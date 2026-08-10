@@ -23,6 +23,21 @@ describe("Engine", () => {
     runtime.dispose();
   });
 
+  it("composes through real Track instances and publishes renderer-neutral values", () => {
+    const runtime = new Engine({
+      clock: createManualClock(),
+      interpolator: createFakeInterpolator(),
+      scheduler: createFakeScheduler(),
+    }).load(project);
+    runtime.mount("hero/arm");
+    const batch = runtime.graph.flush(["hero/arm"], 1);
+    const patch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
+    expect(patch?.values).toEqual({});
+    expect(patch?.values).not.toHaveProperty("nodeId");
+    expect(patch?.sourceProgress).toBe(0);
+    runtime.dispose();
+  });
+
   it("rejects invalid injected ports", () => {
     const clock = createManualClock();
     const invalidInterpolator: unknown = {};
