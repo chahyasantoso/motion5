@@ -4,7 +4,13 @@ import type { Cancel, Scheduler } from "./scheduler";
 export function createFakeInterpolator(): Interpolator {
   return {
     create(config) {
-      const duration = typeof config === "object" && config !== null && "duration" in config && typeof config.duration === "number" ? config.duration : 0;
+      const duration =
+        typeof config === "object" &&
+        config !== null &&
+        "duration" in config &&
+        typeof config.duration === "number"
+          ? config.duration
+          : 0;
       let currentProgress = 0;
       let killed = false;
       return {
@@ -12,7 +18,8 @@ export function createFakeInterpolator(): Interpolator {
         progress(value?: number) {
           if (value === undefined) return currentProgress;
           if (killed) throw new Error("Interpolation timeline is killed.");
-          if (!Number.isFinite(value) || value < 0 || value > 1) throw new RangeError("Progress must be between 0 and 1.");
+          if (!Number.isFinite(value) || value < 0 || value > 1)
+            throw new RangeError("Progress must be between 0 and 1.");
           currentProgress = value;
         },
         kill() {
