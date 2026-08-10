@@ -14,13 +14,13 @@ One entry per decision that would otherwise be relitigated. Format: context, dec
 
 ## ADR-002: Authored schema stays at version 4
 
-**Status:** Accepted, 2026-08-10
+**Status:** Accepted, 2026-08-10. Qualified by ADR-010.
 
 **Context.** The authored JSON contract is stable and well understood. The runtime is what needs replacing.
 
 **Decision.** Keep `schemaVersion: 4` as the authored input contract. Version the runtime independently. Qualify ids internally rather than changing authored syntax.
 
-**Consequences.** Existing authored projects load. The schema version number no longer tracks the runtime version, which must be documented clearly or it will confuse people. Open question Q1 in [PRD.md](./PRD.md) revisits this before v1.
+**Consequences.** Existing authored projects load, with the one renamed key in ADR-010. The schema version number no longer tracks the runtime version, which must be documented clearly or it will confuse people. Open question Q1 in [PRD.md](./PRD.md) revisits this before v1.
 
 ## ADR-003: No capability or rollout flags in shipped code
 
@@ -91,3 +91,21 @@ One entry per decision that would otherwise be relitigated. Format: context, dec
 **Decision.** This repository ships libraries, tests, benchmarks, and docs. Example applications live in a separate repository and consume the published package like any other user.
 
 **Consequences.** Visual evidence needs a home outside this tree. Integration fixtures and the package consumer test carry the load that demo smoke tests used to.
+
+## ADR-010: `freeTracks` is the authored key, and diagnostics carry severity
+
+**Status:** Accepted, 2026-08-10
+
+**Context.** Two authored fields from the reference dialect were missing from the motion5 contract.
+
+`perspective` is a top-level CSS pixel value for the stage's 3D projection. The engine never reads it: it is renderer-layer scene metadata. It is nonetheless load-validated, because animating `z`, `rotationX`, or `rotationY` without a perspective ancestor produces a silently wrong render rather than an error.
+
+Free tracks, tracks belonging to no motion, were authored in the reference as a bare top-level `tracks` array. So `project.tracks` and `motion.tracks` meant different things one nesting level apart. The reference then gated the behavior behind a `freeTracks` capability flag, which ADR-003 already rules out.
+
+**Decision.** Add both to the authored schema. Name the top-level array `freeTracks`, not `tracks`. Free tracks qualify as `~/trackId` and are ordinary graph nodes with no flag and no second code path. Keep `perspective` in the project but out of the runtime: the renderer applies it, the loader only validates it.
+
+Add `severity` of `error` or `warning` to the diagnostic shape. A warning loads and reports; an error rejects. This exists because the perspective rule is genuinely advisory and forcing it to be fatal would reject legal projects, while dropping it would restore the silent failure.
+
+**Consequences.** A reference project using a top-level `tracks` array does not load unmodified. That is a rename in the authored dialect while `schemaVersion` stays at 4, which is exactly the kind of thing a version number is supposed to signal, so this decision is the strongest input to open question Q1 in [PRD.md](./PRD.md): if a second such divergence appears, the schema is version 5 and the migration is documented. No alias is accepted in the meantime, because an alias is two ways to author one thing.
+
+Severity means the loader has two exit paths where it previously had one, and every rule must now declare which it is. A rule that cannot justify being advisory is an error.

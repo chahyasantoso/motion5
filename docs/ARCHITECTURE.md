@@ -55,6 +55,8 @@ One owner per responsibility. If two things can perform an operation, one of the
 - **Motion** owns child membership and hierarchy, stagger, layout, reflow, timeline construction, playback, trigger delegates, and child teardown. Motion is the only composite.
 - **Track** owns playhead and progress state, interpolation inputs, resolved local plugin composition, local lifecycle, and renderer-neutral snapshots. Track is a leaf. It has no children, no parent, no group host, and no graph traversal.
 
+Some authored data has no runtime owner at all, and that is deliberate. `perspective` is validated at load and handed to the renderer untouched. Nothing in the core reads it. See [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md).
+
 ## 4. Invariants
 
 Each one is a test, not a hope. The test id is the invariant id.
@@ -72,16 +74,19 @@ Each one is a test, not a hope. The test id is the invariant id.
 - **I-11** No module under `core/contract`, `core/domain`, `core/graph`, or `core/runtime` imports an animation engine, the DOM, or React.
 - **I-12** Canonical ordering is a pure function of qualified ids and authored order. It never depends on `Map` insertion order derived from runtime events.
 - **I-13** Exactly one upstream clock subscription exists per project, regardless of how many motions are mounted.
-- **I-14** No shipped code branches on a capability or rollout flag.
+- **I-14** No shipped code branches on a capability or rollout flag. Free tracks and cross-motion references travel the same path as any authored node.
+- **I-15** A warning-severity diagnostic never blocks a load, and an error-severity diagnostic never permits one.
 
 ## 5. Identity
 
 Authored ids stay local to their motion. Runtime ids are always qualified, and qualification happens exactly once, at load.
 
 - `motionId/trackId` for a track authored inside a motion.
-- `~/trackId` for an adopted free track.
+- `~/trackId` for a free track, authored in the project's `freeTracks` array or adopted at runtime.
 
-Qualified ids are the sort key for canonical ordering, the key of every registry, and the node id on every published patch. Nothing downstream of load ever sees an unqualified id.
+Qualified ids are the sort key for canonical ordering, the key of every registry, and the node id on every published patch. Nothing downstream of load ever sees an unqualified id. `/` is reserved as the separator and `~` is reserved as the free-track namespace; both are rejected in authored ids.
+
+A free track is not a distinct node type. Once qualified, it differs from a motion track in exactly one way: nothing schedules it, so its playhead is advanced by whoever owns it. Ordering, validation, composition, publication, and teardown are identical.
 
 Reference resolution is total: a reference is either resolved to a member, or recorded as a pending reference with a diagnostic. There is no third state, and a pending reference never publishes.
 
@@ -162,6 +167,8 @@ Teardown is owner-first. The owner removes graph membership, subscriptions, and 
 
 `dispose` and `destroy` are idempotent and reentrancy-safe: the guard flag is set before any notification, never after. A borrowed runtime is detached by its borrower and destroyed only by its owner. Ownership is decided at construction and never changes during teardown.
 
+A free track authored in `freeTracks` is owned by the project and released with it. A free track adopted at runtime is owned by whoever adopted it, and the project detaches rather than destroys it.
+
 ## 11. Diagnostics
 
 One diagnostic shape everywhere:
@@ -171,11 +178,14 @@ interface Diagnostic {
   ruleId: string;
   path: string;
   message: string;
+  severity: "error" | "warning";
   ids?: string[];
 }
 ```
 
-Load-time diagnostics reject. Runtime diagnostics accumulate on the project with a bounded ring buffer and surface on the affected patch. Aggregated failures within a single flush are reported as one aggregate error after the pass completes, never by aborting the pass.
+At load, any `error` rejects the project and no `warning` does. Warnings are collected on the project and readable after load. They are never thrown and never promoted by a flag. See invariant I-15 and ADR-010.
+
+At runtime, diagnostics accumulate on the project in a bounded ring buffer and surface on the affected patch. Aggregated failures within a single flush are reported as one aggregate error after the pass completes, never by aborting the pass.
 
 ## 12. Module layout
 
