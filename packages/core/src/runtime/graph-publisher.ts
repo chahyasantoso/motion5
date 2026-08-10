@@ -1,5 +1,5 @@
 import type { Diagnostic } from "../contract/v5";
-import { edgeKey, type GraphIR, type GraphNode } from "../graph/ir";
+import { edgeKey, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
 
 export interface PublisherComposition {
@@ -31,7 +31,7 @@ function diagnostic(nodeId: string, error: unknown): Diagnostic {
   });
 }
 
-function compareEdgeKeys(a: { readonly observerId: string; readonly sourceId: string; readonly role: string; readonly target?: string }, b: { readonly observerId: string; readonly sourceId: string; readonly role: string; readonly target?: string }): number {
+function compareEdgeKeys(a: GraphEdge, b: GraphEdge): number {
   const left = edgeKey(a);
   const right = edgeKey(b);
   return left < right ? -1 : left > right ? 1 : 0;
