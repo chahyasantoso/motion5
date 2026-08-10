@@ -93,15 +93,16 @@ Goal: an honest toolchain, a typed authored contract, injectable ports with fake
 **Exit:** Integration job is required and green; migration output is byte-stable across runs and across key insertion order.
 **Satisfies:** FR-5, TR-D-07 through TR-D-10, TR-T-04.
 
-### P0-06 Requirements and plan detail
+### P0-06 Requirements, plan detail, and closed decisions
 
 **Status:** This change.
-**Intent:** Replace a phase outline with a slice-level execution plan and add a normative technical requirements document, so that no future slice has to reinvent its own acceptance criteria.
-**Owner:** `docs/TRD.md` becomes the single normative requirements source; `docs/IMPLEMENTATION-PLAN.md` becomes the single sequencing source.
-**Changes:** `docs/IMPLEMENTATION-PLAN.md`, `docs/TRD.md`, `docs/README.md`, `README.md`.
+**Intent:** Replace a phase outline with a slice-level execution plan, add a normative technical requirements document, and close the four open product questions so that no future slice has to reinvent its own acceptance criteria or relitigate scope.
+**Owner:** `docs/TRD.md` becomes the single normative requirements source; `docs/IMPLEMENTATION-PLAN.md` becomes the single sequencing source; `docs/DECISIONS.md` records the closed questions.
+**Changes:** `docs/IMPLEMENTATION-PLAN.md`, `docs/TRD.md`, `docs/PRD.md`, `docs/DECISIONS.md`, `docs/README.md`, `docs/SESSION-STATUS.md`, `README.md`.
 **API delta:** None. Documentation only.
+**Decisions closed:** ADR-014 qualified ids stay internal; ADR-015 GSAP remains the v1 interpolator; ADR-016 runtime diagnostics stay inline; ADR-017 React ships in the v1 package set.
 **Evidence:** None claimed. This slice asserts no runtime invariant and must not pretend to.
-**Exit:** Format check passes; every phase gate in this plan maps to a requirement in the TRD and a job in [CI-WORKFLOW.md](./CI-WORKFLOW.md).
+**Exit:** Format check passes; every phase gate in this plan maps to a requirement in the TRD and a job in [CI-WORKFLOW.md](./CI-WORKFLOW.md); every requirement in the TRD maps to an owning slice here.
 **Depends:** Nothing. **Blocks:** Nothing, but Phase 1 reviews should cite it.
 
 ### Phase 0 exit gate
@@ -122,7 +123,7 @@ Goal: `Track` becomes a genuine leaf and `Motion` becomes the only composite, bo
 **Evidence:** `test/unit/domain/values.test.ts` proves mutation throws in strict mode, that equality drives revision suppression, and that freezing a large nested value does not recurse into a cycle forever.
 **Exit:** No other module owns freezing. Grep-level enforcement lands later in P2-07; the behavioral rule lands here.
 **Depends:** P0-03. **Blocks:** P1-03, P3-01.
-**Risk:** deep freeze on every tick is a performance trap. Mitigation: freeze at publication only, and record the cost in the P3-07 benchmark.
+**Risk:** deep freeze on every tick is a performance trap. Mitigation: freeze at publication only, and record the cost in the P3-07 benchmark. Whether freezing stays unconditional is the one open question in TRD section 18.
 **Satisfies:** TR-R-06, I-7.
 
 ### P1-02 Plugin registry
@@ -191,11 +192,11 @@ Goal: identity, intermediate representation, validation, ordering, live state, a
 
 **Intent:** Qualification happens exactly once, at load, and nothing downstream ever sees an unqualified id.
 **Owner:** `core/graph/ids.ts`.
-**Behavior:** `motionId/trackId` for motion tracks and `~/trackId` for free tracks; `/` is a reserved separator and `~` is a reserved motion id, both rejected in authored input; qualification is a pure total function; parsing a qualified id back into parts is lossless.
-**Evidence:** `test/unit/graph/ids.test.ts` covers round-tripping, reserved-character rejection, collision between a motion track and a free track of the same name, and stability of the sort key.
+**Behavior:** `motionId/trackId` for motion tracks and `~/trackId` for free tracks; `/` is a reserved separator and `~` is a reserved motion id, both rejected in authored input; qualification is a pure total function; parsing a qualified id back into parts is lossless; authored input may never supply an already-qualified id as a node's own identity, and no public API accepts one.
+**Evidence:** `test/unit/graph/ids.test.ts` covers round-tripping, reserved-character rejection, collision between a motion track and a free track of the same name, rejection of an authored id that is already qualified, and stability of the sort key.
 **Exit:** One qualification function exists. No second spelling.
 **Depends:** P0-03. **Blocks:** P2-02, P5-01.
-**Satisfies:** FR-3, TR-G-01, TR-G-02.
+**Satisfies:** FR-3, TR-G-01, TR-G-02, TR-D-11, ADR-014.
 
 ### P2-02 Graph IR
 
@@ -293,11 +294,11 @@ Goal: one project-wide runtime that turns committed graph snapshots into immutab
 
 **Intent:** A failure degrades one branch, never the pass.
 **Owner:** `core/runtime/graph-publisher.ts` failure path plus `core/errors/`.
-**Behavior:** a node whose composition throws publishes `error` status with its diagnostic; its entire downstream closure publishes `blocked`; unrelated branches continue; aggregated failures in one flush are reported as one aggregate error after the pass completes, never by aborting it; retry metadata is retained only for nodes whose publication failed, and retry scheduling keys off monotonic tick numbers.
-**Evidence:** `test/integration/failure-closure.test.ts` proves blocked propagation across a fan-out, unaffected sibling publication, single aggregate error per flush, and retry metadata cleared on recovery.
+**Behavior:** a node whose composition throws publishes `error` status with its diagnostic carried inline on the patch; its entire downstream closure publishes `blocked`; unrelated branches continue; aggregated failures in one flush are reported as one aggregate error after the pass completes, never by aborting it; retry metadata is retained only for nodes whose publication failed, and retry scheduling keys off monotonic tick numbers.
+**Evidence:** `test/integration/failure-closure.test.ts` proves blocked propagation across a fan-out, unaffected sibling publication, single aggregate error per flush, inline diagnostics on the failing patch, and retry metadata cleared on recovery.
 **Exit:** I-9 has a named test.
 **Depends:** P3-02. **Blocks:** P3-04.
-**Satisfies:** FR-12, TR-R-10, TR-E-04, TR-E-05, I-9.
+**Satisfies:** FR-12, TR-R-10, TR-E-04, TR-E-05, TR-E-07, I-9.
 
 ### P3-04 GraphRuntime
 
@@ -349,21 +350,22 @@ Two motions and a free track publish through one graph, one batch, one registry,
 
 Goal: real capabilities behind ports, with core still headless.
 
-### P4-01 Interpolator adapter
+### P4-01 GSAP interpolator adapter
 
-**Intent:** The first real `Interpolator` implementation, proving the port was not an unproven interface.
-**Owner:** `core/adapters/interpolator/`.
-**Behavior:** the adapter creates and kills timelines, reports duration, and reads and writes progress; it never subscribes to its own ticker, because the project owns the clock; killing is idempotent.
-**Evidence:** the P0-04 contract harness runs unchanged against the real adapter.
-**Exit:** The same suite passes for the fake and the real adapter with no adapter-specific branches.
+**Intent:** The first real `Interpolator` implementation, proving the port was not an unproven interface. GSAP is the v1 choice and no built-in sampler ships; see ADR-015.
+**Owner:** `core/adapters/interpolator/gsap/`.
+**Behavior:** the adapter creates and kills GSAP timelines, reports duration, and reads and writes progress; it never subscribes to its own ticker, because the project owns the clock; killing is idempotent; no GSAP object escapes into a patch or a domain snapshot, and no core layer imports, detects, or branches on GSAP.
+**Evidence:** the P0-04 contract harness runs unchanged against the real adapter; parity fixtures cover numeric properties, easing, duration, progress boundaries, and disposal.
+**Exit:** The same suite passes for the fake and the real adapter with no adapter-specific branches, and the boundary job still shows zero engine imports in core.
 **Depends:** P3-06. **Blocks:** P4-02.
-**Satisfies:** FR-18, TR-P-07.
+**Risk:** engine semantics leaking into the port shape. Mitigation: the contract suite is written against the fake first and must not change to accommodate GSAP.
+**Satisfies:** FR-18, FR-23, TR-P-07, TR-P-09, ADR-015.
 
 ### P4-02 Browser clock and DOM adapter
 
 **Intent:** Real ticking and real rendering, both outside core.
 **Owner:** `core/adapters/browser-clock.ts` and `core/adapters/dom/`.
-**Behavior:** the browser clock emits monotonic ticks from animation frames and produces exactly one subscription per project; the DOM adapter consumes frozen patches and applies them, and it is the only place that reads `perspective` and applies it once to a stage container.
+**Behavior:** the browser clock emits monotonic ticks from animation frames and produces exactly one subscription per project; the DOM adapter consumes frozen patches and applies them, and it is the only place that reads `perspective` and applies it once to a stage container; blocked and error patches never apply stale values.
 **Evidence:** the clock passes the port contract harness; `test/integration/dom-patch-apply.test.ts` proves the adapter mutates no patch it receives.
 **Exit:** No DOM import exists outside `core/adapters`.
 **Depends:** P4-01, P1-06. **Blocks:** P4-03.
@@ -371,13 +373,13 @@ Goal: real capabilities behind ports, with core still headless.
 
 ### P4-03 React project and playback hooks
 
-**Intent:** React consumes the runtime without recreating composition.
+**Intent:** React consumes the runtime without recreating composition. React is in the v1 package set; see ADR-017.
 **Owner:** `packages/react/src/`.
-**Behavior:** hooks provide a project context and playback controls; no hook traverses the graph, calls a track composition method, or holds a runtime internal; unmount detaches through the owner path.
-**Evidence:** `packages/react/test/hooks.test.tsx` covers mount, playback control, and unmount with no leaked subscription.
+**Behavior:** hooks provide a project context and playback controls; no hook traverses the graph, calls a track composition method, or holds a runtime internal; importing the package starts no clock, and server rendering never subscribes; unmount detaches through the owner path.
+**Evidence:** `packages/react/test/hooks.test.tsx` covers mount, playback control, strict-mode double mount, server-safe import, and unmount with no leaked subscription.
 **Exit:** `@motion5/react` imports only the public core surface.
 **Depends:** P4-02. **Blocks:** P4-04.
-**Satisfies:** FR-18, TR-A-06.
+**Satisfies:** FR-18, FR-25, TR-A-06, TR-S-07, ADR-017.
 
 ### P4-04 Immutable patch subscription
 
@@ -387,13 +389,13 @@ Goal: real capabilities behind ports, with core still headless.
 **Evidence:** `packages/react/test/use-patch.test.tsx` covers snapshot stability across re-renders, no tearing across two consumers of one node, and mutation rejection.
 **Exit:** The patch contract is immutable at the consumer boundary.
 **Depends:** P4-03. **Blocks:** P4-05.
-**Satisfies:** TR-A-07, I-7.
+**Satisfies:** TR-A-07, TR-S-07, I-7.
 
 ### P4-05 Integration fixtures and build job
 
 **Intent:** Prove the adapters together, and start building what will later be packed.
 **Owner:** `packages/core/test/integration/` and the `build` CI job.
-**Behavior:** end-to-end fixtures drive an authored v5 project through real interpolation and a real clock into applied output; the build job compiles every package and runs public import smoke tests.
+**Behavior:** end-to-end fixtures drive an authored v5 project through real interpolation and a real clock into applied output; the build job compiles every package, including React, and runs public import smoke tests.
 **Evidence:** `test/integration/end-to-end.test.ts` plus a green `build` job.
 **Exit:** The `build` job is required.
 **Depends:** P4-04. **Blocks:** P5-01.
@@ -427,15 +429,15 @@ Goal: cross-motion references and adopted free tracks travel the same path as an
 **Depends:** P5-01. **Blocks:** P5-03.
 **Satisfies:** TR-L-07, ADR-013.
 
-### P5-03 Unified diagnostics
+### P5-03 Unified inline diagnostics
 
-**Intent:** One diagnostic surface for load-time and runtime problems, bounded so it cannot leak memory.
+**Intent:** One diagnostic surface for load-time and runtime problems, delivered inline and bounded so it cannot leak memory. Inline delivery is the settled design; see ADR-016.
 **Owner:** `core/runtime/diagnostics.ts`.
-**Behavior:** runtime diagnostics accumulate on the project in a bounded ring buffer and also surface on the affected patch; the buffer drops oldest entries and reports how many were dropped; load and runtime diagnostics share the one `Diagnostic` shape.
-**Evidence:** `test/integration/diagnostics.test.ts` covers buffer bounding, drop counting, and patch-level surfacing.
-**Exit:** No second diagnostic shape exists.
+**Behavior:** runtime diagnostics surface on the affected patch and in the batch diagnostics summary, and accumulate on the project in a bounded ring buffer; the buffer drops oldest entries and reports how many were dropped; load and runtime diagnostics share the one `Diagnostic` shape; no separate diagnostics stream, emitter, or parallel subscription exists, and the buffer is inspection state only.
+**Evidence:** `test/integration/diagnostics.test.ts` covers buffer bounding, drop counting, patch-level surfacing, batch summary contents, and the absence of any second delivery channel on the public surface.
+**Exit:** No second diagnostic shape and no second diagnostic channel exists.
 **Depends:** P5-02. **Blocks:** P5-04.
-**Satisfies:** FR-20, TR-E-06, TR-E-07.
+**Satisfies:** FR-20, FR-24, TR-E-06, TR-E-07, TR-E-09, ADR-016.
 
 ### P5-04 Unmount and remount recovery
 
@@ -469,17 +471,17 @@ Goal: a shippable, packed, documented, budget-enforced v1 with nothing transitio
 
 **Intent:** Prove the documented imports work from the packed artifact, not just from source.
 **Owner:** the `package` CI job.
-**Behavior:** pack the repository, install the tarball into a clean consumer project, and import only documented exports in both ESM and TypeScript; deep wildcard imports must fail.
-**Evidence:** a consumer fixture that fails when the export map regresses.
+**Behavior:** pack every published package, install the tarballs into a clean consumer project, and import only documented exports in both ESM and TypeScript; the React package gets its own consumer fixture; deep wildcard imports must fail.
+**Evidence:** consumer fixtures for `@motion5/core` and `@motion5/react` that fail when either export map regresses.
 **Exit:** The `package` job is required.
 **Depends:** P6-01. **Blocks:** P6-03.
-**Satisfies:** FR-22, TR-S-05, TR-S-06.
+**Satisfies:** FR-22, FR-25, TR-S-05, TR-S-06, TR-S-07.
 
 ### P6-03 Public documentation
 
 **Intent:** Documentation describes implementation, not intention.
 **Owner:** `docs/` and `README.md`.
-**Behavior:** every intent label is removed or corrected; the architecture, TRD, schema, and API docs are checked against the shipped surface; the documentation map matches the files that exist.
+**Behavior:** every intent label is removed or corrected; the architecture, TRD, schema, and API docs are checked against the shipped surface; the documentation map matches the files that exist; any decision record that shipped differently is superseded rather than quietly ignored.
 **Evidence:** review checklist plus the API report diff from P6-01.
 **Exit:** No document claims a gate or a behavior that does not exist.
 **Depends:** P6-02. **Blocks:** P6-04.
@@ -489,7 +491,7 @@ Goal: a shippable, packed, documented, budget-enforced v1 with nothing transitio
 
 **Intent:** Promote advisory budgets to required gates or delete them.
 **Owner:** the `performance` CI job.
-**Behavior:** budgets become required; any budget still advisory past its recorded expiry is deleted along with its benchmark rather than extended.
+**Behavior:** budgets become required; any budget still advisory past its recorded expiry is deleted along with its benchmark rather than extended; the deep-freeze question in TRD section 18 is answered with benchmark evidence and recorded as a decision.
 **Evidence:** a deliberate regression fails the required job.
 **Exit:** No `continue-on-error` remains in the performance job.
 **Depends:** P6-03, P3-07. **Blocks:** P6-05.
@@ -560,7 +562,16 @@ Each architecture invariant is owned by exactly one slice. If an invariant has n
 - **I-14** no capability or rollout flags: P5-01.
 - **I-15** warnings never block, errors never pass: P2-03.
 
-## 13. CI gate rollout
+## 13. Locked decisions and their owning slices
+
+The four decisions closed in P0-06 are enforced by code, not by prose.
+
+- **ADR-014** qualified ids stay internal: P2-01 rejects authored qualified ids and owns the single qualification function.
+- **ADR-015** GSAP remains the v1 interpolator: P4-01 ships the adapter behind the port; P2-07 keeps the engine out of core.
+- **ADR-016** diagnostics stay inline: P3-03 puts them on the failing patch; P5-03 owns the bounded buffer and the absence of a second channel.
+- **ADR-017** React ships in v1: P4-03 and P4-04 own the hooks; P4-05 builds it; P6-02 packs and consumes it.
+
+## 14. CI gate rollout
 
 - **quality** required since P0-01: format check, typecheck, unit tests, migration tests.
 - **integration** required from P0-05: golden serialization, schema and migration integration, free-track acceptance, warning and error semantics, cycle rejection.
@@ -571,33 +582,37 @@ Each architecture invariant is owned by exactly one slice. If an invariant has n
 
 A job is not live until its owning slice merges. Until then [CI-WORKFLOW.md](./CI-WORKFLOW.md) describes a target, not a check.
 
-## 14. Risk register
+## 15. Risk register
 
 - **P2-06 transaction complexity.** Highest risk in the project. Mitigation: land the undo journal and a failure-injection harness before the command surface; split into 06a and 06b if review stalls.
-- **Deep freeze cost.** Freezing every published value can dominate a frame. Mitigation: freeze once at publication, measure in P3-07, and revisit only with benchmark evidence.
+- **Deep freeze cost.** Freezing every published value can dominate a frame. Mitigation: freeze once at publication, measure in P3-07, and resolve the open TRD question in P6-04 with evidence.
 - **Advisory benchmarks that never graduate.** Mitigation: expiry dates recorded in session status and enforced by P6-04.
 - **Boundary scanner false green.** Mitigation: planted-violation fixtures are mandatory for every mechanical gate.
+- **GSAP semantics leaking into the port.** Mitigation: the contract suite is authored against the fake and must pass the real adapter unchanged, per ADR-015.
 - **React concurrency tearing.** Mitigation: external-store subscription with per-revision snapshot stability, proven by a two-consumer test in P4-04.
 - **Scope creep back toward the predecessor's shape.** Mitigation: any flag, alias, facade, or second owner requires a superseding ADR in the same pull request.
 
-## 15. Definition of done for every slice
+## 16. Definition of done for every slice
 
 A slice is done only when behavior, API, types, docs, tests, and boundaries agree; the nearest test and the full relevant matrix are green; the diff was reviewed with whitespace hidden; the pull request names its failing-first test, its new owner, and the deletion or boundary it establishes; and [SESSION-STATUS.md](./SESSION-STATUS.md) was updated in the same change.
 
-## 16. v1 release checklist
+## 17. v1 release checklist
 
 Every line is binary. No line is satisfied by prose.
 
 - Schema v5 loads and v4 is rejected at the runtime boundary.
+- Authored ids stay local and no public API accepts a qualified id as authored identity.
 - Migration is pure, idempotent, and deterministic, with fresh fixtures.
 - Every architecture invariant maps to a named executable test that fails when the invariant is broken.
 - Rollback leaves every observable surface byte-identical.
 - One project owns one graph runtime, publisher, registry, and clock subscription.
 - Composition failure blocks the downstream closure without aborting the pass.
 - Published patches are deeply frozen, revisioned, deduplicated, and batched.
+- Runtime diagnostics appear inline on affected patches and in batch summaries, with no second channel.
 - Load, mount, unmount, and dispose cycles show flat retention.
 - Core imports no animation engine, DOM API, or React.
-- Real adapters pass the fake-port contract suites unchanged.
+- The GSAP adapter passes the interpolator contract suite unchanged.
+- `@motion5/react` builds, passes its lifecycle and concurrency tests, and passes its own packed consumer test.
 - The documented public API passes a packed-tarball consumer test.
 - Benchmarks run against committed budgets as a required job.
 - Documentation matches implementation and no transitional code remains.
