@@ -8,6 +8,9 @@
   "engines": {
     "node": ">=24"
   },
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "check": "npm run format:check && npm run typecheck && npm test",
     "format": "prettier . --write",

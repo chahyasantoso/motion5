@@ -1,4 +1,4 @@
-import type { Patch, PatchListener, PatchRegistry } from "../../core/src/runtime/patch-registry";
+import type { Patch, PatchListener, PatchSource } from "@motion5/core/internal";
 
 /**
  * Framework-neutral external store used by the React binding. React owns the hook and
@@ -9,10 +9,10 @@ export interface PatchStore {
   subscribe(listener: PatchListener): () => void;
 }
 
-export function createPatchStore(registry: PatchRegistry, nodeId: string): PatchStore {
-  let snapshot = registry.get(nodeId);
+export function createPatchStore(source: PatchSource, nodeId: string): PatchStore {
+  let snapshot = source.get(nodeId);
   const listeners = new Set<PatchListener>();
-  const unsubscribeRegistry = registry.subscribeNode(nodeId, (patch) => {
+  const unsubscribeSource = source.subscribeNode(nodeId, (patch) => {
     snapshot = patch;
     for (const listener of [...listeners]) listener(patch);
   });
@@ -24,7 +24,7 @@ export function createPatchStore(registry: PatchRegistry, nodeId: string): Patch
       listeners.add(listener);
       return () => {
         listeners.delete(listener);
-        if (listeners.size === 0) unsubscribeRegistry();
+        if (listeners.size === 0) unsubscribeSource();
       };
     },
   };
