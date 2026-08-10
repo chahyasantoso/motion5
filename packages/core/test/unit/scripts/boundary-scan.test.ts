@@ -1,4 +1,4 @@
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -40,28 +40,20 @@ describe("boundary scan planted violations", () => {
     expect(extractExportNames(publicExportViolationFixture)).toEqual(["InternalGraphRuntime"]);
   });
 
-  it("detects a consumer reaching into core source internals", () => {
-    expect(consumerInternalViolationFixture).toMatch(/core\/src/);
-  });
-
-  it("executes the shipped scanner against a planted tree", async () => {
+  it("executes the shipped scanner against a planted consumer tree", async () => {
     const directory = await mkdtemp(join(tmpdir(), "motion5-boundary-"));
     try {
-      await writeFile(join(directory, "packages", "core", "src", "index.ts"), "export const CORE_VERSION = '0';");
-    } catch {
-      await writeFile(join(directory, "packages", "core", "src", "index.ts"), "export const CORE_VERSION = '0';");
-    }
-    await rm(directory, { recursive: true, force: true });
+      const indexPath = join(directory, "packages", "core", "src", "index.ts");
+      const consumerPath = join(directory, "packages", "react", "src", "patch-store.ts");
+      await mkdir(join(directory, "packages", "core", "src"), { recursive: true });
+      await mkdir(join(directory, "packages", "react", "src"), { recursive: true });
+      await writeFile(indexPath, "export const CORE_VERSION = '0';");
+      await writeFile(consumerPath, consumerInternalViolationFixture);
 
-    const tree = await mkdtemp(join(tmpdir(), "motion5-boundary-"));
-    try {
-      await writeFile(join(tree, "packages", "core", "src", "index.ts"), "export const CORE_VERSION = '0';", { flag: "w" });
-    } catch {
-      // The scanner's real-tree execution is covered below with a valid source fixture.
+      const violations = await scan(directory);
+      expect(violations).toContain("packages/react/src/patch-store.ts: core source-internal import");
+    } finally {
+      await rm(directory, { recursive: true, force: true });
     }
-    await rm(tree, { recursive: true, force: true });
-
-    expect(importsBoundary(consumerInternalViolationFixture)).toBe(false);
-    expect(consumerInternalViolationFixture).toMatch(/core\/src/);
   });
 });
