@@ -27,15 +27,19 @@ export class Engine {
     const tracks = new Map<string, Track>();
     const compose = (node: {
       id: string;
-      track: { duration?: number; keyframes?: Record<string, unknown> };
+      track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> };
     }) => {
-      const track = new Track({
-        interpolator: this.#options.interpolator,
-        interpolationConfig: node.track,
-      });
-      tracks.set(node.id, track);
+      let track = tracks.get(node.id);
+      if (!track) {
+        track = new Track({
+          interpolator: this.#options.interpolator,
+          interpolationConfig: node.track,
+        });
+        tracks.set(node.id, track);
+      }
+      const compiledTrack = track;
       return (inputs: Readonly<Record<string, unknown>>) => {
-        const snapshot = track.compose(inputs as Readonly<ImmutableRecord>);
+        const snapshot = compiledTrack.compose(inputs as Readonly<ImmutableRecord>);
         return {
           values: snapshot.values,
           sourceProgress: snapshot.progress,
