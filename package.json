@@ -16,6 +16,7 @@
     "test": "vitest run",
     "test:migration": "vitest run packages/core/test/migration",
     "test:contract": "vitest run packages/core/test/contract",
+    "test:ports": "vitest run packages/core/test/contract/ports.test.ts",
     "test:watch": "vitest"
   },
   "devDependencies": {
