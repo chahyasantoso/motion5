@@ -50,7 +50,6 @@ describe("plugin registry", () => {
         ruleId: "plugin-duplicate-use",
         path: "track.use[2]",
         message: 'Plugin "missing" is requested more than once.',
-        message: 'Plugin "missing" is requested more than once.',
         severity: "error",
         ids: ["missing"],
       },
