@@ -80,15 +80,13 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 
 ## ADR-007: Formatting is manual
 
-**Status:** Accepted, 2026-08-10
+**Status:** Superseded by ADR-019, 2026-08-10
 
-**Context.** An automatic formatter that pushes to contributor branches can rewrite history mid-rebase, mix mechanical changes with behavior, and require broad write permission.
+**Context.** Automatic formatting was initially rejected because it can rewrite branches during rebases, contaminate review diffs, and require write permissions on untrusted pull requests.
 
-**Decision.** CI checks formatting and reports the local fix command. A separately dispatched workflow may create a formatting-only pull request.
+**Decision.** The original manual-only policy is superseded for same-repository pull requests. The formatter now runs automatically on pull request open, synchronize, and reopen events and commits mechanical changes back to the exact source branch. Fork pull requests remain check-only because their source code is untrusted and their token cannot safely receive branch-write access.
 
-**Alternatives rejected.** A push-on-every-PR formatter is convenient but unsafe for branches, forks, and review diffs.
-
-**Consequences.** Contributors normally run Prettier locally. Bulk cleanup remains available without mutating work unexpectedly.
+**Consequences.** Same-repository contributors get automatic formatting, while fork contributors retain the safer format-check gate. The workflow must use concurrency cancellation and a mechanical-only commit message. Reverting this policy requires restoring manual-only behavior in the workflow and docs.
 
 ## ADR-008: Gates measure behavior, not prose
 
@@ -207,3 +205,15 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 **Alternatives rejected.** Development-only freezing is faster in production but changes runtime semantics by environment, hides bugs until deployment, and makes React/DOM consumer behavior less trustworthy. A caller-controlled opt-out flag creates a second contract and a larger test matrix. Shallow freezing is insufficient because nested values can still mutate later readers.
 
 **Consequences.** P1-01 and P3-01 own the behavior; P3-07 benchmarks freezing cost on representative graphs and patch shapes. If measured cost is too high, optimize allocation and reuse or change the publication representation in a superseding ADR. Do not weaken the guarantee by silently disabling freezing.
+
+## ADR-019: Automatic Prettier write-back for same-repository pull requests
+
+**Status:** Accepted, 2026-08-10
+
+**Context.** Manual formatting made sense while the repository was establishing its safety policy, but it added repetitive work for repository-owned branches. Same-repository pull requests are trusted contributors, while fork pull requests are untrusted code and must not receive a write-capable workflow token.
+
+**Decision.** On pull request open, synchronize, and reopen events, the formatter runs automatically and commits `chore: apply prettier` back to the exact source branch for same-repository pull requests. Fork pull requests remain check-only through the quality job. Workflow concurrency cancels superseded runs, and formatting remains a mechanical-only commit.
+
+**Alternatives rejected.** Keeping all formatting manual preserves maximum branch safety but wastes time on repository-owned work. Using `pull_request_target` would expose a write-capable token to untrusted fork code and is rejected. Formatting in a separate branch or PR for every internal change adds noise and delays the real review.
+
+**Consequences.** Internal PR branches may receive an automatic formatting commit during review. Contributors should expect that behavior and avoid rebasing while the formatter is running. Fork contributors get an actionable `format:check` failure and can format locally.
