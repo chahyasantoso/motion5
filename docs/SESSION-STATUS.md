@@ -1,9 +1,9 @@
 # Session status
 
 **Captured:** 2026-08-10, Asia/Jakarta
-**Branch:** `feat/p1-05-motion-scheduling`
+**Branch:** `feat/p1-06-trigger-delegates`
 **Phase:** 1, leaf domain
-**Next action:** Run the P1-05 quality matrix and open the implementation pull request only after it is green.
+**Next action:** Run the P1-06 quality matrix and open the implementation pull request only after it is green.
 
 This is the only document that reports current implementation reality. Everything else is a contract, plan, or decision record unless it says otherwise.
 
@@ -13,7 +13,7 @@ Every implementation slice follows this path: create `feat/...` from `main`, imp
 
 ## Current state
 
-P0-01 through P0-06 and P1-01 through P1-04 are merged on `main`. P1-05 is in progress on this branch. It adds the Motion composite, authored child ownership, deterministic stagger, scheduler-backed playback, clock-driven progress, seek, pause, reflow, and owner-first child teardown. Triggers, graph, runtime, adapters, React, benchmarks, and boundary scripts do not exist yet.
+P0-01 through P0-06 and P1-01 through P1-05 are merged on `main`. P1-06 is in progress on this branch. It adds pure manual, scroll, and time trigger delegates that emit Motion commands without browser or DOM access; graph, runtime, adapters, React, benchmarks, and boundary scripts do not exist yet.
 
 ## Landed on main
 
@@ -28,22 +28,23 @@ P0-01 through P0-06 and P1-01 through P1-04 are merged on `main`. P1-05 is in pr
 - Deterministic plugin registry with duplicate registration protection and load diagnostics.
 - Track leaf with local interpolation, plugin composition, immutable snapshots, and disposal.
 - Shared lifecycle primitive with idempotent owner-first teardown.
+- Motion composite with authored child ownership, deterministic stagger, scheduler playback, seek, pause, reflow, and teardown.
 
-## P1-05 changes on this branch
+## P1-06 changes on this branch
 
-- `packages/core/src/domain/motion.ts`: sole composite owner for child membership, scheduling, playback, stagger, seek, reflow, and teardown.
-- `packages/core/test/unit/domain/motion.test.ts`: authored order, stagger, clock/scheduler playback, seek, pause, and teardown evidence.
+- `packages/core/src/domain/triggers.ts`: pure trigger delegates for manual, scroll, and time signals.
+- `packages/core/test/unit/domain/triggers.test.ts`: attachment, validation, normalization, detach, and environment-boundary evidence.
 
 ## Immediate queue
 
-1. Run the P1-05 quality matrix and review the implementation PR.
-2. Merge P1-05 only with green required checks.
-3. Continue with P1-06 trigger delegates.
+1. Run the P1-06 quality matrix and review the implementation PR.
+2. Merge P1-06 only with green required checks.
+3. Review the Phase 1 exit gate, then begin P2-01 qualified ids.
 4. Keep `SESSION-STATUS.md` current after every merged slice.
 
 ## Audit snapshot
 
-The repository follows the implementation plan through P1-04. P1-05 is isolated to Motion composition and local playback; it imports no graph, renderer, or runtime modules.
+The repository follows the implementation plan through P1-05. P1-06 is isolated to trigger delegates and introduces no graph, renderer, or runtime boundary crossing.
 
 ## Guardrails
 
