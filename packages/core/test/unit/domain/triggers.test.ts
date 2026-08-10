@@ -2,13 +2,16 @@ import { describe, expect, it, vi } from "vitest";
 import { createTrigger } from "../../../src/domain/triggers";
 
 describe("trigger delegates", () => {
-  it.each(["manual", "scroll", "time"] as const)("normalizes %s into a progress command", (type) => {
-    const trigger = createTrigger(type);
-    const emit = vi.fn();
-    trigger.attach(emit);
-    trigger.signal({ type, progress: 0.42 });
-    expect(emit).toHaveBeenCalledWith({ setProgress: 0.42 });
-  });
+  it.each(["manual", "scroll", "time"] as const)(
+    "normalizes %s into a progress command",
+    (type) => {
+      const trigger = createTrigger(type);
+      const emit = vi.fn();
+      trigger.attach(emit);
+      trigger.signal({ type, progress: 0.42 });
+      expect(emit).toHaveBeenCalledWith({ setProgress: 0.42 });
+    },
+  );
 
   it("rejects a second attachment and mismatched signals", () => {
     const trigger = createTrigger("manual");

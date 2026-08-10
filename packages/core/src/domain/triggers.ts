@@ -49,7 +49,9 @@ abstract class BaseTrigger implements TriggerDelegate {
 }
 
 class ManualTrigger extends BaseTrigger {
-  constructor() { super("manual"); }
+  constructor() {
+    super("manual");
+  }
   protected handle(signal: TriggerSignal): void {
     if (signal.progress === undefined) throw new TypeError("Manual trigger requires progress.");
     assertProgress(signal.progress);
@@ -58,7 +60,9 @@ class ManualTrigger extends BaseTrigger {
 }
 
 class ScrollTrigger extends BaseTrigger {
-  constructor() { super("scroll"); }
+  constructor() {
+    super("scroll");
+  }
   protected handle(signal: TriggerSignal): void {
     if (signal.progress === undefined) throw new TypeError("Scroll trigger requires progress.");
     assertProgress(signal.progress);
@@ -67,7 +71,9 @@ class ScrollTrigger extends BaseTrigger {
 }
 
 class TimeTrigger extends BaseTrigger {
-  constructor() { super("time"); }
+  constructor() {
+    super("time");
+  }
   protected handle(signal: TriggerSignal): void {
     if (signal.progress === undefined) throw new TypeError("Time trigger requires progress.");
     assertProgress(signal.progress);
@@ -77,14 +83,19 @@ class TimeTrigger extends BaseTrigger {
 
 function assertProgress(progress: number): void {
   if (!Number.isFinite(progress)) throw new TypeError("Trigger progress must be finite.");
-  if (progress < 0 || progress > 1) throw new RangeError("Trigger progress must be between 0 and 1.");
+  if (progress < 0 || progress > 1)
+    throw new RangeError("Trigger progress must be between 0 and 1.");
 }
 
 export function createTrigger(type: TriggerType): TriggerDelegate {
   switch (type) {
-    case "manual": return new ManualTrigger();
-    case "scroll": return new ScrollTrigger();
-    case "time": return new TimeTrigger();
-    default: throw new TypeError(`Unsupported trigger type: ${String(type)}.`);
+    case "manual":
+      return new ManualTrigger();
+    case "scroll":
+      return new ScrollTrigger();
+    case "time":
+      return new TimeTrigger();
+    default:
+      throw new TypeError(`Unsupported trigger type: ${String(type)}.`);
   }
 }
