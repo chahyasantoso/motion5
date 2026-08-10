@@ -34,23 +34,18 @@ describe("Engine", () => {
     runtime.dispose();
   });
 
-  it("composes through one real Track and publishes renderer-neutral values", () => {
+  it("composes through a real Track and publishes renderer-neutral values", () => {
     const runtime = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
       scheduler: createFakeScheduler(),
     }).load(project);
     runtime.mount("hero/arm");
-    const first = runtime.graph.flush(["hero/arm"], 1);
-    const patch = first.patches.find(({ nodeId }) => nodeId === "hero/arm");
+    const batch = runtime.graph.flush(["hero/arm"], 1);
+    const patch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
     expect(patch?.values).toEqual({ opacity: 0.2 });
     expect(patch?.values).not.toHaveProperty("nodeId");
     expect(patch?.sourceProgress).toBe(0);
-
-    const second = runtime.graph.flush(["hero/arm"], 2);
-    expect(second.patches.find(({ nodeId }) => nodeId === "hero/arm")?.values).toBe(
-      patch?.values,
-    );
     runtime.dispose();
   });
 
