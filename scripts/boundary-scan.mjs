@@ -105,7 +105,8 @@ export async function scan(scanRoot = root) {
     }
   };
 
-  for (const layer of coreLayers) await scanCoreFiles(join(scanRoot, "packages", "core", "src", layer));
+  for (const layer of coreLayers)
+    await scanCoreFiles(join(scanRoot, "packages", "core", "src", layer));
   await scanCoreFiles(join(scanRoot, "packages", "core", "src", "engine.ts"));
 
   for (const packageName of consumerPackages) {

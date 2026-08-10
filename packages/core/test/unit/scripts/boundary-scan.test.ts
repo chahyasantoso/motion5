@@ -51,7 +51,9 @@ describe("boundary scan planted violations", () => {
       await writeFile(consumerPath, consumerInternalViolationFixture);
 
       const violations = await scan(directory);
-      expect(violations).toContain("packages/react/src/patch-store.ts: core source-internal import");
+      expect(violations).toContain(
+        "packages/react/src/patch-store.ts: core source-internal import",
+      );
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
