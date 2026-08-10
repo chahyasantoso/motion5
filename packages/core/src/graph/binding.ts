@@ -28,8 +28,7 @@ function requireGraph(project: ProjectDefinition): GraphIR {
 
 function edgeMap(graph: GraphIR): Map<string, GraphIR["nodes"][number]["edges"][number]> {
   const result = new Map<string, GraphIR["nodes"][number]["edges"][number]>();
-  for (const node of graph.nodes)
-    for (const edge of node.edges) result.set(edgeKey(edge), edge);
+  for (const node of graph.nodes) for (const edge of node.edges) result.set(edgeKey(edge), edge);
   return result;
 }
 
@@ -80,8 +79,7 @@ export class GraphBinding {
 
   #populate(graph: GraphIR): void {
     for (const id of graph.order) this.#state.addNode(id);
-    for (const node of graph.nodes)
-      for (const edge of node.edges) this.#state.addEdge(edge);
+    for (const node of graph.nodes) for (const edge of node.edges) this.#state.addEdge(edge);
   }
 
   #applyDelta(previous: GraphIR, next: GraphIR): void {
@@ -92,10 +90,8 @@ export class GraphBinding {
 
     for (const key of previousEdges.keys())
       if (!nextEdges.has(key)) this.#state.removeEdge(previousEdges.get(key)!);
-    for (const id of previousIds)
-      if (!nextIds.has(id)) this.#state.removeNode(id);
+    for (const id of previousIds) if (!nextIds.has(id)) this.#state.removeNode(id);
     for (const id of nextIds) if (!previousIds.has(id)) this.#state.addNode(id);
-    for (const [key, edge] of nextEdges)
-      if (!previousEdges.has(key)) this.#state.addEdge(edge);
+    for (const [key, edge] of nextEdges) if (!previousEdges.has(key)) this.#state.addEdge(edge);
   }
 }

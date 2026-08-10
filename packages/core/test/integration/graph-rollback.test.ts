@@ -47,8 +47,22 @@ describe("GraphBinding transactions", () => {
   });
 
   it.each<[string, GraphBindingHooks]>([
-    ["live-state apply", { afterStateApply: () => { throw new Error("state stage"); } }],
-    ["publisher scheduling", { afterScheduleApply: () => { throw new Error("schedule stage"); } }],
+    [
+      "live-state apply",
+      {
+        afterStateApply: () => {
+          throw new Error("state stage");
+        },
+      },
+    ],
+    [
+      "publisher scheduling",
+      {
+        afterScheduleApply: () => {
+          throw new Error("schedule stage");
+        },
+      },
+    ],
   ])("I-2 restores every observable state after %s fails", (_stage, hooks) => {
     const binding = new GraphBinding(base, { hooks });
     const beforeGraph = binding.graph;
