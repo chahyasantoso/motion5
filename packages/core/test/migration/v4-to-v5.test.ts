@@ -19,7 +19,7 @@ describe("fresh v4-to-v5 migration contract", () => {
     expect(migrated?.schemaVersion).toBe(5);
     expect(migrated?.freeTracks).toEqual(input.tracks);
     expect(migrated?.tracks).toBeUndefined();
-    expect(migrated?.motions[0]?.tracks).toEqual(input.motions[0].tracks);
+    expect(migrated?.motions[0]?.tracks).toEqual(input.motions[0]?.tracks);
   });
 
   it("does not mutate the input or nested arrays", () => {
@@ -28,7 +28,7 @@ describe("fresh v4-to-v5 migration contract", () => {
       tracks: [{ id: "cursor", observes: [{ source: "root" }] }],
       motions: [],
     };
-    const before = structuredClone(input);
+    const before = JSON.parse(JSON.stringify(input));
     const result = migrateV4ToV5(input);
     const migrated = result.migrated as MigratedShape | null;
 
@@ -50,12 +50,7 @@ describe("fresh v4-to-v5 migration contract", () => {
   });
 
   it("rejects ambiguous dual top-level fields instead of choosing one", () => {
-    const result = migrateV4ToV5({
-      schemaVersion: 4,
-      tracks: [],
-      freeTracks: [],
-      motions: [],
-    });
+    const result = migrateV4ToV5({ schemaVersion: 4, tracks: [], freeTracks: [], motions: [] });
 
     expect(result.migrated).toBeNull();
     expect(result.diagnostics[0]?.path).toBe("$");

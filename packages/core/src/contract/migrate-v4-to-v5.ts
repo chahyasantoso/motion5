@@ -5,11 +5,7 @@ export interface MigrationResult<T = Record<string, unknown>> {
   readonly diagnostics: readonly MigrationDiagnostic[];
 }
 
-function diagnostic(
-  path: string,
-  message: string,
-  ids: readonly string[] = [],
-): MigrationDiagnostic {
+function diagnostic(path: string, message: string, ids: readonly string[] = []): MigrationDiagnostic {
   return Object.freeze({
     ruleId: "schema-v4-migration",
     path,
@@ -20,7 +16,6 @@ function diagnostic(
 }
 
 function clone<T>(value: T): T {
-  if (typeof structuredClone === "function") return structuredClone(value);
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
@@ -44,9 +39,7 @@ export function migrateV4ToV5<T extends Record<string, unknown>>(
   if ("tracks" in input && "freeTracks" in input) {
     return {
       migrated: null,
-      diagnostics: [
-        diagnostic("$", "Cannot migrate when both top-level tracks and freeTracks exist."),
-      ],
+      diagnostics: [diagnostic("$", "Cannot migrate when both top-level tracks and freeTracks exist.")],
     };
   }
   if ("tracks" in input && input.tracks !== undefined && !Array.isArray(input.tracks)) {
@@ -62,6 +55,6 @@ export function migrateV4ToV5<T extends Record<string, unknown>>(
     ...rest,
     schemaVersion: 5 as const,
     freeTracks: Array.isArray(tracks) ? tracks : [],
-  } as T & { schemaVersion: 5 };
+  } as unknown as T & { schemaVersion: 5 };
   return { migrated: Object.freeze(migrated), diagnostics: Object.freeze([]) };
 }
