@@ -1,5 +1,6 @@
 import type { ProjectDefinition } from "./contract/v5";
 import { Track } from "./domain/track";
+import type { ImmutableRecord } from "./domain/values";
 import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
@@ -24,17 +25,16 @@ export class Engine {
 
   load(project: ProjectDefinition): ProjectRuntime {
     const tracks = new Map<string, Track>();
-    const compose = (node: {
-      id: string;
-      track: { duration?: number; keyframes?: Record<string, unknown> };
-    }) => {
+    const compose = (
+      node: { id: string; track: { duration?: number; keyframes?: Record<string, unknown> } },
+    ) => {
       const track = new Track({
         interpolator: this.#options.interpolator,
         interpolationConfig: node.track,
       });
       tracks.set(node.id, track);
       return (inputs: Readonly<Record<string, unknown>>) => {
-        const snapshot = track.compose(inputs);
+        const snapshot = track.compose(inputs as Readonly<ImmutableRecord>);
         return {
           values: snapshot.values,
           sourceProgress: snapshot.progress,
