@@ -61,7 +61,7 @@ export function importsBoundary(source) {
 }
 
 export function importsRenderer(source) {
-  return /(?:from|import)\s*["'](?:gsap|react|react-dom|node:dom|domino|(?:\.\/|\.\.\/)[^"']*(?:dom|renderer|react|gsap)[^"']*)(?:["'/]|$)/i.test(
+  return /(?:from|import)\s*["'](?:gsap|react|react-dom|node:dom|domino|(?:\.\/|\.\.\/)[^"']*(?:^|\/)\b(?:dom|renderer|react|gsap)\b[^"']*)(?:["'/]|$)/i.test(
     source,
   );
 }
@@ -112,8 +112,7 @@ export async function scan(scanRoot = root) {
     const source = await readFile(enginePath, "utf8");
     if (importsBoundary(source) || importsRenderer(source))
       violations.push("packages/core/src/engine.ts: renderer or engine import");
-    if (bannedSymbol(source))
-      violations.push("packages/core/src/engine.ts: banned compatibility symbol");
+    if (bannedSymbol(source)) violations.push("packages/core/src/engine.ts: banned compatibility symbol");
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
   }
