@@ -12,7 +12,11 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "@motion5/core": ["packages/core/src/index.ts"],
+      "@motion5/core/internal": ["packages/core/src/internal.ts"]
+    }
   },
   "include": ["packages/**/*.ts"]
 }
