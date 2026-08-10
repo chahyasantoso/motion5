@@ -39,7 +39,10 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   return Object.freeze(value);
 }
 
-function sameRecord(a: Readonly<Record<string, unknown>>, b: Readonly<Record<string, unknown>>): boolean {
+function sameRecord(
+  a: Readonly<Record<string, unknown>>,
+  b: Readonly<Record<string, unknown>>,
+): boolean {
   const aKeys = Object.keys(a).sort();
   const bKeys = Object.keys(b).sort();
   if (aKeys.length !== bKeys.length) return false;
