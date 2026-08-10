@@ -64,3 +64,26 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Boundary scan and planted fixtures
         run: npm run test:boundaries
+
+  performance:
+    name: performance (node 24, advisory)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run deterministic benchmark
+        run: npm run benchmark
+      - name: Upload benchmark report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: motion5-benchmark-report
+          path: performance/benchmark-report.json
+          if-no-files-found: error
