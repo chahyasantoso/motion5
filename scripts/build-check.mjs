@@ -1,9 +1,6 @@
 import { readFile } from "node:fs/promises";
 
-const files = [
-  "packages/core/src/index.ts",
-  "packages/react/src/index.ts",
-];
+const files = ["packages/core/src/index.ts", "packages/react/src/index.ts"];
 const required = ["AUTHORED_SCHEMA_VERSION", "validateV5", "createManualClock", "CORE_VERSION"];
 for (const path of files) {
   const source = await readFile(new URL(`../${path}`, import.meta.url), "utf8");
