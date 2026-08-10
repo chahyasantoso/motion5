@@ -130,7 +130,7 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 
 **Alternatives rejected.** Accepting both `tracks` and `freeTracks` creates two authored spellings. Guessing whether a bare reference is free or motion-owned recreates ambiguity. Auto-migration inside `loadProject` hides data changes and complicates rollback.
 
-**Consequences.** Existing projects need an explicit migration step. The loader has one dialect and can produce deterministic diagnostics. Migration tooling must validate assumptions before moving top-level `tracks`.
+**Consequences.** Existing projects need an explicit migration step. The loader has one dialect and can produce deterministic diagnostics. Migration tooling must validate migration assumptions before moving top-level `tracks`.
 
 ## ADR-012: Perspective is metadata, not runtime state
 
@@ -195,3 +195,15 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 **Alternatives rejected.** Shipping React later reduces v1 scope but risks discovering an incompatible publication contract after the public API is frozen. Embedding React in core would remove the packaging question and destroy renderer neutrality.
 
 **Consequences.** Core keeps zero React dependency while React tests become part of the release matrix. Concurrency safety is proven by a two-consumer tearing test rather than assumed.
+
+## ADR-018: Deep freezing is unconditional in v1
+
+**Status:** Accepted, 2026-08-10
+
+**Context.** Published patches cross the core-to-renderer boundary and are consumed by DOM adapters, React external-store hooks, and arbitrary renderers. Making freezing development-only would make the documented immutability contract disappear in production and would allow production-only mutation bugs. Freezing cost is a legitimate performance risk, but it is measurable and can be optimized without weakening the contract.
+
+**Decision.** Published patches, batches, and nested values are deeply frozen in every environment in v1. Freezing happens once at publication, not repeatedly during graph traversal or adapter reads. Structural sharing and already-frozen subtree reuse are preferred optimizations. There is no production opt-out flag.
+
+**Alternatives rejected.** Development-only freezing is faster in production but changes runtime semantics by environment, hides bugs until deployment, and makes React/DOM consumer behavior less trustworthy. A caller-controlled opt-out flag creates a second contract and a larger test matrix. Shallow freezing is insufficient because nested values can still mutate later readers.
+
+**Consequences.** P1-01 and P3-01 own the behavior; P3-07 benchmarks freezing cost on representative graphs and patch shapes. If measured cost is too high, optimize allocation and reuse or change the publication representation in a superseding ADR. Do not weaken the guarantee by silently disabling freezing.
