@@ -3,7 +3,7 @@
 **Captured:** 2026-08-10, Asia/Jakarta
 **Branch:** `feat/p1-01-immutable-value-snapshots`
 **Phase:** 1, leaf domain
-**Next action:** Run the P1-01 value tests and open the implementation pull request only after the quality matrix is green.
+**Next action:** Re-run the P1-01 quality matrix after the strict TypeScript fix; open or update the implementation pull request only after it is green.
 
 This is the only document that reports current implementation reality. Everything else is a contract, plan, or decision record unless it says otherwise.
 
@@ -13,9 +13,9 @@ Every implementation slice follows this path: create `feat/...` from `main`, imp
 
 ## Current state
 
-P0-01 through P0-05 are merged on `main`. P0-06 is merged on `main` as documentation only: the detailed implementation plan, normative TRD, lineage documentation, resolved decisions ADR-014 through ADR-017, and unconditional v1 deep-freezing ADR-018.
+P0-01 through P0-06 are merged on `main`. P0-06 is documentation only: the detailed implementation plan, normative TRD, lineage documentation, resolved decisions ADR-014 through ADR-017, and unconditional v1 deep-freezing ADR-018.
 
-P1-01 is in progress on this branch. It adds the first domain primitive: renderer-neutral immutable values, deep freezing, cycle rejection, and structural equality. No Track, Motion, graph, runtime, adapter, React, benchmark, or boundary implementation exists yet.
+P1-01 is in progress on this branch. It adds renderer-neutral immutable values, deep freezing, cycle rejection, and structural equality. The first CI pass exposed a recursive type alias and strict indexing errors; both are fixed in the latest commit. No Track, Motion, graph, runtime, adapter, React, benchmark, or boundary implementation exists yet.
 
 ## Landed on main
 
@@ -30,19 +30,19 @@ P1-01 is in progress on this branch. It adds the first domain primitive: rendere
 
 ## P1-01 changes on this branch
 
-- `packages/core/src/domain/values.ts`: `ImmutableValue`, `freezeValue`, and `equalValues`.
+- `packages/core/src/domain/values.ts`: recursive interfaces plus `ImmutableValue`, `freezeValue`, and `equalValues`.
 - `packages/core/test/unit/domain/values.test.ts`: deep immutability, cycle safety, unsupported values, equality, and shared-reference coverage.
 
 ## Immediate queue
 
-1. Run the P1-01 quality matrix and review the implementation PR.
+1. Re-run the P1-01 quality matrix after the TypeScript fix.
 2. Merge P1-01 only with green required checks.
 3. Continue with P1-02 plugin registry, then P1-03 Track leaf.
 4. Keep `SESSION-STATUS.md` current after every merged slice.
 
 ## Audit snapshot
 
-The repository now follows the implementation plan through P0-06: all Phase 0 slices are merged, and P1-01 is the first Phase 1 runtime slice. The plan's P0-05 status wording should be corrected from “In review” to “Done, merged” in the next documentation maintenance commit; it does not change runtime behavior or the current slice ordering.
+The repository follows the implementation plan through P0-06: all Phase 0 slices are merged, and P1-01 is the first Phase 1 runtime slice. The P1-01 implementation remains isolated to domain values and tests, with no renderer, graph, or runtime boundary crossing.
 
 ## Guardrails
 
