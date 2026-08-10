@@ -25,9 +25,10 @@ export class Engine {
 
   load(project: ProjectDefinition): ProjectRuntime {
     const tracks = new Map<string, Track>();
-    const compose = (
-      node: { id: string; track: { duration?: number; keyframes?: Record<string, unknown> } },
-    ) => {
+    const compose = (node: {
+      id: string;
+      track: { duration?: number; keyframes?: Record<string, unknown> };
+    }) => {
       const track = new Track({
         interpolator: this.#options.interpolator,
         interpolationConfig: node.track,
