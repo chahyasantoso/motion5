@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
+import type { ImmutableRecord } from "../../../src/domain/values";
 import { PluginRegistry } from "../../../src/domain/plugins";
 
 describe("plugin registry", () => {
   const plugin = (name: string) => ({
     name,
-    compose: (values: Record<string, never>, _progress: number) => values,
+    compose: (values: Readonly<ImmutableRecord>, _progress: number): ImmutableRecord => values,
   });
 
   it("registers plugins and resolves them in requested deterministic order", () => {
@@ -48,6 +49,7 @@ describe("plugin registry", () => {
       {
         ruleId: "plugin-duplicate-use",
         path: "track.use[2]",
+        message: 'Plugin "missing" is requested more than once.',
         message: 'Plugin "missing" is requested more than once.',
         severity: "error",
         ids: ["missing"],
