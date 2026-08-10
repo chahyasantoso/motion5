@@ -20,10 +20,11 @@ for (let flush = 0; flush < flushCount; flush += 1) {
     traversed += 1;
     published += 1;
     retained.add(node);
-    for (const next of adjacency[node]) if (!seen.has(next)) {
-      seen.add(next);
-      queue.push(next);
-    }
+    for (const next of adjacency[node])
+      if (!seen.has(next)) {
+        seen.add(next);
+        queue.push(next);
+      }
   }
 }
 
@@ -35,7 +36,8 @@ const measurements = {
   retainedNodes: retained.size,
   complexity: traversed === nodeCount * flushCount ? "linear-dirty-closure" : "unexpected",
 };
-const passed = measurements.nodes <= budget.budgets.nodes &&
+const passed =
+  measurements.nodes <= budget.budgets.nodes &&
   measurements.flushes <= budget.budgets.flushes &&
   measurements.publishedPatches <= budget.budgets.maxPatches &&
   measurements.retainedNodes <= budget.budgets.maxRetainedInstances &&
@@ -47,6 +49,9 @@ const report = {
   measurements,
   passed,
 };
-await writeFile(new URL("./benchmark-report.json", import.meta.url), `${JSON.stringify(report, null, 2)}\n`);
+await writeFile(
+  new URL("./benchmark-report.json", import.meta.url),
+  `${JSON.stringify(report, null, 2)}\n`,
+);
 console.log(JSON.stringify(report, null, 2));
 if (!passed) process.exitCode = 1;
