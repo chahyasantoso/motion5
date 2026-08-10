@@ -32,7 +32,6 @@ export class GraphRuntime {
     this.#publisher = new GraphPublisher(this.#registry);
     this.#clock = clock;
     this.#compose = compose;
-    this.#members = new Set(this.#binding.graph.nodes.map(({ id }) => id));
     this.#unsubscribe = this.#clock.subscribe((event) => this.#onTick(event));
   }
 

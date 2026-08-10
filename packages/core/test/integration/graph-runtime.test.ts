@@ -39,6 +39,7 @@ describe("GraphRuntime", () => {
   it("I-13 keeps ticks monotonic across detach and reattach", () => {
     const clock = createManualClock();
     const runtime = new GraphRuntime(project, clock, compose);
+    runtime.attach("hero/arm");
     const batches: number[] = [];
     runtime.registry.subscribeBatch((batch) => batches.push(batch.tick));
 
@@ -56,15 +57,20 @@ describe("GraphRuntime", () => {
   it("publishes only attached seeds and stops after disposal", () => {
     const clock = createManualClock();
     const runtime = new GraphRuntime(project, clock, compose);
+    runtime.attach("hero/arm");
+    runtime.attach("~/cursor");
     const seen: (readonly string[])[] = [];
     runtime.registry.subscribeBatch((batch) => seen.push(batch.seeds));
 
-    runtime.detach("caption/label");
     clock.tick();
     expect(seen).toEqual([["hero/arm", "~/cursor"]]);
 
+    runtime.detach("~/cursor");
+    clock.tick();
+    expect(seen).toEqual([["hero/arm", "~/cursor"], ["hero/arm"]]);
+
     runtime.dispose();
     expect(() => clock.tick()).not.toThrow();
-    expect(seen).toHaveLength(1);
+    expect(seen).toHaveLength(2);
   });
 });
