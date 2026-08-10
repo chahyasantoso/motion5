@@ -1,27 +1,32 @@
-# Documentation index
+# motion5 documentation
 
-## Read first
+This directory is the project’s working contract. It is intentionally more detailed than a README because it answers questions that should not be rediscovered in every implementation session.
 
-- [SESSION-STATUS.md](./SESSION-STATUS.md) - where the project actually is, and the next action. Always current or it is a bug.
+## Current reality
 
-## Charter and contracts
+Start with [SESSION-STATUS.md](./SESSION-STATUS.md). It is the only document allowed to claim what has landed. Plans, architecture, and ADRs describe intended behavior unless they explicitly say otherwise.
 
-- [PRD.md](./PRD.md) - problem, users, goals, requirements, release criteria.
-- [ARCHITECTURE.md](./ARCHITECTURE.md) - ownership model, invariants, layers, algorithms.
-- [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md) - the authored `schemaVersion: 4` input contract.
-- [DECISIONS.md](./DECISIONS.md) - architectural decision records.
+## Product and contracts
 
-## Delivery
+- [PRD.md](./PRD.md): problem statement, users, goals, functional requirements, quality attributes, and release criteria.
+- [ARCHITECTURE.md](./ARCHITECTURE.md): owners, invariants, graph lifecycle, publication semantics, failure handling, boundaries, and deletion list.
+- [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md): schema v5 syntax, field semantics, id qualification, observation edges, diagnostics, and validation.
+- [MIGRATION-V4-TO-V5.md](./MIGRATION-V4-TO-V5.md): explicit migration procedure and compatibility policy.
+- [DECISIONS.md](./DECISIONS.md): accepted decisions, context, alternatives rejected, consequences, and reversals.
 
-- [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) - phases, pull requests, exit gates.
-- [PR-WORKFLOW.md](./PR-WORKFLOW.md) - branching, sizing, review, merge policy.
-- [CI-WORKFLOW.md](./CI-WORKFLOW.md) - the gate matrix and its rollout.
-- [FORMATTING.md](./FORMATTING.md) - the manual Prettier workflow.
-- [TESTING-STRATEGY.md](./TESTING-STRATEGY.md) - test tiers and evidence rules.
+## Delivery and evidence
 
-## Rules for these documents
+- [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md): phases, pull requests, dependencies, test obligations, and exit gates.
+- [TESTING-STRATEGY.md](./TESTING-STRATEGY.md): test tiers, determinism rules, invariant evidence, and prohibited evidence.
+- [CI-WORKFLOW.md](./CI-WORKFLOW.md): workflow rules, job contracts, artifacts, required versus advisory gates, and rollout schedule.
+- [PR-WORKFLOW.md](./PR-WORKFLOW.md): branch naming, commit style, pull request contents, review order, merge policy, and reverts.
+- [FORMATTING.md](./FORMATTING.md): Prettier configuration, local commands, manual workflow, and permission rationale.
 
-- A document that describes intent must say so. A document that describes reality must be true on the day it is read.
-- Status lives in one file. Do not scatter progress notes across plans, reviews, and handoffs.
-- When a decision changes, edit `DECISIONS.md` and record the reversal. Do not leave two contradictory documents in the tree.
-- Delete documents that describe deleted code in the same pull request that deletes the code.
+## Documentation rules
+
+1. Reality belongs in one status file. Do not create parallel handoffs, review logs, or completion matrices.
+2. Intent documents must label themselves as intent when code does not exist yet.
+3. Every new public behavior needs schema/type/API documentation and a test plan in the same pull request.
+4. A decision reversal updates the original record or clearly supersedes it; contradictory records are not left behind.
+5. Delete documents that describe deleted code in the same change that deletes the code.
+6. Do not copy documentation, tests, fixtures, or examples from the predecessor repository. Recreate the contract from first principles.

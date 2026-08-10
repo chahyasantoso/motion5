@@ -1,43 +1,33 @@
-# Formatting
+# Formatting workflow
 
-Prettier is the only style authority. There is no debate surface: no per-file overrides, no style rules in review, no lint plugin that duplicates Prettier's opinions.
+Prettier is the only formatting authority. It is a mechanical tool, not a code-review topic.
 
-## Configuration
-
-`.prettierrc.json` at the repository root, applied to everything not listed in `.prettierignore`. Changing the configuration is a standalone pull request that contains the configuration change and the resulting reformat, and nothing else.
-
-## Local
+## Local commands
 
 ```bash
-npm run format        # write
-npm run format:check  # verify
+npm run format        # write changes
+npm run format:check  # verify without writing
 ```
 
-Run `npm run format` before pushing. Editor format-on-save with the Prettier extension is recommended and is equivalent.
+Run the formatter before pushing. The resulting formatting commit must not contain behavior, type, or documentation decisions.
 
-## In CI
+## Automatic CI behavior
 
-The `quality` job runs `format:check`. It fails with the exact command to fix it. It does not write to your branch.
+The quality job runs `npm run format:check`. It never writes to the branch. A failure tells the contributor to run `npm run format` locally.
 
-## The manual workflow
+## Manual workflow
 
-`.github/workflows/format.yml` is dispatched by hand, never on push, never on pull request, never on a schedule.
+`.github/workflows/format.yml` is manual dispatch only. It has two modes:
 
-Two modes:
+- **pull-request:** formats the selected ref, creates a branch, and opens `chore: apply prettier`.
+- **report:** prints the diff and fails without pushing.
 
-- **pull-request** (default) - applies Prettier and opens a separate pull request titled `chore: apply prettier` against the ref you dispatched from. Nothing is pushed to your branch.
-- **report** - applies Prettier, prints the diff, fails if there is drift, writes nothing anywhere.
+It must never run on push, pull request, or schedule. The workflow has write permission only because manual dispatch is an explicit operator action. Formatting PRs should be reopened or otherwise retriggered before merge if token-authored PR checks do not start automatically.
 
-To run it: Actions, then **Format (manual)**, then **Run workflow**, pick the branch and the mode.
+## Configuration changes
 
-Because the workflow commits with the default Actions token, checks do not run automatically on the pull request it opens. Push an empty commit, or close and reopen it, to trigger CI before merging.
+Changing `.prettierrc.json`, `.prettierignore`, or the Prettier version is its own PR. Apply the resulting reformat separately or in the same mechanical-only PR, never alongside behavior.
 
-## Why manual
+## Why not auto-push
 
-An automatic formatter that pushes to contributor branches does three bad things. It rewrites history under someone who is mid-rebase. It mixes mechanical changes into behavior commits, which destroys the whitespace-insensitive diff that reviewers rely on to catch a real change hiding inside a reformat. And it needs write permission on every pull request run, including from forks, which is a permission this repository does not want to hold.
-
-A manual dispatch keeps the convenience of a one-click reformat for the rare bulk case, such as a Prettier version bump, and keeps the everyday path boring: format locally, commit, done.
-
-## Rule
-
-Formatting never shares a commit with behavior. If a review comment is about whitespace, the answer is `npm run format`, not a discussion.
+Automatic writes can rewrite a branch during rebase, contaminate review diffs, and require write permissions on untrusted pull requests and forks. Manual formatting keeps convenience without making branch mutation part of normal CI.

@@ -1,57 +1,51 @@
-# Migration: authored schema v4 to v5
+# Migration from authored schema v4 to v5
 
-Schema v5 is a deliberate breaking authored-contract release. It keeps the motion meaning and runtime graph model, but makes free-track ownership explicit and reserves the qualified-id namespace.
+v5 is a breaking authored-contract release. The migration is intentionally explicit and runs before `loadProject`. motion5 does not accept v4, does not silently rename fields, and does not maintain a v4 mode.
 
-## What changes
+## Why v5 exists
 
-### 1. Bump the version
+The old dialect used `tracks` at both the project and motion level. A reader had to infer whether `project.tracks` meant free tracks while `motion.tracks` meant scheduled tracks. v5 calls the project-level field `freeTracks`, reserves qualified ids, and makes the contract machine-detectable.
+
+## Mechanical changes
+
+### Version
 
 ```diff
 - schemaVersion: 4
 + schemaVersion: 5
 ```
 
-### 2. Rename top-level `tracks` to `freeTracks`
-
-In v4, a top-level `tracks` array contains tracks that belong to no motion. In v5, rename that property:
+### Project-level tracks
 
 ```diff
- {
--  schemaVersion: 4,
--  tracks: [cursorTrack],
-+  schemaVersion: 5,
-+  freeTracks: [cursorTrack],
- }
+- { schemaVersion: 4, tracks: [cursor] }
++ { schemaVersion: 5, freeTracks: [cursor] }
 ```
 
-Do not rename `tracks` inside a motion. Motion-owned tracks remain under `motion.tracks`.
+Do not rename `motion.tracks`.
 
-### 3. Update free-track references
-
-Free tracks use the qualified `~/trackId` namespace in graph edges and runtime APIs. If a v4 edge referenced a top-level track by a bare id, make the namespace explicit:
+### Free references
 
 ```diff
 - { source: "cursor", role: "input", target: "pointer" }
 + { source: "~/cursor", role: "input", target: "pointer" }
 ```
 
-The same rule applies to programmatic lookup and adoption: use `~/cursor`, not the ambiguous bare `cursor`.
+Use qualified `motionId/trackId` for cross-motion references and `~/trackId` for free tracks. Local references inside one motion may remain local until normalization.
 
-### 4. Add or validate perspective
+### Perspective
 
-`perspective` is optional project metadata for the renderer's 3D stage. Add a positive CSS-pixel number when the project animates `z`, `rotationX`, `rotationY`, or non-zero path-point `z` values:
+Add a finite positive number when the project contains 3D keyframes or path depth:
 
 ```js
 { schemaVersion: 5, perspective: 1200, motions: [...] }
 ```
 
-Missing perspective produces a warning, not a load failure. A present value must be finite and greater than zero.
+Missing perspective is a warning. Zero, negative, non-finite, or non-numeric present values are errors.
 
-## Compatibility policy
+## Explicit migration function
 
-motion5 does not accept v4 as an alias and does not silently reinterpret top-level `tracks`. This avoids two authored dialects for one runtime contract. Build an explicit migration step at your project boundary, then pass only v5 data to motion5.
-
-A mechanical migration is safe when the input is known to use top-level `tracks` only for free tracks:
+The migration must be a pure transformation and must not mutate its input:
 
 ```js
 export function migrateV4ToV5(project) {
@@ -61,14 +55,22 @@ export function migrateV4ToV5(project) {
 }
 ```
 
-Before using it, verify that `tracks` is not a legacy field with another meaning and validate duplicate ids, qualified references, reserved ids, and perspective requirements. Migration must be performed before loading, not inside the runtime.
+This helper is safe only when the v4 producer’s top-level `tracks` is known to mean free tracks. Before applying it, validate that the source is an object, `tracks` is an array or absent, ids are unique, no id contains `/`, no motion is named `~`, and any free references are qualified. If both `tracks` and `freeTracks` exist, fail rather than choose one.
 
-## Migration checklist
+## Semantic review checklist
 
-- [ ] Change `schemaVersion` from `4` to `5`.
-- [ ] Rename only the project-level `tracks` to `freeTracks`.
-- [ ] Qualify free-track references as `~/trackId`.
-- [ ] Add `perspective` for 3D scenes, or accept the warning.
-- [ ] Reject ids containing `/` and motion id `~`.
-- [ ] Run the v5 validator and inspect warnings.
-- [ ] Store the migrated document as v5; do not keep a runtime alias.
+- Does every top-level track really have no Motion owner?
+- Are any bare references ambiguous after multiple motions are added?
+- Are free tracks expected to survive unmounting an unrelated motion?
+- Does 3D content need `perspective`?
+- Are any ids using `/` or the reserved motion id `~`?
+- Are any cycles introduced by qualifying references?
+- Does the migrated document serialize deterministically?
+
+## Compatibility policy
+
+Store migrated documents as v5. Do not keep a runtime alias or pass both fields. A migration tool may report warnings and errors, but the runtime receives only the validated v5 shape.
+
+## Migration acceptance tests
+
+A fresh test suite must prove: version bump; top-level rename only; qualified free references; no input mutation; idempotence on v5; rejection of both old and new top-level fields; and deterministic diagnostics for invalid migration assumptions.

@@ -1,82 +1,123 @@
-# motion5 product requirements
+# motion5 product requirements document
 
-**Owner:** [@chahyasantoso](https://github.com/chahyasantoso)
-**Status:** Accepted for Phase 0
-**Authored contract:** `schemaVersion: 5`
-**Migration:** [MIGRATION-V4-TO-V5.md](./MIGRATION-V4-TO-V5.md)
+**Status:** Accepted product direction, Phase 0 implementation
+**Authored contract:** schema v5
+**Runtime status:** See [SESSION-STATUS.md](./SESSION-STATUS.md)
 
-## Contract decision
+## 1. Product summary
 
-motion5 uses authored schema v5. Schema v4 is not accepted as an alias. The v4-to-v5 migration is explicit: bump the version, rename project-level `tracks` to `freeTracks`, qualify free-track references as `~/trackId`, and validate perspective metadata for 3D scenes.
+motion5 is a deterministic animation runtime for projects whose animated values depend on other animated values. It turns authored motions and tracks into a qualified observation graph, evaluates that graph transactionally, and publishes immutable patches for renderers.
 
-## 1. Problem
+The product is not “another timeline wrapper.” Its differentiator is a single ownership model that makes graph order, failure, lifecycle, and renderer boundaries explicit.
 
-Rich web animation work fails at the same place every time: dependency between animated things. A hand follows a forearm, which follows an upper arm, which follows a scroll position. Tools handle the single-timeline case well and the dependency case badly.
+## 2. Problem
 
-## 2. Vision
+A timeline can interpolate one value. Real scenes compose values: a hand follows a forearm; a caption follows a path; several motions consume one cursor or scroll node; an upstream node can disappear while downstream nodes remain mounted.
 
-A small animation runtime where **ownership is impossible to misunderstand**. One authority per state transition, one live state per project, one publication path, one clock.
+When application code solves those relationships inside frame callbacks, ordering becomes accidental, intermediate state leaks, failures become stale values, and tests become timing-dependent. motion5 makes the relationship itself part of the project contract.
 
-## 3. Goals
+## 3. Users and jobs
 
-1. **G1 Deterministic evaluation.** Same authored project plus same tick sequence yields byte-identical published patches.
-2. **G2 Single authority.** Every state transition has exactly one code path. No aliases, parity modes, rollout flags, or schema-version aliases.
-3. **G3 Renderer neutrality.** Core resolves and publishes without GSAP, DOM, or React imports.
-4. **G4 Transactional topology.** Failed graph mutations leave IR, live edges, indexes, subscriptions, and patches unchanged.
-5. **G5 Immutable publication.** Subscribers receive frozen, revisioned patches in whole batches.
-6. **G6 Honest gates.** CI measures behavior, API shape, boundaries, packaging, or formatting.
-7. **G7 Leak-free lifecycle.** Teardown is owner-first and idempotent.
-8. **G8 Small public surface.** Published exports are allow-listed.
+**Creative engineer:** author a scene and drive it from scroll, time, or manual input without writing graph traversal or frame callbacks.
 
-## 4. Functional requirements
+**Rig author:** express forward-kinematics or derived-value relationships and receive deterministic order, cycle diagnostics, and blocked downstream state when inputs fail.
 
-### Authoring and loading
+**Renderer author:** consume immutable patches without knowing whether values came from a motion track, free track, or cross-motion dependency.
 
-- **FR-1** Load and validate authored `schemaVersion: 5` projects. v4 input fails with a migration diagnostic before mount.
-- **FR-2** Reject ambiguous, duplicate, malformed, unknown, self-referential, and cyclic references with rule id, authored path, message, severity, and ids.
-- **FR-3** Normalize motion ids to `motionId/trackId` and free tracks to `~/trackId` exactly once at load.
-- **FR-4** Support explicit v4-to-v5 migration outside the runtime; do not auto-migrate or accept aliases.
-- **FR-5** Preserve optional `perspective` as validated renderer metadata and emit a warning when 3D data lacks it.
+**Tooling author:** inspect revisions, source contributions, diagnostics, and project membership through stable public contracts.
 
-### Graph and runtime
+**Maintainer:** extend the runtime without introducing a second owner, hidden flag, or renderer dependency into core.
 
-- **FR-6** Produce immutable graph IR with nodes, edges, diagnostics, and canonical topological order.
-- **FR-7** Route every topology change through one transactional mutation coordinator.
-- **FR-8** Keep one long-lived observation state per project.
-- **FR-9** One ProjectRuntime owns exactly one GraphRuntime, publisher, patch registry, and clock subscription.
-- **FR-10** One flush per tick produces one immutable batch; each dirty node composes at most once.
-- **FR-11** Track is a leaf; Motion is the sole composite; graph traversal belongs to the graph layer.
+## 4. Goals
 
-### Ports and adapters
-
-- **FR-12** Define injectable Clock, Interpolator, and Scheduler ports with fakes.
-- **FR-13** Provide GSAP and DOM adapters behind ports, and React hooks over immutable patches.
-
-### Membership
-
-- **FR-14** Support cross-motion references and `~/trackId` free tracks with no capability flag.
-- **FR-15** Diagnose missing, unknown, duplicate, role-mismatched, and incompatible references consistently.
+1. Deterministic graph evaluation.
+2. One owner for every state transition.
+3. Renderer-neutral core.
+4. Atomic topology mutation with rollback.
+5. Immutable, revisioned, batched publication.
+6. Leak-free owner-first teardown.
+7. Small allow-listed public API.
+8. Honest CI gates that run what they claim.
+9. Explicit schema v5 migration from v4.
 
 ## 5. Non-goals
 
-- Backward compatibility with the runtime API of motionpath.
-- A demo application or example gallery in this repository.
-- A visual editor, physics engine, or SSR ticking.
+- Runtime compatibility with motionpath APIs.
+- A demo or visual editor in this repository.
+- A physics, collision, or IK solver.
+- Multiple animation engines in core.
+- Server-side ticking or DOM access in core.
+- A silent v4 compatibility mode.
 
-## 6. Release criteria for v1
+## 6. Functional requirements
 
-1. Authored schema v5 projects load and validate; v4 projects receive the documented migration diagnostic.
-2. One qualified graph and one long-lived observation state exist per loaded project.
-3. The mutation coordinator is the only topology writer; the publisher cannot mutate topology.
-4. Track is a leaf and Motion is the sole composite.
-5. Core imports no animation engine or DOM.
-6. Free tracks and cross-motion references share the same graph path with no flags.
-7. Migration, tests, types, exports, docs, and benchmarks describe only the v5 contract.
-8. Every CI gate exists and runs.
+### Loading and authoring
 
-## 7. Open questions
+- **FR-1:** Accept only `schemaVersion: 5` at the runtime boundary.
+- **FR-2:** Validate ids, triggers, tracks, perspective, observations, duplicates, and cycles before mount.
+- **FR-3:** Normalize motion tracks to `motionId/trackId` and free tracks to `~/trackId` exactly once.
+- **FR-4:** Preserve project-level perspective as validated metadata without adding it to patches.
+- **FR-5:** Provide an explicit pure v4-to-v5 migration outside the runtime.
 
-- **Q1** Closed: authored schema v5 is the contract. v4 migration is explicit and external to the runtime.
-- **Q2** Reference interpolator: GSAP adapter, or built-in sampler with GSAP optional. Current position: GSAP first.
-- **Q3** Diagnostics inline on patches, or separate stream. Current position: inline, with batch summary.
-- **Q4** Is `packages/react` in v1. Current position: yes, minimal surface.
+### Graph and state
+
+- **FR-6:** Produce immutable graph IR with nodes, edges, diagnostics, and canonical order.
+- **FR-7:** Route add, remove, and replace through one transactional binding.
+- **FR-8:** Keep ObservationState identity stable across commits and rollback.
+- **FR-9:** Treat free tracks and motion tracks as one graph node model.
+
+### Runtime and publication
+
+- **FR-10:** One project owns one GraphRuntime, publisher, patch registry, and clock subscription.
+- **FR-11:** One tick produces one batch; dirty nodes compose at most once.
+- **FR-12:** Composition failure yields error status and blocks downstream closure without aborting unrelated branches.
+- **FR-13:** Publication deduplicates unchanged patches and retains retry metadata only for publication failures.
+- **FR-14:** Subscribers never see half a flush and cannot mutate later readers through published values.
+
+### Playback and adapters
+
+- **FR-15:** Motion owns playback, triggers, child scheduling, stagger, reflow, and teardown.
+- **FR-16:** Track owns playhead and local composition only.
+- **FR-17:** Clock, Interpolator, and Scheduler are injectable ports with fake contract implementations.
+- **FR-18:** GSAP, DOM, browser clock, and React integrations live behind adapters.
+
+### Membership and tooling
+
+- **FR-19:** Support cross-motion references and free tracks without flags.
+- **FR-20:** Diagnose unresolved, duplicate, self-referential, role-invalid, and incompatible references consistently.
+- **FR-21:** Export only documented APIs; internals use an unadvertised entrypoint.
+- **FR-22:** Ship deterministic benchmarks and package-consumer smoke tests.
+
+## 7. Quality attributes
+
+**Determinism:** no wall-clock or random input in core tests; canonical order is based on qualified ids and authored order.
+
+**Diagnosability:** every diagnostic has rule id, path, severity, message, and involved ids where applicable.
+
+**Performance:** committed budgets cover graph traversal, dirty propagation, publication, and memory retention. A benchmark that is advisory must have a removal date.
+
+**Memory:** repeated load, mount, unmount, and dispose cycles release subscriptions, timelines, graph membership, and cached patches.
+
+**Packaging:** core has no renderer dependency; public exports work from the packed artifact, not only from source.
+
+**Testability:** core runs headless with fake ports and no GSAP, DOM, or React.
+
+## 8. Success metrics
+
+- Every architecture invariant has a named executable test.
+- v4 migration output is deterministic and v4 runtime input is rejected.
+- Core test suite imports no animation engine.
+- No capability flags or compatibility facades ship.
+- The documented public API passes a tarball consumer test.
+- No phase requires a second revert.
+
+## 9. Release criteria
+
+v1 is releasable only when schema v5 loading, migration, graph transactions, publication, lifecycle, ports, adapters, package exports, benchmarks, and documentation all have green evidence. The complete binary checklist lives in the implementation plan and is mirrored by CI jobs.
+
+## 10. Open questions
+
+- Whether a future schema v6 makes qualified ids authorable rather than internal.
+- Whether the first interpolator should remain GSAP-backed or gain a built-in sampler.
+- Whether runtime diagnostics remain inline on patches or gain a separate stream.
+- Whether React remains in the v1 package set or becomes a follow-on package.

@@ -1,45 +1,51 @@
 # Testing strategy
 
-## No borrowed tests
+Tests are evidence for the contract, not a museum of implementation details. No test, helper, fixture, or snapshot is copied from motionpath. Behavioral intent may be independently recreated against the motion5 contract.
 
-No test, fixture, snapshot, or helper is copied from the reference repository. Behavioral intent may be reproduced from reading it; files may not be. Two reasons. A copied test encodes the old ownership model in its setup, and importing that setup quietly imports the architecture it was written against. And a copied test that passes proves the old behavior, which is not the same as proving the new contract.
+## Test tiers
 
-When a reference behavior is worth preserving, it is written here as a new test against the new contract, with a comment naming the behavior, not the source file.
+1. **Unit:** one module, fake dependencies, deterministic and headless.
+2. **Contract:** one suite per Clock, Interpolator, and Scheduler port, run against fakes and real adapters.
+3. **Integration:** multiple owners: loading, graph transactions, rollback, lifecycle, publication, cross-motion, and free-track membership.
+4. **Migration:** pure v4-to-v5 transformation and validation assumptions.
+5. **Golden:** authored v5 project in, sorted serialized patch batches out.
+6. **Package:** packed tarball installed into a clean consumer with documented imports.
+7. **Performance:** deterministic graph benchmarks compared against committed budgets.
 
-## Tiers
+## Fresh migration test requirements
 
-1. **Unit.** One module, fakes for everything else. Fast, no DOM, no animation engine. The bulk of the suite.
-2. **Contract.** One suite per port, run against the fake and against every real adapter. If a fake and a real adapter can disagree, the port is not proven.
-3. **Integration.** Multiple owners cooperating: graph transactions with rollback, mount and unmount lifecycles, cross-motion composition, patch batching, subscriber semantics.
-4. **Golden fixtures.** Authored project in, serialized batch sequence out. Deterministic byte comparison.
-5. **Package.** Pack the tarball, install it in a temporary consumer, import the documented public API. Catches export map mistakes nothing else catches.
-6. **Performance.** Deterministic benchmarks with committed budgets, failing on a defined threshold.
+The migration suite must prove all of the following:
 
-## Invariant tests
+- v4 becomes v5;
+- only project-level `tracks` becomes `freeTracks`;
+- motion-level `tracks` remains unchanged;
+- free references gain `~/` qualification where required;
+- the input object and nested arrays are not mutated;
+- applying migration to v5 is idempotent;
+- both old `tracks` and new `freeTracks` fail rather than silently merging;
+- malformed top-level tracks, duplicate ids, reserved ids, and ambiguous references produce deterministic diagnostics;
+- perspective is preserved, added only by an explicit caller decision, and never injected with a guessed value.
 
-Every invariant in [ARCHITECTURE.md](./ARCHITECTURE.md) section 4 has a test named after it, for example `I-2 failed mutation restores the pre-mutation snapshot`. Grepping for an invariant id must find both the rule and its proof. An invariant without a test is a comment.
+Tests must be authored from these rules. They must not import predecessor fixtures or assert predecessor internals.
+
+## Invariant evidence
+
+Each architecture invariant has a named executable test. I-1 proves stable ObservationState identity. I-2 compares pre/post snapshots after failed mutation. I-3 inspects the public publisher contract through behavior, not comments. I-5 counts composition calls in a diamond. I-6 observes subscriber timing across one flush. I-7 attempts deep mutation of published values. I-11 is enforced by an import boundary job plus a headless test.
 
 ## Determinism
 
-- Time comes from the manual clock. No `Date.now`, no `performance.now`, no `requestAnimationFrame` in any test.
-- No randomness. Where variety is needed, use a seeded generator committed alongside the test.
-- No reliance on `Map` or `Set` iteration order for anything asserted. Canonical order is by qualified id, and tests assert that explicitly.
-- Fixtures serialize with sorted keys.
+Tests use the manual clock. They do not read wall time, random values, browser animation frames, or unordered collection iteration. Fixture serializers sort object keys and use canonical qualified-id order.
 
-## What is not a test
+## Prohibited evidence
 
-These are banned as evidence, because the reference project shipped all of them and none of them caught a real defect:
+No comment-density gates, non-shrinking file allowlists, source-text scans presented as behavioral tests, snapshots of private object graphs, or value-only parity tests that ignore payload shape.
 
-- Source-text scans asserting that a symbol still exists.
-- Comment-to-code ratio or prose gates.
-- File allowlists that may not shrink.
-- Snapshot tests over pretty-printed internals.
-- Tests that assert two code paths produce equal values, when the actual risk is that they produce different payload shapes. Compare shape and value, or do not claim parity.
-
-## Coverage
-
-Coverage is reported, not gated. A gate on a percentage buys tests for getters. The real gate is the invariant list: every invariant proven, every public API exercised by the package consumer test, every port covered by its contract suite.
+Boundary scans are allowed as mechanical enforcement. They complement, never replace, runtime tests.
 
 ## Failure hygiene
 
-A flaky test is deleted or fixed within one working session. Skipping to get green is a revert in disguise, and it is treated as one.
+A flaky test is fixed or deleted in the same working session. Skipping a test to get green is treated as a revert. Test names should describe the contract and failure mode, not the implementation method.
+
+## Coverage policy
+
+Coverage is reported but not the release gate. The release gate is the invariant matrix, public package consumer, migration suite, contract suites, and deterministic integration behavior.
