@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import { migrateV4ToV5 } from "../../src/contract/migrate-v4-to-v5";
 
+type MigratedShape = Record<string, any> & { schemaVersion: 5; freeTracks: any[] };
+
 describe("fresh v4-to-v5 migration contract", () => {
   it("bumps the version and renames only project-level tracks", () => {
     const input = {
@@ -11,12 +13,13 @@ describe("fresh v4-to-v5 migration contract", () => {
       motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "title" }] }],
     };
     const result = migrateV4ToV5(input);
+    const migrated = result.migrated as MigratedShape | null;
 
     expect(result.diagnostics).toEqual([]);
-    expect(result.migrated?.schemaVersion).toBe(5);
-    expect(result.migrated?.freeTracks).toEqual(input.tracks);
-    expect(result.migrated?.tracks).toBeUndefined();
-    expect(result.migrated?.motions[0]?.tracks).toEqual(input.motions[0].tracks);
+    expect(migrated?.schemaVersion).toBe(5);
+    expect(migrated?.freeTracks).toEqual(input.tracks);
+    expect(migrated?.tracks).toBeUndefined();
+    expect(migrated?.motions[0]?.tracks).toEqual(input.motions[0].tracks);
   });
 
   it("does not mutate the input or nested arrays", () => {
@@ -27,13 +30,14 @@ describe("fresh v4-to-v5 migration contract", () => {
     };
     const before = structuredClone(input);
     const result = migrateV4ToV5(input);
+    const migrated = result.migrated as MigratedShape | null;
 
     expect(input).toEqual(before);
-    expect(result.migrated?.freeTracks).not.toBe(input.tracks);
-    expect(result.migrated?.freeTracks?.[0]).not.toBe(input.tracks[0]);
+    expect(migrated?.freeTracks).not.toBe(input.tracks);
+    expect(migrated?.freeTracks?.[0]).not.toBe(input.tracks[0]);
   });
 
-  it("is a no-op with a diagnostic for v5 input", () => {
+  it("rejects v5 input instead of acting as a compatibility alias", () => {
     const input = { schemaVersion: 5, motions: [], freeTracks: [] };
     const result = migrateV4ToV5(input);
 
@@ -67,8 +71,9 @@ describe("fresh v4-to-v5 migration contract", () => {
   it("preserves perspective without inventing a value", () => {
     const input = { schemaVersion: 4, perspective: 1200, motions: [] };
     const result = migrateV4ToV5(input);
+    const migrated = result.migrated as MigratedShape | null;
 
-    expect(result.migrated?.perspective).toBe(1200);
-    expect(result.migrated?.freeTracks).toEqual([]);
+    expect(migrated?.perspective).toBe(1200);
+    expect(migrated?.freeTracks).toEqual([]);
   });
 });

@@ -11,13 +11,13 @@ Start with [SESSION-STATUS.md](./SESSION-STATUS.md). It is the only document all
 - [PRD.md](./PRD.md): problem statement, users, goals, functional requirements, quality attributes, and release criteria.
 - [ARCHITECTURE.md](./ARCHITECTURE.md): owners, invariants, graph lifecycle, publication semantics, failure handling, boundaries, and deletion list.
 - [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md): schema v5 syntax, field semantics, id qualification, observation edges, diagnostics, and validation.
-- [MIGRATION-V4-TO-V5.md](./MIGRATION-V4-TO-V5.md): explicit migration procedure and compatibility policy.
-- [DECISIONS.md](./DECISIONS.md): accepted decisions, context, alternatives rejected, consequences, and reversals.
+- [MIGRATION-V4-TO-V5.md](./MIGRATION-V4-TO-V5.md): explicit migration procedure, pure migration behavior, and compatibility policy.
+- [DECISIONS.md](./DECISIONS.md): accepted decisions, alternatives rejected, consequences, and supersession history.
 
 ## Delivery and evidence
 
 - [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md): phases, pull requests, dependencies, test obligations, and exit gates.
-- [TESTING-STRATEGY.md](./TESTING-STRATEGY.md): test tiers, determinism rules, invariant evidence, and prohibited evidence.
+- [TESTING-STRATEGY.md](./TESTING-STRATEGY.md): test tiers, determinism rules, migration evidence, invariant evidence, and prohibited evidence.
 - [CI-WORKFLOW.md](./CI-WORKFLOW.md): workflow rules, job contracts, artifacts, required versus advisory gates, and rollout schedule.
 - [PR-WORKFLOW.md](./PR-WORKFLOW.md): branch naming, commit style, pull request contents, review order, merge policy, and reverts.
 - [FORMATTING.md](./FORMATTING.md): Prettier configuration, local commands, manual workflow, and permission rationale.
