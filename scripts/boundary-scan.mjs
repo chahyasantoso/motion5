@@ -93,21 +93,29 @@ export function extractExportNames(source) {
   return names;
 }
 
+async function scanFiles(directory, scanRoot, violations) {
+  for (const path of await walk(directory)) {
+    const source = await readFile(path, "utf8");
+    const file = relative(path, scanRoot);
+    if (importsBoundary(source) || importsRenderer(source))
+      violations.push(`${file}: renderer or engine import`);
+    if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
+  }
+}
+
 export async function scan(scanRoot = root) {
   const violations = [];
-  const scanCoreFiles = async (directory) => {
-    for (const path of await walk(directory)) {
-      const source = await readFile(path, "utf8");
-      const file = relative(path, scanRoot);
-      if (importsBoundary(source) || importsRenderer(source))
-        violations.push(`${file}: renderer or engine import`);
-      if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
-    }
-  };
-
   for (const layer of coreLayers)
-    await scanCoreFiles(join(scanRoot, "packages", "core", "src", layer));
-  await scanCoreFiles(join(scanRoot, "packages", "core", "src", "engine.ts"));
+    await scanFiles(join(scanRoot, "packages", "core", "src", layer), scanRoot, violations);
+  const enginePath = join(scanRoot, "packages", "core", "src", "engine.ts");
+  try {
+    const source = await readFile(enginePath, "utf8");
+    if (importsBoundary(source) || importsRenderer(source))
+      violations.push("packages/core/src/engine.ts: renderer or engine import");
+    if (bannedSymbol(source)) violations.push("packages/core/src/engine.ts: banned compatibility symbol");
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
 
   for (const packageName of consumerPackages) {
     const directory = join(scanRoot, "packages", packageName, "src");
