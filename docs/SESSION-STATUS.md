@@ -1,9 +1,9 @@
 # Session status
 
 **Captured:** 2026-08-10, Asia/Jakarta
-**Branch:** `docs/p0-06-trd-and-detailed-plan`
-**Phase:** 0, requirements and plan detail
-**Next action:** Review and merge the P0-06 documentation pull request after quality checks are green.
+**Branch:** `feat/p1-01-immutable-value-snapshots`
+**Phase:** 1, leaf domain
+**Next action:** Run the P1-01 value tests and open the implementation pull request only after the quality matrix is green.
 
 This is the only document that reports current implementation reality. Everything else is a contract, plan, or decision record unless it says otherwise.
 
@@ -13,9 +13,9 @@ Every implementation slice follows this path: create `feat/...` from `main`, imp
 
 ## Current state
 
-P0-03, P0-04, and P0-05 are merged on `main`. P0-05 added deterministic golden serialization, fresh schema/migration integration fixtures, and a required integration CI job. The runtime, graph, adapters, React package, benchmarks, and boundary scripts do not exist yet.
+P0-01 through P0-05 are merged on `main`. P0-06 is merged on `main` as documentation only: the detailed implementation plan, normative TRD, lineage documentation, resolved decisions ADR-014 through ADR-017, and unconditional v1 deep-freezing ADR-018.
 
-P0-06 is documentation only: a slice-level implementation plan, a normative technical requirements document, and ADR-014 through ADR-018. It asserts no runtime invariant and adds no executable evidence. The four product questions plus the deep-freezing policy are now closed.
+P1-01 is in progress on this branch. It adds the first domain primitive: renderer-neutral immutable values, deep freezing, cycle rejection, and structural equality. No Track, Motion, graph, runtime, adapter, React, benchmark, or boundary implementation exists yet.
 
 ## Landed on main
 
@@ -26,30 +26,23 @@ P0-06 is documentation only: a slice-level implementation plan, a normative tech
 - Fresh v5 fixtures for minimal projects, perspective warnings, free tracks, cycles, and migration.
 - Integration tests covering deterministic serialization, warning/error semantics, free-track acceptance, cycle rejection, and migration immutability.
 - Required GitHub Actions integration job using the committed lockfile.
+- Detailed implementation plan, TRD, motionpath lineage, and locked architecture decisions.
 
-## Decisions closed by P0-06
+## P1-01 changes on this branch
 
-- Qualified runtime ids stay internal; no schema v6 is planned to make them authorable (ADR-014).
-- GSAP remains the supported v1 interpolator behind the port; no built-in sampler (ADR-015).
-- Runtime diagnostics stay inline on patches and batch summaries; no separate stream (ADR-016).
-- `@motion5/react` ships in the v1 package set and its gates are release-blocking (ADR-017).
-- Published patches, batches, and nested values are deeply frozen in every v1 environment, with no production opt-out (ADR-018).
-
-## Not landed yet
-
-- P0-06 is not on `main` until its documentation PR is reviewed and merged.
-- Full graph runtime and publication behavior remain unimplemented.
-- Boundary, benchmark, build, and package-consumer jobs are planned, not live.
+- `packages/core/src/domain/values.ts`: `ImmutableValue`, `freezeValue`, and `equalValues`.
+- `packages/core/test/unit/domain/values.test.ts`: deep immutability, cycle safety, unsupported values, equality, and shared-reference coverage.
 
 ## Immediate queue
 
-1. Review and merge the P0-06 documentation PR.
-2. Start Phase 1 with P1-01 immutable value snapshots, then P1-03 Track leaf.
-3. Keep `SESSION-STATUS.md` current after every merged slice.
+1. Run the P1-01 quality matrix and review the implementation PR.
+2. Merge P1-01 only with green required checks.
+3. Continue with P1-02 plugin registry, then P1-03 Track leaf.
+4. Keep `SESSION-STATUS.md` current after every merged slice.
 
 ## Audit snapshot
 
-Against the implementation plan, the repository is correctly at the end of Phase 0: P0-01 through P0-05 are implemented, and P0-06 is documentation-only on this branch. No Phase 1 runtime slice has started. The main remaining audit issue is documentation synchronization: the plan still labels P0-05 as “In review” and must be updated before P0-06 is merged.
+The repository now follows the implementation plan through P0-06: all Phase 0 slices are merged, and P1-01 is the first Phase 1 runtime slice. The plan's P0-05 status wording should be corrected from “In review” to “Done, merged” in the next documentation maintenance commit; it does not change runtime behavior or the current slice ordering.
 
 ## Guardrails
 
