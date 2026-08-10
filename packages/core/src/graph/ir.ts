@@ -10,6 +10,7 @@ import {
   qualifyFreeTrack,
   qualifyMotionTrack,
 } from "./ids";
+import { orderGraph } from "./order";
 
 export interface GraphEdge {
   readonly observerId: string;
@@ -29,6 +30,8 @@ export interface GraphNode {
 export interface GraphIR {
   readonly nodes: readonly GraphNode[];
   readonly nodeById: Readonly<Record<string, GraphNode>>;
+  /** Canonical topological order. Sources precede observers. */
+  readonly order: readonly string[];
   readonly diagnostics: readonly Diagnostic[];
 }
 
@@ -43,6 +46,10 @@ function freeze<T>(value: T): T {
 
 function diag(ruleId: string, path: string, message: string, ids?: readonly string[]): Diagnostic {
   return { ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) };
+}
+
+function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
+  return a.ruleId.localeCompare(b.ruleId) || a.path.localeCompare(b.path);
 }
 
 function qualifySource(source: string, motionId: string): string {
@@ -230,15 +237,23 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
         );
     }
 
-  diagnostics.sort((a, b) => a.ruleId.localeCompare(b.ruleId) || a.path.localeCompare(b.path));
+  diagnostics.sort(compareDiagnostics);
   if (diagnostics.some(({ severity }) => severity === "error"))
     return { diagnostics: Object.freeze(diagnostics) };
+
+  const ordering = orderGraph(nodes);
+  if (ordering.order === undefined) {
+    const rejected = [...diagnostics, ...ordering.diagnostics].sort(compareDiagnostics);
+    return { diagnostics: Object.freeze(rejected) };
+  }
+
   const nodeById: Record<string, GraphNode> = {};
   for (const node of nodes) nodeById[node.id] = node;
   return {
     graph: freeze({
       nodes: freeze(nodes),
       nodeById: freeze(nodeById),
+      order: ordering.order,
       diagnostics: freeze(diagnostics),
     }),
     diagnostics: freeze(diagnostics),
