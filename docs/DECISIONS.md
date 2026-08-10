@@ -4,7 +4,7 @@ These records capture decisions whose accidental reversal would recreate the pre
 
 ## How to use this file
 
-Before introducing a flag, alias, facade, second owner, compatibility path, or new public export, search this file. If the proposal conflicts with an accepted record, either reject it or add a superseding record in the same pull request. Never leave two active records that say opposite things.
+Before introducing a flag, alias, facade, second owner, compatibility path, new public export, authored identity form, diagnostics channel, or interpolation engine, search this file. If the proposal conflicts with an accepted record, either reject it or add a superseding record in the same pull request. Never leave two active records that say opposite things.
 
 ## ADR-001: Start a new repository
 
@@ -147,3 +147,51 @@ Before introducing a flag, alias, facade, second owner, compatibility path, or n
 **Decision.** A free track differs from a motion track only in scheduling ownership. It participates in the same normalization, validation, graph state, publication, diagnostics, and lifecycle paths. It is not a second node type and is never capability-gated.
 
 **Consequences.** Shared upstream values can outlive unrelated motions. A free track authored in the project is project-owned; an adopted runtime track remains owned by its adopter and is detached rather than destroyed when detached.
+
+## ADR-014: Qualified ids stay internal; there is no schema v6 for authorable ids
+
+**Status:** Accepted, 2026-08-10
+
+**Context.** TRD section 18 tracked whether a future schema v6 should make qualified runtime ids directly authorable. Doing so would make normalization output part of the authored contract and would give one track two valid spellings inside its own motion.
+
+**Decision.** Authored identity stays local. A motion track is authored with a local id, cross-motion and free-track references use explicit `motionId/trackId` and `~/trackId` reference syntax, and canonical node identity is produced exactly once by normalization. No schema v6 is planned for the purpose of making qualified node ids authorable.
+
+**Alternatives rejected.** Fully qualified authored ids remove one lookup but leak storage identity into authoring, make motion reuse and project composition harder, and turn any future namespace change into a schema migration. Treating authored ids as already normalized would delete the load-time boundary where reserved characters are rejected.
+
+**Consequences.** Validators must keep rejecting `/` in track ids, `/` in motion ids, and `~` as a motion id. No public API may bypass normalization by accepting a runtime node id as authored identity. Reversing this requires a superseding record plus a new authored schema version, not a loader option.
+
+## ADR-015: GSAP remains the v1 interpolator
+
+**Status:** Accepted, 2026-08-10
+
+**Context.** TRD section 18 tracked whether the first interpolator should remain engine-backed or gain a built-in sampler that would remove the last external runtime dependency from the default setup.
+
+**Decision.** GSAP remains the supported v1 implementation of the `Interpolator` port. It lives behind an adapter, passes the shared port contract suite unchanged, and never appears in `core/contract`, `core/domain`, `core/graph`, or `core/runtime`. No built-in sampler ships in v1.
+
+**Alternatives rejected.** A built-in sampler removes a dependency but starts a second animation-engine project, complete with easing compatibility, keyframe semantics, and numerical parity work, before the graph runtime has proven itself. Importing GSAP directly into Track or the runtime would be faster and would destroy renderer neutrality.
+
+**Consequences.** Core stays testable with fakes and imports no engine. The GSAP adapter and its contract evidence are release requirements. A future sampler may be added as another port implementation, never as a branch inside core.
+
+## ADR-016: Runtime diagnostics stay inline on patches
+
+**Status:** Accepted, 2026-08-10
+
+**Context.** TRD section 18 tracked whether runtime diagnostics should remain inline on patches or gain a separate stream. Consumers need failure context atomically with the values they are about to render.
+
+**Decision.** Runtime diagnostics surface inline on the affected patch and in the batch diagnostics summary, and accumulate in a bounded ring buffer on the project for inspection. No separate diagnostics stream ships in v1.
+
+**Alternatives rejected.** An independent stream centralizes logging but races with publication, forces consumers to correlate two timelines, and duplicates subscription lifecycle. Project-level-only diagnostics lose the node context that makes a diagnostic actionable.
+
+**Consequences.** Patch equality and revision rules must account for meaningful diagnostic changes. One batch is enough to render or log a complete state. The ring buffer is observational and must never become a second publication owner.
+
+## ADR-017: React ships in the v1 package set
+
+**Status:** Accepted, 2026-08-10
+
+**Context.** TRD section 18 tracked whether `@motion5/react` belongs in v1 or becomes a follow-on package. React is a primary consumer boundary, and deferring it would leave patch identity, subscription semantics, strict-mode lifecycle, and packaging assumptions unproven until after the core API froze.
+
+**Decision.** `@motion5/react` is part of v1 and its build, hook lifecycle, and packed-consumer gates are release-blocking. It consumes only the documented public core surface, subscribes with external-store semantics, and never traverses the graph or composes recursively.
+
+**Alternatives rejected.** Shipping React later reduces v1 scope but risks discovering an incompatible publication contract after the public API is frozen. Embedding React in core would remove the packaging question and destroy renderer neutrality.
+
+**Consequences.** Core keeps zero React dependency while React tests become part of the release matrix. Concurrency safety is proven by a two-consumer tearing test rather than assumed.

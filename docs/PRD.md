@@ -3,6 +3,7 @@
 **Status:** Accepted product direction, Phase 0 implementation
 **Authored contract:** schema v5
 **Runtime status:** See [SESSION-STATUS.md](./SESSION-STATUS.md)
+**Technical requirements:** See [TRD.md](./TRD.md)
 
 ## 1. Product summary
 
@@ -39,10 +40,14 @@ When application code solves those relationships inside frame callbacks, orderin
 7. Small allow-listed public API.
 8. Honest CI gates that run what they claim.
 9. Explicit schema v5 migration from v4.
+10. First-class React support inside the v1 package set.
 
 ## 5. Non-goals
 
 - Runtime compatibility with motionpath APIs.
+- Authorable runtime-qualified ids, or a schema v6 created for that purpose.
+- A built-in interpolation sampler in v1.
+- A separate runtime diagnostics event stream in v1.
 - A demo or visual editor in this repository.
 - A physics, collision, or IK solver.
 - Multiple animation engines in core.
@@ -55,7 +60,7 @@ When application code solves those relationships inside frame callbacks, orderin
 
 - **FR-1:** Accept only `schemaVersion: 5` at the runtime boundary.
 - **FR-2:** Validate ids, triggers, tracks, perspective, observations, duplicates, and cycles before mount.
-- **FR-3:** Normalize motion tracks to `motionId/trackId` and free tracks to `~/trackId` exactly once.
+- **FR-3:** Normalize motion tracks to `motionId/trackId` and free tracks to `~/trackId` exactly once. Authored documents keep local ids and explicit reference syntax; qualified identity stays internal.
 - **FR-4:** Preserve project-level perspective as validated metadata without adding it to patches.
 - **FR-5:** Provide an explicit pure v4-to-v5 migration outside the runtime.
 
@@ -88,17 +93,23 @@ When application code solves those relationships inside frame callbacks, orderin
 - **FR-21:** Export only documented APIs; internals use an unadvertised entrypoint.
 - **FR-22:** Ship deterministic benchmarks and package-consumer smoke tests.
 
+### Locked v1 scope
+
+- **FR-23:** GSAP is the supported v1 `Interpolator` implementation, reachable only through the port. No built-in sampler ships in v1. See ADR-015.
+- **FR-24:** Runtime diagnostics surface inline on affected patches and batch summaries, with bounded project-level history and no separate stream. See ADR-016.
+- **FR-25:** `@motion5/react` ships in the v1 package set and its lifecycle, build, and packed-consumer gates are release-blocking. See ADR-017.
+
 ## 7. Quality attributes
 
 **Determinism:** no wall-clock or random input in core tests; canonical order is based on qualified ids and authored order.
 
-**Diagnosability:** every diagnostic has rule id, path, severity, message, and involved ids where applicable.
+**Diagnosability:** every diagnostic has rule id, path, severity, message, and involved ids where applicable, and runtime failures appear where consumers already read state.
 
 **Performance:** committed budgets cover graph traversal, dirty propagation, publication, and memory retention. A benchmark that is advisory must have a removal date.
 
 **Memory:** repeated load, mount, unmount, and dispose cycles release subscriptions, timelines, graph membership, and cached patches.
 
-**Packaging:** core has no renderer dependency; public exports work from the packed artifact, not only from source.
+**Packaging:** core has no renderer dependency; public exports work from the packed artifact, not only from source. React is a separately consumable v1 package.
 
 **Testability:** core runs headless with fake ports and no GSAP, DOM, or React.
 
@@ -107,17 +118,24 @@ When application code solves those relationships inside frame callbacks, orderin
 - Every architecture invariant has a named executable test.
 - v4 migration output is deterministic and v4 runtime input is rejected.
 - Core test suite imports no animation engine.
+- The GSAP adapter passes the Interpolator contract suite unchanged, with no GSAP import in core.
+- Runtime diagnostics appear on the affected patch and in the batch summary.
+- React strict-mode lifecycle, build, and packed-consumer gates are green.
 - No capability flags or compatibility facades ship.
 - The documented public API passes a tarball consumer test.
 - No phase requires a second revert.
 
 ## 9. Release criteria
 
-v1 is releasable only when schema v5 loading, migration, graph transactions, publication, lifecycle, ports, adapters, package exports, benchmarks, and documentation all have green evidence. The complete binary checklist lives in the implementation plan and is mirrored by CI jobs.
+v1 is releasable only when schema v5 loading, migration, graph transactions, inline diagnostics, publication, lifecycle, ports, the GSAP adapter, browser and DOM adapters, React, package exports, benchmarks, and documentation all have green evidence. The complete binary checklist lives in the implementation plan and is mirrored by CI jobs.
 
-## 10. Open questions
+## 10. Resolved product decisions
 
-- Whether a future schema v6 makes qualified ids authorable rather than internal.
-- Whether the first interpolator should remain GSAP-backed or gain a built-in sampler.
-- Whether runtime diagnostics remain inline on patches or gain a separate stream.
-- Whether React remains in the v1 package set or becomes a follow-on package.
+These were open questions. They are now settled, and reversing one requires a superseding record in [DECISIONS.md](./DECISIONS.md) plus matching PRD, TRD, and plan updates in the same pull request.
+
+- **Qualified ids stay internal.** No schema v6 is planned to make runtime-qualified ids authorable. Authored identity remains local, and normalization owns canonical identity. See ADR-014.
+- **GSAP remains the interpolator.** The first and only v1 interpolator is GSAP behind the port. A built-in sampler is out of scope. See ADR-015.
+- **Diagnostics stay inline.** Runtime diagnostics ride on patches and batch summaries rather than a separate stream. See ADR-016.
+- **React stays in v1.** `@motion5/react` ships with v1 and blocks release if its gates fail. See ADR-017.
+
+Remaining technical questions, including whether deep freezing stays unconditional once benchmarks exist, are tracked in [TRD.md](./TRD.md) section 18.

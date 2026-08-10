@@ -63,6 +63,7 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 - **TR-D-08 Migration idempotence.** Applying migration to an already-migrated document must produce a structurally equal document.
 - **TR-D-09 Ambiguity refusal.** A document carrying both top-level `tracks` and `freeTracks` must fail migration rather than resolve the conflict by preference.
 - **TR-D-10 Deterministic serialization.** The golden serializer must sort object keys lexicographically, preserve array order, emit JSON-safe values only, and end output with exactly one newline. Serializing the same logical document twice must be byte-identical regardless of key insertion order.
+- **TR-D-11 Authored identity stays local.** Authored track ids are local to their owner, and cross-boundary references use `motionId/trackId` or `~/trackId` reference syntax only. No authored document may define a node whose id is already a qualified runtime id, and no public API may accept a qualified id as authored identity. Implements FR-3 and ADR-014.
 
 ## 6. Graph kernel requirements
 
@@ -89,7 +90,7 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 - **TR-R-05 Patch shape.** A patch must carry `nodeId`, `revision`, `values`, `sourceProgress`, `sourceRevisions`, `status` of `ready`, `blocked`, or `error`, and `diagnostics`, empty when `ready`. A batch must carry its patches, tick number, seed set, and diagnostics summary.
 - **TR-R-06 Deep immutability.** Published patches and their nested values must be deeply frozen. Mutating a received patch must throw in strict mode and must never affect a later reader. Implements I-7 and FR-14.
 - **TR-R-07 Monotonic revisions.** Revisions must be monotonic per node and must advance only when a published value actually changes.
-- **TR-R-08 Deduplication.** Unchanged values, progress, source revisions, and status must produce no new revision and no subscriber notification. Implements FR-13.
+- **TR-R-08 Deduplication.** Unchanged values, progress, source revisions, status, and inline diagnostics must produce no new revision and no subscriber notification. Implements FR-13.
 - **TR-R-09 Batch-close notification.** Subscribers must be notified only at batch close, node subscribers before batch subscribers. No subscriber may observe a partial flush. Unsubscribing during notification must be safe. Implements I-6.
 - **TR-R-10 Failure containment.** A composition failure must publish `error` for the failing node and `blocked` for its entire downstream closure, while unrelated branches continue. Aggregated failures within one flush are reported as one aggregate error after the pass completes, never by aborting it. Retry metadata is retained only for nodes whose publication failed. Implements FR-12 and I-9.
 - **TR-R-11 Project-wide runtime.** `GraphRuntime` is project-wide, never Motion-wide, and owns one binding, one live state, one publisher, one registry, and one clock subscription. Implements FR-10.
@@ -118,6 +119,7 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 - **TR-P-06 Shared contract suite.** Every port ships one contract suite that both its fake and every real adapter must pass unchanged. A port with no passing real adapter is an unproven interface.
 - **TR-P-07 Adapter neutrality.** An adapter may depend on its external engine and on the port it implements, and on nothing else in the repository. No adapter may subscribe to its own ticker; the project owns the clock.
 - **TR-P-08 Renderer application.** Renderer adapters consume frozen patches and must not mutate them. The DOM adapter is the only component that applies `perspective`, and it applies it once to a stage container.
+- **TR-P-09 GSAP is the v1 interpolator.** The supported v1 `Interpolator` implementation is GSAP behind an adapter. It must pass the TR-P-06 contract suite unchanged, must be replaceable through the port, and must not be imported, detected, or branched on by any core layer. No built-in sampler ships in v1. Implements FR-23 and ADR-015.
 
 ## 10. Lifecycle and memory requirements
 
@@ -140,6 +142,7 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 - **TR-E-06 Bounded accumulation.** Runtime diagnostics accumulate in a bounded ring buffer on the project. The buffer must drop oldest entries and report how many entries were dropped.
 - **TR-E-07 Patch-level surfacing.** A runtime diagnostic that affects a node must also surface on that node's patch.
 - **TR-E-08 Diagnosability.** Every diagnostic must be actionable: it names the rule, the path, and the involved ids where applicable, and never reports only a generic failure message.
+- **TR-E-09 Inline delivery only.** Runtime diagnostics must be delivered inline on the affected patch and in the batch diagnostics summary. There must be no separate diagnostics stream, event emitter, or parallel subscription in v1, and the TR-E-06 buffer is read-only inspection state that must never become a second publication owner. Implements FR-24 and ADR-016.
 
 ## 12. Public surface and packaging requirements
 
@@ -149,6 +152,7 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 - **TR-S-04 Mechanical enforcement.** Adding a public export without updating the committed API report must fail CI.
 - **TR-S-05 Packed verification.** The documented public API must work from a packed tarball installed into a clean consumer, in both ESM and TypeScript, not only from source. Implements FR-22.
 - **TR-S-06 Export map regression.** A consumer fixture must fail when the export map regresses or when a blocked deep import starts resolving.
+- **TR-S-07 React ships in v1.** `@motion5/react` is part of the v1 package set. It must build, pass hook lifecycle and concurrency tests, import only the public core surface, start no clock on import or during server rendering, and pass its own packed-consumer test. A failure in any of those gates blocks the v1 release. Implements FR-25 and ADR-017.
 
 ## 13. Performance requirements
 
@@ -185,7 +189,7 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 
 - FR-1: TR-D-01.
 - FR-2: TR-D-02, TR-D-06.
-- FR-3: TR-G-01, TR-G-02.
+- FR-3: TR-G-01, TR-G-02, TR-D-11.
 - FR-4: TR-A-05, TR-D-04.
 - FR-5: TR-D-07, TR-D-08, TR-D-09.
 - FR-6: TR-G-03.
@@ -205,6 +209,9 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 - FR-20: TR-E-01, TR-E-08, TR-G-05.
 - FR-21: TR-S-01, TR-S-02, TR-S-03.
 - FR-22: TR-S-05, TR-PF-01.
+- FR-23: TR-P-09.
+- FR-24: TR-E-09, TR-E-06, TR-E-07.
+- FR-25: TR-S-07, TR-A-06, TR-A-07.
 
 ### Architecture invariants to technical requirements
 
@@ -224,6 +231,13 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 - I-14: TR-A-04.
 - I-15: TR-E-02.
 
+### Decision records to technical requirements
+
+- ADR-014 qualified ids stay internal: TR-D-11, TR-G-01.
+- ADR-015 GSAP is the v1 interpolator: TR-P-09, TR-A-03, TR-C-03.
+- ADR-016 diagnostics stay inline: TR-E-09, TR-E-06, TR-E-07, TR-R-08.
+- ADR-017 React ships in v1: TR-S-07, TR-A-06, TR-A-07.
+
 ### Delivery slices
 
 The slice that satisfies each requirement is named in [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md). Every requirement in this document must appear in at least one slice; a requirement with no slice means the plan is incomplete, and a slice with no requirement means the work has no acceptance criteria.
@@ -232,12 +246,17 @@ The slice that satisfies each requirement is named in [IMPLEMENTATION-PLAN.md](.
 
 v1 is releasable only when every requirement in sections 4 through 15 has a green verification, the invariant matrix is complete, the packed consumer test passes, benchmarks run as a required job against committed budgets, and documentation matches implementation. The binary checklist lives at the end of [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) and is mirrored by CI jobs.
 
-## 18. Open technical questions
+## 18. Resolved and open technical questions
 
-These are tracked, not answered. Each must be resolved by a decision record before v1.
+### Resolved
 
-- Whether a future schema v6 makes qualified ids authorable rather than internal.
-- Whether the first interpolator remains engine-backed or gains a built-in sampler, which would remove the last external runtime dependency from the default setup.
-- Whether runtime diagnostics remain inline on patches or gain a separate stream, which changes TR-E-07.
-- Whether React remains in the v1 package set or becomes a follow-on package, which changes the scope of TR-A-06 and TR-S-05.
+- **Qualified ids stay internal.** No schema v6 is created to make qualified ids authorable. See ADR-014 and TR-D-11.
+- **GSAP remains the interpolator.** The first interpolator stays engine-backed; no built-in sampler ships in v1. See ADR-015 and TR-P-09.
+- **Diagnostics stay inline.** Runtime diagnostics ride on patches and batch summaries rather than a separate stream, so TR-E-07 stands unchanged. See ADR-016 and TR-E-09.
+- **React stays in v1.** `@motion5/react` remains in the v1 package set, so TR-A-06 and TR-S-05 keep their full scope. See ADR-017 and TR-S-07.
+
+### Still open
+
+Tracked, not answered. Each must be resolved by a decision record before v1.
+
 - Whether deep freezing stays unconditional or becomes development-only once TR-PF-03 has real measurements.

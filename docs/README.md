@@ -12,7 +12,7 @@ motion5 is a clean-room successor to [motionpath](https://github.com/chahyasanto
 
 ## Product and contracts
 
-- [PRD.md](./PRD.md): problem statement, users, goals, functional requirements, quality attributes, and release criteria.
+- [PRD.md](./PRD.md): problem statement, users, goals, functional requirements, quality attributes, release criteria, and resolved product decisions.
 - [TRD.md](./TRD.md): normative technical requirements, verification methods, and traceability to product requirements and architecture invariants.
 - [ARCHITECTURE.md](./ARCHITECTURE.md): owners, invariants, graph lifecycle, publication semantics, failure handling, boundaries, and deletion list.
 - [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md): schema v5 syntax, field semantics, id qualification, observation edges, diagnostics, and validation.
@@ -30,6 +30,10 @@ motion5 is a clean-room successor to [motionpath](https://github.com/chahyasanto
 ## How the documents fit together
 
 PRD says why and what. TRD says what "correct" means, in testable terms. ARCHITECTURE says who owns what. IMPLEMENTATION-PLAN says in what order, and names the evidence for each slice. SESSION-STATUS says what is actually true today. DECISIONS says what not to re-litigate.
+
+## Locked scope decisions
+
+Four scope questions are closed and should not be reopened in review: qualified ids stay internal (ADR-014), GSAP remains the v1 interpolator (ADR-015), runtime diagnostics stay inline (ADR-016), and React ships in v1 (ADR-017). PRD section 10 and TRD section 18 record the outcomes; TRD section 18 also lists the one technical question that is still open.
 
 ## Documentation rules
 

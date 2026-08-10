@@ -80,10 +80,21 @@ The current authored contract is **schema v5**. It includes:
 
 v4 is not accepted as an alias. Use the explicit [v4 to v5 migration](docs/MIGRATION-V4-TO-V5.md) before loading a project. The runtime does not silently rename fields or reinterpret ambiguous top-level `tracks`.
 
+## Locked v1 direction
+
+Four questions that shaped the scope are settled. Reversing one needs a superseding decision record, not a pull request comment.
+
+- Qualified runtime ids stay internal. Authored ids stay local, and no schema v6 is planned to change that. See ADR-014.
+- GSAP remains the supported v1 interpolator, behind the port. No built-in sampler. See ADR-015.
+- Runtime diagnostics stay inline on patches and batch summaries. No separate stream. See ADR-016.
+- `@motion5/react` ships in v1 and its gates block the release. See ADR-017.
+
 ## What is deliberately not here
 
 - No demo application or example gallery.
 - No compatibility facade for the predecessor runtime.
+- No built-in interpolation sampler in v1.
+- No separate diagnostics event stream in v1.
 - No rollout or capability flags.
 - No second observation implementation for “legacy” and “new” modes.
 - No graph recursion from Track.

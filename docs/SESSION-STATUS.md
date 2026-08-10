@@ -15,7 +15,7 @@ Every implementation slice follows this path: create `feat/...` from `main`, imp
 
 P0-05 adds deterministic golden serialization, fresh schema/migration integration fixtures, and a required integration CI job. P0-03 and P0-04 are merged on `main`. The runtime, graph, adapters, React package, benchmarks, and boundary scripts do not exist yet.
 
-P0-06 is open on `docs/p0-06-trd-and-detailed-plan`. It is documentation only: a slice-level implementation plan and a normative technical requirements document. It asserts no runtime invariant and adds no executable evidence.
+P0-06 is open on `docs/p0-06-trd-and-detailed-plan`. It is documentation only: a slice-level implementation plan, a normative technical requirements document, and ADR-014 through ADR-017, which close the four open product questions. It asserts no runtime invariant and adds no executable evidence.
 
 ## Landed on this branch
 
@@ -23,6 +23,15 @@ P0-06 is open on `docs/p0-06-trd-and-detailed-plan`. It is documentation only: a
 - Fresh v5 fixtures for minimal projects, perspective warnings, free tracks, cycles, and migration.
 - Integration tests covering deterministic serialization, warning/error semantics, free-track acceptance, cycle rejection, and migration immutability.
 - Required GitHub Actions integration job using the committed lockfile.
+
+## Decisions closed by P0-06
+
+- Qualified runtime ids stay internal; no schema v6 is planned to make them authorable (ADR-014).
+- GSAP remains the supported v1 interpolator behind the port; no built-in sampler (ADR-015).
+- Runtime diagnostics stay inline on patches and batch summaries; no separate stream (ADR-016).
+- `@motion5/react` ships in the v1 package set and its gates are release-blocking (ADR-017).
+
+One technical question remains open: whether deep freezing stays unconditional once benchmarks exist. It is tracked in TRD section 18.
 
 ## Not landed yet
 
