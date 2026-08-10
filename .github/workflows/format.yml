@@ -1,15 +1,16 @@
 # Manual only. This workflow is never triggered by push, pull request, or a
-# schedule, and it never writes to a contributor branch. See docs/FORMATTING.md.
+# schedule. See docs/FORMATTING.md.
 name: Format (manual)
 
 on:
   workflow_dispatch:
     inputs:
       mode:
-        description: Open a formatting pull request, or only report the drift.
+        description: Commit formatting directly, open a PR, or only report drift.
         type: choice
-        default: pull-request
+        default: direct-commit
         options:
+          - direct-commit
           - pull-request
           - report
 
@@ -28,16 +29,15 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Install
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install --no-audit --no-fund
-          fi
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Apply formatter
         run: npm run format
       - name: Detect drift
@@ -52,13 +52,23 @@ jobs:
         if: steps.drift.outputs.changed == 'false'
         run: echo "No formatting drift. Nothing to do."
       - name: Report drift
-        if: steps.drift.outputs.changed == 'true' && github.event.inputs.mode == 'report'
+        if: steps.drift.outputs.changed == 'true' && inputs.mode == 'report'
         run: |
           git --no-pager diff
           echo "Formatting drift detected. Run 'npm run format' locally and commit the result."
           exit 1
+      - name: Commit formatting directly
+        if: steps.drift.outputs.changed == 'true' && inputs.mode == 'direct-commit'
+        env:
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: apply prettier"
+          git push origin "HEAD:${TARGET_BRANCH}"
       - name: Open formatting pull request
-        if: steps.drift.outputs.changed == 'true' && github.event.inputs.mode == 'pull-request'
+        if: steps.drift.outputs.changed == 'true' && inputs.mode == 'pull-request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -66,7 +76,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b "$branch"
-          git add -u
+          git add -A
           git commit -m "chore: apply prettier"
           git push origin "$branch"
-          gh pr create --base "${{ github.ref_name }}" --head "$branch" --title "chore: apply prettier" --body "Mechanical formatting only, produced by the manual format workflow. No behavior changes. Checks do not start automatically on token-authored pull requests: push an empty commit or reopen this to run CI."
+          gh pr create --base "${{ github.ref_name }}" --head "$branch" --title "chore: apply prettier" --body "Mechanical formatting only, produced by the manual format workflow. No behavior changes."
