@@ -2,7 +2,7 @@
 
 motion5 is a renderer-neutral, transactional dataflow animation runtime. It evaluates authored animation projects as one dependency graph and publishes immutable patches for DOM, React, or any other renderer.
 
-> **Status:** Phase 4 remediation is complete through R8 on `main`. R1 through R8 repaired publication correctness, real Track composition, membership gating, package boundaries, boundary enforcement, and target-aware DOM patching. P4-05 integration/build acceptance is still pending, followed by the documentation and packaging hardening work described in the implementation plan.
+> **Status:** Phase 4 is reopened. The 2026-08-10 consolidated audit found that R1-R8 repaired the graph infrastructure and adapter boundaries, but not the animation value pipeline. `Engine.load()` currently publishes empty or input-only patches, Track instances are rebuilt on every flush, and the plugin/keyframe compiler is not implemented. Start with [the consolidated audit](docs/PHASE-3-4-CONSOLIDATED-AUDIT.md), [the recovery plan](docs/PHASE-3-4-RECOVERY-PLAN.md), and [the implementor brief](docs/IMPLEMENTOR-BRIEF-MOTIONPATH-TO-MOTION5.md). Do not resume P4-05, packaging, or performance hardening until the Phase 0R/1R recovery work has real failing-first evidence.
 
 > **Lineage:** motion5 is a clean-room successor to [motionpath](https://github.com/chahyasantoso/motionpath), a data-first animation runtime built on GSAP. motionpath is the behavioral oracle for what these animations should do. motion5 is a different answer to how the runtime should own that behavior.
 
@@ -18,16 +18,18 @@ motion5 treats those dependencies as a first-class graph. A project is loaded, v
 - transactional graph replacement with rollback;
 - immutable, revisioned, batched patch publication;
 - input and output observation publication with deterministic ordering;
-- real Track composition through the injected Interpolator port;
 - explicit attach/detach membership gating;
 - `@motion5/core` and `@motion5/core/internal` package entrypoints;
 - a mechanical boundary scanner covering core and React consumers;
 - target-aware DOM patch application with diffing and key removal.
 
+The authored animation value/compiler pipeline is **not yet shipped**: authored keyframes are not compiled into proxy-backed interpolation, plugins are not resolved from authored keys, and real Track state does not survive a flush.
+
 ## What remains
 
-- P4-05 end-to-end integration and required build job must be recreated against current `main`;
-- React hook wiring and packed consumer verification remain separate acceptance work;
+- Phase 0R/1R value-pipeline recovery: interpolator state, typed stops, plugin compilation/composition, Track lifetime, and progress invalidation;
+- Phase 2/3 hardening: final-value memo consistency, batch error preservation, reentrancy proof, and boundary self-test repair;
+- Phase 4R consumer work: DOM writer contract, React hooks/subscription lifecycle, public runtime exports, and the required P4-05 build/end-to-end gate;
 - cross-motion membership and adoption remain Phase 5 work;
 - API report, packed package consumer, required performance budget, and transitional-code deletion remain Phase 6 work.
 
@@ -52,7 +54,7 @@ npm test
 
 ## Documentation map
 
-Read in this order: [Session status](docs/SESSION-STATUS.md), [PRD](docs/PRD.md), [TRD](docs/TRD.md), [Architecture](docs/ARCHITECTURE.md), [Authored schema](docs/AUTHORED-SCHEMA.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md), [Testing strategy](docs/TESTING-STRATEGY.md), [CI workflow](docs/CI-WORKFLOW.md), [PR workflow](docs/PR-WORKFLOW.md), and [Decision records](docs/DECISIONS.md).
+Read in this order: [Session status](docs/SESSION-STATUS.md), [Consolidated audit](docs/PHASE-3-4-CONSOLIDATED-AUDIT.md), [Recovery plan](docs/PHASE-3-4-RECOVERY-PLAN.md), [Implementor brief](docs/IMPLEMENTOR-BRIEF-MOTIONPATH-TO-MOTION5.md), [PRD](docs/PRD.md), [TRD](docs/TRD.md), [Architecture](docs/ARCHITECTURE.md), [Authored schema](docs/AUTHORED-SCHEMA.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md), [Testing strategy](docs/TESTING-STRATEGY.md), [CI workflow](docs/CI-WORKFLOW.md), [PR workflow](docs/PR-WORKFLOW.md), and [Decision records](docs/DECISIONS.md).
 
 ## Contributing rule of thumb
 
