@@ -62,7 +62,8 @@ export class GraphRuntime {
 
   attach(nodeId: string): void {
     this.#assertLive();
-    if (!this.#binding.graph.nodeById[nodeId]) throw new TypeError(`Unknown graph node \"${nodeId}\".`);
+    if (!this.#binding.graph.nodeById[nodeId])
+      throw new TypeError(`Unknown graph node \"${nodeId}\".`);
     this.#members.add(nodeId);
   }
 
@@ -94,7 +95,8 @@ export class GraphRuntime {
 
   #onTick(event: ClockTick): void {
     if (this.#disposed) return;
-    if (event.tick <= this.#lastTick) throw new RangeError("Clock ticks must be strictly increasing.");
+    if (event.tick <= this.#lastTick)
+      throw new RangeError("Clock ticks must be strictly increasing.");
     this.flush([...this.#members], event.tick);
   }
 
