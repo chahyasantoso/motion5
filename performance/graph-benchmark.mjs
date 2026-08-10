@@ -18,5 +18,8 @@ const report = {
     retention: "deterministic-manual-clock",
   },
 };
-await writeFile(new URL("./benchmark-report.json", import.meta.url), `${JSON.stringify(report, null, 2)}\n`);
+await writeFile(
+  new URL("./benchmark-report.json", import.meta.url),
+  `${JSON.stringify(report, null, 2)}\n`,
+);
 console.log(JSON.stringify(report, null, 2));
