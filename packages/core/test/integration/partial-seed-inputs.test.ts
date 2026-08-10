@@ -3,7 +3,9 @@ import type { GraphEdge, GraphIR } from "../../src/graph/ir";
 import { GraphPublisher, type PublisherNode } from "../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 
-const snapshot = (nodes: readonly PublisherNode[]): GraphIR & { nodes: readonly PublisherNode[] } => ({
+const snapshot = (
+  nodes: readonly PublisherNode[],
+): GraphIR & { nodes: readonly PublisherNode[] } => ({
   nodes,
   nodeById: Object.freeze(Object.fromEntries(nodes.map((node) => [node.id, node]))),
   order: Object.freeze(nodes.map(({ id }) => id)),
