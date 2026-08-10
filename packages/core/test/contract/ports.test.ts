@@ -31,6 +31,18 @@ describe("Clock port contract", () => {
 });
 
 describe("Interpolator port contract", () => {
+  it("exposes deterministic adapter-owned state for authored stops", () => {
+    const timeline = createFakeInterpolator().create({
+      duration: 2,
+      keyframes: { x: { stops: [{ p: 0, v: 10 }, { p: 1, v: 30 }] } },
+    });
+    expect(timeline.state).toEqual({ x: 10 });
+    timeline.progress(0.5);
+    expect(timeline.state).toEqual({ x: 20 });
+    timeline.progress(1);
+    expect(timeline.state).toEqual({ x: 30 });
+  });
+
   it("creates a controllable timeline and kills it", () => {
     const timeline = createFakeInterpolator().create({ duration: 2 });
     expect(timeline.duration).toBe(2);
