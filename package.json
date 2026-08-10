@@ -15,5 +15,10 @@
     "test:migration": "vitest run packages/core/test/migration",
     "test:contract": "vitest run packages/core/test/contract",
     "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2",
+    "typescript": "5.8.3",
+    "vitest": "^4.1.10"
   }
-}]}
+}
