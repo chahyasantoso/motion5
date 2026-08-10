@@ -72,15 +72,18 @@ export class PatchRegistry {
   #batchDiagnostics: Diagnostic[] = [];
   #batchTick = 0;
   #batchSeeds: string[] = [];
+  #batchOpen = false;
 
   get(nodeId: string): Patch | undefined {
     return this.#patches.get(nodeId);
   }
 
   beginBatch(tick: number, seeds: readonly string[]): void {
-    if (this.#batch.length > 0) throw new Error("A patch batch is already open.");
+    if (this.#batchOpen) throw new Error("A patch batch is already open.");
+    this.#batchOpen = true;
     this.#batchTick = tick;
     this.#batchSeeds = [...seeds];
+    this.#batch = [];
     this.#batchDiagnostics = [];
   }
 
@@ -116,6 +119,7 @@ export class PatchRegistry {
   }
 
   closeBatch(): PatchBatch {
+    if (!this.#batchOpen) throw new Error("No patch batch is open.");
     const batch = deepFreeze({
       tick: this.#batchTick,
       seeds: [...this.#batchSeeds],
@@ -124,11 +128,13 @@ export class PatchRegistry {
     }) as PatchBatch;
     const nodeListeners = new Map(this.#nodeListeners);
     const batchListeners = new Set(this.#batchListeners);
+    this.#batchOpen = false;
+    this.#batch = [];
+    this.#batchDiagnostics = [];
+    this.#batchSeeds = [];
     for (const patch of batch.patches)
       for (const listener of nodeListeners.get(patch.nodeId) ?? []) listener(patch);
     for (const listener of batchListeners) listener(batch);
-    this.#batch = [];
-    this.#batchDiagnostics = [];
     return batch;
   }
 }

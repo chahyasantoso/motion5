@@ -71,4 +71,12 @@ describe("PatchRegistry", () => {
     registry.closeBatch();
     expect(count).toBe(1);
   });
+
+  it("rejects opening a second empty batch and closing without an open batch", () => {
+    const registry = new PatchRegistry();
+    registry.beginBatch(1, []);
+    expect(() => registry.beginBatch(2, [])).toThrow("already open");
+    registry.closeBatch();
+    expect(() => registry.closeBatch()).toThrow("No patch batch is open");
+  });
 });
