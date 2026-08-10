@@ -1,5 +1,5 @@
 import type { Diagnostic } from "../contract/v5";
-import type { GraphIR, GraphNode } from "../graph/ir";
+import { edgeKey, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
 
 export interface PublisherComposition {
@@ -29,6 +29,20 @@ function diagnostic(nodeId: string, error: unknown): Diagnostic {
     severity: "error",
     ids: Object.freeze([nodeId]),
   });
+}
+
+function compareEdgeKeys(a: GraphEdge, b: GraphEdge): number {
+  const left = edgeKey(a);
+  const right = edgeKey(b);
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function mergeValues(
+  base: Readonly<Record<string, unknown>>,
+  overlay: Readonly<Record<string, unknown>> | undefined,
+): Readonly<Record<string, unknown>> {
+  if (overlay === undefined) return base;
+  return Object.freeze({ ...base, ...overlay });
 }
 
 /**
@@ -98,9 +112,17 @@ export class GraphPublisher {
           }
           const composed = node.compose(inputs);
           memo.set(id, composed);
+          let values = composed.values;
+          for (const edge of node.edges
+            .filter(({ role }) => role === "output")
+            .sort(compareEdgeKeys)) {
+            const sourceValues =
+              memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
+            values = mergeValues(values, sourceValues);
+          }
           this.#registry.publish({
             nodeId: id,
-            values: composed.values,
+            values,
             sourceProgress: composed.sourceProgress,
             sourceRevisions: composed.sourceRevisions,
             status: "ready",
