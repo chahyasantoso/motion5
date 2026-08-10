@@ -91,9 +91,12 @@ export class GraphPublisher {
         }
         try {
           const inputs: Record<string, unknown> = {};
-          for (const edge of node.edges)
-            if (edge.role === "input") inputs[edge.target ?? ""] = memo.get(edge.sourceId)?.values;
-          const composed = memo.get(id) ?? node.compose(inputs);
+          for (const edge of node.edges) {
+            if (edge.role !== "input") continue;
+            inputs[edge.target ?? ""] =
+              memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
+          }
+          const composed = node.compose(inputs);
           memo.set(id, composed);
           this.#registry.publish({
             nodeId: id,
