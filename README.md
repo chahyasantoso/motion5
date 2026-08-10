@@ -10,7 +10,18 @@ Timeline engines are good at answering â€œwhat is this value at progress 0.42?â€
 
 motion5 treats those dependencies as a first-class graph. A project is loaded, validated, normalized into qualified node ids, evaluated in canonical topological order, and published as one immutable batch per clock tick. Consumers render the batch. They do not traverse the graph, call `Track.compose()`, or inspect runtime internals.
 
-The predecessor repository, [motionpath](https://github.com/chahyasantoso/motionpath), is a behavioral reference only. motion5 intentionally does not copy its source, tests, fixtures, demos, history, or migration seams.
+## Inspiration and lineage
+
+motion5 is inspired by and succeeds [motionpath](https://github.com/chahyasantoso/motionpath), a data-first animation runtime built on GSAP. motionpath is where the ideas were proven: authored projects as plain data, a rig graph in which animated values observe other animated values, and forward-kinematics style derived motion.
+
+motionpath also proved the failure modes. Two implementations of one responsibility, per-Motion runtime pieces, compatibility facades, rollout flags, and a demo application that ended up shaping the package layout. Those are structural problems, not cosmetic ones, so motion5 keeps the ideas and starts the ownership model over. See [ADR-001](docs/DECISIONS.md) and [architecture section 15](docs/ARCHITECTURE.md#15-why-not-just-clean-up-motionpath).
+
+motionpath is a read-only behavioral oracle and a source of fixture intent. motion5 does not copy its source, tests, fixtures, demos, history, or migration seams, and offers no runtime compatibility with its APIs. For background on the ideas motion5 inherits:
+
+- [Rig graph guide](https://github.com/chahyasantoso/motionpath/blob/main/docs/RIG-GRAPH-GUIDE.md)
+- [Rig graph architecture](https://github.com/chahyasantoso/motionpath/blob/main/docs/RIG-GRAPH-ARCHITECTURE.md)
+- [Forward kinematics](https://github.com/chahyasantoso/motionpath/blob/main/docs/FORWARD-KINEMATICS.md)
+- [MotionPath v4 system guide](https://github.com/chahyasantoso/motionpath/blob/main/docs/MOTIONPATH-V4-SYSTEM-GUIDE.md)
 
 ## Core promise
 
@@ -81,15 +92,16 @@ Read in this order:
 
 1. [Session status](docs/SESSION-STATUS.md): what exists today and the next concrete action.
 2. [PRD](docs/PRD.md): users, goals, requirements, non-goals, and release criteria.
-3. [Architecture](docs/ARCHITECTURE.md): ownership, invariants, data flow, failure semantics, and module boundaries.
-4. [Authored schema](docs/AUTHORED-SCHEMA.md): the v5 input contract and validation rules.
-5. [Migration guide](docs/MIGRATION-V4-TO-V5.md): mechanical and semantic migration steps.
-6. [Implementation plan](docs/IMPLEMENTATION-PLAN.md): phase-by-phase pull requests and exit gates.
-7. [Testing strategy](docs/TESTING-STRATEGY.md): how behavior is proven and what does not count as evidence.
-8. [CI workflow](docs/CI-WORKFLOW.md): required gates and when each becomes real.
-9. [PR workflow](docs/PR-WORKFLOW.md): branch, review, sizing, merge, and revert rules.
-10. [Formatting](docs/FORMATTING.md): local Prettier and the manual formatting workflow.
-11. [Decision records](docs/DECISIONS.md): decisions that should not be re-litigated in code review.
+3. [TRD](docs/TRD.md): normative technical requirements, rule catalog, algorithms, budgets, and traceability.
+4. [Architecture](docs/ARCHITECTURE.md): ownership, invariants, data flow, failure semantics, and module boundaries.
+5. [Authored schema](docs/AUTHORED-SCHEMA.md): the v5 input contract and validation rules.
+6. [Migration guide](docs/MIGRATION-V4-TO-V5.md): mechanical and semantic migration steps.
+7. [Implementation plan](docs/IMPLEMENTATION-PLAN.md): slice-by-slice pull requests, owners, tests, and exit gates.
+8. [Testing strategy](docs/TESTING-STRATEGY.md): how behavior is proven and what does not count as evidence.
+9. [CI workflow](docs/CI-WORKFLOW.md): required gates and when each becomes real.
+10. [PR workflow](docs/PR-WORKFLOW.md): branch, review, sizing, merge, and revert rules.
+11. [Formatting](docs/FORMATTING.md): local Prettier and the manual formatting workflow.
+12. [Decision records](docs/DECISIONS.md): decisions that should not be re-litigated in code review.
 
 ## Toolchain and commands
 
