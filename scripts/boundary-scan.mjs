@@ -33,7 +33,9 @@ const allowedPublicExports = new Set([
 ]);
 
 async function walk(directory) {
-  const entries = await (await import("node:fs/promises")).readdir(directory, { withFileTypes: true });
+  const entries = await (
+    await import("node:fs/promises")
+  ).readdir(directory, { withFileTypes: true });
   const files = [];
   for (const entry of entries) {
     const path = join(directory, entry.name);
@@ -48,15 +50,21 @@ function relative(path) {
 }
 
 function importsBoundary(source) {
-  return /(?:from|import)\s*[\"'](?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:[\"'/]|$)/.test(source);
+  return /(?:from|import)\s*[\"'](?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:[\"'/]|$)/.test(
+    source,
+  );
 }
 
 function importsRenderer(source) {
-  return /(?:from|import)\s*[\"'](?:node:dom|domino|\.\/?[^\"']*(?:dom|renderer|react|gsap)[^\"']*)(?:[\"'/]|$)/i.test(source);
+  return /(?:from|import)\s*[\"'](?:node:dom|domino|\.\/?[^\"']*(?:dom|renderer|react|gsap)[^\"']*)(?:[\"'/]|$)/i.test(
+    source,
+  );
 }
 
 function bannedSymbol(source) {
-  return /(?:compatibility|facade|parityMode|rollout|capabilityFlag|observationAlias|groupHost)/i.test(source);
+  return /(?:compatibility|facade|parityMode|rollout|capabilityFlag|observationAlias|groupHost)/i.test(
+    source,
+  );
 }
 
 function extractExportNames(source) {
@@ -67,7 +75,10 @@ function extractExportNames(source) {
       if (name) names.push(name);
     }
   }
-  for (const match of source.matchAll(/export\s+(?:const|function|class|interface|type)\s+([A-Za-z_$][\w$]*)/g)) names.push(match[1]);
+  for (const match of source.matchAll(
+    /export\s+(?:const|function|class|interface|type)\s+([A-Za-z_$][\w$]*)/g,
+  ))
+    names.push(match[1]);
   return names;
 }
 
@@ -77,7 +88,8 @@ for (const layer of layers) {
   for (const path of await walk(directory)) {
     const source = await readFile(path, "utf8");
     const file = relative(path);
-    if (importsBoundary(source) || importsRenderer(source)) violations.push(`${file}: renderer or engine import`);
+    if (importsBoundary(source) || importsRenderer(source))
+      violations.push(`${file}: renderer or engine import`);
     if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
   }
 }
@@ -85,7 +97,8 @@ for (const layer of layers) {
 const indexPath = join(coreRoot, "index.ts");
 const indexSource = await readFile(indexPath, "utf8");
 for (const name of extractExportNames(indexSource)) {
-  if (!allowedPublicExports.has(name)) violations.push(`packages/core/src/index.ts: public export ${name} is not allow-listed`);
+  if (!allowedPublicExports.has(name))
+    violations.push(`packages/core/src/index.ts: public export ${name} is not allow-listed`);
 }
 
 if (violations.length > 0) {
