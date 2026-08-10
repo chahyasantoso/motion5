@@ -1,10 +1,10 @@
-export type ImmutableValue =
-  | string
-  | number
-  | boolean
-  | null
-  | readonly ImmutableValue[]
-  | Readonly<Record<string, ImmutableValue>>;
+export interface ImmutableArray extends ReadonlyArray<ImmutableValue> {}
+
+export interface ImmutableRecord {
+  readonly [key: string]: ImmutableValue;
+}
+
+export type ImmutableValue = string | number | boolean | null | ImmutableArray | ImmutableRecord;
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -48,7 +48,8 @@ export function freezeValue<T extends ImmutableValue>(value: T): Readonly<T> {
     if (Array.isArray(current)) {
       for (const item of current) visit(item);
     } else {
-      for (const key of Object.keys(current)) visit(current[key]);
+      const record = current as Record<string, unknown>;
+      for (const key of Object.keys(record)) visit(record[key]);
     }
     active.delete(current);
     visited.add(current);
@@ -83,10 +84,14 @@ export function equalValues(left: unknown, right: unknown): boolean {
       return a.every((item, index) => equal(item, b[index]));
     }
 
-    const aKeys = Object.keys(a).sort();
-    const bKeys = Object.keys(b).sort();
+    const aRecord = a as Record<string, unknown>;
+    const bRecord = b as Record<string, unknown>;
+    const aKeys = Object.keys(aRecord).sort();
+    const bKeys = Object.keys(bRecord).sort();
     if (aKeys.length !== bKeys.length) return false;
-    return aKeys.every((key, index) => key === bKeys[index] && equal(a[key], b[key]));
+    return aKeys.every(
+      (key, index) => key === bKeys[index] && equal(aRecord[key], bRecord[key]),
+    );
   }
 
   return equal(left, right);
