@@ -27,9 +27,9 @@ P0-01 through P0-06 and P1-01 through P1-06 are merged on `main`. P2-01 qualifie
 
 ## P2-07 changes on this branch
 
-- `scripts/boundary-scan.mjs`: scans existing contract, domain, graph, and runtime layers safely, rejecting renderer/engine imports and banned compatibility vocabulary, then checks the public entrypoint against an allow list.
+- `scripts/boundary-scan.mjs`: scans existing contract, domain, graph, and runtime layers safely, rejecting bare or relative renderer/engine imports and banned compatibility vocabulary, then checks the public entrypoint against an allow list.
 - `scripts/boundary-scan-fixtures.ts`: typed planted violations, so the quality job typechecks the fixture import without an ambient declaration gap.
-- `packages/core/test/unit/scripts/boundary-scan.test.ts`: planted violations prove the mechanical rules can fail, including bare `react` package imports; a clean fixture proves the baseline passes.
+- `packages/core/test/unit/scripts/boundary-scan.test.ts`: planted violations prove the mechanical rules can fail, including bare `react` and `gsap` package imports; a clean fixture proves the baseline passes.
 - `.github/workflows/ci.yml`: adds a required `boundaries (node 24)` job running the scan and planted fixtures.
 - `package.json`: adds `npm run test:boundaries`.
 
@@ -44,7 +44,7 @@ P0-01 through P0-06 and P1-01 through P1-06 are merged on `main`. P2-01 qualifie
 
 The repository follows the implementation plan through P2-07. P2-02/P2-03 remain intentionally combined in `graph/ir.ts`. P2-06 uses a candidate `ProjectDefinition` replacement API rather than exposing separate add/remove commands before the runtime membership model exists. P2-07 makes the core import and public-export boundaries mechanical and gives the new CI job planted-violation evidence; it does not claim that runtime or adapters exist.
 
-The first P2-07 run exposed two integration gaps, both fixed: the TypeScript test import now resolves to a typed `.ts` fixture instead of an untyped `.mjs` module, and the scanner treats not-yet-created layers as empty rather than failing with ENOENT. The next run exposed a third gap in the shared fixture: `importsRenderer` detected relative renderer paths but not bare `react` package imports, while the planted fixture intentionally used `import React from 'react'`. The scanner and test now share the same bare-package coverage.
+The first P2-07 run exposed two integration gaps, both fixed: the TypeScript test import now resolves to a typed `.ts` fixture instead of an untyped `.mjs` module, and the scanner treats not-yet-created layers as empty rather than failing with ENOENT. The next run exposed a third gap in the shared fixture: `importsRenderer` detected relative renderer paths but not bare `react` package imports. The current run exposed the same matcher gap for the bare `gsap` engine fixture; both are now covered by the shared scanner and planted test.
 
 ## Guardrails
 
