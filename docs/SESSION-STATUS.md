@@ -1,9 +1,9 @@
 # Session status
 
 **Captured:** 2026-08-10, Asia/Jakarta
-**Branch:** `feat/p2-06-graph-binding-transactions`
+**Branch:** `feat/p2-07-boundary-scan-ci-gate`
 **Phase:** 2, graph kernel
-**Next action:** Run the P2-06 quality matrix, review the implementation pull request, and merge only when the required checks are green.
+**Next action:** Run the P2-07 quality matrix, review the implementation pull request, and merge only when the required checks are green.
 
 This is the only document that reports current implementation reality. Everything else is a contract, plan, or decision record unless it says otherwise.
 
@@ -13,7 +13,7 @@ Every implementation slice follows this path: create `feat/...` from `main`, imp
 
 ## Current state
 
-P0-01 through P0-06 and P1-01 through P1-06 are merged on `main`. P2-01 qualified identities, P2-02/P2-03 immutable IR with candidate validation, P2-04 canonical ordering with cycle detection, and P2-05 stable live state plus deterministic graph collation are merged on `main`. P2-06 transactional GraphBinding is on this branch. P2-07 boundary scripts, runtime, adapters, React, and benchmarks do not exist yet.
+P0-01 through P0-06 and P1-01 through P1-06 are merged on `main`. P2-01 qualified identities, P2-02/P2-03 immutable IR with candidate validation, P2-04 canonical ordering with cycle detection, P2-05 stable live state plus deterministic graph collation, and P2-06 transactional GraphBinding are merged on `main`. P2-07 boundary scripts and the required CI gate are on this branch. Runtime, adapters, React, and benchmarks do not exist yet.
 
 ## Landed on main
 
@@ -23,26 +23,27 @@ P0-01 through P0-06 and P1-01 through P1-06 are merged on `main`. P2-01 qualifie
 - Immutable graph IR, one node model for motion and free tracks, reference normalization, deterministic edge validation, and pre-mount rejection.
 - Canonical topological order and minimal-path cycle diagnostics, both iterative.
 - Stable in-place ObservationState with canonical indexes and a reversible undo journal.
+- Transactional GraphBinding with candidate isolation, journaled deltas, atomic graph commit, and rollback evidence.
 
-## P2-06 changes on this branch
+## P2-07 changes on this branch
 
-- `packages/core/src/graph/binding.ts`: candidate-first GraphBinding transaction path. It validates before touching active state, applies a reversible state delta, calls the future publisher-scheduling stage, swaps the immutable graph only after all pre-commit stages succeed, and rethrows the original failure after rollback.
-- `packages/core/test/integration/graph-rollback.test.ts`: I-2 evidence for valid replacement, invalid-candidate isolation, live-state failure, publisher-schedule failure, identity preservation, exact snapshot restoration, and released journals.
-
-The scheduling and invalidation hooks are explicit test seams until their real owners exist in P3; no publisher or runtime is being faked here.
+- `scripts/boundary-scan.mjs`: scans contract, domain, graph, and runtime for renderer/engine imports and banned compatibility vocabulary, then checks the public entrypoint against an allow list.
+- `scripts/boundary-scan-fixtures.mjs` and `packages/core/test/unit/scripts/boundary-scan.test.ts`: planted violations prove the mechanical rules can fail, while a clean fixture proves the baseline passes.
+- `.github/workflows/ci.yml`: adds a required `boundaries (node 24)` job running the scan and planted fixtures.
+- `package.json`: adds `npm run test:boundaries`.
 
 ## Immediate queue
 
-1. Run the P2-06 quality matrix and review the implementation PR.
-2. Merge P2-06 only with green required checks.
-3. Continue with P2-07 boundary scan and required CI gate.
+1. Run the P2-07 quality matrix and review the implementation PR.
+2. Merge P2-07 only with green required checks.
+3. Continue to P3-01 PatchRegistry and runtime publication.
 4. Keep `SESSION-STATUS.md` current after every merged slice.
 
 ## Audit snapshot
 
-The repository follows the implementation plan through P2-06. P2-02/P2-03 remain intentionally combined in `graph/ir.ts`, and P2-06 uses a candidate `ProjectDefinition` replacement API rather than exposing separate add/remove commands before the runtime membership model exists. That keeps one transaction path and avoids a second mutation owner. The live-state delta still exercises node and edge add/remove operations, and P3 will attach the real schedule and invalidation owners through the existing stage boundary.
+The repository follows the implementation plan through P2-07. P2-02/P2-03 remain intentionally combined in `graph/ir.ts`. P2-06 uses a candidate `ProjectDefinition` replacement API rather than exposing separate add/remove commands before the runtime membership model exists. P2-07 makes the core import and public-export boundaries mechanical and gives the new CI job a planted-violation test; it does not claim that runtime or adapters exist.
 
-No boundary scanner, publication, renderer, React, or benchmark path exists yet. The P2-06 test harness is failure-injection evidence only, not a claim that publisher scheduling is live.
+The boundary scanner intentionally complements, rather than replaces, behavioral tests. Its banned vocabulary list is narrow and mechanical, and the allow list mirrors the current `packages/core/src/index.ts` surface. A future public export must update both the entrypoint and this scanner in the same slice.
 
 ## Guardrails
 
