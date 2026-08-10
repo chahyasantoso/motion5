@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
-import { GraphBinding } from "../../src/graph/binding";
+import { GraphBinding, type GraphBindingHooks } from "../../src/graph/binding";
 
 const project = (tracks: ProjectDefinition["motions"][number]["tracks"]): ProjectDefinition => ({
   schemaVersion: 5,
@@ -46,16 +46,16 @@ describe("GraphBinding transactions", () => {
     expect(binding.state.journalLength).toBe(0);
   });
 
-  it.each([
+  it.each<[string, GraphBindingHooks]>([
     ["live-state apply", { afterStateApply: () => { throw new Error("state stage"); } }],
     ["publisher scheduling", { afterScheduleApply: () => { throw new Error("schedule stage"); } }],
   ])("I-2 restores every observable state after %s fails", (_stage, hooks) => {
-    const binding = new GraphBinding(base);
+    const binding = new GraphBinding(base, { hooks });
     const beforeGraph = binding.graph;
     const beforeState = binding.state.snapshot();
     const held = binding.state;
 
-    expect(() => binding.replace(changed, hooks as never)).toThrow();
+    expect(() => binding.replace(changed)).toThrow();
     expect(binding.graph).toBe(beforeGraph);
     expect(binding.state).toBe(held);
     expect(binding.state.snapshot()).toEqual(beforeState);
