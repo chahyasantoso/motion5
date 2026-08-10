@@ -35,7 +35,7 @@ describe("DOM patch adapter", () => {
     adapter.apply(input);
     adapter.apply(patch("hero/arm", {}));
     adapter.apply(patch("hero/label", { opacity: 0.5 }));
-    expect(first.style.opacity).toBeUndefined();
+    expect(first.style.opacity).toBe(1);
     expect(second.style.opacity).toBe(0.5);
     expect(writes).toHaveLength(3);
     expect(writes[0]?.[0]).toBe(first);
