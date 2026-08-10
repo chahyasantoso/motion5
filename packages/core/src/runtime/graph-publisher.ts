@@ -1,6 +1,5 @@
 import type { Diagnostic } from "../contract/v5";
-import type { GraphIR, GraphNode } from "../graph/ir";
-import { edgeKey } from "../graph/ir";
+import { edgeKey, type GraphIR, type GraphNode } from "../graph/ir";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
 
 export interface PublisherComposition {
@@ -30,6 +29,12 @@ function diagnostic(nodeId: string, error: unknown): Diagnostic {
     severity: "error",
     ids: Object.freeze([nodeId]),
   });
+}
+
+function compareEdgeKeys(a: { readonly observerId: string; readonly sourceId: string; readonly role: string; readonly target?: string }, b: { readonly observerId: string; readonly sourceId: string; readonly role: string; readonly target?: string }): number {
+  const left = edgeKey(a);
+  const right = edgeKey(b);
+  return left < right ? -1 : left > right ? 1 : 0;
 }
 
 function mergeValues(
@@ -108,9 +113,9 @@ export class GraphPublisher {
           const composed = node.compose(inputs);
           memo.set(id, composed);
           let values = composed.values;
-          for (const edge of [...node.edges]
+          for (const edge of node.edges
             .filter(({ role }) => role === "output")
-            .sort((a, b) => edgeKey(a).localeCompare(edgeKey(b)))) {
+            .sort(compareEdgeKeys)) {
             const sourceValues =
               memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
             values = mergeValues(values, sourceValues);
