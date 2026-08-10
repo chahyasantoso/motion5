@@ -33,37 +33,29 @@ export function createFakeScheduler<Options = unknown>(): Scheduler<() => void, 
   readonly pending: readonly ScheduledJob<Options>[];
   flush(): void;
 } {
-  const jobs: Array<ScheduledJob<Options>> = [];
+  const jobs: Array<ScheduledJob<Options> & { cancelled: boolean }> = [];
   return {
     schedule(job, options) {
       if (typeof job !== "function") throw new TypeError("Scheduled job must be a function.");
-      let cancelled = false;
       const entry = {
         job,
         options,
+        cancelled: false,
         cancel: {
           cancel() {
-            cancelled = true;
+            entry.cancelled = true;
           },
         },
-      } satisfies ScheduledJob<Options>;
+      } satisfies ScheduledJob<Options> & { cancelled: boolean };
       jobs.push(entry);
       return entry.cancel;
     },
     get pending() {
-      return jobs.filter((entry) => {
-        let active = true;
-        const originalCancel = entry.cancel.cancel;
-        entry.cancel.cancel = () => {
-          active = false;
-          originalCancel();
-        };
-        return active;
-      });
+      return jobs.filter((entry) => !entry.cancelled);
     },
     flush() {
       const pending = jobs.splice(0, jobs.length);
-      for (const entry of pending) entry.job();
+      for (const entry of pending) if (!entry.cancelled) entry.job();
     },
   };
 }

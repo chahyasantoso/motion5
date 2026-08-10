@@ -16,5 +16,10 @@
     "test:contract": "vitest run packages/core/test/contract",
     "test:ports": "vitest run packages/core/test/contract/ports.test.ts",
     "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "prettier": "3.6.2",
+    "typescript": "5.8.3",
+    "vitest": "^4.1.10"
   }
 }
