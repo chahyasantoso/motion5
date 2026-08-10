@@ -13,11 +13,21 @@ export interface Diagnostic {
   readonly ids?: readonly string[];
 }
 
+export interface AuthoredStop {
+  readonly p: number;
+  readonly v: unknown;
+  readonly ease?: unknown;
+}
+
+export interface AuthoredProperty {
+  readonly stops: readonly AuthoredStop[];
+}
+
 export interface TrackDefinition {
   readonly id: string;
   readonly duration?: number;
   readonly use?: string;
-  readonly keyframes?: Record<string, unknown>;
+  readonly keyframes?: Readonly<Record<string, AuthoredProperty>>;
   readonly observes?: readonly ObservationDefinition[];
 }
 
