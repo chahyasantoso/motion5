@@ -30,14 +30,16 @@ describe("ProjectRuntime", () => {
 
   it("rejects invalid candidates before constructing a replacement runtime", () => {
     const clock = createManualClock();
-    const invalid = {
-      ...project,
+    const invalid: ProjectDefinition = {
+      schemaVersion: 5,
       motions: [
         {
-          ...project.motions[0],
+          id: "hero",
+          trigger: { type: "manual" },
           tracks: [{ id: "arm", observes: [{ source: "missing" }] }],
         },
       ],
+      freeTracks: [{ id: "cursor" }],
     };
     expect(() => new ProjectRuntime(invalid, { clock, compose })).toThrow(TypeError);
   });
