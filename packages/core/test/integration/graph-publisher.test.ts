@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { GraphEdge, GraphIR, GraphNode } from "../../src/graph/ir";
+import type { GraphEdge, GraphIR } from "../../src/graph/ir";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 import { GraphPublisher, type PublisherNode } from "../../src/runtime/graph-publisher";
 
@@ -53,21 +53,19 @@ describe("GraphPublisher", () => {
     expect(events).toEqual(["batch"]);
   });
 
-  it("I-9 publishes an error and blocks only the downstream closure", () => {
+  it("I-9 publishes an error and blocks the downstream closure while unrelated branches continue", () => {
     const nodes = [
       makeNode("bad", 0, [], () => { throw new Error("boom"); }),
       makeNode("child", 1, ["bad"], () => ({ values: {}, sourceProgress: 0, sourceRevisions: {} })),
       makeNode("sibling", 2, [], () => ({ values: { ok: true }, sourceProgress: 0, sourceRevisions: {} })),
     ];
     const registry = new PatchRegistry();
-    const batch = new GraphPublisher(registry).flush(snapshot(nodes), ["bad"], 1);
+    const batch = new GraphPublisher(registry).flush(snapshot(nodes), ["bad", "sibling"], 1);
     expect(batch.patches.map(({ nodeId, status }) => [nodeId, status])).toEqual([
       ["bad", "error"],
       ["child", "blocked"],
+      ["sibling", "ready"],
     ]);
-    expect(batch.patches.some(({ nodeId, status }) => nodeId === "sibling" && status === "ready")).toBe(
-      false,
-    );
   });
 
   it("does not expose topology mutation methods", () => {
