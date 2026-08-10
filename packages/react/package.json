@@ -1,0 +1,9 @@
+{
+  "name": "@motion5/react",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}
