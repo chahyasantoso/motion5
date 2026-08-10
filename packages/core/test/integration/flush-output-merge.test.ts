@@ -42,11 +42,7 @@ describe("GraphPublisher output edges", () => {
       [{ observerId: "observer", sourceId: "source", role: "output" }],
       () => ({ values: { x: 10 }, sourceProgress: 0, sourceRevisions: {} }),
     );
-    const batch = new GraphPublisher(registry).flush(
-      snapshot([source, observer]),
-      ["source"],
-      1,
-    );
+    const batch = new GraphPublisher(registry).flush(snapshot([source, observer]), ["source"], 1);
     expect(batch.patches.find(({ nodeId }) => nodeId === "observer")?.values).toEqual({
       opacity: 0.5,
       x: 10,
@@ -79,8 +75,7 @@ describe("GraphPublisher output edges", () => {
       ["a", "b"],
       1,
     );
-    const expectedWinner =
-      edgeKey(edges[0]!) < edgeKey(edges[1]!) ? "a" : "b";
+    const expectedWinner = edgeKey(edges[0]!) < edgeKey(edges[1]!) ? "a" : "b";
     expect(batch.patches.find(({ nodeId }) => nodeId === "observer")?.values).toEqual({
       color: expectedWinner,
     });
