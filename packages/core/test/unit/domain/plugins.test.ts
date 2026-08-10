@@ -58,7 +58,9 @@ describe("plugin registry", () => {
   it("rejects malformed registrations", () => {
     const registry = new PluginRegistry();
 
-    expect(() => registry.register({ name: "", compose: plugin("x").compose })).toThrow(/non-empty/);
+    expect(() => registry.register({ name: "", compose: plugin("x").compose })).toThrow(
+      /non-empty/,
+    );
     expect(() => registry.register({ name: "x", compose: undefined as never })).toThrow(/function/);
   });
 

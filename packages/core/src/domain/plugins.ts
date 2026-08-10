@@ -16,7 +16,12 @@ export interface ResolvedPlugins {
   readonly diagnostics: readonly Diagnostic[];
 }
 
-function diagnostic(ruleId: string, path: string, message: string, ids?: readonly string[]): Diagnostic {
+function diagnostic(
+  ruleId: string,
+  path: string,
+  message: string,
+  ids?: readonly string[],
+): Diagnostic {
   return { ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) };
 }
 
@@ -56,12 +61,19 @@ export class PluginRegistry {
     names.forEach((name, index) => {
       const itemPath = `${path}[${index}]`;
       if (typeof name !== "string" || name.trim() === "") {
-        diagnostics.push(diagnostic("plugin-name", itemPath, "Plugin name must be a non-empty string."));
+        diagnostics.push(
+          diagnostic("plugin-name", itemPath, "Plugin name must be a non-empty string."),
+        );
         return;
       }
       if (requested.has(name)) {
         diagnostics.push(
-          diagnostic("plugin-duplicate-use", itemPath, `Plugin "${name}" is requested more than once.`, [name]),
+          diagnostic(
+            "plugin-duplicate-use",
+            itemPath,
+            `Plugin "${name}" is requested more than once.`,
+            [name],
+          ),
         );
         return;
       }
