@@ -1,9 +1,9 @@
 # Session status
 
 **Captured:** 2026-08-10, Asia/Jakarta
-**Branch:** `feat/p3-01-patch-registry`
+**Branch:** `feat/p3-02-03-publisher-failure-semantics`
 **Phase:** 3, runtime and publication
-**Next action:** Run the P3-01 quality matrix, review the implementation pull request, and merge only when the required checks are green.
+**Next action:** Run the collapsed P3-02/P3-03 quality matrix, review the implementation pull request, and merge only when the required checks are green.
 
 This is the only document that reports current implementation reality. Everything else is a contract, plan, or decision record unless it says otherwise.
 
@@ -13,7 +13,7 @@ Every implementation slice follows this path: create `feat/...` from `main`, imp
 
 ## Current state
 
-P0-01 through P0-06 and P1-01 through P1-06 are merged on `main`. P2-01 through P2-07 are merged on `main`, including boundary enforcement. P3-01 PatchRegistry is on this branch. P3-02/P3-03 publisher and failure semantics, P3-04 GraphRuntime, P3-05 ProjectRuntime, P3-06 Engine, P3-07 benchmarks, adapters, React, and packaging do not exist yet.
+P0-01 through P0-06 and P1-01 through P1-06 are merged on `main`. P2-01 through P2-07 are merged on `main`. P3-01 PatchRegistry is merged on `main`. The collapsed P3-02/P3-03 GraphPublisher and failure-containment slice is on this branch. P3-04 GraphRuntime, P3-05 ProjectRuntime, P3-06 Engine, P3-07 benchmarks, adapters, React, and packaging do not exist yet.
 
 ## Landed on main
 
@@ -24,22 +24,25 @@ P0-01 through P0-06 and P1-01 through P1-06 are merged on `main`. P2-01 through 
 - Stable in-place ObservationState with canonical indexes and a reversible undo journal.
 - Transactional GraphBinding with candidate isolation, journaled deltas, atomic graph commit, and rollback evidence.
 - Mechanical core boundary scan with planted-violation fixtures and a required CI gate.
+- Immutable revisioned PatchRegistry with batch-close notifications.
 
-## P3-01 changes on this branch
+## Collapsed P3-02/P3-03 changes on this branch
 
-- `packages/core/src/runtime/patch-registry.ts`: one owner for patch identity, revisions, deep immutability, batch collection, and node-before-batch subscriber notification.
-- `packages/core/test/unit/runtime/patch-registry.test.ts`: I-6, I-7, and I-8 evidence for freeze, revision suppression, ordering, and unchanged-publish silence.
+- `packages/core/src/runtime/graph-publisher.ts`: one-way seeded-closure traversal, per-flush composition memoization, error patches, downstream blocked patches, and unrelated-branch continuation. No topology mutation methods.
+- `packages/core/test/integration/graph-publisher.test.ts`: I-5 diamond composition, I-9 failure closure, unrelated sibling continuation, whole-batch notification, and publisher shape evidence.
+
+The publisher accepts a concrete `PublisherSnapshot` with compose-capable nodes for now. Runtime wiring and the real Track composition boundary remain P3-04/P3-05 work; this slice does not claim a complete project runtime.
 
 ## Immediate queue
 
-1. Run the P3-01 quality matrix and review the implementation PR.
-2. Merge P3-01 only with green required checks.
-3. Continue with the collapsed P3-02/P3-03 publisher plus failure-containment slice.
+1. Run the collapsed P3-02/P3-03 quality matrix and review the implementation PR.
+2. Merge only with green required checks.
+3. Continue with P3-04 GraphRuntime, then P3-05 ProjectRuntime.
 4. Keep `SESSION-STATUS.md` current after every merged slice.
 
 ## Audit snapshot
 
-Phase 3 is intentionally being executed as five PRs: P3-01 registry, P3-02/P3-03 publisher plus failure semantics, P3-04 GraphRuntime, P3-05 ProjectRuntime, and P3-06/P3-07 Engine plus benchmarks. P3-01 keeps patch ownership separate because revision identity and subscriber timing are independently consumed by the publisher and React. No publisher or runtime exists yet.
+Phase 3 remains five PRs: P3-01 registry, P3-02/P3-03 publisher plus failure semantics, P3-04 GraphRuntime, P3-05 ProjectRuntime, and P3-06/P3-07 Engine plus benchmarks. The publisher's failure path is intentionally inline in the publisher because status publication, downstream blocking, and aggregate failure behavior share one traversal owner. No clock subscription, project lifecycle, renderer, React, or benchmark path exists yet.
 
 ## Guardrails
 
