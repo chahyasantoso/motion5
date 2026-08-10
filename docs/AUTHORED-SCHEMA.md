@@ -20,22 +20,42 @@ const project = {
   projectId: "landing",
   perspective: 1200,
   templates: [],
-  motions: [{
-    id: "hero",
-    trigger: { type: "time", autoplay: false },
-    stagger: 0.08,
-    tracks: [{
-      id: "title",
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "time", autoplay: false },
+      stagger: 0.08,
+      tracks: [
+        {
+          id: "title",
+          duration: 1,
+          keyframes: {
+            opacity: {
+              stops: [
+                { p: 0, v: 0 },
+                { p: 1, v: 1 },
+              ],
+            },
+          },
+          observes: [{ source: "~/cursor", role: "input", target: "pointer" }],
+        },
+      ],
+    },
+  ],
+  freeTracks: [
+    {
+      id: "cursor",
       duration: 1,
-      keyframes: { opacity: { stops: [{ p: 0, v: 0 }, { p: 1, v: 1 }] } },
-      observes: [{ source: "~/cursor", role: "input", target: "pointer" }],
-    }],
-  }],
-  freeTracks: [{
-    id: "cursor",
-    duration: 1,
-    keyframes: { x: { stops: [{ p: 0, v: 0 }, { p: 1, v: 100 }] } },
-  }],
+      keyframes: {
+        x: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 1, v: 100 },
+          ],
+        },
+      },
+    },
+  ],
 };
 ```
 

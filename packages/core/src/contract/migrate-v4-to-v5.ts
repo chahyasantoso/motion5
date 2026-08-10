@@ -5,7 +5,11 @@ export interface MigrationResult<T = Record<string, unknown>> {
   readonly diagnostics: readonly MigrationDiagnostic[];
 }
 
-function diagnostic(path: string, message: string, ids: readonly string[] = []): MigrationDiagnostic {
+function diagnostic(
+  path: string,
+  message: string,
+  ids: readonly string[] = [],
+): MigrationDiagnostic {
   return Object.freeze({
     ruleId: "schema-v4-migration",
     path,
@@ -25,7 +29,9 @@ function clone<T>(value: T): T {
  * The runtime does not call this function. Callers migrate at their boundary,
  * inspect diagnostics, then pass only schema-v5 data to the loader.
  */
-export function migrateV4ToV5<T extends Record<string, unknown>>(input: T): MigrationResult<T & { schemaVersion: 5 }> {
+export function migrateV4ToV5<T extends Record<string, unknown>>(
+  input: T,
+): MigrationResult<T & { schemaVersion: 5 }> {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     return { migrated: null, diagnostics: [diagnostic("$", "Schema v4 input must be an object.")] };
   }
@@ -38,7 +44,9 @@ export function migrateV4ToV5<T extends Record<string, unknown>>(input: T): Migr
   if ("tracks" in input && "freeTracks" in input) {
     return {
       migrated: null,
-      diagnostics: [diagnostic("$", "Cannot migrate when both top-level tracks and freeTracks exist.")],
+      diagnostics: [
+        diagnostic("$", "Cannot migrate when both top-level tracks and freeTracks exist."),
+      ],
     };
   }
   if ("tracks" in input && input.tracks !== undefined && !Array.isArray(input.tracks)) {
