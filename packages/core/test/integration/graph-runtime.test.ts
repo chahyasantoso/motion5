@@ -56,7 +56,7 @@ describe("GraphRuntime", () => {
   it("publishes only attached seeds and stops after disposal", () => {
     const clock = createManualClock();
     const runtime = new GraphRuntime(project, clock, compose);
-    const seen: string[][] = [];
+    const seen: readonly string[][] = [];
     runtime.registry.subscribeBatch((batch) => seen.push(batch.seeds));
 
     runtime.detach("caption/label");
