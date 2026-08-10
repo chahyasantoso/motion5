@@ -87,3 +87,12 @@ jobs:
           name: motion5-benchmark-report
           path: performance/benchmark-report.json
           if-no-files-found: error
+      - name: Upload failure diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: motion5-performance-failure-diagnostics
+          path: |
+            performance/benchmark-report.json
+            test-results/**
+          if-no-files-found: ignore
