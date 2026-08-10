@@ -21,10 +21,11 @@ describe("ProjectRuntime", () => {
     const first = {};
     runtime.mount("hero/arm", first);
     expect(runtime.instanceCount).toBe(1);
-    expect(runtime.graph.memberCount).toBe(2);
+    expect(runtime.graph.memberCount).toBe(1);
     expect(() => runtime.mount("hero/arm", {})).toThrow(TypeError);
     runtime.unmount("hero/arm");
     expect(runtime.instanceCount).toBe(0);
+    expect(runtime.graph.memberCount).toBe(0);
     runtime.dispose();
   });
 

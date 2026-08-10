@@ -11,7 +11,7 @@ const project: ProjectDefinition = {
 };
 
 describe("Engine", () => {
-  it("TR-R-15 validates ports and loads a headless project", () => {
+  it("TR-R-15 validates ports and loads a headless project without implicit membership", () => {
     const clock = createManualClock();
     const engine = new Engine({
       clock,
@@ -19,7 +19,7 @@ describe("Engine", () => {
       scheduler: createFakeScheduler(),
     });
     const runtime = engine.load(project);
-    expect(runtime.graph.memberCount).toBe(2);
+    expect(runtime.graph.memberCount).toBe(0);
     runtime.dispose();
   });
 
