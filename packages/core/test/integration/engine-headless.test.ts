@@ -25,6 +25,15 @@ describe("Engine", () => {
 
   it("rejects invalid injected ports", () => {
     const clock = createManualClock();
-    expect(() => new Engine({ clock, interpolator: {}, scheduler: {} })).toThrow(TypeError);
+    const invalidInterpolator: unknown = {};
+    const invalidScheduler: unknown = {};
+    expect(
+      () =>
+        new Engine({
+          clock,
+          interpolator: invalidInterpolator as never,
+          scheduler: invalidScheduler as never,
+        }),
+    ).toThrow(TypeError);
   });
 });
