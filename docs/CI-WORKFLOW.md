@@ -9,24 +9,24 @@ CI is an executable version of the project’s evidence model. It checks pull re
 - Read-only repository permissions for CI.
 - Concurrency cancellation per branch or pull request.
 - Same required matrix on pull requests and protected branch pushes.
-- Artifacts for benchmark output and failure diagnostics.
+- Benchmark output and failure diagnostics are uploaded as artifacts.
 - No job exists merely to look complete; every job has a local command and a real assertion.
 
 ## Live jobs
 
-**quality:** format check, TypeScript check, unit tests, and migration tests. Required.
+**quality:** format check, TypeScript check, and unit tests. Required.
 
-**integration:** deterministic golden serialization, schema/migration contract integration, free-track acceptance, warning/error semantics, and cycle rejection. Required from P0-05.
+**integration:** deterministic graph/runtime integration tests. Required.
+
+**boundaries:** rejects renderer imports in core, banned compatibility symbols, and forbidden public exports. Required.
+
+**performance:** runs the deterministic benchmark against versioned advisory budgets and uploads the report. Advisory until `2026-08-17`; it must be promoted or deleted by then.
 
 ## Planned jobs
 
-**boundaries:** rejects renderer imports in core, banned compatibility symbols, duplicate runtime owners, and forbidden public exports.
+**build:** builds packages and runs public import smoke tests. Added by P4-05.
 
-**performance:** runs deterministic graph and memory benchmarks against versioned budgets. Advisory only during calibration, with a removal date in status; required afterward.
-
-**build:** builds packages and runs public import smoke tests.
-
-**package:** packs the repository, installs the tarball into a clean consumer, and imports only documented exports.
+**package:** packs the repository, installs the tarball into a clean consumer, and imports only documented exports. Added by P6-02.
 
 ## Command contract
 
@@ -37,20 +37,19 @@ CI is an executable version of the project’s evidence model. It checks pull re
   "test:contract": "vitest run packages/core/test/contract",
   "test:ports": "vitest run packages/core/test/contract/ports.test.ts",
   "test:integration": "vitest run packages/core/test/integration",
-  "boundary": "node scripts/boundary-scan.mjs",
-  "api:check": "node scripts/api-surface-check.mjs",
+  "test:boundaries": "node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts",
   "benchmark": "node performance/graph-benchmark.mjs",
   "build": "npm run build",
   "pack:check": "npm pack --dry-run"
 }
 ```
 
-Every CI step must map to an npm script reproducible locally. If it cannot, add the script before adding the job.
+Every CI step maps to an npm script reproducible locally. If it cannot, add the script before adding the job.
 
 ## Rollout schedule
 
-P0-02 made installs reproducible. P0-05 adds the required integration job. P2-07 adds boundaries. P3-07 adds performance. P4-05 adds build. P6-02 adds package consumer verification. Until a job’s owning phase lands, this document describes the target, not a live check.
+P0-02 made installs reproducible. P0-05 added the required integration job. P2-07 added boundaries. P3-07 adds performance as advisory calibration. P4-05 adds build. P6-02 adds package consumer verification. Until a job’s owning phase lands, this document describes the target, not a live check.
 
 ## Required versus advisory
 
-Required jobs block merges. A benchmark may be advisory only while its baseline is being calibrated, must name its expiry in status, and must be promoted or deleted by that date. “Continue on error forever” is not a policy.
+Required jobs block merges. Performance is advisory only while its baseline is calibrated, but it must run on every pull request, upload its report, name its expiry in session status, and be promoted or deleted by that date. “Continue on error forever” is not a policy.
