@@ -3,7 +3,7 @@
 **Captured:** 2026-08-10, Asia/Jakarta
 **Branch:** `feat/p2-07-boundary-scan-ci-gate`
 **Phase:** 2, graph kernel
-**Next action:** Run the P2-07 quality matrix, review the implementation pull request, and merge only when the required checks are green.
+**Next action:** Run the P2-07 quality matrix after the CI fixes, review the implementation pull request, and merge only when the required checks are green.
 
 This is the only document that reports current implementation reality. Everything else is a contract, plan, or decision record unless it says otherwise.
 
@@ -27,23 +27,24 @@ P0-01 through P0-06 and P1-01 through P1-06 are merged on `main`. P2-01 qualifie
 
 ## P2-07 changes on this branch
 
-- `scripts/boundary-scan.mjs`: scans contract, domain, graph, and runtime for renderer/engine imports and banned compatibility vocabulary, then checks the public entrypoint against an allow list.
-- `scripts/boundary-scan-fixtures.mjs` and `packages/core/test/unit/scripts/boundary-scan.test.ts`: planted violations prove the mechanical rules can fail, while a clean fixture proves the baseline passes.
+- `scripts/boundary-scan.mjs`: scans existing contract, domain, graph, and runtime layers safely, rejecting renderer/engine imports and banned compatibility vocabulary, then checks the public entrypoint against an allow list.
+- `scripts/boundary-scan-fixtures.ts`: typed planted violations, so the quality job typechecks the fixture import without an ambient declaration gap.
+- `packages/core/test/unit/scripts/boundary-scan.test.ts`: planted violations prove the mechanical rules can fail, while a clean fixture proves the baseline passes.
 - `.github/workflows/ci.yml`: adds a required `boundaries (node 24)` job running the scan and planted fixtures.
 - `package.json`: adds `npm run test:boundaries`.
 
 ## Immediate queue
 
-1. Run the P2-07 quality matrix and review the implementation PR.
+1. Re-run the P2-07 quality matrix and review the implementation pull request.
 2. Merge P2-07 only with green required checks.
 3. Continue to P3-01 PatchRegistry and runtime publication.
 4. Keep `SESSION-STATUS.md` current after every merged slice.
 
 ## Audit snapshot
 
-The repository follows the implementation plan through P2-07. P2-02/P2-03 remain intentionally combined in `graph/ir.ts`. P2-06 uses a candidate `ProjectDefinition` replacement API rather than exposing separate add/remove commands before the runtime membership model exists. P2-07 makes the core import and public-export boundaries mechanical and gives the new CI job a planted-violation test; it does not claim that runtime or adapters exist.
+The repository follows the implementation plan through P2-07. P2-02/P2-03 remain intentionally combined in `graph/ir.ts`. P2-06 uses a candidate `ProjectDefinition` replacement API rather than exposing separate add/remove commands before the runtime membership model exists. P2-07 makes the core import and public-export boundaries mechanical and gives the new CI job planted-violation evidence; it does not claim that runtime or adapters exist.
 
-The boundary scanner intentionally complements, rather than replaces, behavioral tests. Its banned vocabulary list is narrow and mechanical, and the allow list mirrors the current `packages/core/src/index.ts` surface. A future public export must update both the entrypoint and this scanner in the same slice.
+The first P2-07 run exposed two honest integration gaps, both fixed here: the TypeScript test import now resolves to a typed `.ts` fixture instead of an untyped `.mjs` module, and the scanner treats not-yet-created layers as empty rather than failing with ENOENT. The old `.mjs` fixture remains only as an unused historical file on this branch and can be deleted in the cleanup pass if the repository's file deletion tool is used.
 
 ## Guardrails
 

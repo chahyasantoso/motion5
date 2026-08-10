@@ -5,7 +5,7 @@ import {
   engineViolationFixture,
   publicExportViolationFixture,
   rendererViolationFixture,
-} from "../../../../../scripts/boundary-scan-fixtures.mjs";
+} from "../../../../../scripts/boundary-scan-fixtures";
 
 const importsBoundary = (source: string): boolean =>
   /(?:from|import)\s*[\"'](?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:[\"'/]|$)/.test(

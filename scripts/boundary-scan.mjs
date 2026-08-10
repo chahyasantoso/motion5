@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -33,9 +33,13 @@ const allowedPublicExports = new Set([
 ]);
 
 async function walk(directory) {
-  const entries = await (
-    await import("node:fs/promises")
-  ).readdir(directory, { withFileTypes: true });
+  let entries;
+  try {
+    entries = await readdir(directory, { withFileTypes: true });
+  } catch (error) {
+    if (error?.code === "ENOENT") return [];
+    throw error;
+  }
   const files = [];
   for (const entry of entries) {
     const path = join(directory, entry.name);
