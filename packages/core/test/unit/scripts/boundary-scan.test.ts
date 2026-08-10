@@ -1,5 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  bannedSymbol,
+  extractExportNames,
+  importsBoundary,
+  importsRenderer,
+  scan,
+} from "../../../../../scripts/boundary-scan.mjs";
+import {
   bannedSymbolFixture,
   cleanFixture,
   engineViolationFixture,
@@ -7,18 +14,8 @@ import {
   rendererViolationFixture,
 } from "../../../../../scripts/boundary-scan-fixtures";
 
-const importsBoundary = (source: string): boolean =>
-  /(?:from|import)\s*[\"'](?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:[\"'/]|$)/.test(
-    source,
-  );
-const importsRenderer = (source: string): boolean =>
-  /(?:from|import)\s*[\"'](?:gsap|react|react-dom|node:dom|domino|(?:\.\/|\.\.\/)[^\"']*(?:dom|renderer|react|gsap)[^\"']*)(?:[\"'/]|$)/i.test(
-    source,
-  );
-const bannedSymbol = (source: string): boolean =>
-  /(?:compatibility|facade|parityMode|rollout|capabilityFlag|observationAlias|groupHost)/i.test(
-    source,
-  );
+const consumerInternalViolationFixture =
+  "import type { Patch } from '../../core/src/runtime/patch-registry';";
 
 describe("boundary scan planted violations", () => {
   it("passes a clean fixture", () => {
@@ -38,10 +35,16 @@ describe("boundary scan planted violations", () => {
     expect(bannedSymbol(bannedSymbolFixture)).toBe(true);
   });
 
-  it("flags an export outside the public allow list", () => {
-    const names = [
-      ...publicExportViolationFixture.matchAll(/export\s+const\s+([A-Za-z_$][\w$]*)/g),
-    ].map((match) => match[1]);
-    expect(names).toEqual(["InternalGraphRuntime"]);
+  it("extracts exports outside the public allow list", () => {
+    expect(extractExportNames(publicExportViolationFixture)).toEqual(["InternalGraphRuntime"]);
+  });
+
+  it("detects a consumer reaching into core source internals", () => {
+    expect(consumerInternalViolationFixture).toMatch(/core\/src/);
+    expect(importsBoundary(consumerInternalViolationFixture)).toBe(false);
+  });
+
+  it("executes the shipped scanner against the current tree", async () => {
+    expect(await scan()).toEqual([]);
   });
 });
