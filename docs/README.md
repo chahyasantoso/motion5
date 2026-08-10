@@ -6,6 +6,14 @@ This directory is the project’s working contract. It is intentionally more det
 
 Start with [SESSION-STATUS.md](./SESSION-STATUS.md). It is the only document allowed to claim what has landed. Plans, architecture, and ADRs describe intended behavior unless they explicitly say otherwise.
 
+The current status is **Phase 4 reopened**. The graph infrastructure is substantially repaired, but the authored animation value/compiler pipeline still needs restoration before P4-05 can be accepted.
+
+## Recovery references
+
+- [PHASE-3-4-CONSOLIDATED-AUDIT.md](./PHASE-3-4-CONSOLIDATED-AUDIT.md): consolidated motionpath v4/v5 lineage, findings, and architecture judgment.
+- [PHASE-3-4-RECOVERY-PLAN.md](./PHASE-3-4-RECOVERY-PLAN.md): actionable restoration sequence and stop conditions.
+- [IMPLEMENTOR-BRIEF-MOTIONPATH-TO-MOTION5.md](./IMPLEMENTOR-BRIEF-MOTIONPATH-TO-MOTION5.md): focused instructions and source references for implementors.
+
 ## Lineage
 
 motion5 is a clean-room successor to [motionpath](https://github.com/chahyasantoso/motionpath). The predecessor is a read-only behavioral oracle and a source of fixture intent. It is not an architecture template, and nothing is copied from it. ADR-001 and [ARCHITECTURE.md](./ARCHITECTURE.md) section 15 explain why.
@@ -21,7 +29,7 @@ motion5 is a clean-room successor to [motionpath](https://github.com/chahyasanto
 
 ## Delivery and evidence
 
-- [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md): phases, slice-level pull requests, dependencies, test obligations, exit gates, risk register, and the v1 checklist.
+- [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md): phases, slice-level pull requests, dependencies, test obligations, exit gates, risk register, and the v1 checklist. Treat its completed-slice claims as intent until reconciled with SESSION-STATUS and the recovery plan.
 - [TESTING-STRATEGY.md](./TESTING-STRATEGY.md): test tiers, determinism rules, migration evidence, invariant evidence, and prohibited evidence.
 - [CI-WORKFLOW.md](./CI-WORKFLOW.md): workflow rules, job contracts, artifacts, required versus advisory gates, and rollout schedule.
 - [PR-WORKFLOW.md](./PR-WORKFLOW.md): branch naming, commit style, pull request contents, review order, merge policy, and reverts.
@@ -29,11 +37,11 @@ motion5 is a clean-room successor to [motionpath](https://github.com/chahyasanto
 
 ## How the documents fit together
 
-PRD says why and what. TRD says what "correct" means, in testable terms. ARCHITECTURE says who owns what. IMPLEMENTATION-PLAN says in what order, and names the evidence for each slice. SESSION-STATUS says what is actually true today. DECISIONS says what not to re-litigate.
+PRD says why and what. TRD says what “correct” means, in testable terms. ARCHITECTURE says who owns what. IMPLEMENTATION-PLAN says in what order, and names the evidence for each slice. SESSION-STATUS says what is actually true today. The recovery plan explains the work required to restore the missing value pipeline. DECISIONS says what not to re-litigate.
 
 ## Locked scope decisions
 
-Four scope questions are closed and should not be reopened in review: qualified ids stay internal (ADR-014), GSAP remains the v1 interpolator (ADR-015), runtime diagnostics stay inline (ADR-016), and React ships in v1 (ADR-017). PRD section 10 and TRD section 18 record the outcomes; TRD section 18 also lists the one technical question that is still open.
+Four scope questions are closed and should not be reopened in review: qualified ids stay internal (ADR-014), GSAP remains the v1 interpolator (ADR-015), runtime diagnostics stay inline (ADR-016), and React ships in v1 (ADR-017). The interpolator state contract and value/compiler restoration are recovery decisions and must be recorded with their implementation slices.
 
 ## Documentation rules
 
