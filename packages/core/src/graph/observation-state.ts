@@ -1,0 +1,169 @@
+import { compareCodeUnits } from "./compare";
+import type { GraphEdge } from "./ir";
+import { edgeKey } from "./ir";
+
+/** A read-only structural view of live state, used for evidence and inspection. */
+export interface ObservationStateSnapshot {
+  readonly nodes: readonly string[];
+  readonly edges: readonly GraphEdge[];
+}
+
+/** Each entry names the action that undoes one applied mutation. */
+type JournalEntry =
+  | { readonly undo: "add-node"; readonly id: string }
+  | { readonly undo: "remove-node"; readonly id: string }
+  | { readonly undo: "add-edge"; readonly edge: GraphEdge }
+  | { readonly undo: "remove-edge"; readonly edge: GraphEdge };
+
+function compareEdges(a: GraphEdge, b: GraphEdge): number {
+  return (
+    compareCodeUnits(a.observerId, b.observerId) ||
+    compareCodeUnits(a.sourceId, b.sourceId) ||
+    compareCodeUnits(a.role, b.role) ||
+    compareCodeUnits(a.target ?? "", b.target ?? "")
+  );
+}
+
+/** Drop an explicit `undefined` target so edge identity has exactly one representation. */
+function normalizeEdge(edge: GraphEdge): GraphEdge {
+  return Object.freeze(
+    edge.target === undefined
+      ? { observerId: edge.observerId, sourceId: edge.sourceId, role: edge.role }
+      : {
+          observerId: edge.observerId,
+          sourceId: edge.sourceId,
+          role: edge.role,
+          target: edge.target,
+        },
+  );
+}
+
+/**
+ * The one long-lived live-state object per loaded project.
+ *
+ * Live nodes and edges are mutated in place and never rebuilt, so a reference held by a
+ * subscriber before a commit is still authoritative after it. Every mutation records the
+ * action that undoes it; `rollback` replays that journal in reverse and `commit` releases
+ * it. There is deliberately no method that reconstructs this object from a graph snapshot:
+ * population is the transaction coordinator's job, and a rebuild seam would destroy the
+ * identity that makes an undo journal meaningful.
+ *
+ * Implements I-1 and ADR-006. Satisfies FR-8, TR-G-08, and TR-G-12.
+ */
+export class ObservationState {
+  readonly #nodes = new Set<string>();
+  readonly #edges = new Map<string, GraphEdge>();
+  readonly #byObserver = new Map<string, Set<string>>();
+  readonly #bySource = new Map<string, Set<string>>();
+  #journal: JournalEntry[] = [];
+  #replaying = false;
+
+  /** Number of applied mutations that are still reversible. */
+  get journalLength(): number {
+    return this.#journal.length;
+  }
+
+  hasNode(id: string): boolean {
+    return this.#nodes.has(id);
+  }
+
+  hasEdge(edge: GraphEdge): boolean {
+    return this.#edges.has(edgeKey(edge));
+  }
+
+  /** Live edges whose observer is `observerId`, in canonical order. */
+  sourcesOf(observerId: string): readonly GraphEdge[] {
+    return this.#collect(this.#byObserver.get(observerId));
+  }
+
+  /** Live edges whose source is `sourceId`, in canonical order. */
+  observersOf(sourceId: string): readonly GraphEdge[] {
+    return this.#collect(this.#bySource.get(sourceId));
+  }
+
+  addNode(id: string): void {
+    if (this.#nodes.has(id)) throw new TypeError(`Node "${id}" is already live.`);
+    this.#nodes.add(id);
+    this.#byObserver.set(id, new Set());
+    this.#bySource.set(id, new Set());
+    this.#record({ undo: "remove-node", id });
+  }
+
+  removeNode(id: string): void {
+    if (!this.#nodes.has(id)) throw new TypeError(`Node "${id}" is not live.`);
+    if ((this.#byObserver.get(id)?.size ?? 0) > 0 || (this.#bySource.get(id)?.size ?? 0) > 0)
+      throw new TypeError(`Node "${id}" still has live edges. Remove them first.`);
+    this.#nodes.delete(id);
+    this.#byObserver.delete(id);
+    this.#bySource.delete(id);
+    this.#record({ undo: "add-node", id });
+  }
+
+  addEdge(edge: GraphEdge): void {
+    const live = normalizeEdge(edge);
+    const key = edgeKey(live);
+    if (this.#edges.has(key)) throw new TypeError(`Edge "${key}" is already live.`);
+    if (!this.#nodes.has(live.observerId))
+      throw new TypeError(`Edge observer "${live.observerId}" is not live.`);
+    if (!this.#nodes.has(live.sourceId))
+      throw new TypeError(`Edge source "${live.sourceId}" is not live.`);
+    this.#edges.set(key, live);
+    this.#byObserver.get(live.observerId)?.add(key);
+    this.#bySource.get(live.sourceId)?.add(key);
+    this.#record({ undo: "remove-edge", edge: live });
+  }
+
+  removeEdge(edge: GraphEdge): void {
+    const key = edgeKey(edge);
+    const live = this.#edges.get(key);
+    if (live === undefined) throw new TypeError(`Edge "${key}" is not live.`);
+    this.#edges.delete(key);
+    this.#byObserver.get(live.observerId)?.delete(key);
+    this.#bySource.get(live.sourceId)?.delete(key);
+    this.#record({ undo: "add-edge", edge: live });
+  }
+
+  /** Accept every applied mutation and release the journal. Live identity is untouched. */
+  commit(): void {
+    this.#journal = [];
+  }
+
+  /** Replay the journal in reverse, then release it. Live identity is untouched. */
+  rollback(): void {
+    this.#replaying = true;
+    try {
+      for (let index = this.#journal.length - 1; index >= 0; index -= 1) {
+        const entry = this.#journal[index];
+        if (entry === undefined) continue;
+        if (entry.undo === "add-node") this.addNode(entry.id);
+        else if (entry.undo === "remove-node") this.removeNode(entry.id);
+        else if (entry.undo === "add-edge") this.addEdge(entry.edge);
+        else this.removeEdge(entry.edge);
+      }
+    } finally {
+      this.#journal = [];
+      this.#replaying = false;
+    }
+  }
+
+  snapshot(): ObservationStateSnapshot {
+    return Object.freeze({
+      nodes: Object.freeze([...this.#nodes].sort(compareCodeUnits)),
+      edges: Object.freeze([...this.#edges.values()].sort(compareEdges)),
+    });
+  }
+
+  #record(entry: JournalEntry): void {
+    if (!this.#replaying) this.#journal.push(Object.freeze(entry));
+  }
+
+  #collect(keys: ReadonlySet<string> | undefined): readonly GraphEdge[] {
+    if (keys === undefined) return Object.freeze([]);
+    const edges: GraphEdge[] = [];
+    for (const key of keys) {
+      const edge = this.#edges.get(key);
+      if (edge !== undefined) edges.push(edge);
+    }
+    return Object.freeze(edges.sort(compareEdges));
+  }
+}

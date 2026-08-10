@@ -1,9 +1,5 @@
-import type {
-  Diagnostic,
-  ObservationDefinition,
-  ProjectDefinition,
-  TrackDefinition,
-} from "../contract/v5";
+import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../contract/v5";
+import { compareCodeUnits } from "./compare";
 import {
   assertAuthoredMotionId,
   assertAuthoredTrackId,
@@ -40,6 +36,14 @@ export interface GraphBuildResult {
   readonly diagnostics: readonly Diagnostic[];
 }
 
+/**
+ * The single spelling of edge identity: source, role, and target, scoped to the observer.
+ * Every duplicate check and every live-state index keys off this and nothing else.
+ */
+export function edgeKey(edge: GraphEdge): string {
+  return `${edge.observerId}|${edge.sourceId}|${edge.role}|${edge.target ?? ""}`;
+}
+
 function freeze<T>(value: T): T {
   return Object.freeze(value);
 }
@@ -49,7 +53,7 @@ function diag(ruleId: string, path: string, message: string, ids?: readonly stri
 }
 
 function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
-  return a.ruleId.localeCompare(b.ruleId) || a.path.localeCompare(b.path);
+  return compareCodeUnits(a.ruleId, b.ruleId) || compareCodeUnits(a.path, b.path);
 }
 
 function qualifySource(source: string, motionId: string): string {
@@ -208,7 +212,7 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
   const edgeKeys = new Set<string>();
   for (const node of nodes)
     for (const edge of node.edges) {
-      const key = `${edge.observerId}|${edge.sourceId}|${edge.role}|${edge.target ?? ""}`;
+      const key = edgeKey(edge);
       if (edgeKeys.has(key))
         diagnostics.push(
           diag("observation-duplicate", edge.observerId, `Duplicate observation edge "${key}".`, [
