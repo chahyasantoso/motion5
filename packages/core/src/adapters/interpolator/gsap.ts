@@ -2,7 +2,8 @@ import type { Interpolator, InterpolationTimeline } from "../../ports/interpolat
 
 export interface GsapTimelineLike {
   readonly duration: () => number;
-  progress(value?: number): number | GsapTimelineLike;
+  progress(): number;
+  progress(value: number): GsapTimelineLike;
   kill(): void;
 }
 
@@ -14,14 +15,17 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
   return {
     create(config): InterpolationTimeline {
       const timeline = gsap.timeline(config);
+      function progress(): number;
+      function progress(value: number): void;
+      function progress(value?: number): number | void {
+        if (value === undefined) return timeline.progress();
+        timeline.progress(value);
+      }
       return {
         get duration() {
           return timeline.duration();
         },
-        progress(value?: number): number | void {
-          if (value === undefined) return timeline.progress() as number;
-          timeline.progress(value);
-        },
+        progress,
         kill(): void {
           timeline.kill();
         },
