@@ -28,7 +28,7 @@ An external review of this tree raised two findings. Both are real. Both are und
 
 It is correct that `packages/react/src/patch-store.ts` imports `../../core/src/runtime/patch-registry`, that `Patch`, `PatchListener`, and `PatchRegistry` are absent from `packages/core/src/index.ts`, and that `scripts/boundary-scan.mjs` never inspects consumers, so the `boundaries` job passes over it.
 
-It is wrong that the mirrored rule "isn't written down." P4-03's exit condition in the implementation plan reads: *"`@motion5/core` imports only the public core surface."* This is not an unstated principle. It is the named, binary exit gate of the slice currently in review, and it is unmet.
+It is wrong that the mirrored rule "isn't written down." P4-03's exit condition in the implementation plan reads: _"`@motion5/core` imports only the public core surface."_ This is not an unstated principle. It is the named, binary exit gate of the slice currently in review, and it is unmet.
 
 It is also wrong about the fix. Exporting three types from `index.ts` does not resolve this, because `@motion5/core` is not a resolvable specifier at all. `packages/core/package.json` does not exist, the root manifest declares no `workspaces` field, and the `packages/core/src/internal.ts` entrypoint promised in P0-03 was never created. The relative path is not a shortcut a developer took past a working boundary. It is the only import that currently resolves. See F-6.
 
@@ -71,7 +71,7 @@ if (edge.role === "input") inputs[edge.target ?? ""] = memo.get(edge.sourceId)?.
 
 **Consequence:** any node with two upstreams where only one was seeded publishes wrong values. This is not a latent risk. It is the normal case the moment seeds are narrower than the whole graph, which is the entire purpose of the dirty-closure optimization. A full-graph seed masks it completely, which is why the current suite does not see it.
 
-**Oracle:** motionpath's `usecases/GraphPublisher.js` composed **every** node in canonical order into a `composed` map and then published only the dirty subset. motion5 correctly narrowed *publication* to the dirty closure but also narrowed *input availability*, which was not the same decision. The predecessor was right here.
+**Oracle:** motionpath's `usecases/GraphPublisher.js` composed **every** node in canonical order into a `composed` map and then published only the dirty subset. motion5 correctly narrowed _publication_ to the dirty closure but also narrowed _input availability_, which was not the same decision. The predecessor was right here.
 
 **Fix:** the registry already holds the last published value for every node. Fall back to it.
 
@@ -447,7 +447,7 @@ Commit scopes follow the existing convention: `fix(runtime):`, `feat(adapters):`
 
 The eleven findings share one cause, and fixing them without fixing it means writing this document again at Phase 5.
 
-The plan's own rule is unambiguous: *"A slice with no failing-first test is not a slice."* Every slice from P3-02 to P4-02 named its evidence file in the plan and merged without it. The evidence names were treated as a description of intent rather than as a merge condition, and because the named files never existed, nothing in CI noticed. The suite is green over the code that was written, and silent over the code that was not.
+The plan's own rule is unambiguous: _"A slice with no failing-first test is not a slice."_ Every slice from P3-02 to P4-02 named its evidence file in the plan and merged without it. The evidence names were treated as a description of intent rather than as a merge condition, and because the named files never existed, nothing in CI noticed. The suite is green over the code that was written, and silent over the code that was not.
 
 This is cheap to close mechanically, and it is the highest-leverage change in this document.
 
