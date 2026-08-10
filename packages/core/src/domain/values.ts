@@ -89,9 +89,7 @@ export function equalValues(left: unknown, right: unknown): boolean {
     const aKeys = Object.keys(aRecord).sort();
     const bKeys = Object.keys(bRecord).sort();
     if (aKeys.length !== bKeys.length) return false;
-    return aKeys.every(
-      (key, index) => key === bKeys[index] && equal(aRecord[key], bRecord[key]),
-    );
+    return aKeys.every((key, index) => key === bKeys[index] && equal(aRecord[key], bRecord[key]));
   }
 
   return equal(left, right);
