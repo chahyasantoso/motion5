@@ -5,9 +5,7 @@
   "type": "module",
   "description": "Transactional dataflow animation runtime.",
   "license": "MIT",
-  "engines": {
-    "node": ">=24"
-  },
+  "engines": { "node": ">=24" },
   "scripts": {
     "check": "npm run format:check && npm run typecheck && npm test",
     "format": "prettier . --write",
@@ -19,6 +17,7 @@
     "test:ports": "vitest run packages/core/test/contract/ports.test.ts",
     "test:integration": "vitest run packages/core/test/integration",
     "test:boundaries": "node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts",
+    "benchmark": "node performance/graph-benchmark.mjs",
     "test:watch": "vitest"
   },
   "devDependencies": {
