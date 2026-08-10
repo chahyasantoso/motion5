@@ -12,16 +12,9 @@ motion5 treats those dependencies as a first-class graph. A project is loaded, v
 
 ## Inspiration and lineage
 
-motion5 is inspired by and succeeds [motionpath](https://github.com/chahyasantoso/motionpath), a data-first animation runtime built on GSAP. motionpath is where the ideas were proven: authored projects as plain data, a rig graph in which animated values observe other animated values, and forward-kinematics style derived motion.
+motion5 is inspired by [motionpath](https://github.com/chahyasantoso/motionpath), its predecessor and behavioral reference. motionpath provides the complete product history and the real-world animation and rigging problems that motivated this clean architecture.
 
-motionpath also proved the failure modes. Two implementations of one responsibility, per-Motion runtime pieces, compatibility facades, rollout flags, and a demo application that ended up shaping the package layout. Those are structural problems, not cosmetic ones, so motion5 keeps the ideas and starts the ownership model over. See [ADR-001](docs/DECISIONS.md) and [architecture section 15](docs/ARCHITECTURE.md#15-why-not-just-clean-up-motionpath).
-
-motionpath is a read-only behavioral oracle and a source of fixture intent. motion5 does not copy its source, tests, fixtures, demos, history, or migration seams, and offers no runtime compatibility with its APIs. For background on the ideas motion5 inherits:
-
-- [Rig graph guide](https://github.com/chahyasantoso/motionpath/blob/main/docs/RIG-GRAPH-GUIDE.md)
-- [Rig graph architecture](https://github.com/chahyasantoso/motionpath/blob/main/docs/RIG-GRAPH-ARCHITECTURE.md)
-- [Forward kinematics](https://github.com/chahyasantoso/motionpath/blob/main/docs/FORWARD-KINEMATICS.md)
-- [MotionPath v4 system guide](https://github.com/chahyasantoso/motionpath/blob/main/docs/MOTIONPATH-V4-SYSTEM-GUIDE.md)
+The relationship is intentionally one-way: motion5 may study motionpath's behavior and fixture intent, but it does not copy source, tests, fixtures, demos, history, compatibility APIs, or migration seams. motionpath answers “what behavior proved useful?”; motion5 answers “what is the smallest ownership model that can provide it reliably?”
 
 ## Core promise
 
@@ -49,7 +42,7 @@ Authored schema v5
         |
         v
    GraphRuntime
-   /    |     \\
+   /    |     \
 Binding Publisher PatchRegistry
    |
 ObservationState
@@ -76,10 +69,19 @@ The current authored contract is **schema v5**. It includes:
 
 v4 is not accepted as an alias. Use the explicit [v4 to v5 migration](docs/MIGRATION-V4-TO-V5.md) before loading a project. The runtime does not silently rename fields or reinterpret ambiguous top-level `tracks`.
 
+## Locked v1 direction
+
+- Qualified runtime ids remain internal; no schema v6 authoring change is planned.
+- GSAP remains the supported v1 interpolator behind the adapter boundary.
+- Runtime diagnostics stay inline on patches and batch summaries.
+- `@motion5/react` ships as part of v1.
+
 ## What is deliberately not here
 
 - No demo application or example gallery.
 - No compatibility facade for the predecessor runtime.
+- No built-in interpolation sampler in v1.
+- No separate diagnostics event stream in v1.
 - No rollout or capability flags.
 - No second observation implementation for “legacy” and “new” modes.
 - No graph recursion from Track.
@@ -92,11 +94,11 @@ Read in this order:
 
 1. [Session status](docs/SESSION-STATUS.md): what exists today and the next concrete action.
 2. [PRD](docs/PRD.md): users, goals, requirements, non-goals, and release criteria.
-3. [TRD](docs/TRD.md): normative technical requirements, rule catalog, algorithms, budgets, and traceability.
+3. [Technical requirements](docs/TRD.md): normative module, contract, lifecycle, adapter, and verification requirements.
 4. [Architecture](docs/ARCHITECTURE.md): ownership, invariants, data flow, failure semantics, and module boundaries.
 5. [Authored schema](docs/AUTHORED-SCHEMA.md): the v5 input contract and validation rules.
 6. [Migration guide](docs/MIGRATION-V4-TO-V5.md): mechanical and semantic migration steps.
-7. [Implementation plan](docs/IMPLEMENTATION-PLAN.md): slice-by-slice pull requests, owners, tests, and exit gates.
+7. [Implementation plan](docs/IMPLEMENTATION-PLAN.md): detailed slices, dependencies, work, tests, and exit gates.
 8. [Testing strategy](docs/TESTING-STRATEGY.md): how behavior is proven and what does not count as evidence.
 9. [CI workflow](docs/CI-WORKFLOW.md): required gates and when each becomes real.
 10. [PR workflow](docs/PR-WORKFLOW.md): branch, review, sizing, merge, and revert rules.

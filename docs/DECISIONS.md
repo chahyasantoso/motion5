@@ -4,7 +4,7 @@ These records capture decisions whose accidental reversal would recreate the pre
 
 ## How to use this file
 
-Before introducing a flag, alias, facade, second owner, compatibility path, or new public export, search this file. If the proposal conflicts with an accepted record, either reject it or add a superseding record in the same pull request. Never leave two active records that say opposite things.
+Before introducing a flag, alias, facade, second owner, compatibility path, new public export, authored identity form, diagnostics channel, or interpolation engine, search this file. If a proposal conflicts with an accepted record, either reject it or add a superseding record in the same pull request. Never leave two active records that say opposite things.
 
 ## ADR-001: Start a new repository
 
@@ -12,7 +12,7 @@ Before introducing a flag, alias, facade, second owner, compatibility path, or n
 
 **Context.** The predecessor has valuable behavior but accumulated migration residue: overlapping observation owners, per-Motion runtime pieces, compatibility APIs, demos coupled to package layout, and tests that protect historical seams. Refactoring in place would keep both the old and new assumptions alive while the ownership model was being changed.
 
-**Decision.** motion5 starts with a clean repository. The predecessor is a read-only behavioral oracle. No source files, tests, fixtures, demos, commit history, or status documents are copied.
+**Decision.** motion5 starts with a clean repository. The predecessor, [motionpath](https://github.com/chahyasantoso/motionpath), is a read-only behavioral oracle and the source of the product's historical story. No source files, tests, fixtures, demos, commit history, or status documents are copied.
 
 **Alternatives rejected.** A fork would be faster for the first feature but would import the very seams this project is meant to remove. A branch inside the old repository would make “new contract” and “old contract” impossible to distinguish.
 
@@ -147,3 +147,51 @@ Before introducing a flag, alias, facade, second owner, compatibility path, or n
 **Decision.** A free track differs from a motion track only in scheduling ownership. It participates in the same normalization, validation, graph state, publication, diagnostics, and lifecycle paths. It is not a second node type and is never capability-gated.
 
 **Consequences.** Shared upstream values can outlive unrelated motions. A free track authored in the project is project-owned; an adopted runtime track remains owned by its adopter and is detached rather than destroyed when detached.
+
+## ADR-014: Qualified runtime ids remain internal
+
+**Status:** Accepted, 2026-08-10
+
+**Context.** A possible schema v6 could make fully qualified runtime ids directly authorable. That would couple authored documents to normalization details, duplicate local and runtime identity forms, and make refactoring namespace rules a schema migration.
+
+**Decision.** Do not create schema v6 merely to make qualified node ids authorable. Motion track ids remain local in their definition. Cross-motion and free-track references use explicit reference syntax, while canonical runtime ids are produced exactly once by normalization.
+
+**Alternatives rejected.** Fully qualified authored ids simplify one lookup but leak storage identity into authoring and create two valid ways to name a local track. Treating authored ids as already normalized would make project composition and motion reuse harder.
+
+**Consequences.** The authored/runtime identity boundary remains deliberate. Validators must reject reserved namespace characters, and no public API may bypass normalization by injecting a runtime node id as authored identity.
+
+## ADR-015: GSAP remains the v1 interpolator
+
+**Status:** Accepted, 2026-08-10
+
+**Context.** motion5 needs a proven interpolation engine but must keep engine-specific state out of its graph and publication core. Building a sampler would expand v1 into easing compatibility, keyframe semantics, and numerical edge cases unrelated to graph ownership.
+
+**Decision.** GSAP is the supported v1 implementation of the `Interpolator` port. It lives behind an adapter and must pass the same contract suite as the fake. No built-in sampler ships in v1.
+
+**Alternatives rejected.** A built-in sampler reduces a dependency but creates a second animation-engine project and a parity burden before the graph runtime is proven. Importing GSAP directly into Track or runtime would violate renderer-neutral boundaries.
+
+**Consequences.** Core remains testable without GSAP. The GSAP adapter and its package-consumer evidence are release requirements. Another interpolator may be added later only as a port implementation, not a core branch.
+
+## ADR-016: Runtime diagnostics remain inline
+
+**Status:** Accepted, 2026-08-10
+
+**Context.** Consumers need status and failure context atomically with the values they render. A separate diagnostics stream can race with patch publication and forces consumers to correlate two timelines.
+
+**Decision.** Affected patches carry runtime diagnostics, and batches carry an inline summary. ProjectRuntime retains a bounded diagnostic ring buffer for inspection. No separate diagnostics stream ships in v1.
+
+**Alternatives rejected.** An independent stream offers centralized logging but weakens atomicity and duplicates subscription lifecycle. Global-only diagnostics lose node context.
+
+**Consequences.** Patch equality and revision rules include meaningful diagnostic changes. Adapters can render or log a complete state from one batch. The bounded buffer is observational and cannot become a second publication owner.
+
+## ADR-017: React is part of v1
+
+**Status:** Accepted, 2026-08-10
+
+**Context.** React is a primary consumer boundary, and postponing it would leave patch identity, subscription semantics, strict-mode lifecycle, and packaging assumptions unproven until after the core API freezes.
+
+**Decision.** `@motion5/react` remains in the v1 package set. It consumes public immutable patches and lifecycle APIs, uses external-store subscription semantics, and never imports graph internals or performs recursive composition.
+
+**Alternatives rejected.** A follow-on React package reduces initial scope but risks discovering an incompatible publication contract after v1. Embedding React in core would destroy renderer neutrality.
+
+**Consequences.** React build, strict-mode lifecycle, server-import, selector stability, and packed-consumer tests are release-blocking. Core still has no React dependency.
