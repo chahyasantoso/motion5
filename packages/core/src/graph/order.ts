@@ -157,6 +157,8 @@ export function orderGraph(nodes: readonly GraphNode[]): GraphOrderResult {
     if (!cycles.has(key)) cycles.set(key, cycle);
   }
 
-  const diagnostics = [...cycles.values()].sort(comparePaths).map((cycle) => cycleDiagnostic(cycle));
+  const diagnostics = [...cycles.values()]
+    .sort(comparePaths)
+    .map((cycle) => cycleDiagnostic(cycle));
   return { diagnostics: Object.freeze(diagnostics) };
 }

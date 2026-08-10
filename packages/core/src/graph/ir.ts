@@ -1,8 +1,4 @@
-import type {
-  Diagnostic,
-  ProjectDefinition,
-  TrackDefinition,
-} from "../contract/v5";
+import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../contract/v5";
 import { compareCodeUnits } from "./compare";
 import {
   assertAuthoredMotionId,
