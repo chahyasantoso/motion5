@@ -3,9 +3,7 @@ import type { GraphEdge, GraphIR } from "../../src/graph/ir";
 import { GraphPublisher, type PublisherNode } from "../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 
-const snapshot = (
-  nodes: readonly PublisherNode[],
-): GraphIR & { nodes: readonly PublisherNode[] } => ({
+const snapshot = (nodes: readonly PublisherNode[]): GraphIR & { nodes: readonly PublisherNode[] } => ({
   nodes,
   nodeById: Object.freeze(Object.fromEntries(nodes.map((node) => [node.id, node]))),
   order: Object.freeze(nodes.map(({ id }) => id)),
@@ -30,8 +28,9 @@ const node = (
 describe("GraphPublisher partial-seed inputs", () => {
   it("uses the last published value for an unseeded input source", () => {
     const registry = new PatchRegistry();
+    let a = 2;
     const sourceA = node("source-a", 0, [], () => ({
-      values: { a: 2 },
+      values: { a },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
@@ -57,8 +56,9 @@ describe("GraphPublisher partial-seed inputs", () => {
     const publisher = new GraphPublisher(registry);
 
     publisher.flush(graph, ["source-a", "source-b"], 1);
+    a = 4;
     const batch = publisher.flush(graph, ["source-a"], 2);
 
-    expect(batch.patches.find(({ nodeId }) => nodeId === "sink")?.values).toEqual({ total: 5 });
+    expect(batch.patches.find(({ nodeId }) => nodeId === "sink")?.values).toEqual({ total: 7 });
   });
 });
