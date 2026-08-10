@@ -58,7 +58,11 @@ export function parseQualifiedId(value: string): QualifiedId {
     return qualifyFreeTrack(trackId);
   }
   const separator = value.indexOf("/");
-  if (separator <= 0 || separator === value.length - 1 || value.indexOf("/", separator + 1) !== -1) {
+  if (
+    separator <= 0 ||
+    separator === value.length - 1 ||
+    value.indexOf("/", separator + 1) !== -1
+  ) {
     throw new TypeError("Qualified id must be 'motionId/trackId' or '~/trackId'.");
   }
   return qualifyMotionTrack(value.slice(0, separator), value.slice(separator + 1));
