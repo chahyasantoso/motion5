@@ -32,10 +32,11 @@ describe("DOM patch adapter", () => {
     );
     const input = patch("hero/arm", { opacity: 1, _internal: true, offset: 10 });
     adapter.apply(input);
+    expect(first.style.opacity).toBe(1);
     adapter.apply(input);
     adapter.apply(patch("hero/arm", {}));
     adapter.apply(patch("hero/label", { opacity: 0.5 }));
-    expect(first.style.opacity).toBe(1);
+    expect(first.style.opacity).toBeUndefined();
     expect(second.style.opacity).toBe(0.5);
     expect(writes).toHaveLength(3);
     expect(writes[0]?.[0]).toBe(first);
