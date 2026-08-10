@@ -13,6 +13,7 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "noEmit": true,
+    "baseUrl": ".",
     "paths": {
       "@motion5/core": ["packages/core/src/index.ts"],
       "@motion5/core/internal": ["packages/core/src/internal.ts"]
