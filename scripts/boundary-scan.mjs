@@ -112,7 +112,8 @@ export async function scan(scanRoot = root) {
     const source = await readFile(enginePath, "utf8");
     if (importsBoundary(source) || importsRenderer(source))
       violations.push("packages/core/src/engine.ts: renderer or engine import");
-    if (bannedSymbol(source)) violations.push("packages/core/src/engine.ts: banned compatibility symbol");
+    if (bannedSymbol(source))
+      violations.push("packages/core/src/engine.ts: banned compatibility symbol");
   } catch (error) {
     if (error?.code !== "ENOENT") throw error;
   }
