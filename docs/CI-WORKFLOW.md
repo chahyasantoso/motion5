@@ -5,20 +5,22 @@ CI is an executable version of the project’s evidence model. It checks pull re
 ## Global rules
 
 - Node 24 and a pinned lockfile.
-- `npm ci`, not an unconstrained install, after P0-02.
+- `npm ci`, not an unconstrained install.
 - Read-only repository permissions for CI.
 - Concurrency cancellation per branch or pull request.
 - Same required matrix on pull requests and protected branch pushes.
 - Artifacts for benchmark output and failure diagnostics.
 - No job exists merely to look complete; every job has a local command and a real assertion.
 
-## Jobs
+## Live jobs
 
-**quality:** format check, TypeScript check, unit tests, migration tests. Required from Phase 0.
+**quality:** format check, TypeScript check, unit tests, and migration tests. Required.
 
-**integration:** graph transaction, lifecycle, publication, free-track, and adapter integration. Required once P0-05/P3 evidence exists.
+**integration:** deterministic golden serialization, schema/migration contract integration, free-track acceptance, warning/error semantics, and cycle rejection. Required from P0-05.
 
-**boundaries:** rejects renderer imports in core, banned compatibility symbols, duplicate runtime owners, and forbidden public exports. Mechanical enforcement only; behavior remains in tests.
+## Planned jobs
+
+**boundaries:** rejects renderer imports in core, banned compatibility symbols, duplicate runtime owners, and forbidden public exports.
 
 **performance:** runs deterministic graph and memory benchmarks against versioned budgets. Advisory only during calibration, with a removal date in status; required afterward.
 
@@ -32,7 +34,9 @@ CI is an executable version of the project’s evidence model. It checks pull re
 {
   "check": "npm run format:check && npm run typecheck && npm test",
   "test:migration": "vitest run packages/core/test/migration",
-  "test:integration": "vitest run --project integration",
+  "test:contract": "vitest run packages/core/test/contract",
+  "test:ports": "vitest run packages/core/test/contract/ports.test.ts",
+  "test:integration": "vitest run packages/core/test/integration",
   "boundary": "node scripts/boundary-scan.mjs",
   "api:check": "node scripts/api-surface-check.mjs",
   "benchmark": "node performance/graph-benchmark.mjs",
@@ -45,7 +49,7 @@ Every CI step must map to an npm script reproducible locally. If it cannot, add 
 
 ## Rollout schedule
 
-P0-02 makes installs reproducible. P0-05 adds migration and integration checks. P2-07 adds boundaries. P3-07 adds performance. P4-05 adds build. P6-02 adds package consumer verification. Until a job’s owning phase lands, this document describes the target, not a live check.
+P0-02 made installs reproducible. P0-05 adds the required integration job. P2-07 adds boundaries. P3-07 adds performance. P4-05 adds build. P6-02 adds package consumer verification. Until a job’s owning phase lands, this document describes the target, not a live check.
 
 ## Required versus advisory
 

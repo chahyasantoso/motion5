@@ -34,6 +34,18 @@ jobs:
         run: npm run typecheck
       - name: Unit tests
         run: npm test
-  # The integration, boundaries, performance, build, and package jobs land with
-  # the phases that give them something real to verify. See docs/CI-WORKFLOW.md
-  # for the schedule. A job that asserts nothing is not added early.
+
+  integration:
+    name: integration (node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Integration tests
+        run: npm run test:integration
