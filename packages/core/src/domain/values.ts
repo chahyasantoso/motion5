@@ -13,9 +13,7 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function invalidValue(value: unknown): TypeError {
-  return new TypeError(
-    `Unsupported immutable value: ${Object.prototype.toString.call(value)}.`,
-  );
+  return new TypeError(`Unsupported immutable value: ${Object.prototype.toString.call(value)}.`);
 }
 
 /**
