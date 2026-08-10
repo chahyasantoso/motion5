@@ -50,10 +50,28 @@ describe("Track leaf", () => {
 
     expect(() => track.setProgress(Number.NaN)).toThrow(/finite/);
     const first = track.compose({ x: 1 });
-    const second = track.compose({ x: 999 });
+    const second = track.compose({ x: 1 });
     expect(second).toBe(first);
     expect(compose).toHaveBeenCalledTimes(1);
     expect(first.values).toEqual({ x: 1, opacity: 1 });
+  });
+
+  it("recomposes a clean track when its inputs change", () => {
+    const fake = createInterpolator();
+    const compose = vi.fn((values: Readonly<ImmutableRecord>) => ({ ...values }));
+    const track = new Track({
+      interpolator: fake.interpolator,
+      plugins: {
+        plugins: Object.freeze([createPlugin("passthrough", compose)]),
+        diagnostics: Object.freeze([]),
+      },
+    });
+
+    const first = track.compose({ x: 1 });
+    const second = track.compose({ x: 2 });
+    expect(second).not.toBe(first);
+    expect(second.values).toEqual({ x: 2 });
+    expect(compose).toHaveBeenCalledTimes(2);
   });
 
   it("is a leaf with no composite or graph API", () => {

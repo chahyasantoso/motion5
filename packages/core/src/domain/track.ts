@@ -1,5 +1,5 @@
 import type { ImmutableRecord } from "./values";
-import { freezeValue } from "./values";
+import { equalValues, freezeValue } from "./values";
 import type { InterpolationTimeline, Interpolator } from "../ports/interpolator";
 import type { ResolvedPlugins } from "./plugins";
 
@@ -21,6 +21,7 @@ export class Track {
   #dirty = true;
   #disposed = false;
   #lastSnapshot: TrackSnapshot | undefined;
+  #lastInputs: Readonly<ImmutableRecord> | undefined;
 
   constructor(options: TrackOptions) {
     this.#timeline = options.interpolator.create(options.interpolationConfig);
@@ -51,7 +52,13 @@ export class Track {
 
   compose(inputs: Readonly<ImmutableRecord> = {}): TrackSnapshot {
     this.assertActive();
-    if (!this.#dirty && this.#lastSnapshot) return this.#lastSnapshot;
+    if (
+      !this.#dirty &&
+      this.#lastSnapshot &&
+      this.#lastInputs !== undefined &&
+      (this.#lastInputs === inputs || equalValues(this.#lastInputs, inputs))
+    )
+      return this.#lastSnapshot;
     let values: ImmutableRecord = { ...inputs };
     for (const plugin of this.#plugins.plugins) {
       values = plugin.compose(values, this.#progress);
@@ -61,6 +68,7 @@ export class Track {
       progress: this.#progress,
       values: freezeValue(values),
     });
+    this.#lastInputs = freezeValue({ ...inputs });
     this.#lastSnapshot = snapshot;
     this.#dirty = false;
     return snapshot;
@@ -71,6 +79,7 @@ export class Track {
     this.#disposed = true;
     this.#timeline.kill();
     this.#lastSnapshot = undefined;
+    this.#lastInputs = undefined;
   }
 
   private assertActive(): void {
