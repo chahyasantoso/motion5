@@ -10,7 +10,12 @@ describe("React patch consumer boundary", () => {
     const unsubscribe = store.subscribe((patch) => seen.push(patch.revision));
 
     registry.beginBatch(1, ["hero/arm"]);
-    registry.publish({ nodeId: "hero/arm", values: { opacity: 1 }, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: "hero/arm",
+      values: { opacity: 1 },
+      sourceProgress: 0,
+      status: "ready",
+    });
     registry.closeBatch();
     const first = store.getSnapshot();
     expect(first?.revision).toBe(1);
@@ -18,14 +23,24 @@ describe("React patch consumer boundary", () => {
     expect(seen).toEqual([1]);
 
     registry.beginBatch(2, ["hero/arm"]);
-    registry.publish({ nodeId: "hero/arm", values: { opacity: 1 }, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: "hero/arm",
+      values: { opacity: 1 },
+      sourceProgress: 0,
+      status: "ready",
+    });
     registry.closeBatch();
     expect(store.getSnapshot()).toBe(first);
     expect(seen).toEqual([1]);
 
     unsubscribe();
     registry.beginBatch(3, ["hero/arm"]);
-    registry.publish({ nodeId: "hero/arm", values: { opacity: 0 }, sourceProgress: 0, status: "ready" });
+    registry.publish({
+      nodeId: "hero/arm",
+      values: { opacity: 0 },
+      sourceProgress: 0,
+      status: "ready",
+    });
     registry.closeBatch();
     expect(seen).toEqual([1]);
   });
