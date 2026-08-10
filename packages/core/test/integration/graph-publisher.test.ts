@@ -24,7 +24,9 @@ const makeNode = (
   });
 };
 
-const snapshot = (nodes: readonly PublisherNode[]): GraphIR & { nodes: readonly PublisherNode[] } => ({
+const snapshot = (
+  nodes: readonly PublisherNode[],
+): GraphIR & { nodes: readonly PublisherNode[] } => ({
   nodes,
   nodeById: Object.freeze(Object.fromEntries(nodes.map((node) => [node.id, node]))),
   order: Object.freeze(nodes.map(({ id }) => id)),
@@ -48,16 +50,29 @@ describe("GraphPublisher", () => {
     const events: string[] = [];
     registry.subscribeBatch(() => events.push("batch"));
     const batch = new GraphPublisher(registry).flush(snapshot(nodes), ["root"], 1);
-    expect(calls).toEqual(new Map([["root", 1], ["left", 1], ["right", 1], ["sink", 1]]));
+    expect(calls).toEqual(
+      new Map([
+        ["root", 1],
+        ["left", 1],
+        ["right", 1],
+        ["sink", 1],
+      ]),
+    );
     expect(batch.patches).toHaveLength(4);
     expect(events).toEqual(["batch"]);
   });
 
   it("I-9 publishes an error and blocks the downstream closure while unrelated branches continue", () => {
     const nodes = [
-      makeNode("bad", 0, [], () => { throw new Error("boom"); }),
+      makeNode("bad", 0, [], () => {
+        throw new Error("boom");
+      }),
       makeNode("child", 1, ["bad"], () => ({ values: {}, sourceProgress: 0, sourceRevisions: {} })),
-      makeNode("sibling", 2, [], () => ({ values: { ok: true }, sourceProgress: 0, sourceRevisions: {} })),
+      makeNode("sibling", 2, [], () => ({
+        values: { ok: true },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      })),
     ];
     const registry = new PatchRegistry();
     const batch = new GraphPublisher(registry).flush(snapshot(nodes), ["bad", "sibling"], 1);
