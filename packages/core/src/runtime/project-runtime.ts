@@ -5,6 +5,7 @@ import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
 export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly compose: ComposeResolver;
+  readonly disposeComposition?: () => void;
 }
 
 /**
@@ -15,11 +16,18 @@ export class ProjectRuntime {
   readonly #project: ProjectDefinition;
   readonly #graph: GraphRuntime;
   readonly #instances = new Map<string, object>();
+  readonly #disposeComposition: () => void;
   #disposed = false;
 
   constructor(project: ProjectDefinition, options: ProjectRuntimeOptions) {
     this.#project = project;
-    this.#graph = new GraphRuntime(project, options.clock, options.compose);
+    this.#disposeComposition = options.disposeComposition ?? (() => undefined);
+    try {
+      this.#graph = new GraphRuntime(project, options.clock, options.compose);
+    } catch (error) {
+      this.#disposeComposition();
+      throw error;
+    }
   }
 
   get project(): ProjectDefinition {
@@ -56,6 +64,7 @@ export class ProjectRuntime {
     for (const nodeId of [...this.#instances.keys()]) this.#graph.detach(nodeId);
     this.#instances.clear();
     this.#graph.dispose();
+    this.#disposeComposition();
   }
 
   #assertLive(): void {
