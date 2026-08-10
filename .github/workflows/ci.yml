@@ -22,19 +22,12 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      # Dependency caching is intentionally off until P0-02 commits the
-      # lockfile. actions/setup-node caching requires one, and a cache key
-      # derived from nothing is worse than no cache.
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-      - name: Install
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install --no-audit --no-fund
-          fi
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Format check
         run: npm run format:check
       - name: Typecheck
