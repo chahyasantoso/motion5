@@ -22,7 +22,7 @@ describe("ProjectRuntime", () => {
     runtime.mount("hero/arm", first);
     expect(runtime.instanceCount).toBe(1);
     expect(runtime.graph.memberCount).toBe(2);
-    expect(runtime.mount("hero/arm", {})).toThrow;
+    expect(() => runtime.mount("hero/arm", {})).toThrow(TypeError);
     runtime.unmount("hero/arm");
     expect(runtime.instanceCount).toBe(0);
     runtime.dispose();
@@ -30,7 +30,15 @@ describe("ProjectRuntime", () => {
 
   it("rejects invalid candidates before constructing a replacement runtime", () => {
     const clock = createManualClock();
-    const invalid = { ...project, motions: [{ ...project.motions[0], tracks: [{ id: "arm", observes: [{ source: "missing" }] }] }] };
+    const invalid = {
+      ...project,
+      motions: [
+        {
+          ...project.motions[0],
+          tracks: [{ id: "arm", observes: [{ source: "missing" }] }],
+        },
+      ],
+    };
     expect(() => new ProjectRuntime(invalid, { clock, compose })).toThrow(TypeError);
   });
 
