@@ -50,11 +50,7 @@ describe("canonical order and cycle detection", () => {
   });
 
   it("keeps disconnected components in canonical id order", () => {
-    const result = orderGraph([
-      node("~/cursor", 0),
-      node("hero/arm", 0),
-      node("caption/label", 0),
-    ]);
+    const result = orderGraph([node("~/cursor", 0), node("hero/arm", 0), node("caption/label", 0)]);
     expect(result.order).toEqual(["caption/label", "hero/arm", "~/cursor"]);
   });
 
