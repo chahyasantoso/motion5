@@ -20,6 +20,7 @@
     "test:integration": "vitest run packages/core/test/integration",
     "test:boundaries": "node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts",
     "benchmark": "node performance/graph-benchmark.mjs",
+    "build": "npm run typecheck && node scripts/build-check.mjs",
     "test:watch": "vitest"
   },
   "devDependencies": {
