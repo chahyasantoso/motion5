@@ -21,6 +21,8 @@ export type {
 } from "./contract/v5";
 export { migrateV4ToV5 } from "./contract/migrate-v4-to-v5";
 export type { MigrationResult } from "./contract/migrate-v4-to-v5";
+export { validateV5 } from "./contract/validate-v5";
+export type { ValidationResult } from "./contract/validate-v5";
 
 /** Version of this package. Independent of the authored schema version. */
 export const CORE_VERSION = "0.0.0";
