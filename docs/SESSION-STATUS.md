@@ -1,9 +1,9 @@
 # Session status
 
 **Captured:** 2026-08-10, Asia/Jakarta
-**Branch:** `feat/p0-04-ports-and-fakes`
-**Phase:** 0, port baseline
-**Next action:** Open and review the P0-04 pull request; merge only after CI is green and the port contract tests pass.
+**Branch:** `feat/p0-05-golden-fixtures-and-integration`
+**Phase:** 0, golden evidence baseline
+**Next action:** Open and review the P0-05 pull request; merge only after quality and integration CI are green.
 
 This is the only document that reports current implementation reality. Everything else is a contract, plan, or decision record unless it says otherwise.
 
@@ -13,26 +13,25 @@ Every implementation slice follows this path: create `feat/...` from `main`, imp
 
 ## Current state
 
-P0-04 adds injectable Clock, Interpolator, and Scheduler ports, deterministic fakes, and fresh contract tests. P0-03 is accepted on `main`. The runtime, graph, adapters, React package, benchmarks, and boundary scripts do not exist yet.
+P0-05 adds deterministic golden serialization, fresh schema/migration integration fixtures, and a required integration CI job. P0-03 and P0-04 are merged on `main`. The runtime, graph, adapters, React package, benchmarks, and boundary scripts do not exist yet.
 
 ## Landed on this branch
 
-- `Clock` interface with manual clock, monotonic tick/time events, unsubscribe, disposal, and delta validation.
-- `Interpolator` interface with renderer-neutral timeline contract and fake implementation.
-- `Scheduler` interface with cancellation and fake queued scheduler.
-- Fresh contract tests for all three ports.
-- Public assertion helpers and manual clock export.
+- Stable JSON-safe golden serializer and parser.
+- Fresh v5 fixtures for minimal projects, perspective warnings, free tracks, cycles, and migration.
+- Integration tests covering deterministic serialization, warning/error semantics, free-track acceptance, cycle rejection, and migration immutability.
+- Required GitHub Actions integration job using the committed lockfile.
 
 ## Not landed yet
 
-- P0-04 is not on `main` until its PR is reviewed and merged.
-- No graph kernel, runtime, publisher, adapters, React package, benchmarks, or boundary scanner.
+- P0-05 is not on `main` until its PR is reviewed and merged.
+- Full graph runtime and publication behavior remain unimplemented.
 
 ## Immediate queue
 
-1. Open/review the P0-04 PR and wait for CI.
-2. Merge P0-04 after green checks.
-3. Start P0-05 golden fixture serialization and integration CI.
+1. Open/review the P0-05 PR and wait for quality plus integration CI.
+2. Merge P0-05 after green checks.
+3. Start Phase 1 with immutable values and the Track leaf.
 
 ## Guardrails
 

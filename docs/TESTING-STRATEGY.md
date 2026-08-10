@@ -8,25 +8,15 @@ Tests are evidence for the contract, not a museum of implementation details. No 
 2. **Contract:** one suite per Clock, Interpolator, and Scheduler port, run against fakes and real adapters.
 3. **Integration:** multiple owners: loading, graph transactions, rollback, lifecycle, publication, cross-motion, and free-track membership.
 4. **Migration:** pure v4-to-v5 transformation and validation assumptions.
-5. **Golden:** authored v5 project in, sorted serialized patch batches out.
+5. **Golden:** authored v5 project in, sorted serialized patch batches out. P0-05 establishes the stable JSON serializer and fixture format; runtime patch goldens land with the graph publisher.
 6. **Package:** packed tarball installed into a clean consumer with documented imports.
 7. **Performance:** deterministic graph benchmarks compared against committed budgets.
 
-## Fresh migration test requirements
+## P0-05 golden and integration evidence
 
-The migration suite must prove all of the following:
+Golden fixtures are JSON-safe values with a stable serializer: object keys sort lexicographically, arrays preserve authored order, and output ends with one newline. Fixtures must state their intent and expected observable result. They may represent validation/migration now and published patch batches later.
 
-- v4 becomes v5;
-- only project-level `tracks` becomes `freeTracks`;
-- motion-level `tracks` remains unchanged;
-- free references gain `~/` qualification where required;
-- the input object and nested arrays are not mutated;
-- applying migration to v5 is idempotent;
-- both old `tracks` and new `freeTracks` fail rather than silently merging;
-- malformed top-level tracks, duplicate ids, reserved ids, and ambiguous references produce deterministic diagnostics;
-- perspective is preserved, added only by an explicit caller decision, and never injected with a guessed value.
-
-Tests must be authored from these rules. They must not import predecessor fixtures or assert predecessor internals.
+The P0-05 suite proves deterministic serialization, round-trip parsing, v5 free-track acceptance, perspective warning semantics, cycle rejection before mounting, and v4 migration immutability. It uses fresh fixtures written for motion5, not predecessor files.
 
 ## Invariant evidence
 
@@ -38,9 +28,7 @@ Tests use the manual clock. They do not read wall time, random values, browser a
 
 ## Prohibited evidence
 
-No comment-density gates, non-shrinking file allowlists, source-text scans presented as behavioral tests, snapshots of private object graphs, or value-only parity tests that ignore payload shape.
-
-Boundary scans are allowed as mechanical enforcement. They complement, never replace, runtime tests.
+No comment-density gates, non-shrinking file allowlists, source-text scans presented as behavioral tests, snapshots of private object graphs, or value-only parity tests that ignore payload shape. Boundary scans are allowed as mechanical enforcement; they complement, never replace, runtime tests.
 
 ## Failure hygiene
 
@@ -48,4 +36,4 @@ A flaky test is fixed or deleted in the same working session. Skipping a test to
 
 ## Coverage policy
 
-Coverage is reported but not the release gate. The release gate is the invariant matrix, public package consumer, migration suite, contract suites, and deterministic integration behavior.
+Coverage is reported but not the release gate. The release gate is the invariant matrix, public package consumer, migration suite, contract suites, integration behavior, and deterministic benchmarks.
