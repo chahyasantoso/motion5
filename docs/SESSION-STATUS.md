@@ -3,7 +3,7 @@
 **Captured:** 2026-08-10, Asia/Jakarta
 **Branch:** `feat/p2-07-boundary-scan-ci-gate`
 **Phase:** 2, graph kernel
-**Next action:** Run the P2-07 quality matrix after the CI fixes, review the implementation pull request, and merge only when the required checks are green.
+**Next action:** Re-run the P2-07 quality matrix after the CI fixes, review the implementation pull request, and merge only when the required checks are green.
 
 This is the only document that reports current implementation reality. Everything else is a contract, plan, or decision record unless it says otherwise.
 
@@ -29,7 +29,7 @@ P0-01 through P0-06 and P1-01 through P1-06 are merged on `main`. P2-01 qualifie
 
 - `scripts/boundary-scan.mjs`: scans existing contract, domain, graph, and runtime layers safely, rejecting renderer/engine imports and banned compatibility vocabulary, then checks the public entrypoint against an allow list.
 - `scripts/boundary-scan-fixtures.ts`: typed planted violations, so the quality job typechecks the fixture import without an ambient declaration gap.
-- `packages/core/test/unit/scripts/boundary-scan.test.ts`: planted violations prove the mechanical rules can fail, while a clean fixture proves the baseline passes.
+- `packages/core/test/unit/scripts/boundary-scan.test.ts`: planted violations prove the mechanical rules can fail, including bare `react` package imports; a clean fixture proves the baseline passes.
 - `.github/workflows/ci.yml`: adds a required `boundaries (node 24)` job running the scan and planted fixtures.
 - `package.json`: adds `npm run test:boundaries`.
 
@@ -44,7 +44,7 @@ P0-01 through P0-06 and P1-01 through P1-06 are merged on `main`. P2-01 qualifie
 
 The repository follows the implementation plan through P2-07. P2-02/P2-03 remain intentionally combined in `graph/ir.ts`. P2-06 uses a candidate `ProjectDefinition` replacement API rather than exposing separate add/remove commands before the runtime membership model exists. P2-07 makes the core import and public-export boundaries mechanical and gives the new CI job planted-violation evidence; it does not claim that runtime or adapters exist.
 
-The first P2-07 run exposed two honest integration gaps, both fixed here: the TypeScript test import now resolves to a typed `.ts` fixture instead of an untyped `.mjs` module, and the scanner treats not-yet-created layers as empty rather than failing with ENOENT. The old `.mjs` fixture remains only as an unused historical file on this branch and can be deleted in the cleanup pass if the repository's file deletion tool is used.
+The first P2-07 run exposed two integration gaps, both fixed: the TypeScript test import now resolves to a typed `.ts` fixture instead of an untyped `.mjs` module, and the scanner treats not-yet-created layers as empty rather than failing with ENOENT. The next run exposed a third gap in the shared fixture: `importsRenderer` detected relative renderer paths but not bare `react` package imports, while the planted fixture intentionally used `import React from 'react'`. The scanner and test now share the same bare-package coverage.
 
 ## Guardrails
 

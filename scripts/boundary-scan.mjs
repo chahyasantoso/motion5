@@ -60,7 +60,7 @@ function importsBoundary(source) {
 }
 
 function importsRenderer(source) {
-  return /(?:from|import)\s*[\"'](?:node:dom|domino|\.\/?[^\"']*(?:dom|renderer|react|gsap)[^\"']*)(?:[\"'/]|$)/i.test(
+  return /(?:from|import)\s*[\"'](?:react|react-dom|node:dom|domino|(?:\.\/|\.\.\/)[^\"']*(?:dom|renderer|react|gsap)[^\"']*)(?:[\"'/]|$)/i.test(
     source,
   );
 }

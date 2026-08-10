@@ -12,7 +12,7 @@ const importsBoundary = (source: string): boolean =>
     source,
   );
 const importsRenderer = (source: string): boolean =>
-  /(?:from|import)\s*[\"'](?:node:dom|domino|\.\/?[^\"']*(?:dom|renderer|react|gsap)[^\"']*)(?:[\"'/]|$)/i.test(
+  /(?:from|import)\s*[\"'](?:react|react-dom|node:dom|domino|(?:\.\/|\.\.\/)[^\"']*(?:dom|renderer|react|gsap)[^\"']*)(?:[\"'/]|$)/i.test(
     source,
   );
 const bannedSymbol = (source: string): boolean =>
