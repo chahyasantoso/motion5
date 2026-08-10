@@ -36,15 +36,17 @@ export interface ScheduledJob<Options = unknown> {
   readonly cancel: Cancel;
 }
 
+type ActiveScheduledJob<Options> = ScheduledJob<Options> & { cancelled: boolean };
+
 export function createFakeScheduler<Options = unknown>(): Scheduler<() => void, Options> & {
   readonly pending: readonly ScheduledJob<Options>[];
   flush(): void;
 } {
-  const jobs: Array<ScheduledJob<Options> & { cancelled: boolean }> = [];
+  const jobs: ActiveScheduledJob<Options>[] = [];
   return {
     schedule(job, options) {
       if (typeof job !== "function") throw new TypeError("Scheduled job must be a function.");
-      const entry = {
+      const entry: ActiveScheduledJob<Options> = {
         job,
         options,
         cancelled: false,
@@ -53,7 +55,7 @@ export function createFakeScheduler<Options = unknown>(): Scheduler<() => void, 
             entry.cancelled = true;
           },
         },
-      } satisfies ScheduledJob<Options> & { cancelled: boolean };
+      };
       jobs.push(entry);
       return entry.cancel;
     },
