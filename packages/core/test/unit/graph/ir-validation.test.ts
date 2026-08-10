@@ -119,4 +119,25 @@ describe("graph IR and candidate validation", () => {
     );
     expect(first.diagnostics).toEqual(second.diagnostics);
   });
+
+  it("breaks diagnostic ties by code unit, not by locale collation", () => {
+    const result = buildGraphIR(
+      project({
+        motions: [
+          {
+            id: "a",
+            trigger: { type: "manual" },
+            tracks: [{ id: "bx", observes: [{ source: "~/nope" }] }],
+          },
+          {
+            id: "a-b",
+            trigger: { type: "manual" },
+            tracks: [{ id: "x", observes: [{ source: "~/nope" }] }],
+          },
+        ],
+      }),
+    );
+    expect(result.graph).toBeUndefined();
+    expect(result.diagnostics.map(({ path }) => path)).toEqual(["a-b/x", "a/bx"]);
+  });
 });

@@ -1,4 +1,5 @@
 import type { Diagnostic } from "../contract/v5";
+import { compareCodeUnits } from "./compare";
 import type { GraphNode } from "./ir";
 
 /** Rule id reported when the observation graph cannot be linearized. */
@@ -15,18 +16,14 @@ interface OrderSlot {
   readonly authoredIndex: number;
 }
 
-function compareIds(a: string, b: string): number {
-  return a < b ? -1 : a > b ? 1 : 0;
-}
-
 function compareSlots(a: OrderSlot, b: OrderSlot): number {
-  return compareIds(a.id, b.id) || a.authoredIndex - b.authoredIndex;
+  return compareCodeUnits(a.id, b.id) || a.authoredIndex - b.authoredIndex;
 }
 
 function comparePaths(a: readonly string[], b: readonly string[]): number {
   if (a.length !== b.length) return a.length - b.length;
   for (let index = 0; index < a.length; index += 1) {
-    const compared = compareIds(a[index] ?? "", b[index] ?? "");
+    const compared = compareCodeUnits(a[index] ?? "", b[index] ?? "");
     if (compared !== 0) return compared;
   }
   return 0;
@@ -49,7 +46,7 @@ function insertReady(ready: OrderSlot[], slot: OrderSlot): void {
 function canonicalCycle(path: readonly string[]): readonly string[] {
   let start = 0;
   for (let index = 1; index < path.length; index += 1)
-    if (compareIds(path[index] ?? "", path[start] ?? "") < 0) start = index;
+    if (compareCodeUnits(path[index] ?? "", path[start] ?? "") < 0) start = index;
   return [...path.slice(start), ...path.slice(0, start)];
 }
 
@@ -123,7 +120,7 @@ export function orderGraph(nodes: readonly GraphNode[]): GraphOrderResult {
       downstream.push(node.id);
       indegree.set(node.id, (indegree.get(node.id) ?? 0) + 1);
     }
-  for (const downstream of dependents.values()) downstream.sort(compareIds);
+  for (const downstream of dependents.values()) downstream.sort(compareCodeUnits);
 
   const ready: OrderSlot[] = [];
   for (const node of nodes) {
@@ -152,7 +149,7 @@ export function orderGraph(nodes: readonly GraphNode[]): GraphOrderResult {
   for (const node of nodes) if (!emitted.has(node.id)) live.add(node.id);
 
   const cycles = new Map<string, readonly string[]>();
-  for (const start of [...live].sort(compareIds)) {
+  for (const start of [...live].sort(compareCodeUnits)) {
     const path = shortestCycleFrom(start, live, dependents);
     if (path === undefined) continue;
     const cycle = canonicalCycle(path);
@@ -160,8 +157,6 @@ export function orderGraph(nodes: readonly GraphNode[]): GraphOrderResult {
     if (!cycles.has(key)) cycles.set(key, cycle);
   }
 
-  const diagnostics = [...cycles.values()]
-    .sort(comparePaths)
-    .map((cycle) => cycleDiagnostic(cycle));
+  const diagnostics = [...cycles.values()].sort(comparePaths).map((cycle) => cycleDiagnostic(cycle));
   return { diagnostics: Object.freeze(diagnostics) };
 }
