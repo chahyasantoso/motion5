@@ -1,28 +1,22 @@
 # Session status
 
 **Captured:** 2026-08-10, Asia/Jakarta
-**Branch:** `docs/r9-status-and-plan-truth-pass`
-**Phase:** 4, remediation complete through R8; P4-05 acceptance pending
-**Next action:** Recreate P4-05 from current `main`: end-to-end integration plus the required build job. Do not close Phase 4 until that gate is green.
+**Branch:** `feat/p4-05-current-main-integration-build`
+**Phase:** 4, P4-05 acceptance
+**Next action:** Review and merge P4-05 only when the current-main end-to-end fixture and required build job are green; then proceed to React hook and packed-consumer acceptance work.
 
 This is the only document that reports current implementation reality. Everything else is a contract, plan, or decision record unless it says otherwise.
 
 ## Current state
 
-P0-01 through P0-06, P1-01 through P1-06, P2-01 through P2-07, P3-01 through P3-07 plus remediation, collapsed P4-01/P4-02 adapters, and remediation R1 through R8 are merged on `main`. The React patch-store boundary is merged and now imports through `@motion5/core/internal`; the boundary scanner covers core and consumer packages. P4-05 does not exist on current `main` and must be recreated from this point.
+P0-01 through P0-06, P1-01 through P1-06, P2-01 through P2-07, P3-01 through P3-07 plus remediation, collapsed P4-01/P4-02 adapters, and remediation R1 through R8 are merged on `main`. R9 documentation is merged. P4-05 is recreated here against current `main`; the stale pre-remediation PR was closed and is not being revived.
 
-## R9 changes
+## P4-05 changes
 
-- `README.md`: no longer claims Phase 0 or an unimplemented runtime; records the shipped remediation and remaining acceptance work.
-- `docs/SESSION-STATUS.md`: records current `main` and the next concrete P4-05 action.
-- `docs/IMPLEMENTATION-PLAN.md`: remains the normative execution plan; named evidence paths are reconciled in the next update after P4-05 is recreated.
-
-## Known deferred work
-
-- P4-05: end-to-end integration and required build job.
-- React hooks and packed consumer acceptance.
-- Phase 5 cross-motion references, adopted free tracks, diagnostics buffer, and remount recovery.
-- Phase 6 API report, package consumer, required performance budget, and transitional-code deletion.
+- `packages/core/test/integration/end-to-end.test.ts`: drives the current GSAP-like interpolator, immutable patch, browser clock, and target-aware DOM adapter together.
+- `scripts/build-check.mjs`: checks the current public core entrypoint.
+- `package.json`: adds the local build command.
+- `.github/workflows/ci.yml`: adds the required build job with locked install.
 
 ## Guardrails
 

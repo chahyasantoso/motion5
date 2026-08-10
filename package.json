@@ -8,9 +8,7 @@
   "engines": {
     "node": ">=24"
   },
-  "workspaces": [
-    "packages/*"
-  ],
+  "workspaces": ["packages/*"],
   "scripts": {
     "check": "npm run format:check && npm run typecheck && npm test",
     "format": "prettier . --write",
@@ -22,6 +20,7 @@
     "test:ports": "vitest run packages/core/test/contract/ports.test.ts",
     "test:integration": "vitest run packages/core/test/integration",
     "test:boundaries": "node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts",
+    "build": "npm run typecheck && node scripts/build-check.mjs",
     "benchmark": "node performance/graph-benchmark.mjs",
     "test:watch": "vitest"
   },
