@@ -19,6 +19,7 @@
     "test:ports": "vitest run packages/core/test/contract/ports.test.ts",
     "test:integration": "vitest run packages/core/test/integration",
     "test:boundaries": "node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts",
+    "benchmark": "node performance/graph-benchmark.mjs",
     "test:watch": "vitest"
   },
   "devDependencies": {
