@@ -4,7 +4,8 @@ import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const coreRoot = join(root, "packages", "core", "src");
-const layers = ["contract", "domain", "graph", "runtime"];
+const coreLayers = ["contract", "domain", "graph", "runtime", "ports"];
+const consumerPackages = ["react"];
 const allowedPublicExports = new Set([
   "AUTHORED_SCHEMA_VERSION",
   "DIAGNOSTIC_SEVERITIES",
@@ -32,7 +33,7 @@ const allowedPublicExports = new Set([
   "CORE_VERSION",
 ]);
 
-async function walk(directory) {
+export async function walk(directory) {
   let entries;
   try {
     entries = await readdir(directory, { withFileTypes: true });
@@ -49,29 +50,35 @@ async function walk(directory) {
   return files;
 }
 
-function relative(path) {
-  return path.slice(root.length + 1).replaceAll("\\", "/");
+function relative(path, scanRoot) {
+  return path.slice(scanRoot.length + 1).replaceAll("\\", "/");
 }
 
-function importsBoundary(source) {
-  return /(?:from|import)\s*[\"'](?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:[\"'/]|$)/.test(
+export function importsBoundary(source) {
+  return /(?:from|import)\s*["'](?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:["'/]|$)/.test(
     source,
   );
 }
 
-function importsRenderer(source) {
-  return /(?:from|import)\s*[\"'](?:gsap|react|react-dom|node:dom|domino|(?:\.\/|\.\.\/)[^\"']*(?:dom|renderer|react|gsap)[^\"']*)(?:[\"'/]|$)/i.test(
+export function importsRenderer(source) {
+  return /(?:from|import)\s*["'](?:gsap|react|react-dom|node:dom|domino|(?:\.\/|\.\.\/)[^"']*(?:dom|renderer|react|gsap)[^"']*)(?:["'/]|$)/i.test(
     source,
   );
 }
 
-function bannedSymbol(source) {
+export function importsCoreInternals(source) {
+  return /(?:from|import)\s*["'][^"']*(?:packages\/core\/src|\.\.\/\.\.\/core\/src)(?:["'/]|$)/.test(
+    source,
+  );
+}
+
+export function bannedSymbol(source) {
   return /(?:compatibility|facade|parityMode|rollout|capabilityFlag|observationAlias|groupHost)/i.test(
     source,
   );
 }
 
-function extractExportNames(source) {
+export function extractExportNames(source) {
   const names = [];
   for (const match of source.matchAll(/export\s+(?:type\s+)?\{([^}]+)\}/g)) {
     for (const item of match[1].split(",")) {
@@ -86,28 +93,45 @@ function extractExportNames(source) {
   return names;
 }
 
-const violations = [];
-for (const layer of layers) {
-  const directory = join(coreRoot, layer);
-  for (const path of await walk(directory)) {
-    const source = await readFile(path, "utf8");
-    const file = relative(path);
-    if (importsBoundary(source) || importsRenderer(source))
-      violations.push(`${file}: renderer or engine import`);
-    if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
+export async function scan(scanRoot = root) {
+  const violations = [];
+  const scanCoreFiles = async (directory) => {
+    for (const path of await walk(directory)) {
+      const source = await readFile(path, "utf8");
+      const file = relative(path, scanRoot);
+      if (importsBoundary(source) || importsRenderer(source))
+        violations.push(`${file}: renderer or engine import`);
+      if (bannedSymbol(source)) violations.push(`${file}: banned compatibility symbol`);
+    }
+  };
+
+  for (const layer of coreLayers) await scanCoreFiles(join(scanRoot, "packages", "core", "src", layer));
+  await scanCoreFiles(join(scanRoot, "packages", "core", "src", "engine.ts"));
+
+  for (const packageName of consumerPackages) {
+    const directory = join(scanRoot, "packages", packageName, "src");
+    for (const path of await walk(directory)) {
+      const source = await readFile(path, "utf8");
+      const file = relative(path, scanRoot);
+      if (importsCoreInternals(source)) violations.push(`${file}: core source-internal import`);
+    }
   }
+
+  const indexPath = join(scanRoot, "packages", "core", "src", "index.ts");
+  const indexSource = await readFile(indexPath, "utf8");
+  for (const name of extractExportNames(indexSource)) {
+    if (!allowedPublicExports.has(name))
+      violations.push(`packages/core/src/index.ts: public export ${name} is not allow-listed`);
+  }
+  return violations;
 }
 
-const indexPath = join(coreRoot, "index.ts");
-const indexSource = await readFile(indexPath, "utf8");
-for (const name of extractExportNames(indexSource)) {
-  if (!allowedPublicExports.has(name))
-    violations.push(`packages/core/src/index.ts: public export ${name} is not allow-listed`);
-}
-
-if (violations.length > 0) {
-  console.error(violations.join("\n"));
-  process.exitCode = 1;
-} else {
-  console.log("boundary scan passed");
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const violations = await scan();
+  if (violations.length > 0) {
+    console.error(violations.join("\n"));
+    process.exitCode = 1;
+  } else {
+    console.log("boundary scan passed");
+  }
 }
