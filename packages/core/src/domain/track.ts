@@ -24,7 +24,9 @@ export class Track {
 
   constructor(options: TrackOptions) {
     this.#timeline = options.interpolator.create(options.interpolationConfig);
-    this.#plugins = options.plugins ?? Object.freeze({ plugins: Object.freeze([]), diagnostics: Object.freeze([]) });
+    this.#plugins =
+      options.plugins ??
+      Object.freeze({ plugins: Object.freeze([]), diagnostics: Object.freeze([]) });
     this.#progress = 0;
   }
 

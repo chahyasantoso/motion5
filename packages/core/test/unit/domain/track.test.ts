@@ -18,7 +18,10 @@ function createInterpolator() {
   };
 }
 
-function createPlugin(name: string, compose: (values: Readonly<ImmutableRecord>, progress: number) => ImmutableRecord) {
+function createPlugin(
+  name: string,
+  compose: (values: Readonly<ImmutableRecord>, progress: number) => ImmutableRecord,
+) {
   return { name, compose };
 }
 
@@ -39,7 +42,10 @@ describe("Track leaf", () => {
     const compose = vi.fn((values: Readonly<ImmutableRecord>) => ({ ...values, opacity: 1 }));
     const track = new Track({
       interpolator: fake.interpolator,
-      plugins: { plugins: Object.freeze([createPlugin("opacity", compose)]), diagnostics: Object.freeze([]) },
+      plugins: {
+        plugins: Object.freeze([createPlugin("opacity", compose)]),
+        diagnostics: Object.freeze([]),
+      },
     });
 
     expect(() => track.setProgress(Number.NaN)).toThrow(/finite/);
