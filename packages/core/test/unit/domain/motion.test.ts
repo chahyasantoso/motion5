@@ -46,6 +46,15 @@ describe("Motion composite", () => {
     clock.tick(0.5);
     expect(tracks[0]?.track.progress).toBe(0);
     motion.dispose();
-    expect(tracks.every(({ track }) => { try { track.compose(); return false; } catch { return true; } })).toBe(true);
+    expect(
+      tracks.every(({ track }) => {
+        try {
+          track.compose();
+          return false;
+        } catch {
+          return true;
+        }
+      }),
+    ).toBe(true);
   });
 });

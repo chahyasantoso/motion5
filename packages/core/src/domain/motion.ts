@@ -33,7 +33,8 @@ export class Motion {
     }
     const ids = new Set<string>();
     for (const entry of options.tracks) {
-      if (!entry.id || ids.has(entry.id)) throw new Error(`Duplicate Motion track id: ${entry.id}.`);
+      if (!entry.id || ids.has(entry.id))
+        throw new Error(`Duplicate Motion track id: ${entry.id}.`);
       ids.add(entry.id);
     }
     this.#clock = options.clock;
@@ -50,10 +51,18 @@ export class Motion {
     });
   }
 
-  get state() { return this.#lifecycle.state; }
-  get playing() { return this.#playing; }
-  get position() { return this.#position; }
-  get tracks() { return this.#tracks; }
+  get state() {
+    return this.#lifecycle.state;
+  }
+  get playing() {
+    return this.#playing;
+  }
+  get position() {
+    return this.#position;
+  }
+  get tracks() {
+    return this.#tracks;
+  }
 
   schedule(): readonly number[] {
     return this.#tracks.map((_, index) => index * this.#stagger);
@@ -88,8 +97,12 @@ export class Motion {
     this.schedule();
   }
 
-  dispose(): void { this.#lifecycle.dispose(); }
-  destroy(): void { this.#lifecycle.destroy(); }
+  dispose(): void {
+    this.#lifecycle.dispose();
+  }
+  destroy(): void {
+    this.#lifecycle.destroy();
+  }
 
   #onTick(event: ClockTick): void {
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;
