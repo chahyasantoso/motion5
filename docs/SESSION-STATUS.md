@@ -15,6 +15,8 @@ Every implementation slice follows this path: create `feat/...` from `main`, imp
 
 P0-05 adds deterministic golden serialization, fresh schema/migration integration fixtures, and a required integration CI job. P0-03 and P0-04 are merged on `main`. The runtime, graph, adapters, React package, benchmarks, and boundary scripts do not exist yet.
 
+P0-06 is open on `docs/p0-06-trd-and-detailed-plan`. It is documentation only: a slice-level implementation plan and a normative technical requirements document. It asserts no runtime invariant and adds no executable evidence.
+
 ## Landed on this branch
 
 - Stable JSON-safe golden serializer and parser.
@@ -25,13 +27,15 @@ P0-05 adds deterministic golden serialization, fresh schema/migration integratio
 ## Not landed yet
 
 - P0-05 is not on `main` until its PR is reviewed and merged.
+- P0-06 is not on `main` until its PR is reviewed and merged.
 - Full graph runtime and publication behavior remain unimplemented.
 
 ## Immediate queue
 
 1. Open/review the P0-05 PR and wait for quality plus integration CI.
 2. Merge P0-05 after green checks.
-3. Start Phase 1 with immutable values and the Track leaf.
+3. Review and merge the P0-06 documentation PR.
+4. Start Phase 1 with P1-01 immutable value snapshots, then the P1-03 Track leaf.
 
 ## Guardrails
 
