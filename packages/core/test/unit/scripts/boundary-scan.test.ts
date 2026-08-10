@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error The scanner is an executable .mjs test fixture without a declaration build.
 import {
   bannedSymbol,
   extractExportNames,
@@ -10,11 +9,13 @@ import {
 import {
   bannedSymbolFixture,
   cleanFixture,
-  consumerInternalViolationFixture,
   engineViolationFixture,
   publicExportViolationFixture,
   rendererViolationFixture,
 } from "../../../../../scripts/boundary-scan-fixtures";
+
+const consumerInternalViolationFixture =
+  "import type { Patch } from '../../core/src/runtime/patch-registry';";
 
 describe("boundary scan planted violations", () => {
   it("passes a clean fixture", () => {
