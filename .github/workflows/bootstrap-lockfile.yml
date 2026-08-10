@@ -1,0 +1,59 @@
+name: Bootstrap lockfile (manual)
+
+# Run this once from the Actions tab while package-lock.json is absent.
+# It generates the lockfile with Node 24/npm, commits it to the selected branch,
+# and lets the normal CI workflow switch to npm ci afterward.
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to update
+        required: true
+        default: main
+        type: string
+
+concurrency:
+  group: bootstrap-lockfile-${{ inputs.branch }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    name: generate package-lock.json (node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Generate lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
+      - name: Verify lockfile
+        run: npm ci --ignore-scripts --no-audit --no-fund --dry-run
+
+      - name: Commit lockfile
+        env:
+          TARGET_BRANCH: ${{ inputs.branch }}
+        run: |
+          if git diff --quiet -- package-lock.json; then
+            echo "package-lock.json is already current."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          git commit -m "chore: add npm lockfile"
+          git push origin "HEAD:${TARGET_BRANCH}"
