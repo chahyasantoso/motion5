@@ -1,7 +1,7 @@
 /**
  * `@motion5/core` public entrypoint.
  *
- * Phase 0 contract surface. Runtime internals are never exported from here.
+ * Graph internals remain private to the package.
  */
 
 export {
@@ -10,6 +10,8 @@ export {
   SUPPORTED_TRIGGER_TYPES,
 } from "./contract/v5";
 export type {
+  AuthoredProperty,
+  AuthoredStop,
   Diagnostic,
   DiagnosticSeverity,
   MigrationDiagnostic,
@@ -25,8 +27,10 @@ export { validateV5 } from "./contract/validate-v5";
 export type { ValidationResult } from "./contract/validate-v5";
 export { parseGolden, serializeGolden } from "./contract/golden";
 export type { GoldenFixture, GoldenValidationFixture } from "./contract/golden";
+export { Engine } from "./engine";
 export { assertClock, createManualClock } from "./ports/clock";
 export { assertInterpolator } from "./ports/interpolator";
+export type { InterpolationTimeline, Interpolator } from "./ports/interpolator";
 export { assertScheduler } from "./ports/scheduler";
 
 /** Version of this package. Independent of the authored schema version. */
