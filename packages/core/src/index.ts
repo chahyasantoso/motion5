@@ -1,12 +1,26 @@
 /**
  * `@motion5/core` public entrypoint.
  *
- * Phase 0 placeholder. The contract layer replaces this in P0-03.
- * Runtime internals are never exported from here.
+ * Phase 0 contract surface. Runtime internals are never exported from here.
  */
+
+export {
+  AUTHORED_SCHEMA_VERSION,
+  DIAGNOSTIC_SEVERITIES,
+  SUPPORTED_TRIGGER_TYPES,
+} from "./contract/v5";
+export type {
+  Diagnostic,
+  DiagnosticSeverity,
+  MigrationDiagnostic,
+  MotionDefinition,
+  ObservationDefinition,
+  ProjectDefinition,
+  TrackDefinition,
+  TriggerType,
+} from "./contract/v5";
+export { migrateV4ToV5 } from "./contract/migrate-v4-to-v5";
+export type { MigrationResult } from "./contract/migrate-v4-to-v5";
 
 /** Version of this package. Independent of the authored schema version. */
 export const CORE_VERSION = "0.0.0";
-
-/** Authored input contract version. v4 requires explicit migration to v5. */
-export const AUTHORED_SCHEMA_VERSION = 5;
