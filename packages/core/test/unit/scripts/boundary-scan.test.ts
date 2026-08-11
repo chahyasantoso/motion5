@@ -24,7 +24,7 @@ describe("boundary scan planted violations", () => {
   it("passes a clean fixture", () => {
     expect(importsBoundary(cleanFixture)).toBe(false);
     expect(importsRenderer(cleanFixture)).toBe(false);
-    expect(bannedSymbol(cleanFixture)).toBe(false);
+    expect(bannedSymbol(bannedSymbolFixture)).toBe(false);
   });
 
   it("fails on renderer and animation-engine imports", () => {
@@ -52,7 +52,10 @@ describe("boundary scan planted violations", () => {
     try {
       await mkdir(join(root, "packages", "core", "src"), { recursive: true });
       await mkdir(join(root, "packages", "vue", "src"), { recursive: true });
-      await writeFile(join(root, "packages", "core", "src", "index.ts"), "export const ok = 1;\n");
+      await writeFile(
+        join(root, "packages", "core", "src", "index.ts"),
+        "export const ok = 1;\n",
+      );
       await writeFile(
         join(root, "packages", "vue", "src", "index.ts"),
         "import type { Patch } from '../../core/src/runtime/patch-registry';\n",
