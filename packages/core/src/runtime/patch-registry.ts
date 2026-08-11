@@ -31,6 +31,10 @@ export interface PublishInput {
   readonly diagnostics?: readonly Diagnostic[];
 }
 
+export const REENTRANT_BATCH_MESSAGE =
+  "Cannot open a patch batch while subscribers are being notified. " +
+  "Queue one follow-up invalidation instead of recursing.";
+
 function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   if (value === null || typeof value !== "object") return value;
   if (seen.has(value)) return value;
@@ -73,12 +77,25 @@ export class PatchRegistry {
   #batchTick = 0;
   #batchSeeds: string[] = [];
   #batchOpen = false;
+  #notifying = false;
 
   get(nodeId: string): Patch | undefined {
     return this.#patches.get(nodeId);
   }
 
+  /**
+   * True only while closeBatch() is delivering a settled batch to its listeners. Callers that
+   * own scheduling (the runtime) read this to queue a follow-up instead of recursing.
+   */
+  get notifying(): boolean {
+    return this.#notifying;
+  }
+
   beginBatch(tick: number, seeds: readonly string[]): void {
+    // A subscriber running inside closeBatch() must never be able to start a nested batch:
+    // the outer batch is already settled and its remaining listeners have not run yet, so a
+    // nested publication would be delivered out of order.
+    if (this.#notifying) throw new Error(REENTRANT_BATCH_MESSAGE);
     if (this.#batchOpen) throw new Error("A patch batch is already open.");
     this.#batchOpen = true;
     this.#batchTick = tick;
@@ -138,10 +155,23 @@ export class PatchRegistry {
     // every listener has had its turn, once state is already fully settled.
     let firstError: unknown;
     let hasError = false;
-    for (const patch of batch.patches) {
-      for (const listener of nodeListeners.get(patch.nodeId) ?? []) {
+    this.#notifying = true;
+    try {
+      for (const patch of batch.patches) {
+        for (const listener of nodeListeners.get(patch.nodeId) ?? []) {
+          try {
+            listener(patch);
+          } catch (error) {
+            if (!hasError) {
+              hasError = true;
+              firstError = error;
+            }
+          }
+        }
+      }
+      for (const listener of batchListeners) {
         try {
-          listener(patch);
+          listener(batch);
         } catch (error) {
           if (!hasError) {
             hasError = true;
@@ -149,16 +179,10 @@ export class PatchRegistry {
           }
         }
       }
-    }
-    for (const listener of batchListeners) {
-      try {
-        listener(batch);
-      } catch (error) {
-        if (!hasError) {
-          hasError = true;
-          firstError = error;
-        }
-      }
+    } finally {
+      // The notification window closes before any error leaves this method, so a caller that
+      // recovers from a listener failure can immediately open the next batch.
+      this.#notifying = false;
     }
     if (hasError) throw firstError;
     return batch;
