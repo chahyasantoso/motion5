@@ -13,7 +13,14 @@ const project: ProjectDefinition = {
       tracks: [
         {
           id: "arm",
-          keyframes: { opacity: { stops: [{ p: 0, v: 0.2 }, { p: 1, v: 1 }] } },
+          keyframes: {
+            opacity: {
+              stops: [
+                { p: 0, v: 0.2 },
+                { p: 1, v: 1 },
+              ],
+            },
+          },
         },
       ],
     },

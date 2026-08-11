@@ -123,22 +123,29 @@ The work is complete only when:
 ## Suggested task/PR template
 
 ### Invariant
+
 What becomes true in one sentence?
 
 ### Failing-first evidence
+
 Which test fails on the parent commit, and what exact assertion proves the bug?
 
 ### Owner
+
 Which single object owns the new state transition?
 
 ### Motionpath oracle
+
 Which file or behavior in motionpath is the reference, and what is intentionally not copied?
 
 ### Motion5 boundary
+
 Which existing motion5 owner or boundary remains unchanged?
 
 ### Deletions
+
 What placeholder, duplicate owner, dead API, or stale claim is removed?
 
 ### Exit
+
 What exact command and test make the slice green?
