@@ -17,9 +17,10 @@ permissions:
 
 jobs:
   archive:
-    name: archive failed logs
+    name: archive failed logs and audit reports
     if: >-
       github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.name == 'Recovery audit' ||
       github.event.workflow_run.conclusion != 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -56,6 +57,22 @@ jobs:
           gh run view "$RUN_ID" --log-failed > "logs/$RUN_ID/failed-jobs.log" 2>&1 || true
           gh run view "$RUN_ID" --json databaseId,name,headBranch,headSha,status,conclusion,createdAt,updatedAt \
             > "logs/$RUN_ID/run.json"
+
+      - name: Download audit artifacts
+        if: steps.run.outputs.workflow == 'Recovery audit'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ steps.run.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p "logs/$RUN_ID/audit-artifacts"
+          gh run download "$RUN_ID" --dir "logs/$RUN_ID/audit-artifacts" || true
+
+      - name: Write archive index
+        env:
+          RUN_ID: ${{ steps.run.outputs.run_id }}
+        run: |
+          set -euo pipefail
           {
             echo "# CI log archive: $RUN_ID"
             echo
@@ -64,11 +81,10 @@ jobs:
             echo "- Source run: https://github.com/${{ github.repository }}/actions/runs/$RUN_ID"
             echo "- Captured: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo
-            echo "## Failed job output"
-            echo
-            echo '```text'
-            cat "logs/$RUN_ID/failed-jobs.log"
-            echo '```'
+            echo "Detailed failed-job output: [failed-jobs.log](./failed-jobs.log)"
+            if test -d "logs/$RUN_ID/audit-artifacts" && find "logs/$RUN_ID/audit-artifacts" -type f -print -quit | grep -q .; then
+              echo "Audit artifacts: [audit-artifacts/](./audit-artifacts/)"
+            fi
           } > "logs/$RUN_ID/README.md"
 
       - name: Commit archive
@@ -79,5 +95,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "logs/$RUN_ID"
-          git commit -m "ci: archive logs for run $RUN_ID" || echo "No new log files to commit"
+          git commit -m "ci: archive logs and audit report for run $RUN_ID" || echo "No new log files to commit"
           git push origin ci-logs
