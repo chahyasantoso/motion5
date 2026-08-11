@@ -48,7 +48,7 @@ describe("adapter ports", () => {
         },
       },
     });
-    expect(timeline.state).toEqual({ x: 100 });
+    expect(timeline.state).toEqual({ x: 0 });
     timeline.progress(0.5);
     expect(timeline.state).toEqual({ x: 50 });
     timeline.kill();
