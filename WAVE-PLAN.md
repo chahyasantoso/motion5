@@ -1,6 +1,38 @@
 # Motion5 rescue wave plan
 
-This is the execution plan for `rescue/restore-motionpath-parity`. It is intentionally separate from `RECOVERY.md`: `RECOVERY.md` is the short handoff, this file is the detailed work queue.
+This is the **single live checklist** for `rescue/restore-motionpath-parity`. `RECOVERY.md` is the short restart handoff; this file owns the current status, next action, wave plan, evidence links, and exit gates. If the prose below conflicts with the table, the table is the current status.
+
+## Live status dashboard
+
+| ID | Slice | Status | Branch | Related code / tests | Commit or evidence |
+|---|---|---|---|---|---|
+| W0 | Rescue loop and audit baseline | Not started | `rescue/restore-motionpath-parity` | [RECOVERY.md](RECOVERY.md), [progress template](progress/README.md), planned [.github/workflows/recovery-audit.yml](.github/workflows/recovery-audit.yml) | No workflow run yet |
+| A1 | Final-value memo consistency | Done on main, verify on rescue | `fix/A1-final-value-memo` | [graph-publisher.ts](packages/core/src/runtime/graph-publisher.ts), [consistency test](packages/core/test/integration/publisher-output-merge-consistency.test.ts) | [1d59c087](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a) |
+| A2 | Preserve subscriber errors | Done on main, verify on rescue | `fix/A2-subscriber-errors` | [patch-registry.ts](packages/core/src/runtime/patch-registry.ts), [subscriber test](packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts) | [1d59c087](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835a) |
+| A3 | Guard subscriber-triggered reentrancy | Not started | `fix/A3-publisher-reentrancy` | Publisher/runtime notification boundary | No evidence yet |
+| B1 | Prepare-stage plugin contribution | Not started | `fix/B1-track-contribution` | [track.ts](packages/core/src/domain/track.ts), [plugins.ts](packages/core/src/domain/plugins.ts) | No evidence yet |
+| B2 | Real GSAP multi-stop compilation | Not started | `fix/B2-gsap-stop-compilation` | [gsap.ts](packages/core/src/adapters/interpolator/gsap.ts), [adapter tests](packages/core/test/contract/adapters.test.ts) | No evidence yet |
+| C1 | React store resubscription | Not started | `fix/C1-react-store-lifecycle` | [patch-store.ts](packages/react/src/patch-store.ts), [store test](packages/react/test/patch-store.test.ts) | No evidence yet |
+| C2 | React hook and public exports | Not started | `fix/C2-react-public-surface` | Planned [react index](packages/react/src/index.ts) and hook | No evidence yet |
+| C3 | DOM metadata, serialization, and clear coverage | Not started | `fix/C3-dom-contract` | [dom.ts](packages/core/src/adapters/dom.ts), [DOM test](packages/core/test/integration/dom-patch-apply.test.ts), oracle [domRenderer.js](https://github.com/chahyasantoso/motionpath/blob/1bc8d044347fa3b1732e6dad3bc8437ad23e2687/packages/core/src/adapters/domRenderer.js) | No evidence yet |
+| D1 | Discover consumer packages | Not started | `fix/D1-boundary-discovery` | [boundary-scan.mjs](scripts/boundary-scan.mjs) | No evidence yet |
+| D2 | Planted boundary self-test | Not started | `fix/D2-boundary-self-test` | [boundary test](packages/core/test/unit/scripts/boundary-scan.test.ts), [fixtures](scripts/boundary-scan-fixtures.mjs) | No evidence yet |
+| D3 | Acceptance and failing-first evidence gates | Not started | `fix/D3-evidence-gates` | Planned acceptance checker and manual audit workflow | No evidence yet |
+| E1 | Required declaration build | Not started | `fix/E1-required-build` | [.github/workflows/ci.yml](.github/workflows/ci.yml), package exports | No evidence yet |
+| E2 | Real end-to-end product path | Not started | `fix/E2-end-to-end-proof` | Planned integration fixture | No evidence yet |
+| E3 | Mutation baseline and ratchet | Not started | `fix/E3-mutation-gate` | Planned Stryker config and audit artifact | No baseline yet |
+
+### How to update this table
+
+After each slice PR merges into rescue, update exactly this table first:
+
+- `Not started` -> `In progress` when the branch exists and work has begun.
+- `In progress` -> `Red test recorded` when the failing-first run is saved.
+- `Red test recorded` -> `Green, pending wave gate` when the real acceptance test and cheap CI pass.
+- `Green, pending wave gate` -> `Done` only when the slice's dependencies and wave exit gate pass.
+- Put the PR or commit link in the final column, plus links to durable CI artifacts when available.
+
+The detailed `progress/<slice>.md` files are optional supporting logs, not a second status system. If one exists, link it from the relevant row. Do not mark a slice done from code inspection or a generic green test suite.
 
 ## Operating rules
 
@@ -13,7 +45,7 @@ The oracle is evidence, not a wholesale-copy target. Inspect the named oracle fi
 **Goal:** make recovery resumable and observable.
 
 - Create `rescue/restore-motionpath-parity` from frozen `main`.
-- Add one `progress/<slice>.md` file per slice using `progress/README.md`.
+- Add one `progress/<slice>.md` file per slice using `progress/README.md` when detailed evidence is useful.
 - Add `.github/workflows/recovery-audit.yml` as the manual audit workflow described below.
 - Run the workflow on baseline before fixing code.
 - Record the initial mutation score, failing-first result, and missing acceptance mappings.
@@ -56,7 +88,7 @@ The workflow should report a nonzero failure for broken evidence, but it should 
 - Area: `packages/core/src/runtime/patch-registry.ts` and publisher recovery path.
 - Invariant: every subscriber gets a turn, the registry resets, and the first original error is rethrown.
 - Evidence: throwing node subscriber, throwing batch subscriber, and registry reuse tests.
-- Status at baseline: implemented in commit `1d59c087231c3c3f9c3cde6822d34835a`.
+- Status at baseline: implemented in commit `1d59c087231c3c3f9c3cde6822d34835ee94705a`.
 
 ### A3: define and guard reentrancy
 
@@ -130,7 +162,7 @@ The workflow should report a nonzero failure for broken evidence, but it should 
 - Invariant: scanner discovers every package under `packages/` except `core`; no hardcoded consumer list.
 - Evidence: temporary package fixture is scanned and its internal import is detected.
 
-### D2: planted scanner self-test
+### D2: planted boundary self-test
 
 - Branch: `fix/D2-boundary-self-test`.
 - Areas: boundary scanner and test.
@@ -169,7 +201,7 @@ The workflow should report a nonzero failure for broken evidence, but it should 
 
 - Branch: `fix/E3-mutation-gate`.
 - Areas: Stryker configuration and workflow.
-- Invariant: mutations in runtime and adapters cannot silently survive; first run establishes the measured baseline, later runs cannot regress.
+- Invariant: mutations in runtime and adapters cannot silently survive; first run establishes the baseline, not a made-up pass threshold.
 - Evidence: uploaded mutation report and a checked-in threshold generated from observed data, never invented.
 
 **Wave E exit gate:** required build, end-to-end fixture, and cheap PR checks are green; mutation score is recorded and ratcheted; only then update status docs and merge rescue into `main`.
