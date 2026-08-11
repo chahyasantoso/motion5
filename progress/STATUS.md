@@ -33,7 +33,7 @@ Last reviewed: 2026-08-12
 
 ## Current next action
 
-D2 on [PR #57](https://github.com/chahyasantoso/motion5/pull/57). The slice self-test was red for a reason unrelated to the scanner and the slice log claimed a consumer rule the scanner does not have. Both are corrected; let CI go green on the PR head, dispatch the Recovery audit with base `2409672471cf673594c9970864dc8ff9a93184cd`, then merge.
+Dispatch the Recovery audit against `fix/D2-boundary-self-test` with base `2409672471cf673594c9970864dc8ff9a93184cd` and no exception, then merge [PR #57](https://github.com/chahyasantoso/motion5/pull/57). Slice CI is already green on the head commit; the audit is the only outstanding gate.
 
 [PR #58](https://github.com/chahyasantoso/motion5/pull/58) already carries D3 work. It is parked until D2 merges, because D3 rebases onto the D2 rescue tip and its acceptance map must name the boundary self-test D2 finalizes.
 
@@ -106,8 +106,9 @@ Open shared gates that no merged slice closes: Wave A exit, acceptance mapping (
 
 - Status: In progress. Branch `fix/D2-boundary-self-test`, [PR #57](https://github.com/chahyasantoso/motion5/pull/57). [Slice log](D2.md).
 - Files: [scanner](../scripts/boundary-scan.mjs), [self-test](../packages/core/test/unit/scripts/boundary-scan.test.ts), [fixtures](../scripts/boundary-scan-fixtures.ts).
-- Evidence: none accepted yet. CI run [#31512814867](https://github.com/chahyasantoso/motion5/actions/runs/31512814867) was red on `quality` and `boundaries`; the self-test asserted the banned fixture was clean, so it failed for a reason unrelated to the scanner. Corrected on this branch along with the false consumer-rule claim in the slice log and the drifted duplicate fixture file.
-- Blocking exit: green CI on the PR head, then a Recovery audit dispatch with base `2409672471cf673594c9970864dc8ff9a93184cd` and no exception.
+- Scanner gap closed: the parent scanned the five core layers plus a hardcoded `engine.ts`, so `packages/core/src/index.ts` was checked for export names only and `packages/core/src/internal.ts` was never read. Both public entries could import a renderer or carry banned vocabulary while the boundaries job stayed green.
+- Evidence: slice [CI #31547163284](https://github.com/chahyasantoso/motion5/actions/runs/31547163284) is green on `quality`, `boundaries`, and `integration`. The earlier red run [#31512814867](https://github.com/chahyasantoso/motion5/actions/runs/31512814867) failed because the self-test asserted the banned fixture was clean, which is unrelated to the scanner.
+- Blocking exit: a Recovery audit dispatch with base `2409672471cf673594c9970864dc8ff9a93184cd` and no exception. The failing-first leg must be red on the base with a behavioral assertion on `packages/core/src/internal.ts: renderer or engine import`, not an import-resolution error.
 
 ### D3: Acceptance evidence gates
 
