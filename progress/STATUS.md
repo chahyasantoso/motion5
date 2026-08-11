@@ -9,7 +9,7 @@ Last reviewed: 2026-08-11
 | W0 | Rescue loop and audit baseline | Green, pending wave gate | `rescue/restore-motionpath-parity` | [WAVE-PLAN](../WAVE-PLAN.md), [audit workflow](../.github/workflows/recovery-audit.yml), [baseline record](W0-baseline.md) | [baseline record](W0-baseline.md), workflow commits [`de126e90`](https://github.com/chahyasantoso/motion5/commit/de126e90b446713dfa4b9d162261a89c2d10ecf0) and [`4398247f`](https://github.com/chahyasantoso/motion5/commit/4398247f305df6272fd666fa8d32618ee32c0077); reports received |
 | A1 | Final-value memo consistency | Done on main, verify on rescue | `fix/A1-final-value-memo` | [publisher](../packages/core/src/runtime/graph-publisher.ts), [test](../packages/core/test/integration/publisher-output-merge-consistency.test.ts) | [1d59c087](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a) |
 | A2 | Preserve subscriber errors | Done on main, verify on rescue | `fix/A2-subscriber-errors` | [registry](../packages/core/src/runtime/patch-registry.ts), [test](../packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts) | [1d59c087](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a) |
-| A3 | Guard subscriber-triggered reentrancy | In progress | `fix/A3-publisher-reentrancy` | Publisher/runtime notification boundary | Next: failing-first test |
+| A3 | Guard subscriber-triggered reentrancy | Red test recorded | `fix/A3-publisher-reentrancy` | [registry](../packages/core/src/runtime/patch-registry.ts), [publisher](../packages/core/src/runtime/graph-publisher.ts), [runtime](../packages/core/src/runtime/graph-runtime.ts), [test](../packages/core/test/unit/runtime/publisher-reentrancy.test.ts), [slice log](A3.md) | red [`9d16a0a1`](https://github.com/chahyasantoso/motion5/commit/9d16a0a139189b8d77db3a399bbd707313f1921b), implementation [`bc240bab`](https://github.com/chahyasantoso/motion5/commit/bc240bab509973b46e19d75197b44487153ee625); policy documented in [A3.md](A3.md). No green claim yet: `npm run check` and PR checks have not been run on this branch |
 | B1 | Prepare-stage plugin contribution | Not started | `fix/B1-track-contribution` | [track](../packages/core/src/domain/track.ts), [plugins](../packages/core/src/domain/plugins.ts) | No evidence yet |
 | B2 | Real GSAP multi-stop compilation | Not started | `fix/B2-gsap-stop-compilation` | [GSAP adapter](../packages/core/src/adapters/interpolator/gsap.ts), [tests](../packages/core/test/contract/adapters.test.ts) | No evidence yet |
 | C1 | React store resubscription | Not started | `fix/C1-react-store-lifecycle` | [store](../packages/react/src/patch-store.ts), [test](../packages/react/test/patch-store.test.ts) | No evidence yet |
@@ -41,4 +41,10 @@ Last reviewed: 2026-08-11
 
 ## Current next action
 
-Start A3: create `fix/A3-publisher-reentrancy` from the latest rescue tip, add the failing-first subscriber-triggered flush test, inspect the motionpath scheduler/notification behavior, and choose one explicit non-recursive policy. Do not start B1/B2 until A3 is proven.
+Verify A3 before anything else, in this order:
+
+1. Check out [`9d16a0a1`](https://github.com/chahyasantoso/motion5/commit/9d16a0a139189b8d77db3a399bbd707313f1921b) and run `npx vitest run packages/core/test/unit/runtime/publisher-reentrancy.test.ts`. It must be red; paste the failures into [A3.md](A3.md).
+2. Check out [`bc240bab`](https://github.com/chahyasantoso/motion5/commit/bc240bab509973b46e19d75197b44487153ee625) and run `npm run check`. It must be green, including the A1/A2 tests and `test:boundaries`.
+3. Only then set A3 to `Green, pending wave gate`, open the PR from `fix/A3-publisher-reentrancy` into `rescue/restore-motionpath-parity`, and close the Wave A exit gate (A1 and A2 re-verified on rescue).
+
+Do not start B1/B2 until A3 is green and merged into rescue.
