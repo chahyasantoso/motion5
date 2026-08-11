@@ -27,24 +27,21 @@ function readStops(property: unknown): readonly AuthoredStop[] {
   if (!property || typeof property !== "object" || !("stops" in property)) return [];
   const stops = (property as { stops?: unknown }).stops;
   if (!Array.isArray(stops)) return [];
-  return stops.filter(
-    (stop): stop is AuthoredStop =>
-      Boolean(
-        stop &&
-          typeof stop === "object" &&
-          typeof (stop as { p?: unknown }).p === "number" &&
-          Number.isFinite((stop as { p: number }).p) &&
-          "v" in stop,
-      ),
+  return stops.filter((stop): stop is AuthoredStop =>
+    Boolean(
+      stop &&
+        typeof stop === "object" &&
+        typeof (stop as { p?: unknown }).p === "number" &&
+        Number.isFinite((stop as { p: number }).p) &&
+        "v" in stop,
+    ),
   );
 }
 
 function readDuration(config: unknown): number {
   if (!config || typeof config !== "object") return 1;
   const duration = (config as { duration?: unknown }).duration;
-  return typeof duration === "number" && Number.isFinite(duration) && duration >= 0
-    ? duration
-    : 1;
+  return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
 }
 
 function compileKeyframes(config: unknown): {
