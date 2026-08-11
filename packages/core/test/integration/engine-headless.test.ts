@@ -70,8 +70,14 @@ describe("Engine", () => {
     runtime.mount("hero/arm");
     const first = runtime.graph.flush(["hero/arm"], 1);
     const second = runtime.graph.flush(["hero/arm"], 2);
-    expect(first.patches[0]?.values).toEqual({ opacity: 0.2, rendered: true });
-    expect(second.patches[0]?.values).toEqual({ opacity: 0.2, rendered: true });
+    expect(first.patches.find(({ nodeId }) => nodeId === "hero/arm")?.values).toEqual({
+      opacity: 0.2,
+      rendered: true,
+    });
+    expect(second.patches.find(({ nodeId }) => nodeId === "hero/arm")?.values).toEqual({
+      opacity: 0.2,
+      rendered: true,
+    });
     expect(compose).toHaveBeenCalledTimes(1);
     runtime.dispose();
   });
