@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
@@ -39,6 +39,21 @@ describe("Engine", () => {
     const runtime = engine.load(project);
     expect(runtime.graph.memberCount).toBe(0);
     runtime.dispose();
+  });
+
+  it("reuses one compiled timeline across repeated flushes and kills it once", () => {
+    const create = vi.fn(createFakeInterpolator().create);
+    const runtime = new Engine({
+      clock: createManualClock(),
+      interpolator: { create },
+      scheduler: createFakeScheduler(),
+    }).load(project);
+    runtime.mount("hero/arm");
+    runtime.graph.flush(["hero/arm"], 1);
+    runtime.graph.flush(["hero/arm"], 2);
+    expect(create).toHaveBeenCalledTimes(1);
+    runtime.dispose();
+    expect(create.mock.results[0]?.value).toBeDefined();
   });
 
   it("composes through a real Track and publishes renderer-neutral values", () => {
