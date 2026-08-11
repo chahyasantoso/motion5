@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { createBrowserClock } from "../../src/adapters/browser-clock";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
-import { createGsapInterpolator, type GsapTimelineLike } from "../../src/adapters/interpolator/gsap";
+import {
+  createGsapInterpolator,
+  type GsapTimelineLike,
+} from "../../src/adapters/interpolator/gsap";
 
 describe("adapter ports", () => {
   it("compiles authored stops onto an adapter-owned proxy state", () => {
@@ -36,7 +39,14 @@ describe("adapter ports", () => {
     });
     const timeline = interpolator.create({
       duration: 2,
-      keyframes: { x: { stops: [{ p: 0, v: 0 }, { p: 1, v: 100 }] } },
+      keyframes: {
+        x: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 1, v: 100 },
+          ],
+        },
+      },
     });
     expect(timeline.state).toEqual({ x: 100 });
     timeline.progress(0.5);
