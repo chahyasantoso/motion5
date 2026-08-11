@@ -19,7 +19,7 @@ describe("React public hook render/update (C2)", () => {
   it("renders the current patch and updates after publication", () => {
     const registry = new PatchRegistry();
     const snapshots: Array<number | undefined> = [];
-    function Consumer(): unknown {
+    function Consumer(): null {
       const patch = usePatch(registry, "hero/arm");
       snapshots.push(patch?.values.opacity as number | undefined);
       return null;
