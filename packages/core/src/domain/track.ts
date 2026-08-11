@@ -18,13 +18,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function prepareConfig(config: unknown, plugins: readonly PluginDefinition[]): unknown {
+function prepareConfig(
+  config: unknown,
+  plugins: readonly PluginDefinition[],
+): unknown {
   if (!isRecord(config) || !isRecord(config.keyframes)) return config;
-  const keyframes = { ...config.keyframes };
+  let keyframes = { ...config.keyframes };
   for (const plugin of plugins) {
     if (plugin.stage !== "prepare" || plugin.contribute === undefined) continue;
-    const contribution = plugin.contribute(keyframes);
-    if (isRecord(contribution)) Object.assign(keyframes, contribution);
+    const authoredSnapshot = Object.freeze({ ...keyframes });
+    const contribution = plugin.contribute(authoredSnapshot);
+    if (isRecord(contribution)) keyframes = { ...keyframes, ...contribution };
   }
   return Object.freeze({ ...config, keyframes: Object.freeze(keyframes) });
 }
