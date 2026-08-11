@@ -6,6 +6,16 @@ import { GraphRuntime } from "../../../src/runtime/graph-runtime";
 import { GraphPublisher, type PublisherNode } from "../../../src/runtime/graph-publisher";
 import { PatchRegistry, type PatchBatch } from "../../../src/runtime/patch-registry";
 
+// Evidence-branch note: `pendingSeeds` and `notifying` are read structurally so this file
+// compiles against the unfixed runtime too. Without this, `typecheck` fails first and the
+// assertions below never execute, which would prove only that the API is missing rather than
+// that the behavior is wrong. The shipped copy on the fix branch uses the real types.
+const pendingSeeds = (runtime: GraphRuntime): readonly string[] =>
+  (runtime as unknown as { pendingSeeds?: readonly string[] }).pendingSeeds ?? [];
+
+const isNotifying = (registry: PatchRegistry): boolean =>
+  (registry as unknown as { notifying?: boolean }).notifying ?? false;
+
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
@@ -69,7 +79,7 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
       "reentrant-flush-deferred",
     );
     // The follow-up is queued, not dropped.
-    expect(runtime.pendingSeeds).toEqual(["caption/label"]);
+    expect(pendingSeeds(runtime)).toEqual(["caption/label"]);
     expect(runtime.registry.get("caption/label")).toBeUndefined();
 
     runtime.dispose();
@@ -90,7 +100,7 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
     });
 
     clock.tick();
-    expect(runtime.pendingSeeds).toEqual(["caption/label"]);
+    expect(pendingSeeds(runtime)).toEqual(["caption/label"]);
 
     // The clock stays the single owner: the follow-up rides the next tick.
     clock.tick();
@@ -98,7 +108,7 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
     expect(ticks).toEqual([1, 2]);
     expect(runtime.registry.get("caption/label")?.values).toEqual({ node: "caption/label" });
     expect(runtime.registry.get("caption/label")?.revision).toBe(1);
-    expect(runtime.pendingSeeds).toEqual([]);
+    expect(pendingSeeds(runtime)).toEqual([]);
 
     // Exactly one follow-up: a third tick must not replay it.
     clock.tick();
@@ -128,7 +138,7 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
     clock.tick();
 
     expect(ticks).toEqual([1]);
-    expect([...runtime.pendingSeeds].sort()).toEqual(["caption/label", "hero/arm"]);
+    expect([...pendingSeeds(runtime)].sort()).toEqual(["caption/label", "hero/arm"]);
 
     clock.tick();
     expect(ticks).toEqual([1, 2]);
@@ -152,7 +162,7 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
 
     expect(() => registry.closeBatch()).not.toThrow();
     expect((nested as Error)?.message).toMatch(/while subscribers are being notified/);
-    expect(registry.notifying).toBe(false);
+    expect(isNotifying(registry)).toBe(false);
   });
 
   it("rejects a direct publisher flush from inside a subscriber and stays reusable", () => {
@@ -165,7 +175,7 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
     expect(() => publisher.flush(soleSnapshot("hero/arm"), ["hero/arm"], 1)).toThrow(
       /while subscribers are being notified/,
     );
-    expect(registry.notifying).toBe(false);
+    expect(isNotifying(registry)).toBe(false);
     expect(() => publisher.flush(soleSnapshot("other/node"), ["other/node"], 3)).not.toThrow();
   });
 });
