@@ -21,11 +21,26 @@ describe("schema v5 validator", () => {
   it("rejects malformed, non-finite, out-of-range, non-monotonic, and duplicate stops", () => {
     const result = validateV5(
       projectWithKeyframes({
-        malformed: { stops: [{ p: 0, v: 0 }, { p: 0.5, v: 1 }] },
+        malformed: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 0.5, v: 1 },
+          ],
+        },
         nan: { stops: [{ p: Number.NaN, v: 0 }] },
         range: { stops: [{ p: 1.5, v: 0 }] },
-        order: { stops: [{ p: 0.8, v: 0 }, { p: 0.2, v: 1 }] },
-        duplicate: { stops: [{ p: 0.2, v: 0 }, { p: 0.2, v: 1 }] },
+        order: {
+          stops: [
+            { p: 0.8, v: 0 },
+            { p: 0.2, v: 1 },
+          ],
+        },
+        duplicate: {
+          stops: [
+            { p: 0.2, v: 0 },
+            { p: 0.2, v: 1 },
+          ],
+        },
       }),
     );
     expect(result.valid).toBe(false);
@@ -40,9 +55,7 @@ describe("schema v5 validator", () => {
   });
 
   it("warns when a property does not cover both interpolation endpoints", () => {
-    const result = validateV5(
-      projectWithKeyframes({ opacity: { stops: [{ p: 0.25, v: 0.5 }] } }),
-    );
+    const result = validateV5(projectWithKeyframes({ opacity: { stops: [{ p: 0.25, v: 0.5 }] } }));
     expect(result.valid).toBe(true);
     expect(result.diagnostics).toEqual(
       expect.arrayContaining([
@@ -138,7 +151,10 @@ describe("schema v5 validator", () => {
           id: "hero",
           trigger: { type: "manual" },
           tracks: [
-            { id: "pointer", observes: [{ source: "~/cursor", role: "input", target: "position" }] },
+            {
+              id: "pointer",
+              observes: [{ source: "~/cursor", role: "input", target: "position" }],
+            },
           ],
         },
       ],
