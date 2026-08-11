@@ -8,7 +8,9 @@ export interface GsapTimelineLike {
   kill(): void;
 }
 
-export interface GsapLike { timeline(config?: unknown): GsapTimelineLike; }
+export interface GsapLike {
+  timeline(config?: unknown): GsapTimelineLike;
+}
 
 function compileVars(config: unknown): Record<string, unknown> {
   if (!config || typeof config !== "object" || !("keyframes" in config)) return {};
@@ -39,7 +41,16 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
         if (value === undefined) return timeline.progress();
         timeline.progress(value);
       }
-      return { get duration() { return timeline.duration(); }, state: proxy, progress, kill(): void { timeline.kill(); } };
+      return {
+        get duration() {
+          return timeline.duration();
+        },
+        state: proxy,
+        progress,
+        kill(): void {
+          timeline.kill();
+        },
+      };
     },
   };
 }
