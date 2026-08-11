@@ -1,34 +1,36 @@
 # W0: recovery audit baseline
 
-- Status: Green, pending wave gate
+- Status: Done
 - Branch: `rescue/restore-motionpath-parity`
-- Parent commit: `913e564a806394c9f11307dfd2442a8f9ffa2620`
-- Audit workflow commit: `de126e90b446713dfa4b9d162261a89c2d10ecf0`
+- Baseline commit: [`913e564a`](https://github.com/chahyasantoso/motion5/commit/913e564a806394c9f11307dfd2442a8f9ffa2620)
+- Audit workflow implementation: [`0db6147`](https://github.com/chahyasantoso/motion5/commit/0db6147083dde1cd5808f6fcf22b69c0fd1060fa)
 - Oracle repository and revision: `chahyasantoso/motionpath`, `1bc8d044347fa3b1732e6dad3bc8437ad23e2687`
 
-## Runs received
+## Dispatch evidence
 
-Two GitHub Actions artifact ZIPs were supplied. Their labels were reversed, so the report contents are authoritative:
+The workflow was added to the default branch so GitHub Actions would expose it in the UI. The workflow definition was then selected from `rescue/restore-motionpath-parity`, while the `ref` input selected the code under audit.
 
-- Report labeled `main-audit.zip`: audited `rescue/restore-motionpath-parity`, commit `ef4405bb1d290500a8d7758e01066443381086f9`, generated `2026-08-11T06:49:12Z`.
-- Report labeled `rescue-audit.zip`: audited `main`, commit `4398247f305df6272fd666fa8d32618ee32c0077`, generated `2026-08-11T06:46:19Z`.
+- Baseline [audit run #5](https://github.com/chahyasantoso/motion5/actions/runs/31481132895)
+- Rescue [audit run #6](https://github.com/chahyasantoso/motion5/actions/runs/31481291665)
 
-## Results
+Each run produced six artifacts: contract, mutation, acceptance, failing-first, build, and the assembled report. Both runs failed the missing-evidence jobs as designed. That is the expected W0 measurement, not a false green.
 
-- Existing test suite: pass, 31 files and 132 tests.
-- Boundary suite: pass.
-- Missing evidence gates on both refs:
-  - `scripts/acceptance-scan.mjs`
-  - `docs/acceptance-map.json`
-  - `packages/core/test/integration/end-to-end.test.ts`
-  - `packages/react/src/index.ts`
-  - `stryker.config.json`
-- This is a baseline, not a recovery pass. Green existing tests do not close the missing gates.
+## Rescue contract result
 
-## Failing-first evidence
+The contract artifact for run #6 records commit `0db6147083dde1cd5808f6fcf22b69c0fd1060fa` and:
 
-Not run. Wave 0 establishes the audit workflow and baseline; the next slice must add a real failing-first test before production changes.
+- GSAP contract: pass, 18 tests
+- DOM contract: pass, 1 test
+- React lifecycle: pass, 1 test
+- Boundaries: pass, 6 tests
+- End-to-end: missing, `packages/core/test/integration/end-to-end.test.ts`
+
+The missing end-to-end fixture belongs to E2. Its absence does not invalidate the existing GSAP, DOM, React, or boundary evidence.
+
+## Interpretation
+
+W0 is closed: the audit is executable through manual dispatch, uploads durable artifacts, assembles a report, and fails when required evidence is absent. The baseline and rescue runs are linked above. The red jobs identify future work: acceptance mapping, mutation baseline, failing-first on a slice head, declaration build, and end-to-end proof.
 
 ## Next exact action
 
-Start A3, subscriber-triggered reentrancy. First add the failing test on this rescue tip, inspect the oracle scheduler/notification behavior, then implement one explicit non-recursive policy. Do not start B1/B2 until Wave A's runtime notification behavior is proven.
+Dispatch the audit with `ref: 74f885ca` and `base: bec08ded` to prove B1 failing-first. Then start B2 from the latest rescue tip.
