@@ -6,6 +6,7 @@ function createInterpolator() {
   const progressCalls: number[] = [];
   const timeline = {
     duration: 1,
+    state: {} as Readonly<Record<string, unknown>>,
     progress: (value?: number) => {
       if (value !== undefined) progressCalls.push(value);
       return 0;
