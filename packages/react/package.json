@@ -6,6 +6,9 @@
   "dependencies": {
     "@motion5/core": "0.0.0"
   },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
   "exports": {
     ".": "./src/index.ts"
   }
