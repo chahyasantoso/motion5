@@ -14,6 +14,12 @@ Restore motion5 by adapting the working behavior of the oracle repository, `chah
 - Oracle revision inspected for this handoff: `1bc8d044347fa3b1732e6dad3bc8437ad23e2687`
 - Rescue branch to create locally: `rescue/restore-motionpath-parity`
 
+## How work is merged
+
+Freeze feature work on `main`. Create the rescue branch once, then create one short-lived fix branch from the latest rescue tip for each slice. Each fix branch merges back into `rescue/restore-motionpath-parity` only after its failing-first test, implementation, and CI evidence are present. Merge rescue into `main` once, after all wave exit gates pass.
+
+The detailed slice order, dependencies, acceptance tests, and exit gates live in [`WAVE-PLAN.md`](WAVE-PLAN.md). Keep this file as the handoff index and keep the plan as the execution map.
+
 ## Verdict at baseline
 
 A1 and A2 are implemented: publisher memo stores post-merge values, and subscriber failures preserve the original error while resetting batch state.
@@ -30,21 +36,6 @@ Open defects and proof gaps:
 - No required build job or honest authored-project-to-real-interpolation-to-clock-to-DOM end-to-end fixture.
 - `docs/SESSION-STATUS.md` overstates the GSAP gate and must not be used as evidence until corrected.
 
-## Recovery order
-
-1. Create the rescue branch from the baseline. Freeze feature work on `main`.
-2. Build behavior matrices from motionpath before implementing each slice. Record oracle file paths and expected outputs in the corresponding test.
-3. Add failing-first tests against current motion5. Do not make the fake smarter to make the test pass.
-4. Replace the GSAP fake contract with real GSAP and test a multi-stop property at progress 0, 0.5, and 1.
-5. Wire prepare-stage `contribute` into Track construction before interpolator creation, then compile the contributed keyframes.
-6. Add DOM serialization, metadata-based internal-key filtering, and clear-on-teardown coverage.
-7. Add React resubscription, hooks, public exports, and lifecycle tests.
-8. Choose and test reentrancy behavior: deferred follow-up or explicit next-tick invalidation. Never allow recursive batch opening.
-9. Repair boundary discovery and planted-fixture testing.
-10. Add the required declaration build and public-import smoke test, then one real end-to-end fixture.
-11. Run mutation testing over runtime and adapters. Use the first report as a baseline, then ratchet upward instead of inventing a threshold.
-12. Update status docs only after executable evidence passes.
-
 ## Non-negotiable evidence rules
 
 - Every acceptance criterion maps to a test ID and a test file.
@@ -59,9 +50,9 @@ Open defects and proof gaps:
 
 At session start:
 
-1. Read this file and the latest files under `progress/`.
-2. Inspect current `main` and recent CI artifacts.
-3. Pick one recovery item only.
+1. Read this file, [`WAVE-PLAN.md`](WAVE-PLAN.md), and the latest files under `progress/`.
+2. Inspect current `main`, the rescue branch, and recent CI artifacts.
+3. Pick one recovery slice only.
 4. Identify the oracle behavior and write or verify the failing-first test before changing production code.
 
 At session end:
