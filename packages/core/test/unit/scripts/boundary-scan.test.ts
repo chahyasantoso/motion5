@@ -52,10 +52,7 @@ describe("boundary scan planted violations", () => {
     try {
       await mkdir(join(root, "packages", "core", "src"), { recursive: true });
       await mkdir(join(root, "packages", "vue", "src"), { recursive: true });
-      await writeFile(
-        join(root, "packages", "core", "src", "index.ts"),
-        "export const ok = 1;\n",
-      );
+      await writeFile(join(root, "packages", "core", "src", "index.ts"), "export const ok = 1;\n");
       await writeFile(
         join(root, "packages", "vue", "src", "index.ts"),
         "import React from 'react';\nimport type { Patch } from '../../core/src/runtime/patch-registry';\n",
