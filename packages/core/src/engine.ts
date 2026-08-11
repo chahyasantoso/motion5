@@ -33,24 +33,23 @@ export class Engine {
       id: string;
       track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> };
     }) => {
-      let track = tracks.get(node.id);
-      if (!track) {
-        const resolved = this.#plugins?.resolveForKeyframes(
-          node.track.keyframes ?? {},
-          `${node.id}.keyframes`,
-        );
-        if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
-          throw new TypeError(resolved.diagnostics.map(({ message }) => message).join(" "));
-        track = new Track({
-          interpolator: this.#options.interpolator,
-          interpolationConfig: node.track,
-          ...(resolved ? { plugins: resolved } : {}),
-        });
-        tracks.set(node.id, track);
-      }
-      const compiledTrack = track;
       return (inputs: Readonly<Record<string, unknown>>) => {
-        const snapshot = compiledTrack.compose(inputs as Readonly<ImmutableRecord>);
+        let track = tracks.get(node.id);
+        if (!track) {
+          const resolved = this.#plugins?.resolveForKeyframes(
+            node.track.keyframes ?? {},
+            `${node.id}.keyframes`,
+          );
+          if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
+            throw new TypeError(resolved.diagnostics.map(({ message }) => message).join(" "));
+          track = new Track({
+            interpolator: this.#options.interpolator,
+            interpolationConfig: node.track,
+            ...(resolved ? { plugins: resolved } : {}),
+          });
+          tracks.set(node.id, track);
+        }
+        const snapshot = track.compose(inputs as Readonly<ImmutableRecord>);
         return {
           values: snapshot.values,
           sourceProgress: snapshot.progress,
