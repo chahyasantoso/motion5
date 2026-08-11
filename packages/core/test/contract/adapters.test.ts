@@ -7,6 +7,54 @@ import {
 } from "../../src/adapters/interpolator/gsap";
 
 describe("adapter ports", () => {
+  it("compiles authored stops onto an adapter-owned proxy state", () => {
+    let value = 0;
+    let killed = false;
+    let target: Record<string, unknown> | undefined;
+    let vars: Record<string, unknown> | undefined;
+    const interpolator = createGsapInterpolator({
+      timeline: (): GsapTimelineLike => {
+        function progress(): number;
+        function progress(next: number): GsapTimelineLike;
+        function progress(next?: number): number | GsapTimelineLike {
+          if (next === undefined) return value;
+          value = next;
+          if (target && typeof vars?.x === "number") target.x = vars.x * next;
+          return timeline;
+        }
+        const timeline: GsapTimelineLike = {
+          duration: () => 2,
+          progress,
+          to(nextTarget, nextVars) {
+            target = nextTarget;
+            vars = nextVars;
+            return timeline;
+          },
+          kill() {
+            killed = true;
+          },
+        };
+        return timeline;
+      },
+    });
+    const timeline = interpolator.create({
+      duration: 2,
+      keyframes: {
+        x: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 1, v: 100 },
+          ],
+        },
+      },
+    });
+    expect(timeline.state).toEqual({ x: 100 });
+    timeline.progress(0.5);
+    expect(timeline.state).toEqual({ x: 50 });
+    timeline.kill();
+    expect(killed).toBe(true);
+  });
+
   it("adapts a GSAP-like timeline without leaking the engine object", () => {
     let value = 0;
     let killed = false;
