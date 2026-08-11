@@ -59,8 +59,12 @@ function claims(plugin: PluginDefinition, key: string): boolean {
   return Boolean(plugin.keys?.includes(key) || plugin.claimsKey?.(key));
 }
 
+function stageRank(stage: string | undefined): number {
+  return stage === "prepare" ? 0 : stage === "compose" ? 1 : 2;
+}
+
 function comparePlugins(left: PluginDefinition, right: PluginDefinition): number {
-  const stage = (left.stage ?? "compose").localeCompare(right.stage ?? "compose");
+  const stage = stageRank(left.stage) - stageRank(right.stage);
   if (stage !== 0) return stage;
   return (left.priority ?? 0) - (right.priority ?? 0);
 }
