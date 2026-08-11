@@ -17,35 +17,34 @@ export interface EngineOptions {
 /** Composition root: validates ports and constructs the one project lifetime owner. */
 export class Engine {
   readonly #options: EngineOptions;
-  readonly #plugins: PluginRegistry;
+  readonly #plugins: PluginRegistry | undefined;
 
   constructor(options: EngineOptions) {
     assertClock(options.clock);
     assertInterpolator(options.interpolator);
     assertScheduler(options.scheduler);
     this.#options = options;
-    this.#plugins = options.plugins ?? new PluginRegistry();
+    this.#plugins = options.plugins;
   }
 
   load(project: ProjectDefinition): ProjectRuntime {
     const tracks = new Map<string, Track>();
     const compose = (node: {
       id: string;
-      track: {
-        duration?: number;
-        keyframes?: Readonly<Record<string, unknown>>;
-      };
+      track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> };
     }) => {
       let track = tracks.get(node.id);
       if (!track) {
-        const keyframes = node.track.keyframes ?? {};
-        const resolved = this.#plugins.resolveForKeyframes(keyframes, `${node.id}.keyframes`);
-        if (resolved.diagnostics.some(({ severity }) => severity === "error"))
+        const resolved = this.#plugins?.resolveForKeyframes(
+          node.track.keyframes ?? {},
+          `${node.id}.keyframes`,
+        );
+        if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
           throw new TypeError(resolved.diagnostics.map(({ message }) => message).join(" "));
         track = new Track({
           interpolator: this.#options.interpolator,
           interpolationConfig: node.track,
-          plugins: resolved,
+          ...(resolved ? { plugins: resolved } : {}),
         });
         tracks.set(node.id, track);
       }
