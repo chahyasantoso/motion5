@@ -1,216 +1,96 @@
 # Motion5 rescue wave plan
 
-This is the **single live checklist** for `rescue/restore-motionpath-parity`. `RECOVERY.md` is the short restart handoff; this file owns the current status, next action, wave plan, evidence links, and exit gates. If the prose below conflicts with the table, the table is the current status.
-
-## Live status dashboard
-
-| ID | Slice | Status | Branch | Related code / tests | Commit or evidence |
-|---|---|---|---|---|---|
-| W0 | Rescue loop and audit baseline | Not started | `rescue/restore-motionpath-parity` | [RECOVERY.md](RECOVERY.md), [progress template](progress/README.md), planned [.github/workflows/recovery-audit.yml](.github/workflows/recovery-audit.yml) | No workflow run yet |
-| A1 | Final-value memo consistency | Done on main, verify on rescue | `fix/A1-final-value-memo` | [graph-publisher.ts](packages/core/src/runtime/graph-publisher.ts), [consistency test](packages/core/test/integration/publisher-output-merge-consistency.test.ts) | [1d59c087](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a) |
-| A2 | Preserve subscriber errors | Done on main, verify on rescue | `fix/A2-subscriber-errors` | [patch-registry.ts](packages/core/src/runtime/patch-registry.ts), [subscriber test](packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts) | [1d59c087](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835a) |
-| A3 | Guard subscriber-triggered reentrancy | Not started | `fix/A3-publisher-reentrancy` | Publisher/runtime notification boundary | No evidence yet |
-| B1 | Prepare-stage plugin contribution | Not started | `fix/B1-track-contribution` | [track.ts](packages/core/src/domain/track.ts), [plugins.ts](packages/core/src/domain/plugins.ts) | No evidence yet |
-| B2 | Real GSAP multi-stop compilation | Not started | `fix/B2-gsap-stop-compilation` | [gsap.ts](packages/core/src/adapters/interpolator/gsap.ts), [adapter tests](packages/core/test/contract/adapters.test.ts) | No evidence yet |
-| C1 | React store resubscription | Not started | `fix/C1-react-store-lifecycle` | [patch-store.ts](packages/react/src/patch-store.ts), [store test](packages/react/test/patch-store.test.ts) | No evidence yet |
-| C2 | React hook and public exports | Not started | `fix/C2-react-public-surface` | Planned [react index](packages/react/src/index.ts) and hook | No evidence yet |
-| C3 | DOM metadata, serialization, and clear coverage | Not started | `fix/C3-dom-contract` | [dom.ts](packages/core/src/adapters/dom.ts), [DOM test](packages/core/test/integration/dom-patch-apply.test.ts), oracle [domRenderer.js](https://github.com/chahyasantoso/motionpath/blob/1bc8d044347fa3b1732e6dad3bc8437ad23e2687/packages/core/src/adapters/domRenderer.js) | No evidence yet |
-| D1 | Discover consumer packages | Not started | `fix/D1-boundary-discovery` | [boundary-scan.mjs](scripts/boundary-scan.mjs) | No evidence yet |
-| D2 | Planted boundary self-test | Not started | `fix/D2-boundary-self-test` | [boundary test](packages/core/test/unit/scripts/boundary-scan.test.ts), [fixtures](scripts/boundary-scan-fixtures.mjs) | No evidence yet |
-| D3 | Acceptance and failing-first evidence gates | Not started | `fix/D3-evidence-gates` | Planned acceptance checker and manual audit workflow | No evidence yet |
-| E1 | Required declaration build | Not started | `fix/E1-required-build` | [.github/workflows/ci.yml](.github/workflows/ci.yml), package exports | No evidence yet |
-| E2 | Real end-to-end product path | Not started | `fix/E2-end-to-end-proof` | Planned integration fixture | No evidence yet |
-| E3 | Mutation baseline and ratchet | Not started | `fix/E3-mutation-gate` | Planned Stryker config and audit artifact | No baseline yet |
-
-### How to update this table
-
-After each slice PR merges into rescue, update exactly this table first:
-
-- `Not started` -> `In progress` when the branch exists and work has begun.
-- `In progress` -> `Red test recorded` when the failing-first run is saved.
-- `Red test recorded` -> `Green, pending wave gate` when the real acceptance test and cheap CI pass.
-- `Green, pending wave gate` -> `Done` only when the slice's dependencies and wave exit gate pass.
-- Put the PR or commit link in the final column, plus links to durable CI artifacts when available.
-
-The detailed `progress/<slice>.md` files are optional supporting logs, not a second status system. If one exists, link it from the relevant row. Do not mark a slice done from code inspection or a generic green test suite.
+This file is the **detailed execution plan** for `rescue/restore-motionpath-parity`. It is not a status dashboard. The only live status, next action, branch state, commit links, and evidence links live in [`progress/STATUS.md`](progress/STATUS.md). Update that file, not this one, when work changes.
 
 ## Operating rules
 
-Every slice gets its own branch from the latest rescue tip and one PR back into rescue. Do not combine unrelated slices. Before production changes, add a test derived from motionpath behavior and run it against the parent commit. Save the red run in the PR or workflow artifact. Then implement the smallest adapter that preserves motion5's graph and TypeScript boundaries. A slice is green only when its real acceptance test passes and the relevant cheap CI checks are green.
+Freeze `main`. Create the rescue branch once, then one short-lived fix branch from the latest rescue tip for each slice. Each slice gets a failing-first test derived from the working `motionpath` oracle, implementation, and durable CI evidence before it can be marked complete in `progress/STATUS.md`. Merge slices into rescue in dependency order, then merge rescue into `main` once all wave gates pass.
 
-The oracle is evidence, not a wholesale-copy target. Inspect the named oracle files, record the behavior matrix in the test, and adapt the behavior at motion5's ports.
+The oracle is evidence, not a wholesale-copy target. Preserve motion5's graph ownership and TypeScript boundaries while adapting the oracle's working behavior at motion5's ports. A green generic test suite is not proof of a slice.
 
 ## Wave 0: establish the rescue loop
 
 **Goal:** make recovery resumable and observable.
 
 - Create `rescue/restore-motionpath-parity` from frozen `main`.
-- Add one `progress/<slice>.md` file per slice using `progress/README.md` when detailed evidence is useful.
-- Add `.github/workflows/recovery-audit.yml` as the manual audit workflow described below.
-- Run the workflow on baseline before fixing code.
-- Record the initial mutation score, failing-first result, and missing acceptance mappings.
+- Implement `.github/workflows/recovery-audit.yml`.
+- Run the audit on frozen `main` before fixing runtime code.
+- Record mutation score, failing-first result, acceptance gaps, and artifact links in `progress/STATUS.md`.
 
-**Exit gate:** baseline report is attached to the rescue tracking issue; no code slice is marked complete from the baseline run.
+**Exit gate:** a real GitHub Actions baseline run exists and is linked from W0. Until then, W0 is not complete.
 
-## Manual audit workflow specification
+### Manual audit workflow specification
 
-This workflow is planned but does not exist yet. Do not tell a future session that it was run until the file is committed and a GitHub Actions run has produced artifacts.
+The workflow is planned and does not yet exist. Do not claim it ran until the file is committed and GitHub Actions has produced artifacts.
 
 **File:** `.github/workflows/recovery-audit.yml`
 
-**Trigger:** `workflow_dispatch` with a required `ref` input, defaulting to `main`. The checkout must use that ref explicitly.
+**Trigger:** `workflow_dispatch` with a required `ref` input, defaulting to `main`; checkout must use that ref explicitly.
 
-**Jobs and artifacts:**
+**Jobs:**
 
-- `contract`: install locked dependencies and run real GSAP, DOM, React lifecycle, boundary, and end-to-end contract tests; upload the test result.
-- `mutation`: run Stryker only against runtime and adapter source; upload the HTML and JSON reports. The first run establishes the baseline, not a made-up pass threshold.
-- `acceptance`: run the acceptance-map checker and upload the mapping report.
-- `failing-first`: compare the changed ref with its parent, run only newly added tests against the parent implementation, and upload the red/green evidence. If the implementation is a refactor with no meaningful new test, require an explicit documented exception instead of silently skipping.
-- `build`: run declaration emission and public-import smoke tests; upload logs.
+- `contract`: real GSAP contract tests, DOM tests, React lifecycle tests, boundary tests, and end-to-end tests.
+- `mutation`: Stryker scoped to `packages/core/src/runtime/**` and `packages/core/src/adapters/**`; upload HTML and JSON reports.
+- `acceptance`: verify every acceptance-map item points to an existing test and that the test ran.
+- `failing-first`: compare the selected ref with its parent, run newly added tests against the parent implementation, and upload red/green evidence. Require a documented exception for a genuine refactor with no new behavioral test.
+- `build`: declaration emission and public-import smoke tests; upload logs.
 
-The workflow should report a nonzero failure for broken evidence, but it should not hide the artifacts behind `continue-on-error`. A failed audit is useful only if its report survives the failure.
+Failed jobs must still upload their reports. Manual audit measures expensive evidence and does not replace required PR checks. After recovery, format, typecheck, real contract tests, boundaries, build, and end-to-end checks must block merges; mutation testing may remain manual or nightly.
 
-## Wave A: close publisher and runtime hardening
+## Wave A: publisher and runtime hardening
 
-**Goal:** eliminate state and notification behavior that can make downstream output depend on traversal timing.
+**Goal:** eliminate state and notification behavior that can make output depend on traversal timing.
 
-### A1: final-value memo consistency
+- **A1 final-value memo consistency**, branch `fix/A1-final-value-memo`, area `packages/core/src/runtime/graph-publisher.ts`. Invariant: same-flush input consumers see the post-output-merge value. Evidence: output-overlay and partial-seed tests. Baseline implementation: [`1d59c087`](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a); verify on rescue.
+- **A2 preserve subscriber errors**, branch `fix/A2-subscriber-errors`, areas `packages/core/src/runtime/patch-registry.ts` and publisher recovery. Invariant: every subscriber gets a turn, state resets, first original error rethrows. Evidence: node subscriber, batch subscriber, and reuse tests. Baseline implementation: [`1d59c087`](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a); verify on rescue.
+- **A3 guard subscriber-triggered reentrancy**, branch `fix/A3-publisher-reentrancy`. Choose and document one policy, preferably queue one follow-up invalidation for the next tick. Evidence: subscriber-triggered flush proves no recursive batch error and no lost follow-up. Inspect motionpath scheduler behavior; do not add a second clock.
 
-- Branch: `fix/A1-final-value-memo`.
-- Area: `packages/core/src/runtime/graph-publisher.ts`.
-- Invariant: same-flush input consumers see exactly the post-output-merge value that was published.
-- Evidence: same-flush output-overlay test and partial-seed fallback test.
-- Status at baseline: implemented in commit `1d59c087231c3c3f9c3cde6822d34835ee94705a`.
-
-### A2: preserve subscriber errors
-
-- Branch: `fix/A2-subscriber-errors`.
-- Area: `packages/core/src/runtime/patch-registry.ts` and publisher recovery path.
-- Invariant: every subscriber gets a turn, the registry resets, and the first original error is rethrown.
-- Evidence: throwing node subscriber, throwing batch subscriber, and registry reuse tests.
-- Status at baseline: implemented in commit `1d59c087231c3c3f9c3cde6822d34835ee94705a`.
-
-### A3: define and guard reentrancy
-
-- Branch: `fix/A3-publisher-reentrancy`.
-- Area: publisher/runtime notification boundary.
-- Decision: choose one explicit policy, preferably queue one follow-up invalidation for the next tick rather than recursively opening a batch.
-- Evidence: subscriber-triggered flush test proves no recursive batch error and proves the follow-up invalidation is not lost.
-- Oracle check: inspect motionpath's scheduler/notification behavior; do not invent a second clock.
-
-**Wave A exit gate:** A1, A2, and A3 tests pass; registry is reusable after all listener failures; no subscriber can recursively open a second batch.
+**Wave A exit gate:** A1, A2, and A3 evidence passes; registry is reusable after listener failures; subscribers cannot recursively open a second batch.
 
 ## Wave B: restore the value compiler
 
-**Goal:** make authored stops and plugin contributions produce the values that the real interpolator owns.
+**Goal:** authored stops and plugin contributions produce values owned by the real interpolator.
 
-### B1: prepare-stage contribution
+- **B1 prepare-stage plugin contribution**, branch `fix/B1-track-contribution`, areas `packages/core/src/domain/track.ts`, plugin contract, and interpolation config. Prepare plugins run once during Track construction before interpolator creation; merged output is compiled. Evidence: transformed stop appears in output and contributor is not rerun on compose. Inspect motionpath contribution and compilation paths.
+- **B2 real GSAP multi-stop compilation**, branch `fix/B2-gsap-stop-compilation`, area `packages/core/src/adapters/interpolator/gsap.ts`. A multi-stop property must be correct at progress `0`, `0.5`, and `1`. Use real GSAP, no interpolation fake. Do not initialize proxy with the final stop or pass only the last value to `timeline.to()`.
 
-- Branch: `fix/B1-track-contribution`.
-- Areas: `packages/core/src/domain/track.ts`, plugin contract, interpolation config.
-- Invariant: matching `stage: "prepare"` plugins run once during Track construction, before interpolator creation; their merged output is compiled.
-- Evidence: contributor transforms an authored stop and the composed value reflects the transformed stop; contributor is not rerun on every compose.
-- Oracle checks: plugin contribution and keyframe compilation paths in motionpath.
+**Wave B exit gate:** real GSAP and contribution tests pass with authored stops compiled into an adapter-owned timeline. B2 depends on B1.
 
-### B2: real GSAP multi-stop compilation
+## Wave C: ship the consumer boundaries
 
-- Branch: `fix/B2-gsap-stop-compilation`.
-- Area: `packages/core/src/adapters/interpolator/gsap.ts`.
-- Invariant: a multi-stop property has correct state at progress `0`, `0.5`, and `1`.
-- Evidence: real GSAP devDependency, no interpolation fake, multi-stop numeric and at least one non-numeric contract case where supported.
-- Required correction: do not initialize the proxy with the final stop and do not pass only the last value to `timeline.to()`.
+**Goal:** prove output can be consumed safely by React and DOM.
 
-**Wave B exit gate:** real GSAP and prepare-stage contribution tests pass, with authored stops compiled into an adapter-owned timeline. B2 depends on B1.
+- **C1 React store lifecycle**, branch `fix/C1-react-store-lifecycle`, area `packages/react/src/patch-store.ts`. Subscribe, remove the last listener, subscribe again, and receive future patches. Test resubscription, snapshot identity, and StrictMode-style lifecycle.
+- **C2 React public hook and exports**, branch `fix/C2-react-public-surface`, areas `packages/react/src/index.ts`, hook, and dependencies. Use `useSyncExternalStore` without leaking core internals. Test render/update and public import. Depends on C1.
+- **C3 DOM adapter contract**, branch `fix/C3-dom-contract`, area `packages/core/src/adapters/dom.ts` and plugin metadata. Match target resolution, dirty diff, omitted-key removal, blocked/error no-op, internal-key filtering, output serialization, and cache teardown. Test multi-target, serializer, and explicit `clear(target)`. `clear()` is cache teardown, not style restoration, unless the contract changes. Oracle: [`domRenderer.js`](https://github.com/chahyasantoso/motionpath/blob/1bc8d044347fa3b1732e6dad3bc8437ad23e2687/packages/core/src/adapters/domRenderer.js).
 
-## Wave C: make consumers shippable
-
-**Goal:** prove runtime output can be consumed safely by React and DOM boundaries.
-
-### C1: React store lifecycle
-
-- Branch: `fix/C1-react-store-lifecycle`.
-- Area: `packages/react/src/patch-store.ts`.
-- Invariant: subscribe, remove the last listener, then subscribe again still receives future patches.
-- Evidence: exact 0-to-1 resubscription test, unchanged snapshot identity test, and StrictMode-style subscribe/unsubscribe lifecycle test.
-
-### C2: React public hook and exports
-
-- Branch: `fix/C2-react-public-surface`.
-- Areas: `packages/react/src/index.ts`, hook, package dependencies.
-- Invariant: a real hook reads the external store through `useSyncExternalStore` without leaking core internals.
-- Evidence: render/update test and public-import smoke test.
-- Dependency: C1.
-
-### C3: DOM adapter contract
-
-- Branch: `fix/C3-dom-contract`.
-- Area: `packages/core/src/adapters/dom.ts` and plugin metadata boundary.
-- Invariant: target resolution, dirty diff, omitted-key removal, blocked/error no-op, internal-key filtering, output serialization, and cache teardown match the documented contract.
-- Evidence: multi-target test, serializer test, and explicit `clear(target)` test. Treat `clear()` as cache teardown, not style restoration, unless the contract is deliberately changed.
-- Oracle check: `motionpath/packages/core/src/adapters/domRenderer.js`.
-
-**Wave C exit gate:** React lifecycle and public import tests pass; DOM behavior matches the oracle and has explicit clear coverage.
+**Wave C exit gate:** React lifecycle/public imports pass; DOM matches oracle with explicit clear coverage.
 
 ## Wave D: make governance executable
 
-**Goal:** stop documentation-only acceptance criteria from becoming green claims.
+**Goal:** stop documentation-only acceptance criteria becoming green claims.
 
-### D1: discover consumer packages
+- **D1 discover consumer packages**, branch `fix/D1-boundary-discovery`, area `scripts/boundary-scan.mjs`. Discover every package under `packages/` except `core`; no hardcoded list. Test with a temporary consumer fixture.
+- **D2 planted boundary self-test**, branch `fix/D2-boundary-self-test`, areas scanner and test. `scan(tempFixtureRoot)` must detect planted consumer leakage, renderer import, and bad export. Direct predicate tests are supplementary. Weakening a scanner rule must make the planted test red.
+- **D3 acceptance and failing-first evidence**, branch `fix/D3-evidence-gates`, areas acceptance checker and audit workflow. Every acceptance item maps to an existing test that ran; new tests fail on the parent before implementation. Preserve baseline and rescue artifacts.
 
-- Branch: `fix/D1-boundary-discovery`.
-- Area: `scripts/boundary-scan.mjs`.
-- Invariant: scanner discovers every package under `packages/` except `core`; no hardcoded consumer list.
-- Evidence: temporary package fixture is scanned and its internal import is detected.
-
-### D2: planted boundary self-test
-
-- Branch: `fix/D2-boundary-self-test`.
-- Areas: boundary scanner and test.
-- Invariant: the shipped `scan(tempFixtureRoot)` detects planted consumer leakage, renderer import, and bad public export; direct predicate tests are supplementary only.
-- Evidence: weaken each relevant scanner rule and confirm the planted test goes red.
-
-### D3: acceptance and failing-first evidence
-
-- Branch: `fix/D3-evidence-gates`.
-- Areas: acceptance map/checker and manual audit workflow.
-- Invariant: every acceptance item maps to a test ID that exists and ran; new tests fail on the parent implementation commit before implementation.
-- Evidence: uploaded reports for baseline and rescue runs.
-
-**Wave D exit gate:** scanner self-test is capable of failing, acceptance mappings are complete, and the manual workflow produces durable artifacts.
+**Wave D exit gate:** scanner self-test can fail, mappings are complete, and audit artifacts are durable.
 
 ## Wave E: prove the real product path
 
 **Goal:** make “recovered” mean a real consumer path works.
 
-### E1: required declaration build
+- **E1 required declaration build**, branch `fix/E1-required-build`, areas package TypeScript config, exports, and `.github/workflows/ci.yml`. Every package emits declarations and public imports resolve without source internals. Bundling remains deferred.
+- **E2 end-to-end fixture**, branch `fix/E2-end-to-end-proof`. Authored project -> real GSAP interpolation -> real/manual clock tick -> patch -> DOM writes a real numeric value. Must fail on baseline and pass on rescue. Depends on A1, B1, B2, C3, and E1.
+- **E3 mutation baseline and ratchet**, branch `fix/E3-mutation-gate`. Scope Stryker to runtime and adapters. First run establishes the measured baseline; later runs cannot regress. Never invent the threshold.
 
-- Branch: `fix/E1-required-build`.
-- Areas: package TypeScript config, package exports, `.github/workflows/ci.yml`.
-- Invariant: every package emits declarations and public imports resolve without source-internal paths.
-- Evidence: required GitHub job and public-import smoke test.
-- Bundling remains deferred; declaration build plus public import is the current acceptance boundary.
-
-### E2: end-to-end fixture
-
-- Branch: `fix/E2-end-to-end-proof`.
-- Areas: integration test and adapter wiring.
-- Invariant: authored project -> real GSAP interpolation -> real/manual clock tick -> patch publication -> DOM adapter writes a real numeric value.
-- Evidence: one honest fixture that fails on baseline and passes on rescue; depends on A1, B1, B2, C3, and E1's public surface.
-
-### E3: mutation baseline and ratchet
-
-- Branch: `fix/E3-mutation-gate`.
-- Areas: Stryker configuration and workflow.
-- Invariant: mutations in runtime and adapters cannot silently survive; first run establishes the baseline, not a made-up pass threshold.
-- Evidence: uploaded mutation report and a checked-in threshold generated from observed data, never invented.
-
-**Wave E exit gate:** required build, end-to-end fixture, and cheap PR checks are green; mutation score is recorded and ratcheted; only then update status docs and merge rescue into `main`.
+**Wave E exit gate:** required build, end-to-end, and cheap PR checks are green; mutation score is recorded and ratcheted; only then update status docs and merge rescue into `main`.
 
 ## Final merge checklist
 
-- All wave PRs merged into rescue in dependency order.
-- Every slice has a `progress/` record with commit, tests, oracle paths, and CI artifacts.
-- `main` branch protection requires format, typecheck, contract tests, boundaries, build, and end-to-end checks.
+- `progress/STATUS.md` is current and links every slice's commit and evidence.
+- All slice branches are merged into rescue in dependency order.
+- Branch protection requires format, typecheck, contract tests, boundaries, build, and end-to-end checks.
 - Mutation testing is manual or nightly until fast enough for PRs, but its report is never ignored.
 - `docs/SESSION-STATUS.md` describes only verified behavior.
-- Open a single final PR from rescue into `main`.
+- Open one final PR from rescue into `main`.
