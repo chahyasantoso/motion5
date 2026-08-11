@@ -1,0 +1,59 @@
+name: Prepare GSAP lockfile
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to update"
+        required: true
+        default: "fix/B2-gsap-stop-compilation-repair"
+        type: string
+      gsap_version:
+        description: "Exact GSAP version"
+        required: true
+        default: "3.15.0"
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    name: Generate package-lock.json with GSAP
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Add exact GSAP dev dependency and regenerate lockfile
+        env:
+          GSAP_VERSION: ${{ inputs.gsap_version }}
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund --save-dev --save-exact "gsap@${GSAP_VERSION}"
+
+      - name: Verify dependency metadata
+        run: |
+          node -e "const p=require('./package.json'); if (p.devDependencies?.gsap !== '${{ inputs.gsap_version }}') process.exit(1)"
+          node -e "const l=require('./package-lock.json'); if (l.packages?.['node_modules/gsap']?.version !== '${{ inputs.gsap_version }}') process.exit(1)"
+
+      - name: Commit and push generated files
+        env:
+          TARGET_BRANCH: ${{ inputs.branch }}
+        run: |
+          if git diff --quiet -- package.json package-lock.json; then
+            echo "No dependency changes were generated."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
+          git commit -m "chore: add gsap dev dependency and regenerate lockfile"
+          git push origin "HEAD:${TARGET_BRANCH}"
