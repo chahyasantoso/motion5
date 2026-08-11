@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "items": [
+    { "id": "gsap-contract", "test": "packages/core/test/contract/gsap-multi-stop.test.ts" },
+    { "id": "dom-contract", "test": "packages/core/test/integration/dom-patch-apply.test.ts" },
+    { "id": "react-lifecycle", "test": "packages/react/test" },
+    { "id": "boundaries", "test": "packages/core/test/unit/scripts/boundary-scan.test.ts" },
+    { "id": "end-to-end", "test": "packages/core/test/integration/end-to-end.test.ts" }
+  ]
+}
