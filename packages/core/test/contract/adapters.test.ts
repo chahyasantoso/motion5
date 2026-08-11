@@ -2,7 +2,10 @@ import { gsap } from "gsap";
 import { describe, expect, it } from "vitest";
 import { createBrowserClock } from "../../src/adapters/browser-clock";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
-import { createGsapInterpolator } from "../../src/adapters/interpolator/gsap";
+import {
+  createGsapInterpolator,
+  type GsapTimelineLike,
+} from "../../src/adapters/interpolator/gsap";
 
 describe("adapter ports", () => {
   it("compiles authored stops onto a real GSAP timeline at every endpoint", () => {
@@ -35,31 +38,22 @@ describe("adapter ports", () => {
     let value = 0;
     let killed = false;
     const interpolator = createGsapInterpolator({
-      timeline: (): {
-        duration: () => number;
-        progress: {
-          (): number;
-          (next: number): ReturnType<typeof gsap.timeline>;
-        };
-        kill: () => void;
-      } => {
-        const timeline = gsap.timeline();
-        const progress = ((next?: number) => {
+      timeline: (): GsapTimelineLike => {
+        function progress(): number;
+        function progress(next: number): GsapTimelineLike;
+        function progress(next?: number): number | GsapTimelineLike {
           if (next === undefined) return value;
           value = next;
-          timeline.progress(next);
           return timeline;
-        }) as {
-          (): number;
-          (next: number): ReturnType<typeof gsap.timeline>;
-        };
-        return {
+        }
+        const timeline: GsapTimelineLike = {
           duration: () => 2,
           progress,
-          kill: () => {
+          kill() {
             killed = true;
           },
         };
+        return timeline;
       },
     });
     const timeline = interpolator.create({});
