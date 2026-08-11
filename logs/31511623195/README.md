@@ -1,0 +1,45 @@
+# CI log archive: 31511623195
+
+- Workflow: CI
+- Conclusion: failure
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/31511623195
+- Captured: 2026-08-11T16:18:14Z
+
+Detailed failed-job output: [failed-jobs.log](./failed-jobs.log)
+Job and step outcomes: [jobs.json](./jobs.json)
+
+## Job outcomes
+
+- boundaries (node 24): failure — failed steps: Boundary scan and planted fixtures (failure)
+- performance (node 24, advisory): success
+- integration (node 24): success
+- quality (node 24): failure — failed steps: Format check (failure)
+
+## Failed job output
+
+```text
+boundaries (node 24)	Boundary scan and planted fixtures	﻿2026-08-11T16:17:51.1657372Z ##[group]Run npm run test:boundaries
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-11T16:17:51.1657748Z ^[[36;1mnpm run test:boundaries^[[0m
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-11T16:17:51.1705389Z shell: /usr/bin/bash -e {0}
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-11T16:17:51.1705684Z ##[endgroup]
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-11T16:17:51.2756148Z 
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-11T16:17:51.2756774Z > motion5@0.0.0 test:boundaries
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-11T16:17:51.2757570Z > node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-11T16:17:51.2758024Z 
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-11T16:17:51.3151915Z ackages/react/src/index.ts: renderer or engine import
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-11T16:17:51.3153443Z ackages/react/src/patch-store.ts: renderer or engine import
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-11T16:17:51.3278689Z ##[error]Process completed with exit code 1.
+quality (node 24)	Format check	﻿2026-08-11T16:17:51.7764653Z ##[group]Run npm run format:check
+quality (node 24)	Format check	2026-08-11T16:17:51.7765045Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Format check	2026-08-11T16:17:51.7812228Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Format check	2026-08-11T16:17:51.7812516Z ##[endgroup]
+quality (node 24)	Format check	2026-08-11T16:17:51.8829214Z 
+quality (node 24)	Format check	2026-08-11T16:17:51.8830362Z > motion5@0.0.0 format:check
+quality (node 24)	Format check	2026-08-11T16:17:51.8831020Z > prettier . --check
+quality (node 24)	Format check	2026-08-11T16:17:51.8831528Z 
+quality (node 24)	Format check	2026-08-11T16:17:51.9769275Z Checking formatting...
+quality (node 24)	Format check	2026-08-11T16:17:53.7674985Z [^[[33mwarn^[[39m] packages/core/test/unit/scripts/boundary-scan.test.ts
+quality (node 24)	Format check	2026-08-11T16:17:53.9719122Z [^[[33mwarn^[[39m] scripts/boundary-scan.mjs
+quality (node 24)	Format check	2026-08-11T16:17:54.0016461Z [^[[33mwarn^[[39m] Code style issues found in 2 files. Run Prettier with --write to fix.
+quality (node 24)	Format check	2026-08-11T16:17:54.0469423Z ##[error]Process completed with exit code 1.
+```
