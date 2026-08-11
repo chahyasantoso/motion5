@@ -74,7 +74,8 @@ describe("Engine", () => {
       opacity: 0.2,
       rendered: true,
     });
-    expect(second.patches.find(({ nodeId }) => nodeId === "hero/arm")?.values).toEqual({
+    expect(second.patches).toEqual([]);
+    expect(runtime.graph.registry.get("hero/arm")?.values).toEqual({
       opacity: 0.2,
       rendered: true,
     });
