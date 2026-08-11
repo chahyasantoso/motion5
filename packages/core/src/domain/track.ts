@@ -1,7 +1,7 @@
 import type { ImmutableRecord } from "./values";
 import { equalValues, freezeValue } from "./values";
 import type { InterpolationTimeline, Interpolator } from "../ports/interpolator";
-import type { ResolvedPlugins } from "./plugins";
+import type { PluginDefinition, ResolvedPlugins } from "./plugins";
 
 export interface TrackSnapshot {
   readonly progress: number;
@@ -14,6 +14,22 @@ export interface TrackOptions {
   readonly plugins?: ResolvedPlugins;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function prepareConfig(config: unknown, plugins: readonly PluginDefinition[]): unknown {
+  if (!isRecord(config) || !isRecord(config.keyframes)) return config;
+  let keyframes = { ...config.keyframes };
+  for (const plugin of plugins) {
+    if (plugin.stage !== "prepare" || plugin.contribute === undefined) continue;
+    const authoredSnapshot = Object.freeze({ ...keyframes });
+    const contribution = plugin.contribute(authoredSnapshot);
+    if (isRecord(contribution)) keyframes = { ...keyframes, ...contribution };
+  }
+  return Object.freeze({ ...config, keyframes: Object.freeze(keyframes) });
+}
+
 export class Track {
   readonly #timeline: InterpolationTimeline;
   readonly #plugins: ResolvedPlugins;
@@ -24,10 +40,11 @@ export class Track {
   #lastInputs: Readonly<ImmutableRecord> | undefined;
 
   constructor(options: TrackOptions) {
-    this.#timeline = options.interpolator.create(options.interpolationConfig);
     this.#plugins =
       options.plugins ??
       Object.freeze({ plugins: Object.freeze([]), diagnostics: Object.freeze([]) });
+    const preparedConfig = prepareConfig(options.interpolationConfig, this.#plugins.plugins);
+    this.#timeline = options.interpolator.create(preparedConfig);
     this.#progress = 0;
   }
 
