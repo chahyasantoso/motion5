@@ -1,0 +1,83 @@
+name: Archive CI logs
+
+on:
+  workflow_run:
+    workflows: ["CI", "Recovery audit"]
+    types: [completed]
+    branches: [main, "rescue/**", "fix/**"]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Completed workflow run ID to archive"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  archive:
+    name: archive failed logs
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion != 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out log branch
+        uses: actions/checkout@v4
+        with:
+          ref: ci-logs
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve run metadata
+        id: run
+        env:
+          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
+          EVENT_WORKFLOW: ${{ github.event.workflow_run.name }}
+          EVENT_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
+          INPUT_RUN_ID: ${{ inputs.run_id }}
+        run: |
+          set -euo pipefail
+          RUN_ID="${INPUT_RUN_ID:-$EVENT_RUN_ID}"
+          test -n "$RUN_ID"
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "workflow=${EVENT_WORKFLOW:-manual}" >> "$GITHUB_OUTPUT"
+          echo "conclusion=${EVENT_CONCLUSION:-manual}" >> "$GITHUB_OUTPUT"
+
+      - name: Download failed job logs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ steps.run.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p "logs/$RUN_ID"
+          gh run view "$RUN_ID" --log-failed > "logs/$RUN_ID/failed-jobs.log" 2>&1 || true
+          gh run view "$RUN_ID" --json databaseId,name,headBranch,headSha,status,conclusion,createdAt,updatedAt \
+            > "logs/$RUN_ID/run.json"
+          {
+            echo "# CI log archive: $RUN_ID"
+            echo
+            echo "- Workflow: ${{ steps.run.outputs.workflow }}"
+            echo "- Conclusion: ${{ steps.run.outputs.conclusion }}"
+            echo "- Source run: https://github.com/${{ github.repository }}/actions/runs/$RUN_ID"
+            echo "- Captured: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo
+            echo "## Failed job output"
+            echo
+            echo '```text'
+            cat "logs/$RUN_ID/failed-jobs.log"
+            echo '```'
+          } > "logs/$RUN_ID/README.md"
+
+      - name: Commit archive
+        env:
+          RUN_ID: ${{ steps.run.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "logs/$RUN_ID"
+          git commit -m "ci: archive logs for run $RUN_ID" || echo "No new log files to commit"
+          git push origin ci-logs
