@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createGsapInterpolator, type GsapTimelineLike } from "../../src/adapters/interpolator/gsap";
+import {
+  createGsapInterpolator,
+  type GsapTimelineLike,
+} from "../../src/adapters/interpolator/gsap";
 
 describe("GSAP multi-stop compilation (B2)", () => {
   it("starts at the first stop and reaches the authored endpoint", () => {
@@ -29,7 +32,13 @@ describe("GSAP multi-stop compilation (B2)", () => {
     });
     const timeline = interpolator.create({
       keyframes: {
-        x: { stops: [{ p: 0, v: 0 }, { p: 0.5, v: 50 }, { p: 1, v: 100 }] },
+        x: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 0.5, v: 50 },
+            { p: 1, v: 100 },
+          ],
+        },
       },
     });
     expect(timeline.state).toEqual({ x: 0 });
