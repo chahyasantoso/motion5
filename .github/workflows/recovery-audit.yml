@@ -1,0 +1,83 @@
+name: Recovery audit
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch, tag, or commit to audit"
+        required: true
+        default: "main"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  baseline:
+    name: Recovery baseline audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out selected ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Run current test baseline
+        id: tests
+        continue-on-error: true
+        run: npm test 2>&1 | tee recovery-test.log
+
+      - name: Run current boundary baseline
+        id: boundaries
+        continue-on-error: true
+        run: npm run test:boundaries 2>&1 | tee recovery-boundary.log
+
+      - name: Record missing recovery gates
+        run: |
+          {
+            echo "# Recovery audit baseline"
+            echo
+            echo "- Ref: ${{ inputs.ref }}"
+            echo "- Commit: $(git rev-parse HEAD)"
+            echo "- Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo
+            echo "## Existing checks"
+            echo "- npm test result: ${{ steps.tests.outcome }}"
+            echo "- boundary result: ${{ steps.boundaries.outcome }}"
+            echo
+            echo "## Planned evidence gates"
+            for path in \
+              .github/workflows/recovery-audit.yml \
+              scripts/acceptance-scan.mjs \
+              docs/acceptance-map.json \
+              packages/core/test/integration/end-to-end.test.ts \
+              packages/react/src/index.ts \
+              stryker.config.json; do
+              if test -e "$path"; then echo "- PRESENT: $path"; else echo "- MISSING: $path"; fi
+            done
+            echo
+            echo "## Interpretation"
+            echo "This is a baseline measurement, not a recovery pass. Missing gates are expected on the frozen baseline."
+          } | tee recovery-audit-report.md
+
+      - name: Upload baseline artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-audit-${{ github.run_id }}
+          path: |
+            recovery-audit-report.md
+            recovery-test.log
+            recovery-boundary.log
+          if-no-files-found: error
