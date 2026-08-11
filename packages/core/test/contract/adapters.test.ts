@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createBrowserClock } from "../../src/adapters/browser-clock";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
-{
+import {
   createGsapInterpolator,
   type GsapTimelineLike,
 } from "../../src/adapters/interpolator/gsap";
