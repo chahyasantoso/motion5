@@ -1,0 +1,35 @@
+# CI log archive: 31504056324
+
+- Workflow: CI
+- Conclusion: failure
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/31504056324
+- Captured: 2026-08-11T14:54:37Z
+
+Detailed failed-job output: [failed-jobs.log](./failed-jobs.log)
+Job and step outcomes: [jobs.json](./jobs.json)
+
+## Job outcomes
+
+- performance (node 24, advisory): success
+- quality (node 24): unknown — failed steps: Typecheck (failure)
+- integration (node 24): success
+- boundaries (node 24): success
+
+## Failed job output
+
+```text
+quality (node 24)	Typecheck	﻿2026-08-11T14:53:58.5071205Z ##[group]Run npm run typecheck
+quality (node 24)	Typecheck	2026-08-11T14:53:58.5071560Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Typecheck	2026-08-11T14:53:58.5120252Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Typecheck	2026-08-11T14:53:58.5120546Z ##[endgroup]
+quality (node 24)	Typecheck	2026-08-11T14:53:58.6159547Z 
+quality (node 24)	Typecheck	2026-08-11T14:53:58.6160286Z > motion5@0.0.0 typecheck
+quality (node 24)	Typecheck	2026-08-11T14:53:58.6160778Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Typecheck	2026-08-11T14:53:58.6160989Z 
+quality (node 24)	Typecheck	2026-08-11T14:54:00.0420196Z ##[error]packages/react/test/public-hook-render.test.ts(30,39): error TS2769: No overload matches this call.
+quality (node 24)	Typecheck	2026-08-11T14:54:00.0429653Z   The last overload gave the following error.
+quality (node 24)	Typecheck	2026-08-11T14:54:00.0430832Z     Argument of type '() => unknown' is not assignable to parameter of type 'string | FunctionComponent<{}> | ComponentClass<{}, any>'.
+quality (node 24)	Typecheck	2026-08-11T14:54:00.0431964Z       Type '() => unknown' is not assignable to type 'FunctionComponent<{}>'.
+quality (node 24)	Typecheck	2026-08-11T14:54:00.0432800Z         Type 'unknown' is not assignable to type 'ReactNode | Promise<ReactNode>'.
+quality (node 24)	Typecheck	2026-08-11T14:54:00.0696122Z ##[error]Process completed with exit code 2.
+```
