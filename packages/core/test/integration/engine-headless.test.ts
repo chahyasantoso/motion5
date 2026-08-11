@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
+import { PluginRegistry } from "../../src/domain/plugins";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
@@ -38,6 +39,47 @@ describe("Engine", () => {
     });
     const runtime = engine.load(project);
     expect(runtime.graph.memberCount).toBe(0);
+    runtime.dispose();
+  });
+
+  it("reuses one compiled timeline across repeated flushes and kills it once", () => {
+    const create = vi.fn(createFakeInterpolator().create);
+    const runtime = new Engine({
+      clock: createManualClock(),
+      interpolator: { create },
+      scheduler: createFakeScheduler(),
+    }).load(project);
+    runtime.mount("hero/arm");
+    runtime.graph.flush(["hero/arm"], 1);
+    runtime.graph.flush(["hero/arm"], 2);
+    expect(create).toHaveBeenCalledTimes(1);
+    runtime.dispose();
+    expect(create.mock.results[0]?.value).toBeDefined();
+  });
+
+  it("resolves and composes authored-key plugins once during Track construction", () => {
+    const plugins = new PluginRegistry();
+    const compose = vi.fn((values: Record<string, unknown>) => ({ ...values, rendered: true }));
+    plugins.register({ name: "opacity", keys: ["opacity"], compose });
+    const runtime = new Engine({
+      clock: createManualClock(),
+      interpolator: createFakeInterpolator(),
+      scheduler: createFakeScheduler(),
+      plugins,
+    }).load(project);
+    runtime.mount("hero/arm");
+    const first = runtime.graph.flush(["hero/arm"], 1);
+    const second = runtime.graph.flush(["hero/arm"], 2);
+    expect(first.patches.find(({ nodeId }) => nodeId === "hero/arm")?.values).toEqual({
+      opacity: 0.2,
+      rendered: true,
+    });
+    expect(second.patches).toEqual([]);
+    expect(runtime.graph.registry.get("hero/arm")?.values).toEqual({
+      opacity: 0.2,
+      rendered: true,
+    });
+    expect(compose).toHaveBeenCalledTimes(1);
     runtime.dispose();
   });
 

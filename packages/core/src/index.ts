@@ -28,6 +28,8 @@ export type { ValidationResult } from "./contract/validate-v5";
 export { parseGolden, serializeGolden } from "./contract/golden";
 export type { GoldenFixture, GoldenValidationFixture } from "./contract/golden";
 export { Engine } from "./engine";
+export { PluginRegistry } from "./domain/plugins";
+export type { PluginDefinition, ResolvedPlugins } from "./domain/plugins";
 export { assertClock, createManualClock } from "./ports/clock";
 export { assertInterpolator } from "./ports/interpolator";
 export type { InterpolationTimeline, Interpolator } from "./ports/interpolator";
