@@ -117,7 +117,9 @@ async function discoverConsumerPackages(scanRoot) {
     if (error?.code === "ENOENT") return [];
     throw error;
   }
-  return entries.filter((entry) => entry.isDirectory() && entry.name !== "core").map((entry) => entry.name);
+  return entries
+    .filter((entry) => entry.isDirectory() && entry.name !== "core")
+    .map((entry) => entry.name);
 }
 
 export async function scan(scanRoot = root) {

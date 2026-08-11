@@ -57,7 +57,9 @@ describe("boundary scan planted violations", () => {
         join(root, "packages", "vue", "src", "index.ts"),
         "import type { Patch } from '../../core/src/runtime/patch-registry';\n",
       );
-      await expect(scan(root)).resolves.toContain("packages/vue/src/index.ts: core source-internal import");
+      await expect(scan(root)).resolves.toContain(
+        "packages/vue/src/index.ts: core source-internal import",
+      );
     } finally {
       await rm(root, { recursive: true, force: true });
     }
