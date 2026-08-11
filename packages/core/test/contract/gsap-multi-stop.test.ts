@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createGsapInterpolator, type GsapTimelineLike } from "../../src/adapters/interpolator/gsap";
+import {
+  createGsapInterpolator,
+  type GsapTimelineLike,
+} from "../../src/adapters/interpolator/gsap";
 
 describe("GSAP multi-stop compilation (B2)", () => {
   it("interpolates authored stops at 0, 0.5, and 1 using adapter-owned state", () => {
