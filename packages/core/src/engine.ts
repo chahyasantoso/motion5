@@ -16,25 +16,28 @@ export class Engine {
 
   load(project: ProjectDefinition): ProjectRuntime {
     const tracks = new Map<string, Track>();
+    const nodes = new Map<string, { duration?: number; keyframes?: Readonly<Record<string, unknown>> }>();
+    for (const motion of project.motions) for (const track of motion.tracks) nodes.set(`${motion.id}/${track.id}`, track);
+    for (const track of project.freeTracks ?? []) nodes.set(`~/${track.id}`, track);
+    const compile = (nodeId: string): Track => {
+      const existing = tracks.get(nodeId);
+      if (existing) return existing;
+      const definition = nodes.get(nodeId);
+      if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
+      const resolved = this.#plugins?.resolveForKeyframes(definition.keyframes ?? {}, `${nodeId}.keyframes`);
+      if (resolved?.diagnostics.some(({ severity }) => severity === "error")) throw new TypeError(resolved.diagnostics.map(({ message }) => message).join(" "));
+      const track = new Track({ interpolator: this.#options.interpolator, interpolationConfig: definition, ...(resolved ? { plugins: resolved } : {}) });
+      tracks.set(nodeId, track);
+      return track;
+    };
     const compose = (node: { id: string; track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> } }) => (inputs: Readonly<Record<string, unknown>>) => {
-      let track = tracks.get(node.id);
-      if (!track) {
-        const resolved = this.#plugins?.resolveForKeyframes(node.track.keyframes ?? {}, `${node.id}.keyframes`);
-        if (resolved?.diagnostics.some(({ severity }) => severity === "error")) throw new TypeError(resolved.diagnostics.map(({ message }) => message).join(" "));
-        track = new Track({ interpolator: this.#options.interpolator, interpolationConfig: node.track, ...(resolved ? { plugins: resolved } : {}) });
-        tracks.set(node.id, track);
-      }
-      const snapshot = track.compose(inputs as Readonly<ImmutableRecord>);
+      const snapshot = compile(node.id).compose(inputs as Readonly<ImmutableRecord>);
       return { values: snapshot.values, sourceProgress: snapshot.progress, sourceRevisions: {} };
     };
     return new ProjectRuntime(project, {
       clock: this.#options.clock,
       compose,
-      setProgress: (nodeId, progress) => {
-        const track = tracks.get(nodeId);
-        if (!track) throw new TypeError(`Track "${nodeId}" is not compiled yet.`);
-        track.setProgress(progress);
-      },
+      setProgress: (nodeId, progress) => compile(nodeId).setProgress(progress),
       disposeComposition: () => { for (const track of tracks.values()) track.dispose(); tracks.clear(); },
     });
   }
