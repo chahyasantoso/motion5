@@ -2,6 +2,7 @@ node_modules
 dist
 coverage
 *.log
+!logs/**/*.log
 .DS_Store
 .vitest
 *.tgz
