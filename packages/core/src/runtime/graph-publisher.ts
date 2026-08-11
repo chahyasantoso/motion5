@@ -1,6 +1,6 @@
 import type { Diagnostic } from "../contract/v5";
 import { edgeKey, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
-import { PatchRegistry, type PatchBatch } from "./patch-registry";
+import { PatchRegistry, REENTRANT_BATCH_MESSAGE, type PatchBatch } from "./patch-registry";
 
 export interface PublisherComposition {
   readonly values: Readonly<Record<string, unknown>>;
@@ -58,6 +58,10 @@ export class GraphPublisher {
   }
 
   flush(snapshot: PublisherSnapshot, seeds: readonly string[], tick: number): PatchBatch {
+    // Traversal is not a scheduler. Deciding what to do with a flush requested from inside a
+    // subscriber belongs to the runtime that owns ticks and seeds, so refuse it here before
+    // any batch state is touched instead of silently nesting a publication.
+    if (this.#registry.notifying) throw new Error(REENTRANT_BATCH_MESSAGE);
     const byId = new Map(snapshot.nodes.map((node) => [node.id, node]));
     const dependents = new Map<string, string[]>();
     for (const node of snapshot.nodes) dependents.set(node.id, []);
