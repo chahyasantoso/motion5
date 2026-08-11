@@ -14,7 +14,8 @@ export interface GsapLike {
 export function createGsapInterpolator(gsap: GsapLike): Interpolator {
   return {
     create(config): InterpolationTimeline {
-      const timeline = gsap.timeline(config);
+      const proxy: Record<string, unknown> = {};
+      const timeline = gsap.timeline({ ...(config as object), targets: proxy });
       function progress(): number;
       function progress(value: number): void;
       function progress(value?: number): number | void {
@@ -25,6 +26,7 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
         get duration() {
           return timeline.duration();
         },
+        state: proxy,
         progress,
         kill(): void {
           timeline.kill();

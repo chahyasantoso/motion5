@@ -59,7 +59,10 @@ export class Track {
       (this.#lastInputs === inputs || equalValues(this.#lastInputs, inputs))
     )
       return this.#lastSnapshot;
-    let values: ImmutableRecord = { ...inputs };
+    let values: ImmutableRecord = {
+      ...(this.#timeline.state as Readonly<ImmutableRecord>),
+      ...inputs,
+    };
     for (const plugin of this.#plugins.plugins) {
       values = plugin.compose(values, this.#progress);
       freezeValue(values);

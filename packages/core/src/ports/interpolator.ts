@@ -1,5 +1,6 @@
 export interface InterpolationTimeline {
   readonly duration: number;
+  readonly state: Readonly<Record<string, unknown>>;
   progress(): number;
   progress(value: number): void;
   kill(): void;
