@@ -7,38 +7,69 @@ import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
 import { ProjectRuntime } from "./runtime/project-runtime";
 
-export interface EngineOptions { readonly clock: Clock; readonly interpolator: Interpolator; readonly scheduler: Scheduler; readonly plugins?: PluginRegistry; }
+export interface EngineOptions {
+  readonly clock: Clock;
+  readonly interpolator: Interpolator;
+  readonly scheduler: Scheduler;
+  readonly plugins?: PluginRegistry;
+}
 
 export class Engine {
   readonly #options: EngineOptions;
   readonly #plugins: PluginRegistry | undefined;
-  constructor(options: EngineOptions) { assertClock(options.clock); assertInterpolator(options.interpolator); assertScheduler(options.scheduler); this.#options = options; this.#plugins = options.plugins; }
+  constructor(options: EngineOptions) {
+    assertClock(options.clock);
+    assertInterpolator(options.interpolator);
+    assertScheduler(options.scheduler);
+    this.#options = options;
+    this.#plugins = options.plugins;
+  }
 
   load(project: ProjectDefinition): ProjectRuntime {
     const tracks = new Map<string, Track>();
-    const nodes = new Map<string, { duration?: number; keyframes?: Readonly<Record<string, unknown>> }>();
-    for (const motion of project.motions) for (const track of motion.tracks) nodes.set(`${motion.id}/${track.id}`, track);
+    const nodes = new Map<
+      string,
+      { duration?: number; keyframes?: Readonly<Record<string, unknown>> }
+    >();
+    for (const motion of project.motions)
+      for (const track of motion.tracks) nodes.set(`${motion.id}/${track.id}`, track);
     for (const track of project.freeTracks ?? []) nodes.set(`~/${track.id}`, track);
     const compile = (nodeId: string): Track => {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
       const definition = nodes.get(nodeId);
       if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
-      const resolved = this.#plugins?.resolveForKeyframes(definition.keyframes ?? {}, `${nodeId}.keyframes`);
-      if (resolved?.diagnostics.some(({ severity }) => severity === "error")) throw new TypeError(resolved.diagnostics.map(({ message }) => message).join(" "));
-      const track = new Track({ interpolator: this.#options.interpolator, interpolationConfig: definition, ...(resolved ? { plugins: resolved } : {}) });
+      const resolved = this.#plugins?.resolveForKeyframes(
+        definition.keyframes ?? {},
+        `${nodeId}.keyframes`,
+      );
+      if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
+        throw new TypeError(resolved.diagnostics.map(({ message }) => message).join(" "));
+      const track = new Track({
+        interpolator: this.#options.interpolator,
+        interpolationConfig: definition,
+        ...(resolved ? { plugins: resolved } : {}),
+      });
       tracks.set(nodeId, track);
       return track;
     };
-    const compose = (node: { id: string; track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> } }) => (inputs: Readonly<Record<string, unknown>>) => {
-      const snapshot = compile(node.id).compose(inputs as Readonly<ImmutableRecord>);
-      return { values: snapshot.values, sourceProgress: snapshot.progress, sourceRevisions: {} };
-    };
+    const compose =
+      (node: {
+        id: string;
+        track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> };
+      }) =>
+      (inputs: Readonly<Record<string, unknown>>) => {
+        const snapshot = compile(node.id).compose(inputs as Readonly<ImmutableRecord>);
+        return { values: snapshot.values, sourceProgress: snapshot.progress, sourceRevisions: {} };
+      };
     return new ProjectRuntime(project, {
       clock: this.#options.clock,
       compose,
       setProgress: (nodeId, progress) => compile(nodeId).setProgress(progress),
-      disposeComposition: () => { for (const track of tracks.values()) track.dispose(); tracks.clear(); },
+      disposeComposition: () => {
+        for (const track of tracks.values()) track.dispose();
+        tracks.clear();
+      },
     });
   }
 }
