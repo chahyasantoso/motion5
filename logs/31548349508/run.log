@@ -1,0 +1,28 @@
+mutation baseline	Fail until a mutation baseline exists	﻿2026-08-11T23:56:19.7405358Z ##[group]Run test "${MUTATION_FAILED:-1}" = "0"
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T23:56:19.7405908Z ^[[36;1mtest "${MUTATION_FAILED:-1}" = "0"^[[0m
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T23:56:19.7453707Z shell: /usr/bin/bash -e {0}
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T23:56:19.7453980Z env:
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T23:56:19.7454208Z   MUTATION_FAILED: 1
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T23:56:19.7454443Z ##[endgroup]
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T23:56:19.7534449Z ##[error]Process completed with exit code 1.
+declaration build	Fail until declarations and public entries resolve	﻿2026-08-11T23:56:18.0739839Z ##[group]Run test "${BUILD_FAILED:-1}" = "0"
+declaration build	Fail until declarations and public entries resolve	2026-08-11T23:56:18.0740305Z ^[[36;1mtest "${BUILD_FAILED:-1}" = "0"^[[0m
+declaration build	Fail until declarations and public entries resolve	2026-08-11T23:56:18.0794000Z shell: /usr/bin/bash -e {0}
+declaration build	Fail until declarations and public entries resolve	2026-08-11T23:56:18.0794333Z env:
+declaration build	Fail until declarations and public entries resolve	2026-08-11T23:56:18.0794585Z   BUILD_FAILED: 1
+declaration build	Fail until declarations and public entries resolve	2026-08-11T23:56:18.0794854Z ##[endgroup]
+declaration build	Fail until declarations and public entries resolve	2026-08-11T23:56:18.0865980Z ##[error]Process completed with exit code 1.
+acceptance mapping	Fail until acceptance mapping is executable	﻿2026-08-11T23:56:20.3337745Z ##[group]Run test "${ACCEPTANCE_FAILED:-1}" = "0"
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T23:56:20.3338243Z ^[[36;1mtest "${ACCEPTANCE_FAILED:-1}" = "0"^[[0m
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T23:56:20.3369312Z shell: /usr/bin/bash -e {0}
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T23:56:20.3369699Z env:
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T23:56:20.3370110Z   ACCEPTANCE_FAILED: 1
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T23:56:20.3370434Z ##[endgroup]
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T23:56:20.3431732Z ##[error]Process completed with exit code 1.
+contract surfaces	Fail when a contract surface is missing or red	﻿2026-08-11T23:56:24.5755883Z ##[group]Run test "${CONTRACT_FAILED:-1}" = "0"
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T23:56:24.5756281Z ^[[36;1mtest "${CONTRACT_FAILED:-1}" = "0"^[[0m
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T23:56:24.5800702Z shell: /usr/bin/bash -e {0}
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T23:56:24.5800966Z env:
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T23:56:24.5801173Z   CONTRACT_FAILED: 1
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T23:56:24.5801413Z ##[endgroup]
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T23:56:24.5878846Z ##[error]Process completed with exit code 1.

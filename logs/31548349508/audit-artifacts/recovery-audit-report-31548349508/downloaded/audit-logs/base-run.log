@@ -1,0 +1,99 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/motion5/motion5[39m
+
+ [31m❯[39m packages/core/test/unit/scripts/boundary-scan.test.ts [2m([22m[2m10 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 43[2mms[22m[39m
+     [32m✓[39m passes a clean fixture[32m 2[2mms[22m[39m
+     [32m✓[39m fails on renderer and animation-engine imports[32m 0[2mms[22m[39m
+     [32m✓[39m fails on banned compatibility vocabulary[32m 0[2mms[22m[39m
+[31m     [31m×[31m fails on a consumer reaching into core source internals[39m[32m 6[2mms[22m[39m
+     [32m✓[39m extracts exports outside the public allow list[32m 1[2mms[22m[39m
+[31m     [31m×[31m reports every planted violation class through the shipped scanner[39m[32m 10[2mms[22m[39m
+[31m     [31m×[31m reads a core package entry that is not engine.ts[39m[32m 6[2mms[22m[39m
+[31m     [31m×[31m discovers a consumer package that no list mentions[39m[32m 5[2mms[22m[39m
+     [32m✓[39m keeps a consumer renderer import legal[32m 5[2mms[22m[39m
+     [32m✓[39m executes the shipped scanner against the current tree[32m 7[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 4 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/unit/scripts/boundary-scan.test.ts[2m > [22mboundary scan predicates[2m > [22mfails on a consumer reaching into core source internals
+[31m[1mAssertionError[22m: expected false to be true // Object.is equality[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- true[39m
+[31m+ false[39m
+
+[36m [2m❯[22m packages/core/test/unit/scripts/boundary-scan.test.ts:[2m75:68[22m[39m
+    [90m 73|[39m
+    [90m 74|[39m   [34mit[39m([32m"fails on a consumer reaching into core source internals"[39m[33m,[39m () [33m=>[39m {
+    [90m 75|[39m     expect(importsCoreInternals(consumerInternalViolationFixture)).toB…
+    [90m   |[39m                                                                    [31m^[39m
+    [90m 76|[39m     expect(importsBoundary(consumerInternalViolationFixture)).toBe(fal…
+    [90m 77|[39m   })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/unit/scripts/boundary-scan.test.ts[2m > [22mboundary scan planted violations[2m > [22mreports every planted violation class through the shipped scanner
+[31m[1mAssertionError[22m: expected [ …(3) ] to deeply equal [ …(6) ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  [[22m
+[2m    "packages/core/src/runtime/leak.ts: renderer or engine import",[22m
+[2m    "packages/core/src/runtime/leak.ts: banned compatibility symbol",[22m
+[32m-   "packages/core/src/internal.ts: renderer or engine import",[39m
+[32m-   "packages/core/src/internal.ts: banned compatibility symbol",[39m
+[32m-   "packages/vue/src/index.ts: core source-internal import",[39m
+[2m    "packages/core/src/index.ts: public export InternalGraphRuntime is not allow-listed",[22m
+[2m  ][22m
+
+[36m [2m❯[22m packages/core/test/unit/scripts/boundary-scan.test.ts:[2m87:24[22m[39m
+    [90m 85|[39m   it("reports every planted violation class through the shipped scanne…
+    [90m 86|[39m     [35mconst[39m violations [33m=[39m [35mawait[39m [34mwithPlantedRoot[39m((root) [33m=>[39m [34mscan[39m(root))[33m;[39m
+    [90m 87|[39m     [34mexpect[39m(violations)[33m.[39m[34mtoEqual[39m([
+    [90m   |[39m                        [31m^[39m
+    [90m 88|[39m       [32m"packages/core/src/runtime/leak.ts: renderer or engine import"[39m[33m,[39m
+    [90m 89|[39m       [32m"packages/core/src/runtime/leak.ts: banned compatibility symbol"[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/unit/scripts/boundary-scan.test.ts[2m > [22mboundary scan planted violations[2m > [22mreads a core package entry that is not engine.ts
+[31m[1mAssertionError[22m: expected [ …(3) ] to include 'packages/core/src/internal.ts: render…'[39m
+[36m [2m❯[22m packages/core/test/unit/scripts/boundary-scan.test.ts:[2m99:24[22m[39m
+    [90m 97|[39m   [34mit[39m([32m"reads a core package entry that is not engine.ts"[39m[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m 98|[39m     [35mconst[39m violations [33m=[39m [35mawait[39m [34mwithPlantedRoot[39m((root) [33m=>[39m [34mscan[39m(root))[33m;[39m
+    [90m 99|[39m     expect(violations).toContain("packages/core/src/internal.ts: rende…
+    [90m   |[39m                        [31m^[39m
+    [90m100|[39m     expect(violations).toContain("packages/core/src/internal.ts: banne…
+    [90m101|[39m   })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/unit/scripts/boundary-scan.test.ts[2m > [22mboundary scan planted violations[2m > [22mdiscovers a consumer package that no list mentions
+[31m[1mAssertionError[22m: expected [ …(3) ] to include 'packages/vue/src/index.ts: core sourc…'[39m
+[36m [2m❯[22m packages/core/test/unit/scripts/boundary-scan.test.ts:[2m105:24[22m[39m
+    [90m103|[39m   it("discovers a consumer package that no list mentions", async () =>…
+    [90m104|[39m     [35mconst[39m violations [33m=[39m [35mawait[39m [34mwithPlantedRoot[39m((root) [33m=>[39m [34mscan[39m(root))[33m;[39m
+    [90m105|[39m     expect(violations).toContain("packages/vue/src/index.ts: core sour…
+    [90m   |[39m                        [31m^[39m
+    [90m106|[39m   })[33m;[39m
+    [90m107|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[2m | [22m[1m[32m6 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 23:56:17
+[2m   Duration [22m 231ms[2m (transform 36ms, setup 0ms, import 54ms, tests 43ms, environment 0ms)[22m
+
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/unit/scripts/boundary-scan.test.ts,title=packages/core/test/unit/scripts/boundary-scan.test.ts > boundary scan predicates > fails on a consumer reaching into core source internals,line=75,column=68::AssertionError: expected false to be true // Object.is equality%0A%0A- Expected%0A+ Received%0A%0A- true%0A+ false%0A%0A ❯ packages/core/test/unit/scripts/boundary-scan.test.ts:75:68%0A%0A
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/unit/scripts/boundary-scan.test.ts,title=packages/core/test/unit/scripts/boundary-scan.test.ts > boundary scan planted violations > reports every planted violation class through the shipped scanner,line=87,column=24::AssertionError: expected [ …(3) ] to deeply equal [ …(6) ]%0A%0A- Expected%0A+ Received%0A%0A  [%0A    "packages/core/src/runtime/leak.ts: renderer or engine import",%0A    "packages/core/src/runtime/leak.ts: banned compatibility symbol",%0A-   "packages/core/src/internal.ts: renderer or engine import",%0A-   "packages/core/src/internal.ts: banned compatibility symbol",%0A-   "packages/vue/src/index.ts: core source-internal import",%0A    "packages/core/src/index.ts: public export InternalGraphRuntime is not allow-listed",%0A  ]%0A%0A ❯ packages/core/test/unit/scripts/boundary-scan.test.ts:87:24%0A%0A
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/unit/scripts/boundary-scan.test.ts,title=packages/core/test/unit/scripts/boundary-scan.test.ts > boundary scan planted violations > reads a core package entry that is not engine.ts,line=99,column=24::AssertionError: expected [ …(3) ] to include 'packages/core/src/internal.ts: render…'%0A ❯ packages/core/test/unit/scripts/boundary-scan.test.ts:99:24%0A%0A
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/unit/scripts/boundary-scan.test.ts,title=packages/core/test/unit/scripts/boundary-scan.test.ts > boundary scan planted violations > discovers a consumer package that no list mentions,line=105,column=24::AssertionError: expected [ …(3) ] to include 'packages/vue/src/index.ts: core sourc…'%0A ❯ packages/core/test/unit/scripts/boundary-scan.test.ts:105:24%0A%0A
