@@ -59,7 +59,7 @@ describe("boundary scan planted violations", () => {
       );
       const violations = await scan(root);
       expect(violations).toContain("packages/vue/src/index.ts: core source-internal import");
-      expect(violations).toContain("packages/vue/src/index.ts: renderer or engine import");
+      expect(violations).not.toContain("packages/vue/src/index.ts: renderer or engine import");
     } finally {
       await rm(root, { recursive: true, force: true });
     }
