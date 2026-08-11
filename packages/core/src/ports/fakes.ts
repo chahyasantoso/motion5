@@ -26,13 +26,17 @@ function interpolate(a: unknown, b: unknown, amount: number): unknown {
 }
 
 function valueAt(stops: readonly FakeStop[], progress: number): unknown {
-  if (progress <= stops[0].p) return stops[0].v;
+  const first = stops[0];
+  if (!first) return undefined;
+  if (progress <= first.p) return first.v;
   const last = stops[stops.length - 1];
+  if (!last) return first.v;
   if (progress >= last.p) return last.v;
   for (let index = 1; index < stops.length; index += 1) {
     const next = stops[index];
+    const previous = stops[index - 1];
+    if (!next || !previous) continue;
     if (progress <= next.p) {
-      const previous = stops[index - 1];
       const amount = (progress - previous.p) / (next.p - previous.p);
       return interpolate(previous.v, next.v, amount);
     }
