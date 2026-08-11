@@ -17,7 +17,9 @@ describe("acceptance mapping scan (D3)", () => {
         join(root, "docs", "acceptance-map.json"),
         JSON.stringify({ version: 1, items: [{ id: "missing", test: "test/missing.test.ts" }] }),
       );
-      await expect(scanAcceptance(root)).resolves.toEqual(["missing: missing test/missing.test.ts"]);
+      await expect(scanAcceptance(root)).resolves.toEqual([
+        "missing: missing test/missing.test.ts",
+      ]);
     } finally {
       await rm(root, { recursive: true, force: true });
     }

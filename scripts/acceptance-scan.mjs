@@ -28,7 +28,8 @@ export async function scanAcceptance(scanRoot = root) {
       failures.push("Each acceptance item requires string id and test fields.");
       continue;
     }
-    if (!(await exists(join(scanRoot, item.test)))) failures.push(`${item.id}: missing ${item.test}`);
+    if (!(await exists(join(scanRoot, item.test))))
+      failures.push(`${item.id}: missing ${item.test}`);
   }
   return failures;
 }
