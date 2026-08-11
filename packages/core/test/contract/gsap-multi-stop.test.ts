@@ -19,10 +19,9 @@ describe("GSAP multi-stop compilation (B2)", () => {
             const stops = [0, 50, 100];
             const segment = Math.min(1, progressValue * 2);
             const index = Math.min(1, Math.floor(segment));
-            const local = segment - index;
-            const from = stops[index] ?? stops[0];
-            const to = stops[index + 1] ?? stops[stops.length - 1];
-            target.x = from + (to - from) * local;
+            const from = stops[index] as number;
+            const to = stops[index + 1] as number;
+            target.x = from + (to - from) * (segment - index);
           }
           return timeline;
         }
