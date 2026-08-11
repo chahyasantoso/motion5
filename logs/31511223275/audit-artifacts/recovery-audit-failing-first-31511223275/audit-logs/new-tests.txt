@@ -1,0 +1,1 @@
+packages/core/test/unit/scripts/boundary-scan.test.ts

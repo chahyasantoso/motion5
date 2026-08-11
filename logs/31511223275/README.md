@@ -1,0 +1,52 @@
+# CI log archive: 31511223275
+
+- Workflow: Recovery audit
+- Conclusion: failure
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/31511223275
+- Captured: 2026-08-11T16:13:51Z
+
+Detailed failed-job output: [failed-jobs.log](./failed-jobs.log)
+Job and step outcomes: [jobs.json](./jobs.json)
+Audit artifacts: [audit-artifacts/](./audit-artifacts/)
+
+## Job outcomes
+
+- contract surfaces: failure — failed steps: Fail when a contract surface is missing or red (failure)
+- declaration build: failure — failed steps: Fail until declarations and public entries resolve (failure)
+- failing-first evidence: success
+- mutation baseline: failure — failed steps: Fail until a mutation baseline exists (failure)
+- acceptance mapping: failure — failed steps: Fail until acceptance mapping is executable (failure)
+- audit report: unknown
+
+## Failed job output
+
+```text
+contract surfaces	Fail when a contract surface is missing or red	﻿2026-08-11T16:13:22.0782578Z ##[group]Run test "${CONTRACT_FAILED:-1}" = "0"
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T16:13:22.0783014Z ^[[36;1mtest "${CONTRACT_FAILED:-1}" = "0"^[[0m
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T16:13:22.0804846Z shell: /usr/bin/bash -e {0}
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T16:13:22.0805206Z env:
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T16:13:22.0805471Z   CONTRACT_FAILED: 1
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T16:13:22.0805752Z ##[endgroup]
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T16:13:22.0856188Z ##[error]Process completed with exit code 1.
+declaration build	Fail until declarations and public entries resolve	﻿2026-08-11T16:13:18.8284932Z ##[group]Run test "${BUILD_FAILED:-1}" = "0"
+declaration build	Fail until declarations and public entries resolve	2026-08-11T16:13:18.8285285Z ^[[36;1mtest "${BUILD_FAILED:-1}" = "0"^[[0m
+declaration build	Fail until declarations and public entries resolve	2026-08-11T16:13:18.8333760Z shell: /usr/bin/bash -e {0}
+declaration build	Fail until declarations and public entries resolve	2026-08-11T16:13:18.8334063Z env:
+declaration build	Fail until declarations and public entries resolve	2026-08-11T16:13:18.8334271Z   BUILD_FAILED: 1
+declaration build	Fail until declarations and public entries resolve	2026-08-11T16:13:18.8334492Z ##[endgroup]
+declaration build	Fail until declarations and public entries resolve	2026-08-11T16:13:18.8415357Z ##[error]Process completed with exit code 1.
+mutation baseline	Fail until a mutation baseline exists	﻿2026-08-11T16:13:19.1178921Z ##[group]Run test "${MUTATION_FAILED:-1}" = "0"
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T16:13:19.1179309Z ^[[36;1mtest "${MUTATION_FAILED:-1}" = "0"^[[0m
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T16:13:19.1206337Z shell: /usr/bin/bash -e {0}
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T16:13:19.1206628Z env:
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T16:13:19.1206918Z   MUTATION_FAILED: 1
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T16:13:19.1207167Z ##[endgroup]
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T16:13:19.1259378Z ##[error]Process completed with exit code 1.
+acceptance mapping	Fail until acceptance mapping is executable	﻿2026-08-11T16:13:20.7617414Z ##[group]Run test "${ACCEPTANCE_FAILED:-1}" = "0"
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T16:13:20.7617840Z ^[[36;1mtest "${ACCEPTANCE_FAILED:-1}" = "0"^[[0m
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T16:13:20.7665854Z shell: /usr/bin/bash -e {0}
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T16:13:20.7666167Z env:
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T16:13:20.7666409Z   ACCEPTANCE_FAILED: 1
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T16:13:20.7666652Z ##[endgroup]
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T16:13:20.7757504Z ##[error]Process completed with exit code 1.
+```
