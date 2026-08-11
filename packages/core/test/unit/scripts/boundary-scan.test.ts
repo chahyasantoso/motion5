@@ -24,7 +24,7 @@ describe("boundary scan planted violations", () => {
   it("passes a clean fixture", () => {
     expect(importsBoundary(cleanFixture)).toBe(false);
     expect(importsRenderer(cleanFixture)).toBe(false);
-    expect(bannedSymbol(bannedSymbolFixture)).toBe(false);
+    expect(bannedSymbol(cleanFixture)).toBe(false);
   });
 
   it("fails on renderer and animation-engine imports", () => {
