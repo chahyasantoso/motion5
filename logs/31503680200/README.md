@@ -1,0 +1,27 @@
+# CI log archive: 31503680200
+
+- Workflow: CI
+- Conclusion: failure
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/31503680200
+- Captured: 2026-08-11T14:50:33Z
+
+Detailed failed-job output: [failed-jobs.log](./failed-jobs.log)
+
+## Failed job output
+
+```text
+quality (node 24)	Typecheck	﻿2026-08-11T14:49:53.3673234Z ##[group]Run npm run typecheck
+quality (node 24)	Typecheck	2026-08-11T14:49:53.3673619Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Typecheck	2026-08-11T14:49:53.3721522Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Typecheck	2026-08-11T14:49:53.3721854Z ##[endgroup]
+quality (node 24)	Typecheck	2026-08-11T14:49:53.4712082Z 
+quality (node 24)	Typecheck	2026-08-11T14:49:53.4712980Z > motion5@0.0.0 typecheck
+quality (node 24)	Typecheck	2026-08-11T14:49:53.4713666Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Typecheck	2026-08-11T14:49:53.4713999Z 
+quality (node 24)	Typecheck	2026-08-11T14:49:54.9242910Z ##[error]packages/react/test/public-hook-render.test.ts(30,39): error TS2769: No overload matches this call.
+quality (node 24)	Typecheck	2026-08-11T14:49:54.9253425Z   The last overload gave the following error.
+quality (node 24)	Typecheck	2026-08-11T14:49:54.9254618Z     Argument of type '() => unknown' is not assignable to parameter of type 'string | FunctionComponent<{}> | ComponentClass<{}, any>'.
+quality (node 24)	Typecheck	2026-08-11T14:49:54.9255748Z       Type '() => unknown' is not assignable to type 'FunctionComponent<{}>'.
+quality (node 24)	Typecheck	2026-08-11T14:49:54.9256807Z         Type 'unknown' is not assignable to type 'ReactNode | Promise<ReactNode>'.
+quality (node 24)	Typecheck	2026-08-11T14:49:54.9524028Z ##[error]Process completed with exit code 2.
+```
