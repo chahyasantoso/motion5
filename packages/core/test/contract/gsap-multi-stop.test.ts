@@ -17,8 +17,12 @@ describe("GSAP multi-stop compilation (B2)", () => {
           progressValue = value;
           if (target) {
             const stops = [0, 50, 100];
-            const segment = Math.min(1, progressValue * 2);
-            const index = Math.min(1, Math.floor(segment));
+            if (progressValue >= 1) {
+              target.x = stops[stops.length - 1];
+              return timeline;
+            }
+            const segment = progressValue * (stops.length - 1);
+            const index = Math.floor(segment);
             const from = stops[index] as number;
             const to = stops[index + 1] as number;
             target.x = from + (to - from) * (segment - index);
