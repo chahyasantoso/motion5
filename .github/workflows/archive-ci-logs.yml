@@ -13,6 +13,7 @@ on:
         type: string
 
 permissions:
+  actions: read
   contents: write
 
 jobs:
@@ -47,16 +48,37 @@ jobs:
           echo "workflow=${EVENT_WORKFLOW:-manual}" >> "$GITHUB_OUTPUT"
           echo "conclusion=${EVENT_CONCLUSION:-manual}" >> "$GITHUB_OUTPUT"
 
-      - name: Download failed job logs
+      - name: Download job outcomes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_ID: ${{ steps.run.outputs.run_id }}
         run: |
           set -euo pipefail
           mkdir -p "logs/$RUN_ID"
-          gh run view "$RUN_ID" --log-failed > "logs/$RUN_ID/failed-jobs.log" 2>&1 || true
           gh run view "$RUN_ID" --json databaseId,name,headBranch,headSha,status,conclusion,createdAt,updatedAt \
             > "logs/$RUN_ID/run.json"
+          # Step-level outcomes are always retrievable, even when no step log is.
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100" \
+            > "logs/$RUN_ID/jobs.json" || echo '{}' > "logs/$RUN_ID/jobs.json"
+
+      - name: Download failed job logs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RUN_ID: ${{ steps.run.outputs.run_id }}
+        run: |
+          set -uo pipefail
+          LOG="logs/$RUN_ID/failed-jobs.log"
+          # GitHub finalizes the log archive asynchronously, so an immediate request can
+          # return an empty body for a run that definitely has failed steps.
+          for attempt in 1 2 3 4 5 6; do
+            gh run view "$RUN_ID" --log-failed > "$LOG" 2>&1 || true
+            if test -s "$LOG"; then
+              echo "captured failed-job output on attempt $attempt"
+              break
+            fi
+            echo "attempt $attempt returned no failed-job output, waiting for the log archive"
+            sleep 20
+          done
 
       - name: Download audit artifacts
         if: steps.run.outputs.workflow == 'Recovery audit'
@@ -72,8 +94,9 @@ jobs:
         env:
           RUN_ID: ${{ steps.run.outputs.run_id }}
         run: |
-          set -euo pipefail
+          set -uo pipefail
           LOG="logs/$RUN_ID/failed-jobs.log"
+          JOBS="logs/$RUN_ID/jobs.json"
           {
             echo "# CI log archive: $RUN_ID"
             echo
@@ -83,9 +106,21 @@ jobs:
             echo "- Captured: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo
             echo "Detailed failed-job output: [failed-jobs.log](./failed-jobs.log)"
+            echo "Job and step outcomes: [jobs.json](./jobs.json)"
             if test -d "logs/$RUN_ID/audit-artifacts" && find "logs/$RUN_ID/audit-artifacts" -type f -print -quit | grep -q .; then
               echo "Audit artifacts: [audit-artifacts/](./audit-artifacts/)"
             fi
+            echo
+            echo "## Job outcomes"
+            echo
+            jq -r '
+              (.jobs // [])[]
+              | "- " + .name + ": " + (.conclusion // "unknown")
+                + ((([(.steps // [])[]
+                      | select(.conclusion != "success" and .conclusion != "skipped")
+                      | .name + " (" + (.conclusion // "unknown") + ")"] | join("; ")) as $bad
+                    | if $bad == "" then "" else " — failed steps: " + $bad end))
+            ' "$JOBS" 2>/dev/null || echo "- job outcomes unavailable"
             echo
             echo "## Failed job output"
             echo
@@ -94,7 +129,7 @@ jobs:
               tail -c 400000 "$LOG"
               echo '```'
             else
-              echo "No failed-job output was returned for this run."
+              echo "GitHub returned no failed-step log for this run. Read the job outcomes above."
             fi
           } > "logs/$RUN_ID/README.md"
 
