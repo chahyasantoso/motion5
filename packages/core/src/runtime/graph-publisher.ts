@@ -111,7 +111,6 @@ export class GraphPublisher {
               memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
           }
           const composed = node.compose(inputs);
-          memo.set(id, composed);
           let values = composed.values;
           for (const edge of node.edges
             .filter(({ role }) => role === "output")
@@ -120,6 +119,10 @@ export class GraphPublisher {
               memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
             values = mergeValues(values, sourceValues);
           }
+          // Memoize the value actually published, not the pre-merge composition. A same-flush
+          // input-role consumer of this node must see what it published, not what it computed
+          // before its own output-role merges were applied.
+          memo.set(id, { ...composed, values });
           this.#registry.publish({
             nodeId: id,
             values,
@@ -141,7 +144,15 @@ export class GraphPublisher {
       }
       return this.#registry.closeBatch();
     } catch (error) {
-      this.#registry.closeBatch();
+      // Best-effort cleanup only. If the registry is already closed (e.g. this error IS
+      // the closeBatch() call above having already fully closed and reset state before a
+      // subscriber threw), this recovery call will itself throw -- that secondary failure
+      // must never replace the original error being propagated below.
+      try {
+        this.#registry.closeBatch();
+      } catch {
+        // intentionally swallowed; see comment above
+      }
       throw error;
     }
   }

@@ -132,9 +132,35 @@ export class PatchRegistry {
     this.#batch = [];
     this.#batchDiagnostics = [];
     this.#batchSeeds = [];
-    for (const patch of batch.patches)
-      for (const listener of nodeListeners.get(patch.nodeId) ?? []) listener(patch);
-    for (const listener of batchListeners) listener(batch);
+    // A listener's own bug must not prevent other listeners from being notified, and must
+    // not leave the registry's batch state inconsistent. Every listener runs regardless of
+    // whether an earlier one threw; the first thrown error (if any) is rethrown only after
+    // every listener has had its turn, once state is already fully settled.
+    let firstError: unknown;
+    let hasError = false;
+    for (const patch of batch.patches) {
+      for (const listener of nodeListeners.get(patch.nodeId) ?? []) {
+        try {
+          listener(patch);
+        } catch (error) {
+          if (!hasError) {
+            hasError = true;
+            firstError = error;
+          }
+        }
+      }
+    }
+    for (const listener of batchListeners) {
+      try {
+        listener(batch);
+      } catch (error) {
+        if (!hasError) {
+          hasError = true;
+          firstError = error;
+        }
+      }
+    }
+    if (hasError) throw firstError;
     return batch;
   }
 }
