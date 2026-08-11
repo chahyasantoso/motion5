@@ -14,10 +14,29 @@ The oracle is evidence, not a wholesale-copy target. Inspect the named oracle fi
 
 - Create `rescue/restore-motionpath-parity` from frozen `main`.
 - Add one `progress/<slice>.md` file per slice using `progress/README.md`.
-- Add the manual audit workflow and run it on baseline before fixing code.
+- Add `.github/workflows/recovery-audit.yml` as the manual audit workflow described below.
+- Run the workflow on baseline before fixing code.
 - Record the initial mutation score, failing-first result, and missing acceptance mappings.
 
 **Exit gate:** baseline report is attached to the rescue tracking issue; no code slice is marked complete from the baseline run.
+
+## Manual audit workflow specification
+
+This workflow is planned but does not exist yet. Do not tell a future session that it was run until the file is committed and a GitHub Actions run has produced artifacts.
+
+**File:** `.github/workflows/recovery-audit.yml`
+
+**Trigger:** `workflow_dispatch` with a required `ref` input, defaulting to `main`. The checkout must use that ref explicitly.
+
+**Jobs and artifacts:**
+
+- `contract`: install locked dependencies and run real GSAP, DOM, React lifecycle, boundary, and end-to-end contract tests; upload the test result.
+- `mutation`: run Stryker only against runtime and adapter source; upload the HTML and JSON reports. The first run establishes the baseline, not a made-up pass threshold.
+- `acceptance`: run the acceptance-map checker and upload the mapping report.
+- `failing-first`: compare the changed ref with its parent, run only newly added tests against the parent implementation, and upload the red/green evidence. If the implementation is a refactor with no meaningful new test, require an explicit documented exception instead of silently skipping.
+- `build`: run declaration emission and public-import smoke tests; upload logs.
+
+The workflow should report a nonzero failure for broken evidence, but it should not hide the artifacts behind `continue-on-error`. A failed audit is useful only if its report survives the failure.
 
 ## Wave A: close publisher and runtime hardening
 
@@ -122,7 +141,7 @@ The oracle is evidence, not a wholesale-copy target. Inspect the named oracle fi
 
 - Branch: `fix/D3-evidence-gates`.
 - Areas: acceptance map/checker and manual audit workflow.
-- Invariant: every acceptance item maps to a test ID that exists and ran; new tests fail on the parent commit before implementation.
+- Invariant: every acceptance item maps to a test ID that exists and ran; new tests fail on the parent implementation commit before implementation.
 - Evidence: uploaded reports for baseline and rescue runs.
 
 **Wave D exit gate:** scanner self-test is capable of failing, acceptance mappings are complete, and the manual workflow produces durable artifacts.
