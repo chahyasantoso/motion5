@@ -18,6 +18,11 @@ interface AuthoredStop {
   readonly ease?: unknown;
 }
 
+interface CompiledSegment {
+  readonly values: Record<string, unknown>;
+  readonly duration: number;
+}
+
 function readStops(property: unknown): readonly AuthoredStop[] {
   if (!property || typeof property !== "object" || !("stops" in property)) return [];
   const stops = (property as { stops?: unknown }).stops;
@@ -44,7 +49,7 @@ function readDuration(config: unknown): number {
 
 function compileKeyframes(config: unknown): {
   readonly initial: Record<string, unknown>;
-  readonly segments: readonly Record<string, unknown>[];
+  readonly segments: readonly CompiledSegment[];
 } {
   if (!config || typeof config !== "object" || !("keyframes" in config))
     return { initial: {}, segments: [] };
@@ -53,23 +58,31 @@ function compileKeyframes(config: unknown): {
     return { initial: {}, segments: [] };
 
   const initial: Record<string, unknown> = {};
-  const segments: Record<string, unknown>[] = [];
+  const segmentValues: Record<string, unknown>[] = [];
+  const segmentDurations: number[] = [];
   for (const [key, property] of Object.entries(keyframes)) {
     const stops = readStops(property);
     const first = stops[0];
     if (first === undefined) continue;
     initial[key] = first.v;
-    for (const stop of stops.slice(1)) {
-      const previous = stops[stops.indexOf(stop) - 1];
-      if (previous === undefined) continue;
-      const segment = segments[stops.indexOf(stop) - 1] ?? {};
+    for (let index = 1; index < stops.length; index += 1) {
+      const previous = stops[index - 1];
+      const stop = stops[index];
+      if (previous === undefined || stop === undefined) continue;
+      const segment = segmentValues[index - 1] ?? {};
       segment[key] = stop.v;
-      if (stop.ease !== undefined) segment[`${key}Ease`] = stop.ease;
-      segment.__position = stop.p;
-      segments[stops.indexOf(stop) - 1] = segment;
+      if (stop.ease !== undefined) segment.ease = stop.ease;
+      segmentValues[index - 1] = segment;
+      segmentDurations[index - 1] = Math.max(0, stop.p - previous.p);
     }
   }
-  return { initial, segments };
+  return {
+    initial,
+    segments: segmentValues.map((values, index) => ({
+      values,
+      duration: segmentDurations[index] ?? 0,
+    })),
+  };
 }
 
 export function createGsapInterpolator(gsap: GsapLike): Interpolator {
@@ -81,10 +94,10 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
       Object.assign(proxy, compiled.initial);
       const duration = readDuration(config);
       for (const segment of compiled.segments) {
-        const position = segment.__position;
-        delete segment.__position;
-        const vars = { ...segment, duration: typeof position === "number" ? position * duration : duration };
-        timeline.to?.(proxy, vars);
+        timeline.to?.(proxy, {
+          ...segment.values,
+          duration: segment.duration * duration,
+        });
       }
       function progress(): number;
       function progress(value: number): void;
