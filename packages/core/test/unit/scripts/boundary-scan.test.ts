@@ -1,3 +1,6 @@
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   bannedSymbol,
@@ -42,6 +45,24 @@ describe("boundary scan planted violations", () => {
   it("detects a consumer reaching into core source internals", () => {
     expect(consumerInternalViolationFixture).toMatch(/core\/src/);
     expect(importsBoundary(consumerInternalViolationFixture)).toBe(false);
+  });
+
+  it("executes the shipped scanner against a planted unlisted consumer package", async () => {
+    const root = await mkdtemp(join(tmpdir(), "motion5-boundary-"));
+    try {
+      await mkdir(join(root, "packages", "core", "src"), { recursive: true });
+      await mkdir(join(root, "packages", "vue", "src"), { recursive: true });
+      await writeFile(join(root, "packages", "core", "src", "index.ts"), "export const ok = 1;\n");
+      await writeFile(
+        join(root, "packages", "vue", "src", "index.ts"),
+        "import type { Patch } from '../../core/src/runtime/patch-registry';\n",
+      );
+      await expect(scan(root)).resolves.toContain(
+        "packages/vue/src/index.ts: core source-internal import",
+      );
+    } finally {
+      await rm(root, { recursive: true, force: true });
+    }
   });
 
   it("executes the shipped scanner against the current tree", async () => {

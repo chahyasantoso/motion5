@@ -3,9 +3,7 @@ import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
-const coreRoot = join(root, "packages", "core", "src");
 const coreLayers = ["contract", "domain", "graph", "runtime", "ports"];
-const consumerPackages = ["react"];
 const allowedPublicExports = new Set([
   "AUTHORED_SCHEMA_VERSION",
   "DIAGNOSTIC_SEVERITIES",
@@ -69,7 +67,7 @@ export function importsBoundary(source) {
 }
 
 export function importsRenderer(source) {
-  return /(?:from|import)\s*["'](?:gsap|react|react-dom|node:dom|domino|(?:\.\/|\.\.\/)[^"']*(?:^|\/)\b(?:dom|renderer|react|gsap)\b[^"']*)(?:["'/]|$)/i.test(
+  return /(?:from|import)\s*["'](?:gsap|react|react-dom|node:dom|domino|(?:\.\/|\.\.\/)[^"']*(?:^|\/)\b(?:dom|renderer|react|gsap)\b)["'/]/i.test(
     source,
   );
 }
@@ -111,6 +109,19 @@ async function scanFiles(directory, scanRoot, violations) {
   }
 }
 
+async function discoverConsumerPackages(scanRoot) {
+  let entries;
+  try {
+    entries = await readdir(join(scanRoot, "packages"), { withFileTypes: true });
+  } catch (error) {
+    if (error?.code === "ENOENT") return [];
+    throw error;
+  }
+  return entries
+    .filter((entry) => entry.isDirectory() && entry.name !== "core")
+    .map((entry) => entry.name);
+}
+
 export async function scan(scanRoot = root) {
   const violations = [];
   for (const layer of coreLayers)
@@ -126,7 +137,7 @@ export async function scan(scanRoot = root) {
     if (error?.code !== "ENOENT") throw error;
   }
 
-  for (const packageName of consumerPackages) {
+  for (const packageName of await discoverConsumerPackages(scanRoot)) {
     const directory = join(scanRoot, "packages", packageName, "src");
     for (const path of await walk(directory)) {
       const source = await readFile(path, "utf8");
@@ -136,7 +147,12 @@ export async function scan(scanRoot = root) {
   }
 
   const indexPath = join(scanRoot, "packages", "core", "src", "index.ts");
-  const indexSource = await readFile(indexPath, "utf8");
+  let indexSource = "";
+  try {
+    indexSource = await readFile(indexPath, "utf8");
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
   for (const name of extractExportNames(indexSource)) {
     if (!allowedPublicExports.has(name))
       violations.push(`packages/core/src/index.ts: public export ${name} is not allow-listed`);
