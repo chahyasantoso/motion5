@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { gsap } from "gsap";
+import { describe, expect, it } from "vitest";
 import {
   createGsapInterpolator,
   type GsapTimelineLike,
@@ -12,11 +12,7 @@ describe("GSAP multi-stop compilation (B2)", () => {
         const real = gsap.timeline({ paused: true });
         const timeline: GsapTimelineLike = {
           duration: () => real.duration(),
-          progress(value?: number): number | GsapTimelineLike {
-            if (value === undefined) return real.progress();
-            real.progress(value);
-            return timeline;
-          },
+          progress,
           to(target, vars) {
             real.to(target, vars);
             return timeline;
@@ -25,6 +21,13 @@ describe("GSAP multi-stop compilation (B2)", () => {
             real.kill();
           },
         };
+        function progress(): number;
+        function progress(value: number): GsapTimelineLike;
+        function progress(value?: number): number | GsapTimelineLike {
+          if (value === undefined) return real.progress();
+          real.progress(value);
+          return timeline;
+        }
         return timeline;
       },
     });
