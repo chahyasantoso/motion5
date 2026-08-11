@@ -29,7 +29,10 @@ describe("plugin registry", () => {
     registry.register(plugin("opacity", { keys: ["opacity"] }));
     registry.register(plugin("transform", { claimsKey: (key: string) => key === "x" }));
 
-    const resolved = registry.resolveForKeyframes({ opacity: {}, x: {}, mystery: {} }, "track.keyframes");
+    const resolved = registry.resolveForKeyframes(
+      { opacity: {}, x: {}, mystery: {} },
+      "track.keyframes",
+    );
 
     expect(resolved.plugins.map(({ name }) => name)).toEqual(["opacity", "transform"]);
     expect(resolved.diagnostics).toEqual([
