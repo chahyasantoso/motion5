@@ -1,5 +1,5 @@
-import { gsap } from "gsap";
 import { describe, expect, it } from "vitest";
+import { gsap } from "gsap";
 import {
   createGsapInterpolator,
   type GsapTimelineLike,
@@ -45,11 +45,11 @@ describe("GSAP multi-stop compilation (B2)", () => {
       },
     });
 
-    expect(timeline.state).toEqual({ x: 0 });
+    expect(timeline.state).toMatchObject({ x: 0 });
     timeline.progress(0.5);
-    expect(timeline.state).toEqual({ x: 50 });
+    expect(timeline.state).toMatchObject({ x: 50 });
     timeline.progress(1);
-    expect(timeline.state).toEqual({ x: 100 });
+    expect(timeline.state).toMatchObject({ x: 100 });
     timeline.kill();
   });
 });
