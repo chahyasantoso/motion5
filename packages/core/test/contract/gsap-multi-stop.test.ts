@@ -10,20 +10,25 @@ describe("GSAP multi-stop compilation (B2)", () => {
     let target: Record<string, unknown> | undefined;
     const interpolator = createGsapInterpolator({
       timeline: (): GsapTimelineLike => {
+        function progress(): number;
+        function progress(value: number): GsapTimelineLike;
+        function progress(value?: number): number | GsapTimelineLike {
+          if (value === undefined) return progressValue;
+          progressValue = value;
+          if (target) {
+            const stops = [0, 50, 100];
+            const segment = Math.min(1, progressValue * 2);
+            const index = Math.min(1, Math.floor(segment));
+            const local = segment - index;
+            const from = stops[index] ?? stops[0];
+            const to = stops[index + 1] ?? stops[stops.length - 1];
+            target.x = from + (to - from) * local;
+          }
+          return timeline;
+        }
         const timeline: GsapTimelineLike = {
           duration: () => 1,
-          progress(value?: number): number | GsapTimelineLike {
-            if (value === undefined) return progressValue;
-            progressValue = value;
-            if (target) {
-              const stops = [0, 50, 100];
-              const segment = Math.min(1, progressValue * 2);
-              const index = Math.min(1, Math.floor(segment));
-              const local = segment - index;
-              target.x = stops[index] + (stops[index + 1] - stops[index]) * local;
-            }
-            return timeline;
-          },
+          progress,
           to(nextTarget) {
             target = nextTarget;
             return timeline;
