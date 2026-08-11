@@ -1,48 +1,36 @@
 import { describe, expect, it } from "vitest";
+import { gsap } from "gsap";
 import {
   createGsapInterpolator,
   type GsapTimelineLike,
 } from "../../src/adapters/interpolator/gsap";
 
 describe("GSAP multi-stop compilation (B2)", () => {
-  it("interpolates authored stops at 0, 0.5, and 1 using adapter-owned state", () => {
-    let progressValue = 0;
-    let target: Record<string, unknown> | undefined;
+  it("interpolates authored stops at 0, 0.5, and 1 using real GSAP state", () => {
     const interpolator = createGsapInterpolator({
       timeline: (): GsapTimelineLike => {
-        function progress(): number;
-        function progress(value: number): GsapTimelineLike;
-        function progress(value?: number): number | GsapTimelineLike {
-          if (value === undefined) return progressValue;
-          progressValue = value;
-          if (target) {
-            const stops = [0, 50, 100];
-            if (progressValue >= 1) {
-              target.x = stops[stops.length - 1];
-              return timeline;
-            }
-            const segment = progressValue * (stops.length - 1);
-            const index = Math.floor(segment);
-            const from = stops[index] as number;
-            const to = stops[index + 1] as number;
-            target.x = from + (to - from) * (segment - index);
-          }
-          return timeline;
-        }
+        const real = gsap.timeline({ paused: true });
         const timeline: GsapTimelineLike = {
-          duration: () => 1,
-          progress,
-          to(nextTarget) {
-            target = nextTarget;
+          duration: () => real.duration(),
+          progress(value?: number): number | GsapTimelineLike {
+            if (value === undefined) return real.progress();
+            real.progress(value);
             return timeline;
           },
-          kill() {},
+          to(target, vars) {
+            real.to(target, vars);
+            return timeline;
+          },
+          kill() {
+            real.kill();
+          },
         };
         return timeline;
       },
     });
 
     const timeline = interpolator.create({
+      duration: 1,
       keyframes: {
         x: {
           stops: [
@@ -59,5 +47,6 @@ describe("GSAP multi-stop compilation (B2)", () => {
     expect(timeline.state).toEqual({ x: 50 });
     timeline.progress(1);
     expect(timeline.state).toEqual({ x: 100 });
+    timeline.kill();
   });
 });
