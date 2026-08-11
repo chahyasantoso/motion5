@@ -1,0 +1,28 @@
+acceptance mapping	Fail until acceptance mapping is executable	﻿2026-08-11T15:47:50.2599336Z ##[group]Run test "${ACCEPTANCE_FAILED:-1}" = "0"
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T15:47:50.2599751Z ^[[36;1mtest "${ACCEPTANCE_FAILED:-1}" = "0"^[[0m
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T15:47:50.2644591Z shell: /usr/bin/bash -e {0}
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T15:47:50.2644874Z env:
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T15:47:50.2645087Z   ACCEPTANCE_FAILED: 1
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T15:47:50.2645337Z ##[endgroup]
+acceptance mapping	Fail until acceptance mapping is executable	2026-08-11T15:47:50.2722660Z ##[error]Process completed with exit code 1.
+declaration build	Fail until declarations and public entries resolve	﻿2026-08-11T15:47:45.5716835Z ##[group]Run test "${BUILD_FAILED:-1}" = "0"
+declaration build	Fail until declarations and public entries resolve	2026-08-11T15:47:45.5717235Z ^[[36;1mtest "${BUILD_FAILED:-1}" = "0"^[[0m
+declaration build	Fail until declarations and public entries resolve	2026-08-11T15:47:45.5765527Z shell: /usr/bin/bash -e {0}
+declaration build	Fail until declarations and public entries resolve	2026-08-11T15:47:45.5765800Z env:
+declaration build	Fail until declarations and public entries resolve	2026-08-11T15:47:45.5766010Z   BUILD_FAILED: 1
+declaration build	Fail until declarations and public entries resolve	2026-08-11T15:47:45.5766233Z ##[endgroup]
+declaration build	Fail until declarations and public entries resolve	2026-08-11T15:47:45.5846762Z ##[error]Process completed with exit code 1.
+contract surfaces	Fail when a contract surface is missing or red	﻿2026-08-11T15:47:54.8261320Z ##[group]Run test "${CONTRACT_FAILED:-1}" = "0"
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T15:47:54.8261712Z ^[[36;1mtest "${CONTRACT_FAILED:-1}" = "0"^[[0m
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T15:47:54.8306020Z shell: /usr/bin/bash -e {0}
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T15:47:54.8306293Z env:
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T15:47:54.8306494Z   CONTRACT_FAILED: 1
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T15:47:54.8306719Z ##[endgroup]
+contract surfaces	Fail when a contract surface is missing or red	2026-08-11T15:47:54.8382058Z ##[error]Process completed with exit code 1.
+mutation baseline	Fail until a mutation baseline exists	﻿2026-08-11T15:47:45.3570019Z ##[group]Run test "${MUTATION_FAILED:-1}" = "0"
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T15:47:45.3570379Z ^[[36;1mtest "${MUTATION_FAILED:-1}" = "0"^[[0m
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T15:47:45.3614323Z shell: /usr/bin/bash -e {0}
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T15:47:45.3614900Z env:
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T15:47:45.3615112Z   MUTATION_FAILED: 1
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T15:47:45.3615340Z ##[endgroup]
+mutation baseline	Fail until a mutation baseline exists	2026-08-11T15:47:45.3688022Z ##[error]Process completed with exit code 1.

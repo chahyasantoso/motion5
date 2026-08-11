@@ -1,0 +1,1 @@
+packages/core/test/integration/dom-patch-apply.test.ts
