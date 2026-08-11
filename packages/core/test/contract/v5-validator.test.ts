@@ -4,11 +4,65 @@ import { validateV5 } from "../../src/contract/validate-v5";
 
 const baseProject = () => ({ schemaVersion: 5, motions: [], freeTracks: [] });
 
+function projectWithKeyframes(keyframes: unknown) {
+  return {
+    schemaVersion: 5,
+    motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm", keyframes }] }],
+  };
+}
+
 describe("schema v5 validator", () => {
   it("accepts the minimal v5 project", () => {
     const result = validateV5(baseProject());
     expect(result.valid).toBe(true);
     expect(result.diagnostics).toEqual([]);
+  });
+
+  it("rejects malformed, non-finite, out-of-range, non-monotonic, and duplicate stops", () => {
+    const result = validateV5(
+      projectWithKeyframes({
+        malformed: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 0.5, v: 1 },
+          ],
+        },
+        nan: { stops: [{ p: Number.NaN, v: 0 }] },
+        range: { stops: [{ p: 1.5, v: 0 }] },
+        order: {
+          stops: [
+            { p: 0.8, v: 0 },
+            { p: 0.2, v: 1 },
+          ],
+        },
+        duplicate: {
+          stops: [
+            { p: 0.2, v: 0 },
+            { p: 0.2, v: 1 },
+          ],
+        },
+      }),
+    );
+    expect(result.valid).toBe(false);
+    expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(
+      expect.arrayContaining([
+        "stop-position",
+        "stop-position-range",
+        "stop-position-order",
+        "stop-position-duplicate",
+      ]),
+    );
+  });
+
+  it("warns when a property does not cover both interpolation endpoints", () => {
+    const result = validateV5(projectWithKeyframes({ opacity: { stops: [{ p: 0.25, v: 0.5 }] } }));
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ ruleId: "stop-missing-start", severity: "warning" }),
+        expect.objectContaining({ ruleId: "stop-missing-end", severity: "warning" }),
+      ]),
+    );
   });
 
   it("rejects v4 and reports the schema path", () => {

@@ -32,9 +32,66 @@ function issue(
     ...(ids.length > 0 ? { ids: Object.freeze([...ids]) } : {}),
   });
 }
-
 function isObject(value: unknown): value is RawObject {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function validateKeyframes(keyframes: unknown, path: string, diagnostics: Diagnostic[]): void {
+  if (keyframes === undefined) return;
+  if (!isObject(keyframes)) {
+    diagnostics.push(issue("keyframes-shape", path, "Track keyframes must be an object."));
+    return;
+  }
+  for (const [key, rawProperty] of Object.entries(keyframes)) {
+    const propertyPath = `${path}.${key}`;
+    if (!isObject(rawProperty)) {
+      diagnostics.push(
+        issue("stops-shape", `${propertyPath}.stops`, "Authored properties require a stops array."),
+      );
+      continue;
+    }
+    if (Object.keys(rawProperty).length === 0) continue;
+    if (!Array.isArray(rawProperty.stops)) {
+      diagnostics.push(
+        issue("stops-shape", `${propertyPath}.stops`, "Authored properties require a stops array."),
+      );
+      continue;
+    }
+    let previous: number | undefined;
+    const positions = new Set<number>();
+    for (const [index, rawStop] of rawProperty.stops.entries()) {
+      const stopPath = `${propertyPath}.stops[${index}]`;
+      if (!isObject(rawStop) || typeof rawStop.p !== "number" || !Number.isFinite(rawStop.p)) {
+        diagnostics.push(
+          issue("stop-position", `${stopPath}.p`, "Stop p must be a finite number."),
+        );
+        continue;
+      }
+      const position = rawStop.p;
+      if (position < 0 || position > 1)
+        diagnostics.push(
+          issue("stop-position-range", `${stopPath}.p`, "Stop p must be between 0 and 1."),
+        );
+      if (previous !== undefined && position < previous)
+        diagnostics.push(
+          issue("stop-position-order", `${stopPath}.p`, "Stop positions must be monotonic."),
+        );
+      if (positions.has(position))
+        diagnostics.push(
+          issue("stop-position-duplicate", `${stopPath}.p`, "Stop positions must be unique."),
+        );
+      positions.add(position);
+      previous = position;
+    }
+    if (positions.size > 0 && !positions.has(0))
+      diagnostics.push(
+        issue("stop-missing-start", propertyPath, "Stop sequence does not define p=0.", "warning"),
+      );
+    if (positions.size > 0 && !positions.has(1))
+      diagnostics.push(
+        issue("stop-missing-end", propertyPath, "Stop sequence does not define p=1.", "warning"),
+      );
+  }
 }
 
 function validateId(
@@ -48,19 +105,16 @@ function validateId(
     diagnostics.push(issue("id-shape", path, `${label} id must be a non-empty string.`));
     return diagnostics;
   }
-  if (value.includes("/")) {
+  if (value.includes("/"))
     diagnostics.push(
       issue("id-qualified-separator", path, `${label} id '${value}' must not contain '/'.`),
     );
-  }
-  if (reservedTilde && value === "~") {
+  if (reservedTilde && value === "~")
     diagnostics.push(
       issue("id-reserved-namespace", path, "The motion id '~' is reserved for free tracks."),
     );
-  }
   return diagnostics;
 }
-
 function usesThreeD(track: RawObject): boolean {
   const keyframes = isObject(track.keyframes) ? track.keyframes : null;
   if (!keyframes) return false;
@@ -76,7 +130,6 @@ function usesThreeD(track: RawObject): boolean {
     path.points.some((point) => isObject(point) && typeof point.z === "number" && point.z !== 0)
   );
 }
-
 function validateTrackShape(
   track: unknown,
   path: string,
@@ -88,6 +141,7 @@ function validateTrackShape(
     return false;
   }
   diagnostics.push(...validateId(track.id, `${path}.id`, "Track"));
+  validateKeyframes(track.keyframes, `${path}.keyframes`, diagnostics);
   if (typeof track.id === "string" && track.id.length > 0) {
     if (seenIds.has(track.id))
       diagnostics.push(
@@ -101,14 +155,12 @@ function validateTrackShape(
       );
     seenIds.add(track.id);
   }
-  if (track.observes !== undefined && !Array.isArray(track.observes)) {
+  if (track.observes !== undefined && !Array.isArray(track.observes))
     diagnostics.push(
       issue("observes-shape", `${path}.observes`, "Track observes must be an array."),
     );
-  }
   return true;
 }
-
 function addObservationDiagnostics(
   track: RawObject,
   path: string,
@@ -140,7 +192,7 @@ function addObservationDiagnostics(
       );
       continue;
     }
-    if (!OBSERVATION_ROLES.includes(role as (typeof OBSERVATION_ROLES)[number])) {
+    if (!OBSERVATION_ROLES.includes(role as (typeof OBSERVATION_ROLES)[number]))
       diagnostics.push(
         issue(
           "observation-role",
@@ -148,8 +200,7 @@ function addObservationDiagnostics(
           "Observation role must be 'input' or 'output'.",
         ),
       );
-    }
-    if (role === "input" && (typeof target !== "string" || target.length === 0)) {
+    if (role === "input" && (typeof target !== "string" || target.length === 0))
       diagnostics.push(
         issue(
           "observation-input-target",
@@ -157,8 +208,7 @@ function addObservationDiagnostics(
           "Input observations require a non-empty target.",
         ),
       );
-    }
-    if (role === "output" && target !== undefined) {
+    if (role === "output" && target !== undefined)
       diagnostics.push(
         issue(
           "observation-output-target",
@@ -166,8 +216,6 @@ function addObservationDiagnostics(
           "Output observations must not define target.",
         ),
       );
-    }
-
     const qualifiedSource =
       source.startsWith("~/") || source.includes("/")
         ? source
@@ -175,7 +223,7 @@ function addObservationDiagnostics(
           ? `${ownerId}/${source}`
           : source;
     const sourceKnown = qualifiedIds.has(qualifiedSource) || freeIds.has(source);
-    if (!sourceKnown) {
+    if (!sourceKnown)
       diagnostics.push(
         issue(
           "observation-unknown-source",
@@ -185,7 +233,6 @@ function addObservationDiagnostics(
           [source],
         ),
       );
-    }
     const edgeKey = `${qualifiedSource}|${role}|${role === "input" ? String(target) : ""}`;
     if (seen.has(edgeKey))
       diagnostics.push(
@@ -202,7 +249,7 @@ function addObservationDiagnostics(
       source === ownerId ||
       qualifiedSource === `${ownerId}/${ownerId}` ||
       qualifiedSource === ownerId
-    ) {
+    )
       diagnostics.push(
         issue(
           "observation-self-reference",
@@ -212,19 +259,16 @@ function addObservationDiagnostics(
           [ownerId],
         ),
       );
-    }
     if (sourceKnown && typeof track.id === "string")
       edges.push({ source: qualifiedSource, target: `${ownerId}/${track.id}`, path: edgePath });
   }
 }
-
-function hasCycle(nodes: ReadonlySet<string>, edges: readonly Edge[]): boolean {
+function hasCycle(nodes: ReadonlySet<string>, edges: Edge[]): boolean {
   const outgoing = new Map<string, string[]>();
   for (const node of nodes) outgoing.set(node, []);
-  for (const edge of edges) {
+  for (const edge of edges)
     if (outgoing.has(edge.source) && outgoing.has(edge.target))
       outgoing.get(edge.source)?.push(edge.target);
-  }
   const visiting = new Set<string>();
   const visited = new Set<string>();
   const visit = (node: string): boolean => {
@@ -238,7 +282,6 @@ function hasCycle(nodes: ReadonlySet<string>, edges: readonly Edge[]): boolean {
   };
   return [...nodes].some(visit);
 }
-
 export function validateV5(input: unknown): ValidationResult {
   const diagnostics: Diagnostic[] = [];
   if (!isObject(input))
@@ -266,7 +309,6 @@ export function validateV5(input: unknown): ValidationResult {
     diagnostics.push(issue("motions-shape", "motions", "motions must be an array."));
   if (input.freeTracks !== undefined && !Array.isArray(input.freeTracks))
     diagnostics.push(issue("free-tracks-shape", "freeTracks", "freeTracks must be an array."));
-
   const motions = Array.isArray(input.motions) ? input.motions : [];
   const freeTracks = Array.isArray(input.freeTracks) ? input.freeTracks : [];
   const motionIds = new Set<string>();
@@ -282,7 +324,6 @@ export function validateV5(input: unknown): ValidationResult {
   }> = [];
   const freeRecords: Array<{ raw: RawObject; path: string; id: string }> = [];
   const allTracks: RawObject[] = [];
-
   for (const [index, rawMotion] of motions.entries()) {
     const path = `motions[${index}]`;
     if (!isObject(rawMotion)) {
@@ -335,7 +376,6 @@ export function validateV5(input: unknown): ValidationResult {
     }
     motionRecords.push({ raw: rawMotion, path, id, tracks, localIds });
   }
-
   for (const [index, rawTrack] of freeTracks.entries()) {
     const path = `freeTracks[${index}]`;
     if (!validateTrackShape(rawTrack, path, freeIds, diagnostics)) continue;
@@ -349,10 +389,9 @@ export function validateV5(input: unknown): ValidationResult {
     allTracks.push(track);
     freeRecords.push({ raw: track, path, id });
   }
-
   const edges: Edge[] = [];
-  for (const record of motionRecords) {
-    for (const track of record.tracks) {
+  for (const record of motionRecords)
+    for (const track of record.tracks)
       addObservationDiagnostics(
         track,
         `${record.path}.tracks[${record.tracks.indexOf(track)}]`,
@@ -363,8 +402,6 @@ export function validateV5(input: unknown): ValidationResult {
         edges,
         diagnostics,
       );
-    }
-  }
   for (const record of freeRecords)
     addObservationDiagnostics(
       record.raw,
@@ -376,7 +413,6 @@ export function validateV5(input: unknown): ValidationResult {
       edges,
       diagnostics,
     );
-
   const perspective = input.perspective;
   if (
     perspective !== undefined &&
@@ -403,7 +439,6 @@ export function validateV5(input: unknown): ValidationResult {
         );
   if (hasCycle(nodes, edges))
     diagnostics.push(issue("observation-cycle", "motions", "Observation graph contains a cycle."));
-
   const valid = !diagnostics.some(({ severity }) => severity === "error");
   return {
     valid,
