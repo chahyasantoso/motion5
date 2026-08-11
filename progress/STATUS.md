@@ -1,0 +1,44 @@
+# Motion5 recovery status
+
+This is the **single source of truth** for recovery progress. Update this file after every slice branch or PR changes state. `WAVE-PLAN.md` contains the detailed plan and acceptance guidance, but its prose is not authoritative for status.
+
+Last reviewed: 2026-08-11
+
+| ID | Slice | Status | Branch | Related files | Commit or evidence |
+|---|---|---|---|---|---|
+| W0 | Rescue loop and audit baseline | Not started | `rescue/restore-motionpath-parity` | [WAVE-PLAN](../WAVE-PLAN.md), planned [audit workflow](../.github/workflows/recovery-audit.yml) | No workflow run yet |
+| A1 | Final-value memo consistency | Done on main, verify on rescue | `fix/A1-final-value-memo` | [publisher](../packages/core/src/runtime/graph-publisher.ts), [test](../packages/core/test/integration/publisher-output-merge-consistency.test.ts) | [1d59c087](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a) |
+| A2 | Preserve subscriber errors | Done on main, verify on rescue | `fix/A2-subscriber-errors` | [registry](../packages/core/src/runtime/patch-registry.ts), [test](../packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts) | [1d59c087](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a) |
+| A3 | Guard subscriber-triggered reentrancy | Not started | `fix/A3-publisher-reentrancy` | Publisher/runtime notification boundary | No evidence yet |
+| B1 | Prepare-stage plugin contribution | Not started | `fix/B1-track-contribution` | [track](../packages/core/src/domain/track.ts), [plugins](../packages/core/src/domain/plugins.ts) | No evidence yet |
+| B2 | Real GSAP multi-stop compilation | Not started | `fix/B2-gsap-stop-compilation` | [GSAP adapter](../packages/core/src/adapters/interpolator/gsap.ts), [tests](../packages/core/test/contract/adapters.test.ts) | No evidence yet |
+| C1 | React store resubscription | Not started | `fix/C1-react-store-lifecycle` | [store](../packages/react/src/patch-store.ts), [test](../packages/react/test/patch-store.test.ts) | No evidence yet |
+| C2 | React hook and public exports | Not started | `fix/C2-react-public-surface` | Planned React index and hook | No evidence yet |
+| C3 | DOM metadata, serialization, and clear coverage | Not started | `fix/C3-dom-contract` | [DOM adapter](../packages/core/src/adapters/dom.ts), [test](../packages/core/test/integration/dom-patch-apply.test.ts) | No evidence yet |
+| D1 | Discover consumer packages | Not started | `fix/D1-boundary-discovery` | [scanner](../scripts/boundary-scan.mjs) | No evidence yet |
+| D2 | Planted boundary self-test | Not started | `fix/D2-boundary-self-test` | [test](../packages/core/test/unit/scripts/boundary-scan.test.ts), [fixtures](../scripts/boundary-scan-fixtures.mjs) | No evidence yet |
+| D3 | Acceptance and failing-first evidence gates | Not started | `fix/D3-evidence-gates` | Planned checker and audit workflow | No evidence yet |
+| E1 | Required declaration build | Not started | `fix/E1-required-build` | [CI](../.github/workflows/ci.yml), package exports | No evidence yet |
+| E2 | Real end-to-end product path | Not started | `fix/E2-end-to-end-proof` | Planned integration fixture | No evidence yet |
+| E3 | Mutation baseline and ratchet | Not started | `fix/E3-mutation-gate` | Planned Stryker config and audit artifact | No baseline yet |
+
+## Status vocabulary
+
+- **Not started**: no branch or implementation work.
+- **In progress**: branch exists and work has begun.
+- **Red test recorded**: failing-first evidence is saved.
+- **Green, pending wave gate**: real acceptance test and cheap CI pass, but the wave gate is not complete.
+- **Done**: slice dependencies and its wave exit gate are proven.
+- **Blocked**: work cannot proceed; explain why in the row or linked slice log.
+
+## Update protocol
+
+1. Update this table first whenever work starts, a red run is recorded, a PR merges, or evidence changes.
+2. Put commit, PR, workflow, and artifact links in the final column.
+3. Use `progress/<slice>.md` only for detailed evidence: oracle files, commands, output, and known gaps. It is supporting evidence, never a competing status source.
+4. Update `RECOVERY.md` only when the current handoff, baseline, or open-defect summary changes.
+5. Update `WAVE-PLAN.md` only when the plan, dependencies, acceptance criteria, or exit gates change.
+
+## Current next action
+
+Create the rescue branch, implement the planned manual audit workflow, run it against frozen `main`, and record the baseline artifacts in the W0 row. Do not mark W0 complete until a real GitHub Actions run exists.

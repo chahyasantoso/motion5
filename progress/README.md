@@ -1,29 +1,27 @@
 # Recovery progress
 
-Use one file per slice, for example `progress/B1-contribute.md` or `progress/C1-react-store.md`.
+`progress/STATUS.md` is the single source of truth for slice status. Read and update it first.
 
-Copy this template:
+Use one optional file per slice, for example `progress/B2-gsap.md`, only when detailed evidence does not fit in the status table. Each slice log should contain:
 
 ```md
 # <slice>
 
-- Status: not started | red | green | blocked
+- Status:
 - Branch:
-- Commit:
+- Parent commit:
+- Final commit:
 - Oracle repository and revision:
 - Oracle files inspected:
 - Motion5 files changed:
-- Acceptance test IDs:
-- Failing-first evidence:
+- Invariant:
+- Acceptance test IDs and paths:
+- Failing-first command and result:
 - Passing command and result:
-- CI workflow run and artifact links:
+- CI workflow run:
+- Artifact links:
 - Known gaps:
 - Next exact action:
 ```
 
-Rules:
-
-- `green` means the executable acceptance test passed against the real boundary, not merely that typecheck passed.
-- Keep the first failing run and the final passing run linked from the PR or workflow artifact.
-- One slice per file. Do not overwrite history; append a dated note when a result changes.
-- If implementation and test disagree, compare against `motionpath` before changing either one.
+Never let a slice log disagree with `progress/STATUS.md`. If the evidence changes, update the status table first, then the detailed log.
