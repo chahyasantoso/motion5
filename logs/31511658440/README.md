@@ -1,0 +1,34 @@
+# CI log archive: 31511658440
+
+- Workflow: CI
+- Conclusion: failure
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/31511658440
+- Captured: 2026-08-11T16:18:57Z
+
+Detailed failed-job output: [failed-jobs.log](./failed-jobs.log)
+Job and step outcomes: [jobs.json](./jobs.json)
+
+## Job outcomes
+
+- performance (node 24, advisory): success
+- quality (node 24): failure — failed steps: Format check (failure)
+- boundaries (node 24): success
+- integration (node 24): success
+
+## Failed job output
+
+```text
+quality (node 24)	Format check	﻿2026-08-11T16:18:38.7586857Z ##[group]Run npm run format:check
+quality (node 24)	Format check	2026-08-11T16:18:38.7587239Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Format check	2026-08-11T16:18:38.7633993Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Format check	2026-08-11T16:18:38.7634332Z ##[endgroup]
+quality (node 24)	Format check	2026-08-11T16:18:38.8716017Z 
+quality (node 24)	Format check	2026-08-11T16:18:38.8717046Z > motion5@0.0.0 format:check
+quality (node 24)	Format check	2026-08-11T16:18:38.8717818Z > prettier . --check
+quality (node 24)	Format check	2026-08-11T16:18:38.8718137Z 
+quality (node 24)	Format check	2026-08-11T16:18:38.9865457Z Checking formatting...
+quality (node 24)	Format check	2026-08-11T16:18:40.6924236Z [^[[33mwarn^[[39m] packages/core/test/unit/scripts/acceptance-scan.test.ts
+quality (node 24)	Format check	2026-08-11T16:18:40.8779392Z [^[[33mwarn^[[39m] scripts/acceptance-scan.mjs
+quality (node 24)	Format check	2026-08-11T16:18:40.9357686Z [^[[33mwarn^[[39m] Code style issues found in 2 files. Run Prettier with --write to fix.
+quality (node 24)	Format check	2026-08-11T16:18:40.9791039Z ##[error]Process completed with exit code 1.
+```
