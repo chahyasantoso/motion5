@@ -40,6 +40,34 @@ It is wrong that motionpath's `domRenderer` "handled transform composition and f
 
 **What the external review missed:** F-1 through F-5, F-7, F-8, F-10, and F-11. Its two "smaller notes, not blocking" are both symptoms of F-1 and are reclassified accordingly. Its bottom line, "ship-quality core," is not supportable.
 
+## 2A. Deferred findings from the comprehensive code review
+
+This section is the canonical disposition for the later source review. These findings are **confirmed or plausible code concerns, intentionally deferred until the rescue wave is complete**. They are not C2 work, not resolved by the C2 PR, and must not be converted into recovery claims without failing-first tests and CI evidence.
+
+### D-1: Track input/state precedence needs an executable contract
+
+`Track.compose()` currently constructs its base as timeline state followed by graph inputs, so inputs win on key collisions. The intended contract says graph inputs feed the source object before local composition. The exact merge point needs a dedicated test that distinguishes input seeding from local/plugin output, then an implementation decision consistent with the authored composition model. Do not change this from prose alone.
+
+### D-2: Track lifetime ownership is behaviorally cached but structurally misplaced
+
+`Engine` caches one `Track` per node and disposes them through `ProjectRuntime`'s `disposeComposition` callback, so the review claim that a new Track is constructed on every flush is false for the current code. The real concern remains: `ProjectRuntime` does not directly own the Track collection, and `GraphRuntime.flush()` rebuilds frozen publisher node wrappers and calls the compose resolver for every node on every flush. Treat this as an ownership/allocation follow-up, not as evidence of per-flush Track reconstruction.
+
+### D-3: Plugin stage and metadata behavior is under-specified and under-tested
+
+Prepare-stage plugins contribute during Track construction, but all resolved plugins still participate in the runtime compose loop. `inputs`, `outputs`, `internalKeys`, serializer metadata, merge modes, and related ownership semantics are present only partially or as metadata. `resolveForKeyframes()` can omit plugins that claim no authored key but are required by composition inputs. `resolve(names)` also needs an explicit deterministic ordering contract, and unknown stage values currently fall through to the runtime rank. These are follow-up contract questions, not C2 blockers.
+
+### D-4: Seek uses synthetic ticks outside the clock stream
+
+`ProjectRuntime.seek()` calls `GraphRuntime.invalidate()`, which advances `#lastTick` without an emitted `ClockTick`. This is intentional invalidation rather than a second clock, but ordering when seek and clock events interleave is not proven. Add a test before changing semantics, especially around a seek followed by a clock event with the same or lower tick.
+
+### D-5: Validation and adapter diagnostics are incomplete
+
+The contract validator checks stop shape and positions, while the GSAP adapter filters malformed stops rather than reporting deterministic diagnostics. Unsupported authored keys and invalid stop values need an explicit boundary decision: reject, warn, or preserve for a plugin. Timeline state and plugin output also lack a validated immutable-value boundary before publication. This belongs in a later validation/adapter slice with executable diagnostics tests.
+
+### Disposition and revisit point
+
+These five findings are **deferred, consolidated here, and not fixed in the current rescue slices**. The rescue wave should finish its existing C2, C3, D1-D3, and E1-E3 work first. After the final rescue tip has a full audit, run a comprehensive source review against that tip, convert only surviving concerns into new slices, and assign each a failing-first test. The C2 PR may link this section, but it should not own these findings.
+
 ## 3. What is solid and must not be reopened
 
 This is not filler. Several findings below are one file away from code that is genuinely good, and a remediation PR that widens into this material should be recut.
@@ -50,8 +78,6 @@ This is not filler. Several findings below are one file away from code that is g
 - `graph/ir.ts`. One spelling of edge identity in `edgeKey`, diagnostics sorted by rule then path, error severity blocking the build while warnings pass. I-15 is honestly satisfied.
 - `runtime/patch-registry.ts`. Cycle-safe deep freeze, revision advance suppressed by structural equality, listener sets snapshotted before notification so unsubscribe during a tick is safe. I-7 and I-8 are honestly satisfied, with the narrow exception in F-10.
 - `domain/lifecycle.ts` and the disposal guards throughout. Idempotent and owner-first, as specified.
-
-The ownership model is the thing this project got right, and every finding below is repairable without reopening it.
 
 ## 4. Findings
 
@@ -94,7 +120,7 @@ A node that has never published resolves to `undefined`, which is correct and di
 
 **Consequence:** P3-02 specifies that "input-role edges contribute to the source object before local composition and output-role edges merge over the resulting patch after it." `graph/ir.ts` builds output edges, validates that they carry no target, and includes them in ordering and in the live edge set. Publication then drops them silently. Half of the authored observation contract is unimplemented, and because output is the default role when `observes[].role` is omitted, this is the path most authored projects will take.
 
-**Fix:** after a successful `node.compose(inputs)`, merge each output-source's current values over the composed values, in canonical edge order, then publish the merged result. Resolve each output source the same way F-1 resolves inputs, memo first and registry second. motionpath's `usecases/mergePatches.js` is the behavioral reference for one-level-deep object merge semantics; do not copy the file, and note that motion5 patches are frozen, so the merge must build a new object rather than mutate.
+**Fix:** after a successful `node.compose(inputs)`, merge each output-source's current values over the composed values, in canonical edge order, then publish the merged result. Resolve each output source the same way F-1 resolves inputs. motionpath's `usecases/mergePatches.js` is the behavioral reference for one-level-deep object merge semantics; do not copy the file, and note that motion5 patches are frozen, so the merge must build a new object rather than mutate.
 
 **Ordering note:** merge order must be canonical, not authored, or two runs of the same project can disagree when a node has two output sources that write the same key. Sort by `edgeKey`.
 
@@ -133,8 +159,6 @@ This is the finding that most distorts the project's apparent state. The graph, 
 ```ts
 if (!this.#dirty && this.#lastSnapshot) return this.#lastSnapshot;
 ```
-
-`#dirty` is set only by `setProgress`. The `inputs` argument is not part of the check.
 
 **Consequence:** a track whose own progress did not move but whose upstream input did returns the previous snapshot. This is precisely the shape of the FK-plugin case from motionpath: a node that never moves its own playhead but whose composed value depends entirely on a parent that did.
 
@@ -202,11 +226,11 @@ The allow-list in `scripts/boundary-scan.mjs` gains only what lands on the publi
 
 **Consequence:** the planted-violation suite proves that a copy of the predicates, living in the test file, behaves correctly. Edit or weaken a regex in the real script and every test still passes. The fourth case is worse than the other three: it does not even use the script's `extractExportNames`, it inlines a different and simpler regex and asserts on that.
 
-This is the exact failure mode the plan's own risk register names, "a scanner that is green because its glob is wrong," and it is the failure mode ADR-008 made planted fixtures mandatory to prevent. The mitigation was implemented in a way that cannot detect the risk it was written for.
+**Fix:** `boundary-scan.mjs` exports `importsBoundary`, `importsRenderer`, `bannedSymbol`, `extractExportNames`, and a `scan()` that returns the violations array instead of only printing. The script keeps a thin `main` that calls `scan()`, prints, and sets the exit code. The test imports those symbols from the script and deletes its local copies. Add one case that runs the real `scan()` against a planted temporary tree containing a consumer reaching into `core/src` and asserts a non-empty violations array, which covers glob scope and not just regex text.
 
-**Fix:** `boundary-scan.mjs` exports `importsBoundary`, `importsRenderer`, `bannedSymbol`, `extractExportNames`, and a `scan()` that returns the violations array instead of only printing. The script keeps a thin `main` that calls `scan()`, prints, and sets the exit code. The test imports those symbols from the script and deletes its local copies. Add one case that runs the real `scan()` against a planted temporary tree and asserts a non-empty violations array, so glob scope is covered and not just predicate text.
+**Exit:** deleting a rule from the script turns the suite red. Verify this by hand before merging; it is the entire point of the slice.
 
-**Owned by:** R7, alongside F-7. Same file, same invariant, one PR.
+**Fixes:** F-7, F-8. **Depends:** R6, so the consumer rule has a legal alternative to point at. **Blocks:** nothing.
 
 ### F-9 High: the DOM adapter cannot address a target and does not write style
 
@@ -274,7 +298,7 @@ What motionpath did **not** do, contrary to the external review: compose transfo
 
 ## 5. Remediation plan
 
-Nine pull requests in three waves. The slicing follows the existing delivery rules in section 2 of the implementation plan: one PR establishes one meaningful invariant, under twenty semantic files, and a PR that cannot name the single object owning its state transition is not ready.
+Nine pull requests in three waves. The slicing follows the existing delivery rules in section 2 of the implementation plan: one PR establishes one meaningful invariant, under twenty semantic files, and a PR that cannot name the single object owning its state transition is not ready to be written.
 
 Waves are dependency tiers, not calendar milestones. Within a wave, PRs are listed in merge order.
 
@@ -359,7 +383,6 @@ Nothing else is worth doing first. Wiring real composition into a publisher that
 - **Evidence:** the test imports every predicate from the script and holds no local copies. One new case runs the real `scan()` over a planted temporary tree containing a consumer reaching into `core/src` and asserts a non-empty result, which covers glob scope and not just regex text.
 - **Exit:** deleting a rule from the script turns the suite red. Verify this by hand before merging; it is the entire point of the slice.
 - **Fixes:** F-7, F-8. **Depends:** R6, so the consumer rule has a legal alternative to point at. **Blocks:** nothing.
-- **Risk and rollback:** widening the scan to `ports/` and `engine.ts` may surface pre-existing violations. If it does, that is a finding and gets its own PR rather than a widened allow list.
 
 ### Wave 3: adapters and truth
 
@@ -372,7 +395,6 @@ Nothing else is worth doing first. Wiring real composition into a publisher that
 - **Evidence:** `test/integration/dom-patch-apply.test.ts`, which P4-02 already names and which does not exist. Cover per-node target resolution, internal-key filtering, dirty-key diffing, key removal emitting `undefined`, blocked and error patches applying nothing, patch immutability after apply, and target release on teardown.
 - **Exit:** P4-02's named evidence exists, and no DOM or engine import appears outside `adapters/`, confirmed by the now-wider R7 scan.
 - **Fixes:** F-9. **Depends:** R5, R7. **Blocks:** P4-05.
-- **Risk and rollback:** scope creep into a transform composer. Mitigation: the writer port hands values to the engine exactly as motionpath did; if a PR in this slice starts serializing transforms by hand, it has gone wrong.
 
 #### R9 `docs/r9-status-and-plan-truth-pass`
 
@@ -383,7 +405,6 @@ Nothing else is worth doing first. Wiring real composition into a publisher that
 - **Evidence:** none claimed. This slice asserts no runtime invariant and must not pretend to, per the same rule P0-06 applied to itself.
 - **Exit:** every evidence filename in the plan resolves to a file that exists, or has been struck with a note naming what covers the requirement instead. The README status paragraph and the install-fallback paragraph are correct. The `graph/normalize.ts` and `graph/validate.ts` collapse into `ir.ts` is recorded. The reentrancy guard is either implemented in an earlier PR or its claim is withdrawn. The advisory-budget expiry of 2026-08-17 is restated with a decision.
 - **Fixes:** F-11. **Depends:** R1 through R8, since each writes the evidence file its own requirement names. **Blocks:** nothing.
-- **Risk and rollback:** none. Documentation only, per the formatting-separate-from-behavior rule.
 
 ### Sequencing
 
