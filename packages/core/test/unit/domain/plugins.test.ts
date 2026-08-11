@@ -3,9 +3,10 @@ import type { ImmutableRecord } from "../../../src/domain/values";
 import { PluginRegistry } from "../../../src/domain/plugins";
 
 describe("plugin registry", () => {
-  const plugin = (name: string) => ({
+  const plugin = (name: string, extra: Record<string, unknown> = {}) => ({
     name,
     compose: (values: Readonly<ImmutableRecord>, _progress: number): ImmutableRecord => values,
+    ...extra,
   });
 
   it("registers plugins and resolves them in requested deterministic order", () => {
@@ -21,6 +22,39 @@ describe("plugin registry", () => {
     expect(resolved.plugins.map(({ name }) => name)).toEqual(["second", "first"]);
     expect(resolved.plugins[0]).not.toBe(second);
     expect(resolved.plugins[0]).toEqual(second);
+  });
+
+  it("resolves plugins that claim authored keys and reports unsupported keys", () => {
+    const registry = new PluginRegistry();
+    registry.register(plugin("opacity", { keys: ["opacity"] }));
+    registry.register(plugin("transform", { claimsKey: (key: string) => key === "x" }));
+
+    const resolved = registry.resolveForKeyframes(
+      { opacity: {}, x: {}, mystery: {} },
+      "track.keyframes",
+    );
+
+    expect(resolved.plugins.map(({ name }) => name)).toEqual(["opacity", "transform"]);
+    expect(resolved.diagnostics).toEqual([
+      {
+        ruleId: "plugin-unknown-key",
+        path: "track.keyframes.mystery",
+        message: 'No registered plugin claims authored key "mystery".',
+        severity: "error",
+        ids: ["mystery"],
+      },
+    ]);
+  });
+
+  it("orders authored-key plugins by stage, priority, then registration order", () => {
+    const registry = new PluginRegistry();
+    registry.register(plugin("late", { keys: ["x"], stage: "compose", priority: 20 }));
+    registry.register(plugin("early", { keys: ["y"], stage: "prepare", priority: 99 }));
+    registry.register(plugin("same", { keys: ["z"], stage: "compose", priority: 10 }));
+
+    const resolved = registry.resolveForKeyframes({ x: {}, y: {}, z: {} });
+
+    expect(resolved.plugins.map(({ name }) => name)).toEqual(["early", "same", "late"]);
   });
 
   it("rejects duplicate registration instead of overwriting", () => {
