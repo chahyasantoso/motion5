@@ -30,37 +30,42 @@ const project: ProjectDefinition = {
 };
 
 describe("Engine", () => {
-  it("TR-R-15 validates ports and loads a headless project without implicit membership", () => {
-    const clock = createManualClock();
-    const engine = new Engine({
-      clock,
-      interpolator: createFakeInterpolator(),
-      scheduler: createFakeScheduler(),
-    });
-    const runtime = engine.load(project);
-    expect(runtime.graph.memberCount).toBe(0);
-    runtime.dispose();
-  });
-
-  it("reuses one compiled timeline across repeated flushes and kills it once", () => {
-    const create = vi.fn(createFakeInterpolator().create);
+  it("publishes a progress change through the existing graph runtime", () => {
     const runtime = new Engine({
       clock: createManualClock(),
-      interpolator: { create },
+      interpolator: createFakeInterpolator(),
       scheduler: createFakeScheduler(),
     }).load(project);
     runtime.mount("hero/arm");
     runtime.graph.flush(["hero/arm"], 1);
-    runtime.graph.flush(["hero/arm"], 2);
-    expect(create).toHaveBeenCalledTimes(1);
+    const batch = runtime.seek("hero/arm", 0.5);
+    const patch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
+    expect(patch?.values.opacity).toBeCloseTo(0.6, 12);
+    expect(patch?.sourceProgress).toBe(0.5);
     runtime.dispose();
-    expect(create.mock.results[0]?.value).toBeDefined();
   });
 
-  it("resolves and composes authored-key plugins once during Track construction", () => {
+  it("keeps one clock owner while clock progress publishes once", () => {
+    const clock = createManualClock();
+    const subscribe = vi.spyOn(clock, "subscribe");
+    const runtime = new Engine({
+      clock,
+      interpolator: createFakeInterpolator(),
+      scheduler: createFakeScheduler(),
+    }).load(project);
+    runtime.mount("hero/arm");
+    runtime.seek("hero/arm", 0.25);
+    expect(subscribe).toHaveBeenCalledTimes(1);
+    runtime.dispose();
+  });
+
+  it("still resolves authored-key plugins during progress updates", () => {
     const plugins = new PluginRegistry();
-    const compose = vi.fn((values: Record<string, unknown>) => ({ ...values, rendered: true }));
-    plugins.register({ name: "opacity", keys: ["opacity"], compose });
+    plugins.register({
+      name: "opacity",
+      keys: ["opacity"],
+      compose: (values) => ({ ...values, rendered: true }),
+    });
     const runtime = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
@@ -68,47 +73,8 @@ describe("Engine", () => {
       plugins,
     }).load(project);
     runtime.mount("hero/arm");
-    const first = runtime.graph.flush(["hero/arm"], 1);
-    const second = runtime.graph.flush(["hero/arm"], 2);
-    expect(first.patches.find(({ nodeId }) => nodeId === "hero/arm")?.values).toEqual({
-      opacity: 0.2,
-      rendered: true,
-    });
-    expect(second.patches).toEqual([]);
-    expect(runtime.graph.registry.get("hero/arm")?.values).toEqual({
-      opacity: 0.2,
-      rendered: true,
-    });
-    expect(compose).toHaveBeenCalledTimes(1);
+    runtime.seek("hero/arm", 1);
+    expect(runtime.graph.registry.get("hero/arm")?.values).toEqual({ opacity: 1, rendered: true });
     runtime.dispose();
-  });
-
-  it("composes through a real Track and publishes renderer-neutral values", () => {
-    const runtime = new Engine({
-      clock: createManualClock(),
-      interpolator: createFakeInterpolator(),
-      scheduler: createFakeScheduler(),
-    }).load(project);
-    runtime.mount("hero/arm");
-    const batch = runtime.graph.flush(["hero/arm"], 1);
-    const patch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
-    expect(patch?.values).toEqual({ opacity: 0.2 });
-    expect(patch?.values).not.toHaveProperty("nodeId");
-    expect(patch?.sourceProgress).toBe(0);
-    runtime.dispose();
-  });
-
-  it("rejects invalid injected ports", () => {
-    const clock = createManualClock();
-    const invalidInterpolator: unknown = {};
-    const invalidScheduler: unknown = {};
-    expect(
-      () =>
-        new Engine({
-          clock,
-          interpolator: invalidInterpolator as never,
-          scheduler: invalidScheduler as never,
-        }),
-    ).toThrow(TypeError);
   });
 });

@@ -8,13 +8,6 @@ import { PatchRegistry, type PatchBatch } from "./patch-registry";
 export type ComposeNode = PublisherNode["compose"];
 export type ComposeResolver = (node: GraphNode) => ComposeNode;
 
-/**
- * The one project-wide owner of binding, live state, publisher, registry, and clock input.
- *
- * Motion instances do not construct this object. They attach membership and request seeds;
- * the single clock subscription remains here, so detach and reattach cannot reset the tick
- * sequence used by retry scheduling.
- */
 export class GraphRuntime {
   readonly #binding: GraphBinding;
   readonly #registry: PatchRegistry;
@@ -38,23 +31,18 @@ export class GraphRuntime {
   get binding(): GraphBinding {
     return this.#binding;
   }
-
   get state() {
     return this.#binding.state;
   }
-
   get registry(): PatchRegistry {
     return this.#registry;
   }
-
   get publisher(): GraphPublisher {
     return this.#publisher;
   }
-
   get tick(): number {
     return this.#lastTick;
   }
-
   get memberCount(): number {
     return this.#members.size;
   }
@@ -65,7 +53,6 @@ export class GraphRuntime {
       throw new TypeError(`Unknown graph node \"${nodeId}\".`);
     this.#members.add(nodeId);
   }
-
   detach(nodeId: string): void {
     this.#assertLive();
     this.#members.delete(nodeId);
@@ -85,20 +72,23 @@ export class GraphRuntime {
     );
   }
 
+  invalidate(seeds: readonly string[]): PatchBatch {
+    this.#assertLive();
+    return this.flush(seeds, this.#lastTick + 1);
+  }
+
   dispose(): void {
     if (this.#disposed) return;
     this.#disposed = true;
     this.#unsubscribe();
     this.#members.clear();
   }
-
   #onTick(event: ClockTick): void {
     if (this.#disposed) return;
     if (event.tick <= this.#lastTick)
       throw new RangeError("Clock ticks must be strictly increasing.");
     this.flush([...this.#members], event.tick);
   }
-
   #assertLive(): void {
     if (this.#disposed) throw new Error("GraphRuntime is disposed.");
   }
