@@ -21,22 +21,21 @@ import {
 
 /**
  * Plants one of every violation class the scanner owns into a throwaway tree:
- * a core layer file that imports an engine and names a banned symbol, a core
- * entry that exports outside the allow list, and a consumer package that is not
- * hardcoded anywhere and reaches into core source internals.
+ * a core layer file and a core package entry that import an engine and name a
+ * banned symbol, a core entry that exports outside the allow list, and a
+ * consumer package that is hardcoded nowhere and reaches into core internals.
  */
 async function plantFixtureRoot(): Promise<string> {
   const root = await mkdtemp(join(tmpdir(), "motion5-boundary-"));
+  const leaking = `${engineViolationFixture}\n${bannedSymbolFixture}\n`;
   await mkdir(join(root, "packages", "core", "src", "runtime"), { recursive: true });
   await mkdir(join(root, "packages", "vue", "src"), { recursive: true });
   await writeFile(
     join(root, "packages", "core", "src", "index.ts"),
     `${publicExportViolationFixture}\n`,
   );
-  await writeFile(
-    join(root, "packages", "core", "src", "runtime", "leak.ts"),
-    `${engineViolationFixture}\n${bannedSymbolFixture}\n`,
-  );
+  await writeFile(join(root, "packages", "core", "src", "internal.ts"), leaking);
+  await writeFile(join(root, "packages", "core", "src", "runtime", "leak.ts"), leaking);
   await writeFile(
     join(root, "packages", "vue", "src", "index.ts"),
     `${rendererViolationFixture}\n${consumerInternalViolationFixture}\n`,
@@ -88,9 +87,17 @@ describe("boundary scan planted violations", () => {
     expect(violations).toEqual([
       "packages/core/src/runtime/leak.ts: renderer or engine import",
       "packages/core/src/runtime/leak.ts: banned compatibility symbol",
+      "packages/core/src/internal.ts: renderer or engine import",
+      "packages/core/src/internal.ts: banned compatibility symbol",
       "packages/vue/src/index.ts: core source-internal import",
       "packages/core/src/index.ts: public export InternalGraphRuntime is not allow-listed",
     ]);
+  });
+
+  it("reads a core package entry that is not engine.ts", async () => {
+    const violations = await withPlantedRoot((root) => scan(root));
+    expect(violations).toContain("packages/core/src/internal.ts: renderer or engine import");
+    expect(violations).toContain("packages/core/src/internal.ts: banned compatibility symbol");
   });
 
   it("discovers a consumer package that no list mentions", async () => {
