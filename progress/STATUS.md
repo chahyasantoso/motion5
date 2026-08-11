@@ -6,7 +6,7 @@ Last reviewed: 2026-08-11
 
 | ID | Slice | Status | Branch | Related files | Commit or evidence |
 |---|---|---|---|---|---|
-| W0 | Rescue loop and audit baseline | Not started | `rescue/restore-motionpath-parity` | [WAVE-PLAN](../WAVE-PLAN.md), planned [audit workflow](../.github/workflows/recovery-audit.yml) | No workflow run yet |
+| W0 | Rescue loop and audit baseline | In progress | `rescue/restore-motionpath-parity` | [WAVE-PLAN](../WAVE-PLAN.md), [audit workflow](../.github/workflows/recovery-audit.yml) | [workflow commit](https://github.com/chahyasantoso/motion5/commit/de126e90b446713dfa4b9d162261a89c2d10ecf0); run pending |
 | A1 | Final-value memo consistency | Done on main, verify on rescue | `fix/A1-final-value-memo` | [publisher](../packages/core/src/runtime/graph-publisher.ts), [test](../packages/core/test/integration/publisher-output-merge-consistency.test.ts) | [1d59c087](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a) |
 | A2 | Preserve subscriber errors | Done on main, verify on rescue | `fix/A2-subscriber-errors` | [registry](../packages/core/src/runtime/patch-registry.ts), [test](../packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts) | [1d59c087](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a) |
 | A3 | Guard subscriber-triggered reentrancy | Not started | `fix/A3-publisher-reentrancy` | Publisher/runtime notification boundary | No evidence yet |
@@ -41,4 +41,4 @@ Last reviewed: 2026-08-11
 
 ## Current next action
 
-Create the rescue branch, implement the planned manual audit workflow, run it against frozen `main`, and record the baseline artifacts in the W0 row. Do not mark W0 complete until a real GitHub Actions run exists.
+Run **Recovery audit** manually from the Actions tab against `main`, then link the workflow run and uploaded baseline artifacts in the W0 row. Do not mark W0 complete until the run exists and its missing gates are recorded.
