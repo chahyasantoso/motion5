@@ -6,6 +6,7 @@ type MutationConfig = {
   readonly plugins?: readonly string[];
   readonly mutate?: readonly string[];
   readonly reporters?: readonly string[];
+  readonly vitest?: { readonly configFile?: string };
   readonly jsonReporter?: { readonly fileName?: string };
 };
 
@@ -17,6 +18,7 @@ describe("mutation gate configuration (E3)", () => {
 
     expect(config.testRunner).toBe("vitest");
     expect(config.plugins).toContain("@stryker-mutator/vitest-runner");
+    expect(config.vitest?.configFile).toBe("vitest.stryker.config.ts");
     expect(config.mutate).toEqual([
       "packages/core/src/runtime/**/*.ts",
       "packages/core/src/adapters/**/*.ts",

@@ -3,7 +3,13 @@
   "packageManager": "npm",
   "plugins": ["@stryker-mutator/vitest-runner"],
   "testRunner": "vitest",
-  "mutate": ["packages/core/src/runtime/**/*.ts", "packages/core/src/adapters/**/*.ts"],
+  "vitest": {
+    "configFile": "vitest.stryker.config.ts"
+  },
+  "mutate": [
+    "packages/core/src/runtime/**/*.ts",
+    "packages/core/src/adapters/**/*.ts"
+  ],
   "reporters": ["clear-text", "progress", "json", "html"],
   "jsonReporter": {
     "fileName": "reports/mutation/mutation.json"
