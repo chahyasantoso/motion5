@@ -9,14 +9,17 @@ describe("GSAP interpolator clock ownership (P0-2)", () => {
     let receivedConfig: unknown;
     const timeline: GsapTimelineLike = {
       duration: () => 1,
-      progress(value?: number) {
-        return value === undefined ? 0 : timeline;
-      },
+      progress,
       to() {
         return timeline;
       },
       kill() {},
     };
+    function progress(): number;
+    function progress(value: number): GsapTimelineLike;
+    function progress(value?: number): number | GsapTimelineLike {
+      return value === undefined ? 0 : timeline;
+    }
 
     const interpolator = createGsapInterpolator({
       timeline(config) {
