@@ -1,0 +1,37 @@
+[32m12:22:54 (2313) INFO ProjectReader[39m Found 7 of 135 file(s) to be mutated.
+[32m12:22:54 (2313) INFO Instrumenter[39m Instrumented 7 source file(s) with 512 mutant(s)
+[32m12:22:54 (2313) INFO ConcurrencyTokenProvider[39m Creating 4 test runner process(es).
+[32m12:22:55 (2313) INFO BroadcastReporter[39m Detected that current console does not support the "progress" reporter, downgrading to "progress-append-only" reporter
+[32m12:22:55 (2313) INFO DryRunExecutor[39m Starting initial test run (vitest test runner with "perTest" coverage analysis). This may take a while.
+[91m12:22:57 (2313) ERROR DryRunExecutor[39m One or more tests resulted in an error:
+	Test runner crashed. Tried twice to restart it without any luck. Last time the error message was: Error: TypeError: Cannot destructure property 'moduleGraph' of 'project.server' as it is undefined.
+TypeError: Cannot destructure property 'moduleGraph' of 'project.server' as it is undefined.
+    at file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/vitest-runner/dist/src/vitest-test-runner.js:130:21
+    at Array.forEach (<anonymous>)
+    at VitestTestRunner.resetContext (file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/vitest-runner/dist/src/vitest-test-runner.js:129:27)
+    at VitestTestRunner.run (file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/vitest-runner/dist/src/vitest-test-runner.js:77:14)
+    at VitestTestRunner.dryRun (file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/vitest-runner/dist/src/vitest-test-runner.js:58:39)
+    at ChildProcessTestRunnerWorker.dryRun (file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/core/dist/src/test-runner/child-process-test-runner-worker.js:25:30)
+    at ChildProcessProxyWorker.handleCall (file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/core/dist/src/child-proxy/child-process-proxy-worker.js:87:28)
+Error: TypeError: Cannot destructure property 'moduleGraph' of 'project.server' as it is undefined.
+TypeError: Cannot destructure property 'moduleGraph' of 'project.server' as it is undefined.
+    at file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/vitest-runner/dist/src/vitest-test-runner.js:130:21
+    at Array.forEach (<anonymous>)
+    at VitestTestRunner.resetContext (file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/vitest-runner/dist/src/vitest-test-runner.js:129:27)
+    at VitestTestRunner.run (file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/vitest-runner/dist/src/vitest-test-runner.js:77:14)
+    at VitestTestRunner.dryRun (file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/vitest-runner/dist/src/vitest-test-runner.js:58:39)
+    at ChildProcessTestRunnerWorker.dryRun (file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/core/dist/src/test-runner/child-process-test-runner-worker.js:25:30)
+    at ChildProcessProxyWorker.handleCall (file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/core/dist/src/child-proxy/child-process-proxy-worker.js:87:28)
+    at ChildProcess.<anonymous> (file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/core/dist/src/child-proxy/child-process-proxy.js:121:72)
+    at ChildProcess.emit (node:events:509:28)
+    at emit (node:internal/child_process:972:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:91:21)
+[91m12:22:57 (2313) ERROR Stryker[39m Unexpected error occurred while running Stryker Error: Something went wrong in the initial test run
+    at DryRunExecutor.validateResultCompleted (file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:76:15)
+    at DryRunExecutor.executeDryRun (file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/core/dist/src/process/3-dry-run-executor.js:96:14)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async WorkItem.execute (file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/core/dist/src/concurrent/pool.js:32:28)
+    at async file:///home/runner/work/motion5/motion5/node_modules/@stryker-mutator/core/dist/src/concurrent/pool.js:69:13
+[32m12:22:57 (2313) INFO Stryker[39m This might be a known problem with a solution documented in our troubleshooting guide.
+[32m12:22:57 (2313) INFO Stryker[39m You can find it at https://stryker-mutator.io/docs/stryker-js/troubleshooting/
+[32m12:22:57 (2313) INFO Stryker[39m Still having trouble figuring out what went wrong? Try `npx stryker run --fileLogLevel trace --logLevel debug` to get some more info.

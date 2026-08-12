@@ -1,0 +1,3 @@
+npm warn deprecated @babel/plugin-proposal-explicit-resource-management@7.27.4: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-explicit-resource-management instead.
+
+added 234 packages in 4s
