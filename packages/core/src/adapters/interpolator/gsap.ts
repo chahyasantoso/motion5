@@ -21,6 +21,7 @@ interface AuthoredStop {
 interface CompiledSegment {
   readonly values: Record<string, unknown>;
   readonly duration: number;
+  readonly ease?: unknown;
 }
 
 function readStops(property: unknown): readonly AuthoredStop[] {
@@ -57,6 +58,7 @@ function compileKeyframes(config: unknown): {
   const initial: Record<string, unknown> = {};
   const segmentValues: Record<string, unknown>[] = [];
   const segmentDurations: number[] = [];
+  const segmentEases: unknown[] = [];
   for (const [key, property] of Object.entries(keyframes)) {
     const stops = readStops(property);
     const first = stops[0];
@@ -68,9 +70,9 @@ function compileKeyframes(config: unknown): {
       if (previous === undefined || stop === undefined) continue;
       const segment = segmentValues[index - 1] ?? {};
       segment[key] = stop.v;
-      if (stop.ease !== undefined) segment.ease = stop.ease;
       segmentValues[index - 1] = segment;
       segmentDurations[index - 1] = Math.max(0, stop.p - previous.p);
+      if (stop.ease !== undefined) segmentEases[index - 1] = stop.ease;
     }
   }
   return {
@@ -78,6 +80,9 @@ function compileKeyframes(config: unknown): {
     segments: segmentValues.map((values, index) => ({
       values,
       duration: segmentDurations[index] ?? 0,
+      // Authored easing wins; otherwise disable GSAP's implicit power easing. The authored
+      // schema describes interpolation positions, so an unspecified ease must be linear.
+      ease: segmentEases[index] ?? "none",
     })),
   };
 }
@@ -94,6 +99,7 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
         timeline.to?.(proxy, {
           ...segment.values,
           duration: segment.duration * duration,
+          ease: segment.ease,
         });
       }
       function progress(): number;
