@@ -1,0 +1,637 @@
+integration (node 24)	Install locked dependencies	﻿2026-08-12T13:14:09.6940671Z ##[group]Run npm ci --ignore-scripts --no-audit --no-fund
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:09.6941239Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund^[[0m
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:09.7036655Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:09.7036974Z ##[endgroup]
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1386826Z npm error code EUSAGE
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1490174Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1492120Z npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1493834Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1494879Z npm error Invalid: lock file's @stryker-mutator/core@8.7.1 does not satisfy @stryker-mutator/core@9.6.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1497315Z npm error Invalid: lock file's @stryker-mutator/vitest-runner@8.7.1 does not satisfy @stryker-mutator/vitest-runner@9.6.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1498908Z npm error Invalid: lock file's @inquirer/prompts@6.0.1 does not satisfy @inquirer/prompts@8.5.2
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1500070Z npm error Invalid: lock file's @stryker-mutator/api@8.7.1 does not satisfy @stryker-mutator/api@9.6.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1501180Z npm error Invalid: lock file's @stryker-mutator/instrumenter@8.7.1 does not satisfy @stryker-mutator/instrumenter@9.6.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1502245Z npm error Invalid: lock file's @stryker-mutator/util@8.7.1 does not satisfy @stryker-mutator/util@9.6.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1503058Z npm error Invalid: lock file's ajv@8.17.1 does not satisfy ajv@8.18.0
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1503741Z npm error Invalid: lock file's chalk@5.3.0 does not satisfy chalk@5.6.2
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1504378Z npm error Invalid: lock file's commander@12.1.0 does not satisfy commander@14.0.3
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1505040Z npm error Invalid: lock file's emoji-regex@10.4.0 does not satisfy emoji-regex@10.6.0
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1506068Z npm error Invalid: lock file's execa@9.4.1 does not satisfy execa@9.6.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1506588Z npm error Missing: json-rpc-2.0@1.7.1 from lock file
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1507126Z npm error Invalid: lock file's minimatch@9.0.9 does not satisfy minimatch@10.2.6
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1507697Z npm error Missing: mutation-server-protocol@0.4.1 from lock file
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1508418Z npm error Invalid: lock file's mutation-testing-elements@3.4.0 does not satisfy mutation-testing-elements@3.7.3
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1509310Z npm error Invalid: lock file's mutation-testing-metrics@3.3.0 does not satisfy mutation-testing-metrics@3.7.3
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1510238Z npm error Invalid: lock file's mutation-testing-report-schema@3.3.0 does not satisfy mutation-testing-report-schema@3.7.3
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1510977Z npm error Invalid: lock file's tslib@2.7.0 does not satisfy tslib@2.8.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1511596Z npm error Invalid: lock file's typed-inject@4.0.0 does not satisfy typed-inject@5.0.0
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1512312Z npm error Invalid: lock file's typed-rest-client@2.1.0 does not satisfy typed-rest-client@2.3.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1513057Z npm error Invalid: lock file's @inquirer/checkbox@3.0.1 does not satisfy @inquirer/checkbox@5.2.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1513782Z npm error Invalid: lock file's @inquirer/confirm@4.0.1 does not satisfy @inquirer/confirm@6.1.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1514512Z npm error Invalid: lock file's @inquirer/editor@3.0.1 does not satisfy @inquirer/editor@5.2.2
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1515217Z npm error Invalid: lock file's @inquirer/expand@3.0.1 does not satisfy @inquirer/expand@5.1.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1516171Z npm error Invalid: lock file's @inquirer/input@3.0.1 does not satisfy @inquirer/input@5.1.2
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1516902Z npm error Invalid: lock file's @inquirer/number@2.0.1 does not satisfy @inquirer/number@4.1.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1517637Z npm error Invalid: lock file's @inquirer/password@3.0.1 does not satisfy @inquirer/password@5.1.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1518369Z npm error Invalid: lock file's @inquirer/rawlist@3.0.1 does not satisfy @inquirer/rawlist@5.3.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1519065Z npm error Invalid: lock file's @inquirer/search@2.0.1 does not satisfy @inquirer/search@4.2.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1520012Z npm error Invalid: lock file's @inquirer/select@3.0.1 does not satisfy @inquirer/select@5.2.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1520563Z npm error Missing: @inquirer/ansi@2.0.7 from lock file
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1521167Z npm error Invalid: lock file's @inquirer/core@9.2.1 does not satisfy @inquirer/core@11.2.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1521917Z npm error Invalid: lock file's @inquirer/figures@1.0.15 does not satisfy @inquirer/figures@2.0.7
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1522613Z npm error Invalid: lock file's @inquirer/type@2.0.0 does not satisfy @inquirer/type@4.0.7
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1523166Z npm error Missing: fast-wrap-ansi@0.2.2 from lock file
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1523845Z npm error Invalid: lock file's mute-stream@1.0.0 does not satisfy mute-stream@3.0.0
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1524415Z npm error Missing: @inquirer/external-editor@3.0.3 from lock file
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1524967Z npm error Invalid: lock file's chardet@0.7.0 does not satisfy chardet@2.2.0
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1525981Z npm error Invalid: lock file's iconv-lite@0.4.24 does not satisfy iconv-lite@0.7.3
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1526631Z npm error Invalid: lock file's @babel/core@7.25.9 does not satisfy @babel/core@7.29.7
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1527314Z npm error Invalid: lock file's @babel/generator@7.25.9 does not satisfy @babel/generator@7.29.8
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1528003Z npm error Invalid: lock file's @babel/parser@7.25.9 does not satisfy @babel/parser@7.29.8
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1528883Z npm error Invalid: lock file's @babel/plugin-proposal-decorators@7.24.7 does not satisfy @babel/plugin-proposal-decorators@7.29.7
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1529777Z npm error Missing: @babel/plugin-transform-explicit-resource-management@7.29.7 from lock file
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1530655Z npm error Invalid: lock file's @babel/preset-typescript@7.24.7 does not satisfy @babel/preset-typescript@7.28.5
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1531499Z npm error Invalid: lock file's angular-html-parser@6.0.2 does not satisfy angular-html-parser@10.4.0
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1532181Z npm error Invalid: lock file's semver@7.6.3 does not satisfy semver@7.7.4
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1532718Z npm error Missing: @jridgewell/remapping@2.3.5 from lock file
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1533192Z npm error Missing: fast-string-width@3.0.2 from lock file
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1533698Z npm error Missing: fast-string-truncated-width@3.0.3 from lock file
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1534352Z npm error Invalid: lock file's brace-expansion@2.1.4 does not satisfy brace-expansion@5.0.9
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1535066Z npm error Invalid: lock file's balanced-match@1.0.2 does not satisfy balanced-match@4.0.4
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1535871Z npm error Missing: zod@4.4.3 from lock file
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1536349Z npm error Invalid: lock file's qs@6.15.3 does not satisfy qs@6.15.1
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1536724Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1536993Z npm error Clean install a project
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1537253Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1537449Z npm error Usage:
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1537659Z npm error npm ci
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1537862Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1538084Z npm error Options:
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1538585Z npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1539344Z npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1540038Z npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1540680Z npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts]
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1541280Z npm error [--allow-directory <all|none|root>] [--allow-file <all|none|root>]
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1541866Z npm error [--allow-git <all|none|root>] [--allow-remote <all|none|root>]
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1542477Z npm error [--allow-scripts <package-list> [--allow-scripts <package-list> ...]]
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1543130Z npm error [--strict-allow-scripts] [--dangerously-allow-all-scripts] [--no-audit]
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1543654Z npm error [--no-bin-links] [--no-fund] [--dry-run]
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1544381Z npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1544975Z npm error [--workspaces] [--include-workspace-root] [--install-links]
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1545688Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1545965Z npm error   --install-strategy
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1546435Z npm error     Sets the strategy for installing packages in node_modules.
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1546806Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1547070Z npm error   --legacy-bundling
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1547587Z npm error     Instead of hoisting package installs in `node_modules`, install packages
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1548016Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1548242Z npm error   --global-style
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1548863Z npm error     Only install direct dependencies in the top level `node_modules`,
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1549265Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1549482Z npm error   --omit
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1549902Z npm error     Dependency types to omit from the installation tree on disk.
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1550289Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1550502Z npm error   --include
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1550979Z npm error     Option that allows for defining which types of dependencies to install.
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1551399Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1551653Z npm error   --strict-peer-deps
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1552122Z npm error     If set to `true`, and `--legacy-peer-deps` is not set, then _any_
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1552518Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1552774Z npm error   --foreground-scripts
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1553227Z npm error     Run all build scripts (ie, `preinstall`, `install`, and
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1553584Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1553813Z npm error   --ignore-scripts
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1554297Z npm error     If true, npm does not run scripts specified in package.json files.
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1554693Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1554922Z npm error   --allow-directory
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1555693Z npm error     Limits the ability for npm to install dependencies from directories.
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1556132Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1556361Z npm error   --allow-file
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1556834Z npm error     Limits the ability for npm to install dependencies from tarball files.
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1557239Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1557456Z npm error   --allow-git
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1557916Z npm error     Limits the ability for npm to fetch dependencies from git references.
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1558325Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1558552Z npm error   --allow-remote
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1558984Z npm error     Limits the ability for npm to fetch dependencies from urls.
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1559352Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1559580Z npm error   --allow-scripts
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1560074Z npm error     Comma-separated list of packages whose install-time lifecycle scripts
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1560486Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1560742Z npm error   --strict-allow-scripts
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1561229Z npm error     If `true`, turn the install-script policy from a warning into a hard
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1561631Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1561910Z npm error   --dangerously-allow-all-scripts
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1562418Z npm error     If `true`, bypass the `allowScripts` policy entirely and run every
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1562802Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1563009Z npm error   --audit
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1563475Z npm error     When "true" submit audit reports alongside the current npm command to the
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1563886Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1564097Z npm error   --bin-links
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1564562Z npm error     Tells npm to create symlinks (or `.cmd` shims on Windows) for package
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1564966Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1565169Z npm error   --fund
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1565731Z npm error     When "true" displays the message at the end of each `npm install`
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1566119Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1566328Z npm error   --dry-run
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1566804Z npm error     Indicates that you don't want npm to make any changes and that it should
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1567367Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1567589Z npm error   -w|--workspace
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1568094Z npm error     Enable running a command in the context of the configured workspaces of the
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1568520Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1568738Z npm error   --workspaces
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1569188Z npm error     Set to true to run the command in the context of **all** configured
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1569574Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1569838Z npm error   --include-workspace-root
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1570355Z npm error     Include the workspace root when workspaces are enabled for a command.
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1570757Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1571103Z npm error   --install-links
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1571582Z npm error     When set file: protocol dependencies will be packed and installed as
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1571986Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1572178Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1572547Z npm error aliases: clean-install, ic, install-clean, isntall-clean
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1572912Z npm error
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1573180Z npm error Run "npm help ci" for more info
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.1847746Z npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-08-12T13_14_09_761Z-debug-0.log
+integration (node 24)	Install locked dependencies	2026-08-12T13:14:15.2324028Z ##[error]Process completed with exit code 1.
+quality (node 24)	Install locked dependencies	﻿2026-08-12T13:14:13.7751451Z ##[group]Run npm ci --ignore-scripts --no-audit --no-fund
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:13.7751999Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund^[[0m
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:13.7819186Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:13.7819496Z ##[endgroup]
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8256092Z npm error code EUSAGE
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8363535Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8366018Z npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8367479Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8368475Z npm error Invalid: lock file's @stryker-mutator/core@8.7.1 does not satisfy @stryker-mutator/core@9.6.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8370467Z npm error Invalid: lock file's @stryker-mutator/vitest-runner@8.7.1 does not satisfy @stryker-mutator/vitest-runner@9.6.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8371945Z npm error Invalid: lock file's @inquirer/prompts@6.0.1 does not satisfy @inquirer/prompts@8.5.2
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8373429Z npm error Invalid: lock file's @stryker-mutator/api@8.7.1 does not satisfy @stryker-mutator/api@9.6.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8375180Z npm error Invalid: lock file's @stryker-mutator/instrumenter@8.7.1 does not satisfy @stryker-mutator/instrumenter@9.6.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8376707Z npm error Invalid: lock file's @stryker-mutator/util@8.7.1 does not satisfy @stryker-mutator/util@9.6.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8377851Z npm error Invalid: lock file's ajv@8.17.1 does not satisfy ajv@8.18.0
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8378805Z npm error Invalid: lock file's chalk@5.3.0 does not satisfy chalk@5.6.2
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8379838Z npm error Invalid: lock file's commander@12.1.0 does not satisfy commander@14.0.3
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8380993Z npm error Invalid: lock file's emoji-regex@10.4.0 does not satisfy emoji-regex@10.6.0
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8382042Z npm error Invalid: lock file's execa@9.4.1 does not satisfy execa@9.6.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8382857Z npm error Missing: json-rpc-2.0@1.7.1 from lock file
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8383786Z npm error Invalid: lock file's minimatch@9.0.9 does not satisfy minimatch@10.2.6
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8384946Z npm error Missing: mutation-server-protocol@0.4.1 from lock file
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8386250Z npm error Invalid: lock file's mutation-testing-elements@3.4.0 does not satisfy mutation-testing-elements@3.7.3
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8387797Z npm error Invalid: lock file's mutation-testing-metrics@3.3.0 does not satisfy mutation-testing-metrics@3.7.3
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8389489Z npm error Invalid: lock file's mutation-testing-report-schema@3.3.0 does not satisfy mutation-testing-report-schema@3.7.3
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8390808Z npm error Invalid: lock file's tslib@2.7.0 does not satisfy tslib@2.8.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8391900Z npm error Invalid: lock file's typed-inject@4.0.0 does not satisfy typed-inject@5.0.0
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8393147Z npm error Invalid: lock file's typed-rest-client@2.1.0 does not satisfy typed-rest-client@2.3.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8394461Z npm error Invalid: lock file's @inquirer/checkbox@3.0.1 does not satisfy @inquirer/checkbox@5.2.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8395982Z npm error Invalid: lock file's @inquirer/confirm@4.0.1 does not satisfy @inquirer/confirm@6.1.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8397285Z npm error Invalid: lock file's @inquirer/editor@3.0.1 does not satisfy @inquirer/editor@5.2.2
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8398540Z npm error Invalid: lock file's @inquirer/expand@3.0.1 does not satisfy @inquirer/expand@5.1.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8399769Z npm error Invalid: lock file's @inquirer/input@3.0.1 does not satisfy @inquirer/input@5.1.2
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8401001Z npm error Invalid: lock file's @inquirer/number@2.0.1 does not satisfy @inquirer/number@4.1.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8402283Z npm error Invalid: lock file's @inquirer/password@3.0.1 does not satisfy @inquirer/password@5.1.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8403590Z npm error Invalid: lock file's @inquirer/rawlist@3.0.1 does not satisfy @inquirer/rawlist@5.3.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8405023Z npm error Invalid: lock file's @inquirer/search@2.0.1 does not satisfy @inquirer/search@4.2.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8406576Z npm error Invalid: lock file's @inquirer/select@3.0.1 does not satisfy @inquirer/select@5.2.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8407551Z npm error Missing: @inquirer/ansi@2.0.7 from lock file
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8408561Z npm error Invalid: lock file's @inquirer/core@9.2.1 does not satisfy @inquirer/core@11.2.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8409888Z npm error Invalid: lock file's @inquirer/figures@1.0.15 does not satisfy @inquirer/figures@2.0.7
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8411123Z npm error Invalid: lock file's @inquirer/type@2.0.0 does not satisfy @inquirer/type@4.0.7
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8412063Z npm error Missing: fast-wrap-ansi@0.2.2 from lock file
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8413187Z npm error Invalid: lock file's mute-stream@1.0.0 does not satisfy mute-stream@3.0.0
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8414192Z npm error Missing: @inquirer/external-editor@3.0.3 from lock file
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8415378Z npm error Invalid: lock file's chardet@0.7.0 does not satisfy chardet@2.2.0
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8416446Z npm error Invalid: lock file's iconv-lite@0.4.24 does not satisfy iconv-lite@0.7.3
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8417564Z npm error Invalid: lock file's @babel/core@7.25.9 does not satisfy @babel/core@7.29.7
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8418782Z npm error Invalid: lock file's @babel/generator@7.25.9 does not satisfy @babel/generator@7.29.8
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8420013Z npm error Invalid: lock file's @babel/parser@7.25.9 does not satisfy @babel/parser@7.29.8
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8421555Z npm error Invalid: lock file's @babel/plugin-proposal-decorators@7.24.7 does not satisfy @babel/plugin-proposal-decorators@7.29.7
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8423127Z npm error Missing: @babel/plugin-transform-explicit-resource-management@7.29.7 from lock file
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8424637Z npm error Invalid: lock file's @babel/preset-typescript@7.24.7 does not satisfy @babel/preset-typescript@7.28.5
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8426315Z npm error Invalid: lock file's angular-html-parser@6.0.2 does not satisfy angular-html-parser@10.4.0
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8427496Z npm error Invalid: lock file's semver@7.6.3 does not satisfy semver@7.7.4
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8428417Z npm error Missing: @jridgewell/remapping@2.3.5 from lock file
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8429226Z npm error Missing: fast-string-width@3.0.2 from lock file
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8430106Z npm error Missing: fast-string-truncated-width@3.0.3 from lock file
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8431232Z npm error Invalid: lock file's brace-expansion@2.1.4 does not satisfy brace-expansion@5.0.9
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8432470Z npm error Invalid: lock file's balanced-match@1.0.2 does not satisfy balanced-match@4.0.4
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8433360Z npm error Missing: zod@4.4.3 from lock file
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8434147Z npm error Invalid: lock file's qs@6.15.3 does not satisfy qs@6.15.1
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8434954Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8435404Z npm error Clean install a project
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8435836Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8436153Z npm error Usage:
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8436505Z npm error npm ci
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8436850Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8437207Z npm error Options:
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8438039Z npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8439310Z npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8440506Z npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8441607Z npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts]
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8442649Z npm error [--allow-directory <all|none|root>] [--allow-file <all|none|root>]
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8443670Z npm error [--allow-git <all|none|root>] [--allow-remote <all|none|root>]
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8444924Z npm error [--allow-scripts <package-list> [--allow-scripts <package-list> ...]]
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8446089Z npm error [--strict-allow-scripts] [--dangerously-allow-all-scripts] [--no-audit]
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8446995Z npm error [--no-bin-links] [--no-fund] [--dry-run]
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8448136Z npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8449178Z npm error [--workspaces] [--include-workspace-root] [--install-links]
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8449813Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8450237Z npm error   --install-strategy
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8451006Z npm error     Sets the strategy for installing packages in node_modules.
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8451644Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8452033Z npm error   --legacy-bundling
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8452898Z npm error     Instead of hoisting package installs in `node_modules`, install packages
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8453613Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8453985Z npm error   --global-style
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8455124Z npm error     Only install direct dependencies in the top level `node_modules`,
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8455815Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8456161Z npm error   --omit
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8456883Z npm error     Dependency types to omit from the installation tree on disk.
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8457544Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8457899Z npm error   --include
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8458776Z npm error     Option that allows for defining which types of dependencies to install.
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8459494Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8459918Z npm error   --strict-peer-deps
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8460731Z npm error     If set to `true`, and `--legacy-peer-deps` is not set, then _any_
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8461378Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8461808Z npm error   --foreground-scripts
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8462555Z npm error     Run all build scripts (ie, `preinstall`, `install`, and
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8463153Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8463532Z npm error   --ignore-scripts
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8464350Z npm error     If true, npm does not run scripts specified in package.json files.
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8465225Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8465617Z npm error   --allow-directory
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8466459Z npm error     Limits the ability for npm to install dependencies from directories.
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8467166Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8467527Z npm error   --allow-file
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8468349Z npm error     Limits the ability for npm to install dependencies from tarball files.
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8469040Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8469397Z npm error   --allow-git
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8470197Z npm error     Limits the ability for npm to fetch dependencies from git references.
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8470883Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8471251Z npm error   --allow-remote
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8471999Z npm error     Limits the ability for npm to fetch dependencies from urls.
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8472650Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8473019Z npm error   --allow-scripts
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8473870Z npm error     Comma-separated list of packages whose install-time lifecycle scripts
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8474581Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8475319Z npm error   --strict-allow-scripts
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8476189Z npm error     If `true`, turn the install-script policy from a warning into a hard
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8476865Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8477350Z npm error   --dangerously-allow-all-scripts
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8478235Z npm error     If `true`, bypass the `allowScripts` policy entirely and run every
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8478896Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8479251Z npm error   --audit
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8480063Z npm error     When "true" submit audit reports alongside the current npm command to the
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8480774Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8481128Z npm error   --bin-links
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8481926Z npm error     Tells npm to create symlinks (or `.cmd` shims on Windows) for package
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8482606Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8482973Z npm error   --fund
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8483723Z npm error     When "true" displays the message at the end of each `npm install`
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8484387Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8484934Z npm error   --dry-run
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8485761Z npm error     Indicates that you don't want npm to make any changes and that it should
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8486661Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8487034Z npm error   -w|--workspace
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8487899Z npm error     Enable running a command in the context of the configured workspaces of the
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8488644Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8489004Z npm error   --workspaces
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8489785Z npm error     Set to true to run the command in the context of **all** configured
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8490444Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8490883Z npm error   --include-workspace-root
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8491780Z npm error     Include the workspace root when workspaces are enabled for a command.
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8492477Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8493006Z npm error   --install-links
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8493837Z npm error     When set file: protocol dependencies will be packed and installed as
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8494526Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8495060Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8495708Z npm error aliases: clean-install, ic, install-clean, isntall-clean
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8496350Z npm error
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8496806Z npm error Run "npm help ci" for more info
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8497922Z npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-08-12T13_14_13_841Z-debug-0.log
+quality (node 24)	Install locked dependencies	2026-08-12T13:14:18.8861152Z ##[error]Process completed with exit code 1.
+boundaries (node 24)	Install locked dependencies	﻿2026-08-12T13:14:05.0049328Z ##[group]Run npm ci --ignore-scripts --no-audit --no-fund
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:05.0050621Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund^[[0m
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:05.0118395Z shell: /usr/bin/bash -e {0}
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:05.0119389Z ##[endgroup]
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.1976438Z npm error code EUSAGE
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2098537Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2100551Z npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2101950Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2102913Z npm error Invalid: lock file's @stryker-mutator/core@8.7.1 does not satisfy @stryker-mutator/core@9.6.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2104411Z npm error Invalid: lock file's @stryker-mutator/vitest-runner@8.7.1 does not satisfy @stryker-mutator/vitest-runner@9.6.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2106609Z npm error Invalid: lock file's @inquirer/prompts@6.0.1 does not satisfy @inquirer/prompts@8.5.2
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2107599Z npm error Invalid: lock file's @stryker-mutator/api@8.7.1 does not satisfy @stryker-mutator/api@9.6.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2108500Z npm error Invalid: lock file's @stryker-mutator/instrumenter@8.7.1 does not satisfy @stryker-mutator/instrumenter@9.6.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2109684Z npm error Invalid: lock file's @stryker-mutator/util@8.7.1 does not satisfy @stryker-mutator/util@9.6.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2110779Z npm error Invalid: lock file's ajv@8.17.1 does not satisfy ajv@8.18.0
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2111711Z npm error Invalid: lock file's chalk@5.3.0 does not satisfy chalk@5.6.2
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2112656Z npm error Invalid: lock file's commander@12.1.0 does not satisfy commander@14.0.3
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2113760Z npm error Invalid: lock file's emoji-regex@10.4.0 does not satisfy emoji-regex@10.6.0
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2115052Z npm error Invalid: lock file's execa@9.4.1 does not satisfy execa@9.6.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2115893Z npm error Missing: json-rpc-2.0@1.7.1 from lock file
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2116805Z npm error Invalid: lock file's minimatch@9.0.9 does not satisfy minimatch@10.2.6
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2117723Z npm error Missing: mutation-server-protocol@0.4.1 from lock file
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2118462Z npm error Invalid: lock file's mutation-testing-elements@3.4.0 does not satisfy mutation-testing-elements@3.7.3
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2119338Z npm error Invalid: lock file's mutation-testing-metrics@3.3.0 does not satisfy mutation-testing-metrics@3.7.3
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2120996Z npm error Invalid: lock file's mutation-testing-report-schema@3.3.0 does not satisfy mutation-testing-report-schema@3.7.3
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2122321Z npm error Invalid: lock file's tslib@2.7.0 does not satisfy tslib@2.8.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2123364Z npm error Invalid: lock file's typed-inject@4.0.0 does not satisfy typed-inject@5.0.0
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2124826Z npm error Invalid: lock file's typed-rest-client@2.1.0 does not satisfy typed-rest-client@2.3.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2126178Z npm error Invalid: lock file's @inquirer/checkbox@3.0.1 does not satisfy @inquirer/checkbox@5.2.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2127452Z npm error Invalid: lock file's @inquirer/confirm@4.0.1 does not satisfy @inquirer/confirm@6.1.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2128752Z npm error Invalid: lock file's @inquirer/editor@3.0.1 does not satisfy @inquirer/editor@5.2.2
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2129969Z npm error Invalid: lock file's @inquirer/expand@3.0.1 does not satisfy @inquirer/expand@5.1.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2131156Z npm error Invalid: lock file's @inquirer/input@3.0.1 does not satisfy @inquirer/input@5.1.2
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2132420Z npm error Invalid: lock file's @inquirer/number@2.0.1 does not satisfy @inquirer/number@4.1.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2133567Z npm error Invalid: lock file's @inquirer/password@3.0.1 does not satisfy @inquirer/password@5.1.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2134351Z npm error Invalid: lock file's @inquirer/rawlist@3.0.1 does not satisfy @inquirer/rawlist@5.3.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2135359Z npm error Invalid: lock file's @inquirer/search@2.0.1 does not satisfy @inquirer/search@4.2.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2136916Z npm error Invalid: lock file's @inquirer/select@3.0.1 does not satisfy @inquirer/select@5.2.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2137810Z npm error Missing: @inquirer/ansi@2.0.7 from lock file
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2138760Z npm error Invalid: lock file's @inquirer/core@9.2.1 does not satisfy @inquirer/core@11.2.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2139932Z npm error Invalid: lock file's @inquirer/figures@1.0.15 does not satisfy @inquirer/figures@2.0.7
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2141093Z npm error Invalid: lock file's @inquirer/type@2.0.0 does not satisfy @inquirer/type@4.0.7
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2141982Z npm error Missing: fast-wrap-ansi@0.2.2 from lock file
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2142875Z npm error Invalid: lock file's mute-stream@1.0.0 does not satisfy mute-stream@3.0.0
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2143999Z npm error Missing: @inquirer/external-editor@3.0.3 from lock file
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2145098Z npm error Invalid: lock file's chardet@0.7.0 does not satisfy chardet@2.2.0
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2146111Z npm error Invalid: lock file's iconv-lite@0.4.24 does not satisfy iconv-lite@0.7.3
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2147162Z npm error Invalid: lock file's @babel/core@7.25.9 does not satisfy @babel/core@7.29.7
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2148292Z npm error Invalid: lock file's @babel/generator@7.25.9 does not satisfy @babel/generator@7.29.8
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2149434Z npm error Invalid: lock file's @babel/parser@7.25.9 does not satisfy @babel/parser@7.29.8
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2150891Z npm error Invalid: lock file's @babel/plugin-proposal-decorators@7.24.7 does not satisfy @babel/plugin-proposal-decorators@7.29.7
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2152350Z npm error Missing: @babel/plugin-transform-explicit-resource-management@7.29.7 from lock file
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2153743Z npm error Invalid: lock file's @babel/preset-typescript@7.24.7 does not satisfy @babel/preset-typescript@7.28.5
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2155337Z npm error Invalid: lock file's angular-html-parser@6.0.2 does not satisfy angular-html-parser@10.4.0
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2156439Z npm error Invalid: lock file's semver@7.6.3 does not satisfy semver@7.7.4
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2157298Z npm error Missing: @jridgewell/remapping@2.3.5 from lock file
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2158048Z npm error Missing: fast-string-width@3.0.2 from lock file
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2158875Z npm error Missing: fast-string-truncated-width@3.0.3 from lock file
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2159916Z npm error Invalid: lock file's brace-expansion@2.1.4 does not satisfy brace-expansion@5.0.9
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2161052Z npm error Invalid: lock file's balanced-match@1.0.2 does not satisfy balanced-match@4.0.4
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2161881Z npm error Missing: zod@4.4.3 from lock file
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2162606Z npm error Invalid: lock file's qs@6.15.3 does not satisfy qs@6.15.1
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2163209Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2163625Z npm error Clean install a project
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2164038Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2164349Z npm error Usage:
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2164842Z npm error npm ci
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2165180Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2165521Z npm error Options:
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2166332Z npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2167555Z npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2168664Z npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2169698Z npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts]
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2170672Z npm error [--allow-directory <all|none|root>] [--allow-file <all|none|root>]
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2171610Z npm error [--allow-git <all|none|root>] [--allow-remote <all|none|root>]
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2172598Z npm error [--allow-scripts <package-list> [--allow-scripts <package-list> ...]]
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2173661Z npm error [--strict-allow-scripts] [--dangerously-allow-all-scripts] [--no-audit]
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2174508Z npm error [--no-bin-links] [--no-fund] [--dry-run]
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2175740Z npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2176721Z npm error [--workspaces] [--include-workspace-root] [--install-links]
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2177311Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2177713Z npm error   --install-strategy
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2178426Z npm error     Sets the strategy for installing packages in node_modules.
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2179029Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2179401Z npm error   --legacy-bundling
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2180207Z npm error     Instead of hoisting package installs in `node_modules`, install packages
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2180887Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2181236Z npm error   --global-style
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2181990Z npm error     Only install direct dependencies in the top level `node_modules`,
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2182788Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2183120Z npm error   --omit
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2183791Z npm error     Dependency types to omit from the installation tree on disk.
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2184418Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2185014Z npm error   --include
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2185779Z npm error     Option that allows for defining which types of dependencies to install.
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2186442Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2186831Z npm error   --strict-peer-deps
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2187573Z npm error     If set to `true`, and `--legacy-peer-deps` is not set, then _any_
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2188179Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2188593Z npm error   --foreground-scripts
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2189312Z npm error     Run all build scripts (ie, `preinstall`, `install`, and
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2189888Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2190256Z npm error   --ignore-scripts
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2191008Z npm error     If true, npm does not run scripts specified in package.json files.
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2191647Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2192001Z npm error   --allow-directory
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2192767Z npm error     Limits the ability for npm to install dependencies from directories.
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2193430Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2193772Z npm error   --allow-file
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2194541Z npm error     Limits the ability for npm to install dependencies from tarball files.
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2195390Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2195732Z npm error   --allow-git
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2196494Z npm error     Limits the ability for npm to fetch dependencies from git references.
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2197139Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2197492Z npm error   --allow-remote
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2198264Z npm error     Limits the ability for npm to fetch dependencies from urls.
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2198874Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2199231Z npm error   --allow-scripts
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2200025Z npm error     Comma-separated list of packages whose install-time lifecycle scripts
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2200703Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2201109Z npm error   --strict-allow-scripts
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2201906Z npm error     If `true`, turn the install-script policy from a warning into a hard
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2202542Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2202993Z npm error   --dangerously-allow-all-scripts
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2203817Z npm error     If `true`, bypass the `allowScripts` policy entirely and run every
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2204425Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2204918Z npm error   --audit
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2205676Z npm error     When "true" submit audit reports alongside the current npm command to the
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2206356Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2206697Z npm error   --bin-links
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2207439Z npm error     Tells npm to create symlinks (or `.cmd` shims on Windows) for package
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2208077Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2208429Z npm error   --fund
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2209113Z npm error     When "true" displays the message at the end of each `npm install`
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2209737Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2210083Z npm error   --dry-run
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2210832Z npm error     Indicates that you don't want npm to make any changes and that it should
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2211669Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2212014Z npm error   -w|--workspace
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2212821Z npm error     Enable running a command in the context of the configured workspaces of the
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2213513Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2213858Z npm error   --workspaces
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2214723Z npm error     Set to true to run the command in the context of **all** configured
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2215358Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2215781Z npm error   --include-workspace-root
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2216623Z npm error     Include the workspace root when workspaces are enabled for a command.
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2217272Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2217628Z npm error   --install-links
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2218422Z npm error     When set file: protocol dependencies will be packed and installed as
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2219241Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2219545Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2220163Z npm error aliases: clean-install, ic, install-clean, isntall-clean
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2220762Z npm error
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2221191Z npm error Run "npm help ci" for more info
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2222300Z npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-08-12T13_14_05_077Z-debug-0.log
+boundaries (node 24)	Install locked dependencies	2026-08-12T13:14:10.2645969Z ##[error]Process completed with exit code 1.
+performance (node 24, advisory)	Install locked dependencies	﻿2026-08-12T13:14:18.8744953Z ##[group]Run npm ci --ignore-scripts --no-audit --no-fund
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:18.8745496Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund^[[0m
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:18.8950070Z shell: /usr/bin/bash -e {0}
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:18.8950379Z ##[endgroup]
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.8980457Z npm error code EUSAGE
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9104523Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9106826Z npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9109342Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9110479Z npm error Invalid: lock file's @stryker-mutator/core@8.7.1 does not satisfy @stryker-mutator/core@9.6.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9111871Z npm error Invalid: lock file's @stryker-mutator/vitest-runner@8.7.1 does not satisfy @stryker-mutator/vitest-runner@9.6.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9113132Z npm error Invalid: lock file's @inquirer/prompts@6.0.1 does not satisfy @inquirer/prompts@8.5.2
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9114355Z npm error Invalid: lock file's @stryker-mutator/api@8.7.1 does not satisfy @stryker-mutator/api@9.6.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9115651Z npm error Invalid: lock file's @stryker-mutator/instrumenter@8.7.1 does not satisfy @stryker-mutator/instrumenter@9.6.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9116788Z npm error Invalid: lock file's @stryker-mutator/util@8.7.1 does not satisfy @stryker-mutator/util@9.6.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9117655Z npm error Invalid: lock file's ajv@8.17.1 does not satisfy ajv@8.18.0
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9118594Z npm error Invalid: lock file's chalk@5.3.0 does not satisfy chalk@5.6.2
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9119447Z npm error Invalid: lock file's commander@12.1.0 does not satisfy commander@14.0.3
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9120313Z npm error Invalid: lock file's emoji-regex@10.4.0 does not satisfy emoji-regex@10.6.0
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9121109Z npm error Invalid: lock file's execa@9.4.1 does not satisfy execa@9.6.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9121743Z npm error Missing: json-rpc-2.0@1.7.1 from lock file
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9122440Z npm error Invalid: lock file's minimatch@9.0.9 does not satisfy minimatch@10.2.6
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9123179Z npm error Missing: mutation-server-protocol@0.4.1 from lock file
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9124150Z npm error Invalid: lock file's mutation-testing-elements@3.4.0 does not satisfy mutation-testing-elements@3.7.3
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9125266Z npm error Invalid: lock file's mutation-testing-metrics@3.3.0 does not satisfy mutation-testing-metrics@3.7.3
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9126213Z npm error Invalid: lock file's mutation-testing-report-schema@3.3.0 does not satisfy mutation-testing-report-schema@3.7.3
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9126955Z npm error Invalid: lock file's tslib@2.7.0 does not satisfy tslib@2.8.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9127563Z npm error Invalid: lock file's typed-inject@4.0.0 does not satisfy typed-inject@5.0.0
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9128438Z npm error Invalid: lock file's typed-rest-client@2.1.0 does not satisfy typed-rest-client@2.3.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9129203Z npm error Invalid: lock file's @inquirer/checkbox@3.0.1 does not satisfy @inquirer/checkbox@5.2.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9129956Z npm error Invalid: lock file's @inquirer/confirm@4.0.1 does not satisfy @inquirer/confirm@6.1.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9130704Z npm error Invalid: lock file's @inquirer/editor@3.0.1 does not satisfy @inquirer/editor@5.2.2
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9131404Z npm error Invalid: lock file's @inquirer/expand@3.0.1 does not satisfy @inquirer/expand@5.1.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9132096Z npm error Invalid: lock file's @inquirer/input@3.0.1 does not satisfy @inquirer/input@5.1.2
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9132846Z npm error Invalid: lock file's @inquirer/number@2.0.1 does not satisfy @inquirer/number@4.1.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9133570Z npm error Invalid: lock file's @inquirer/password@3.0.1 does not satisfy @inquirer/password@5.1.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9134288Z npm error Invalid: lock file's @inquirer/rawlist@3.0.1 does not satisfy @inquirer/rawlist@5.3.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9134977Z npm error Invalid: lock file's @inquirer/search@2.0.1 does not satisfy @inquirer/search@4.2.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9135952Z npm error Invalid: lock file's @inquirer/select@3.0.1 does not satisfy @inquirer/select@5.2.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9136502Z npm error Missing: @inquirer/ansi@2.0.7 from lock file
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9137071Z npm error Invalid: lock file's @inquirer/core@9.2.1 does not satisfy @inquirer/core@11.2.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9137907Z npm error Invalid: lock file's @inquirer/figures@1.0.15 does not satisfy @inquirer/figures@2.0.7
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9138624Z npm error Invalid: lock file's @inquirer/type@2.0.0 does not satisfy @inquirer/type@4.0.7
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9139308Z npm error Missing: fast-wrap-ansi@0.2.2 from lock file
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9139848Z npm error Invalid: lock file's mute-stream@1.0.0 does not satisfy mute-stream@3.0.0
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9140412Z npm error Missing: @inquirer/external-editor@3.0.3 from lock file
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9140955Z npm error Invalid: lock file's chardet@0.7.0 does not satisfy chardet@2.2.0
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9141574Z npm error Invalid: lock file's iconv-lite@0.4.24 does not satisfy iconv-lite@0.7.3
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9142223Z npm error Invalid: lock file's @babel/core@7.25.9 does not satisfy @babel/core@7.29.7
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9142895Z npm error Invalid: lock file's @babel/generator@7.25.9 does not satisfy @babel/generator@7.29.8
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9143581Z npm error Invalid: lock file's @babel/parser@7.25.9 does not satisfy @babel/parser@7.29.8
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9144448Z npm error Invalid: lock file's @babel/plugin-proposal-decorators@7.24.7 does not satisfy @babel/plugin-proposal-decorators@7.29.7
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9145356Z npm error Missing: @babel/plugin-transform-explicit-resource-management@7.29.7 from lock file
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9146198Z npm error Invalid: lock file's @babel/preset-typescript@7.24.7 does not satisfy @babel/preset-typescript@7.28.5
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9147034Z npm error Invalid: lock file's angular-html-parser@6.0.2 does not satisfy angular-html-parser@10.4.0
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9147709Z npm error Invalid: lock file's semver@7.6.3 does not satisfy semver@7.7.4
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9148391Z npm error Missing: @jridgewell/remapping@2.3.5 from lock file
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9148861Z npm error Missing: fast-string-width@3.0.2 from lock file
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9149362Z npm error Missing: fast-string-truncated-width@3.0.3 from lock file
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9150005Z npm error Invalid: lock file's brace-expansion@2.1.4 does not satisfy brace-expansion@5.0.9
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9150699Z npm error Invalid: lock file's balanced-match@1.0.2 does not satisfy balanced-match@4.0.4
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9151215Z npm error Missing: zod@4.4.3 from lock file
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9151669Z npm error Invalid: lock file's qs@6.15.3 does not satisfy qs@6.15.1
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9152024Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9152291Z npm error Clean install a project
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9152550Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9152741Z npm error Usage:
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9152954Z npm error npm ci
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9153158Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9153377Z npm error Options:
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9153868Z npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9154606Z npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9155311Z npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9155943Z npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts]
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9156542Z npm error [--allow-directory <all|none|root>] [--allow-file <all|none|root>]
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9157124Z npm error [--allow-git <all|none|root>] [--allow-remote <all|none|root>]
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9157852Z npm error [--allow-scripts <package-list> [--allow-scripts <package-list> ...]]
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9158529Z npm error [--strict-allow-scripts] [--dangerously-allow-all-scripts] [--no-audit]
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9159052Z npm error [--no-bin-links] [--no-fund] [--dry-run]
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9159757Z npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9160360Z npm error [--workspaces] [--include-workspace-root] [--install-links]
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9160728Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9160979Z npm error   --install-strategy
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9161422Z npm error     Sets the strategy for installing packages in node_modules.
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9161783Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9162016Z npm error   --legacy-bundling
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9162510Z npm error     Instead of hoisting package installs in `node_modules`, install packages
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9163041Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9163258Z npm error   --global-style
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9163711Z npm error     Only install direct dependencies in the top level `node_modules`,
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9164104Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9164303Z npm error   --omit
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9164717Z npm error     Dependency types to omit from the installation tree on disk.
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9165099Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9165306Z npm error   --include
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9165779Z npm error     Option that allows for defining which types of dependencies to install.
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9166189Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9166436Z npm error   --strict-peer-deps
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9166894Z npm error     If set to `true`, and `--legacy-peer-deps` is not set, then _any_
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9167271Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9167519Z npm error   --foreground-scripts
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9168087Z npm error     Run all build scripts (ie, `preinstall`, `install`, and
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9168449Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9168666Z npm error   --ignore-scripts
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9169133Z npm error     If true, npm does not run scripts specified in package.json files.
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9169514Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9169733Z npm error   --allow-directory
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9170211Z npm error     Limits the ability for npm to install dependencies from directories.
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9170609Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9170828Z npm error   --allow-file
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9171299Z npm error     Limits the ability for npm to install dependencies from tarball files.
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9171696Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9171908Z npm error   --allow-git
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9172368Z npm error     Limits the ability for npm to fetch dependencies from git references.
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9172772Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9172989Z npm error   --allow-remote
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9173419Z npm error     Limits the ability for npm to fetch dependencies from urls.
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9173793Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9174020Z npm error   --allow-scripts
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9174505Z npm error     Comma-separated list of packages whose install-time lifecycle scripts
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9174911Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9175166Z npm error   --strict-allow-scripts
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9175658Z npm error     If `true`, turn the install-script policy from a warning into a hard
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9176054Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9176334Z npm error   --dangerously-allow-all-scripts
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9176840Z npm error     If `true`, bypass the `allowScripts` policy entirely and run every
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9177224Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9177431Z npm error   --audit
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9178019Z npm error     When "true" submit audit reports alongside the current npm command to the
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9178438Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9178655Z npm error   --bin-links
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9179116Z npm error     Tells npm to create symlinks (or `.cmd` shims on Windows) for package
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9179521Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9179726Z npm error   --fund
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9180156Z npm error     When "true" displays the message at the end of each `npm install`
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9180534Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9180744Z npm error   --dry-run
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9181215Z npm error     Indicates that you don't want npm to make any changes and that it should
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9181749Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9181969Z npm error   -w|--workspace
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9182465Z npm error     Enable running a command in the context of the configured workspaces of the
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9182881Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9183096Z npm error   --workspaces
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9183537Z npm error     Set to true to run the command in the context of **all** configured
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9183916Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9184175Z npm error   --include-workspace-root
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9184808Z npm error     Include the workspace root when workspaces are enabled for a command.
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9185212Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9185431Z npm error   --install-links
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9185904Z npm error     When set file: protocol dependencies will be packed and installed as
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9186296Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9186482Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9186845Z npm error aliases: clean-install, ic, install-clean, isntall-clean
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9187206Z npm error
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9187461Z npm error Run "npm help ci" for more info
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9262977Z npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-08-12T13_14_18_956Z-debug-0.log
+performance (node 24, advisory)	Install locked dependencies	2026-08-12T13:14:24.9732094Z ##[error]Process completed with exit code 1.
+performance (node 24, advisory)	Upload benchmark report	﻿2026-08-12T13:14:24.9816921Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+performance (node 24, advisory)	Upload benchmark report	2026-08-12T13:14:24.9818575Z ##[group]Run actions/upload-artifact@v4
+performance (node 24, advisory)	Upload benchmark report	2026-08-12T13:14:24.9818884Z with:
+performance (node 24, advisory)	Upload benchmark report	2026-08-12T13:14:24.9819122Z   name: motion5-benchmark-report
+performance (node 24, advisory)	Upload benchmark report	2026-08-12T13:14:24.9819430Z   path: performance/benchmark-report.json
+performance (node 24, advisory)	Upload benchmark report	2026-08-12T13:14:24.9819741Z   if-no-files-found: error
+performance (node 24, advisory)	Upload benchmark report	2026-08-12T13:14:24.9820004Z   compression-level: 6
+performance (node 24, advisory)	Upload benchmark report	2026-08-12T13:14:24.9820245Z   overwrite: false
+performance (node 24, advisory)	Upload benchmark report	2026-08-12T13:14:24.9820488Z   include-hidden-files: false
+performance (node 24, advisory)	Upload benchmark report	2026-08-12T13:14:24.9820765Z ##[endgroup]
+performance (node 24, advisory)	Upload benchmark report	2026-08-12T13:14:25.1511851Z (node:2320) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+performance (node 24, advisory)	Upload benchmark report	2026-08-12T13:14:25.1513425Z (Use `node --trace-deprecation ...` to show where the warning was created)
+performance (node 24, advisory)	Upload benchmark report	2026-08-12T13:14:25.1565002Z ##[error]No files were found with the provided path: performance/benchmark-report.json. No artifacts will be uploaded.
