@@ -1,41 +1,10 @@
-import { gsap } from "gsap";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
-import {
-  createGsapInterpolator,
-  type GsapTimelineLike,
-} from "../../src/adapters/interpolator/gsap";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeScheduler } from "../../src/ports/fakes";
-
-function createRealGsapInterpolator() {
-  return createGsapInterpolator({
-    timeline: (): GsapTimelineLike => {
-      const real = gsap.timeline({ paused: true });
-      const timeline: GsapTimelineLike = {
-        duration: () => real.duration(),
-        progress,
-        to(target, vars) {
-          real.to(target, vars);
-          return timeline;
-        },
-        kill() {
-          real.kill();
-        },
-      };
-      function progress(): number;
-      function progress(value: number): GsapTimelineLike;
-      function progress(value?: number): number | GsapTimelineLike {
-        if (value === undefined) return real.progress();
-        real.progress(value);
-        return timeline;
-      }
-      return timeline;
-    },
-  });
-}
+import { createRealGsapSeam } from "../support/real-gsap";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
@@ -67,9 +36,10 @@ describe("real end-to-end product path (E2)", () => {
     const dom = createDomPatchAdapter(stage, undefined, (nodeId) =>
       nodeId === "hero/arm" ? target : undefined,
     );
+    const seam = createRealGsapSeam();
     const runtime = new Engine({
       clock: createManualClock(),
-      interpolator: createRealGsapInterpolator(),
+      interpolator: seam.interpolator,
       scheduler: createFakeScheduler(),
     }).load(project);
 
@@ -84,6 +54,11 @@ describe("real end-to-end product path (E2)", () => {
 
     dom.apply(patch!);
     expect(target.style.opacity).toBeCloseTo(0.5, 10);
+
+    // The product path must own the only clock: real GSAP, not the fixture, confirms the
+    // adapter's timeline is paused.
+    expect(seam.created[0]?.paused()).toBe(true);
+
     runtime.dispose();
   });
 });

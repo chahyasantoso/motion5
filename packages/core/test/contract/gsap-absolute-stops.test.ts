@@ -3,6 +3,7 @@ import {
   createGsapInterpolator,
   type GsapTimelineLike,
 } from "../../src/adapters/interpolator/gsap";
+import { createRealGsapSeam, readNumber } from "../support/real-gsap";
 
 type Tween = {
   target: Record<string, unknown>;
@@ -93,5 +94,62 @@ describe("GSAP absolute multi-property stops (P0-3)", () => {
     expect(fake.state).toEqual({ x: 50, y: 50 });
     timeline.progress(1);
     expect(fake.state).toEqual({ x: 100, y: 100 });
+  });
+
+  it("keeps per-property grids and the leading hold intact on real GSAP", () => {
+    // The deterministic double above states the invariant. This states it against the library
+    // that actually schedules the tweens: the seam forwards each segment's absolute position
+    // instead of dropping it, so a regression to shared ordinal segments fails here.
+    const seam = createRealGsapSeam();
+    const timeline = seam.interpolator.create({
+      duration: 1,
+      keyframes: {
+        x: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 0.5, v: 50 },
+            { p: 1, v: 100 },
+          ],
+        },
+        y: {
+          stops: [
+            { p: 0.2, v: 20 },
+            { p: 0.25, v: 25 },
+            { p: 1, v: 100 },
+          ],
+        },
+      },
+    });
+
+    const x = (): number => readNumber(timeline.state, "x");
+    const y = (): number => readNumber(timeline.state, "y");
+
+    // Authored positions are absolute, so the last stop at p = 1 is the timeline's end.
+    expect(timeline.duration).toBeCloseTo(1, 10);
+
+    timeline.progress(0);
+    expect(x()).toBeCloseTo(0, 6);
+    expect(y()).toBeCloseTo(20, 6);
+
+    // y holds at its authored start until its own first stop at 0.2, on its own grid.
+    timeline.progress(0.2);
+    expect(x()).toBeCloseTo(20, 6);
+    expect(y()).toBeCloseTo(20, 6);
+
+    // 0.25 is the end of y's short segment and mid-ramp for x. Shared ordinal segments would
+    // put one property on the other's grid here.
+    timeline.progress(0.25);
+    expect(x()).toBeCloseTo(25, 6);
+    expect(y()).toBeCloseTo(25, 6);
+
+    timeline.progress(0.5);
+    expect(x()).toBeCloseTo(50, 6);
+    expect(y()).toBeCloseTo(50, 6);
+
+    timeline.progress(1);
+    expect(x()).toBeCloseTo(100, 6);
+    expect(y()).toBeCloseTo(100, 6);
+
+    timeline.kill();
   });
 });
