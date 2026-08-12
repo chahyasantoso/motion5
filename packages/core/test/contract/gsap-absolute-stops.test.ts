@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createGsapInterpolator, type GsapTimelineLike } from "../../src/adapters/interpolator/gsap";
+import {
+  createGsapInterpolator,
+  type GsapTimelineLike,
+} from "../../src/adapters/interpolator/gsap";
 
 type Tween = {
   target: Record<string, unknown>;
