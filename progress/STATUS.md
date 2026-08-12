@@ -54,7 +54,7 @@ D3 is next on [PR #58](https://github.com/chahyasantoso/motion5/pull/58), but Gi
 
 ### Wave C
 
-- C1 merge: [`25cff099`](https://github.com/chahyasantoso/motion5/commit/25cff099a1cf...)
+- C1 merge: [`25cff099`](https://github.com/chahyasantoso/motion5/commit/25cff099a1cf32f9c3cde6822d34835ee94705a)
 - C1 failing-first audit: [run #31495880105](https://github.com/chahyasantoso/motion5/actions/runs/31495880105)
 - C2 merge: [`5707bc7b`](https://github.com/chahyasantoso/motion5/commit/5707bc7be98ba5fa3e72f1c6c9f9980510714f36)
 - C2 audit: [run #31507507062](https://github.com/chahyasantoso/motion5/actions/runs/31507507062)
