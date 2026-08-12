@@ -4,7 +4,7 @@ export interface GsapTimelineLike {
   readonly duration: () => number;
   progress(): number;
   progress(value: number): GsapTimelineLike;
-  to?(target: Record<string, unknown>, vars: Record<string, unknown>): GsapTimelineLike;
+  to(target: Record<string, unknown>, vars: Record<string, unknown>): GsapTimelineLike;
   kill(): void;
 }
 
@@ -80,8 +80,6 @@ function compileKeyframes(config: unknown): {
     segments: segmentValues.map((values, index) => ({
       values,
       duration: segmentDurations[index] ?? 0,
-      // Authored easing wins; otherwise disable GSAP's implicit power easing. The authored
-      // schema describes interpolation positions, so an unspecified ease must be linear.
       ease: segmentEases[index] ?? "none",
     })),
   };
@@ -91,12 +89,12 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
   return {
     create(config): InterpolationTimeline {
       const proxy: Record<string, unknown> = {};
-      const timeline = gsap.timeline();
+      const timeline = gsap.timeline({ paused: true });
       const compiled = compileKeyframes(config);
       Object.assign(proxy, compiled.initial);
       const duration = readDuration(config);
       for (const segment of compiled.segments) {
-        timeline.to?.(proxy, {
+        timeline.to(proxy, {
           ...segment.values,
           duration: segment.duration * duration,
           ease: segment.ease,
