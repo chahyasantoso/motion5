@@ -1,0 +1,17 @@
+diff --git a/packages/core/test/contract/gsap-multi-stop.test.ts b/packages/core/test/contract/gsap-multi-stop.test.ts
+index 1a91aa6..58a0c96 100644
+--- a/packages/core/test/contract/gsap-multi-stop.test.ts
++++ b/packages/core/test/contract/gsap-multi-stop.test.ts
+@@ -73,7 +73,11 @@ describe("GSAP multi-stop compilation (B2)", () => {
+     });
+ 
+     timeline.progress(0.5);
+-    expect(timeline.state.x).toBeCloseTo(25, 10);
++    // GSAP's "power2" corresponds to a cubic curve (t^3), not quadratic (t^2) -- power1
++    // is quadratic, power2 is cubic, power3 quartic, power4 quintic. At t=0.5, power2.in
++    // gives 0.5^3 = 0.125, so x = 100 * 0.125 = 12.5. Confirmed directly against the
++    // installed gsap package with no adapter involved before fixing this expectation.
++    expect(timeline.state.x).toBeCloseTo(12.5, 10);
+     timeline.kill();
+   });
+ });
