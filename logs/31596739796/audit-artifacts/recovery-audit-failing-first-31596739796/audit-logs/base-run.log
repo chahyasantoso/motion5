@@ -1,0 +1,28 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/motion5/motion5[39m
+
+ [31m❯[39m packages/core/test/unit/scripts/mutation-config.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 6[2mms[22m[39m
+[31m     [31m×[31m scopes Stryker to runtime and adapters and emits the audit JSON report[39m[32m 4[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/unit/scripts/mutation-config.test.ts[2m > [22mmutation gate configuration (E3)[2m > [22mscopes Stryker to runtime and adapters and emits the audit JSON report
+[31m[1mError[22m: ENOENT: no such file or directory, open '/home/runner/work/motion5/motion5/stryker.config.json'[39m
+[36m [2m❯[22m packages/core/test/unit/scripts/mutation-config.test.ts:[2m16:7[22m[39m
+    [90m 14|[39m   it("scopes Stryker to runtime and adapters and emits the audit JSON …
+    [90m 15|[39m     [35mconst[39m config [33m=[39m [33mJSON[39m[33m.[39m[34mparse[39m(
+    [90m 16|[39m       await readFile(new URL("../../../../../stryker.config.json", imp…
+    [90m   |[39m       [31m^[39m
+    [90m 17|[39m     ) [35mas[39m [33mMutationConfig[39m[33m;[39m
+    [90m 18|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m   Start at [22m 12:30:24
+[2m   Duration [22m 170ms[2m (transform 22ms, setup 0ms, import 35ms, tests 6ms, environment 0ms)[22m
+
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/unit/scripts/mutation-config.test.ts,title=packages/core/test/unit/scripts/mutation-config.test.ts > mutation gate configuration (E3) > scopes Stryker to runtime and adapters and emits the audit JSON report,line=16,column=7::Error: ENOENT: no such file or directory, open '/home/runner/work/motion5/motion5/stryker.config.json'%0A ❯ packages/core/test/unit/scripts/mutation-config.test.ts:16:7%0A%0A⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯%0ASerialized Error: { errno: -2, code: 'ENOENT', syscall: 'open', path: '/home/runner/work/motion5/motion5/stryker.config.json' }%0A
