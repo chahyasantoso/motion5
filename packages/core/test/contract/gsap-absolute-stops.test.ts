@@ -31,19 +31,30 @@ function createDeterministicTimeline(): {
   function progress(value?: number): number | GsapTimelineLike {
     if (value === undefined) return currentProgress;
     currentProgress = value;
+    const byKey = new Map<string, Tween[]>();
     for (const tween of tweens) {
-      const start = tween.position ?? 0;
-      const duration = typeof tween.vars.duration === "number" ? tween.vars.duration : 0;
-      const end = start + duration;
-      if (currentProgress < start) continue;
-      const amount = end <= start ? 1 : Math.min(1, (currentProgress - start) / duration);
-      for (const [key, valueAtEnd] of Object.entries(tween.vars)) {
+      for (const key of Object.keys(tween.vars)) {
         if (key === "duration" || key === "ease") continue;
-        const valueAtStart = tween.target[key];
-        if (typeof valueAtStart === "number" && typeof valueAtEnd === "number")
-          state[key] = valueAtStart + (valueAtEnd - valueAtStart) * amount;
-        else if (amount >= 1) state[key] = valueAtEnd;
+        const entries = byKey.get(key) ?? [];
+        entries.push(tween);
+        byKey.set(key, entries);
       }
+    }
+    for (const [key, entries] of byKey) {
+      const eligible = entries.filter((tween) => (tween.position ?? 0) <= currentProgress);
+      const active = eligible.at(-1);
+      if (active === undefined) continue;
+      const start = active.position ?? 0;
+      const duration = typeof active.vars.duration === "number" ? active.vars.duration : 0;
+      const end = start + duration;
+      const previous = eligible.at(-2);
+      const valueAtStart =
+        previous?.vars[key] ?? active.target[key];
+      const valueAtEnd = active.vars[key];
+      const amount = end <= start ? 1 : Math.min(1, (currentProgress - start) / duration);
+      if (typeof valueAtStart === "number" && typeof valueAtEnd === "number")
+        state[key] = valueAtStart + (valueAtEnd - valueAtStart) * amount;
+      else if (amount >= 1) state[key] = valueAtEnd;
     }
     return timeline;
   }
