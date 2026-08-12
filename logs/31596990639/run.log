@@ -1,0 +1,388 @@
+prettier --write (same-repository PR)	Set up job	﻿2026-08-12T12:33:15.4799778Z Current runner version: '2.336.0'
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4826835Z ##[group]Runner Image Provisioner
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4827688Z Hosted Compute Agent
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4828420Z Version: 20260729.566
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4829269Z Commit: cf7153fe6e25b664e8693c24944bf2b00355d109
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4830120Z Build Date: 2026-07-29T19:17:02Z
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4830847Z Worker ID: {6eeb560a-70fa-441f-9a59-ba37a17bcdf7}
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4831573Z Azure Region: eastus2
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4832245Z ##[endgroup]
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4834217Z ##[group]Operating System
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4835148Z Ubuntu
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4835953Z 24.04.4
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4836681Z LTS
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4837478Z ##[endgroup]
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4838350Z ##[group]Runner Image
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4839505Z Image: ubuntu-24.04
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4840395Z Version: 20260810.271.1
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4842039Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260810.271/images/ubuntu/Ubuntu2404-Readme.md
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4844857Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260810.271
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4846327Z ##[endgroup]
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4848333Z ##[group]GITHUB_TOKEN Permissions
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4851230Z Contents: write
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4852298Z Metadata: read
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4853198Z PullRequests: read
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4854068Z ##[endgroup]
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4857392Z Secret source: Actions
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.4859514Z Prepare workflow directory
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.5201815Z Prepare all required actions
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.5251794Z Getting action download info
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.7319006Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:15.8712298Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:33:16.0727359Z Complete job name: prettier --write (same-repository PR)
+prettier --write (same-repository PR)	Run actions/checkout@v4	﻿2026-08-12T12:33:16.1489704Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1499138Z ##[group]Run actions/checkout@v4
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1499897Z with:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1500335Z   ref: fix/E3-mutation-gate
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1500846Z   repository: chahyasantoso/motion5
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1501365Z   fetch-depth: 0
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1505472Z   token: ***
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1505912Z   ssh-strict: true
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1506349Z   ssh-user: git
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1506792Z   persist-credentials: true
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1507281Z   clean: true
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1507725Z   sparse-checkout-cone-mode: true
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1508245Z   fetch-tags: false
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1508686Z   show-progress: true
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1509255Z   lfs: false
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1509727Z   submodules: false
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1510190Z   set-safe-directory: true
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1510686Z   allow-unsafe-pr-checkout: false
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.1511403Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2569747Z Syncing repository: chahyasantoso/motion5
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2572643Z ##[group]Getting Git version info
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2573856Z Working directory is '/home/runner/work/motion5/motion5'
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2575475Z [command]/usr/bin/git version
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2620214Z git version 2.54.0
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2642070Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2657871Z Temporarily overriding HOME='/home/runner/work/_temp/7bb7acd3-9645-45f2-93f4-6d1126a03b26' before making global git config changes
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2660312Z Adding repository directory to the temporary git global config as a safe directory
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2663417Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/motion5/motion5
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2722338Z Deleting the contents of '/home/runner/work/motion5/motion5'
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2724520Z ##[group]Initializing the repository
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2726242Z [command]/usr/bin/git init /home/runner/work/motion5/motion5
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2810683Z hint: Using 'master' as the name for the initial branch. This default branch name
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2815129Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2816923Z hint: to use in all of your new repositories, which will suppress this warning,
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2818292Z hint: call:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2819133Z hint:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2819837Z hint: 	git config --global init.defaultBranch <name>
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2820467Z hint:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2821050Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2822028Z hint: 'development'. The just-created branch can be renamed via this command:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2822762Z hint:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2823313Z hint: 	git branch -m <name>
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2823894Z hint:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2825778Z hint: Disable this message with "git config set advice.defaultBranchName false"
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2826770Z Initialized empty Git repository in /home/runner/work/motion5/motion5/.git/
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2828461Z [command]/usr/bin/git remote add origin https://github.com/chahyasantoso/motion5
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2869941Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2870728Z ##[group]Disabling automatic garbage collection
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2874884Z [command]/usr/bin/git config --local gc.auto 0
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2910654Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2911407Z ##[group]Setting up auth
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2919176Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.2959595Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.3344013Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.3392014Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.3658267Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.3699369Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.3946551Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.3989337Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.3990207Z ##[group]Fetching the repository
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:16.3999548Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2886966Z From https://github.com/chahyasantoso/motion5
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2889405Z  * [new branch]      chore/format-31354308601 -> origin/chore/format-31354308601
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2891176Z  * [new branch]      chore/r6-core-package-boundary -> origin/chore/r6-core-package-boundary
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2892589Z  * [new branch]      ci-logs                -> origin/ci-logs
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2893778Z  * [new branch]      ci/archive-workflow    -> origin/ci/archive-workflow
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2895182Z  * [new branch]      ci/auto-format-pr-branches -> origin/ci/auto-format-pr-branches
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2896904Z  * [new branch]      docs/detailed-plan-and-trd -> origin/docs/detailed-plan-and-trd
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2899079Z  * [new branch]      docs/p0-06-trd-and-detailed-plan -> origin/docs/p0-06-trd-and-detailed-plan
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2901406Z  * [new branch]      docs/phase3-implementation-review -> origin/docs/phase3-implementation-review
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2903780Z  * [new branch]      docs/r9-status-and-plan-truth-pass -> origin/docs/r9-status-and-plan-truth-pass
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2906648Z  * [new branch]      docs/repo-review-and-remediation-plan -> origin/docs/repo-review-and-remediation-plan
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2909254Z  * [new branch]      feat/p0-04-ports-and-fakes -> origin/feat/p0-04-ports-and-fakes
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2911943Z  * [new branch]      feat/p0-05-golden-fixtures-and-integration -> origin/feat/p0-05-golden-fixtures-and-integration
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2915241Z  * [new branch]      feat/p1-01-immutable-value-snapshots -> origin/feat/p1-01-immutable-value-snapshots
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2918011Z  * [new branch]      feat/p1-02-plugin-registry -> origin/feat/p1-02-plugin-registry
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2920535Z  * [new branch]      feat/p1-03-track-leaf  -> origin/feat/p1-03-track-leaf
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2923042Z  * [new branch]      feat/p1-04-lifecycle-primitives -> origin/feat/p1-04-lifecycle-primitives
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2925819Z  * [new branch]      feat/p1-05-motion-scheduling -> origin/feat/p1-05-motion-scheduling
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2928500Z  * [new branch]      feat/p1-06-trigger-delegates -> origin/feat/p1-06-trigger-delegates
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2931010Z  * [new branch]      feat/p2-01-qualified-ids -> origin/feat/p2-01-qualified-ids
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2933597Z  * [new branch]      feat/p2-02-03-graph-ir-validation -> origin/feat/p2-02-03-graph-ir-validation
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2936738Z  * [new branch]      feat/p2-04-cycle-detection-and-order -> origin/feat/p2-04-cycle-detection-and-order
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2940164Z  * [new branch]      feat/p2-05-stable-observation-state -> origin/feat/p2-05-stable-observation-state
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2943679Z  * [new branch]      feat/p2-06-graph-binding-transactions -> origin/feat/p2-06-graph-binding-transactions
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2947017Z  * [new branch]      feat/p2-07-boundary-scan-ci-gate -> origin/feat/p2-07-boundary-scan-ci-gate
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2950048Z  * [new branch]      feat/p3-01-patch-registry -> origin/feat/p3-01-patch-registry
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2953541Z  * [new branch]      feat/p3-02-03-publisher-failure-semantics -> origin/feat/p3-02-03-publisher-failure-semantics
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2956747Z  * [new branch]      feat/p3-04-graph-runtime -> origin/feat/p3-04-graph-runtime
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2959555Z  * [new branch]      feat/p3-05-project-runtime -> origin/feat/p3-05-project-runtime
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2962619Z  * [new branch]      feat/p3-06-07-engine-and-benchmarks -> origin/feat/p3-06-07-engine-and-benchmarks
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2965602Z  * [new branch]      feat/p4-01-02-adapters -> origin/feat/p4-01-02-adapters
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2968550Z  * [new branch]      feat/p4-03-04-react-consumer-boundary -> origin/feat/p4-03-04-react-consumer-boundary
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2972291Z  * [new branch]      feat/p4-05-current-main-integration-build -> origin/feat/p4-05-current-main-integration-build
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2975734Z  * [new branch]      feat/p4-05-integration-build-gate -> origin/feat/p4-05-integration-build-gate
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2979034Z  * [new branch]      feat/r5-engine-compose-resolver -> origin/feat/r5-engine-compose-resolver
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2982475Z  * [new branch]      feat/r8-dom-adapter-target-resolution -> origin/feat/r8-dom-adapter-target-resolution
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2985664Z  * [new branch]      fix/A3-publisher-reentrancy -> origin/fix/A3-publisher-reentrancy
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2988228Z  * [new branch]      fix/A3-red-evidence    -> origin/fix/A3-red-evidence
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2990834Z  * [new branch]      fix/B1-track-contribution -> origin/fix/B1-track-contribution
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2993569Z  * [new branch]      fix/B2-gsap-stop-compilation -> origin/fix/B2-gsap-stop-compilation
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.2996708Z  * [new branch]      fix/B2-gsap-stop-compilation-clean -> origin/fix/B2-gsap-stop-compilation-clean
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3000200Z  * [new branch]      fix/B2-gsap-stop-compilation-repair -> origin/fix/B2-gsap-stop-compilation-repair
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3003290Z  * [new branch]      fix/C1-react-store-lifecycle -> origin/fix/C1-react-store-lifecycle
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3006314Z  * [new branch]      fix/C2-react-public-surface -> origin/fix/C2-react-public-surface
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3009356Z  * [new branch]      fix/C3-dom-contract    -> origin/fix/C3-dom-contract
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3012593Z  * [new branch]      fix/D1-boundary-discovery -> origin/fix/D1-boundary-discovery
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3015226Z  * [new branch]      fix/D2-boundary-self-test -> origin/fix/D2-boundary-self-test
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3018269Z  * [new branch]      fix/D3-evidence-gates  -> origin/fix/D3-evidence-gates
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3021880Z  * [new branch]      fix/D3-evidence-gates-rescue -> origin/fix/D3-evidence-gates-rescue
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3025479Z  * [new branch]      fix/D3-evidence-gates-v2 -> origin/fix/D3-evidence-gates-v2
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3028239Z  * [new branch]      fix/E1-required-build-rescue -> origin/fix/E1-required-build-rescue
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3031413Z  * [new branch]      fix/E1-required-build-v2 -> origin/fix/E1-required-build-v2
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3035375Z  * [new branch]      fix/E2-end-to-end-proof-rescue -> origin/fix/E2-end-to-end-proof-rescue
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3038145Z  * [new branch]      fix/E3-mutation-gate   -> origin/fix/E3-mutation-gate
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3041157Z  * [new branch]      fix/r1-publisher-input-resolution -> origin/fix/r1-publisher-input-resolution
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3044723Z  * [new branch]      fix/r2-output-edge-merge -> origin/fix/r2-output-edge-merge
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3048256Z  * [new branch]      fix/r3-track-input-recompute -> origin/fix/r3-track-input-recompute
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3052277Z  * [new branch]      fix/r4-membership-gates-seeds -> origin/fix/r4-membership-gates-seeds
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3057079Z  * [new branch]      fix/r7-boundary-scan-coverage-and-self-test -> origin/fix/r7-boundary-scan-coverage-and-self-test
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3061239Z  * [new branch]      main                   -> origin/main
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3064178Z  * [new branch]      merge/E2-clean-into-rescue -> origin/merge/E2-clean-into-rescue
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3068281Z  * [new branch]      phase-0r1-gsap-contract-proof -> origin/phase-0r1-gsap-contract-proof
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3071992Z  * [new branch]      phase-0r2-1r1-gap-closure -> origin/phase-0r2-1r1-gap-closure
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3074953Z  * [new branch]      phase-0r2-stop-validation -> origin/phase-0r2-stop-validation
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3077803Z  * [new branch]      phase-1r1-plugin-compilation -> origin/phase-1r1-plugin-compilation
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3081202Z  * [new branch]      phase-1r2-track-compiler-lifetime -> origin/phase-1r2-track-compiler-lifetime
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3084507Z  * [new branch]      phase-1r3-progress-invalidation -> origin/phase-1r3-progress-invalidation
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3089079Z  * [new branch]      rescue/restore-motionpath-parity -> origin/rescue/restore-motionpath-parity
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3092303Z  * [new branch]      restore-motionpath-value-pipeline -> origin/restore-motionpath-value-pipeline
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3098045Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3100332Z ##[group]Determining the checkout info
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3102643Z [command]/usr/bin/git branch --list --remote origin/fix/E3-mutation-gate
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3104547Z   origin/fix/E3-mutation-gate
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3109592Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3111199Z [command]/usr/bin/git sparse-checkout disable
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3138233Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3172825Z ##[group]Checking out the ref
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3176430Z [command]/usr/bin/git checkout --progress --force -B fix/E3-mutation-gate refs/remotes/origin/fix/E3-mutation-gate
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3322269Z Switched to a new branch 'fix/E3-mutation-gate'
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3325143Z branch 'fix/E3-mutation-gate' set up to track 'origin/fix/E3-mutation-gate'.
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3332994Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3378108Z [command]/usr/bin/git log -1 --format=%H
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:33:17.3409968Z 380622f0a1cf40fba6fe6dcc11f4a2d3cb2cb066
+prettier --write (same-repository PR)	Run actions/setup-node@v4	﻿2026-08-12T12:33:17.3858081Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.3863545Z ##[group]Run actions/setup-node@v4
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.3864631Z with:
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.3865456Z   node-version: 24
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.3866358Z   cache: npm
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.3867231Z   always-auth: false
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.3868165Z   check-latest: false
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.3878042Z   token: ***
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.3879036Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.5319184Z Found in cache @ /opt/hostedtoolcache/node/24.19.0/x64
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.5323392Z (node:2192) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.5326468Z (Use `node --trace-deprecation ...` to show where the warning was created)
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.5329153Z ##[group]Environment details
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.8928406Z node: v24.19.0
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.8930310Z npm: 11.17.0
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.8931436Z yarn: 1.22.22
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.8933459Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:17.8951090Z [command]/opt/hostedtoolcache/node/24.19.0/x64/bin/npm config get cache
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:18.0381734Z /home/runner/.npm
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:18.1237511Z Cache hit for: node-cache-Linux-x64-npm-c2e5d555bc9e84f526536f7ce98adc37976096bfe7c2dc15d7b2e5553d204784
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:18.1338936Z (node:2192) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:18.3705672Z Received 30514904 of 30514904 (100.0%), 134.1 MBs/sec
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:18.3706715Z Cache Size: ~29 MB (30514904 B)
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:18.3776649Z [command]/usr/bin/tar -xf /home/runner/work/_temp/721181bb-1e72-4bb5-91b7-bb48037f749d/cache.tzst -P -C /home/runner/work/motion5/motion5 --use-compress-program unzstd
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:18.4831253Z Cache restored successfully
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:33:18.4849968Z Cache restored from key: node-cache-Linux-x64-npm-c2e5d555bc9e84f526536f7ce98adc37976096bfe7c2dc15d7b2e5553d204784
+prettier --write (same-repository PR)	Install locked dependencies	﻿2026-08-12T12:33:18.5044524Z ##[group]Run npm ci --ignore-scripts --no-audit --no-fund
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:33:18.5045151Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund^[[0m
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:33:18.5097529Z shell: /usr/bin/bash -e {0}
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:33:18.5097922Z ##[endgroup]
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:33:20.7339988Z npm warn deprecated @babel/plugin-proposal-explicit-resource-management@7.27.4: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-explicit-resource-management instead.
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:33:22.5459101Z 
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:33:22.5459946Z added 234 packages in 4s
+prettier --write (same-repository PR)	Apply formatter	﻿2026-08-12T12:33:22.6086710Z ##[group]Run npm run format
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:22.6087085Z ^[[36;1mnpm run format^[[0m
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:22.6129573Z shell: /usr/bin/bash -e {0}
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:22.6129912Z ##[endgroup]
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:22.7212801Z 
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:22.7213939Z > motion5@0.0.0 format
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:22.7214559Z > prettier . --write
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:22.7214813Z 
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:22.8832068Z ^[[90m.github/pull_request_template.md^[[39m 41ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:22.9149508Z ^[[90m.github/workflows/archive-ci-logs.yml^[[39m 28ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:22.9271345Z ^[[90m.github/workflows/bootstrap-lockfile.yml^[[39m 6ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:22.9396405Z ^[[90m.github/workflows/ci.yml^[[39m 12ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:22.9474617Z ^[[90m.github/workflows/format-manual.yml^[[39m 5ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:22.9537558Z ^[[90m.github/workflows/format.yml^[[39m 4ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:22.9795797Z ^[[90m.github/workflows/recovery-audit.yml^[[39m 19ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.0199006Z ^[[90m.prettierrc.json^[[39m 34ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.0264300Z ^[[90mdocs/acceptance-map.json^[[39m 3ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.1281801Z ^[[90mdocs/ARCHITECTURE.md^[[39m 98ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.1655223Z ^[[90mdocs/AUTHORED-SCHEMA.md^[[39m 35ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.1815380Z ^[[90mdocs/CI-WORKFLOW.md^[[39m 13ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.2294542Z ^[[90mdocs/DECISIONS.md^[[39m 44ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.2355929Z ^[[90mdocs/FORMATTING.md^[[39m 4ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.3561695Z ^[[90mdocs/IMPLEMENTATION-PLAN.md^[[39m 119ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.3881965Z ^[[90mdocs/IMPLEMENTOR-BRIEF-MOTIONPATH-TO-MOTION5.md^[[39m 26ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.4050661Z ^[[90mdocs/MIGRATION-V4-TO-V5.md^[[39m 15ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.4376305Z ^[[90mdocs/PHASE-3-4-CONSOLIDATED-AUDIT.md^[[39m 31ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.4580206Z ^[[90mdocs/PHASE-3-4-RECOVERY-PLAN.md^[[39m 18ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.4756835Z ^[[90mdocs/PHASE-3-IMPLEMENTATION-REVIEW.md^[[39m 11ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.5982613Z ^[[90mdocs/PHASE-4-IMPLEMENTATION-REVIEW.md^[[39m 121ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.6126578Z ^[[90mdocs/PR-WORKFLOW.md^[[39m 6ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.6374774Z ^[[90mdocs/PRD.md^[[39m 19ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.6489247Z ^[[90mdocs/README.md^[[39m 9ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.6559562Z ^[[90mdocs/SESSION-STATUS.md^[[39m 6ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.6674372Z ^[[90mdocs/TESTING-STRATEGY.md^[[39m 10ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.7438343Z ^[[90mdocs/TRD.md^[[39m 74ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.7495018Z ^[[90mpackage.json^[[39m 2ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.7536577Z ^[[90mpackages/core/package.json^[[39m 1ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.7691611Z ^[[90mpackages/core/src/adapters/browser-clock.ts^[[39m 12ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.7863235Z ^[[90mpackages/core/src/adapters/dom.ts^[[39m 15ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.8110814Z ^[[90mpackages/core/src/adapters/interpolator/gsap.ts^[[39m 22ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.8211418Z ^[[90mpackages/core/src/contract/golden.ts^[[39m 7ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.8311320Z ^[[90mpackages/core/src/contract/migrate-v4-to-v5.ts^[[39m 8ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.8368527Z ^[[90mpackages/core/src/contract/v5.ts^[[39m 4ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.8896967Z ^[[90mpackages/core/src/contract/validate-v5.ts^[[39m 51ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.9090761Z ^[[90mpackages/core/src/domain/lifecycle.ts^[[39m 9ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.9337550Z ^[[90mpackages/core/src/domain/motion.ts^[[39m 19ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.9552996Z ^[[90mpackages/core/src/domain/plugins.ts^[[39m 20ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.9666441Z ^[[90mpackages/core/src/domain/track.ts^[[39m 10ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.9764889Z ^[[90mpackages/core/src/domain/triggers.ts^[[39m 8ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:23.9856128Z ^[[90mpackages/core/src/domain/values.ts^[[39m 8ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.0040546Z ^[[90mpackages/core/src/engine.ts^[[39m 11ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.0152737Z ^[[90mpackages/core/src/graph/binding.ts^[[39m 8ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.0210168Z ^[[90mpackages/core/src/graph/compare.ts^[[39m 2ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.0272475Z ^[[90mpackages/core/src/graph/ids.ts^[[39m 6ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.0503419Z ^[[90mpackages/core/src/graph/ir.ts^[[39m 21ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.0700938Z ^[[90mpackages/core/src/graph/observation-state.ts^[[39m 18ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.0839132Z ^[[90mpackages/core/src/graph/order.ts^[[39m 12ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.0976672Z ^[[90mpackages/core/src/index.ts^[[39m 3ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.1000095Z ^[[90mpackages/core/src/internal.ts^[[39m 1ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.1096390Z ^[[90mpackages/core/src/ports/clock.ts^[[39m 4ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.1199985Z ^[[90mpackages/core/src/ports/fakes.ts^[[39m 9ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.1232246Z ^[[90mpackages/core/src/ports/interpolator.ts^[[39m 2ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.1261685Z ^[[90mpackages/core/src/ports/scheduler.ts^[[39m 2ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.1406668Z ^[[90mpackages/core/src/runtime/graph-publisher.ts^[[39m 12ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.1510558Z ^[[90mpackages/core/src/runtime/graph-runtime.ts^[[39m 9ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.1648354Z ^[[90mpackages/core/src/runtime/patch-registry.ts^[[39m 12ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.1715232Z ^[[90mpackages/core/src/runtime/project-runtime.ts^[[39m 5ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.1831941Z ^[[90mpackages/core/test/contract/adapters.test.ts^[[39m 8ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.1894084Z ^[[90mpackages/core/test/contract/gsap-multi-stop.test.ts^[[39m 4ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.1984794Z ^[[90mpackages/core/test/contract/ports.test.ts^[[39m 7ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.2141267Z ^[[90mpackages/core/test/contract/v5-validator.test.ts^[[39m 13ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.2190504Z ^[[90mpackages/core/test/fixtures/v5-contract.ts^[[39m 3ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.2256196Z ^[[90mpackages/core/test/integration/contract-baseline.test.ts^[[39m 4ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.2356665Z ^[[90mpackages/core/test/integration/dom-patch-apply.test.ts^[[39m 8ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.2439096Z ^[[90mpackages/core/test/integration/end-to-end.test.ts^[[39m 7ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.2520429Z ^[[90mpackages/core/test/integration/engine-headless.test.ts^[[39m 6ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.2714404Z ^[[90mpackages/core/test/integration/flush-output-merge.test.ts^[[39m 8ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.2760645Z ^[[90mpackages/core/test/integration/golden-roundtrip.test.ts^[[39m 2ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.2875429Z ^[[90mpackages/core/test/integration/graph-publisher.test.ts^[[39m 11ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.2988203Z ^[[90mpackages/core/test/integration/graph-rollback.test.ts^[[39m 9ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.3077372Z ^[[90mpackages/core/test/integration/graph-runtime.test.ts^[[39m 7ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.3140780Z ^[[90mpackages/core/test/integration/membership-gating.test.ts^[[39m 3ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.3215647Z ^[[90mpackages/core/test/integration/partial-seed-inputs.test.ts^[[39m 7ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.3271927Z ^[[90mpackages/core/test/integration/project-runtime.test.ts^[[39m 4ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.3369584Z ^[[90mpackages/core/test/integration/publisher-output-merge-consistency.test.ts^[[39m 8ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.3450619Z ^[[90mpackages/core/test/migration/v4-to-v5.test.ts^[[39m 6ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.3544250Z ^[[90mpackages/core/test/unit/domain/lifecycle.test.ts^[[39m 5ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.3654985Z ^[[90mpackages/core/test/unit/domain/motion.test.ts^[[39m 8ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.3799095Z ^[[90mpackages/core/test/unit/domain/plugins.test.ts^[[39m 13ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.3855584Z ^[[90mpackages/core/test/unit/domain/track-contribution.test.ts^[[39m 4ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.4008929Z ^[[90mpackages/core/test/unit/domain/track.test.ts^[[39m 13ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.4073571Z ^[[90mpackages/core/test/unit/domain/triggers.test.ts^[[39m 5ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.4147971Z ^[[90mpackages/core/test/unit/domain/values.test.ts^[[39m 6ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.4269019Z ^[[90mpackages/core/test/unit/graph/ids.test.ts^[[39m 6ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.4603428Z ^[[90mpackages/core/test/unit/graph/ir-validation.test.ts^[[39m 9ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.4736136Z ^[[90mpackages/core/test/unit/graph/observation-state.test.ts^[[39m 12ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.4828107Z ^[[90mpackages/core/test/unit/graph/order.test.ts^[[39m 8ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.4851469Z ^[[90mpackages/core/test/unit/placeholder.test.ts^[[39m 1ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.4960196Z ^[[90mpackages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts^[[39m 8ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5039818Z ^[[90mpackages/core/test/unit/runtime/patch-registry.test.ts^[[39m 6ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5154622Z ^[[90mpackages/core/test/unit/runtime/publisher-reentrancy.test.ts^[[39m 10ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5222235Z ^[[90mpackages/core/test/unit/scripts/acceptance-scan.test.ts^[[39m 4ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5301874Z ^[[90mpackages/core/test/unit/scripts/boundary-scan.test.ts^[[39m 7ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5341681Z ^[[90mpackages/core/test/unit/scripts/mutation-config.test.ts^[[39m 3ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5381452Z ^[[90mpackages/react/package.json^[[39m 1ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5422583Z ^[[90mpackages/react/src/index.ts^[[39m 2ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5464297Z ^[[90mpackages/react/src/patch-store.ts^[[39m 3ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5535444Z ^[[90mpackages/react/test/patch-store-lifecycle.test.ts^[[39m 4ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5577171Z ^[[90mpackages/react/test/patch-store.test.ts^[[39m 3ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5618987Z ^[[90mpackages/react/test/public-hook-render.test.ts^[[39m 3ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5642983Z ^[[90mpackages/react/test/public-hook.test.ts^[[39m 1ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5710600Z ^[[90mpackages/react/test/public-package-surface.test.ts^[[39m 6ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5743355Z ^[[90mperformance/budgets.json^[[39m 1ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5847587Z ^[[90mperformance/graph-benchmark.mjs^[[39m 9ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5922833Z ^[[90mprogress/A3.md^[[39m 5ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.5986511Z ^[[90mprogress/B1.md^[[39m 5ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.6126559Z ^[[90mprogress/B2.md^[[39m 7ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.6178531Z ^[[90mprogress/C1.md^[[39m 4ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.6294761Z ^[[90mprogress/C2.md^[[39m 10ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.6349297Z ^[[90mprogress/C3.md^[[39m 4ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.6385472Z ^[[90mprogress/D1.md^[[39m 3ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.6488432Z ^[[90mprogress/D2.md^[[39m 9ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.6531783Z ^[[90mprogress/D3.md^[[39m 3ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.6575164Z ^[[90mprogress/E1.md^[[39m 3ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.6631013Z ^[[90mprogress/E3.md^[[39m 4ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.6714213Z ^[[90mprogress/README.md^[[39m 6ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.6782336Z ^[[90mprogress/STATUS.md^[[39m 5ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.6841291Z ^[[90mprogress/W0-baseline.md^[[39m 4ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.6945502Z ^[[90mREADME.md^[[39m 9ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.7082049Z ^[[90mRECOVERY.md^[[39m 6ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.7128989Z ^[[90mscripts/acceptance-scan.d.mts^[[39m 2ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.7226131Z ^[[90mscripts/acceptance-scan.mjs^[[39m 7ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.7261837Z ^[[90mscripts/boundary-scan-fixtures.ts^[[39m 2ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.7296369Z ^[[90mscripts/boundary-scan.d.mts^[[39m 2ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.7438221Z ^[[90mscripts/boundary-scan.mjs^[[39m 12ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.7466947Z stryker.config.json 2ms
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.7495498Z ^[[90mtsconfig.json^[[39m 1ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.7520444Z ^[[90mvitest.stryker.config.ts^[[39m 2ms (unchanged)
+prettier --write (same-repository PR)	Apply formatter	2026-08-12T12:33:24.7855200Z ^[[90mWAVE-PLAN.md^[[39m 32ms (unchanged)
+prettier --write (same-repository PR)	Commit formatting changes	﻿2026-08-12T12:33:24.8316198Z ##[group]Run if git diff --quiet; then
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8316582Z ^[[36;1mif git diff --quiet; then^[[0m
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8316878Z ^[[36;1m  echo "No formatting drift."^[[0m
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8317143Z ^[[36;1m  exit 0^[[0m
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8317350Z ^[[36;1mfi^[[0m
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8317594Z ^[[36;1mgit config user.name "github-actions[bot]"^[[0m
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8318053Z ^[[36;1mgit config user.email "41898282+github-actions[bot]@users.noreply.github.com"^[[0m
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8318469Z ^[[36;1mgit add -A^[[0m
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8319912Z ^[[36;1mgit commit -m "chore: apply prettier"^[[0m
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8320266Z ^[[36;1mgit push origin "HEAD:${TARGET_BRANCH}"^[[0m
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8360867Z shell: /usr/bin/bash -e {0}
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8361139Z env:
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8361363Z   TARGET_BRANCH: fix/E3-mutation-gate
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8361646Z ##[endgroup]
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8639836Z [fix/E3-mutation-gate b15d7a9] chore: apply prettier
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:24.8640429Z  1 file changed, 1 insertion(+), 4 deletions(-)
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:25.9263191Z To https://github.com/chahyasantoso/motion5
+prettier --write (same-repository PR)	Commit formatting changes	2026-08-12T12:33:25.9263744Z    380622f..b15d7a9  HEAD -> fix/E3-mutation-gate
+prettier --write (same-repository PR)	Post Run actions/setup-node@v4	﻿2026-08-12T12:33:25.9430118Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+prettier --write (same-repository PR)	Post Run actions/setup-node@v4	2026-08-12T12:33:25.9431308Z Post job cleanup.
+prettier --write (same-repository PR)	Post Run actions/setup-node@v4	2026-08-12T12:33:26.0646817Z (node:2294) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+prettier --write (same-repository PR)	Post Run actions/setup-node@v4	2026-08-12T12:33:26.0647699Z (Use `node --trace-deprecation ...` to show where the warning was created)
+prettier --write (same-repository PR)	Post Run actions/setup-node@v4	2026-08-12T12:33:26.0650158Z Cache hit occurred on the primary key node-cache-Linux-x64-npm-c2e5d555bc9e84f526536f7ce98adc37976096bfe7c2dc15d7b2e5553d204784, not saving cache.
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	﻿2026-08-12T12:33:26.0799943Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:33:26.0801200Z Post job cleanup.
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:33:26.1672980Z [command]/usr/bin/git version
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:33:26.1715184Z git version 2.54.0
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:33:26.1753715Z Temporarily overriding HOME='/home/runner/work/_temp/03577ae5-5be0-4b95-a36b-6384c93fee47' before making global git config changes
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:33:26.1755189Z Adding repository directory to the temporary git global config as a safe directory
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:33:26.1759748Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/motion5/motion5
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:33:26.1800764Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:33:26.1838311Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:33:26.2095405Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:33:26.2123475Z http.https://github.com/.extraheader
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:33:26.2140220Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:33:26.2178287Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:33:26.2443721Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:33:26.2483275Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+prettier --write (same-repository PR)	Complete job	﻿2026-08-12T12:33:26.2928202Z Cleaning up orphan processes
+prettier --write (same-repository PR)	Complete job	2026-08-12T12:33:26.3227883Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
