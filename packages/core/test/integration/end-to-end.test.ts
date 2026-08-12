@@ -2,7 +2,10 @@ import { gsap } from "gsap";
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
-import { createGsapInterpolator, type GsapTimelineLike } from "../../src/adapters/interpolator/gsap";
+import {
+  createGsapInterpolator,
+  type GsapTimelineLike,
+} from "../../src/adapters/interpolator/gsap";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeScheduler } from "../../src/ports/fakes";
