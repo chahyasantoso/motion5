@@ -74,6 +74,9 @@ describe("real end-to-end product path (E2)", () => {
     }).load(project);
 
     runtime.mount("hero/arm");
+    // Seed the mounted node first, matching the runtime's existing consumer path. The
+    // subsequent seek proves the progress update, not an accidental first-publication edge.
+    runtime.graph.flush(["hero/arm"], 1);
     const batch = runtime.seek("hero/arm", 0.5);
     const patch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
     expect(patch?.values.opacity).toBeCloseTo(0.5, 10);
