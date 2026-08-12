@@ -74,12 +74,11 @@ describe("real end-to-end product path (E2)", () => {
     }).load(project);
 
     runtime.mount("hero/arm");
-    // The first flush creates and publishes the Track's initial state. Seeking changes the
-    // adapter-owned GSAP timeline; a second explicit flush publishes that changed state.
     runtime.graph.flush(["hero/arm"], 1);
     runtime.seek("hero/arm", 0.5);
-    const batch = runtime.graph.flush(["hero/arm"], 3);
-    const patch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
+    // `seek` owns invalidation, matching the oracle's progress -> notify -> invalidate path.
+    // Read the canonical published state instead of assuming the final flush call owns it.
+    const patch = runtime.graph.registry.get("hero/arm");
     expect(patch?.values.opacity).toBeCloseTo(0.5, 10);
     expect(patch).toBeDefined();
 
