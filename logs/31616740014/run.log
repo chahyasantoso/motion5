@@ -1,0 +1,12 @@
+quality (node 24)	Format check	﻿2026-08-12T16:16:32.8350170Z ##[group]Run npm run format:check
+quality (node 24)	Format check	2026-08-12T16:16:32.8350558Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Format check	2026-08-12T16:16:32.8397818Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Format check	2026-08-12T16:16:32.8398131Z ##[endgroup]
+quality (node 24)	Format check	2026-08-12T16:16:32.9375389Z 
+quality (node 24)	Format check	2026-08-12T16:16:32.9376073Z > motion5@0.0.0 format:check
+quality (node 24)	Format check	2026-08-12T16:16:32.9376650Z > prettier . --check
+quality (node 24)	Format check	2026-08-12T16:16:32.9376926Z 
+quality (node 24)	Format check	2026-08-12T16:16:33.0361300Z Checking formatting...
+quality (node 24)	Format check	2026-08-12T16:16:34.4108440Z [^[[33mwarn^[[39m] packages/core/test/contract/gsap-absolute-stops.test.ts
+quality (node 24)	Format check	2026-08-12T16:16:34.9564459Z [^[[33mwarn^[[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+quality (node 24)	Format check	2026-08-12T16:16:35.0022804Z ##[error]Process completed with exit code 1.
