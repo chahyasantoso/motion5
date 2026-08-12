@@ -17,8 +17,28 @@ export function createBrowserClock(source: FrameSource): Clock & { dispose(): vo
     previous = time;
     tick += 1;
     const event = Object.freeze({ tick, time, delta });
-    for (const listener of [...listeners]) listener(event);
-    handle = source.requestFrame(frame);
+    let firstError: unknown;
+    let hasError = false;
+    try {
+      // Every listener gets its turn, and the next frame is requested in `finally` before any
+      // error leaves this callback. A listener's own bug used to end the loop for good: the
+      // reschedule sat after the dispatch, so one throw meant no further frame was ever
+      // requested and every animation on the page stopped. The same policy as
+      // PatchRegistry.closeBatch applies here, first error rethrown once state is settled.
+      for (const listener of [...listeners]) {
+        try {
+          listener(event);
+        } catch (error) {
+          if (!hasError) {
+            hasError = true;
+            firstError = error;
+          }
+        }
+      }
+    } finally {
+      if (!disposed) handle = source.requestFrame(frame);
+    }
+    if (hasError) throw firstError;
   };
   handle = source.requestFrame(frame);
   return {
