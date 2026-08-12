@@ -5,10 +5,7 @@
   "commandRunner": {
     "command": "npm test"
   },
-  "mutate": [
-    "packages/core/src/runtime/**/*.ts",
-    "packages/core/src/adapters/**/*.ts"
-  ],
+  "mutate": ["packages/core/src/runtime/**/*.ts", "packages/core/src/adapters/**/*.ts"],
   "reporters": ["clear-text", "progress", "json", "html"],
   "jsonReporter": {
     "fileName": "reports/mutation/mutation.json"
