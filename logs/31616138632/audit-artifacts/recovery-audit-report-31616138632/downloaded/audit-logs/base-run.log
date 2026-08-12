@@ -1,0 +1,38 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/motion5/motion5[39m
+
+ [31m❯[39m packages/core/test/contract/gsap-paused-timeline.test.ts [2m([22m[2m1 test[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 9[2mms[22m[39m
+[31m     [31m×[31m creates a paused timeline so the project clock is the only clock owner[39m[32m 7[2mms[22m[39m
+ [32m✓[39m packages/core/test/contract/adapters.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/contract/gsap-paused-timeline.test.ts[2m > [22mGSAP interpolator clock ownership (P0-2)[2m > [22mcreates a paused timeline so the project clock is the only clock owner
+[31m[1mAssertionError[22m: expected undefined to deeply equal { paused: true }[39m
+
+[32m- Expected:[39m
+{
+  "paused": true,
+}
+
+[31m+ Received:[39m
+undefined
+
+[36m [2m❯[22m packages/core/test/contract/gsap-paused-timeline.test.ts:[2m33:28[22m[39m
+    [90m 31|[39m     interpolator[33m.[39m[34mcreate[39m({ duration[33m:[39m [34m1[39m[33m,[39m keyframes[33m:[39m {} })[33m;[39m
+    [90m 32|[39m
+    [90m 33|[39m     [34mexpect[39m(receivedConfig)[33m.[39m[34mtoEqual[39m({ paused[33m:[39m [35mtrue[39m })[33m;[39m
+    [90m   |[39m                            [31m^[39m
+    [90m 34|[39m   })[33m;[39m
+    [90m 35|[39m })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m1 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (5)[39m
+[2m   Start at [22m 16:09:23
+[2m   Duration [22m 210ms[2m (transform 62ms, setup 0ms, import 97ms, tests 15ms, environment 0ms)[22m
+
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/contract/gsap-paused-timeline.test.ts,title=packages/core/test/contract/gsap-paused-timeline.test.ts > GSAP interpolator clock ownership (P0-2) > creates a paused timeline so the project clock is the only clock owner,line=33,column=28::AssertionError: expected undefined to deeply equal { paused: true }%0A%0A- Expected:%0A{%0A  "paused": true,%0A}%0A%0A+ Received:%0Aundefined%0A%0A ❯ packages/core/test/contract/gsap-paused-timeline.test.ts:33:28%0A%0A
