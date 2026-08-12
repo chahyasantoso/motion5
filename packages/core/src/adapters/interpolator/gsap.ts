@@ -4,7 +4,11 @@ export interface GsapTimelineLike {
   readonly duration: () => number;
   progress(): number;
   progress(value: number): GsapTimelineLike;
-  to(target: Record<string, unknown>, vars: Record<string, unknown>): GsapTimelineLike;
+  to(
+    target: Record<string, unknown>,
+    vars: Record<string, unknown>,
+    position?: number,
+  ): GsapTimelineLike;
   kill(): void;
 }
 
@@ -19,7 +23,9 @@ interface AuthoredStop {
 }
 
 interface CompiledSegment {
-  readonly values: Record<string, unknown>;
+  readonly key: string;
+  readonly value: unknown;
+  readonly start: number;
   readonly duration: number;
   readonly ease?: unknown;
 }
@@ -56,9 +62,7 @@ function compileKeyframes(config: unknown): {
     return { initial: {}, segments: [] };
 
   const initial: Record<string, unknown> = {};
-  const segmentValues: Record<string, unknown>[] = [];
-  const segmentDurations: number[] = [];
-  const segmentEases: unknown[] = [];
+  const segments: CompiledSegment[] = [];
   for (const [key, property] of Object.entries(keyframes)) {
     const stops = readStops(property);
     const first = stops[0];
@@ -68,21 +72,16 @@ function compileKeyframes(config: unknown): {
       const previous = stops[index - 1];
       const stop = stops[index];
       if (previous === undefined || stop === undefined) continue;
-      const segment = segmentValues[index - 1] ?? {};
-      segment[key] = stop.v;
-      segmentValues[index - 1] = segment;
-      segmentDurations[index - 1] = Math.max(0, stop.p - previous.p);
-      if (stop.ease !== undefined) segmentEases[index - 1] = stop.ease;
+      segments.push({
+        key,
+        value: stop.v,
+        start: previous.p,
+        duration: Math.max(0, stop.p - previous.p),
+        ...(stop.ease === undefined ? {} : { ease: stop.ease }),
+      });
     }
   }
-  return {
-    initial,
-    segments: segmentValues.map((values, index) => ({
-      values,
-      duration: segmentDurations[index] ?? 0,
-      ease: segmentEases[index] ?? "none",
-    })),
-  };
+  return { initial, segments };
 }
 
 export function createGsapInterpolator(gsap: GsapLike): Interpolator {
@@ -94,11 +93,15 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
       Object.assign(proxy, compiled.initial);
       const duration = readDuration(config);
       for (const segment of compiled.segments) {
-        timeline.to(proxy, {
-          ...segment.values,
-          duration: segment.duration * duration,
-          ease: segment.ease,
-        });
+        timeline.to(
+          proxy,
+          {
+            [segment.key]: segment.value,
+            duration: segment.duration * duration,
+            ease: segment.ease ?? "none",
+          },
+          segment.start * duration,
+        );
       }
       function progress(): number;
       function progress(value: number): void;
