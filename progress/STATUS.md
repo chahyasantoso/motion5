@@ -22,18 +22,22 @@ Last reviewed: 2026-08-12
 | D3  | Acceptance evidence gates                       | Done            |
 | E1  | Required declaration build                      | Done            |
 | E2  | Real end-to-end product path                    | Done            |
-| E3  | Mutation baseline and ratchet                   | In progress     |
+| E3  | Mutation baseline and ratchet                   | Ready to merge  |
 
 ## Current next action
 
-E3 is active on `fix/E3-mutation-gate`. Run Bootstrap lockfile for that branch first, then focused CI, then Recovery audit with base `4b4abdd1` and no failing-first exception.
+Merge E3 PR #64 into `rescue/restore-motionpath-parity`. Its measured baseline is 333 Killed, 152 Survived, 25 NoCoverage, and 2 Timeout across 512 mutants, for a **68.31% mutation score** using `Killed / (Killed + Survived + Timeout)`. The ratchet is set to 68.31 in `stryker.config.json`.
 
-## Evidence
+Wave A's shared exit gate closes after E3 merges and the rescue branch reruns its full required checks.
+
+## Recent evidence
 
 - E2 merged via clean replay PR [#63](https://github.com/chahyasantoso/motion5/pull/63), merge commit [`4b4abdd1`](https://github.com/chahyasantoso/motion5/commit/4b4abdd1c3ddcb57bc1ce6c2444a54ce65bf38de).
 - E2 audit: [run #31594467503](https://github.com/chahyasantoso/motion5/actions/runs/31594467503), contract, acceptance, failing-first, and build green; mutation assigned to E3.
+- E3 CI: [run #31602675963](https://github.com/chahyasantoso/motion5/actions/runs/31602675963), quality, integration, boundaries, and performance passed.
+- E3 audit: [run #31602953122](https://github.com/chahyasantoso/motion5/actions/runs/31602953122), all five jobs passed; raw mutation artifact attached in the audit archive.
 
 ## Remaining work
 
-- E3: bootstrap the lockfile, establish the mutation baseline, and set the ratchet from measured evidence.
-- Wave A shared exit gate.
+- E3: merge PR #64.
+- Wave A shared exit gate, then rerun rescue checks and open the final rescue-to-main PR.

@@ -7,7 +7,10 @@
     "configFile": "vitest.stryker.config.ts",
     "related": true
   },
-  "mutate": ["packages/core/src/runtime/**/*.ts", "packages/core/src/adapters/**/*.ts"],
+  "mutate": [
+    "packages/core/src/runtime/**/*.ts",
+    "packages/core/src/adapters/**/*.ts"
+  ],
   "reporters": ["clear-text", "progress", "json", "html"],
   "jsonReporter": {
     "fileName": "reports/mutation/mutation.json"
@@ -17,8 +20,8 @@
   },
   "coverageAnalysis": "perTest",
   "thresholds": {
-    "high": 0,
-    "low": 0,
-    "break": 0
+    "high": 68.31,
+    "low": 68.31,
+    "break": 68.31
   }
 }
