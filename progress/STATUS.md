@@ -6,76 +6,37 @@ Last reviewed: 2026-08-12
 
 ## Board
 
-| ID  | Slice                                           | Status                       |
-| --- | ----------------------------------------------- | ---------------------------- |
-| W0  | Rescue loop and audit baseline                  | Done                         |
-| A1  | Final-value memo consistency                    | Done, gate open              |
-| A2  | Preserve subscriber errors                      | Done, gate open              |
-| A3  | Guard subscriber-triggered reentrancy           | Done, gate open              |
-| B1  | Prepare-stage plugin contribution               | Done                         |
-| B2  | Real GSAP multi-stop compilation                | Done                         |
-| C1  | React store resubscription                      | Done                         |
-| C2  | React hook and public exports                   | Done, gate open              |
-| C3  | DOM metadata, serialization, and clear coverage | Done                         |
-| D1  | Discover consumer packages                      | Done                         |
-| D2  | Planted boundary self-test                      | Done                         |
-| D3  | Acceptance evidence gates                       | In progress, rebase required |
-| E1  | Required declaration build                      | Not started                  |
-| E2  | Real end-to-end product path                    | Not started                  |
-| E3  | Mutation baseline and ratchet                   | Not started                  |
+| ID | Slice | Status |
+| --- | --- | --- |
+| W0 | Rescue loop and audit baseline | Done |
+| A1 | Final-value memo consistency | Done, gate open |
+| A2 | Preserve subscriber errors | Done, gate open |
+| A3 | Guard subscriber-triggered reentrancy | Done, gate open |
+| B1 | Prepare-stage plugin contribution | Done |
+| B2 | Real GSAP multi-stop compilation | Done |
+| C1 | React store resubscription | Done |
+| C2 | React hook and public exports | Done, gate open |
+| C3 | DOM metadata, serialization, and clear coverage | Done |
+| D1 | Discover consumer packages | Done |
+| D2 | Planted boundary self-test | Done |
+| D3 | Acceptance evidence gates | Done |
+| E1 | Required declaration build | Done |
+| E2 | Real end-to-end product path | In progress |
+| E3 | Mutation baseline and ratchet | Not started |
 
 ## Current next action
 
-D2 is merged into rescue as [`64178c0d`](https://github.com/chahyasantoso/motion5/commit/64178c0d0c751ca12f277f93c0ac7ed198722d05). Its failing-first audit [run #31548349508](https://github.com/chahyasantoso/motion5/actions/runs/31548349508) passed with no exception. The overall audit stayed red only on shared missing-evidence gates, so do not rerun it.
+E2 is active on [PR #62](https://github.com/chahyasantoso/motion5/pull/62). It starts from merged E1 rescue tip [`fb38313e`](https://github.com/chahyasantoso/motion5/commit/fb38313e76c411dee6ce25b8fee5c3aa307fe068), adds the real GSAP-to-patch-to-DOM fixture, and registers it in the acceptance map. Run focused CI first, then Recovery audit with base `fb38313e76c411dee6ce25b8fee5c3aa307fe068` and no exception.
 
-D3 is next on [PR #58](https://github.com/chahyasantoso/motion5/pull/58), but GitHub could not automatically update its branch after D2 because the old D3 head conflicts with the new rescue tip. Resolve the conflict by rebasing `fix/D3-evidence-gates` onto `rescue/restore-motionpath-parity`, keep the D3 acceptance scanner/map and the merged D2 boundary self-test, then rerun focused CI before the D3 audit.
+## Recent evidence
 
-## Evidence by slice
+- D2 audit: [run #31548349508](https://github.com/chahyasantoso/motion5/actions/runs/31548349508), failing-first passed.
+- D3 merge: [`83eb44d2`](https://github.com/chahyasantoso/motion5/commit/83eb44d2da7e118e284d96c890f82cd90c84f960); audit [run #31570343311](https://github.com/chahyasantoso/motion5/actions/runs/31570343311), acceptance and failing-first passed.
+- E1 merge: [`fb38313e`](https://github.com/chahyasantoso/motion5/commit/fb38313e76c411dee6ce25b8fee5c3aa307fe068); audit [run #31571222958](https://github.com/chahyasantoso/motion5/actions/runs/31571222958), declaration build, acceptance, and documented failing-first exception passed. Contract remains open until E2; mutation remains E3.
+- E2 branch head: [`d1083904`](https://github.com/chahyasantoso/motion5/commit/d1083904c42d66c8810496ab522cd142f086c072).
 
-### W0
+## Remaining work
 
-- Workflow: [`0db6147`](https://github.com/chahyasantoso/motion5/commit/0db6147083dde1cd5808f6fcf22b69c0fd1060fa)
-- Baseline audit: [run #31481132895](https://github.com/chahyasantoso/motion5/actions/runs/31481132895)
-- Rescue audit: [run #31481291665](https://github.com/chahyasantoso/motion5/actions/runs/31481291665)
-
-### Wave A
-
-- A1/A2 implementation: [`1d59c087`](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a)
-- A3 merge: [`bec08ded`](https://github.com/chahyasantoso/motion5/commit/bec08ded24da9b5febdca19be81be6edd84cea53)
-- A3 green CI: [run #31471235572](https://github.com/chahyasantoso/motion5/actions/runs/31471235572)
-- Wave A exit gate remains open.
-
-### Wave B
-
-- B1 merge: [`74f885ca`](https://github.com/chahyasantoso/motion5/commit/74f885ca08f957bea1d552182fcdf33a2b62e70f)
-- B1 failing-first audit: [run #31483412238](https://github.com/chahyasantoso/motion5/actions/runs/31483412238)
-- B2 merge: [`a69836a9`](https://github.com/chahyasantoso/motion5/commit/a69836a9ce823e7583699b46d7460e14301c5133)
-- B2 failing-first audit: [run #31486238764](https://github.com/chahyasantoso/motion5/actions/runs/31486238764)
-
-### Wave C
-
-- C1 merge: [`25cff099`](https://github.com/chahyasantoso/motion5/commit/25cff099a1b2f9a73e990651f73926f7d8b0c3fa)
-- C1 failing-first audit: [run #31495880105](https://github.com/chahyasantoso/motion5/actions/runs/31495880105)
-- C2 merge: [`5707bc7b`](https://github.com/chahyasantoso/motion5/commit/5707bc7be98ba5fa3e72f1c6c9f9980510714f36)
-- C2 audit: [run #31507507062](https://github.com/chahyasantoso/motion5/actions/runs/31507507062)
-- C3 merge: [`c1aeb6ce`](https://github.com/chahyasantoso/motion5/commit/c1aeb6ce77ba312fc4dbb952204889af56f09d8d)
-- C3 audit: [run #31508945158](https://github.com/chahyasantoso/motion5/actions/runs/31508945158)
-
-### Wave D
-
-- D1 merge: [`24096724`](https://github.com/chahyasantoso/motion5/commit/2409672471cf673594c9970864dc8ff9a93184cd)
-- D1 failing-first audit: [run #31511223275](https://github.com/chahyasantoso/motion5/actions/runs/31511223275)
-- D2 merge: [`64178c0d`](https://github.com/chahyasantoso/motion5/commit/64178c0d0c751ca12f277f93c0ac7ed198722d05)
-- D2 branch head: [`aecc6fed`](https://github.com/chahyasantoso/motion5/commit/aecc6fed2c1d38f9d459f0a20eaef8a0fe70d967)
-- D2 audit: [run #31548349508](https://github.com/chahyasantoso/motion5/actions/runs/31548349508)
-- D2 base: [`24096724`](https://github.com/chahyasantoso/motion5/commit/2409672471cf673594c9970864dc8ff9a93184cd)
-- D2 failing-first: pass, base red and audited ref green, no exception.
-- D2 overall red gates: contract surfaces, acceptance mapping, declaration build, and mutation baseline. These remain owned by later slices.
-
-### Remaining work
-
-- D3: rebase [PR #58](https://github.com/chahyasantoso/motion5/pull/58), rerun focused CI, then run its Recovery audit.
-- E1: required declaration build.
-- E2: real end-to-end fixture.
-- E3: mutation baseline and ratchet.
+- E2: merge the real end-to-end fixture after focused CI and audit pass.
+- E3: establish and ratchet the mutation baseline.
 - Wave A shared exit gate.
