@@ -1,27 +1,79 @@
 # Motion5 recovery status
 
-This is the **single source of truth** for recovery progress. Update this file after every slice branch or PR changes state. `WAVE-PLAN.md` contains the detailed plan and acceptance guidance, but its prose is not authoritative for status.
+This is the single source of truth for recovery progress. `WAVE-PLAN.md` contains the detailed plan; this file records live status and evidence.
 
-Last reviewed: 2026-08-11
+Last reviewed: 2026-08-12
 
-| ID  | Slice                                           | Status                   | Branch                               | Related files                                                                                                                                                                                                                                                                   | Commit or evidence                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| --- | ----------------------------------------------- | ------------------------ | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| W0  | Rescue loop and audit baseline                  | Done                     | `rescue/restore-motionpath-parity`   | [WAVE-PLAN](../WAVE-PLAN.md), [audit workflow](../.github/workflows/recovery-audit.yml), [baseline record](W0-baseline.md)                                                                                                                                                      | Five-job workflow is live in [`0db6147`](https://github.com/chahyasantoso/motion5/commit/0db6147083dde1cd5808f6fcf22b69c0fd1060fa). Baseline [audit run #5](https://github.com/chahyasantoso/motion5/actions/runs/31481132895) and rescue [audit run #6](https://github.com/chahyasantoso/motion5/actions/runs/31481291665) both produced six artifacts; red missing-gate jobs are expected baseline measurements, not silent green claims |
-| A1  | Final-value memo consistency                    | Green, pending wave gate | `fix/A1-final-value-memo`            | [publisher](../packages/core/src/runtime/graph-publisher.ts), [test](../packages/core/test/integration/publisher-output-merge-consistency.test.ts)                                                                                                                              | [`1d59c087`](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a); re-proved on rescue by the A3 green [CI](https://github.com/chahyasantoso/motion5/actions/runs/31471235572)                                                                                                                                                                                                                        |
-| A2  | Preserve subscriber errors                      | Green, pending wave gate | `fix/A2-subscriber-errors`           | [registry](../packages/core/src/runtime/patch-registry.ts), [test](../packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts)                                                                                                                                 | [`1d59c087`](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a); re-proved on rescue by the A3 green [CI](https://github.com/chahyasantoso/motion5/actions/runs/31471235572)                                                                                                                                                                                                                        |
-| A3  | Guard subscriber-triggered reentrancy           | Green, pending wave gate | `fix/A3-publisher-reentrancy`        | [registry](../packages/core/src/runtime/patch-registry.ts), [publisher](../packages/core/src/runtime/graph-publisher.ts), [runtime](../packages/core/src/runtime/graph-runtime.ts), [test](../packages/core/test/unit/runtime/publisher-reentrancy.test.ts), [slice log](A3.md) | Merged into rescue as [`bec08ded`](https://github.com/chahyasantoso/motion5/commit/bec08ded24da9b5febdca19be81be6edd84cea53); green [CI](https://github.com/chahyasantoso/motion5/actions/runs/31471235572), red [CI](https://github.com/chahyasantoso/motion5/actions/runs/31471934722). Wave A gate remains open                                                                                                                         |
-| B1  | Prepare-stage plugin contribution               | Done                     | `fix/B1-track-contribution`          | [track](../packages/core/src/domain/track.ts), [plugins](../packages/core/src/domain/plugins.ts), [test](../packages/core/test/unit/domain/track-contribution.test.ts), [slice log](B1.md)                                                                                      | Merged into rescue as [`74f885ca`](https://github.com/chahyasantoso/motion5/commit/74f885ca08f957bea1d552182fcdf33a2b62e70f); green slice [CI](https://github.com/chahyasantoso/motion5/actions/runs/31472986155); failing-first audit [#31483412238](https://github.com/chahyasantoso/motion5/actions/runs/31483412238) passed                                                                                                            |
-| B2  | Real GSAP multi-stop compilation                | Done                     | `fix/B2-gsap-stop-compilation-clean` | [GSAP adapter](../packages/core/src/adapters/interpolator/gsap.ts), [multi-stop test](../packages/core/test/contract/gsap-multi-stop.test.ts), [slice log](B2.md)                                                                                                               | Merged into rescue as [`a69836a9`](https://github.com/chahyasantoso/motion5/commit/a69836a9ce823e7583699b46d7460e14301c5133) from [PR #51](https://github.com/chahyasantoso/motion5/pull/51); green slice [CI](https://github.com/chahyasantoso/motion5/actions/runs/31485624082); failing-first audit [#31486238764](https://github.com/chahyasantoso/motion5/actions/runs/31486238764) passed                                            |
-| C1  | React store resubscription                      | Done                     | `fix/C1-react-store-lifecycle`       | [store](../packages/react/src/patch-store.ts), [lifecycle test](../packages/react/test/patch-store-lifecycle.test.ts), [slice log](C1.md)                                                                                                                                       | Merged into rescue as [`25cff099`](https://github.com/chahyasantoso/motion5/commit/25cff099a1b2f9a73e990651f73926f7d8b0c3fa) from [PR #52](https://github.com/chahyasantoso/motion5/pull/52); slice CI green; failing-first [audit run #13](https://github.com/chahyasantoso/motion5/actions/runs/31495880105) proved base `a69836a9` red and C1 `62eb3334` green                                                                          |
-| C2  | React hook and public exports                   | Done, pending wave gate  | `fix/C2-react-public-surface`        | [React entry](../packages/react/src/index.ts), [public import test](../packages/react/test/public-package-surface.test.ts), [slice log](C2.md)                                                                                                                                  | Merged into rescue as [`5707bc7b`](https://github.com/chahyasantoso/motion5/commit/5707bc7be98ba5fa3e72f1c6c9f9980510714f36); recovery audit [#31507507062](https://github.com/chahyasantoso/motion5/actions/runs/31507507062) proved failing-first red/green and GSAP, DOM, React lifecycle, and boundaries green; shared acceptance, mutation, end-to-end, and declaration gates remain open                                             |
-| C3  | DOM metadata, serialization, and clear coverage | In progress              | `fix/C3-dom-contract`                | [DOM adapter](../packages/core/src/adapters/dom.ts), [test](../packages/core/test/integration/dom-patch-apply.test.ts), [slice log](C3.md)                                                                                                                                      | PR [#55](https://github.com/chahyasantoso/motion5/pull/55); focused evidence pending. Serializer metadata is explicitly deferred because the current plugin contract has no serializer field                                                                                                                                                                                                                                               |
-| D1  | Discover consumer packages                      | Not started              | `fix/D1-boundary-discovery`          | [scanner](../scripts/boundary-scan.mjs)                                                                                                                                                                                                                                         | No evidence yet                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| D2  | Planted boundary self-test                      | Not started              | `fix/D2-boundary-self-test`          | [test](../packages/core/test/unit/scripts/boundary-scan.test.ts), [fixtures](../scripts/boundary-scan-fixtures.mjs)                                                                                                                                                             | No evidence yet                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| D3  | Acceptance evidence gates                       | Not started              | `fix/D3-evidence-gates`              | Planned acceptance checker and map                                                                                                                                                                                                                                              | No evidence yet; failing-first moved into W0 audit workflow                                                                                                                                                                                                                                                                                                                                                                                |
-| E1  | Required declaration build                      | Not started              | `fix/E1-required-build`              | [CI](../.github/workflows/ci.yml), package exports                                                                                                                                                                                                                              | No evidence yet                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| E2  | Real end-to-end product path                    | Not started              | `fix/E2-end-to-end-proof`            | Planned integration fixture                                                                                                                                                                                                                                                     | No evidence yet                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| E3  | Mutation baseline and ratchet                   | Not started              | `fix/E3-mutation-gate`               | Planned Stryker config and audit artifact                                                                                                                                                                                                                                       | No baseline yet; audit correctly fails until the config exists                                                                                                                                                                                                                                                                                                                                                                             |
+## Board
+
+| ID  | Slice                                           | Status                 |
+| --- | ----------------------------------------------- | ---------------------- |
+| W0  | Rescue loop and audit baseline                  | Done                   |
+| A1  | Final-value memo consistency                    | Done, gate open        |
+| A2  | Preserve subscriber errors                      | Done, gate open        |
+| A3  | Guard subscriber-triggered reentrancy           | Done, gate open        |
+| B1  | Prepare-stage plugin contribution               | Done                   |
+| B2  | Real GSAP multi-stop compilation                | Done                   |
+| C1  | React store resubscription                      | Done                   |
+| C2  | React hook and public exports                   | Done, gate open        |
+| C3  | DOM metadata, serialization, and clear coverage | Done                   |
+| D1  | Discover consumer packages                      | Done                   |
+| D2  | Planted boundary self-test                      | Ready to merge         |
+| D3  | Acceptance evidence gates                       | Parked until D2 merges |
+| E1  | Required declaration build                      | Not started            |
+| E2  | Real end-to-end product path                    | Not started            |
+| E3  | Mutation baseline and ratchet                   | Not started            |
 
 ## Current next action
 
-C3 is now active. Let its focused CI and Recovery audit prove the new DOM integration contract, then merge it into rescue. Keep serializer metadata and plugin-owned internal-key behavior in the deferred follow-up review rather than inventing a partial plugin API here.
+Merge [PR #57](https://github.com/chahyasantoso/motion5/pull/57) into `rescue/restore-motionpath-parity`. Do not rerun the D2 audit: [run #31548349508](https://github.com/chahyasantoso/motion5/actions/runs/31548349508) passed the D2 failing-first gate with no exception. Its overall red result is expected because the shared contract, acceptance, declaration, and mutation gates are still missing evidence and belong to later slices. Then rebase and continue [PR #58](https://github.com/chahyasantoso/motion5/pull/58) for D3.
+
+## Evidence by slice
+
+### W0
+
+- Workflow: [`0db6147`](https://github.com/chahyasantoso/motion5/commit/0db6147083dde1cd5808f6fcf22b69c0fd1060fa)
+- Baseline audit: [run #31481132895](https://github.com/chahyasantoso/motion5/actions/runs/31481132895)
+- Rescue audit: [run #31481291665](https://github.com/chahyasantoso/motion5/actions/runs/31481291665)
+
+### Wave A
+
+- A1/A2 implementation: [`1d59c087`](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a)
+- A3 merge: [`bec08ded`](https://github.com/chahyasantoso/motion5/commit/bec08ded24da9b5febdca19be81be6edd84cea53)
+- A3 green CI: [run #31471235572](https://github.com/chahyasantoso/motion5/actions/runs/31471235572)
+- Wave A exit gate remains open.
+
+### Wave B
+
+- B1 merge: [`74f885ca`](https://github.com/chahyasantoso/motion5/commit/74f885ca08f957bea1d552182fcdf33a2b62e70f)
+- B1 failing-first audit: [run #31483412238](https://github.com/chahyasantoso/motion5/actions/runs/31483412238)
+- B2 merge: [`a69836a9`](https://github.com/chahyasantoso/motion5/commit/a69836a9ce823e7583699b46d7460e14301c5133)
+- B2 failing-first audit: [run #31486238764](https://github.com/chahyasantoso/motion5/actions/runs/31486238764)
+
+### Wave C
+
+- C1 merge: [`25cff099`](https://github.com/chahyasantoso/motion5/commit/25cff099a1b2f9a73e990651f73926f7d8b0c3fa)
+- C1 failing-first audit: [run #31495880105](https://github.com/chahyasantoso/motion5/actions/runs/31495880105)
+- C2 merge: [`5707bc7b`](https://github.com/chahyasantoso/motion5/commit/5707bc7be98ba5fa3e72f1c6c9f9980510714f36)
+- C2 audit: [run #31507507062](https://github.com/chahyasantoso/motion5/actions/runs/31507507062)
+- C3 merge: [`c1aeb6ce`](https://github.com/chahyasantoso/motion5/commit/c1aeb6ce77ba312fc4dbb952204889af56f09d8d)
+- C3 audit: [run #31508945158](https://github.com/chahyasantoso/motion5/actions/runs/31508945158)
+
+### Wave D
+
+- D1 merge: [`24096724`](https://github.com/chahyasantoso/motion5/commit/2409672471cf673594c9970864dc8ff9a93184cd)
+- D1 failing-first audit: [run #31511223275](https://github.com/chahyasantoso/motion5/actions/runs/31511223275)
+- D2 branch: [`aecc6fed`](https://github.com/chahyasantoso/motion5/commit/aecc6fed2c1d38f9d459f0a20eaef8a0fe70d967)
+- D2 PR: [#57](https://github.com/chahyasantoso/motion5/pull/57)
+- D2 audit: [run #31548349508](https://github.com/chahyasantoso/motion5/actions/runs/31548349508)
+- D2 base: [`24096724`](https://github.com/chahyasantoso/motion5/commit/2409672471cf673594c9970864dc8ff9a93184cd)
+- D2 failing-first: **pass**, base red and audited ref green, no exception.
+- D2 audit shared-gate failures: contract surfaces, acceptance mapping, declaration build, and mutation baseline. These are expected missing-evidence gates, not D2 regressions.
+
+### Remaining work
+
+- D3: acceptance mapping and durable evidence, after D2 merges. [PR #58](https://github.com/chahyasantoso/motion5/pull/58)
+- E1: required declaration build.
+- E2: real end-to-end fixture.
+- E3: mutation baseline and ratchet.
+- Wave A shared exit gate.
