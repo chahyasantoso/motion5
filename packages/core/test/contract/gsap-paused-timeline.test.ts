@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { createGsapInterpolator, type GsapTimelineLike } from "../../src/adapters/interpolator/gsap";
+import {
+  createGsapInterpolator,
+  type GsapTimelineLike,
+} from "../../src/adapters/interpolator/gsap";
 
 describe("GSAP interpolator clock ownership (P0-2)", () => {
   it("creates a paused timeline so the project clock is the only clock owner", () => {
