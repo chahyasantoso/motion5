@@ -1,0 +1,143 @@
+quality (node 24)	Unit tests	﻿2026-08-12T07:09:14.7489922Z ##[group]Run npm test
+quality (node 24)	Unit tests	2026-08-12T07:09:14.7490222Z ^[[36;1mnpm test^[[0m
+quality (node 24)	Unit tests	2026-08-12T07:09:14.7536689Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Unit tests	2026-08-12T07:09:14.7536969Z ##[endgroup]
+quality (node 24)	Unit tests	2026-08-12T07:09:14.8726776Z 
+quality (node 24)	Unit tests	2026-08-12T07:09:14.8727508Z > motion5@0.0.0 test
+quality (node 24)	Unit tests	2026-08-12T07:09:14.8728080Z > vitest run
+quality (node 24)	Unit tests	2026-08-12T07:09:14.8728402Z 
+quality (node 24)	Unit tests	2026-08-12T07:09:15.2365490Z 
+quality (node 24)	Unit tests	2026-08-12T07:09:15.2367735Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:15.2368452Z 
+quality (node 24)	Unit tests	2026-08-12T07:09:15.5888888Z  ^[[32m✓^[[39m packages/core/test/contract/v5-validator.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:15.6177476Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-state.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:15.6502873Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-reentrancy.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:15.8357423Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugins.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:15.8788775Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/boundary-scan.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 51^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:15.8791167Z  ^[[32m✓^[[39m packages/core/test/unit/graph/order.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:16.0692994Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ir-validation.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:16.0935756Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:16.1234486Z  ^[[32m✓^[[39m packages/core/test/contract/adapters.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:16.2946179Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:16.3059757Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:16.3400815Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:16.5061744Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:16.5136977Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:16.5635661Z  ^[[32m✓^[[39m packages/core/test/migration/v4-to-v5.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:16.7331789Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:16.8266777Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:16.9377401Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:16.9787607Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:16.9789683Z ^[[31m     ^[[31m×^[[31m writes authored GSAP output through a patch into the DOM adapter^[[39m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:17.0664625Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:17.1820336Z  ^[[32m✓^[[39m packages/react/test/patch-store-lifecycle.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:17.1905540Z ^[[90mstderr^[[2m | packages/react/test/public-package-surface.test.ts^[[2m > ^[[22m^[[2mReact public package surface (C2)^[[2m > ^[[22m^[[2mrenders and updates through the package entry alone
+quality (node 24)	Unit tests	2026-08-12T07:09:17.1908128Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Unit tests	2026-08-12T07:09:17.1908852Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-12T07:09:17.1909468Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-12T07:09:17.1910233Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-12T07:09:17.1910512Z 
+quality (node 24)	Unit tests	2026-08-12T07:09:17.1930959Z  ^[[32m✓^[[39m packages/react/test/public-package-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:17.2807103Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:17.4050839Z  ^[[32m✓^[[39m packages/core/test/contract/ports.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:17.4197475Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:17.4707252Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:17.6316870Z  ^[[32m✓^[[39m packages/core/test/unit/domain/lifecycle.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:17.6322176Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:17.6847822Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:17.8085865Z  ^[[32m✓^[[39m packages/core/test/unit/domain/values.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:17.8589054Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/acceptance-scan.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:17.9424563Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.0252542Z  ^[[32m✓^[[39m packages/core/test/unit/domain/triggers.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.0826648Z  ^[[32m✓^[[39m packages/react/test/patch-store.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.1837492Z ^[[90mstderr^[[2m | packages/react/test/public-hook-render.test.ts^[[2m > ^[[22m^[[2mReact public hook render/update (C2)^[[2m > ^[[22m^[[2mrenders the current patch and updates after publication
+quality (node 24)	Unit tests	2026-08-12T07:09:18.1853292Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Unit tests	2026-08-12T07:09:18.1855136Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-12T07:09:18.1856729Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-12T07:09:18.1859486Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-12T07:09:18.1860321Z 
+quality (node 24)	Unit tests	2026-08-12T07:09:18.1876131Z  ^[[32m✓^[[39m packages/react/test/public-hook-render.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.2407173Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.2714391Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track-contribution.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4177966Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4395823Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4586894Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4650520Z 
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4651255Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4651610Z 
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4655117Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m > ^[[22mreal end-to-end product path (E2)^[[2m > ^[[22mwrites authored GSAP output through a patch into the DOM adapter
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4661162Z ^[[31m^[[1mAssertionError^[[22m: expected undefined to be close to 0.5, received difference is NaN, but expected 5e-11^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4662958Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/end-to-end.test.ts:^[[2m83:35^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4695375Z     ^[[90m 81|^[[39m     ^[[35mconst^[[39m patch ^[[33m=^[[39m runtime^[[33m.^[[39mgraph^[[33m.^[[39mregistry^[[33m.^[[39m^[[35mget^[[39m(^[[32m"hero/arm"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4697052Z     ^[[90m 82|^[[39m     ^[[34mexpect^[[39m(patch)^[[33m.^[[39m^[[34mtoBeDefined^[[39m()^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4699066Z     ^[[90m 83|^[[39m     ^[[34mexpect^[[39m(patch^[[33m?.^[[39mvalues^[[33m.^[[39mopacity)^[[33m.^[[39m^[[34mtoBeCloseTo^[[39m(^[[34m0.5^[[39m^[[33m,^[[39m ^[[34m10^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4700509Z     ^[[90m   |^[[39m                                   ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4701131Z     ^[[90m 84|^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4701890Z     ^[[90m 85|^[[39m     dom^[[33m.^[[39m^[[34mapply^[[39m(patch^[[33m!^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4702441Z 
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4702941Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4703318Z 
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4703373Z 
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4708734Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m39 passed^[[39m^[[22m^[[90m (40)^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4710667Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m152 passed^[[39m^[[22m^[[90m (153)^[[39m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4712797Z ^[[2m   Start at ^[[22m 07:09:15
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4716345Z ^[[2m   Duration ^[[22m 3.21s^[[2m (transform 960ms, setup 0ms, import 2.07s, tests 471ms, environment 6ms)^[[22m
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4717520Z 
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4732578Z 
+quality (node 24)	Unit tests	2026-08-12T07:09:18.4756360Z ##[error]AssertionError: expected undefined to be close to 0.5, received difference is NaN, but expected 5e-11
+quality (node 24)	Unit tests	 ❯ packages/core/test/integration/end-to-end.test.ts:83:35
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-12T07:09:18.5186625Z ##[error]Process completed with exit code 1.
+integration (node 24)	Integration tests	﻿2026-08-12T07:09:07.3454044Z ##[group]Run npm run test:integration
+integration (node 24)	Integration tests	2026-08-12T07:09:07.3454512Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Integration tests	2026-08-12T07:09:07.3507492Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Integration tests	2026-08-12T07:09:07.3507785Z ##[endgroup]
+integration (node 24)	Integration tests	2026-08-12T07:09:07.4604098Z 
+integration (node 24)	Integration tests	2026-08-12T07:09:07.4604921Z > motion5@0.0.0 test:integration
+integration (node 24)	Integration tests	2026-08-12T07:09:07.4605731Z > vitest run packages/core/test/integration
+integration (node 24)	Integration tests	2026-08-12T07:09:07.4606153Z 
+integration (node 24)	Integration tests	2026-08-12T07:09:07.9128473Z 
+integration (node 24)	Integration tests	2026-08-12T07:09:07.9132875Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:07.9133936Z 
+integration (node 24)	Integration tests	2026-08-12T07:09:08.2337522Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:08.2446129Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:08.2658640Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:08.4255757Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:08.5336559Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:08.6799217Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:08.7141585Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:08.7144502Z ^[[31m     ^[[31m×^[[31m writes authored GSAP output through a patch into the DOM adapter^[[39m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:08.7878695Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:08.8949019Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:08.9245031Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.0550676Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1045918Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1119925Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1145486Z 
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1146427Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1146973Z 
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1151288Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m > ^[[22mreal end-to-end product path (E2)^[[2m > ^[[22mwrites authored GSAP output through a patch into the DOM adapter
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1159354Z ^[[31m^[[1mAssertionError^[[22m: expected undefined to be close to 0.5, received difference is NaN, but expected 5e-11^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1161077Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/end-to-end.test.ts:^[[2m83:35^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1192681Z     ^[[90m 81|^[[39m     ^[[35mconst^[[39m patch ^[[33m=^[[39m runtime^[[33m.^[[39mgraph^[[33m.^[[39mregistry^[[33m.^[[39m^[[35mget^[[39m(^[[32m"hero/arm"^[[39m)^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1194651Z     ^[[90m 82|^[[39m     ^[[34mexpect^[[39m(patch)^[[33m.^[[39m^[[34mtoBeDefined^[[39m()^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1196433Z     ^[[90m 83|^[[39m     ^[[34mexpect^[[39m(patch^[[33m?.^[[39mvalues^[[33m.^[[39mopacity)^[[33m.^[[39m^[[34mtoBeCloseTo^[[39m(^[[34m0.5^[[39m^[[33m,^[[39m ^[[34m10^[[39m)^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1197883Z     ^[[90m   |^[[39m                                   ^[[31m^^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1199087Z     ^[[90m 84|^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1199925Z     ^[[90m 85|^[[39m     dom^[[33m.^[[39m^[[34mapply^[[39m(patch^[[33m!^[[39m)^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1200446Z 
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1200972Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1201401Z 
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1201453Z 
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1202830Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m12 passed^[[39m^[[22m^[[90m (13)^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1204692Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m30 passed^[[39m^[[22m^[[90m (31)^[[39m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1205756Z ^[[2m   Start at ^[[22m 07:09:07
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1207138Z ^[[2m   Duration ^[[22m 1.19s^[[2m (transform 547ms, setup 0ms, import 961ms, tests 155ms, environment 2ms)^[[22m
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1208443Z 
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1220873Z 
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1252902Z ##[error]AssertionError: expected undefined to be close to 0.5, received difference is NaN, but expected 5e-11
+integration (node 24)	Integration tests	 ❯ packages/core/test/integration/end-to-end.test.ts:83:35
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	2026-08-12T07:09:09.1525088Z ##[error]Process completed with exit code 1.
