@@ -20,8 +20,8 @@
   },
   "coverageAnalysis": "perTest",
   "thresholds": {
-    "high": 68.31,
-    "low": 68.31,
-    "break": 68.31
+    "high": 68.38,
+    "low": 68.38,
+    "break": 68.38
   }
 }
