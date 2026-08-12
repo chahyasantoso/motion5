@@ -63,7 +63,7 @@ const project: ProjectDefinition = {
 describe("real end-to-end product path (E2)", () => {
   it("writes authored GSAP output through a patch into the DOM adapter", () => {
     const stage = { style: {} as Record<string, unknown> };
-    const target = { style: {} as Record<string, unknown> };
+    const target = { style: { opacity: 0 } as Record<string, unknown> };
     const dom = createDomPatchAdapter(stage, undefined, (nodeId) =>
       nodeId === "hero/arm" ? target : undefined,
     );
@@ -76,11 +76,11 @@ describe("real end-to-end product path (E2)", () => {
     runtime.mount("hero/arm");
     runtime.graph.flush(["hero/arm"], 1);
     runtime.seek("hero/arm", 0.5);
-    // `seek` owns invalidation, matching the oracle's progress -> notify -> invalidate path.
-    // Read the canonical published state instead of assuming the final flush call owns it.
+    runtime.graph.flush(["hero/arm"], 2);
+
     const patch = runtime.graph.registry.get("hero/arm");
-    expect(patch?.values.opacity).toBeCloseTo(0.5, 10);
     expect(patch).toBeDefined();
+    expect(patch?.values.opacity).toBeCloseTo(0.5, 10);
 
     dom.apply(patch!);
     expect(target.style.opacity).toBeCloseTo(0.5, 10);
