@@ -1,0 +1,2 @@
+packages/core/test/contract/gsap-multi-stop.test.ts
+packages/core/test/integration/end-to-end.test.ts

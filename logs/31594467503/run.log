@@ -1,0 +1,7 @@
+mutation baseline	Fail until a mutation baseline exists	﻿2026-08-12T12:01:16.3245569Z ##[group]Run test "${MUTATION_FAILED:-1}" = "0"
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T12:01:16.3245870Z ^[[36;1mtest "${MUTATION_FAILED:-1}" = "0"^[[0m
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T12:01:16.3283808Z shell: /usr/bin/bash -e {0}
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T12:01:16.3284025Z env:
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T12:01:16.3284194Z   MUTATION_FAILED: 1
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T12:01:16.3284381Z ##[endgroup]
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T12:01:16.3348270Z ##[error]Process completed with exit code 1.

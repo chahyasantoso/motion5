@@ -1,0 +1,15 @@
+
+> motion5@0.0.0 test:boundaries
+> node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts
+
+boundary scan passed
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/motion5/motion5[39m
+
+ [32m✓[39m packages/core/test/unit/scripts/boundary-scan.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 39[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m   Start at [22m 12:01:21
+[2m   Duration [22m 230ms[2m (transform 38ms, setup 0ms, import 55ms, tests 39ms, environment 0ms)[22m
+
