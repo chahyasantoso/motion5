@@ -1,0 +1,21 @@
+mutation baseline	Fail until a mutation baseline exists	﻿2026-08-12T06:32:08.6931272Z ##[group]Run test "${MUTATION_FAILED:-1}" = "0"
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:32:08.6931948Z ^[[36;1mtest "${MUTATION_FAILED:-1}" = "0"^[[0m
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:32:08.6984925Z shell: /usr/bin/bash -e {0}
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:32:08.6985351Z env:
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:32:08.6985682Z   MUTATION_FAILED: 1
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:32:08.6986030Z ##[endgroup]
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:32:08.7077457Z ##[error]Process completed with exit code 1.
+contract surfaces	Fail when a contract surface is missing or red	﻿2026-08-12T06:32:20.3730473Z ##[group]Run test "${CONTRACT_FAILED:-1}" = "0"
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:32:20.3731215Z ^[[36;1mtest "${CONTRACT_FAILED:-1}" = "0"^[[0m
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:32:20.3779138Z shell: /usr/bin/bash -e {0}
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:32:20.3779412Z env:
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:32:20.3779606Z   CONTRACT_FAILED: 1
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:32:20.3779834Z ##[endgroup]
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:32:20.3853908Z ##[error]Process completed with exit code 1.
+declaration build	Fail until declarations and public entries resolve	﻿2026-08-12T06:32:11.5350552Z ##[group]Run test "${BUILD_FAILED:-1}" = "0"
+declaration build	Fail until declarations and public entries resolve	2026-08-12T06:32:11.5350933Z ^[[36;1mtest "${BUILD_FAILED:-1}" = "0"^[[0m
+declaration build	Fail until declarations and public entries resolve	2026-08-12T06:32:11.5395079Z shell: /usr/bin/bash -e {0}
+declaration build	Fail until declarations and public entries resolve	2026-08-12T06:32:11.5395362Z env:
+declaration build	Fail until declarations and public entries resolve	2026-08-12T06:32:11.5395579Z   BUILD_FAILED: 1
+declaration build	Fail until declarations and public entries resolve	2026-08-12T06:32:11.5395813Z ##[endgroup]
+declaration build	Fail until declarations and public entries resolve	2026-08-12T06:32:11.5472628Z ##[error]Process completed with exit code 1.
