@@ -74,10 +74,11 @@ describe("real end-to-end product path (E2)", () => {
     }).load(project);
 
     runtime.mount("hero/arm");
-    // Seed the mounted node first, matching the runtime's existing consumer path. The
-    // subsequent seek proves the progress update, not an accidental first-publication edge.
+    // The first flush creates and publishes the Track's initial state. Seeking changes the
+    // adapter-owned GSAP timeline; a second explicit flush publishes that changed state.
     runtime.graph.flush(["hero/arm"], 1);
-    const batch = runtime.seek("hero/arm", 0.5);
+    runtime.seek("hero/arm", 0.5);
+    const batch = runtime.graph.flush(["hero/arm"], 3);
     const patch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
     expect(patch?.values.opacity).toBeCloseTo(0.5, 10);
     expect(patch).toBeDefined();
