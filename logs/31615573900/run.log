@@ -1,0 +1,12 @@
+quality (node 24)	Typecheck	﻿2026-08-12T16:02:50.4530956Z ##[group]Run npm run typecheck
+quality (node 24)	Typecheck	2026-08-12T16:02:50.4531323Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Typecheck	2026-08-12T16:02:50.4577715Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Typecheck	2026-08-12T16:02:50.4578011Z ##[endgroup]
+quality (node 24)	Typecheck	2026-08-12T16:02:50.5630622Z 
+quality (node 24)	Typecheck	2026-08-12T16:02:50.5631338Z > motion5@0.0.0 typecheck
+quality (node 24)	Typecheck	2026-08-12T16:02:50.5632070Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Typecheck	2026-08-12T16:02:50.5632433Z 
+quality (node 24)	Typecheck	2026-08-12T16:02:52.3496256Z ##[error]packages/core/test/contract/gsap-paused-timeline.test.ts(12,7): error TS2322: Type '(value?: number | undefined) => 0 | GsapTimelineLike' is not assignable to type '{ (): number; (value: number): GsapTimelineLike; }'.
+quality (node 24)	Typecheck	2026-08-12T16:02:52.3506243Z   Type '0 | GsapTimelineLike' is not assignable to type 'number'.
+quality (node 24)	Typecheck	2026-08-12T16:02:52.3507081Z     Type 'GsapTimelineLike' is not assignable to type 'number'.
+quality (node 24)	Typecheck	2026-08-12T16:02:52.3803596Z ##[error]Process completed with exit code 2.
