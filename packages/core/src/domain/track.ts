@@ -30,6 +30,17 @@ function prepareConfig(config: unknown, plugins: readonly PluginDefinition[]): u
   return Object.freeze({ ...config, keyframes: Object.freeze(keyframes) });
 }
 
+function rendererNeutralState(state: Readonly<Record<string, unknown>>): ImmutableRecord {
+  const values: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(state)) {
+    // GSAP annotates its proxy with `_gsap` and other private bookkeeping objects. They are
+    // adapter internals, not authored output, and must not enter the immutable value contract.
+    if (key.startsWith("_")) continue;
+    values[key] = value;
+  }
+  return values as ImmutableRecord;
+}
+
 export class Track {
   readonly #timeline: InterpolationTimeline;
   readonly #plugins: ResolvedPlugins;
@@ -77,7 +88,7 @@ export class Track {
     )
       return this.#lastSnapshot;
     let values: ImmutableRecord = {
-      ...(this.#timeline.state as Readonly<ImmutableRecord>),
+      ...rendererNeutralState(this.#timeline.state),
       ...inputs,
     };
     for (const plugin of this.#plugins.plugins) {
