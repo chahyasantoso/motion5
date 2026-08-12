@@ -1,0 +1,99 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/motion5/motion5[39m
+
+ [31m❯[39m packages/core/test/unit/runtime/clock-tick-identity.test.ts [2m([22m[2m4 tests[22m[2m | [22m[31m4 failed[39m[2m)[22m[32m 10[2mms[22m[39m
+[31m     [31m×[31m keeps the clock running after a seek published without a frame[39m[32m 5[2mms[22m[39m
+[31m     [31m×[31m separates the clock's frame number from batch identity[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m reports a failed flush as a diagnostic instead of propagating it into the clock[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m requests the next animation frame even when a clock listener throws[39m[32m 2[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 4 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/unit/runtime/clock-tick-identity.test.ts[2m > [22mclock and batch identity are independent (P0-1)[2m > [22mkeeps the clock running after a seek published without a frame
+[31m[1mAssertionError[22m: expected [Function] to not throw an error but 'RangeError: Clock ticks must be stric…' was thrown[39m
+
+[32m- Expected:[39m
+undefined
+
+[31m+ Received:[39m
+"RangeError: Clock ticks must be strictly increasing."
+
+[36m [2m❯[22m packages/core/test/unit/runtime/clock-tick-identity.test.ts:[2m40:38[22m[39m
+    [90m 38|[39m     runtime[33m.[39m[34mseek[39m([32m"hero/arm"[39m[33m,[39m [34m0.5[39m)[33m;[39m
+    [90m 39|[39m
+    [90m 40|[39m     [34mexpect[39m(() [33m=>[39m clock[33m.[39m[34mtick[39m([34m16[39m))[33m.[39mnot[33m.[39m[34mtoThrow[39m()[33m;[39m
+    [90m   |[39m                                      [31m^[39m
+    [90m 41|[39m     [34mexpect[39m(() [33m=>[39m clock[33m.[39m[34mtick[39m([34m16[39m))[33m.[39mnot[33m.[39m[34mtoThrow[39m()[33m;[39m
+    [90m 42|[39m     [34mexpect[39m(runtime[33m.[39mgraph[33m.[39mtick)[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/unit/runtime/clock-tick-identity.test.ts[2m > [22mclock and batch identity are independent (P0-1)[2m > [22mseparates the clock's frame number from batch identity
+[31m[1mRangeError[22m: Clock ticks must be strictly increasing.[39m
+[36m [2m❯[22m GraphRuntime.#onTick packages/core/src/runtime/graph-runtime.ts:[2m142:13[22m[39m
+    [90m140|[39m     [35mif[39m ([35mthis[39m[33m.[39m#disposed) [35mreturn[39m[33m;[39m
+    [90m141|[39m     [35mif[39m (event[33m.[39mtick [33m<=[39m [35mthis[39m[33m.[39m#lastTick)
+    [90m142|[39m       [35mthrow[39m [35mnew[39m [33mRangeError[39m([32m"Clock ticks must be strictly increasing."[39m)[33m;[39m
+    [90m   |[39m             [31m^[39m
+    [90m143|[39m     [35mthis[39m[33m.[39m[34mflush[39m([[33m...[39m[35mthis[39m[33m.[39m#members][33m,[39m event[33m.[39mtick)[33m;[39m
+    [90m144|[39m   }
+[90m [2m❯[22m packages/core/src/runtime/graph-runtime.ts:[2m56:63[22m[39m
+[90m [2m❯[22m Object.tick packages/core/src/ports/clock.ts:[2m43:46[22m[39m
+[90m [2m❯[22m packages/core/test/unit/runtime/clock-tick-identity.test.ts:[2m57:11[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/unit/runtime/clock-tick-identity.test.ts[2m > [22mclock and batch identity are independent (P0-1)[2m > [22mreports a failed flush as a diagnostic instead of propagating it into the clock
+[31m[1mAssertionError[22m: expected [Function] to not throw an error but 'Error: subscriber boom' was thrown[39m
+
+[32m- Expected:[39m
+undefined
+
+[31m+ Received:[39m
+"Error: subscriber boom"
+
+[36m [2m❯[22m packages/core/test/unit/runtime/clock-tick-identity.test.ts:[2m80:38[22m[39m
+    [90m 78|[39m
+    [90m 79|[39m     [90m// A consumer's bug must not be able to stop the frame loop.[39m
+    [90m 80|[39m     [34mexpect[39m(() [33m=>[39m clock[33m.[39m[34mtick[39m([34m16[39m))[33m.[39mnot[33m.[39m[34mtoThrow[39m()[33m;[39m
+    [90m   |[39m                                      [31m^[39m
+    [90m 81|[39m     expect(failures.map(({ ruleId }) => ruleId)).toEqual(["flush-failu…
+    [90m 82|[39m     [34mexpect[39m(failures[[34m0[39m][33m?.[39mmessage)[33m.[39m[34mtoMatch[39m([36m/subscriber boom/[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/unit/runtime/clock-tick-identity.test.ts[2m > [22mclock and batch identity are independent (P0-1)[2m > [22mrequests the next animation frame even when a clock listener throws
+[31m[1mAssertionError[22m: expected [] to deeply equal [ 1 ][39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[32m- [[39m
+[32m-   1,[39m
+[32m- ][39m
+[31m+ [][39m
+
+[36m [2m❯[22m packages/core/test/unit/runtime/clock-tick-identity.test.ts:[2m116:23[22m[39m
+    [90m114|[39m     [34mexpect[39m(() [33m=>[39m frames[33m.[39m[34mshift[39m()[33m?.[39m([34m16[39m))[33m.[39m[34mtoThrow[39m([36m/listener boom/[39m)[33m;[39m
+    [90m115|[39m     [90m// Every listener got its turn despite the earlier throw.[39m
+    [90m116|[39m     [34mexpect[39m(secondSaw)[33m.[39m[34mtoEqual[39m([[34m1[39m])[33m;[39m
+    [90m   |[39m                       [31m^[39m
+    [90m117|[39m     [90m// The loop rescheduled itself, so the clock is not dead.[39m
+    [90m118|[39m     [34mexpect[39m(requests)[33m.[39m[34mtoBe[39m([34m2[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m4 failed[39m[22m[90m (4)[39m
+[2m   Start at [22m 15:38:54
+[2m   Duration [22m 183ms[2m (transform 62ms, setup 0ms, import 79ms, tests 10ms, environment 0ms)[22m
+
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/unit/runtime/clock-tick-identity.test.ts,title=packages/core/test/unit/runtime/clock-tick-identity.test.ts > clock and batch identity are independent (P0-1) > keeps the clock running after a seek published without a frame,line=40,column=38::AssertionError: expected [Function] to not throw an error but 'RangeError: Clock ticks must be stric…' was thrown%0A%0A- Expected:%0Aundefined%0A%0A+ Received:%0A"RangeError: Clock ticks must be strictly increasing."%0A%0A ❯ packages/core/test/unit/runtime/clock-tick-identity.test.ts:40:38%0A%0A
+
+::error file=/home/runner/work/motion5/motion5/packages/core/src/runtime/graph-runtime.ts,title=packages/core/test/unit/runtime/clock-tick-identity.test.ts > clock and batch identity are independent (P0-1) > separates the clock's frame number from batch identity,line=142,column=13::RangeError: Clock ticks must be strictly increasing.%0A ❯ GraphRuntime.#onTick packages/core/src/runtime/graph-runtime.ts:142:13%0A ❯ packages/core/src/runtime/graph-runtime.ts:56:63%0A ❯ Object.tick packages/core/src/ports/clock.ts:43:46%0A ❯ packages/core/test/unit/runtime/clock-tick-identity.test.ts:57:11%0A%0A
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/unit/runtime/clock-tick-identity.test.ts,title=packages/core/test/unit/runtime/clock-tick-identity.test.ts > clock and batch identity are independent (P0-1) > reports a failed flush as a diagnostic instead of propagating it into the clock,line=80,column=38::AssertionError: expected [Function] to not throw an error but 'Error: subscriber boom' was thrown%0A%0A- Expected:%0Aundefined%0A%0A+ Received:%0A"Error: subscriber boom"%0A%0A ❯ packages/core/test/unit/runtime/clock-tick-identity.test.ts:80:38%0A%0A
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/unit/runtime/clock-tick-identity.test.ts,title=packages/core/test/unit/runtime/clock-tick-identity.test.ts > clock and batch identity are independent (P0-1) > requests the next animation frame even when a clock listener throws,line=116,column=23::AssertionError: expected [] to deeply equal [ 1 ]%0A%0A- Expected%0A+ Received%0A%0A- [%0A-   1,%0A- ]%0A+ []%0A%0A ❯ packages/core/test/unit/runtime/clock-tick-identity.test.ts:116:23%0A%0A
