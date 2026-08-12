@@ -70,6 +70,9 @@ describe("adapter ports", () => {
         const timeline: GsapTimelineLike = {
           duration: () => 2,
           progress,
+          to(_target, _vars) {
+            return timeline;
+          },
           kill() {
             killed = true;
           },
