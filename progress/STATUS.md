@@ -6,23 +6,23 @@ Last reviewed: 2026-08-12
 
 ## Board
 
-| ID | Slice | Status |
-| --- | --- | --- |
-| W0 | Rescue loop and audit baseline | Done |
-| A1 | Final-value memo consistency | Done, gate open |
-| A2 | Preserve subscriber errors | Done, gate open |
-| A3 | Guard subscriber-triggered reentrancy | Done, gate open |
-| B1 | Prepare-stage plugin contribution | Done |
-| B2 | Real GSAP multi-stop compilation | Done |
-| C1 | React store resubscription | Done |
-| C2 | React hook and public exports | Done, gate open |
-| C3 | DOM metadata, serialization, and clear coverage | Done |
-| D1 | Discover consumer packages | Done |
-| D2 | Planted boundary self-test | Done |
-| D3 | Acceptance evidence gates | In progress, rebase required |
-| E1 | Required declaration build | Not started |
-| E2 | Real end-to-end product path | Not started |
-| E3 | Mutation baseline and ratchet | Not started |
+| ID  | Slice                                           | Status                       |
+| --- | ----------------------------------------------- | ---------------------------- |
+| W0  | Rescue loop and audit baseline                  | Done                         |
+| A1  | Final-value memo consistency                    | Done, gate open              |
+| A2  | Preserve subscriber errors                      | Done, gate open              |
+| A3  | Guard subscriber-triggered reentrancy           | Done, gate open              |
+| B1  | Prepare-stage plugin contribution               | Done                         |
+| B2  | Real GSAP multi-stop compilation                | Done                         |
+| C1  | React store resubscription                      | Done                         |
+| C2  | React hook and public exports                   | Done, gate open              |
+| C3  | DOM metadata, serialization, and clear coverage | Done                         |
+| D1  | Discover consumer packages                      | Done                         |
+| D2  | Planted boundary self-test                      | Done                         |
+| D3  | Acceptance evidence gates                       | In progress, rebase required |
+| E1  | Required declaration build                      | Not started                  |
+| E2  | Real end-to-end product path                    | Not started                  |
+| E3  | Mutation baseline and ratchet                   | Not started                  |
 
 ## Current next action
 
