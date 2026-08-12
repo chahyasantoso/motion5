@@ -1,0 +1,14 @@
+contract surfaces	Fail when a contract surface is missing or red	﻿2026-08-12T06:45:54.3122111Z ##[group]Run test "${CONTRACT_FAILED:-1}" = "0"
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:45:54.3122509Z ^[[36;1mtest "${CONTRACT_FAILED:-1}" = "0"^[[0m
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:45:54.3166718Z shell: /usr/bin/bash -e {0}
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:45:54.3167001Z env:
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:45:54.3167223Z   CONTRACT_FAILED: 1
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:45:54.3167467Z ##[endgroup]
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:45:54.3243259Z ##[error]Process completed with exit code 1.
+mutation baseline	Fail until a mutation baseline exists	﻿2026-08-12T06:45:46.8861980Z ##[group]Run test "${MUTATION_FAILED:-1}" = "0"
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:45:46.8862379Z ^[[36;1mtest "${MUTATION_FAILED:-1}" = "0"^[[0m
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:45:46.8905981Z shell: /usr/bin/bash -e {0}
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:45:46.8906240Z env:
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:45:46.8906437Z   MUTATION_FAILED: 1
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:45:46.8906654Z ##[endgroup]
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:45:46.8982046Z ##[error]Process completed with exit code 1.
