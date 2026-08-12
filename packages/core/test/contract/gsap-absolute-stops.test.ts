@@ -48,8 +48,7 @@ function createDeterministicTimeline(): {
       const duration = typeof active.vars.duration === "number" ? active.vars.duration : 0;
       const end = start + duration;
       const previous = eligible.at(-2);
-      const valueAtStart =
-        previous?.vars[key] ?? active.target[key];
+      const valueAtStart = previous?.vars[key] ?? active.target[key];
       const valueAtEnd = active.vars[key];
       const amount = end <= start ? 1 : Math.min(1, (currentProgress - start) / duration);
       if (typeof valueAtStart === "number" && typeof valueAtEnd === "number")
