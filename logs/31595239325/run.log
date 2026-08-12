@@ -1,0 +1,497 @@
+prettier --write (same-repository PR)	Set up job	﻿2026-08-12T12:11:06.6015080Z Current runner version: '2.336.0'
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6043474Z ##[group]Runner Image Provisioner
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6044438Z Hosted Compute Agent
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6045093Z Version: 20260707.563
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6045913Z Commit: 02667638d2b423fbc733a8e32a88b44996a3ba6e
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6046750Z Build Date: 2026-07-07T19:33:50Z
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6047664Z Worker ID: {8be98fe5-d9d6-468f-8bef-5316026978cb}
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6048556Z Azure Region: westus3
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6049214Z ##[endgroup]
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6051127Z ##[group]Operating System
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6051866Z Ubuntu
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6052426Z 24.04.4
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6053145Z LTS
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6053749Z ##[endgroup]
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6054442Z ##[group]Runner Image
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6055224Z Image: ubuntu-24.04
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6055889Z Version: 20260720.247.2
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6057292Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260720.247/images/ubuntu/Ubuntu2404-Readme.md
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6059322Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260720.247
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6060558Z ##[endgroup]
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6061822Z ##[group]GITHUB_TOKEN Permissions
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6063992Z Contents: write
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6064616Z Metadata: read
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6065282Z PullRequests: read
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6065876Z ##[endgroup]
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6067878Z Secret source: Actions
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6068998Z Prepare workflow directory
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6374543Z Prepare all required actions
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.6413532Z Getting action download info
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:06.9786372Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:07.6578580Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+prettier --write (same-repository PR)	Set up job	2026-08-12T12:11:07.8917153Z Complete job name: prettier --write (same-repository PR)
+prettier --write (same-repository PR)	Run actions/checkout@v4	﻿2026-08-12T12:11:07.9503835Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9510722Z ##[group]Run actions/checkout@v4
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9511273Z with:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9511620Z   ref: fix/E3-mutation-gate
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9512023Z   repository: chahyasantoso/motion5
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9512440Z   fetch-depth: 0
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9515635Z   token: ***
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9515972Z   ssh-strict: true
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9516325Z   ssh-user: git
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9516673Z   persist-credentials: true
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9517051Z   clean: true
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9517397Z   sparse-checkout-cone-mode: true
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9517802Z   fetch-tags: false
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9518149Z   show-progress: true
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9518490Z   lfs: false
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9518855Z   submodules: false
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9519203Z   set-safe-directory: true
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9519718Z   allow-unsafe-pr-checkout: false
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:07.9520258Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0376586Z Syncing repository: chahyasantoso/motion5
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0378490Z ##[group]Getting Git version info
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0379304Z Working directory is '/home/runner/work/motion5/motion5'
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0380806Z [command]/usr/bin/git version
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0540947Z git version 2.54.0
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0551260Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0558713Z Temporarily overriding HOME='/home/runner/work/_temp/0dce7c4d-51e4-4d55-b651-d3db3966bc6c' before making global git config changes
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0560583Z Adding repository directory to the temporary git global config as a safe directory
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0561937Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/motion5/motion5
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0584098Z Deleting the contents of '/home/runner/work/motion5/motion5'
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0587336Z ##[group]Initializing the repository
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0601478Z [command]/usr/bin/git init /home/runner/work/motion5/motion5
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0853403Z hint: Using 'master' as the name for the initial branch. This default branch name
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0855159Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0856430Z hint: to use in all of your new repositories, which will suppress this warning,
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0857353Z hint: call:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0857798Z hint:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0858356Z hint: 	git config --global init.defaultBranch <name>
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0858982Z hint:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0859811Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0861094Z hint: 'development'. The just-created branch can be renamed via this command:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0862045Z hint:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0862449Z hint: 	git branch -m <name>
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0862901Z hint:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0863580Z hint: Disable this message with "git config set advice.defaultBranchName false"
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0864672Z Initialized empty Git repository in /home/runner/work/motion5/motion5/.git/
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0866159Z [command]/usr/bin/git remote add origin https://github.com/chahyasantoso/motion5
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0900099Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0904672Z ##[group]Disabling automatic garbage collection
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0905243Z [command]/usr/bin/git config --local gc.auto 0
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0932183Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0932919Z ##[group]Setting up auth
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.0938434Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.1009044Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.1560447Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.1597786Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.1813985Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.1848540Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.2047740Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.2081497Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.2082483Z ##[group]Fetching the repository
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:08.2090809Z [command]/usr/bin/git -c protocol.version=2 fetch --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3473183Z From https://github.com/chahyasantoso/motion5
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3474687Z  * [new branch]      chore/format-31354308601 -> origin/chore/format-31354308601
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3476155Z  * [new branch]      chore/r6-core-package-boundary -> origin/chore/r6-core-package-boundary
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3477557Z  * [new branch]      ci-logs                -> origin/ci-logs
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3478618Z  * [new branch]      ci/archive-workflow    -> origin/ci/archive-workflow
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3480065Z  * [new branch]      ci/auto-format-pr-branches -> origin/ci/auto-format-pr-branches
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3481623Z  * [new branch]      docs/detailed-plan-and-trd -> origin/docs/detailed-plan-and-trd
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3483467Z  * [new branch]      docs/p0-06-trd-and-detailed-plan -> origin/docs/p0-06-trd-and-detailed-plan
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3485538Z  * [new branch]      docs/phase3-implementation-review -> origin/docs/phase3-implementation-review
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3487711Z  * [new branch]      docs/r9-status-and-plan-truth-pass -> origin/docs/r9-status-and-plan-truth-pass
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3490526Z  * [new branch]      docs/repo-review-and-remediation-plan -> origin/docs/repo-review-and-remediation-plan
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3492830Z  * [new branch]      feat/p0-04-ports-and-fakes -> origin/feat/p0-04-ports-and-fakes
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3494937Z  * [new branch]      feat/p0-05-golden-fixtures-and-integration -> origin/feat/p0-05-golden-fixtures-and-integration
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3497123Z  * [new branch]      feat/p1-01-immutable-value-snapshots -> origin/feat/p1-01-immutable-value-snapshots
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3498878Z  * [new branch]      feat/p1-02-plugin-registry -> origin/feat/p1-02-plugin-registry
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3500455Z  * [new branch]      feat/p1-03-track-leaf  -> origin/feat/p1-03-track-leaf
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3501975Z  * [new branch]      feat/p1-04-lifecycle-primitives -> origin/feat/p1-04-lifecycle-primitives
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3503644Z  * [new branch]      feat/p1-05-motion-scheduling -> origin/feat/p1-05-motion-scheduling
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3505217Z  * [new branch]      feat/p1-06-trigger-delegates -> origin/feat/p1-06-trigger-delegates
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3506644Z  * [new branch]      feat/p2-01-qualified-ids -> origin/feat/p2-01-qualified-ids
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3508187Z  * [new branch]      feat/p2-02-03-graph-ir-validation -> origin/feat/p2-02-03-graph-ir-validation
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3510198Z  * [new branch]      feat/p2-04-cycle-detection-and-order -> origin/feat/p2-04-cycle-detection-and-order
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3512165Z  * [new branch]      feat/p2-05-stable-observation-state -> origin/feat/p2-05-stable-observation-state
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3514116Z  * [new branch]      feat/p2-06-graph-binding-transactions -> origin/feat/p2-06-graph-binding-transactions
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3515975Z  * [new branch]      feat/p2-07-boundary-scan-ci-gate -> origin/feat/p2-07-boundary-scan-ci-gate
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3517508Z  * [new branch]      feat/p3-01-patch-registry -> origin/feat/p3-01-patch-registry
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3519661Z  * [new branch]      feat/p3-02-03-publisher-failure-semantics -> origin/feat/p3-02-03-publisher-failure-semantics
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3521433Z  * [new branch]      feat/p3-04-graph-runtime -> origin/feat/p3-04-graph-runtime
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3522776Z  * [new branch]      feat/p3-05-project-runtime -> origin/feat/p3-05-project-runtime
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3524463Z  * [new branch]      feat/p3-06-07-engine-and-benchmarks -> origin/feat/p3-06-07-engine-and-benchmarks
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3526071Z  * [new branch]      feat/p4-01-02-adapters -> origin/feat/p4-01-02-adapters
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3527632Z  * [new branch]      feat/p4-03-04-react-consumer-boundary -> origin/feat/p4-03-04-react-consumer-boundary
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3529839Z  * [new branch]      feat/p4-05-current-main-integration-build -> origin/feat/p4-05-current-main-integration-build
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3531823Z  * [new branch]      feat/p4-05-integration-build-gate -> origin/feat/p4-05-integration-build-gate
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3533666Z  * [new branch]      feat/r5-engine-compose-resolver -> origin/feat/r5-engine-compose-resolver
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3535568Z  * [new branch]      feat/r8-dom-adapter-target-resolution -> origin/feat/r8-dom-adapter-target-resolution
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3537311Z  * [new branch]      fix/A3-publisher-reentrancy -> origin/fix/A3-publisher-reentrancy
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3538624Z  * [new branch]      fix/A3-red-evidence    -> origin/fix/A3-red-evidence
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3540021Z  * [new branch]      fix/B1-track-contribution -> origin/fix/B1-track-contribution
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3541456Z  * [new branch]      fix/B2-gsap-stop-compilation -> origin/fix/B2-gsap-stop-compilation
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3543132Z  * [new branch]      fix/B2-gsap-stop-compilation-clean -> origin/fix/B2-gsap-stop-compilation-clean
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3544959Z  * [new branch]      fix/B2-gsap-stop-compilation-repair -> origin/fix/B2-gsap-stop-compilation-repair
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3546648Z  * [new branch]      fix/C1-react-store-lifecycle -> origin/fix/C1-react-store-lifecycle
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3548339Z  * [new branch]      fix/C2-react-public-surface -> origin/fix/C2-react-public-surface
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3549873Z  * [new branch]      fix/C3-dom-contract    -> origin/fix/C3-dom-contract
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3551160Z  * [new branch]      fix/D1-boundary-discovery -> origin/fix/D1-boundary-discovery
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3552564Z  * [new branch]      fix/D2-boundary-self-test -> origin/fix/D2-boundary-self-test
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3553886Z  * [new branch]      fix/D3-evidence-gates  -> origin/fix/D3-evidence-gates
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3555263Z  * [new branch]      fix/D3-evidence-gates-rescue -> origin/fix/D3-evidence-gates-rescue
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3556711Z  * [new branch]      fix/D3-evidence-gates-v2 -> origin/fix/D3-evidence-gates-v2
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3558172Z  * [new branch]      fix/E1-required-build-rescue -> origin/fix/E1-required-build-rescue
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3559903Z  * [new branch]      fix/E1-required-build-v2 -> origin/fix/E1-required-build-v2
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3562097Z  * [new branch]      fix/E2-end-to-end-proof-rescue -> origin/fix/E2-end-to-end-proof-rescue
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3563876Z  * [new branch]      fix/E3-mutation-gate   -> origin/fix/E3-mutation-gate
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3565428Z  * [new branch]      fix/r1-publisher-input-resolution -> origin/fix/r1-publisher-input-resolution
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3567432Z  * [new branch]      fix/r2-output-edge-merge -> origin/fix/r2-output-edge-merge
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3569694Z  * [new branch]      fix/r3-track-input-recompute -> origin/fix/r3-track-input-recompute
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3571994Z  * [new branch]      fix/r4-membership-gates-seeds -> origin/fix/r4-membership-gates-seeds
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3574948Z  * [new branch]      fix/r7-boundary-scan-coverage-and-self-test -> origin/fix/r7-boundary-scan-coverage-and-self-test
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3577432Z  * [new branch]      main                   -> origin/main
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3579161Z  * [new branch]      merge/E2-clean-into-rescue -> origin/merge/E2-clean-into-rescue
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3582460Z  * [new branch]      phase-0r1-gsap-contract-proof -> origin/phase-0r1-gsap-contract-proof
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3585011Z  * [new branch]      phase-0r2-1r1-gap-closure -> origin/phase-0r2-1r1-gap-closure
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3587014Z  * [new branch]      phase-0r2-stop-validation -> origin/phase-0r2-stop-validation
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3589178Z  * [new branch]      phase-1r1-plugin-compilation -> origin/phase-1r1-plugin-compilation
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3591903Z  * [new branch]      phase-1r2-track-compiler-lifetime -> origin/phase-1r2-track-compiler-lifetime
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3593689Z  * [new branch]      phase-1r3-progress-invalidation -> origin/phase-1r3-progress-invalidation
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3595436Z  * [new branch]      rescue/restore-motionpath-parity -> origin/rescue/restore-motionpath-parity
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3597257Z  * [new branch]      restore-motionpath-value-pipeline -> origin/restore-motionpath-value-pipeline
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3600392Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3601514Z ##[group]Determining the checkout info
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3602587Z [command]/usr/bin/git branch --list --remote origin/fix/E3-mutation-gate
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3612595Z   origin/fix/E3-mutation-gate
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3617863Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.3622469Z [command]/usr/bin/git sparse-checkout disable
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.5213422Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.6350824Z ##[group]Checking out the ref
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.6363516Z [command]/usr/bin/git checkout --progress --force -B fix/E3-mutation-gate refs/remotes/origin/fix/E3-mutation-gate
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.8671526Z Switched to a new branch 'fix/E3-mutation-gate'
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.8672839Z branch 'fix/E3-mutation-gate' set up to track 'origin/fix/E3-mutation-gate'.
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.8682490Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.8722538Z [command]/usr/bin/git log -1 --format=%H
+prettier --write (same-repository PR)	Run actions/checkout@v4	2026-08-12T12:11:10.8746386Z ea0aa3da618817d16ae2fd3afc99e5701d1f27ee
+prettier --write (same-repository PR)	Run actions/setup-node@v4	﻿2026-08-12T12:11:10.9023277Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:10.9024634Z ##[group]Run actions/setup-node@v4
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:10.9024885Z with:
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:10.9025089Z   node-version: 24
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:10.9025296Z   cache: npm
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:10.9025492Z   always-auth: false
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:10.9025712Z   check-latest: false
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:10.9027826Z   token: ***
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:10.9028042Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:11.0193655Z Found in cache @ /opt/hostedtoolcache/node/24.18.0/x64
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:11.0198356Z (node:2146) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:11.0199307Z (Use `node --trace-deprecation ...` to show where the warning was created)
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:11.0200383Z ##[group]Environment details
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:12.7049840Z node: v24.18.0
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:12.7050493Z npm: 11.16.0
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:12.7050750Z yarn: 1.22.22
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:12.7051736Z ##[endgroup]
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:12.7086125Z [command]/opt/hostedtoolcache/node/24.18.0/x64/bin/npm config get cache
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:12.8252555Z /home/runner/.npm
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:13.0746497Z Cache hit for: node-cache-Linux-x64-npm-8fd21980c56e1531048f0bccbf8860b09c4f44035a216fedc1d0a678b1093d45
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:13.0859308Z (node:2146) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:14.2041095Z Received 22865211 of 22865211 (100.0%), 24.0 MBs/sec
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:14.2041679Z Cache Size: ~22 MB (22865211 B)
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:14.2063618Z [command]/usr/bin/tar -xf /home/runner/work/_temp/93583a42-08cf-4b44-9132-a65ca49e71dd/cache.tzst -P -C /home/runner/work/motion5/motion5 --use-compress-program unzstd
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:14.2443846Z Cache restored successfully
+prettier --write (same-repository PR)	Run actions/setup-node@v4	2026-08-12T12:11:14.2457294Z Cache restored from key: node-cache-Linux-x64-npm-8fd21980c56e1531048f0bccbf8860b09c4f44035a216fedc1d0a678b1093d45
+prettier --write (same-repository PR)	Install locked dependencies	﻿2026-08-12T12:11:14.2607494Z ##[group]Run npm ci --ignore-scripts --no-audit --no-fund
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:14.2607901Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund^[[0m
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:14.2699287Z shell: /usr/bin/bash -e {0}
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:14.2699724Z ##[endgroup]
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8806750Z npm error code EUSAGE
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8945627Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8946809Z npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8947643Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8948120Z npm error Missing: @stryker-mutator/core@8.7.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8948770Z npm error Missing: @stryker-mutator/vitest-runner@8.7.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8949414Z npm error Missing: @inquirer/prompts@6.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8950140Z npm error Missing: @stryker-mutator/api@8.7.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8950800Z npm error Missing: @stryker-mutator/instrumenter@8.7.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8951504Z npm error Missing: @stryker-mutator/util@8.7.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8952016Z npm error Missing: ajv@8.17.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8952476Z npm error Missing: chalk@5.3.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8952842Z npm error Missing: commander@12.1.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8953191Z npm error Missing: diff-match-patch@1.0.5 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8953521Z npm error Missing: emoji-regex@10.4.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8953822Z npm error Missing: execa@9.4.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8954118Z npm error Missing: file-url@4.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8954652Z npm error Missing: lodash.groupby@4.6.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8954969Z npm error Missing: minimatch@9.0.9 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8955329Z npm error Missing: mutation-testing-elements@3.4.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8955718Z npm error Missing: mutation-testing-metrics@3.3.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8956127Z npm error Missing: mutation-testing-report-schema@3.3.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8956496Z npm error Missing: npm-run-path@6.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8956805Z npm error Missing: progress@2.0.3 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8957093Z npm error Missing: rxjs@7.8.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8957375Z npm error Missing: semver@7.8.5 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8957719Z npm error Missing: source-map@0.7.6 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8958034Z npm error Missing: tree-kill@1.2.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8958322Z npm error Missing: tslib@2.7.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8958637Z npm error Missing: typed-inject@4.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8958968Z npm error Missing: typed-rest-client@2.1.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8959318Z npm error Missing: @inquirer/checkbox@3.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8959820Z npm error Missing: @inquirer/confirm@4.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8960152Z npm error Missing: @inquirer/editor@3.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8960479Z npm error Missing: @inquirer/expand@3.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8960813Z npm error Missing: @inquirer/input@3.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8961147Z npm error Missing: @inquirer/number@2.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8961489Z npm error Missing: @inquirer/password@3.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8961829Z npm error Missing: @inquirer/rawlist@3.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8962163Z npm error Missing: @inquirer/search@2.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8962493Z npm error Missing: @inquirer/select@3.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8962942Z npm error Missing: @inquirer/core@9.2.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8963281Z npm error Missing: @inquirer/figures@1.0.15 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8963601Z npm error Missing: @inquirer/type@2.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8963921Z npm error Missing: ansi-escapes@4.3.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8964433Z npm error Missing: yoctocolors-cjs@2.1.3 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8964765Z npm error Missing: @types/mute-stream@0.0.4 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8965086Z npm error Missing: @types/node@22.20.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8965405Z npm error Missing: @types/wrap-ansi@3.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8965719Z npm error Missing: cli-width@4.1.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8966023Z npm error Missing: mute-stream@1.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8966331Z npm error Missing: signal-exit@4.1.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8966625Z npm error Missing: strip-ansi@6.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8966937Z npm error Missing: wrap-ansi@6.2.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8967254Z npm error Missing: external-editor@3.1.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8967572Z npm error Missing: @babel/core@7.25.9 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8967900Z npm error Missing: @babel/generator@7.25.9 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8968228Z npm error Missing: @babel/parser@7.25.9 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8968632Z npm error Missing: @babel/plugin-proposal-decorators@7.24.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8969156Z npm error Missing: @babel/plugin-proposal-explicit-resource-management@7.27.4 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8969811Z npm error Missing: @babel/preset-typescript@7.24.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8970186Z npm error Missing: angular-html-parser@6.0.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8970513Z npm error Missing: semver@7.6.3 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8970820Z npm error Missing: weapon-regex@1.3.6 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8971164Z npm error Missing: @ampproject/remapping@2.3.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8971625Z npm error Missing: @babel/code-frame@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8972016Z npm error Missing: @babel/helper-compilation-targets@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8972455Z npm error Missing: @babel/helper-module-transforms@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8972822Z npm error Missing: @babel/helpers@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8973149Z npm error Missing: @babel/template@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8973470Z npm error Missing: @babel/traverse@7.29.8 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8973789Z npm error Missing: @babel/types@7.29.8 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8974094Z npm error Missing: debug@4.4.3 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8974416Z npm error Missing: gensync@1.0.0-beta.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8974716Z npm error Missing: json5@2.2.3 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8975006Z npm error Missing: semver@6.3.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8975360Z npm error Missing: @jridgewell/gen-mapping@0.3.13 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8975761Z npm error Missing: @jridgewell/trace-mapping@0.3.31 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8976187Z npm error Missing: @babel/helper-validator-identifier@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8976557Z npm error Missing: js-tokens@4.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8976861Z npm error Missing: jsesc@3.1.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8977190Z npm error Missing: @babel/compat-data@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8977590Z npm error Missing: @babel/helper-validator-option@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8977956Z npm error Missing: browserslist@4.28.8 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8978275Z npm error Missing: lru-cache@5.1.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8978594Z npm error Missing: semver@6.3.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8978962Z npm error Missing: @babel/helper-module-imports@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8979555Z npm error Missing: @babel/helper-create-class-features-plugin@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8980039Z npm error Missing: @babel/helper-plugin-utils@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8980468Z npm error Missing: @babel/plugin-syntax-decorators@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8980897Z npm error Missing: @babel/helper-annotate-as-pure@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8981370Z npm error Missing: @babel/helper-member-expression-to-functions@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8982002Z npm error Missing: @babel/helper-optimise-call-expression@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8982472Z npm error Missing: @babel/helper-replace-supers@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8982978Z npm error Missing: @babel/helper-skip-transparent-expression-wrappers@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8983399Z npm error Missing: semver@6.3.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8983795Z npm error Missing: @babel/plugin-transform-destructuring@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8984231Z npm error Missing: @babel/plugin-syntax-jsx@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8984678Z npm error Missing: @babel/plugin-transform-modules-commonjs@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8985146Z npm error Missing: @babel/plugin-transform-typescript@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8985582Z npm error Missing: @babel/plugin-syntax-typescript@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8985959Z npm error Missing: @babel/parser@7.29.8 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8986313Z npm error Missing: @babel/generator@7.29.8 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8986675Z npm error Missing: @babel/helper-globals@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8987020Z npm error Missing: @babel/parser@7.29.8 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8987393Z npm error Missing: @babel/helper-string-parser@7.29.7 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8987798Z npm error Missing: @jridgewell/resolve-uri@3.1.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8988157Z npm error Missing: fast-deep-equal@3.1.3 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8988475Z npm error Missing: fast-uri@3.1.5 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8988920Z npm error Missing: json-schema-traverse@1.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8989289Z npm error Missing: require-from-string@2.0.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8989780Z npm error Missing: type-fest@0.21.3 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8990160Z npm error Missing: baseline-browser-mapping@2.11.13 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8990542Z npm error Missing: caniuse-lite@1.0.30001809 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8990924Z npm error Missing: electron-to-chromium@1.5.405 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8991281Z npm error Missing: node-releases@2.0.53 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8991634Z npm error Missing: update-browserslist-db@1.3.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8991948Z npm error Missing: ms@2.1.3 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8992293Z npm error Missing: @sindresorhus/merge-streams@4.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8992651Z npm error Missing: cross-spawn@7.0.6 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8992962Z npm error Missing: figures@6.1.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8993274Z npm error Missing: get-stream@9.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8993596Z npm error Missing: human-signals@8.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8993927Z npm error Missing: is-plain-obj@4.1.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8994248Z npm error Missing: is-stream@4.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8994556Z npm error Missing: pretty-ms@9.3.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8994889Z npm error Missing: strip-final-newline@4.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8995216Z npm error Missing: yoctocolors@2.2.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8995527Z npm error Missing: path-key@3.1.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8995850Z npm error Missing: shebang-command@2.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8996189Z npm error Missing: which@2.0.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8996539Z npm error Missing: chardet@0.7.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8996844Z npm error Missing: iconv-lite@0.4.24 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8997140Z npm error Missing: tmp@0.0.33 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8997478Z npm error Missing: is-unicode-supported@2.1.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8997860Z npm error Missing: @sec-ant/readable-stream@0.4.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8998207Z npm error Missing: safer-buffer@2.1.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8998516Z npm error Missing: yallist@3.1.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8998947Z npm error Missing: brace-expansion@2.1.4 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8999276Z npm error Missing: balanced-match@1.0.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.8999728Z npm error Missing: path-key@4.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9000044Z npm error Missing: unicorn-magic@0.3.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9000347Z npm error Missing: parse-ms@4.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9000651Z npm error Missing: shebang-regex@3.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9000969Z npm error Missing: ansi-regex@5.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9001308Z npm error Missing: os-tmpdir@1.0.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9001610Z npm error Missing: des.js@1.1.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9001903Z npm error Missing: js-md4@0.3.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9002178Z npm error Missing: qs@6.15.3 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9002464Z npm error Missing: tunnel@0.0.6 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9002761Z npm error Missing: underscore@1.13.8 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9003064Z npm error Missing: inherits@2.0.4 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9003395Z npm error Missing: minimalistic-assert@1.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9003746Z npm error Missing: es-define-property@1.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9004079Z npm error Missing: side-channel@1.1.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9004388Z npm error Missing: es-errors@1.3.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9004707Z npm error Missing: object-inspect@1.13.4 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9005046Z npm error Missing: side-channel-list@1.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9005386Z npm error Missing: side-channel-map@1.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9005843Z npm error Missing: side-channel-weakmap@1.0.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9006173Z npm error Missing: call-bound@1.0.4 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9006495Z npm error Missing: get-intrinsic@1.3.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9006850Z npm error Missing: call-bind-apply-helpers@1.0.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9007204Z npm error Missing: function-bind@1.1.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9007543Z npm error Missing: es-object-atoms@1.1.2 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9007869Z npm error Missing: get-proto@1.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9008164Z npm error Missing: gopd@1.2.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9008468Z npm error Missing: has-symbols@1.1.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9008777Z npm error Missing: hasown@2.0.4 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9009100Z npm error Missing: math-intrinsics@1.1.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9009548Z npm error Missing: dunder-proto@1.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9009958Z npm error Missing: escalade@3.2.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9010255Z npm error Missing: isexe@2.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9010554Z npm error Missing: ansi-styles@4.3.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9010877Z npm error Missing: string-width@4.2.3 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9011202Z npm error Missing: color-convert@2.0.1 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9011521Z npm error Missing: color-name@1.1.4 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9011829Z npm error Missing: emoji-regex@8.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9012182Z npm error Missing: is-fullwidth-code-point@3.0.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9012542Z npm error Missing: undici-types@6.21.0 from lock file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9012782Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9012994Z npm error Clean install a project
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9013201Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9013362Z npm error Usage:
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9013546Z npm error npm ci
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9013714Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9013892Z npm error Options:
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9014285Z npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9014820Z npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9015346Z npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9015950Z npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts]
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9016400Z npm error [--allow-directory <all|none|root>] [--allow-file <all|none|root>]
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9016833Z npm error [--allow-git <all|none|root>] [--allow-remote <all|none|root>]
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9017290Z npm error [--allow-scripts <package-list> [--allow-scripts <package-list> ...]]
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9017778Z npm error [--strict-allow-scripts] [--dangerously-allow-all-scripts] [--no-audit]
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9018166Z npm error [--no-bin-links] [--no-fund] [--dry-run]
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9018582Z npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9019042Z npm error [--workspaces] [--include-workspace-root] [--install-links]
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9019322Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9019699Z npm error   --install-strategy
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9020049Z npm error     Sets the strategy for installing packages in node_modules.
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9020338Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9020533Z npm error   --legacy-bundling
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9020920Z npm error     Instead of hoisting package installs in `node_modules`, install packages
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9021243Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9021418Z npm error   --global-style
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9021780Z npm error     Only install direct dependencies in the top level `node_modules`,
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9022078Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9022250Z npm error   --omit
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9022569Z npm error     Dependency types to omit from the installation tree on disk.
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9022854Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9023148Z npm error   --include
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9023510Z npm error     Option that allows for defining which types of dependencies to install.
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9023822Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9024019Z npm error   --strict-peer-deps
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9024371Z npm error     If set to `true`, and `--legacy-peer-deps` is not set, then _any_
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9024664Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9024867Z npm error   --foreground-scripts
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9025204Z npm error     Run all build scripts (ie, `preinstall`, `install`, and
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9025468Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9025647Z npm error   --ignore-scripts
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9026012Z npm error     If true, npm does not run scripts specified in package.json files.
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9026301Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9026479Z npm error   --allow-directory
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9026844Z npm error     Limits the ability for npm to install dependencies from directories.
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9027156Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9027329Z npm error   --allow-file
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9027690Z npm error     Limits the ability for npm to install dependencies from tarball files.
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9027996Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9028171Z npm error   --allow-git
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9028530Z npm error     Limits the ability for npm to fetch dependencies from git references.
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9028836Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9029013Z npm error   --allow-remote
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9029342Z npm error     Limits the ability for npm to fetch dependencies from urls.
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9029795Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9029983Z npm error   --allow-scripts
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9030362Z npm error     Comma-separated list of packages whose install-time lifecycle scripts
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9030671Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9030873Z npm error   --strict-allow-scripts
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9031245Z npm error     If `true`, turn the install-script policy from a warning into a hard
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9031549Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9031770Z npm error   --dangerously-allow-all-scripts
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9032152Z npm error     If `true`, bypass the `allowScripts` policy entirely and run every
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9032440Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9032621Z npm error   --audit
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9032978Z npm error     When "true" submit audit reports alongside the current npm command to the
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9033429Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9033601Z npm error   --bin-links
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9033956Z npm error     Tells npm to create symlinks (or `.cmd` shims on Windows) for package
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9034266Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9034434Z npm error   --fund
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9034762Z npm error     When "true" displays the message at the end of each `npm install`
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9035054Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9035223Z npm error   --dry-run
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9035588Z npm error     Indicates that you don't want npm to make any changes and that it should
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9035902Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9036079Z npm error   -w|--workspace
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9036457Z npm error     Enable running a command in the context of the configured workspaces of the
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9036782Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9036958Z npm error   --workspaces
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9037308Z npm error     Set to true to run the command in the context of **all** configured
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9037599Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9037807Z npm error   --include-workspace-root
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9038200Z npm error     Include the workspace root when workspaces are enabled for a command.
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9038506Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9038685Z npm error   --install-links
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9039046Z npm error     When set file: protocol dependencies will be packed and installed as
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9039343Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9039671Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9039968Z npm error aliases: clean-install, ic, install-clean, isntall-clean
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9040401Z npm error
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9040611Z npm error Run "npm help ci" for more info
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9041103Z npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-08-12T12_11_14_322Z-debug-0.log
+prettier --write (same-repository PR)	Install locked dependencies	2026-08-12T12:11:19.9358995Z ##[error]Process completed with exit code 1.
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	﻿2026-08-12T12:11:19.9487905Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:11:19.9507176Z Post job cleanup.
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:11:20.0163982Z [command]/usr/bin/git version
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:11:20.0196413Z git version 2.54.0
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:11:20.0256563Z Temporarily overriding HOME='/home/runner/work/_temp/a00141bd-434a-4ba4-9760-19b46448cb7f' before making global git config changes
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:11:20.0257744Z Adding repository directory to the temporary git global config as a safe directory
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:11:20.0260663Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/motion5/motion5
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:11:20.0290068Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:11:20.0317594Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:11:20.0524135Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:11:20.0544752Z http.https://github.com/.extraheader
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:11:20.0553364Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:11:20.0580888Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:11:20.0792070Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+prettier --write (same-repository PR)	Post Run actions/checkout@v4	2026-08-12T12:11:20.0823688Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+prettier --write (same-repository PR)	Complete job	﻿2026-08-12T12:11:20.1151916Z Cleaning up orphan processes
+prettier --write (same-repository PR)	Complete job	2026-08-12T12:11:20.1404844Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
