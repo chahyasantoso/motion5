@@ -1,0 +1,12 @@
+quality (node 24)	Format check	﻿2026-08-12T13:50:55.4408572Z ##[group]Run npm run format:check
+quality (node 24)	Format check	2026-08-12T13:50:55.4408958Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Format check	2026-08-12T13:50:55.4452463Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Format check	2026-08-12T13:50:55.4452764Z ##[endgroup]
+quality (node 24)	Format check	2026-08-12T13:50:55.5642151Z 
+quality (node 24)	Format check	2026-08-12T13:50:55.5643228Z > motion5@0.0.0 format:check
+quality (node 24)	Format check	2026-08-12T13:50:55.5643706Z > prettier . --check
+quality (node 24)	Format check	2026-08-12T13:50:55.5643877Z 
+quality (node 24)	Format check	2026-08-12T13:50:55.6797516Z Checking formatting...
+quality (node 24)	Format check	2026-08-12T13:50:57.7403414Z [^[[33mwarn^[[39m] stryker.config.json
+quality (node 24)	Format check	2026-08-12T13:50:57.7911711Z [^[[33mwarn^[[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+quality (node 24)	Format check	2026-08-12T13:50:57.8382387Z ##[error]Process completed with exit code 1.
