@@ -1,0 +1,64 @@
+mutation baseline	Fail until a mutation baseline exists	﻿2026-08-12T06:40:15.8241964Z ##[group]Run test "${MUTATION_FAILED:-1}" = "0"
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:40:15.8242607Z ^[[36;1mtest "${MUTATION_FAILED:-1}" = "0"^[[0m
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:40:15.8283590Z shell: /usr/bin/bash -e {0}
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:40:15.8283876Z env:
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:40:15.8284100Z   MUTATION_FAILED: 1
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:40:15.8284340Z ##[endgroup]
+mutation baseline	Fail until a mutation baseline exists	2026-08-12T06:40:15.8364779Z ##[error]Process completed with exit code 1.
+contract surfaces	Fail when a contract surface is missing or red	﻿2026-08-12T06:40:20.5654317Z ##[group]Run test "${CONTRACT_FAILED:-1}" = "0"
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:40:20.5655033Z ^[[36;1mtest "${CONTRACT_FAILED:-1}" = "0"^[[0m
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:40:20.5701414Z shell: /usr/bin/bash -e {0}
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:40:20.5701688Z env:
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:40:20.5701895Z   CONTRACT_FAILED: 1
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:40:20.5702123Z ##[endgroup]
+contract surfaces	Fail when a contract surface is missing or red	2026-08-12T06:40:20.5784680Z ##[error]Process completed with exit code 1.
+failing-first evidence	Record failing-first verdict	﻿2026-08-12T06:40:15.1720406Z ##[group]Run set -uo pipefail
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1720799Z ^[[36;1mset -uo pipefail^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1721094Z ^[[36;1mmkdir -p audit-fragments audit-logs^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1721604Z ^[[36;1mcp /tmp/new-tests.txt audit-logs/new-tests.txt 2>/dev/null || true^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1722332Z ^[[36;1mcp /tmp/changed-src.txt audit-logs/changed-src.txt 2>/dev/null || true^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1722786Z ^[[36;1mFRAGMENT=audit-fragments/40-failing-first.md^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1723110Z ^[[36;1m{^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1723325Z ^[[36;1m  echo "## failing-first"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1723584Z ^[[36;1m  echo^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1723821Z ^[[36;1m  echo "- ref: ${REF_SHA:-unresolved}"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1724143Z ^[[36;1m  echo "- base: ${BASE_SHA:-unresolved}"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1724457Z ^[[36;1m  echo "- new or modified test files:"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1724763Z ^[[36;1m  if [ -s /tmp/new-tests.txt ]; then^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1725101Z ^[[36;1m    sed "s|^|  - |" /tmp/new-tests.txt^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1725430Z ^[[36;1m  else^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1725641Z ^[[36;1m    echo "  - none"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1725882Z ^[[36;1m  fi^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1726302Z ^[[36;1m  echo "- source files changed:"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1726610Z ^[[36;1m  if [ -s /tmp/changed-src.txt ]; then^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1726937Z ^[[36;1m    sed "s|^|  - |" /tmp/changed-src.txt^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1727215Z ^[[36;1m  else^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1727414Z ^[[36;1m    echo "  - none"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1727645Z ^[[36;1m  fi^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1727883Z ^[[36;1m  echo "- base run: ${RED_RESULT:-not-run}"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1728214Z ^[[36;1m  echo "- ref run: ${GREEN_RESULT:-not-run}"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1728663Z ^[[36;1m  echo "- typecheck is deliberately not run on the base leg: vitest transpiles"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1729233Z ^[[36;1m  echo "  tests without checking them, so a strictly typed test executes against"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1729780Z ^[[36;1m  echo "  an implementation that does not yet expose its API and fails on"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1730323Z ^[[36;1m  echo "  behavior rather than on compilation. Slices ship one test file."^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1730717Z ^[[36;1m} > "$FRAGMENT"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1730958Z ^[[36;1mVERDICT=fail^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1731370Z ^[[36;1mif [ "${RED_RESULT:-}" = "failed-on-base" ] && [ "${GREEN_RESULT:-}" = "passed-on-ref" ]; then^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1731816Z ^[[36;1m  VERDICT=pass^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1732045Z ^[[36;1mfi^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1732331Z ^[[36;1mif [ "$VERDICT" != "pass" ] && [ -n "$AUDIT_EXCEPTION" ]; then^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1732679Z ^[[36;1m  VERDICT=exception^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1733029Z ^[[36;1m  echo "- documented exception: $AUDIT_EXCEPTION" >> "$FRAGMENT"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1733390Z ^[[36;1mfi^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1733622Z ^[[36;1mecho "- verdict: $VERDICT" >> "$FRAGMENT"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1733931Z ^[[36;1mtest "$VERDICT" != "fail"^[[0m
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1783106Z shell: /usr/bin/bash -e {0}
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1783710Z env:
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1784121Z   AUDIT_BASE: 83eb44d2da7e118e284d96c890f82cd90c84f960
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1802881Z   AUDIT_EXCEPTION: 
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1803203Z   REF_SHA: 79b2824098ab102c6c44f1c343d144ba6305c6ce
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1803568Z   BASE_SHA: 83eb44d2da7e118e284d96c890f82cd90c84f960
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1803912Z   RED_RESULT: no-new-tests
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1804166Z   GREEN_RESULT: no-new-tests
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1804433Z ##[endgroup]
+failing-first evidence	Record failing-first verdict	2026-08-12T06:40:15.1936665Z ##[error]Process completed with exit code 1.
