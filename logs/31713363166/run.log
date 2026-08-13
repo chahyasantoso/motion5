@@ -1,0 +1,13 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T15:04:09.6567476Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T15:04:09.6567816Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T15:04:09.6618397Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T15:04:09.6618695Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T15:04:09.6618901Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T15:04:09.6619125Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T15:04:09.7665132Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T15:04:09.7665907Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T15:04:09.7666371Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T15:04:09.7666578Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T15:04:11.5966080Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(21,58): error TS2304: Cannot find name 'vi'.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:04:11.5974536Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(21,160): error TS2304: Cannot find name 'vi'.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:04:11.6275942Z ##[error]Process completed with exit code 2.
