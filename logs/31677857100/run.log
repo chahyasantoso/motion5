@@ -1,0 +1,186 @@
+boundaries (node 24)	Boundary scan and planted fixtures	﻿2026-08-13T07:28:09.0955283Z ##[group]Run npm run test:boundaries
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T07:28:09.0955956Z ^[[36;1mnpm run test:boundaries^[[0m
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T07:28:09.0985630Z shell: /usr/bin/bash -e {0}
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T07:28:09.0986076Z ##[endgroup]
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T07:28:09.1935903Z 
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T07:28:09.1936681Z > motion5@0.0.0 test:boundaries
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T07:28:09.1937451Z > node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T07:28:09.1937893Z 
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T07:28:09.2386804Z packages/core/src/index.ts: public export ProjectHandle is not allow-listed
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T07:28:09.2387629Z packages/core/src/index.ts: public export PatchBatchLike is not allow-listed
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T07:28:09.2516733Z ##[error]Process completed with exit code 1.
+quality (node 24)	Typecheck	﻿2026-08-13T07:28:03.6169163Z ##[group]Run npm run typecheck
+quality (node 24)	Typecheck	2026-08-13T07:28:03.6169616Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Typecheck	2026-08-13T07:28:03.6208587Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Typecheck	2026-08-13T07:28:03.6208820Z ##[endgroup]
+quality (node 24)	Typecheck	2026-08-13T07:28:03.7029233Z 
+quality (node 24)	Typecheck	2026-08-13T07:28:03.7029936Z > motion5@0.0.0 typecheck
+quality (node 24)	Typecheck	2026-08-13T07:28:03.7030464Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Typecheck	2026-08-13T07:28:03.7030690Z 
+quality (node 24)	Typecheck	2026-08-13T07:28:05.0894733Z ##[error]packages/core/test/integration/end-to-end.test.ts(47,13): error TS2339: Property 'graph' does not exist on type 'ProjectHandle'.
+quality (node 24)	Typecheck	2026-08-13T07:28:05.0902612Z ##[error]packages/core/test/integration/end-to-end.test.ts(49,13): error TS2339: Property 'graph' does not exist on type 'ProjectHandle'.
+quality (node 24)	Typecheck	2026-08-13T07:28:05.0904121Z ##[error]packages/core/test/integration/end-to-end.test.ts(51,27): error TS2339: Property 'graph' does not exist on type 'ProjectHandle'.
+quality (node 24)	Typecheck	2026-08-13T07:28:05.1136283Z ##[error]Process completed with exit code 2.
+integration (node 24)	Integration tests	﻿2026-08-13T07:28:05.6602559Z ##[group]Run npm run test:integration
+integration (node 24)	Integration tests	2026-08-13T07:28:05.6603087Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Integration tests	2026-08-13T07:28:05.6628100Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Integration tests	2026-08-13T07:28:05.6628442Z ##[endgroup]
+integration (node 24)	Integration tests	2026-08-13T07:28:05.7424268Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:05.7425132Z > motion5@0.0.0 test:integration
+integration (node 24)	Integration tests	2026-08-13T07:28:05.7425898Z > vitest run packages/core/test/integration
+integration (node 24)	Integration tests	2026-08-13T07:28:05.7426203Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:06.0808884Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:06.0836859Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:06.0844223Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:06.3686163Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:06.3731188Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:06.3819627Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:06.5442981Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:06.5901336Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:06.5939343Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:06.6996887Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:06.7596882Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:06.7728552Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:06.9584565Z  ^[[31m❯^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:06.9587280Z ^[[31m     ^[[31m×^[[31m does not expose graph internals through Engine.load^[[39m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:06.9589331Z ^[[31m     ^[[31m×^[[31m keeps only lifecycle operations on the consumer handle^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:06.9620726Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.1277459Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.1279483Z ^[[31m     ^[[31m×^[[31m writes authored GSAP output through a patch into the DOM adapter^[[39m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.1314236Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.1509780Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2721140Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2741631Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2769373Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2770719Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 3 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2771315Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2775299Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m > ^[[22mreal end-to-end product path (E2)^[[2m > ^[[22mwrites authored GSAP output through a patch into the DOM adapter
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2780472Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading 'flush')^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2782527Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/end-to-end.test.ts:^[[2m47:19^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2810862Z     ^[[90m 45|^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2811968Z     ^[[90m 46|^[[39m     runtime^[[33m.^[[39m^[[34mmount^[[39m(^[[32m"hero/arm"^[[39m)^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2813276Z     ^[[90m 47|^[[39m     runtime^[[33m.^[[39mgraph^[[33m.^[[39m^[[34mflush^[[39m([^[[32m"hero/arm"^[[39m]^[[33m,^[[39m ^[[34m1^[[39m)^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2814299Z     ^[[90m   |^[[39m                   ^[[31m^^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2815607Z     ^[[90m 48|^[[39m     runtime^[[33m.^[[39m^[[34mseek^[[39m(^[[32m"hero/arm"^[[39m^[[33m,^[[39m ^[[34m0.5^[[39m)^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2817058Z     ^[[90m 49|^[[39m     runtime^[[33m.^[[39mgraph^[[33m.^[[39m^[[34mflush^[[39m([^[[32m"hero/arm"^[[39m]^[[33m,^[[39m ^[[34m2^[[39m)^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2817825Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2818274Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2818698Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2820227Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/project-handle-surface.test.ts^[[2m > ^[[22mpublic project handle surface (P1-9)^[[2m > ^[[22mdoes not expose graph internals through Engine.load
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2822113Z ^[[31m^[[1mAssertionError^[[22m: expected [ 'mount', 'unmount', 'seek', …(2) ] to deeply equal []^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2822765Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2823011Z ^[[32m- Expected^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2823554Z ^[[31m+ Received^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2823826Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2824064Z ^[[32m- []^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2824485Z ^[[31m+ [^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2825219Z ^[[31m+   "mount",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2825726Z ^[[31m+   "unmount",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2826222Z ^[[31m+   "seek",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2826786Z ^[[31m+   "subscribe",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2827283Z ^[[31m+   "dispose",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2827841Z ^[[31m+ ]^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2828073Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2828882Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/project-handle-surface.test.ts:^[[2m23:34^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2830379Z     ^[[90m 21|^[[39m     expect((runtime as unknown as { registry?: unknown }).registry).to…
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2831453Z     ^[[90m 22|^[[39m     expect((runtime as unknown as { publisher?: unknown }).publisher).…
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2832760Z     ^[[90m 23|^[[39m     ^[[34mexpect^[[39m(^[[33mObject^[[39m^[[33m.^[[39m^[[34mkeys^[[39m(runtime))^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2833891Z     ^[[90m   |^[[39m                                  ^[[31m^^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2834696Z     ^[[90m 24|^[[39m     runtime^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2837340Z     ^[[90m 25|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2837689Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2838147Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2838517Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2839979Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/project-handle-surface.test.ts^[[2m > ^[[22mpublic project handle surface (P1-9)^[[2m > ^[[22mkeeps only lifecycle operations on the consumer handle
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2842127Z ^[[31m^[[1mAssertionError^[[22m: expected [ '__defineGetter__', …(11) ] to deeply equal [ 'constructor', 'dispose', …(3) ]^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2842895Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2843192Z ^[[32m- Expected^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2843771Z ^[[31m+ Received^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2844052Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2844244Z ^[[2m  [^[[22m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2844940Z ^[[31m+   "__defineGetter__",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2845686Z ^[[31m+   "__defineSetter__",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2846260Z ^[[31m+   "__lookupGetter__",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2846916Z ^[[31m+   "__lookupSetter__",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2847474Z ^[[31m+   "__proto__",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2848045Z ^[[2m    "constructor",^[[22m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2848669Z ^[[32m-   "dispose",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2849149Z ^[[32m-   "mount",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2849695Z ^[[32m-   "seek",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2850167Z ^[[32m-   "unmount",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2850846Z ^[[31m+   "hasOwnProperty",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2851697Z ^[[31m+   "isPrototypeOf",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2852426Z ^[[31m+   "propertyIsEnumerable",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2853115Z ^[[31m+   "toLocaleString",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2853703Z ^[[31m+   "toString",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2854349Z ^[[31m+   "valueOf",^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2855004Z ^[[2m  ]^[[22m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2855211Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2856010Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/project-handle-surface.test.ts:^[[2m36:19^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2857655Z     ^[[90m 34|^[[39m     ^[[35mconst^[[39m names ^[[33m=^[[39m ^[[33mObject^[[39m^[[33m.^[[39m^[[34mgetOwnPropertyNames^[[39m(prototype)^[[33m.^[[39m^[[34msort^[[39m()^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2858804Z     ^[[90m 35|^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2859625Z     ^[[90m 36|^[[39m     expect(names).toEqual(["constructor", "dispose", "mount", "seek", …
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2860527Z     ^[[90m   |^[[39m                   ^[[31m^^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2861796Z     ^[[90m 37|^[[39m     runtime^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2862713Z     ^[[90m 38|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2863005Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2863456Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2863850Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2863888Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2864981Z ^[[2m Test Files ^[[22m ^[[1m^[[31m2 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m14 passed^[[39m^[[22m^[[90m (16)^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2866244Z ^[[2m      Tests ^[[22m ^[[1m^[[31m3 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m34 passed^[[39m^[[22m^[[90m (37)^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2867123Z ^[[2m   Start at ^[[22m 07:28:06
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2868216Z ^[[2m   Duration ^[[22m 1.18s^[[2m (transform 630ms, setup 0ms, import 1.08s, tests 129ms, environment 2ms)^[[22m
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2868786Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2868798Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2897693Z ##[error]TypeError: Cannot read properties of undefined (reading 'flush')
+integration (node 24)	Integration tests	 ❯ packages/core/test/integration/end-to-end.test.ts:47:19
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2908349Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2911809Z ##[error]AssertionError: expected [ 'mount', 'unmount', 'seek', …(2) ] to deeply equal []
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	- Expected
+integration (node 24)	Integration tests	+ Received
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	- []
+integration (node 24)	Integration tests	+ [
+integration (node 24)	Integration tests	+   "mount",
+integration (node 24)	Integration tests	+   "unmount",
+integration (node 24)	Integration tests	+   "seek",
+integration (node 24)	Integration tests	+   "subscribe",
+integration (node 24)	Integration tests	+   "dispose",
+integration (node 24)	Integration tests	+ ]
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	 ❯ packages/core/test/integration/project-handle-surface.test.ts:23:34
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2913106Z 
+integration (node 24)	Integration tests	2026-08-13T07:28:07.2916185Z ##[error]AssertionError: expected [ '__defineGetter__', …(11) ] to deeply equal [ 'constructor', 'dispose', …(3) ]
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	- Expected
+integration (node 24)	Integration tests	+ Received
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	  [
+integration (node 24)	Integration tests	+   "__defineGetter__",
+integration (node 24)	Integration tests	+   "__defineSetter__",
+integration (node 24)	Integration tests	+   "__lookupGetter__",
+integration (node 24)	Integration tests	+   "__lookupSetter__",
+integration (node 24)	Integration tests	+   "__proto__",
+integration (node 24)	Integration tests	    "constructor",
+integration (node 24)	Integration tests	-   "dispose",
+integration (node 24)	Integration tests	-   "mount",
+integration (node 24)	Integration tests	-   "seek",
+integration (node 24)	Integration tests	-   "unmount",
+integration (node 24)	Integration tests	+   "hasOwnProperty",
+integration (node 24)	Integration tests	+   "isPrototypeOf",
+integration (node 24)	Integration tests	+   "propertyIsEnumerable",
+integration (node 24)	Integration tests	+   "toLocaleString",
+integration (node 24)	Integration tests	+   "toString",
+integration (node 24)	Integration tests	+   "valueOf",
+integration (node 24)	Integration tests	  ]
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	 ❯ packages/core/test/integration/project-handle-surface.test.ts:36:19
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	2026-08-13T07:28:07.3208466Z ##[error]Process completed with exit code 1.
