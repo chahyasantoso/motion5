@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import type { AuthoredStop } from "../../../src/contract/v5";
+import type { ImmutableRecord } from "../../../src/domain/values";
 import { PluginRegistry } from "../../../src/domain/plugins";
 
-const stops = (value: number) => ({ stops: [{ p: 0, v: value }, { p: 1, v: value + 1 }] });
-const compose = (values: Record<string, unknown>) => values;
+const stops = (value: number): { readonly stops: readonly AuthoredStop[] } => ({ stops: [{ p: 0, v: value }, { p: 1, v: value + 1 }] });
+const compose = (values: Readonly<ImmutableRecord>): ImmutableRecord => values;
 
 describe("plugin contribution contract (X-3)", () => {
   it("passes the authored key, stops, and frozen track view to the contributor", () => {
