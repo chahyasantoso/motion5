@@ -1,8 +1,13 @@
 import type { AuthoredStop, Diagnostic } from "../contract/v5";
 
+export interface CompiledProperty {
+  readonly key: string;
+  readonly stops: readonly AuthoredStop[];
+}
 export interface CompiledKeyframes {
-  readonly keyframes: Record<string, Record<string, unknown>>;
-  readonly initial: Record<string, unknown>;
+  readonly map: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
+  readonly initial: Readonly<Record<string, unknown>>;
+  readonly properties: readonly CompiledProperty[];
   readonly diagnostics: readonly Diagnostic[];
 }
 
@@ -31,21 +36,37 @@ function readStops(value: unknown): readonly AuthoredStop[] {
   );
 }
 
-export function compilePercentKeyframes(config: unknown, path = "keyframes"): CompiledKeyframes {
-  if (!isRecord(config) || !isRecord(config.keyframes))
-    return { keyframes: {}, initial: {}, diagnostics: [] };
+/**
+ * Compile authored properties without projecting them onto a sibling's percent grid.
+ *
+ * Motion5 intentionally seeds each proxy property from its first authored value, even
+ * when that stop is after 0%. This preserves the leading hold without inventing a 0%
+ * keyframe, unlike the oracle's 0%-only proxy seeding.
+ */
+export function compilePercentKeyframes(
+  keyframes: unknown,
+  path = "keyframes",
+): CompiledKeyframes {
+  if (!isRecord(keyframes))
+    return Object.freeze({
+      map: Object.freeze({}),
+      initial: Object.freeze({}),
+      properties: Object.freeze([]),
+      diagnostics: Object.freeze([]),
+    });
 
-  const keyframes: Record<string, Record<string, unknown>> = {};
+  const map: Record<string, Record<string, unknown>> = {};
   const initial: Record<string, unknown> = {};
+  const properties: CompiledProperty[] = [];
   const diagnostics: Diagnostic[] = [];
   const easeOwners = new Map<string, { ease: unknown; keys: string[] }>();
 
   const addValue = (percent: string, key: string, value: unknown): void => {
-    (keyframes[percent] ??= {})[key] = value;
+    (map[percent] ??= {})[key] = value;
   };
   const addEase = (percent: string, key: string, ease: unknown): void => {
     const owner = easeOwners.get(percent);
-    if (owner && JSON.stringify(owner.ease) !== JSON.stringify(ease)) {
+    if (owner && !Object.is(owner.ease, ease)) {
       const ids = [...new Set([...owner.keys, key])].sort();
       diagnostics.push(
         diagnostic(
@@ -60,37 +81,35 @@ export function compilePercentKeyframes(config: unknown, path = "keyframes"): Co
     if (owner) owner.keys.push(key);
     else {
       easeOwners.set(percent, { ease, keys: [key] });
-      (keyframes[percent] ??= {}).ease = ease;
+      (map[percent] ??= {}).ease = ease;
     }
   };
 
-  for (const [key, property] of Object.entries(config.keyframes)) {
+  for (const [key, property] of Object.entries(keyframes).sort(([left], [right]) =>
+    left.localeCompare(right),
+  )) {
     const stops = readStops(property);
     const first = stops[0];
-    const last = stops.at(-1);
-    if (!first || !last) continue;
+    if (!first) continue;
+    const frozenStops = Object.freeze([...stops]);
+    properties.push(Object.freeze({ key, stops: frozenStops }));
     initial[key] = first.v;
-
-    // These are property-local boundary holds. They prevent a track that starts or
-    // ends late from acquiring GSAP's implicit neutral value, without resampling
-    // any sibling property onto this property's grid.
-    if (first.p > 0) addValue("0%", key, first.v);
     for (const stop of stops) {
       const percent = toPercentKey(stop.p);
       addValue(percent, key, stop.v);
       if (stop.ease !== undefined) addEase(percent, key, stop.ease);
     }
-    if (last.p < 1) addValue("100%", key, last.v);
   }
 
-  const orderedKeyframes = Object.fromEntries(
-    Object.entries(keyframes)
+  const orderedMap = Object.fromEntries(
+    Object.entries(map)
       .sort(([left], [right]) => percentValue(left) - percentValue(right))
       .map(([percent, frame]) => [percent, Object.freeze(frame)]),
   );
   return Object.freeze({
-    keyframes: Object.freeze(orderedKeyframes),
+    map: Object.freeze(orderedMap),
     initial: Object.freeze(initial),
+    properties: Object.freeze(properties),
     diagnostics: Object.freeze(diagnostics),
   });
 }

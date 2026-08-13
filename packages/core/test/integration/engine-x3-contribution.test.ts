@@ -105,7 +105,7 @@ describe("X-3 contribution through the product load path", () => {
     expect(create).not.toHaveBeenCalled();
   });
 
-  it("rejects ease collisions before any timeline is created", () => {
+  it("rejects authored ease collisions before any timeline is created", () => {
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
     expect(() =>
@@ -122,6 +122,43 @@ describe("X-3 contribution through the product load path", () => {
             stops: [
               { p: 0, v: 0 },
               { p: 0.5, v: 50, ease: "power2.out" },
+              { p: 1, v: 100 },
+            ],
+          },
+        }) as never,
+      ),
+    ).toThrow(/plugin-contribution-ease-collision/);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it("merges contributed keyframes into compiler diagnostics before timeline creation", () => {
+    const registry = new PluginRegistry();
+    registry.register({
+      name: "base",
+      keys: ["x"],
+      stage: "prepare",
+      contribute: () => ({
+        keyframes: {
+          derived: {
+            stops: [
+              { p: 0, v: 0 },
+              { p: 0.5, v: 50, ease: "power2.out" },
+              { p: 1, v: 100 },
+            ],
+          },
+        },
+      }),
+      compose,
+    });
+    const interpolator = createFakeInterpolator();
+    const create = vi.spyOn(interpolator, "create");
+    expect(() =>
+      new Engine({ ...options(), interpolator, plugins: registry }).load(
+        projectWith({
+          x: {
+            stops: [
+              { p: 0, v: 0 },
+              { p: 0.5, v: 50, ease: "power1.out" },
               { p: 1, v: 100 },
             ],
           },

@@ -1,24 +1,28 @@
 import { describe, expect, it } from "vitest";
-import { createGsapInterpolator, type GsapTweenLike } from "../../src/adapters/interpolator/gsap";
+import {
+  createGsapInterpolator,
+  type GsapTimelineLike,
+} from "../../src/adapters/interpolator/gsap";
 import { createRealGsapSeam } from "../support/real-gsap";
 
 describe("GSAP interpolator clock ownership (P0-2)", () => {
-  it("creates a paused tween so the project clock is the only clock owner", () => {
+  it("creates a paused parent timeline so the project clock is the only clock owner", () => {
     let receivedVars: Record<string, unknown> | undefined;
-    const tween: GsapTweenLike = {
+    let currentProgress = 0;
+    const timeline: GsapTimelineLike = {
       duration: () => 1,
-      progress,
+      progress(value?: number): number | GsapTimelineLike {
+        if (value === undefined) return currentProgress;
+        currentProgress = value;
+        return timeline;
+      },
+      to: () => timeline,
       kill() {},
-    };
-    function progress(): number;
-    function progress(value: number): GsapTweenLike;
-    function progress(value?: number): number | GsapTweenLike {
-      return value === undefined ? 0 : tween;
-    }
+    } as GsapTimelineLike;
     const interpolator = createGsapInterpolator({
-      to(_target, vars) {
+      timeline(vars) {
         receivedVars = vars;
-        return tween;
+        return timeline;
       },
     });
 

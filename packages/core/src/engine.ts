@@ -87,16 +87,19 @@ export class Engine {
       if (existing) return existing;
       const definition = nodes.get(nodeId);
       if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
-      const keyframeCompilation = compilePercentKeyframes(definition, `${nodeId}.keyframes`);
-      if (keyframeCompilation.diagnostics.some(({ severity }) => severity === "error"))
-        throw new TypeError(describeDiagnostics(keyframeCompilation.diagnostics));
-      const resolved = this.#plugins?.resolveForKeyframes(
-        definition.keyframes ?? {},
-        `${nodeId}.keyframes`,
-        { id: nodeId, duration: definition.duration },
-      );
-      if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
-        throw new TypeError(describeDiagnostics(resolved.diagnostics));
+      const path = `${nodeId}.keyframes`;
+      const resolved = this.#plugins?.resolveForKeyframes(definition.keyframes ?? {}, path, {
+        id: nodeId,
+        duration: definition.duration,
+      });
+      const preparedKeyframes = {
+        ...(definition.keyframes ?? {}),
+        ...(resolved?.preparation.keyframes ?? {}),
+      };
+      const keyframeCompilation = compilePercentKeyframes(preparedKeyframes, path);
+      const diagnostics = [...(resolved?.diagnostics ?? []), ...keyframeCompilation.diagnostics];
+      if (diagnostics.some(({ severity }) => severity === "error"))
+        throw new TypeError(describeDiagnostics(diagnostics));
       const track = new Track({
         interpolator: this.#options.interpolator,
         interpolationConfig: definition,
