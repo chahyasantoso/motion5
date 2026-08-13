@@ -176,9 +176,10 @@ export class PatchRegistry {
     // event. Subscribing or unsubscribing from inside a listener now takes effect on the
     // next batch.
     const nodeListeners = new Map<string, readonly PatchListener[]>(
-      [...this.#nodeListeners].map(
-        ([nodeId, listeners]): [string, readonly PatchListener[]] => [nodeId, [...listeners]],
-      ),
+      [...this.#nodeListeners].map(([nodeId, listeners]): [string, readonly PatchListener[]] => [
+        nodeId,
+        [...listeners],
+      ]),
     );
     const batchListeners: readonly BatchListener[] = [...this.#batchListeners];
     this.#batchOpen = false;
