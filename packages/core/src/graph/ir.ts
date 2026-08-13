@@ -32,9 +32,11 @@ function validateProjection(projection: unknown, path: string, diagnostics: Diag
     return Object.freeze({ pick: Object.freeze([...projection.pick]) });
   }
   if (!isRecord(projection.map) || Object.keys(projection.map).length === 0 || Object.entries(projection.map).some(([source, target]) => source.length === 0 || typeof target !== "string" || target.length === 0)) { diagnostics.push(diag("observation-input-projection", path, "Input projection map must map non-empty source keys to non-empty output keys.")); return undefined; }
-  const targets = Object.values(projection.map);
+  const map: Record<string, string> = {};
+  for (const [source, target] of Object.entries(projection.map)) map[source] = target as string;
+  const targets = Object.values(map);
   if (new Set(targets).size !== targets.length) { diagnostics.push(diag("observation-input-projection", path, "Input projection map output keys must be unique.")); return undefined; }
-  return Object.freeze({ map: Object.freeze({ ...projection.map }) });
+  return Object.freeze({ map: Object.freeze(map) });
 }
 
 function collectTrack(track: TrackDefinition, owner: "motion" | "free", ownerId: string, authoredIndex: number, diagnostics: Diagnostic[]): GraphNode | undefined {
@@ -42,7 +44,7 @@ function collectTrack(track: TrackDefinition, owner: "motion" | "free", ownerId:
   const id = owner === "free" ? qualifyFreeTrack(track.id).value : qualifyMotionTrack(ownerId, track.id).value;
   const edges: GraphEdge[] = [];
   for (const [index, observation] of (track.observes ?? []).entries()) {
-    const path = `${owner === "free" ? `freeTracks[${authoredIndex}]` : `motions[${authoredIndex}]`}.tracks[${index}].observes`;
+    const path = `${owner === "free" ? `freeTracks[${authoredIndex}]` : `motions[${authoredIndex}].tracks[${index}].observes`}`;
     const role = observation.role ?? "output";
     if (role !== "input" && role !== "output") { diagnostics.push(diag("observation-role", path, "Observation role must be input or output.")); continue; }
     if (typeof observation.source !== "string" || observation.source.length === 0) { diagnostics.push(diag("observation-source", path, "Observation source must be non-empty.")); continue; }
