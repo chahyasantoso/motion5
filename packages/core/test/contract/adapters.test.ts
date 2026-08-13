@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createBrowserClock } from "../../src/adapters/browser-clock";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
-import { createGsapInterpolator } from "../../src/adapters/interpolator/gsap";
+import { createGsapInterpolator, type GsapTimelineLike } from "../../src/adapters/interpolator/gsap";
 import { createRealGsapSeam } from "../support/real-gsap";
 
 describe("adapter ports", () => {
@@ -20,31 +20,28 @@ describe("adapter ports", () => {
   it("adapts a GSAP-like timeline without leaking the engine object", () => {
     let value = 0;
     let killed = false;
-    const interpolator = createGsapInterpolator({
-      timeline: () => {
-        function progress(): number;
-        function progress(next: number): ReturnType<typeof timeline>;
-        function progress(next?: number): number | ReturnType<typeof timeline> {
-          if (next === undefined) return value;
-          value = next;
-          return timeline();
-        }
-        const timeline = () => ({
-          duration: () => 2,
-          progress,
-          to: (_target: Record<string, unknown>, _vars: Record<string, unknown>) => timeline(),
-          kill: () => {
-            killed = true;
-          },
-        });
-        return timeline();
+    let timeline: GsapTimelineLike;
+    function progress(): number;
+    function progress(next: number): GsapTimelineLike;
+    function progress(next?: number): number | GsapTimelineLike {
+      if (next === undefined) return value;
+      value = next;
+      return timeline;
+    }
+    timeline = {
+      duration: () => 2,
+      progress,
+      to: () => timeline,
+      kill: () => {
+        killed = true;
       },
-    });
-    const timeline = interpolator.create({});
-    expect(timeline.duration).toBe(2);
-    timeline.progress(0.5);
-    expect(timeline.progress()).toBe(0.5);
-    timeline.kill();
+    };
+    const interpolator = createGsapInterpolator({ timeline: () => timeline });
+    const adapted = interpolator.create({});
+    expect(adapted.duration).toBe(2);
+    adapted.progress(0.5);
+    expect(adapted.progress()).toBe(0.5);
+    adapted.kill();
     expect(killed).toBe(true);
   });
 
