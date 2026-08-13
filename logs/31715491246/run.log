@@ -1,0 +1,26 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T15:27:45.4704872Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T15:27:45.4705265Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T15:27:45.4728715Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T15:27:45.4729099Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T15:27:45.4729346Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T15:27:45.4729599Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T15:27:45.6301788Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T15:27:45.6302992Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T15:27:45.6303788Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T15:27:45.6304081Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T15:27:47.1590313Z ##[error]packages/core/src/contract/validate-v5.ts(34,2310): error TS2352: Conversion of type 'TrackDefinition' to type 'RawObject' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:27:47.1599227Z   Index signature for type 'string' is missing in type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:27:47.1602712Z ##[error]packages/core/src/contract/validate-v5.ts(34,2508): error TS2352: Conversion of type 'TrackDefinition' to type 'RawObject' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:27:47.1605454Z   Index signature for type 'string' is missing in type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:27:47.1748833Z ##[error]Process completed with exit code 2.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-08-13T15:27:37.8672378Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:27:37.8672869Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:27:37.8719281Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:27:37.8719564Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:27:37.8719758Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:27:37.8719968Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:27:39.6537333Z ##[error]packages/core/src/contract/validate-v5.ts(34,2310): error TS2352: Conversion of type 'TrackDefinition' to type 'RawObject' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:27:39.6549290Z   Index signature for type 'string' is missing in type 'TrackDefinition'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:27:39.6553757Z ##[error]packages/core/src/contract/validate-v5.ts(34,2508): error TS2352: Conversion of type 'TrackDefinition' to type 'RawObject' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:27:39.6557091Z   Index signature for type 'string' is missing in type 'TrackDefinition'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:27:39.6867343Z ##[error]Process completed with exit code 2.
