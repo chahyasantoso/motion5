@@ -1,17 +1,131 @@
 import type { Interpolator, InterpolationTimeline } from "../../ports/interpolator";
-export interface GsapTweenLike { readonly duration: () => number; progress(): number; progress(value: number): GsapTweenLike; kill(): void; }
-export interface GsapLike { to(target: Record<string, unknown>, vars: Record<string, unknown>): GsapTweenLike; }
-interface AuthoredStop { readonly p: number; readonly v: unknown; readonly ease?: unknown; }
-type PercentKeyframe = Record<string, unknown>;
-interface PropertyCompilation { readonly stops: readonly AuthoredStop[]; readonly first: AuthoredStop; readonly last: AuthoredStop; }
-function readStops(property: unknown): readonly AuthoredStop[] { if (!property || typeof property !== "object" || !("stops" in property)) return []; const stops = (property as { stops?: unknown }).stops; if (!Array.isArray(stops)) return []; return stops.filter((stop): stop is AuthoredStop => Boolean(stop && typeof stop === "object" && typeof (stop as { p?: unknown }).p === "number" && Number.isFinite((stop as { p: number }).p) && "v" in stop)); }
-function readDuration(config: unknown): number { if (!config || typeof config !== "object") return 1; const duration = (config as { duration?: unknown }).duration; return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1; }
-function readTweenVars(config: unknown): Readonly<Record<string, unknown>> { if (!config || typeof config !== "object") return {}; const vars = (config as { tweenVars?: unknown }).tweenVars; return vars && typeof vars === "object" && !Array.isArray(vars) ? vars as Readonly<Record<string, unknown>> : {}; }
-function toPercentKey(position: number): string { return `${position * 100}%`; }
-function numericValueAt(stops: readonly AuthoredStop[], position: number): unknown { const previous = [...stops].reverse().find((stop) => stop.p <= position) ?? stops[0]; const next = stops.find((stop) => stop.p >= position); if (!previous || !next || previous === next || typeof previous.v !== "number" || typeof next.v !== "number") return previous?.v; const amount = (position - previous.p) / (next.p - previous.p); return previous.v + (next.v - previous.v) * amount; }
-function compileKeyframes(config: unknown): { keyframes: Record<string, PercentKeyframe>; initial: Record<string, unknown> } {
-  if (!config || typeof config !== "object" || !("keyframes" in config)) return { keyframes: {}, initial: {} }; const authored = (config as { keyframes?: unknown }).keyframes; if (!authored || typeof authored !== "object" || Array.isArray(authored)) return { keyframes: {}, initial: {} }; const properties = new Map<string, PropertyCompilation>(); const positions = new Set<number>([0, 1]); for (const [key, property] of Object.entries(authored)) { const stops = readStops(property); const first = stops[0]; const last = stops.at(-1); if (!first || !last) continue; properties.set(key, { stops, first, last }); for (const stop of stops) positions.add(stop.p); }
-  const keyframes: Record<string, PercentKeyframe> = {}; for (const position of [...positions].sort((a, b) => a - b)) { const frame: PercentKeyframe = { ease: "none" }; for (const [key, property] of properties) frame[key] = numericValueAt(property.stops, position); const authoredAtPosition = [...properties.values()].flatMap(({ stops }) => stops.filter((stop) => stop.p === position)); const eases = authoredAtPosition.map((stop) => stop.ease).filter((ease) => ease !== undefined); if (new Set(eases.map((ease) => JSON.stringify(ease))).size > 1) throw new TypeError(`Ease collision at ${toPercentKey(position)}.`); if (eases[0] !== undefined) frame.ease = eases[0]; keyframes[toPercentKey(position)] = frame; }
-  const initial: Record<string, unknown> = {}; for (const [key, property] of properties) initial[key] = property.first.v; return { keyframes, initial };
+export interface GsapTweenLike {
+  readonly duration: () => number;
+  progress(): number;
+  progress(value: number): GsapTweenLike;
+  kill(): void;
 }
-export function createGsapInterpolator(gsap: GsapLike): Interpolator { return { create(config): InterpolationTimeline { const compiled = compileKeyframes(config); const proxy: Record<string, unknown> = { ...compiled.initial }; const tweenVars = readTweenVars(config); const tween = gsap.to(proxy, { ...tweenVars, keyframes: compiled.keyframes, duration: readDuration(config), paused: true }); function progress(): number; function progress(value: number): void; function progress(value?: number): number | void { if (value === undefined) return tween.progress(); tween.progress(value); } return { get duration() { return tween.duration(); }, state: proxy, progress, kill(): void { tween.kill(); } }; } }; }
+export interface GsapLike {
+  to(target: Record<string, unknown>, vars: Record<string, unknown>): GsapTweenLike;
+}
+interface AuthoredStop {
+  readonly p: number;
+  readonly v: unknown;
+  readonly ease?: unknown;
+}
+type PercentKeyframe = Record<string, unknown>;
+interface PropertyCompilation {
+  readonly stops: readonly AuthoredStop[];
+  readonly first: AuthoredStop;
+  readonly last: AuthoredStop;
+}
+function readStops(property: unknown): readonly AuthoredStop[] {
+  if (!property || typeof property !== "object" || !("stops" in property)) return [];
+  const stops = (property as { stops?: unknown }).stops;
+  if (!Array.isArray(stops)) return [];
+  return stops.filter((stop): stop is AuthoredStop =>
+    Boolean(
+      stop &&
+        typeof stop === "object" &&
+        typeof (stop as { p?: unknown }).p === "number" &&
+        Number.isFinite((stop as { p: number }).p) &&
+        "v" in stop,
+    ),
+  );
+}
+function readDuration(config: unknown): number {
+  if (!config || typeof config !== "object") return 1;
+  const duration = (config as { duration?: unknown }).duration;
+  return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
+}
+function readTweenVars(config: unknown): Readonly<Record<string, unknown>> {
+  if (!config || typeof config !== "object") return {};
+  const vars = (config as { tweenVars?: unknown }).tweenVars;
+  return vars && typeof vars === "object" && !Array.isArray(vars)
+    ? (vars as Readonly<Record<string, unknown>>)
+    : {};
+}
+function toPercentKey(position: number): string {
+  return `${position * 100}%`;
+}
+function numericValueAt(stops: readonly AuthoredStop[], position: number): unknown {
+  const previous = [...stops].reverse().find((stop) => stop.p <= position) ?? stops[0];
+  const next = stops.find((stop) => stop.p >= position);
+  if (
+    !previous ||
+    !next ||
+    previous === next ||
+    typeof previous.v !== "number" ||
+    typeof next.v !== "number"
+  )
+    return previous?.v;
+  const amount = (position - previous.p) / (next.p - previous.p);
+  return previous.v + (next.v - previous.v) * amount;
+}
+function compileKeyframes(config: unknown): {
+  keyframes: Record<string, PercentKeyframe>;
+  initial: Record<string, unknown>;
+} {
+  if (!config || typeof config !== "object" || !("keyframes" in config))
+    return { keyframes: {}, initial: {} };
+  const authored = (config as { keyframes?: unknown }).keyframes;
+  if (!authored || typeof authored !== "object" || Array.isArray(authored))
+    return { keyframes: {}, initial: {} };
+  const properties = new Map<string, PropertyCompilation>();
+  const positions = new Set<number>([0, 1]);
+  for (const [key, property] of Object.entries(authored)) {
+    const stops = readStops(property);
+    const first = stops[0];
+    const last = stops.at(-1);
+    if (!first || !last) continue;
+    properties.set(key, { stops, first, last });
+    for (const stop of stops) positions.add(stop.p);
+  }
+  const keyframes: Record<string, PercentKeyframe> = {};
+  for (const position of [...positions].sort((a, b) => a - b)) {
+    const frame: PercentKeyframe = { ease: "none" };
+    for (const [key, property] of properties) frame[key] = numericValueAt(property.stops, position);
+    const authoredAtPosition = [...properties.values()].flatMap(({ stops }) =>
+      stops.filter((stop) => stop.p === position),
+    );
+    const eases = authoredAtPosition.map((stop) => stop.ease).filter((ease) => ease !== undefined);
+    if (new Set(eases.map((ease) => JSON.stringify(ease))).size > 1)
+      throw new TypeError(`Ease collision at ${toPercentKey(position)}.`);
+    if (eases[0] !== undefined) frame.ease = eases[0];
+    keyframes[toPercentKey(position)] = frame;
+  }
+  const initial: Record<string, unknown> = {};
+  for (const [key, property] of properties) initial[key] = property.first.v;
+  return { keyframes, initial };
+}
+export function createGsapInterpolator(gsap: GsapLike): Interpolator {
+  return {
+    create(config): InterpolationTimeline {
+      const compiled = compileKeyframes(config);
+      const proxy: Record<string, unknown> = { ...compiled.initial };
+      const tweenVars = readTweenVars(config);
+      const tween = gsap.to(proxy, {
+        ...tweenVars,
+        keyframes: compiled.keyframes,
+        duration: readDuration(config),
+        paused: true,
+      });
+      function progress(): number;
+      function progress(value: number): void;
+      function progress(value?: number): number | void {
+        if (value === undefined) return tween.progress();
+        tween.progress(value);
+      }
+      return {
+        get duration() {
+          return tween.duration();
+        },
+        state: proxy,
+        progress,
+        kill(): void {
+          tween.kill();
+        },
+      };
+    },
+  };
+}
