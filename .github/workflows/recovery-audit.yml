@@ -158,13 +158,10 @@ jobs:
           git diff --name-only --diff-filter=AM "$base_sha" "$ref_sha" -- '*.test.ts' > audit-logs/new-tests.txt
           test -s audit-logs/new-tests.txt
           git checkout -f "$base_sha"
-<<<<<<< HEAD
-=======
           # Replay the whole test tree, not only the spec files. Seams, helpers, and fixtures do
           # not match '*.test.ts', so checking out the spec alone leaves it calling a base-era
           # helper: the base leg then reds with a TypeError instead of with the behavioral
           # assertion the slice exists to prove, which is evidence of nothing.
->>>>>>> origin/rescue/restore-motionpath-parity
           git checkout "$ref_sha" -- 'packages/*/test/*'
           xargs -a audit-logs/new-tests.txt git checkout "$ref_sha" --
           git diff --name-only "$base_sha" > audit-logs/replayed-files.txt
