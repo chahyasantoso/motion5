@@ -74,7 +74,7 @@ A motion has a unique `id`, a `trigger`, and a `tracks` array. The trigger type 
 
 ## Track fields
 
-A track has a unique local `id`, optional duration and keyframes, optional template use, and optional `observes` edges. Track ids may not contain `/`; motion ids may not contain `/` or equal `~`. These restrictions preserve the qualified namespace.
+A track has a unique local `id`, optional `duration` and keyframes, and optional `observes` edges. Plugins are resolved from authored keyframe keys. The legacy `use` field is not part of schema v5 and is rejected at load with `plugin-contribution-unsupported-entry`; there is no empty plugin-preparation entry point. Track ids may not contain `/`; motion ids may not contain `/` or equal `~`. These restrictions preserve the qualified namespace.
 
 ## Free tracks
 
@@ -114,4 +114,4 @@ Errors reject the candidate project before it can replace the active project. Wa
 
 ## Rejected input
 
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid trigger, invalid perspective, malformed edges, unknown sources, duplicate edges, self-reference, and cycles are errors. Missing perspective for detected 3D content and unused free tracks are warnings.
+Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid trigger, invalid perspective, malformed edges, unknown sources, duplicate edges, self-reference, cycles, and legacy `use` entries are errors. Missing perspective for detected 3D content and unused free tracks are warnings.
