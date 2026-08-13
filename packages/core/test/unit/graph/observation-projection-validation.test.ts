@@ -18,7 +18,6 @@ describe("observation projection validation (X-1)", () => {
                 {
                   source: "source",
                   role: "input",
-                  target: "fromA",
                   projection: { nope: true },
                 },
               ],
@@ -31,5 +30,32 @@ describe("observation projection validation (X-1)", () => {
     expect(buildGraphIR(project).diagnostics.map(({ ruleId }) => ruleId)).toContain(
       "observation-input-projection",
     );
+  });
+
+  it("accepts projected input observations without the compatibility target", () => {
+    const project = {
+      schemaVersion: 5,
+      motions: [
+        {
+          id: "hero",
+          trigger: { type: "manual" },
+          tracks: [
+            { id: "source" },
+            {
+              id: "observer",
+              observes: [
+                {
+                  source: "source",
+                  role: "input",
+                  projection: { pick: ["opacity"] },
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    } as unknown as ProjectDefinition;
+
+    expect(buildGraphIR(project).diagnostics).toEqual([]);
   });
 });
