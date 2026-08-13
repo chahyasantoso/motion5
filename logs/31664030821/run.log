@@ -1,0 +1,24 @@
+quality (node 24)	Format check	﻿2026-08-13T03:28:45.5798478Z ##[group]Run npm run format:check
+quality (node 24)	Format check	2026-08-13T03:28:45.5798802Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Format check	2026-08-13T03:28:45.5825746Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Format check	2026-08-13T03:28:45.5826041Z ##[endgroup]
+quality (node 24)	Format check	2026-08-13T03:28:45.7096150Z 
+quality (node 24)	Format check	2026-08-13T03:28:45.7097046Z > motion5@0.0.0 format:check
+quality (node 24)	Format check	2026-08-13T03:28:45.7097771Z > prettier . --check
+quality (node 24)	Format check	2026-08-13T03:28:45.7098538Z 
+quality (node 24)	Format check	2026-08-13T03:28:45.8283378Z Checking formatting...
+quality (node 24)	Format check	2026-08-13T03:28:47.1377222Z [^[[33mwarn^[[39m] packages/core/src/graph/ir.ts
+quality (node 24)	Format check	2026-08-13T03:28:47.2335625Z [^[[33mwarn^[[39m] packages/core/src/runtime/graph-publisher.ts
+quality (node 24)	Format check	2026-08-13T03:28:47.6577331Z [^[[33mwarn^[[39m] packages/core/test/unit/runtime/publisher-flat-inputs.test.ts
+quality (node 24)	Format check	2026-08-13T03:28:47.9520505Z [^[[33mwarn^[[39m] Code style issues found in 3 files. Run Prettier with --write to fix.
+quality (node 24)	Format check	2026-08-13T03:28:47.9803011Z ##[error]Process completed with exit code 1.
+boundaries (node 24)	Boundary scan and planted fixtures	﻿2026-08-13T03:28:43.2450215Z ##[group]Run npm run test:boundaries
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:43.2450617Z ^[[36;1mnpm run test:boundaries^[[0m
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:43.2503454Z shell: /usr/bin/bash -e {0}
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:43.2503799Z ##[endgroup]
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:43.3574437Z 
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:43.4121527Z ackages/core/src/contract/v5.ts: banned compatibility symbol
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:43.4122465Z > motion5@0.0.0 test:boundaries
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:43.4123504Z > node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:43.4124681Z 
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:43.4251116Z ##[error]Process completed with exit code 1.
