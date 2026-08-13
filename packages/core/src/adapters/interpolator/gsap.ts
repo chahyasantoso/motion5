@@ -37,31 +37,32 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
     const authored = isRecord(config) && isRecord(config.keyframes) ? config.keyframes : {};
     const tweenVars = readTweenVars(config);
     const parent = gsap.timeline?.({ paused: true });
-    if (parent) {
+    if (parent !== undefined) {
+      const timeline = parent;
       for (const [key, property] of Object.entries(authored)) {
         const stops = readStops(property);
         const first = stops[0];
         const last = stops.at(-1);
         if (!first || !last) continue;
-        if (first.p > 0) parent.to(proxy, { [key]: first.v, duration: 0 }, 0);
+        if (first.p > 0) timeline.to(proxy, { [key]: first.v, duration: 0 }, 0);
         for (let index = 1; index < stops.length; index += 1) {
           const previous = stops[index - 1];
           const next = stops[index];
           if (!previous || !next) continue;
           const vars: Record<string, unknown> = { ...tweenVars, [key]: next.v, duration: (next.p - previous.p) * duration, ease: "none" };
           if (next.ease !== undefined) vars.ease = next.ease;
-          parent.to(proxy, vars, previous.p * duration);
+          timeline.to(proxy, vars, previous.p * duration);
         }
-        if (last.p < 1) parent.to(proxy, { [key]: last.v, duration: 0 }, duration);
+        if (last.p < 1) timeline.to(proxy, { [key]: last.v, duration: 0 }, duration);
       }
-      parent.duration(duration);
+      timeline.duration(duration);
       function progress(): number;
       function progress(value: number): void;
       function progress(value?: number): number | void {
-        if (value === undefined) return parent.progress();
-        parent.progress(value);
+        if (value === undefined) return timeline.progress();
+        timeline.progress(value);
       }
-      return { get duration() { return parent.duration(); }, state: proxy, progress, kill(): void { parent.kill(); } };
+      return { get duration() { return timeline.duration(); }, state: proxy, progress, kill(): void { timeline.kill(); } };
     }
     if (!gsap.to) throw new TypeError("GSAP adapter requires timeline().");
     const tween = gsap.to(proxy, { ...tweenVars, keyframes: compiled.keyframes, duration, paused: true });
