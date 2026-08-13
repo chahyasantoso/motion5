@@ -22,15 +22,18 @@ describe("adapter ports", () => {
     let killed = false;
     const tween: GsapTweenLike = {
       duration: () => 2,
-      progress: (next?: number) => {
-        if (next === undefined) return value;
-        value = next;
-        return tween;
-      },
+      progress,
       kill: () => {
         killed = true;
       },
     };
+    function progress(): number;
+    function progress(next: number): GsapTweenLike;
+    function progress(next?: number): number | GsapTweenLike {
+      if (next === undefined) return value;
+      value = next;
+      return tween;
+    }
     const interpolator = createGsapInterpolator({ to: () => tween });
     const adapted = interpolator.create({});
     expect(adapted.duration).toBe(2);
