@@ -100,7 +100,17 @@ describe("one observation-validation owner (P1-12)", () => {
 
   it("mints a frozen snapshot instead of returning the caller's object", () => {
     const project = motion([
-      { id: "arm", keyframes: { opacity: { stops: [{ p: 0, v: 0 }, { p: 1, v: 1 }] } } },
+      {
+        id: "arm",
+        keyframes: {
+          opacity: {
+            stops: [
+              { p: 0, v: 0 },
+              { p: 1, v: 1 },
+            ],
+          },
+        },
+      },
     ]);
 
     const accepted = validateV5(project).value;
