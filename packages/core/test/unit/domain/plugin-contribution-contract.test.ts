@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 import type { AuthoredStop } from "../../../src/contract/v5";
 import type { ImmutableRecord } from "../../../src/domain/values";
 import { PluginRegistry } from "../../../src/domain/plugins";
-
 const stops = (value: number): { readonly stops: readonly AuthoredStop[] } => ({
   stops: [
     { p: 0, v: value },
@@ -10,7 +9,6 @@ const stops = (value: number): { readonly stops: readonly AuthoredStop[] } => ({
   ],
 });
 const compose = (values: Readonly<ImmutableRecord>): ImmutableRecord => values;
-
 describe("plugin contribution contract (X-3)", () => {
   it("passes the authored key, stops, and frozen track view to the contributor", () => {
     const calls: unknown[] = [];
@@ -50,6 +48,7 @@ describe("plugin contribution contract (X-3)", () => {
       contribute: () => ({ keyframes: { derived: stops(4) }, tweenVars: { overwrite: "auto" } }),
       compose,
     });
+    registry.register({ name: "derived-owner", keys: ["derived"], compose });
     const resolved = registry.resolveForKeyframes({ x: stops(1) });
     expect(resolved.diagnostics).toEqual([]);
     expect(resolved.preparation.keyframes).toEqual({ derived: stops(4) });
@@ -79,6 +78,7 @@ describe("plugin contribution contract (X-3)", () => {
       contribute: second,
       compose,
     });
+    registry.register({ name: "derived-owner", keys: ["derived"], compose });
     const resolved = registry.resolveForKeyframes({ x: stops(1) });
     expect(resolved.diagnostics).toEqual([]);
     expect(first).toHaveBeenCalledOnce();
@@ -106,6 +106,7 @@ describe("plugin contribution contract (X-3)", () => {
       }),
       compose,
     });
+    registry.register({ name: "derived-owner", keys: ["derived"], compose });
     const resolved = registry.resolveForKeyframes({ x: stops(1) });
     expect(resolved.diagnostics.map(({ ruleId }) => ruleId)).toContain(
       "plugin-contribution-stop-order",

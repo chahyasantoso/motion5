@@ -33,6 +33,14 @@
     {
       "id": "registry-listener-snapshots",
       "test": "packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts"
+    },
+    {
+      "id": "s5-contribution-completeness",
+      "test": "packages/core/test/unit/domain/plugin-contribution-completeness.test.ts"
+    },
+    {
+      "id": "s5-product-path",
+      "test": "packages/core/test/integration/engine-x3-contribution.test.ts"
     }
   ]
 }

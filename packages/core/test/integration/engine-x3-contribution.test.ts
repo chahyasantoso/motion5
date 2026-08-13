@@ -22,7 +22,8 @@ const property = (value: number) => ({
     { p: 1, v: value + 1 },
   ],
 });
-
+const registerDerivedOwner = (registry: PluginRegistry): void =>
+  registry.register({ name: "derived", keys: ["derived"], compose });
 describe("X-3 contribution through the product load path", () => {
   it("passes contribution context and creates the prepared timeline at load", () => {
     const registry = new PluginRegistry();
@@ -31,6 +32,7 @@ describe("X-3 contribution through the product load path", () => {
       tweenVars: { overwrite: "auto" },
     }));
     registry.register({ name: "base", keys: ["x"], stage: "prepare", contribute, compose });
+    registerDerivedOwner(registry);
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
     const runtime = new Engine({ ...options(), interpolator, plugins: registry }).load(
@@ -67,6 +69,7 @@ describe("X-3 contribution through the product load path", () => {
       contribute: second,
       compose,
     });
+    registerDerivedOwner(registry);
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
     const runtime = new Engine({ ...options(), interpolator, plugins: registry }).load(
@@ -95,6 +98,7 @@ describe("X-3 contribution through the product load path", () => {
       }),
       compose,
     });
+    registerDerivedOwner(registry);
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
     expect(() =>
@@ -148,6 +152,7 @@ describe("X-3 contribution through the product load path", () => {
       }),
       compose,
     });
+    registerDerivedOwner(registry);
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
     expect(() =>

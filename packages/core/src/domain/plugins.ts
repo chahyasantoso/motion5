@@ -1,6 +1,7 @@
 import { validateKeyframes } from "../contract/validate-v5";
 import type { AuthoredProperty, AuthoredStop, Diagnostic } from "../contract/v5";
 import type { ImmutableRecord } from "./values";
+
 export type PluginComposer = (
   values: Readonly<ImmutableRecord>,
   progress: number,
@@ -44,7 +45,9 @@ export interface PluginDefinition {
   readonly contribute?: PluginContributor;
   readonly compose: PluginComposer;
 }
+
 const VALID_STAGES = new Set(["prepare", "compose"]);
+const RESERVED_TWEEN_VARS = new Set(["keyframes", "duration", "paused", "id", "use", "observes"]);
 function diagnostic(
   ruleId: string,
   path: string,
@@ -64,6 +67,12 @@ function stageRank(stage: string): number {
 }
 function comparePlugins(a: PluginDefinition, b: PluginDefinition): number {
   return stageRank(a.stage ?? "compose") - stageRank(b.stage ?? "compose");
+}
+function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
+  if (value === null || typeof value !== "object" || seen.has(value)) return value;
+  seen.add(value);
+  for (const child of Object.values(value as Record<string, unknown>)) deepFreeze(child, seen);
+  return Object.freeze(value);
 }
 function normalizeContribution(
   value: unknown,
@@ -104,6 +113,24 @@ function readStops(value: unknown): readonly AuthoredStop[] {
   return isRecord(value) && Array.isArray(value.stops)
     ? (value.stops as readonly AuthoredStop[])
     : [];
+}
+function validateContributionProperty(
+  output: string,
+  property: unknown,
+  path: string,
+  diagnostics: Diagnostic[],
+): boolean {
+  const before = diagnostics.length;
+  validateKeyframes({ [output]: property }, path, diagnostics, {
+    ruleIdPrefix: "plugin-contribution-",
+    ruleIdAliases: {
+      "stop-position": "stop",
+      "stop-position-range": "stop-range",
+      "stop-position-order": "stop-order",
+      "stop-position-duplicate": "stop-duplicate",
+    },
+  });
+  return !diagnostics.slice(before).some(({ severity }) => severity === "error");
 }
 function prepareContributions(
   authored: Readonly<Record<string, unknown>>,
@@ -146,7 +173,9 @@ function prepareContributions(
       );
       continue;
     }
-    for (const [output, property] of Object.entries(contribution.keyframes ?? {})) {
+    for (const [output, property] of Object.entries(contribution.keyframes ?? {}).sort(([a], [b]) =>
+      a.localeCompare(b),
+    )) {
       if (authoredKeys.has(output)) {
         diagnostics.push(
           diagnostic(
@@ -170,23 +199,48 @@ function prepareContributions(
         );
         continue;
       }
-      const before = diagnostics.length;
-      validateKeyframes({ [output]: property }, path, diagnostics, {
-        ruleIdPrefix: "plugin-contribution-",
-        ruleIdAliases: {
-          "stop-position": "stop",
-          "stop-position-range": "stop-range",
-          "stop-position-order": "stop-order",
-          "stop-position-duplicate": "stop-duplicate",
-        },
-      });
-      const invalid = diagnostics.slice(before).some(({ severity }) => severity === "error");
-      if (!invalid) {
+      const outputOwner = ownerOf(output);
+      if (!outputOwner) {
+        diagnostics.push(
+          diagnostic(
+            "plugin-unknown-key",
+            `${path}.${output}`,
+            `No registered plugin claims contributed key "${output}".`,
+            [output],
+          ),
+        );
+        continue;
+      }
+      if (outputOwner.contribute) {
+        diagnostics.push(
+          diagnostic(
+            "plugin-contribution-cascade",
+            `${path}.${output}`,
+            `Contributed key "${output}" would require another contribution round.`,
+            [plugin.name, outputOwner.name, output].sort(),
+          ),
+        );
+        continue;
+      }
+      if (validateContributionProperty(output, property, path, diagnostics)) {
         keyOwners.set(output, plugin.name);
-        keyframes[output] = property;
+        keyframes[output] = deepFreeze(property);
       }
     }
-    for (const [name, value] of Object.entries(contribution.tweenVars ?? {})) {
+    for (const [name, value] of Object.entries(contribution.tweenVars ?? {}).sort(([a], [b]) =>
+      a.localeCompare(b),
+    )) {
+      if (RESERVED_TWEEN_VARS.has(name)) {
+        diagnostics.push(
+          diagnostic(
+            "plugin-contribution-reserved-tween-var",
+            `${path}.tweenVars.${name}`,
+            `Plugin "${plugin.name}" cannot contribute reserved tween var "${name}".`,
+            [plugin.name, name],
+          ),
+        );
+        continue;
+      }
       const owner = tweenOwners.get(name);
       if (owner && !Object.is(tweenVars[name], value))
         diagnostics.push(
@@ -199,14 +253,11 @@ function prepareContributions(
         );
       else {
         tweenOwners.set(name, owner ?? plugin.name);
-        tweenVars[name] = value;
+        tweenVars[name] = deepFreeze(value);
       }
     }
   }
-  return Object.freeze({
-    keyframes: Object.freeze(keyframes),
-    tweenVars: Object.freeze(tweenVars),
-  });
+  return Object.freeze({ keyframes: deepFreeze(keyframes), tweenVars: deepFreeze(tweenVars) });
 }
 function result(
   plugins: PluginDefinition[],
@@ -248,6 +299,7 @@ function result(
     preparation,
   });
 }
+
 export class PluginRegistry {
   readonly #plugins = new Map<string, PluginDefinition>();
   readonly #keyOwners = new Map<string, PluginDefinition>();
