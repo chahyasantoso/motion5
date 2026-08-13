@@ -375,7 +375,7 @@ export class PluginRegistry {
           diagnostic(
             "plugin-unknown-key",
             `${path}.${key}`,
-            `No registered plugin claims authored key "${key}".`,
+            `No registered plugin claims authored key "${key}"`,
             [key],
           ),
         );
