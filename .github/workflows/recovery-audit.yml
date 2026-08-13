@@ -72,6 +72,7 @@ jobs:
         with: { node-version: ${{ env.NODE_VERSION }}, cache: npm }
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: mkdir -p audit-logs/acceptance
+      # acceptance-map.json is consumed against the executed Vitest report below.
       - run: npx vitest run --reporter=json --outputFile=audit-logs/acceptance/vitest.json | tee audit-logs/acceptance/vitest.log
       - run: node scripts/acceptance-scan.mjs audit-logs/acceptance/vitest.json | tee audit-logs/acceptance/result.log
       - if: always()
@@ -110,9 +111,11 @@ jobs:
           node --input-type=module <<'NODE'
           import { readFile } from "node:fs/promises";
           const report = JSON.parse(await readFile("audit-logs/failing-first/base.json", "utf8"));
-          const failed = (report.testResults ?? []).filter((entry) => entry.status === "failed");
-          if (!failed.length) throw new Error("base red was not assertion-level");
-          console.log(`assertion-level red: ${failed.length}`);
+          const failures = (report.testResults ?? []).filter((entry) => entry.status === "failed");
+          const infrastructure = failures.filter((entry) => /Cannot find|failed to resolve|config|transform|import-resolution/i.test(String(entry.message ?? entry.assertionResults ?? "")));
+          if (infrastructure.length) throw new Error(`import-resolution/config red: ${infrastructure.length}`);
+          if (!failures.length) throw new Error("base red was not assertion-level");
+          console.log(`assertion-level red: ${failures.length}; import-resolution/config red: 0`);
           NODE
           git checkout -f "$ref_sha"
           npm ci --ignore-scripts --no-audit --no-fund > audit-logs/failing-first/ref-install.log 2>&1
