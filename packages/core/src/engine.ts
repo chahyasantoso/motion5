@@ -1,4 +1,5 @@
-import type { ProjectDefinition } from "./contract/v5";
+import type { Diagnostic, ProjectDefinition } from "./contract/v5";
+import { validateV5 } from "./contract/validate-v5";
 import { PluginRegistry } from "./domain/plugins";
 import { Track } from "./domain/track";
 import type { ImmutableRecord } from "./domain/values";
@@ -14,6 +15,23 @@ export interface EngineOptions {
   readonly plugins?: PluginRegistry;
 }
 
+function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
+  return diagnostics
+    .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
+    .join(" ");
+}
+
+function assertValidProject(project: unknown): asserts project is ProjectDefinition {
+  const result = validateV5(project);
+  if (!result.valid) {
+    throw new TypeError(
+      result.diagnostics.length === 0
+        ? "Project failed v5 validation."
+        : describeDiagnostics(result.diagnostics),
+    );
+  }
+}
+
 export class Engine {
   readonly #options: EngineOptions;
   readonly #plugins: PluginRegistry | undefined;
@@ -26,6 +44,7 @@ export class Engine {
   }
 
   load(project: ProjectDefinition): ProjectRuntime {
+    assertValidProject(project);
     const tracks = new Map<string, Track>();
     const nodes = new Map<
       string,
@@ -34,6 +53,7 @@ export class Engine {
     for (const motion of project.motions)
       for (const track of motion.tracks) nodes.set(`${motion.id}/${track.id}`, track);
     for (const track of project.freeTracks ?? []) nodes.set(`~/${track.id}`, track);
+
     const compile = (nodeId: string): Track => {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
@@ -44,7 +64,7 @@ export class Engine {
         `${nodeId}.keyframes`,
       );
       if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
-        throw new TypeError(resolved.diagnostics.map(({ message }) => message).join(" "));
+        throw new TypeError(describeDiagnostics(resolved.diagnostics));
       const track = new Track({
         interpolator: this.#options.interpolator,
         interpolationConfig: definition,
@@ -53,23 +73,33 @@ export class Engine {
       tracks.set(nodeId, track);
       return track;
     };
-    const compose =
-      (node: {
-        id: string;
-        track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> };
-      }) =>
-      (inputs: Readonly<Record<string, unknown>>) => {
-        const snapshot = compile(node.id).compose(inputs as Readonly<ImmutableRecord>);
-        return { values: snapshot.values, sourceProgress: snapshot.progress, sourceRevisions: {} };
-      };
-    return new ProjectRuntime(project, {
-      clock: this.#options.clock,
-      compose,
-      setProgress: (nodeId, progress) => compile(nodeId).setProgress(progress),
-      disposeComposition: () => {
-        for (const track of tracks.values()) track.dispose();
-        tracks.clear();
-      },
-    });
+
+    try {
+      // Prepare every authored track at the load boundary. Lazy compilation made malformed
+      // projects look valid until an unrelated first seek, and leaked the failure as a frame
+      // composition error instead of an acceptance diagnostic.
+      for (const nodeId of nodes.keys()) compile(nodeId);
+      const compose =
+        (node: {
+          id: string;
+          track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> };
+        }) =>
+        (inputs: Readonly<Record<string, unknown>>) => {
+          const snapshot = tracks.get(node.id)!.compose(inputs as Readonly<ImmutableRecord>);
+          return { values: snapshot.values, sourceProgress: snapshot.progress, sourceRevisions: {} };
+        };
+      return new ProjectRuntime(project, {
+        clock: this.#options.clock,
+        compose,
+        setProgress: (nodeId, progress) => tracks.get(nodeId)!.setProgress(progress),
+        disposeComposition: () => {
+          for (const track of tracks.values()) track.dispose();
+          tracks.clear();
+        },
+      });
+    } catch (error) {
+      for (const track of tracks.values()) track.dispose();
+      throw error;
+    }
   }
 }
