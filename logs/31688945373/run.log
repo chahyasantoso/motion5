@@ -1,0 +1,144 @@
+integration (node 24)	Run npm run test:integration	﻿2026-08-13T09:58:04.0615186Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.0615576Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.0661988Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.0662262Z env:
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.0662455Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.0662664Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.1681915Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.1682576Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.1683369Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.1683795Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.5856146Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.5864238Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.5865022Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.9001206Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.9078510Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:04.9183974Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:05.1517876Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:05.1768954Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:05.2009021Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:05.3602643Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:05.4104316Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:05.4253938Z  ^[[31m❯^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:05.4269763Z ^[[31m     ^[[31m×^[[31m uses resolved internal-key metadata instead of hardcoding underscore filtering^[[39m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:05.4271998Z ^[[31m     ^[[31m×^[[31m serializes plugin-owned outputs before writing to the DOM^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:05.5758879Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:05.6329467Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:05.8228265Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:05.8302798Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:05.8479562Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0234723Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0388655Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0513400Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0548949Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0549960Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 2 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0550624Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0559593Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/dom-plugin-metadata.test.ts^[[2m > ^[[22mDOM plugin metadata (X-2)^[[2m > ^[[22muses resolved internal-key metadata instead of hardcoding underscore filtering
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0561328Z ^[[31m^[[1mAssertionError^[[22m: expected undefined to deeply equal [ 'offset', 'secret' ]^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0561968Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0562535Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0562955Z [
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0563462Z   "offset",
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0563959Z   "secret",
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0564416Z ]
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0564736Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0565122Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0565694Z undefined
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0566048Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0567493Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/dom-plugin-metadata.test.ts:^[[2m16:35^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0597730Z     ^[[90m 14|^[[39m     ^[[35mconst^[[39m resolved ^[[33m=^[[39m registry^[[33m.^[[39m^[[34mresolveForKeyframes^[[39m({ x^[[33m:^[[39m {} })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0599381Z     ^[[90m 15|^[[39m     ^[[34mexpect^[[39m(resolved^[[33m.^[[39mdiagnostics)^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0600733Z     ^[[90m 16|^[[39m     ^[[34mexpect^[[39m(resolved^[[33m.^[[39minternalKeys)^[[33m.^[[39m^[[34mtoEqual^[[39m([^[[32m"offset"^[[39m^[[33m,^[[39m ^[[32m"secret"^[[39m])^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0601533Z     ^[[90m   |^[[39m                                   ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0603044Z     ^[[90m 17|^[[39m     ^[[35mconst^[[39m writes^[[33m:^[[39m ^[[33mRecord^[[39m^[[33m<^[[39mstring^[[33m,^[[39m unknown^[[33m>^[[39m[] ^[[33m=^[[39m []^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0604493Z     ^[[90m 18|^[[39m     ^[[35mconst^[[39m stage ^[[33m=^[[39m { style^[[33m:^[[39m {} ^[[35mas^[[39m ^[[33mRecord^[[39m^[[33m<^[[39mstring^[[33m,^[[39m unknown^[[33m>^[[39m }^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0605017Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0605280Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0605499Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0606858Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/dom-plugin-metadata.test.ts^[[2m > ^[[22mDOM plugin metadata (X-2)^[[2m > ^[[22mserializes plugin-owned outputs before writing to the DOM
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0607992Z ^[[31m^[[1mAssertionError^[[22m: expected undefined to deeply equal [ 'path' ]^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0608340Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0608475Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0608870Z [
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0609210Z   "path",
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0609555Z ]
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0609740Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0610013Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0610416Z undefined
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0610620Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0611526Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/dom-plugin-metadata.test.ts:^[[2m55:35^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0613328Z     ^[[90m 53|^[[39m     ^[[35mconst^[[39m resolved ^[[33m=^[[39m registry^[[33m.^[[39m^[[34mresolveForKeyframes^[[39m({ path^[[33m:^[[39m {} })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0614548Z     ^[[90m 54|^[[39m     ^[[34mexpect^[[39m(resolved^[[33m.^[[39mdiagnostics)^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0615437Z     ^[[90m 55|^[[39m     ^[[34mexpect^[[39m(resolved^[[33m.^[[39minternalKeys)^[[33m.^[[39m^[[34mtoEqual^[[39m([^[[32m"path"^[[39m])^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0616205Z     ^[[90m   |^[[39m                                   ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0617367Z     ^[[90m 56|^[[39m     expect(resolved.outputSerializers?.transform?.({ x: 1, y: 2 })).to…
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0618269Z     ^[[90m 57|^[[39m     ^[[35mconst^[[39m writes^[[33m:^[[39m ^[[33mRecord^[[39m^[[33m<^[[39mstring^[[33m,^[[39m unknown^[[33m>^[[39m[] ^[[33m=^[[39m []^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0618735Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0618988Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0619195Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0619216Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0619685Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m16 passed^[[39m^[[22m^[[90m (17)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0620444Z ^[[2m      Tests ^[[22m ^[[1m^[[31m2 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m39 passed^[[39m^[[22m^[[90m (41)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0620954Z ^[[2m   Start at ^[[22m 09:58:04
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0621966Z ^[[2m   Duration ^[[22m 1.46s^[[2m (transform 592ms, setup 0ms, import 1.21s, tests 184ms, environment 2ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0622634Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0630525Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0651469Z ##[error]AssertionError: expected undefined to deeply equal [ 'offset', 'secret' ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	[
+integration (node 24)	Run npm run test:integration	  "offset",
+integration (node 24)	Run npm run test:integration	  "secret",
+integration (node 24)	Run npm run test:integration	]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	undefined
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/dom-plugin-metadata.test.ts:16:35
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0660859Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0663745Z ##[error]AssertionError: expected undefined to deeply equal [ 'path' ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	[
+integration (node 24)	Run npm run test:integration	  "path",
+integration (node 24)	Run npm run test:integration	]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	undefined
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/dom-plugin-metadata.test.ts:55:35
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-13T09:58:06.0933511Z ##[error]Process completed with exit code 1.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-08-13T09:57:54.1938056Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T09:57:54.1938535Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T09:57:54.1977459Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T09:57:54.1977751Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T09:57:54.1977946Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T09:57:54.1978164Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T09:57:55.9104872Z ##[error]packages/core/src/adapters/dom.ts(66,34): error TS2339: Property 'internalKeys' does not exist on type 'ResolvedPlugins'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T09:57:55.9117347Z ##[error]packages/core/src/adapters/dom.ts(67,39): error TS2339: Property 'outputSerializers' does not exist on type 'ResolvedPlugins'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T09:57:55.9406785Z ##[error]Process completed with exit code 2.
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T09:57:55.5303124Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:55.5303472Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:55.5345791Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:55.5346301Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:55.5346525Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:55.5346747Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:55.6513128Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:55.6513936Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:55.6514421Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:55.6514621Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:57.5202990Z ##[error]packages/core/src/adapters/dom.ts(66,34): error TS2339: Property 'internalKeys' does not exist on type 'ResolvedPlugins'.
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:57.5211910Z ##[error]packages/core/src/adapters/dom.ts(67,39): error TS2339: Property 'outputSerializers' does not exist on type 'ResolvedPlugins'.
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:57.5214353Z ##[error]packages/core/test/integration/dom-plugin-metadata.test.ts(16,21): error TS2339: Property 'internalKeys' does not exist on type 'ResolvedPlugins'.
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:57.5216228Z ##[error]packages/core/test/integration/dom-plugin-metadata.test.ts(55,21): error TS2339: Property 'internalKeys' does not exist on type 'ResolvedPlugins'.
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:57.5218141Z ##[error]packages/core/test/integration/dom-plugin-metadata.test.ts(56,21): error TS2339: Property 'outputSerializers' does not exist on type 'ResolvedPlugins'.
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:57.5220015Z ##[error]packages/core/test/unit/domain/plugins.test.ts(18,31): error TS2339: Property 'resolve' does not exist on type 'PluginRegistry'.
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:57.5221876Z ##[error]packages/core/test/unit/domain/plugins.test.ts(20,36): error TS7031: Binding element 'name' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:57.5223448Z ##[error]packages/core/test/unit/domain/plugins.test.ts(83,31): error TS2339: Property 'resolve' does not exist on type 'PluginRegistry'.
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:57.5225020Z ##[error]packages/core/test/unit/domain/plugins.test.ts(84,36): error TS7031: Binding element 'name' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:57.5226687Z ##[error]packages/core/test/unit/domain/plugins.test.ts(115,31): error TS2339: Property 'resolve' does not exist on type 'PluginRegistry'.
+quality (node 24)	Run npm run typecheck	2026-08-13T09:57:57.5529811Z ##[error]Process completed with exit code 2.
