@@ -8,18 +8,20 @@ describe("plugin registry", () => {
     compose: (values: Readonly<ImmutableRecord>, _progress: number): ImmutableRecord => values,
     ...extra,
   });
-  it("registers plugins and resolves them in requested deterministic order", () => {
+
+  it("resolves authored keys in deterministic order", () => {
     const registry = new PluginRegistry();
-    const first = plugin("first");
-    const second = plugin("second");
+    const first = plugin("first", { keys: ["a"] });
+    const second = plugin("second", { keys: ["b"] });
     registry.register(first);
     registry.register(second);
-    const resolved = registry.resolve(["second", "first"]);
+    const resolved = registry.resolveForKeyframes({ a: {}, b: {} });
     expect(resolved.diagnostics).toEqual([]);
-    expect(resolved.plugins.map(({ name }) => name)).toEqual(["second", "first"]);
-    expect(resolved.plugins[0]).not.toBe(second);
-    expect(resolved.plugins[0]).toEqual(second);
+    expect(resolved.plugins.map(({ name }) => name)).toEqual(["first", "second"]);
+    expect(resolved.plugins[0]).not.toBe(first);
+    expect(resolved.plugins[0]).toEqual(first);
   });
+
   it("resolves authored keys and reports unsupported keys", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("opacity", { keys: ["opacity"] }));
@@ -39,6 +41,7 @@ describe("plugin registry", () => {
       },
     ]);
   });
+
   it("orders authored-key plugins by stage, priority, then registration order", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("late", { keys: ["x"], stage: "compose", priority: 20 }));
@@ -48,6 +51,7 @@ describe("plugin registry", () => {
       registry.resolveForKeyframes({ x: {}, y: {}, z: {} }).plugins.map(({ name }) => name),
     ).toEqual(["early", "same", "late"]);
   });
+
   it("retains and invokes the compile-time contribution hook", () => {
     const registry = new PluginRegistry();
     const contribute = vi.fn(() => undefined);
@@ -56,6 +60,7 @@ describe("plugin registry", () => {
     expect(resolved.plugins[0]?.contribute).toBe(contribute);
     expect(contribute).toHaveBeenCalledOnce();
   });
+
   it("rejects duplicate output ownership deterministically", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("first", { keys: ["x"], outputs: ["transform"] }));
@@ -70,6 +75,7 @@ describe("plugin registry", () => {
       },
     ]);
   });
+
   it("rejects duplicate exact key ownership at registration", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("first", { keys: ["x"] }));
@@ -78,6 +84,7 @@ describe("plugin registry", () => {
     );
     expect(registry.size).toBe(1);
   });
+
   it("lets exact ownership beat a predicate fallback", () => {
     const registry = new PluginRegistry();
     const predicate = vi.fn(() => true);
@@ -90,18 +97,21 @@ describe("plugin registry", () => {
     expect(exact).toHaveBeenCalledOnce();
     expect(predicate).not.toHaveBeenCalled();
   });
+
   it("rejects a contributor without prepare stage", () => {
     const registry = new PluginRegistry();
     expect(() =>
       registry.register(plugin("unstaged", { keys: ["x"], contribute: () => undefined })),
     ).toThrow(/requires stage "prepare"/);
   });
+
   it("rejects fractional priorities", () => {
     const registry = new PluginRegistry();
     expect(() => registry.register(plugin("fractional", { priority: 1.5 }))).toThrow(
       /finite integer/,
     );
   });
+
   it("rejects duplicate input ownership at registration", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("first", { inputs: ["source"] }));
@@ -109,6 +119,7 @@ describe("plugin registry", () => {
       /plugin-input-collision/,
     );
   });
+
   it("rejects duplicate registration and malformed metadata", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("transform"));
@@ -120,11 +131,12 @@ describe("plugin registry", () => {
     );
     expect(() => registry.register(plugin("bad-stage", { stage: "typo" }))).toThrow(/stage/);
   });
+
   it("detaches resolved plugins from later registry mutation", () => {
     const registry = new PluginRegistry();
-    const original = plugin("stable");
+    const original = plugin("stable", { keys: ["stable"] });
     registry.register(original);
-    const resolved = registry.resolve(["stable"]);
+    const resolved = registry.resolveForKeyframes({ stable: {} });
     expect(Object.isFrozen(resolved)).toBe(true);
     expect(Object.isFrozen(resolved.plugins)).toBe(true);
     expect(Object.isFrozen(resolved.plugins[0])).toBe(true);
