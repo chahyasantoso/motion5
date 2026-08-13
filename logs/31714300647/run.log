@@ -1,0 +1,69 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T15:14:18.5522466Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:18.5522975Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:18.5577486Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:18.5577917Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:18.5578504Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:18.5578836Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:18.6683398Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:18.6684249Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:18.6684911Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:18.6685245Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5668834Z ##[error]packages/core/src/domain/plugins.ts(23,1896): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5679302Z ##[error]packages/core/src/domain/plugins.ts(23,1916): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5682048Z ##[error]packages/core/src/domain/plugins.ts(23,1925): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5684441Z ##[error]packages/core/src/domain/plugins.ts(23,1941): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5686968Z ##[error]packages/core/src/domain/plugins.ts(23,1949): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5689872Z ##[error]packages/core/src/domain/plugins.ts(23,1954): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5694474Z ##[error]packages/core/src/domain/plugins.ts(23,1958): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5699726Z ##[error]packages/core/src/domain/plugins.ts(23,1967): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5701713Z ##[error]packages/core/src/domain/plugins.ts(23,2079): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5703725Z ##[error]packages/core/src/domain/plugins.ts(23,2101): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5705736Z ##[error]packages/core/src/domain/plugins.ts(23,2110): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5707695Z ##[error]packages/core/src/domain/plugins.ts(23,2126): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5709609Z ##[error]packages/core/src/domain/plugins.ts(23,2134): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5711451Z ##[error]packages/core/src/domain/plugins.ts(23,2139): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5713345Z ##[error]packages/core/src/domain/plugins.ts(23,2145): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5715291Z ##[error]packages/core/src/domain/plugins.ts(23,2156): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5717384Z ##[error]packages/core/src/domain/plugins.ts(23,2934): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5719192Z ##[error]packages/core/src/domain/plugins.ts(23,2935): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5720990Z ##[error]packages/core/src/domain/plugins.ts(23,2943): error TS1005: ']' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5722792Z ##[error]packages/core/src/domain/plugins.ts(23,2950): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5724551Z ##[error]packages/core/src/domain/plugins.ts(23,3191): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5726681Z ##[error]packages/core/src/domain/plugins.ts(23,3198): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5728519Z ##[error]packages/core/src/domain/plugins.ts(23,3208): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5730359Z ##[error]packages/core/src/domain/plugins.ts(23,3211): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5732128Z ##[error]packages/core/src/domain/plugins.ts(23,3221): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5733910Z ##[error]packages/core/src/domain/plugins.ts(23,3226): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5735857Z ##[error]packages/core/src/domain/plugins.ts(23,3231): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5737694Z ##[error]packages/core/src/domain/plugins.ts(23,3236): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5739539Z ##[error]packages/core/src/domain/plugins.ts(23,3387): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5741385Z ##[error]packages/core/src/domain/plugins.ts(23,3394): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5743229Z ##[error]packages/core/src/domain/plugins.ts(23,3404): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5745028Z ##[error]packages/core/src/domain/plugins.ts(23,3407): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5746995Z ##[error]packages/core/src/domain/plugins.ts(23,3411): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5749279Z ##[error]packages/core/src/domain/plugins.ts(23,3422): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5751310Z ##[error]packages/core/src/domain/plugins.ts(23,4085): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5753104Z ##[error]packages/core/src/domain/plugins.ts(23,4086): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5754933Z ##[error]packages/core/src/domain/plugins.ts(23,4094): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5756894Z ##[error]packages/core/src/domain/plugins.ts(23,4103): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5758689Z ##[error]packages/core/src/domain/plugins.ts(23,4106): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5760409Z ##[error]packages/core/src/domain/plugins.ts(23,4117): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5762154Z ##[error]packages/core/src/domain/plugins.ts(23,4124): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5763890Z ##[error]packages/core/src/domain/plugins.ts(23,4131): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5765774Z ##[error]packages/core/src/domain/plugins.ts(23,4140): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5767623Z ##[error]packages/core/src/domain/plugins.ts(23,4144): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5769445Z ##[error]packages/core/src/domain/plugins.ts(23,4153): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5771231Z ##[error]packages/core/src/domain/plugins.ts(23,4597): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5772961Z ##[error]packages/core/src/domain/plugins.ts(23,4598): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5774728Z ##[error]packages/core/src/domain/plugins.ts(23,4606): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5776744Z ##[error]packages/core/src/domain/plugins.ts(23,4618): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5778541Z ##[error]packages/core/src/domain/plugins.ts(23,4626): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5780365Z ##[error]packages/core/src/domain/plugins.ts(23,4637): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5782222Z ##[error]packages/core/src/domain/plugins.ts(23,4641): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5784059Z ##[error]packages/core/src/domain/plugins.ts(23,4658): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5786046Z ##[error]packages/core/src/domain/plugins.ts(23,4663): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5787869Z ##[error]packages/core/src/domain/plugins.ts(23,4669): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5789696Z ##[error]packages/core/src/domain/plugins.ts(23,4676): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5791586Z ##[error]packages/core/src/domain/plugins.ts(23,4688): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5793636Z ##[error]packages/core/src/domain/plugins.ts(24,1): error TS1160: Unterminated template literal.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:14:19.5931781Z ##[error]Process completed with exit code 2.
