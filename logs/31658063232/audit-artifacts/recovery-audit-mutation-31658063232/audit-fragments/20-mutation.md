@@ -1,0 +1,4 @@
+- stryker run: pass
+- mutation counts: killed=357, survived=158, timeout=2, noCoverage=28
+- mutation score: 69.05%
+- mutation threshold: 65.42%
