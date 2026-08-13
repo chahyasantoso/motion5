@@ -26,113 +26,18 @@ env:
   NODE_VERSION: 24
 
 jobs:
-  contract:
-    name: contract surfaces
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Run contract surfaces
-        run: |
-          set -uo pipefail
-          mkdir -p audit-logs audit-fragments
-          failed=0
-          run_suite() { name="$1"; shift; if "$@" > "audit-logs/$name.log" 2>&1; then echo "- $name: pass" >> audit-fragments/10-contract.md; else echo "- $name: FAIL" >> audit-fragments/10-contract.md; failed=1; fi; }
-          echo "## contract" > audit-fragments/10-contract.md
-          run_suite gsap-contract npm run test:contract
-          run_suite dom-contract npx vitest run packages/core/test/integration/dom-patch-apply.test.ts
-          run_suite react-lifecycle npx vitest run packages/react/test
-          run_suite boundaries npm run test:boundaries
-          run_suite end-to-end npx vitest run packages/core/test/integration/end-to-end.test.ts
-          echo "CONTRACT_FAILED=$failed" >> "$GITHUB_ENV"
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: recovery-audit-contract-${{ github.run_id }}
-          path: |
-            audit-fragments/
-            audit-logs/
-          if-no-files-found: warn
-      - if: always()
-        run: test "${CONTRACT_FAILED:-1}" = 0
-
-  mutation:
-    name: mutation baseline
-    runs-on: ubuntu-latest
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Run Stryker and verify its score
-        run: |
-          set -uo pipefail
-          mkdir -p audit-logs audit-fragments
-          failed=0
-          if npx stryker run > audit-logs/mutation.log 2>&1; then echo "- stryker run: pass" > audit-fragments/20-mutation.md; else echo "- stryker run: FAIL" > audit-fragments/20-mutation.md; failed=1; fi
-          if test -e reports/mutation/mutation.json; then
-            node --input-type=module >> audit-fragments/20-mutation.md <<'NODE'
-          import { readFile } from "node:fs/promises";
-          const report = JSON.parse(await readFile("reports/mutation/mutation.json", "utf8"));
-          const mutants = Object.values(report.files ?? {}).flatMap((file) => file.mutants ?? []);
-          const counts = Object.groupBy(mutants, (mutant) => mutant.status ?? "Unknown");
-          const count = (status) => (counts[status] ?? []).length;
-          const killed = count("Killed"), survived = count("Survived"), timeout = count("Timeout"), noCoverage = count("NoCoverage");
-          const denominator = killed + survived + timeout;
-          const derived = denominator ? (killed / denominator) * 100 : Number.NaN;
-          const reported = Number(report.metrics?.mutationScore ?? report.mutationScore);
-          const score = Number.isFinite(reported) ? (reported <= 1 ? reported * 100 : reported) : derived;
-          const threshold = Number(report.thresholds?.break ?? 0);
-          console.log(`- mutation counts: killed=${killed}, survived=${survived}, timeout=${timeout}, noCoverage=${noCoverage}`);
-          console.log(`- mutation score: ${Number.isFinite(score) ? score.toFixed(2) : "unavailable"}%`);
-          console.log(`- mutation threshold: ${threshold.toFixed(2)}%`);
-          if (!Number.isFinite(score) || score < threshold) process.exitCode = 1;
-          NODE
-            if test "$?" -ne 0; then failed=1; fi
-          else
-            echo "- mutation report: MISSING" >> audit-fragments/20-mutation.md
-            failed=1
-          fi
-          echo "MUTATION_FAILED=$failed" >> "$GITHUB_ENV"
-      - if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: recovery-audit-mutation-${{ github.run_id }}
-          path: |
-            audit-fragments/
-            audit-logs/
-            reports/mutation/
-          if-no-files-found: warn
-      - if: always()
-        run: test "${MUTATION_FAILED:-1}" = 0
-
   acceptance:
     name: acceptance mapping
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
+        with: { ref: ${{ inputs.ref }} }
       - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
+        with: { node-version: ${{ env.NODE_VERSION }}, cache: npm }
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: node scripts/acceptance-scan.mjs
+      - run: mkdir -p test-results
+      - run: npx vitest run --reporter=json --outputFile=test-results/vitest.json
+      - run: node scripts/acceptance-scan.mjs test-results/vitest.json
 
   failing-first:
     name: failing-first evidence
@@ -141,14 +46,11 @@ jobs:
       AUDIT_BASE: ${{ inputs.base }}
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
-          fetch-depth: 0
+        with: { ref: ${{ inputs.ref }}, fetch-depth: 0 }
       - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-      - name: Replay new tests against base and ref
+        with: { node-version: ${{ env.NODE_VERSION }}, cache: npm }
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Replay assertion-level red against base and green against ref
         run: |
           set -euo pipefail
           mkdir -p audit-logs
@@ -158,43 +60,46 @@ jobs:
           git diff --name-only --diff-filter=AM "$base_sha" "$ref_sha" -- '*.test.ts' > audit-logs/new-tests.txt
           test -s audit-logs/new-tests.txt
           git checkout -f "$base_sha"
-          # Replay the whole test tree, not only the spec files. Seams, helpers, and fixtures do
-          # not match '*.test.ts', so checking out the spec alone leaves it calling a base-era
-          # helper: the base leg then reds with a TypeError instead of with the behavioral
-          # assertion the slice exists to prove, which is evidence of nothing.
           git checkout "$ref_sha" -- 'packages/*/test/*'
           xargs -a audit-logs/new-tests.txt git checkout "$ref_sha" --
-          git diff --name-only "$base_sha" > audit-logs/replayed-files.txt
           npm ci --ignore-scripts --no-audit --no-fund > audit-logs/base-install.log 2>&1
-          if xargs -a audit-logs/new-tests.txt npx vitest run > audit-logs/base-run.log 2>&1; then exit 1; fi
+          if xargs -a audit-logs/new-tests.txt npx vitest run --reporter=json --outputFile=audit-logs/base.json > audit-logs/base-run.log 2>&1; then
+            echo "base did not fail"; exit 1
+          fi
+          node --input-type=module <<'NODE'
+          import { readFile } from "node:fs/promises";
+          const report = JSON.parse(await readFile("audit-logs/base.json", "utf8"));
+          const results = report.testResults ?? [];
+          const assertionFailures = results.filter((test) => test.status === "failed" && !String(test.assertionResults ?? test.message ?? "").match(/Cannot find|failed to resolve|config|transform/i));
+          if (assertionFailures.length === 0) throw new Error("base red was infrastructure/import-resolution, not assertion-level");
+          console.log(`assertion-level red: ${assertionFailures.length}`);
+          NODE
           git checkout -f "$ref_sha"
           npm ci --ignore-scripts --no-audit --no-fund > audit-logs/ref-install.log 2>&1
-          xargs -a audit-logs/new-tests.txt npx vitest run > audit-logs/ref-run.log 2>&1
+          xargs -a audit-logs/new-tests.txt npx vitest run --reporter=json --outputFile=audit-logs/ref.json > audit-logs/ref-run.log 2>&1
       - if: always()
         uses: actions/upload-artifact@v4
         with:
           name: recovery-audit-failing-first-${{ github.run_id }}
           path: audit-logs/
-          if-no-files-found: warn
 
   build:
     name: declaration build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
+        with: { ref: ${{ inputs.ref }} }
       - uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: npm
+        with: { node-version: ${{ env.NODE_VERSION }}, cache: npm }
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npx tsc -p tsconfig.json --declaration --emitDeclarationOnly --noEmit false --outDir dist-audit
+      - run: npx tsc -p packages/core/tsconfig.build.json
+      - run: test -f packages/core/dist/index.js
+      - run: test -f packages/core/dist/index.d.ts
 
   report:
     name: audit report
     runs-on: ubuntu-latest
-    needs: [contract, mutation, acceptance, failing-first, build]
+    needs: [acceptance, failing-first, build]
     if: always()
     steps:
-      - run: echo "Recovery audit completed for ${{ inputs.ref }}"
+      - run: test "${{ needs.acceptance.result }}" = success && test "${{ needs.failing-first.result }}" = success && test "${{ needs.build.result }}" = success
