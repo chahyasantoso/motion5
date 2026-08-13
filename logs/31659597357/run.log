@@ -1,0 +1,12 @@
+quality (node 24)	Format check	﻿2026-08-13T02:02:52.7813327Z ##[group]Run npm run format:check
+quality (node 24)	Format check	2026-08-13T02:02:52.7813681Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Format check	2026-08-13T02:02:52.7864843Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Format check	2026-08-13T02:02:52.7865138Z ##[endgroup]
+quality (node 24)	Format check	2026-08-13T02:02:52.9021616Z 
+quality (node 24)	Format check	2026-08-13T02:02:52.9022336Z > motion5@0.0.0 format:check
+quality (node 24)	Format check	2026-08-13T02:02:52.9022840Z > prettier . --check
+quality (node 24)	Format check	2026-08-13T02:02:52.9023109Z 
+quality (node 24)	Format check	2026-08-13T02:02:52.9881890Z Checking formatting...
+quality (node 24)	Format check	2026-08-13T02:02:53.1461928Z [^[[33mwarn^[[39m] .github/workflows/recovery-audit.yml
+quality (node 24)	Format check	2026-08-13T02:02:55.2208401Z [^[[33mwarn^[[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+quality (node 24)	Format check	2026-08-13T02:02:55.2581966Z ##[error]Process completed with exit code 1.
