@@ -6,7 +6,7 @@ export interface StageLike {
 }
 
 export interface DomTarget {
-  style: { [key: string]: unknown };
+  style: { removeProperty?: (property: string) => void; [key: string]: unknown };
   [key: string]: unknown;
 }
 
@@ -18,11 +18,44 @@ export interface DomPatchAdapter {
   clear(target?: DomTarget): void;
 }
 
+const transformKeys = new Set(["x", "y", "z", "rotation", "rotationX", "rotationY", "scale"]);
+const transformState = new WeakMap<object, Record<string, unknown>>();
+
+function transformValue(key: string, value: unknown): string {
+  if (key === "scale") return `scale(${String(value)})`;
+  if (key === "rotation") return `rotate(${String(value)}deg)`;
+  if (key === "rotationX") return `rotateX(${String(value)}deg)`;
+  if (key === "rotationY") return `rotateY(${String(value)}deg)`;
+  return `${key}(${String(value)}px)`;
+}
+
+function composeTransform(values: Readonly<Record<string, unknown>>): string {
+  const parts: string[] = [];
+  for (const key of ["x", "y", "z", "rotation", "rotationX", "rotationY", "scale"])
+    if (key in values) parts.push(transformValue(key, values[key]));
+  return parts.join(" ");
+}
+
+function removeStyleProperty(target: DomTarget, key: string): void {
+  if (typeof target.style.removeProperty === "function") target.style.removeProperty(key);
+  else target.style[key] = undefined;
+}
+
 function defaultWriter(target: DomTarget, values: Readonly<Record<string, unknown>>): void {
+  const state = transformState.get(target) ?? {};
   for (const [key, value] of Object.entries(values)) {
-    if (key in target.style || key.startsWith("--")) target.style[key] = value;
+    if (transformKeys.has(key)) {
+      if (value === undefined) delete state[key];
+      else state[key] = value;
+      continue;
+    }
+    if (value === undefined) removeStyleProperty(target, key);
+    else if (key in target.style || key.startsWith("--")) target.style[key] = value;
     else target[key] = value;
   }
+  if (Object.keys(state).length > 0) target.style.transform = composeTransform(state);
+  else removeStyleProperty(target, "transform");
+  transformState.set(target, state);
 }
 
 function renderableValues(values: Readonly<Record<string, unknown>>): Record<string, unknown> {
@@ -61,6 +94,7 @@ export function createDomPatchAdapter(
     clear(target) {
       if (target === undefined) return;
       lastApplied.delete(target);
+      transformState.delete(target);
     },
   };
 }
