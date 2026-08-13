@@ -1,0 +1,366 @@
+quality (node 24)	Run npm test	﻿2026-08-13T15:37:58.2895244Z ##[group]Run npm test
+quality (node 24)	Run npm test	2026-08-13T15:37:58.2895551Z ^[[36;1mnpm test^[[0m
+quality (node 24)	Run npm test	2026-08-13T15:37:58.2936884Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm test	2026-08-13T15:37:58.2937158Z env:
+quality (node 24)	Run npm test	2026-08-13T15:37:58.2937360Z   NODE_VERSION: 24
+quality (node 24)	Run npm test	2026-08-13T15:37:58.2937580Z ##[endgroup]
+quality (node 24)	Run npm test	2026-08-13T15:37:58.4177844Z 
+quality (node 24)	Run npm test	2026-08-13T15:37:58.4178830Z > motion5@0.0.0 test
+quality (node 24)	Run npm test	2026-08-13T15:37:58.4179216Z > vitest run
+quality (node 24)	Run npm test	2026-08-13T15:37:58.4179350Z 
+quality (node 24)	Run npm test	2026-08-13T15:37:58.6872260Z 
+quality (node 24)	Run npm test	2026-08-13T15:37:58.6895442Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:37:58.6896312Z 
+quality (node 24)	Run npm test	2026-08-13T15:37:59.0438245Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugins.test.ts ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:37:59.0945693Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-reentrancy.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:37:59.2463910Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-state.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:37:59.3071706Z  ^[[32m✓^[[39m packages/core/test/contract/v5-validator.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:37:59.4611341Z  ^[[32m✓^[[39m packages/core/test/contract/validation-owner.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:37:59.5765699Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/boundary-scan.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 62^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:37:59.7688418Z  ^[[31m❯^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 38^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:37:59.7691103Z      ^[[32m✓^[[39m passes contribution context and creates the prepared timeline at load^[[32m 23^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:37:59.7692844Z ^[[31m     ^[[31m×^[[31m selects one predicate contributor through Engine.load^[[39m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:37:59.7694254Z ^[[31m     ^[[31m×^[[31m rejects malformed contributions during Engine.load^[[39m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:37:59.7695589Z      ^[[32m✓^[[39m rejects authored ease collisions before any timeline is created^[[32m 1^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:37:59.7697030Z      ^[[32m✓^[[39m merges contributed keyframes into compiler diagnostics before timeline creation^[[32m 1^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:37:59.8243019Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-flat-inputs.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:00.0369133Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/clock-tick-identity.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:00.0510921Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-structural-change.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:00.2713049Z  ^[[32m✓^[[39m packages/core/test/unit/graph/order.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:00.2844251Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ir-validation.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:00.4964764Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/composition-output-shape.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:00.7110931Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-authored-duration.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:00.7253316Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/scheduler-reentrancy.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:00.9289668Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:00.9642635Z  ^[[31m❯^[[39m packages/core/test/unit/domain/plugin-contribution-contract.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:00.9653654Z      ^[[32m✓^[[39m passes the authored key, stops, and frozen track view to the contributor^[[32m 4^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:00.9656906Z ^[[31m     ^[[31m×^[[31m preserves both keyframes and tweenVars from one explicit contribution^[[39m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:00.9663832Z ^[[31m     ^[[31m×^[[31m runs exactly one predicate owner instead of allowing last-write-wins^[[39m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:00.9666257Z ^[[31m     ^[[31m×^[[31m rejects malformed contributed stops instead of installing them^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:01.1723617Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:01.1864752Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:01.4086536Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:01.4694308Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-absolute-stops.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:01.5177112Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/public-declaration-surface.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[33m 2570^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:01.5179622Z      ^[[33m^[[2m✓^[[22m^[[39m scans the emitted entry declaration closure, not just source strings ^[[33m 2567^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:01.6203480Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:01.6902463Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:01.7313065Z  ^[[32m✓^[[39m packages/core/test/contract/adapters.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:01.8462486Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:01.9332997Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:01.9609240Z  ^[[32m✓^[[39m packages/core/test/migration/v4-to-v5.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.0794300Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.1275926Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.1904018Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.2554593Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.3239331Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.3757868Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/governance-gates.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.4768965Z ^[[90mstderr^[[2m | packages/react/test/public-package-surface.test.ts^[[2m > ^[[22m^[[2mReact public package surface (C2)^[[2m > ^[[22m^[[2mrenders and updates through the package entry alone
+quality (node 24)	Run npm test	2026-08-13T15:38:02.4785947Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test	2026-08-13T15:38:02.4787900Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-13T15:38:02.4789207Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-13T15:38:02.4790420Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-13T15:38:02.4791493Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:02.4813538Z  ^[[32m✓^[[39m packages/react/test/public-package-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.5231188Z  ^[[32m✓^[[39m packages/react/test/patch-store-lifecycle.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.5665958Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-sparse-percent-map.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.6738918Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.7154337Z  ^[[32m✓^[[39m packages/core/test/contract/ports.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.7684398Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugin-contribution-completeness.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.8835546Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.9539009Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:02.9672966Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.1028959Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.1453513Z  ^[[32m✓^[[39m packages/core/test/unit/domain/lifecycle.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.1764103Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-paused-timeline.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.2814207Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.3415366Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/acceptance-scan.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.3714317Z  ^[[32m✓^[[39m packages/core/test/unit/domain/values.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.4684442Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-projection-validation.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.5248848Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.5638892Z  ^[[32m✓^[[39m packages/core/test/contract/s4-validation-owner.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.6726354Z  ^[[32m✓^[[39m packages/core/test/unit/domain/triggers.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.7120814Z  ^[[32m✓^[[39m packages/react/test/patch-store.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.7786140Z ^[[90mstderr^[[2m | packages/react/test/public-hook-render.test.ts^[[2m > ^[[22m^[[2mReact public hook render/update (C2)^[[2m > ^[[22m^[[2mrenders the current patch and updates after publication
+quality (node 24)	Run npm test	2026-08-13T15:38:03.7800690Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test	2026-08-13T15:38:03.7802381Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-13T15:38:03.7803661Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-13T15:38:03.7805159Z  ^[[32m✓^[[39m packages/react/test/public-hook-render.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.7808169Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-13T15:38:03.7808969Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:03.8514576Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/mutation-config.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.9271655Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:03.9819886Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.0812234Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.1582796Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.1585162Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2214792Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2249360Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2249986Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 5 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2250340Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2254562Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mselects one predicate contributor through Engine.load
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2260324Z ^[[31m^[[1mTypeError^[[22m: plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key "derived".^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2261848Z ^[[36m ^[[2m❯^[[22m compile packages/core/src/engine.ts:^[[2m102:15^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2303711Z     ^[[90m100|^[[39m       const diagnostics = [...(resolved?.diagnostics ?? []), ...keyfra…
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2305623Z     ^[[90m101|^[[39m       ^[[35mif^[[39m (diagnostics^[[33m.^[[39m^[[34msome^[[39m(({ severity }) ^[[33m=>^[[39m severity ^[[33m===^[[39m ^[[32m"error"^[[39m))
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2307615Z     ^[[90m102|^[[39m         ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(diagnostics))^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2308928Z     ^[[90m   |^[[39m               ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2310040Z     ^[[90m103|^[[39m       ^[[35mconst^[[39m track ^[[33m=^[[39m ^[[35mnew^[[39m ^[[33mTrack^[[39m({
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2311640Z     ^[[90m104|^[[39m         interpolator^[[33m:^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#options^[[33m.^[[39minterpolator^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2313471Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m112:42^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2314915Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m23:179^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2315803Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2316509Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2316788Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2317817Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mrejects malformed contributions during Engine.load
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2319345Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-contribution-stop-order/ but got 'plugin-unknown-key at hero/arm.keyfra…'^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2319953Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2320108Z ^[[32m- Expected:^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2320418Z /plugin-contribution-stop-order/
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2320623Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2320762Z ^[[31m+ Received:^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2321355Z "plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key \"derived\"."
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2321766Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2322533Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m28:128^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2325514Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2325648Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2326138Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2326888Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2328734Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/domain/plugin-contribution-contract.test.ts^[[2m > ^[[22mplugin contribution contract (X-3)^[[2m > ^[[22mpreserves both keyframes and tweenVars from one explicit contribution
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2330957Z ^[[31m^[[1mAssertionError^[[22m: expected [ { …(5) } ] to deeply equal []^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2331460Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2331682Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2332330Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2332547Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2332721Z ^[[32m- []^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2333082Z ^[[31m+ [^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2333434Z ^[[31m+   {^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2333835Z ^[[31m+     "ids": [^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2334290Z ^[[31m+       "derived",^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2334715Z ^[[31m+     ],^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2335543Z ^[[31m+     "message": "No registered plugin claims contributed key \"derived\".",^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2336406Z ^[[31m+     "path": "keyframes.derived",^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2337104Z ^[[31m+     "ruleId": "plugin-unknown-key",^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2337725Z ^[[31m+     "severity": "error",^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2338177Z ^[[31m+   },^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2338539Z ^[[31m+ ]^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2338729Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2339601Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/domain/plugin-contribution-contract.test.ts:^[[2m54:34^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2342972Z     ^[[90m 52|^[[39m     })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2344573Z     ^[[90m 53|^[[39m     ^[[35mconst^[[39m resolved ^[[33m=^[[39m registry^[[33m.^[[39m^[[34mresolveForKeyframes^[[39m({ x^[[33m:^[[39m ^[[34mstops^[[39m(^[[34m1^[[39m) })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2346313Z     ^[[90m 54|^[[39m     ^[[34mexpect^[[39m(resolved^[[33m.^[[39mdiagnostics)^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2347404Z     ^[[90m   |^[[39m                                  ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2349688Z     ^[[90m 55|^[[39m     expect(resolved.preparation.keyframes).toEqual({ derived: stops(4)…
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2350823Z     ^[[90m 56|^[[39m     expect(resolved.preparation.tweenVars).toEqual({ overwrite: "auto"…
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2351393Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2351765Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2352275Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2353368Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/domain/plugin-contribution-contract.test.ts^[[2m > ^[[22mplugin contribution contract (X-3)^[[2m > ^[[22mruns exactly one predicate owner instead of allowing last-write-wins
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2354504Z ^[[31m^[[1mAssertionError^[[22m: expected [ { …(5) } ] to deeply equal []^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2354816Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2354952Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2355227Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2355352Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2355469Z ^[[32m- []^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2355695Z ^[[31m+ [^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2355924Z ^[[31m+   {^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2356173Z ^[[31m+     "ids": [^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2356464Z ^[[31m+       "derived",^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2356759Z ^[[31m+     ],^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2357348Z ^[[31m+     "message": "No registered plugin claims contributed key \"derived\".",^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2358091Z ^[[31m+     "path": "keyframes.derived",^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2359413Z ^[[31m+     "ruleId": "plugin-unknown-key",^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2360221Z ^[[31m+     "severity": "error",^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2360705Z ^[[31m+   },^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2361072Z ^[[31m+ ]^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2361270Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2362361Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/domain/plugin-contribution-contract.test.ts:^[[2m83:34^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2363372Z     ^[[90m 81|^[[39m     })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2364867Z     ^[[90m 82|^[[39m     ^[[35mconst^[[39m resolved ^[[33m=^[[39m registry^[[33m.^[[39m^[[34mresolveForKeyframes^[[39m({ x^[[33m:^[[39m ^[[34mstops^[[39m(^[[34m1^[[39m) })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2366455Z     ^[[90m 83|^[[39m     ^[[34mexpect^[[39m(resolved^[[33m.^[[39mdiagnostics)^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2367805Z     ^[[90m   |^[[39m                                  ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2368558Z     ^[[90m 84|^[[39m     ^[[34mexpect^[[39m(first)^[[33m.^[[39m^[[34mtoHaveBeenCalledOnce^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2369473Z     ^[[90m 85|^[[39m     ^[[34mexpect^[[39m(second)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2369868Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2370128Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2370336Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2371352Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/domain/plugin-contribution-contract.test.ts^[[2m > ^[[22mplugin contribution contract (X-3)^[[2m > ^[[22mrejects malformed contributed stops instead of installing them
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2373343Z ^[[31m^[[1mAssertionError^[[22m: expected [ 'plugin-unknown-key' ] to include 'plugin-contribution-stop-order'^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2374307Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/domain/plugin-contribution-contract.test.ts:^[[2m110:62^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2374910Z     ^[[90m108|^[[39m     })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2375996Z     ^[[90m109|^[[39m     ^[[35mconst^[[39m resolved ^[[33m=^[[39m registry^[[33m.^[[39m^[[34mresolveForKeyframes^[[39m({ x^[[33m:^[[39m ^[[34mstops^[[39m(^[[34m1^[[39m) })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2377492Z     ^[[90m110|^[[39m     ^[[34mexpect^[[39m(resolved^[[33m.^[[39mdiagnostics^[[33m.^[[39m^[[34mmap^[[39m(({ ruleId }) ^[[33m=>^[[39m ruleId))^[[33m.^[[39m^[[34mtoContain^[[39m(
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2378268Z     ^[[90m   |^[[39m                                                              ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2378811Z     ^[[90m111|^[[39m       ^[[32m"plugin-contribution-stop-order"^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2379654Z     ^[[90m112|^[[39m     )^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2379940Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2380328Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2380668Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2380730Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2381494Z ^[[2m Test Files ^[[22m ^[[1m^[[31m2 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m60 passed^[[39m^[[22m^[[90m (62)^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2383243Z ^[[2m      Tests ^[[22m ^[[1m^[[31m5 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m229 passed^[[39m^[[22m^[[90m (234)^[[39m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2384096Z ^[[2m   Start at ^[[22m 15:37:58
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2385091Z ^[[2m   Duration ^[[22m 5.52s^[[2m (transform 1.09s, setup 0ms, import 2.85s, tests 3.30s, environment 8ms)^[[22m
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2385712Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2402415Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2424751Z ##[error]TypeError: plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key "derived".
+quality (node 24)	Run npm test	 ❯ compile packages/core/src/engine.ts:102:15
+quality (node 24)	Run npm test	 ❯ Engine.load packages/core/src/engine.ts:112:42
+quality (node 24)	Run npm test	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:23:179
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2432645Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2436704Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-contribution-stop-order/ but got 'plugin-unknown-key at hero/arm.keyfra…'
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected:
+quality (node 24)	Run npm test	/plugin-contribution-stop-order/
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	+ Received:
+quality (node 24)	Run npm test	"plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key \"derived\"."
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:28:128
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2438842Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2442749Z ##[error]AssertionError: expected [ { …(5) } ] to deeply equal []
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- []
+quality (node 24)	Run npm test	+ [
+quality (node 24)	Run npm test	+   {
+quality (node 24)	Run npm test	+     "ids": [
+quality (node 24)	Run npm test	+       "derived",
+quality (node 24)	Run npm test	+     ],
+quality (node 24)	Run npm test	+     "message": "No registered plugin claims contributed key \"derived\".",
+quality (node 24)	Run npm test	+     "path": "keyframes.derived",
+quality (node 24)	Run npm test	+     "ruleId": "plugin-unknown-key",
+quality (node 24)	Run npm test	+     "severity": "error",
+quality (node 24)	Run npm test	+   },
+quality (node 24)	Run npm test	+ ]
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/domain/plugin-contribution-contract.test.ts:54:34
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2445089Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2449208Z ##[error]AssertionError: expected [ { …(5) } ] to deeply equal []
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- []
+quality (node 24)	Run npm test	+ [
+quality (node 24)	Run npm test	+   {
+quality (node 24)	Run npm test	+     "ids": [
+quality (node 24)	Run npm test	+       "derived",
+quality (node 24)	Run npm test	+     ],
+quality (node 24)	Run npm test	+     "message": "No registered plugin claims contributed key \"derived\".",
+quality (node 24)	Run npm test	+     "path": "keyframes.derived",
+quality (node 24)	Run npm test	+     "ruleId": "plugin-unknown-key",
+quality (node 24)	Run npm test	+     "severity": "error",
+quality (node 24)	Run npm test	+   },
+quality (node 24)	Run npm test	+ ]
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/domain/plugin-contribution-contract.test.ts:83:34
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2452353Z 
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2472632Z ##[error]AssertionError: expected [ 'plugin-unknown-key' ] to include 'plugin-contribution-stop-order'
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/domain/plugin-contribution-contract.test.ts:110:62
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-08-13T15:38:04.2858925Z ##[error]Process completed with exit code 1.
+integration (node 24)	Run npm run test:integration	﻿2026-08-13T15:37:59.9272501Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:59.9272868Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:59.9322527Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:59.9323048Z env:
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:59.9323263Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:59.9323487Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.0404957Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.0405852Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.0406485Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.0406737Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.4131518Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.4139970Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.4158536Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.7789387Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.7896249Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.9160636Z  ^[[31m❯^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 38^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.9163033Z      ^[[32m✓^[[39m passes contribution context and creates the prepared timeline at load^[[32m 24^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.9164825Z ^[[31m     ^[[31m×^[[31m selects one predicate contributor through Engine.load^[[39m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.9166523Z ^[[31m     ^[[31m×^[[31m rejects malformed contributions during Engine.load^[[39m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.9168282Z      ^[[32m✓^[[39m rejects authored ease collisions before any timeline is created^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:00.9170068Z      ^[[32m✓^[[39m merges contributed keyframes into compiler diagnostics before timeline creation^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:01.0154883Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:01.0520791Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:01.1193081Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:01.2268923Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:01.2710836Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:01.3146326Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:01.4276570Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:01.4562052Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:01.6902923Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:01.7204684Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:01.7314960Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:01.8930553Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:01.9171286Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:01.9330637Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0374630Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0408470Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0409200Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 2 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0409517Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0414401Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mselects one predicate contributor through Engine.load
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0420328Z ^[[31m^[[1mTypeError^[[22m: plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key "derived".^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0421579Z ^[[36m ^[[2m❯^[[22m compile packages/core/src/engine.ts:^[[2m102:15^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0471351Z     ^[[90m100|^[[39m       const diagnostics = [...(resolved?.diagnostics ?? []), ...keyfra…
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0473147Z     ^[[90m101|^[[39m       ^[[35mif^[[39m (diagnostics^[[33m.^[[39m^[[34msome^[[39m(({ severity }) ^[[33m=>^[[39m severity ^[[33m===^[[39m ^[[32m"error"^[[39m))
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0475259Z     ^[[90m102|^[[39m         ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(diagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0476490Z     ^[[90m   |^[[39m               ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0477669Z     ^[[90m103|^[[39m       ^[[35mconst^[[39m track ^[[33m=^[[39m ^[[35mnew^[[39m ^[[33mTrack^[[39m({
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0479486Z     ^[[90m104|^[[39m         interpolator^[[33m:^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#options^[[33m.^[[39minterpolator^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0480607Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m112:42^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0482164Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m23:179^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0482871Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0483294Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0483649Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0485394Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mrejects malformed contributions during Engine.load
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0488333Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-contribution-stop-order/ but got 'plugin-unknown-key at hero/arm.keyfra…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0489931Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0490227Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0490746Z /plugin-contribution-stop-order/
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0491061Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0491286Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0492271Z "plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key \"derived\"."
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0492991Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0493798Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m28:128^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0497230Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0497440Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0498341Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0499017Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0508729Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0510062Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m17 passed^[[39m^[[22m^[[90m (18)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0511444Z ^[[2m      Tests ^[[22m ^[[1m^[[31m2 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m44 passed^[[39m^[[22m^[[90m (46)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0512278Z ^[[2m   Start at ^[[22m 15:38:00
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0513102Z ^[[2m   Duration ^[[22m 1.61s^[[2m (transform 635ms, setup 0ms, import 1.36s, tests 217ms, environment 2ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0513510Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0524721Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0547496Z ##[error]TypeError: plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key "derived".
+integration (node 24)	Run npm run test:integration	 ❯ compile packages/core/src/engine.ts:102:15
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:112:42
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:23:179
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0556903Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0562886Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-contribution-stop-order/ but got 'plugin-unknown-key at hero/arm.keyfra…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-contribution-stop-order/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key \"derived\"."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:28:128
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-13T15:38:02.0937508Z ##[error]Process completed with exit code 1.
