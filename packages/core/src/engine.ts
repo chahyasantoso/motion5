@@ -1,4 +1,10 @@
-import type { Diagnostic, ProjectDefinition } from "./contract/v5";
+import type {
+  Diagnostic,
+  Patch,
+  PatchBatch,
+  PatchListener,
+  ProjectDefinition,
+} from "./contract/v5";
 import { validateV5 } from "./contract/validate-v5";
 import { PluginRegistry } from "./domain/plugins";
 import { Track } from "./domain/track";
@@ -13,6 +19,32 @@ export interface EngineOptions {
   readonly interpolator: Interpolator;
   readonly scheduler: Scheduler;
   readonly plugins?: PluginRegistry;
+}
+
+export interface ProjectHandle {
+  mount(nodeId: string, instance?: object): object;
+  unmount(nodeId: string): void;
+  seek(nodeId: string, progress: number): PatchBatch;
+  subscribe(nodeId: string, listener: PatchListener): () => void;
+  dispose(): void;
+}
+
+type RuntimeLike = {
+  mount(nodeId: string, instance?: object): object;
+  unmount(nodeId: string): void;
+  seek(nodeId: string, progress: number): PatchBatch;
+  graph: { registry: { subscribeNode(nodeId: string, listener: PatchListener): () => void } };
+  dispose(): void;
+};
+
+function createHandle(runtime: RuntimeLike): ProjectHandle {
+  return {
+    mount: (nodeId, instance = {}) => runtime.mount(nodeId, instance),
+    unmount: (nodeId) => runtime.unmount(nodeId),
+    seek: (nodeId, progress) => runtime.seek(nodeId, progress),
+    subscribe: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
+    dispose: () => runtime.dispose(),
+  };
 }
 
 function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
@@ -43,7 +75,7 @@ export class Engine {
     this.#plugins = options.plugins;
   }
 
-  load(project: ProjectDefinition): ProjectRuntime {
+  load(project: ProjectDefinition): ProjectHandle {
     assertValidProject(project);
     const tracks = new Map<string, Track>();
     const nodes = new Map<
@@ -89,7 +121,7 @@ export class Engine {
             sourceRevisions: {},
           };
         };
-      return new ProjectRuntime(project, {
+      const runtime = new ProjectRuntime(project, {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
         compose,
@@ -99,6 +131,7 @@ export class Engine {
           tracks.clear();
         },
       });
+      return createHandle(runtime);
     } catch (error) {
       for (const track of tracks.values()) track.dispose();
       throw error;

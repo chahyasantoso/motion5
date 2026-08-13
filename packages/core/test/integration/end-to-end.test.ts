@@ -4,6 +4,7 @@ import { createDomPatchAdapter } from "../../src/adapters/dom";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeScheduler } from "../../src/ports/fakes";
+import type { Patch } from "../../src/runtime/patch-registry";
 import { createRealGsapSeam } from "../support/real-gsap";
 
 const project: ProjectDefinition = {
@@ -44,11 +45,13 @@ describe("real end-to-end product path (E2)", () => {
     }).load(project);
 
     runtime.mount("hero/arm");
-    runtime.graph.flush(["hero/arm"], 1);
+    let patch: Patch | undefined;
+    runtime.subscribe("hero/arm", (next) => {
+      patch = next;
+    });
+    runtime.seek("hero/arm", 0);
     runtime.seek("hero/arm", 0.5);
-    runtime.graph.flush(["hero/arm"], 2);
 
-    const patch = runtime.graph.registry.get("hero/arm");
     expect(patch).toBeDefined();
     expect(patch?.values.opacity).toBeCloseTo(0.5, 10);
 

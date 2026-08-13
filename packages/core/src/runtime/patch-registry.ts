@@ -1,26 +1,12 @@
-import type { Diagnostic } from "../contract/v5";
+import type { Diagnostic, Patch, PatchBatch, PatchListener, PatchStatus } from "../contract/v5";
 import { equalValues } from "../domain/values";
 
-export type PatchStatus = "ready" | "blocked" | "error";
-
-export interface Patch {
-  readonly nodeId: string;
-  readonly revision: number;
-  readonly values: Readonly<Record<string, unknown>>;
-  readonly sourceProgress: number;
-  readonly sourceRevisions: Readonly<Record<string, number>>;
-  readonly status: PatchStatus;
-  readonly diagnostics: readonly Diagnostic[];
-}
-
-export interface PatchBatch {
-  readonly tick: number;
-  readonly seeds: readonly string[];
-  readonly patches: readonly Patch[];
-  readonly diagnostics: readonly Diagnostic[];
-}
-
-export type PatchListener = (patch: Patch) => void;
+/**
+ * The patch contracts are owned by `contract/v5` so the public declaration surface can name
+ * them without pulling this module into its import closure. Re-exported here because the
+ * registry is the only writer of a `Patch`, and its callers should not need two imports.
+ */
+export type { Patch, PatchBatch, PatchListener, PatchStatus } from "../contract/v5";
 export type BatchListener = (batch: PatchBatch) => void;
 
 export interface PublishInput {
