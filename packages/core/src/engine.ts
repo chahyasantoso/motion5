@@ -1,4 +1,10 @@
-import type { Diagnostic, ProjectDefinition } from "./contract/v5";
+import type {
+  Diagnostic,
+  Patch,
+  PatchBatch,
+  PatchListener,
+  ProjectDefinition,
+} from "./contract/v5";
 import { validateV5 } from "./contract/validate-v5";
 import { PluginRegistry } from "./domain/plugins";
 import { Track } from "./domain/track";
@@ -6,7 +12,6 @@ import type { ImmutableRecord } from "./domain/values";
 import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
-import type { Patch, PatchListener } from "./runtime/patch-registry";
 import { ProjectRuntime } from "./runtime/project-runtime";
 
 export interface EngineOptions {
@@ -19,16 +24,9 @@ export interface EngineOptions {
 export interface ProjectHandle {
   mount(nodeId: string, instance?: object): object;
   unmount(nodeId: string): void;
-  seek(nodeId: string, progress: number): PatchBatchLike;
+  seek(nodeId: string, progress: number): PatchBatch;
   subscribe(nodeId: string, listener: PatchListener): () => void;
   dispose(): void;
-}
-
-export interface PatchBatchLike {
-  readonly tick: number;
-  readonly seeds: readonly string[];
-  readonly patches: readonly Patch[];
-  readonly diagnostics: readonly Diagnostic[];
 }
 
 class RuntimeProjectHandle implements ProjectHandle {
@@ -42,7 +40,7 @@ class RuntimeProjectHandle implements ProjectHandle {
   unmount(nodeId: string): void {
     this.#runtime.unmount(nodeId);
   }
-  seek(nodeId: string, progress: number): PatchBatchLike {
+  seek(nodeId: string, progress: number): PatchBatch {
     return this.#runtime.seek(nodeId, progress);
   }
   subscribe(nodeId: string, listener: PatchListener): () => void {

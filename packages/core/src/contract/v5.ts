@@ -13,6 +13,27 @@ export interface Diagnostic {
   readonly ids?: readonly string[];
 }
 
+export type PatchStatus = "ready" | "blocked" | "error";
+
+export interface Patch {
+  readonly nodeId: string;
+  readonly revision: number;
+  readonly values: Readonly<Record<string, unknown>>;
+  readonly sourceProgress: number;
+  readonly sourceRevisions: Readonly<Record<string, number>>;
+  readonly status: PatchStatus;
+  readonly diagnostics: readonly Diagnostic[];
+}
+
+export interface PatchBatch {
+  readonly tick: number;
+  readonly seeds: readonly string[];
+  readonly patches: readonly Patch[];
+  readonly diagnostics: readonly Diagnostic[];
+}
+
+export type PatchListener = (patch: Patch) => void;
+
 export interface AuthoredStop {
   readonly p: number;
   readonly v: unknown;
