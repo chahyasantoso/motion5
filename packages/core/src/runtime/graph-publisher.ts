@@ -45,6 +45,10 @@ function mergeValues(
   return Object.freeze({ ...base, ...overlay });
 }
 
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
 /**
  * One-way publication over an immutable, validated snapshot. It owns traversal and failure
  * containment, but exposes no topology mutation methods. Dirty composition is memoized per
@@ -58,9 +62,6 @@ export class GraphPublisher {
   }
 
   flush(snapshot: PublisherSnapshot, seeds: readonly string[], tick: number): PatchBatch {
-    // Traversal is not a scheduler. Deciding what to do with a flush requested from inside a
-    // subscriber belongs to the runtime that owns ticks and seeds, so refuse it here before
-    // any batch state is touched instead of silently nesting a publication.
     if (this.#registry.notifying) throw new Error(REENTRANT_BATCH_MESSAGE);
     const byId = new Map(snapshot.nodes.map((node) => [node.id, node]));
     const dependents = new Map<string, string[]>();
@@ -109,10 +110,15 @@ export class GraphPublisher {
         }
         try {
           const inputs: Record<string, unknown> = {};
-          for (const edge of node.edges) {
-            if (edge.role !== "input") continue;
-            inputs[edge.target ?? ""] =
+          for (const edge of node.edges
+            .filter(({ role }) => role === "input")
+            .sort(compareEdgeKeys)) {
+            const sourceValues =
               memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
+            if (sourceValues === undefined) continue;
+            if (!isRecord(sourceValues))
+              throw new TypeError(`Input observation source "${edge.sourceId}" must be a record.`);
+            Object.assign(inputs, sourceValues);
           }
           const composed = node.compose(inputs);
           let values = composed.values;
@@ -123,9 +129,6 @@ export class GraphPublisher {
               memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
             values = mergeValues(values, sourceValues);
           }
-          // Memoize the value actually published, not the pre-merge composition. A same-flush
-          // input-role consumer of this node must see what it published, not what it computed
-          // before its own output-role merges were applied.
           memo.set(id, { ...composed, values });
           this.#registry.publish({
             nodeId: id,
@@ -148,14 +151,10 @@ export class GraphPublisher {
       }
       return this.#registry.closeBatch();
     } catch (error) {
-      // Best-effort cleanup only. If the registry is already closed (e.g. this error IS
-      // the closeBatch() call above having already fully closed and reset state before a
-      // subscriber threw), this recovery call will itself throw -- that secondary failure
-      // must never replace the original error being propagated below.
       try {
         this.#registry.closeBatch();
       } catch {
-        // intentionally swallowed; see comment above
+        // Preserve the original flush failure.
       }
       throw error;
     }
