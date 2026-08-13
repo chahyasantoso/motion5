@@ -1,8 +1,6 @@
 name: CI
 
 on:
-  # Pull requests already run the full required suite. Do not also run the same
-  # workflow from pushes to feature branches, or every PR head gets duplicate checks.
   push:
     branches: [main, "rescue/**"]
   pull_request:
@@ -17,6 +15,9 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  NODE_VERSION: 24
+
 jobs:
   quality:
     name: quality (node 24)
@@ -30,12 +31,9 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Install locked dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Typecheck
-        run: npm run typecheck
-      - name: Unit tests
-        run: npm test
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
 
   integration:
     name: integration (node 24)
@@ -49,10 +47,8 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Install locked dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Integration tests
-        run: npm run test:integration
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:integration
 
   boundaries:
     name: boundaries (node 24)
@@ -66,15 +62,12 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Install locked dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Boundary scan and planted fixtures
-        run: npm run test:boundaries
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:boundaries
 
-  performance:
-    name: performance (node 24, advisory)
+  build:
+    name: build (node 24)
     runs-on: ubuntu-latest
-    continue-on-error: true
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -84,75 +77,58 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - name: Install locked dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Run deterministic benchmark
-        run: npm run benchmark
-      - name: Upload benchmark report
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: motion5-benchmark-report
-          path: performance/benchmark-report.json
-          if-no-files-found: error
-      - name: Upload failure diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: motion5-performance-failure-diagnostics
-          path: |
-            performance/benchmark-report.json
-            test-results/**
-          if-no-files-found: ignore
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx tsc -p packages/core/tsconfig.build.json
+      - run: test -f packages/core/dist/index.js
+      - run: test -f packages/core/dist/index.d.ts
 
-  format:
-    name: prettier after behavioral green
-    needs: [quality, integration, boundaries]
-    if: >-
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.head.repo.full_name == github.repository
+  end-to-end:
+    name: end-to-end (node 24)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      HAS_PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN != '' }}
     steps:
-      - name: Check out the exact tested PR head
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          fetch-depth: 1
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN || github.token }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-      - name: Install locked dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Apply Prettier
-        run: npm run format
-      - name: Push formatting child commit
-        if: env.HAS_PAT == 'true'
-        env:
-          TARGET_BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: |
-          if git diff --quiet; then
-            echo "Already formatted."
-            exit 0
-          fi
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
-          git add -A
-          git commit -m "chore: apply prettier"
-          git push origin "HEAD:${TARGET_BRANCH}"
-          echo "Pushed a formatting child commit; CI will verify the new head."
-      - name: Fail with formatting evidence when PAT is unavailable
-        if: env.HAS_PAT != 'true'
-        run: |
-          if git diff --quiet; then
-            echo "Already formatted."
-            exit 0
-          fi
-          git --no-pager diff
-          echo "Formatting drift found, but PERSONAL_ACCESS_TOKEN is unavailable."
-          exit 1
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx vitest run packages/core/test/integration/end-to-end.test.ts
+
+  performance:
+    name: performance (node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run benchmark
+      - uses: actions/upload-artifact@v4
+        with:
+          name: motion5-benchmark-report
+          path: performance/benchmark-report.json
+          if-no-files-found: error
+
+  format:
+    name: prettier after behavioral green
+    needs: [quality, integration, boundaries, build, end-to-end]
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run format:check
