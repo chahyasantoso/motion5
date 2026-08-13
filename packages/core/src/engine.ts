@@ -75,9 +75,6 @@ export class Engine {
     };
 
     try {
-      // Prepare every authored track at the load boundary. Lazy compilation made malformed
-      // projects look valid until an unrelated first seek, and leaked the failure as a frame
-      // composition error instead of an acceptance diagnostic.
       for (const nodeId of nodes.keys()) compile(nodeId);
       const compose =
         (node: {
@@ -94,6 +91,7 @@ export class Engine {
         };
       return new ProjectRuntime(project, {
         clock: this.#options.clock,
+        scheduler: this.#options.scheduler,
         compose,
         setProgress: (nodeId, progress) => tracks.get(nodeId)!.setProgress(progress),
         disposeComposition: () => {

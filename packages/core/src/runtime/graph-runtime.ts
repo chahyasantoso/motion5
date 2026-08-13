@@ -4,6 +4,7 @@ import { GraphBinding } from "../graph/binding";
 import type { GraphNode } from "../graph/ir";
 import { GraphPublisher, type PublisherNode } from "./graph-publisher";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
+import type { Scheduler } from "../ports/scheduler";
 
 export type ComposeNode = PublisherNode["compose"];
 export type ComposeResolver = (node: GraphNode) => ComposeNode;
@@ -11,8 +12,15 @@ export type ComposeResolver = (node: GraphNode) => ComposeNode;
 export const DEFERRED_FLUSH_RULE = "reentrant-flush-deferred";
 export const CLOCK_REGRESSION_RULE = "clock-tick-regression";
 export const FLUSH_FAILURE_RULE = "flush-failure";
+export const SCHEDULER_FAILURE_RULE = "scheduler-failure";
 
 export interface GraphRuntimeOptions {
+  /**
+   * Where a deferred follow-up flush is drained. This is an injected seam, never a clock: it
+   * adds no frame source and does not advance the frame number, so a project with no ticking
+   * clock still drains the work a subscriber queued.
+   */
+  readonly scheduler?: Scheduler;
   /**
    * Where a failure that escaped a flush is reported. A clock dispatch must never propagate
    * one, because the frame loop is the one caller that cannot recover from an exception, so
@@ -33,7 +41,7 @@ function deferredBatch(sequence: number, seeds: readonly string[]): PatchBatch {
     path: ids[0] ?? "",
     message:
       "A flush requested while subscribers were being notified was queued as one follow-up " +
-      "invalidation for the next tick.",
+      "invalidation for the scheduler.",
     severity: "warning",
     ids,
   });
@@ -55,6 +63,7 @@ export class GraphRuntime {
   readonly #publisher: GraphPublisher;
   readonly #clock: Clock;
   readonly #compose: ComposeResolver;
+  readonly #scheduler: Scheduler | undefined;
   readonly #onFlushError: ((diagnostic: Diagnostic) => void) | undefined;
   readonly #unsubscribe: () => void;
   readonly #members = new Set<string>();
@@ -65,6 +74,8 @@ export class GraphRuntime {
   #sequence = 0;
   #lastFlushError: Diagnostic | undefined;
   #flushing = false;
+  /** True between scheduling a drain and that drain running. Coalesces follow-ups to one. */
+  #scheduledDrain = false;
   #disposed = false;
 
   constructor(
@@ -78,6 +89,7 @@ export class GraphRuntime {
     this.#publisher = new GraphPublisher(this.#registry);
     this.#clock = clock;
     this.#compose = compose;
+    this.#scheduler = options.scheduler;
     this.#onFlushError = options.onFlushError;
     this.#unsubscribe = this.#clock.subscribe((event) => this.#onTick(event));
   }
@@ -90,9 +102,6 @@ export class GraphRuntime {
   }
   get registry(): PatchRegistry {
     return this.#registry;
-  }
-  get publisher(): GraphPublisher {
-    return this.#publisher;
   }
   /** The last frame number this runtime saw from its clock. */
   get tick(): number {
@@ -109,7 +118,7 @@ export class GraphRuntime {
   get memberCount(): number {
     return this.#members.size;
   }
-  /** Seeds deferred by reentrant flush requests, waiting for the next flush to drain them. */
+  /** Seeds deferred by reentrant flush requests, waiting for the scheduled drain. */
   get pendingSeeds(): readonly string[] {
     return [...this.#pendingSeeds];
   }
@@ -134,10 +143,12 @@ export class GraphRuntime {
     this.#assertLive();
     // Reentrancy policy: one flush at a time, no recursion, no second clock. A flush asked
     // for while this runtime is already flushing (in practice from a patch subscriber) is
-    // never executed inline. Its seeds are coalesced into a single pending set that the next
-    // flush drains exactly once, so the follow-up is neither recursive nor lost.
+    // never executed inline. Its seeds are coalesced into a single pending set, and one drain
+    // is scheduled through the injected scheduler, so the follow-up is neither recursive nor
+    // dependent on a later clock tick that a scroll- or seek-driven project never produces.
     if (this.#flushing) {
       for (const seed of seeds) this.#pendingSeeds.add(seed);
+      this.#scheduleDrain();
       return deferredBatch(this.#sequence, seeds);
     }
     if (tick !== undefined) {
@@ -147,6 +158,7 @@ export class GraphRuntime {
     }
     const carried = [...this.#pendingSeeds];
     this.#pendingSeeds.clear();
+    this.#scheduledDrain = false;
     const effectiveSeeds = [...new Set([...seeds, ...carried])];
     const nodes = this.#binding.graph.nodes.map((node) =>
       Object.freeze({ ...node, compose: this.#compose(node) }),
@@ -166,6 +178,9 @@ export class GraphRuntime {
       throw error;
     } finally {
       this.#flushing = false;
+      // Seeds can arrive during notification or survive a failure. Either way the queue owns
+      // its own drain from here; nothing else will come back for it.
+      if (this.#pendingSeeds.size > 0) this.#scheduleDrain();
     }
   }
 
@@ -181,7 +196,31 @@ export class GraphRuntime {
     this.#unsubscribe();
     this.#members.clear();
     this.#pendingSeeds.clear();
+    this.#scheduledDrain = false;
   }
+
+  #scheduleDrain(): void {
+    if (this.#scheduler === undefined || this.#scheduledDrain || this.#disposed) return;
+    this.#scheduledDrain = true;
+    try {
+      this.#scheduler.schedule(() => {
+        this.#scheduledDrain = false;
+        if (this.#disposed || this.#pendingSeeds.size === 0) return;
+        try {
+          this.flush([]);
+        } catch (error) {
+          this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describe(error)}`);
+        }
+      });
+    } catch (error) {
+      // Scheduling is an injected boundary and can fail. Clear the guard before reporting so
+      // a later invalidation retries instead of finding a drain that was never scheduled and
+      // leaving the pending seeds stranded for the lifetime of the runtime.
+      this.#scheduledDrain = false;
+      this.#report(SCHEDULER_FAILURE_RULE, `Deferred flush scheduling failed: ${describe(error)}`);
+    }
+  }
+
   #onTick(event: ClockTick): void {
     if (this.#disposed) return;
     // Everything below is reported, never thrown. A clock dispatch is the one caller that

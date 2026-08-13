@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { GraphRuntime } from "../../src/runtime/graph-runtime";
@@ -19,20 +19,25 @@ const compose = (node: { id: string }) => () => ({
 });
 
 describe("GraphRuntime", () => {
-  it("I-13 owns one registry, one publisher, one state, and one clock subscription", () => {
+  it("I-13 owns one registry, one state, and one clock subscription", () => {
     const clock = createManualClock();
-    let subscriptions = 0;
-    const originalSubscribe = clock.subscribe;
-    clock.subscribe = ((listener: Parameters<typeof originalSubscribe>[0]) => {
-      subscriptions += 1;
-      return originalSubscribe(listener);
-    }) as typeof clock.subscribe;
+    // The spy has to exist before construction. Installing it afterwards can only prove that
+    // nothing subscribed later, which is not the invariant being claimed here.
+    const subscribe = vi.spyOn(clock, "subscribe");
 
     const runtime = new GraphRuntime(project, clock, compose);
-    expect(subscriptions).toBe(1);
+
+    expect(subscribe).toHaveBeenCalledTimes(1);
     expect(runtime.registry).toBe(runtime.registry);
-    expect(runtime.publisher).toBe(runtime.publisher);
     expect(runtime.state).toBe(runtime.binding.state);
+    runtime.dispose();
+  });
+
+  it("P1-8 keeps the publisher off the public runtime surface", () => {
+    const clock = createManualClock();
+    const runtime = new GraphRuntime(project, clock, compose);
+
+    expect((runtime as unknown as { publisher?: unknown }).publisher).toBeUndefined();
     runtime.dispose();
   });
 
