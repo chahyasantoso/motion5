@@ -14,8 +14,18 @@ export interface TrackOptions {
   readonly plugins?: ResolvedPlugins;
 }
 
+export class CompositionOutputError extends TypeError {
+  readonly ruleId = "composition-output-shape" as const;
+  constructor(message: string) {
+    super(message);
+    this.name = this.ruleId;
+  }
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
 }
 
 function prepareConfig(config: unknown, plugins: readonly PluginDefinition[]): unknown {
@@ -31,14 +41,26 @@ function prepareConfig(config: unknown, plugins: readonly PluginDefinition[]): u
 }
 
 function rendererNeutralState(state: Readonly<Record<string, unknown>>): ImmutableRecord {
+  if (!isRecord(state))
+    throw new CompositionOutputError("Interpolator state must be a renderer-neutral record.");
   const values: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(state)) {
-    // GSAP annotates its proxy with `_gsap` and other private bookkeeping objects. They are
-    // adapter internals, not authored output, and must not enter the immutable value contract.
     if (key.startsWith("_")) continue;
     values[key] = value;
   }
   return values as ImmutableRecord;
+}
+
+function freezeComposition(values: unknown): ImmutableRecord {
+  if (!isRecord(values))
+    throw new CompositionOutputError("Composition output must be a renderer-neutral record.");
+  try {
+    return freezeValue(values as ImmutableRecord);
+  } catch (error) {
+    throw new CompositionOutputError(
+      `Composition output is not renderer-neutral: ${error instanceof Error ? error.message : String(error)}`,
+    );
+  }
 }
 
 export class Track {
@@ -92,12 +114,17 @@ export class Track {
       ...inputs,
     };
     for (const plugin of this.#plugins.plugins) {
-      values = plugin.compose(values, this.#progress);
-      freezeValue(values);
+      const composed = plugin.compose(values, this.#progress);
+      if (!isRecord(composed))
+        throw new CompositionOutputError(
+          `Plugin "${plugin.name}" must return a renderer-neutral record.`,
+        );
+      values = composed as ImmutableRecord;
     }
+    const frozenValues = freezeComposition(values);
     const snapshot = Object.freeze({
       progress: this.#progress,
-      values: freezeValue(values),
+      values: frozenValues,
     });
     this.#lastInputs = freezeValue({ ...inputs });
     this.#lastSnapshot = snapshot;

@@ -1,5 +1,6 @@
 import type { Diagnostic, InputProjection } from "../contract/v5";
 import { edgeKey, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
+import { CompositionOutputError } from "../domain/track";
 import { PatchRegistry, REENTRANT_BATCH_MESSAGE, type PatchBatch } from "./patch-registry";
 
 export interface PublisherComposition {
@@ -27,8 +28,20 @@ class InputObservationError extends Error {
     this.name = ruleId;
   }
 }
+class OutputObservationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "observation-output-shape";
+  }
+  readonly ruleId = "observation-output-shape" as const;
+}
 function diagnostic(nodeId: string, error: unknown): Diagnostic {
-  const ruleId = error instanceof InputObservationError ? error.ruleId : "composition-failure";
+  const ruleId =
+    error instanceof InputObservationError ||
+    error instanceof OutputObservationError ||
+    error instanceof CompositionOutputError
+      ? error.ruleId
+      : "composition-failure";
   return Object.freeze({
     ruleId,
     path: nodeId,
@@ -42,14 +55,34 @@ function compareEdgeKeys(a: GraphEdge, b: GraphEdge): number {
   const right = edgeKey(b);
   return left < right ? -1 : left > right ? 1 : 0;
 }
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+function isRendererNeutral(value: unknown, seen = new WeakSet<object>()): boolean {
+  if (value === null) return true;
+  if (typeof value === "string" || typeof value === "boolean") return true;
+  if (typeof value === "number") return Number.isFinite(value);
+  if (typeof value !== "object" || seen.has(value)) return false;
+  seen.add(value);
+  if (Array.isArray(value)) return value.every((item) => isRendererNeutral(item, seen));
+  if (!isRecord(value)) return false;
+  return Object.entries(value).every(
+    ([key, item]) => !key.startsWith("_") && isRendererNeutral(item, seen),
+  );
+}
+function validateComposition(values: unknown): asserts values is Readonly<Record<string, unknown>> {
+  if (!isRecord(values) || !isRendererNeutral(values))
+    throw new CompositionOutputError(
+      "Composition output must contain only renderer-neutral values.",
+    );
+}
 function mergeValues(
   base: Readonly<Record<string, unknown>>,
   overlay: Readonly<Record<string, unknown>> | undefined,
 ): Readonly<Record<string, unknown>> {
   return overlay === undefined ? base : Object.freeze({ ...base, ...overlay });
-}
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 function projectValues(
   source: Readonly<Record<string, unknown>>,
@@ -149,12 +182,18 @@ export class GraphPublisher {
             }
           }
           const composed = node.compose(inputs);
+          validateComposition(composed.values);
           let values = composed.values;
           for (const edge of node.edges
             .filter(({ role }) => role === "output")
             .sort(compareEdgeKeys)) {
             const sourceValues =
               memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
+            if (sourceValues === undefined) continue;
+            if (!isRecord(sourceValues) || !isRendererNeutral(sourceValues))
+              throw new OutputObservationError(
+                `Output observation source "${edge.sourceId}" must publish a renderer-neutral record.`,
+              );
             values = mergeValues(values, sourceValues);
           }
           memo.set(id, { ...composed, values });
