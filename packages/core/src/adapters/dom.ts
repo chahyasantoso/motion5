@@ -31,7 +31,13 @@ function transformValue(key: string, value: unknown): string {
 
 function composeTransform(values: Readonly<Record<string, unknown>>): string {
   const parts: string[] = [];
-  for (const key of ["x", "y", "z", "rotation", "rotationX", "rotationY", "scale"])
+  if ("x" in values || "y" in values || "z" in values) {
+    const x = values.x ?? 0;
+    const y = values.y ?? 0;
+    const z = values.z ?? 0;
+    parts.push(`translate3d(${String(x)}px, ${String(y)}px, ${String(z)}px)`);
+  }
+  for (const key of ["rotation", "rotationX", "rotationY", "scale"])
     if (key in values) parts.push(transformValue(key, values[key]));
   return parts.join(" ");
 }
