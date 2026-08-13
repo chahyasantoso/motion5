@@ -1,0 +1,14 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T11:21:55.2787286Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T11:21:55.2787788Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T11:21:55.2826300Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T11:21:55.2826505Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T11:21:55.2826664Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T11:21:55.2826833Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T11:21:55.3707609Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T11:21:55.3708288Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T11:21:55.3708797Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T11:21:55.3709029Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T11:21:57.0162451Z ##[error]packages/core/test/contract/gsap-paused-timeline.test.ts(10,7): error TS2322: Type '(value?: number) => 0 | GsapTweenLike' is not assignable to type '{ (): number; (value: number): GsapTweenLike; }'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:21:57.0171198Z   Type '0 | GsapTweenLike' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:21:57.0172107Z     Type 'GsapTweenLike' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:21:57.0409075Z ##[error]Process completed with exit code 2.
