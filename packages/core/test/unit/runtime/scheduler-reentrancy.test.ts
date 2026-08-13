@@ -65,22 +65,11 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
     runtime.dispose();
   });
 
-  it("uses the runtime queue policy for reentrant work instead of exposing publisher recursion", () => {
+  it("does not expose the publisher as a second public reentrancy entry point", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
     const runtime = new GraphRuntime(project, clock, compose, { scheduler });
-    runtime.attach("hero/arm");
-
-    let directError: unknown;
-    runtime.registry.subscribeNode("hero/arm", () => {
-      try {
-        runtime.graphNotPublic;
-      } catch (error) {
-        directError = error;
-      }
-    });
-
-    expect(directError).toBeUndefined();
+    expect((runtime as unknown as { publisher?: unknown }).publisher).toBeUndefined();
     runtime.dispose();
   });
 });
