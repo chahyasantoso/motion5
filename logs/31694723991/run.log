@@ -1,0 +1,17 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T11:16:15.0678180Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:15.0678560Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:15.0700200Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:15.0700536Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:15.0700798Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:15.0701090Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:15.1645748Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:15.1646635Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:15.1647121Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:15.1647378Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:16.8612217Z ##[error]packages/core/test/contract/adapters.test.ts(25,7): error TS2322: Type '(next?: number | undefined) => number | GsapTweenLike' is not assignable to type '{ (): number; (value: number): GsapTweenLike; }'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:16.8619089Z   Type 'number | GsapTweenLike' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:16.8619715Z     Type 'GsapTweenLike' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:16.8621305Z ##[error]packages/core/test/contract/gsap-paused-timeline.test.ts(4,8): error TS2305: Module '"../../src/adapters/interpolator/gsap"' has no exported member 'GsapTimelineLike'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:16.8623593Z ##[error]packages/core/test/contract/gsap-paused-timeline.test.ts(26,7): error TS2353: Object literal may only specify known properties, and 'timeline' does not exist in type 'GsapLike'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:16.8625311Z ##[error]packages/core/test/contract/gsap-paused-timeline.test.ts(26,16): error TS7006: Parameter 'config' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:16:16.8791243Z ##[error]Process completed with exit code 2.
