@@ -1,0 +1,67 @@
+quality (node 24)	Typecheck	﻿2026-08-13T07:31:20.0683981Z ##[group]Run npm run typecheck
+quality (node 24)	Typecheck	2026-08-13T07:31:20.0684340Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Typecheck	2026-08-13T07:31:20.0731012Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Typecheck	2026-08-13T07:31:20.0731306Z ##[endgroup]
+quality (node 24)	Typecheck	2026-08-13T07:31:20.1826551Z 
+quality (node 24)	Typecheck	2026-08-13T07:31:20.1827061Z > motion5@0.0.0 typecheck
+quality (node 24)	Typecheck	2026-08-13T07:31:20.1827490Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Typecheck	2026-08-13T07:31:22.0542604Z 
+quality (node 24)	Typecheck	2026-08-13T07:31:22.0576534Z ##[error]packages/core/test/integration/end-to-end.test.ts(47,13): error TS2339: Property 'graph' does not exist on type 'ProjectHandle'.
+quality (node 24)	Typecheck	2026-08-13T07:31:22.0588051Z ##[error]packages/core/test/integration/end-to-end.test.ts(49,13): error TS2339: Property 'graph' does not exist on type 'ProjectHandle'.
+quality (node 24)	Typecheck	2026-08-13T07:31:22.0591144Z ##[error]packages/core/test/integration/end-to-end.test.ts(51,27): error TS2339: Property 'graph' does not exist on type 'ProjectHandle'.
+quality (node 24)	Typecheck	2026-08-13T07:31:22.0875136Z ##[error]Process completed with exit code 2.
+integration (node 24)	Integration tests	﻿2026-08-13T07:31:22.8323539Z ##[group]Run npm run test:integration
+integration (node 24)	Integration tests	2026-08-13T07:31:22.8323904Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Integration tests	2026-08-13T07:31:22.8369448Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Integration tests	2026-08-13T07:31:22.8369728Z ##[endgroup]
+integration (node 24)	Integration tests	2026-08-13T07:31:22.9457045Z 
+integration (node 24)	Integration tests	2026-08-13T07:31:22.9457795Z > motion5@0.0.0 test:integration
+integration (node 24)	Integration tests	2026-08-13T07:31:22.9458363Z > vitest run packages/core/test/integration
+integration (node 24)	Integration tests	2026-08-13T07:31:22.9459055Z 
+integration (node 24)	Integration tests	2026-08-13T07:31:23.3886452Z 
+integration (node 24)	Integration tests	2026-08-13T07:31:23.3891002Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:23.3891469Z 
+integration (node 24)	Integration tests	2026-08-13T07:31:23.7858398Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:23.7886474Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:23.8012870Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.0616587Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.1169993Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.1227062Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.2928171Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.3312428Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.3695541Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.6331022Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.6667419Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.6686478Z ^[[31m     ^[[31m×^[[31m writes authored GSAP output through a patch into the DOM adapter^[[39m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.6726758Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.8192923Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.8902070Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.8924537Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9840189Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9872763Z 
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9873761Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9874318Z 
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9878091Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m > ^[[22mreal end-to-end product path (E2)^[[2m > ^[[22mwrites authored GSAP output through a patch into the DOM adapter
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9885794Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading 'flush')^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9887396Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/end-to-end.test.ts:^[[2m47:19^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9918695Z     ^[[90m 45|^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9919614Z     ^[[90m 46|^[[39m     runtime^[[33m.^[[39m^[[34mmount^[[39m(^[[32m"hero/arm"^[[39m)^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9921659Z     ^[[90m 47|^[[39m     runtime^[[33m.^[[39mgraph^[[33m.^[[39m^[[34mflush^[[39m([^[[32m"hero/arm"^[[39m]^[[33m,^[[39m ^[[34m1^[[39m)^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9922856Z     ^[[90m   |^[[39m                   ^[[31m^^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9924100Z     ^[[90m 48|^[[39m     runtime^[[33m.^[[39m^[[34mseek^[[39m(^[[32m"hero/arm"^[[39m^[[33m,^[[39m ^[[34m0.5^[[39m)^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9926541Z     ^[[90m 49|^[[39m     runtime^[[33m.^[[39mgraph^[[33m.^[[39m^[[34mflush^[[39m([^[[32m"hero/arm"^[[39m]^[[33m,^[[39m ^[[34m2^[[39m)^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9927350Z 
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9927863Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9928268Z 
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9928304Z 
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9930102Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m15 passed^[[39m^[[22m^[[90m (16)^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9931629Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m36 passed^[[39m^[[22m^[[90m (37)^[[39m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9955936Z ^[[2m   Start at ^[[22m 07:31:23
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9957178Z ^[[2m   Duration ^[[22m 1.58s^[[2m (transform 747ms, setup 0ms, import 1.36s, tests 166ms, environment 3ms)^[[22m
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9957870Z 
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9957882Z 
+integration (node 24)	Integration tests	2026-08-13T07:31:24.9980158Z ##[error]TypeError: Cannot read properties of undefined (reading 'flush')
+integration (node 24)	Integration tests	 ❯ packages/core/test/integration/end-to-end.test.ts:47:19
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	2026-08-13T07:31:25.0361158Z ##[error]Process completed with exit code 1.
