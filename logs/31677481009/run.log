@@ -1,0 +1,12 @@
+quality (node 24)	Typecheck	﻿2026-08-13T07:22:32.9941666Z ##[group]Run npm run typecheck
+quality (node 24)	Typecheck	2026-08-13T07:22:32.9942041Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Typecheck	2026-08-13T07:22:32.9985533Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Typecheck	2026-08-13T07:22:32.9985821Z ##[endgroup]
+quality (node 24)	Typecheck	2026-08-13T07:22:33.1101951Z 
+quality (node 24)	Typecheck	2026-08-13T07:22:33.1102639Z > motion5@0.0.0 typecheck
+quality (node 24)	Typecheck	2026-08-13T07:22:33.1103371Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Typecheck	2026-08-13T07:22:33.1103745Z 
+quality (node 24)	Typecheck	2026-08-13T07:22:35.0325891Z ##[error]packages/core/test/unit/runtime/scheduler-reentrancy.test.ts(25,65): error TS2353: Object literal may only specify known properties, and 'scheduler' does not exist in type 'GraphRuntimeOptions'.
+quality (node 24)	Typecheck	2026-08-13T07:22:35.0337928Z ##[error]packages/core/test/unit/runtime/scheduler-reentrancy.test.ts(49,65): error TS2353: Object literal may only specify known properties, and 'scheduler' does not exist in type 'GraphRuntimeOptions'.
+quality (node 24)	Typecheck	2026-08-13T07:22:35.0342210Z ##[error]packages/core/test/unit/runtime/scheduler-reentrancy.test.ts(71,65): error TS2353: Object literal may only specify known properties, and 'scheduler' does not exist in type 'GraphRuntimeOptions'.
+quality (node 24)	Typecheck	2026-08-13T07:22:35.0636652Z ##[error]Process completed with exit code 2.
