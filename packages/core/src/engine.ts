@@ -86,7 +86,11 @@ export class Engine {
         }) =>
         (inputs: Readonly<Record<string, unknown>>) => {
           const snapshot = tracks.get(node.id)!.compose(inputs as Readonly<ImmutableRecord>);
-          return { values: snapshot.values, sourceProgress: snapshot.progress, sourceRevisions: {} };
+          return {
+            values: snapshot.values,
+            sourceProgress: snapshot.progress,
+            sourceRevisions: {},
+          };
         };
       return new ProjectRuntime(project, {
         clock: this.#options.clock,

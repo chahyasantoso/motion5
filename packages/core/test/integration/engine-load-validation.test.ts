@@ -60,9 +60,9 @@ describe("Engine product-load validation (X-1 follow-up)", () => {
     const create = vi.spyOn(interpolator, "create");
     const engine = new Engine({ ...options(), interpolator, plugins });
 
-    expect(() => engine.load(projectWith({ unknown: { stops: [{ p: 0, v: 0 }] } }) as never)).toThrow(
-      /plugin-unknown-key/,
-    );
+    expect(() =>
+      engine.load(projectWith({ unknown: { stops: [{ p: 0, v: 0 }] } }) as never),
+    ).toThrow(/plugin-unknown-key/);
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -72,7 +72,14 @@ describe("Engine product-load validation (X-1 follow-up)", () => {
     const engine = new Engine({ ...options(), interpolator });
 
     const runtime = engine.load(
-      projectWith({ opacity: { stops: [{ p: 0, v: 0 }, { p: 1, v: 1 }] } }) as never,
+      projectWith({
+        opacity: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 1, v: 1 },
+          ],
+        },
+      }) as never,
     );
     expect(create).toHaveBeenCalledTimes(1);
     runtime.dispose();
