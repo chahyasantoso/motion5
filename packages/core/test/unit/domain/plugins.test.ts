@@ -108,6 +108,16 @@ describe("plugin registry", () => {
     expect(() => registry.register({ name: "x", compose: undefined as never })).toThrow(/function/);
   });
 
+  it("rejects malformed plugin metadata instead of poisoning resolution order", () => {
+    const registry = new PluginRegistry();
+    expect(() => registry.register(plugin("bad-keys", { keys: "x" }))).toThrow(/keys/);
+    expect(() => registry.register(plugin("bad-claim", { claimsKey: 1 }))).toThrow(/claimsKey/);
+    expect(() => registry.register(plugin("bad-priority", { priority: Number.NaN }))).toThrow(
+      /priority/,
+    );
+    expect(() => registry.register(plugin("bad-stage", { stage: "typo" }))).toThrow(/stage/);
+  });
+
   it("detaches resolved plugins from later registry mutation", () => {
     const registry = new PluginRegistry();
     const original = plugin("stable");
