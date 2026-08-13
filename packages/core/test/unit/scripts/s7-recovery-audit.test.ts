@@ -10,8 +10,8 @@ describe("S7 recovery audit workflow", () => {
     );
 
     expect(workflow).toContain("workflow_dispatch:");
-    expect(workflow).toMatch(/inputs:\s*[\\s\\S]*ref:/);
-    expect(workflow).toMatch(/inputs:\s*[\\s\\S]*base:/);
+    expect(workflow).toMatch(/inputs:[\s\S]*ref:/);
+    expect(workflow).toMatch(/inputs:[\s\S]*base:/);
     expect(workflow).toContain("failing_first_exception");
     expect(workflow).toMatch(/contract:/);
     expect(workflow).toMatch(/mutation:/);
