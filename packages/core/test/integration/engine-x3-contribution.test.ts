@@ -4,7 +4,6 @@ import { Engine } from "../../src/engine";
 import type { ImmutableRecord } from "../../src/domain/values";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
-
 const projectWith = (keyframes: unknown, duration = 1) => ({
   schemaVersion: 5,
   motions: [
@@ -50,33 +49,34 @@ describe("X-3 contribution through the product load path", () => {
     );
     runtime.dispose();
   });
-
-  it("rejects contribution collisions during Engine.load, before timelines exist", () => {
+  it("selects one predicate contributor through Engine.load", () => {
     const registry = new PluginRegistry();
+    const first = vi.fn(() => ({ keyframes: { derived: property(1) } }));
+    const second = vi.fn(() => ({ keyframes: { derived: property(2) } }));
     registry.register({
       name: "first",
-      keys: ["x"],
+      claimsKey: (key) => key === "x",
       stage: "prepare",
-      contribute: () => ({ keyframes: { derived: property(1) } }),
+      contribute: first,
       compose,
     });
     registry.register({
       name: "second",
-      keys: ["x"],
+      claimsKey: (key) => key === "x",
       stage: "prepare",
-      contribute: () => ({ keyframes: { derived: property(2) } }),
+      contribute: second,
       compose,
     });
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
-    expect(() =>
-      new Engine({ ...options(), interpolator, plugins: registry }).load(
-        projectWith({ x: property(1) }) as never,
-      ),
-    ).toThrow(/plugin-contribution-key-collision/);
-    expect(create).not.toHaveBeenCalled();
+    const runtime = new Engine({ ...options(), interpolator, plugins: registry }).load(
+      projectWith({ x: property(1) }) as never,
+    );
+    expect(first).toHaveBeenCalledOnce();
+    expect(second).not.toHaveBeenCalled();
+    expect(create).toHaveBeenCalled();
+    runtime.dispose();
   });
-
   it("rejects malformed contributions during Engine.load", () => {
     const registry = new PluginRegistry();
     registry.register({
@@ -104,7 +104,6 @@ describe("X-3 contribution through the product load path", () => {
     ).toThrow(/plugin-contribution-stop-order/);
     expect(create).not.toHaveBeenCalled();
   });
-
   it("rejects authored ease collisions before any timeline is created", () => {
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
@@ -130,7 +129,6 @@ describe("X-3 contribution through the product load path", () => {
     ).toThrow(/plugin-contribution-ease-collision/);
     expect(create).not.toHaveBeenCalled();
   });
-
   it("merges contributed keyframes into compiler diagnostics before timeline creation", () => {
     const registry = new PluginRegistry();
     registry.register({

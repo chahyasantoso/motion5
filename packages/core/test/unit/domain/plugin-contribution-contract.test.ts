@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { AuthoredStop } from "../../../src/contract/v5";
 import type { ImmutableRecord } from "../../../src/domain/values";
 import { PluginRegistry } from "../../../src/domain/plugins";
@@ -41,7 +41,6 @@ describe("plugin contribution contract (X-3)", () => {
       ],
     ]);
   });
-
   it("preserves both keyframes and tweenVars from one explicit contribution", () => {
     const registry = new PluginRegistry();
     registry.register({
@@ -56,34 +55,39 @@ describe("plugin contribution contract (X-3)", () => {
     expect(resolved.preparation.keyframes).toEqual({ derived: stops(4) });
     expect(resolved.preparation.tweenVars).toEqual({ overwrite: "auto" });
   });
-
-  it("rejects duplicate contributed outputs and conflicting tween vars", () => {
+  it("runs exactly one predicate owner instead of allowing last-write-wins", () => {
     const registry = new PluginRegistry();
+    const first = vi.fn(() => ({
+      keyframes: { derived: stops(1) },
+      tweenVars: { overwrite: "auto" },
+    }));
+    const second = vi.fn(() => ({
+      keyframes: { derived: stops(2) },
+      tweenVars: { overwrite: "all" },
+    }));
     registry.register({
       name: "first",
-      keys: ["x"],
+      claimsKey: (key) => key === "x",
       stage: "prepare",
-      contribute: () => ({ keyframes: { derived: stops(1) }, tweenVars: { overwrite: "auto" } }),
+      contribute: first,
       compose,
     });
     registry.register({
       name: "second",
-      keys: ["x"],
+      claimsKey: (key) => key === "x",
       stage: "prepare",
-      contribute: () => ({ keyframes: { derived: stops(2) }, tweenVars: { overwrite: "all" } }),
+      contribute: second,
       compose,
     });
-    const rules = registry
-      .resolveForKeyframes({ x: stops(1) })
-      .diagnostics.map(({ ruleId }) => ruleId);
-    expect(rules).toEqual(
-      expect.arrayContaining([
-        "plugin-contribution-key-collision",
-        "plugin-contribution-tween-vars-conflict",
-      ]),
-    );
+    const resolved = registry.resolveForKeyframes({ x: stops(1) });
+    expect(resolved.diagnostics).toEqual([]);
+    expect(first).toHaveBeenCalledOnce();
+    expect(second).not.toHaveBeenCalled();
+    expect(resolved.preparation).toEqual({
+      keyframes: { derived: stops(1) },
+      tweenVars: { overwrite: "auto" },
+    });
   });
-
   it("rejects malformed contributed stops instead of installing them", () => {
     const registry = new PluginRegistry();
     registry.register({
