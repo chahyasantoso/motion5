@@ -1,0 +1,12 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T13:57:13.7632697Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T13:57:13.7633244Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T13:57:13.7680460Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T13:57:13.7680743Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T13:57:13.7681190Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T13:57:13.7681411Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T13:57:13.8751427Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T13:57:13.8752452Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T13:57:13.8753206Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T13:57:13.8753538Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T13:57:15.8805253Z ##[error]packages/core/test/contract/gsap-sparse-percent-map.test.ts(20,16): error TS2683: 'this' implicitly has type 'any' because it does not have a type annotation.
+quality (node 24)	Run npm run typecheck	2026-08-13T13:57:15.9104825Z ##[error]Process completed with exit code 2.
