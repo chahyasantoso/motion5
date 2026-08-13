@@ -1,0 +1,17 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T11:18:59.0458850Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T11:18:59.0459212Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T11:18:59.0505003Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T11:18:59.0505276Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T11:18:59.0505471Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T11:18:59.0505680Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T11:18:59.1617158Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T11:18:59.1618434Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T11:18:59.1619208Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T11:18:59.1619553Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T11:19:01.1748740Z ##[error]packages/core/test/contract/adapters.test.ts(25,7): error TS2322: Type '(next?: number) => number | GsapTweenLike' is not assignable to type '{ (): number; (value: number): GsapTweenLike; }'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:19:01.1760079Z   Type 'number | GsapTweenLike' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:19:01.1760961Z     Type 'GsapTweenLike' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:19:01.1763777Z ##[error]packages/core/test/contract/gsap-paused-timeline.test.ts(10,7): error TS2322: Type '(value?: number) => 0 | GsapTweenLike' is not assignable to type '{ (): number; (value: number): GsapTweenLike; }'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:19:01.1766138Z   Type '0 | GsapTweenLike' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:19:01.1767184Z     Type 'GsapTweenLike' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:19:01.2051087Z ##[error]Process completed with exit code 2.
