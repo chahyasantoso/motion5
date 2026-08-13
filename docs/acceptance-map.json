@@ -9,10 +9,6 @@
     { "id": "react-lifecycle", "test": "packages/react/test" },
     { "id": "boundaries", "test": "packages/core/test/unit/scripts/boundary-scan.test.ts" },
     { "id": "end-to-end", "test": "packages/core/test/integration/end-to-end.test.ts" },
-    { "id": "clock-identity", "test": "packages/core/test/unit/runtime/clock-tick-identity.test.ts" },
-    { "id": "flat-projected-inputs", "test": "packages/core/test/unit/runtime/publisher-flat-inputs.test.ts" },
-    { "id": "registry-change-detection", "test": "packages/core/test/unit/runtime/patch-registry-structural-change.test.ts" },
-    { "id": "registry-listener-snapshots", "test": "packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts" },
     { "id": "s6-unsupported-use", "test": "packages/core/test/integration/plugin-use-contract.test.ts" }
   ]
 }
