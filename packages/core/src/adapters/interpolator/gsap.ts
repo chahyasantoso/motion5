@@ -39,6 +39,7 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
     const parent = gsap.timeline?.({ paused: true });
     if (parent !== undefined) {
       const timeline = parent;
+      let hasChildTween = false;
       for (const [key, property] of Object.entries(authored)) {
         const stops = readStops(property);
         const first = stops[0];
@@ -52,17 +53,15 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
           const vars: Record<string, unknown> = { ...tweenVars, [key]: next.v, duration: (next.p - previous.p) * duration, ease: "none" };
           if (next.ease !== undefined) vars.ease = next.ease;
           timeline.to(proxy, vars, previous.p * duration);
+          hasChildTween = true;
         }
         if (last.p < 1) timeline.to(proxy, { [key]: last.v, duration: 0 }, duration);
       }
-      timeline.duration(duration);
+      if (!hasChildTween && duration > 0) timeline.to(proxy, { duration: 0 }, duration);
       function progress(): number;
       function progress(value: number): void;
-      function progress(value?: number): number | void {
-        if (value === undefined) return timeline.progress();
-        timeline.progress(value);
-      }
-      return { get duration() { return timeline.duration(); }, state: proxy, progress, kill(): void { timeline.kill(); } };
+      function progress(value?: number): number | void { if (value === undefined) return timeline.progress(); timeline.progress(value); }
+      return { get duration() { return duration; }, state: proxy, progress, kill(): void { timeline.kill(); } };
     }
     if (!gsap.to) throw new TypeError("GSAP adapter requires timeline().");
     const tween = gsap.to(proxy, { ...tweenVars, keyframes: compiled.keyframes, duration, paused: true });

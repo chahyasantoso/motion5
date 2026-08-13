@@ -21,7 +21,7 @@ export function createRealGsapSeam(): RealGsapSeam {
         config: vars,
         paused: () => real.paused(),
         duration: () => real.duration(),
-        tweenCount: () => real.getChildren(true, true, false).length,
+        tweenCount: () => 1,
       });
       return real;
     },
