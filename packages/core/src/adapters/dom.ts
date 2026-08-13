@@ -1,4 +1,5 @@
 import type { Patch } from "../runtime/patch-registry";
+import type { ResolvedPlugins } from "../domain/plugins";
 
 export interface StageLike {
   style: { perspective?: string; [key: string]: unknown };
@@ -65,11 +66,12 @@ function defaultWriter(target: DomTarget, values: Readonly<Record<string, unknow
   transformState.set(target, state);
 }
 
-function renderableValues(values: Readonly<Record<string, unknown>>): Record<string, unknown> {
+function renderableValues(values: Readonly<Record<string, unknown>>, metadata?: ResolvedPlugins): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(values)) {
-    if (key.startsWith("_") || key === "offset") continue;
-    result[key] = value;
+    if (key.startsWith("_") || key === "offset" || metadata?.internalKeys.includes(key)) continue;
+    const serializer = metadata?.serializers[key];
+    result[key] = serializer ? serializer(value) : value;
   }
   return result;
 }
@@ -79,20 +81,19 @@ export function createDomPatchAdapter(
   perspective?: number,
   resolveTarget: DomTargetResolver = () => stage,
   write: DomPatchWriter = defaultWriter,
+  metadata?: ResolvedPlugins,
 ): DomPatchAdapter {
-  if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
-    stage.style.perspective = `${perspective}px`;
+  if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0) stage.style.perspective = `${perspective}px`;
   const lastApplied = new WeakMap<object, Record<string, unknown>>();
   return {
     apply(patch) {
       if (patch.status !== "ready") return;
       const target = resolveTarget(patch.nodeId);
       if (target === undefined) return;
-      const next = renderableValues(patch.values);
+      const next = renderableValues(patch.values, metadata);
       const previous = lastApplied.get(target) ?? {};
       const dirty: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(next))
-        if (!Object.is(previous[key], value)) dirty[key] = value;
+      for (const [key, value] of Object.entries(next)) if (!Object.is(previous[key], value)) dirty[key] = value;
       for (const key of Object.keys(previous)) if (!(key in next)) dirty[key] = undefined;
       if (Object.keys(dirty).length === 0) return;
       write(target, dirty);
