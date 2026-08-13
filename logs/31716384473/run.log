@@ -1,0 +1,150 @@
+integration (node 24)	Run npm run test:integration	﻿2026-08-13T15:37:23.7224239Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:23.7224624Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:23.7267199Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:23.7267693Z env:
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:23.7267898Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:23.7268115Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:23.8275219Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:23.8276183Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:23.8276862Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:23.8277222Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.1174013Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.1177962Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.1179059Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.4691586Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.4761537Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.5837381Z  ^[[31m❯^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m4 failed^[[39m^[[2m)^[[22m^[[32m 40^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.5840209Z ^[[31m     ^[[31m×^[[31m passes contribution context and creates the prepared timeline at load^[[39m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.5850667Z ^[[31m     ^[[31m×^[[31m selects one predicate contributor through Engine.load^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.5861576Z ^[[31m     ^[[31m×^[[31m rejects malformed contributions during Engine.load^[[39m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.5863488Z      ^[[32m✓^[[39m rejects authored ease collisions before any timeline is created^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.5865812Z ^[[31m     ^[[31m×^[[31m merges contributed keyframes into compiler diagnostics before timeline creation^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.6727821Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.6800870Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.8028426Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.8709659Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:24.9114042Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.0002172Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.0745616Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.1277003Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.3323746Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.3723134Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.3936917Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.5187460Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.5782778Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.5968459Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6668935Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6695396Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6695985Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 4 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6696297Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6700447Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mpasses contribution context and creates the prepared timeline at load
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6706747Z ^[[31m^[[1mTypeError^[[22m: plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key "derived".^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6708227Z ^[[36m ^[[2m❯^[[22m compile packages/core/src/engine.ts:^[[2m102:15^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6754812Z     ^[[90m100|^[[39m       const diagnostics = [...(resolved?.diagnostics ?? []), ...keyfra…
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6756734Z     ^[[90m101|^[[39m       ^[[35mif^[[39m (diagnostics^[[33m.^[[39m^[[34msome^[[39m(({ severity }) ^[[33m=>^[[39m severity ^[[33m===^[[39m ^[[32m"error"^[[39m))
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6759043Z     ^[[90m102|^[[39m         ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(diagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6760267Z     ^[[90m   |^[[39m               ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6760987Z     ^[[90m103|^[[39m       ^[[35mconst^[[39m track ^[[33m=^[[39m ^[[35mnew^[[39m ^[[33mTrack^[[39m({
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6761907Z     ^[[90m104|^[[39m         interpolator^[[33m:^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#options^[[33m.^[[39minterpolator^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6762911Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m112:42^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6763836Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m36:83^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6764391Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6764794Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6765192Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6766371Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mselects one predicate contributor through Engine.load
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6767894Z ^[[31m^[[1mTypeError^[[22m: plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key "derived".^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6769157Z ^[[36m ^[[2m❯^[[22m compile packages/core/src/engine.ts:^[[2m102:15^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6770372Z     ^[[90m100|^[[39m       const diagnostics = [...(resolved?.diagnostics ?? []), ...keyfra…
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6771699Z     ^[[90m101|^[[39m       ^[[35mif^[[39m (diagnostics^[[33m.^[[39m^[[34msome^[[39m(({ severity }) ^[[33m=>^[[39m severity ^[[33m===^[[39m ^[[32m"error"^[[39m))
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6773296Z     ^[[90m102|^[[39m         ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(diagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6774262Z     ^[[90m   |^[[39m               ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6775107Z     ^[[90m103|^[[39m       ^[[35mconst^[[39m track ^[[33m=^[[39m ^[[35mnew^[[39m ^[[33mTrack^[[39m({
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6776346Z     ^[[90m104|^[[39m         interpolator^[[33m:^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#options^[[33m.^[[39minterpolator^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6777601Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m112:42^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6779069Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m72:83^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6779716Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6780133Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6780471Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6782130Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mrejects malformed contributions during Engine.load
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6784691Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-contribution-stop-order/ but got 'plugin-unknown-key at hero/arm.keyfra…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6786120Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6786382Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6786876Z /plugin-contribution-stop-order/
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6787394Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6787638Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6788623Z "plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key \"derived\"."
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6789586Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6790422Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m104:7^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6792567Z     ^[[90m102|^[[39m         ^[[34mprojectWith^[[39m({ x^[[33m:^[[39m ^[[34mproperty^[[39m(^[[34m1^[[39m) }) ^[[35mas^[[39m never^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6793295Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6794067Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m17 passed^[[39m^[[22m^[[90m (18)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6795349Z ^[[2m      Tests ^[[22m ^[[1m^[[31m4 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m42 passed^[[39m^[[22m^[[90m (46)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6796184Z ^[[2m   Start at ^[[22m 15:37:24
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6797274Z ^[[2m   Duration ^[[22m 1.53s^[[2m (transform 623ms, setup 0ms, import 1.28s, tests 212ms, environment 2ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6798418Z     ^[[90m103|^[[39m       )^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6798930Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6803783Z     ^[[90m104|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/plugin-contribution-stop-order/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6805077Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6806086Z     ^[[90m105|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6806720Z     ^[[90m106|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6806906Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6807177Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6807404Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6808543Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mmerges contributed keyframes into compiler diagnostics before timeline creation
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6811766Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-contribution-ease-collision/ but got 'plugin-unknown-key at hero/arm.keyfra…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6812814Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6813031Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6813498Z /plugin-contribution-ease-collision/
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6813816Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6814007Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6814941Z "plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key \"derived\"."
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6815619Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6816381Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m165:7^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6817336Z     ^[[90m163|^[[39m         }) ^[[35mas^[[39m never^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6817913Z     ^[[90m164|^[[39m       )^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6819010Z     ^[[90m165|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/plugin-contribution-ease-collision/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6819879Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6820507Z     ^[[90m166|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6821047Z     ^[[90m167|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6821229Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6821478Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6821688Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6821725Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6846939Z ##[error]TypeError: plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key "derived".
+integration (node 24)	Run npm run test:integration	 ❯ compile packages/core/src/engine.ts:102:15
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:112:42
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:36:83
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6857116Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6860327Z ##[error]TypeError: plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key "derived".
+integration (node 24)	Run npm run test:integration	 ❯ compile packages/core/src/engine.ts:102:15
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:112:42
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:72:83
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6862136Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6865335Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-contribution-stop-order/ but got 'plugin-unknown-key at hero/arm.keyfra…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-contribution-stop-order/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key \"derived\"."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:104:7
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6867074Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.6870364Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-contribution-ease-collision/ but got 'plugin-unknown-key at hero/arm.keyfra…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-contribution-ease-collision/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"plugin-unknown-key at hero/arm.keyframes.derived: No registered plugin claims contributed key \"derived\"."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:165:7
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-13T15:37:25.7205838Z ##[error]Process completed with exit code 1.
