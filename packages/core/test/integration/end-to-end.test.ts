@@ -44,11 +44,13 @@ describe("real end-to-end product path (E2)", () => {
     }).load(project);
 
     runtime.mount("hero/arm");
-    runtime.graph.flush(["hero/arm"], 1);
+    let patch: { values: Readonly<Record<string, unknown>> } | undefined;
+    runtime.subscribe("hero/arm", (next) => {
+      patch = next;
+    });
+    runtime.seek("hero/arm", 0);
     runtime.seek("hero/arm", 0.5);
-    runtime.graph.flush(["hero/arm"], 2);
 
-    const patch = runtime.graph.registry.get("hero/arm");
     expect(patch).toBeDefined();
     expect(patch?.values.opacity).toBeCloseTo(0.5, 10);
 
