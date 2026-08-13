@@ -1,0 +1,33 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T11:33:43.9661997Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:43.9662335Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:43.9713571Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:43.9713869Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:43.9714079Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:43.9714317Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:44.0730454Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:44.0731045Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:44.0731601Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:44.0731818Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9844450Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(11,201): error TS2322: Type '(values: Record<string, unknown>) => Record<string, unknown>' is not assignable to type 'PluginComposer'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9855051Z   Type 'Record<string, unknown>' is not assignable to type 'ImmutableRecord'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9855853Z     'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9856504Z       Type 'unknown' is not assignable to type 'ImmutableValue'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9859403Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(18,165): error TS2322: Type '(values: Record<string, unknown>) => Record<string, unknown>' is not assignable to type 'PluginComposer'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9861841Z   Type 'Record<string, unknown>' is not assignable to type 'ImmutableRecord'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9862621Z     'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9863285Z       Type 'unknown' is not assignable to type 'ImmutableValue'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9865890Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(27,163): error TS2322: Type '(values: Record<string, unknown>) => Record<string, unknown>' is not assignable to type 'PluginComposer'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9868392Z   Type 'Record<string, unknown>' is not assignable to type 'ImmutableRecord'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9869163Z     'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9869900Z       Type 'unknown' is not assignable to type 'ImmutableValue'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9872436Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(28,163): error TS2322: Type '(values: Record<string, unknown>) => Record<string, unknown>' is not assignable to type 'PluginComposer'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9874783Z   Type 'Record<string, unknown>' is not assignable to type 'ImmutableRecord'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9875527Z     'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9876188Z       Type 'unknown' is not assignable to type 'ImmutableValue'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9878847Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(35,166): error TS2322: Type '(values: Record<string, unknown>) => Record<string, unknown>' is not assignable to type 'PluginComposer'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9881220Z   Type 'Record<string, unknown>' is not assignable to type 'ImmutableRecord'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9881992Z     'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9882668Z       Type 'unknown' is not assignable to type 'ImmutableValue'.
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9887171Z ##[error]packages/core/test/unit/domain/track.test.ts(46,7): error TS2739: Type '{ plugins: readonly { name: string; compose: (values: Readonly<ImmutableRecord>, progress: number) => ImmutableRecord; }[]; diagnostics: readonly never[]; }' is missing the following properties from type 'ResolvedPlugins': internalKeys, outputSerializers, preparation
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:45.9894137Z ##[error]packages/core/test/unit/domain/track.test.ts(65,7): error TS2739: Type '{ plugins: readonly { name: string; compose: (values: Readonly<ImmutableRecord>, progress: number) => ImmutableRecord; }[]; diagnostics: readonly never[]; }' is missing the following properties from type 'ResolvedPlugins': internalKeys, outputSerializers, preparation
+quality (node 24)	Run npm run typecheck	2026-08-13T11:33:46.0152002Z ##[error]Process completed with exit code 2.
