@@ -80,21 +80,27 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
     const runtime = new GraphRuntime(project, clock, compose, { scheduler });
     runtime.attach("hero/arm");
     const diagnostics: string[] = [];
-    const reported = new GraphRuntime(project, createManualClock(), compose, {
-      scheduler,
-      onFlushError: (diagnostic) => diagnostics.push(diagnostic.ruleId),
+    runtime.registry.subscribeNode("hero/arm", () => {
+      runtime.invalidate(["caption/label"]);
+      runtime.invalidate(["caption/label"]);
     });
-    reported.attach("hero/arm");
-    reported.registry.subscribeNode("hero/arm", () => reported.invalidate(["caption/label"]));
-    // The first schedule attempt fails but must not poison the guard.
-    reported.flush(["hero/arm"], 1);
-    expect(diagnostics).toContain("scheduler-failure");
-    reported.registry.subscribeNode("caption/label", () => undefined);
-    reported.invalidate(["caption/label"]);
-    expect(attempts).toBeGreaterThan(1);
+
+    runtime.registry.subscribeBatch(() => undefined);
+    runtime.flush(["hero/arm"], 1);
+
+    expect(attempts).toBe(2);
+    expect(runtime.lastFlushError?.ruleId).toBe("scheduler-failure");
     jobs.splice(0).forEach((job) => job());
-    expect(reported.pendingSeeds).toEqual([]);
+    expect(runtime.pendingSeeds).toEqual([]);
+    expect(diagnostics).toEqual([]);
     runtime.dispose();
-    reported.dispose();
+  });
+
+  it("does not expose the publisher as a second public reentrancy entry point", () => {
+    const clock = createManualClock();
+    const scheduler = createFakeScheduler();
+    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    expect((runtime as unknown as { publisher?: unknown }).publisher).toBeUndefined();
+    runtime.dispose();
   });
 });
