@@ -14,6 +14,13 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }
+function preparedConfig(config: unknown, plugins: ResolvedPlugins): unknown {
+  if (!isRecord(config)) return config;
+  const preparation = plugins.preparation;
+  if (!preparation) return config;
+  const keyframes = isRecord(config.keyframes) && isRecord(preparation.keyframes) ? { ...config.keyframes, ...preparation.keyframes } : config.keyframes;
+  return Object.freeze({ ...config, ...(keyframes === undefined ? {} : { keyframes: Object.freeze(keyframes) }), ...(preparation.tweenVars ?? {}) });
+}
 function rendererNeutralState(state: Readonly<Record<string, unknown>>): ImmutableRecord {
   if (!isRecord(state)) throw new CompositionOutputError("Interpolator state must be a renderer-neutral record.");
   const values: Record<string, unknown> = {};
@@ -27,51 +34,11 @@ function freezeComposition(values: unknown): ImmutableRecord {
 }
 const EMPTY_RESOLVED_PLUGINS: ResolvedPlugins = Object.freeze({ plugins: Object.freeze([]), diagnostics: Object.freeze([]) });
 export class Track {
-  readonly #timeline: InterpolationTimeline;
-  readonly #plugins: ResolvedPlugins;
-  #progress = 0;
-  #dirty = true;
-  #disposed = false;
-  #lastSnapshot: TrackSnapshot | undefined;
-  #lastInputs: Readonly<ImmutableRecord> | undefined;
-  constructor(options: TrackOptions) {
-    this.#plugins = options.plugins ?? EMPTY_RESOLVED_PLUGINS;
-    this.#timeline = options.interpolator.create(options.interpolationConfig);
-  }
-  get progress(): number { return this.#progress; }
-  get dirty(): boolean { return this.#dirty; }
-  setProgress(value: number): boolean {
-    this.assertActive();
-    if (!Number.isFinite(value)) throw new TypeError("Track progress must be finite.");
-    const next = Math.max(0, Math.min(1, value));
-    if (Object.is(next, this.#progress)) return false;
-    this.#progress = next;
-    this.#timeline.progress(next);
-    this.#dirty = true;
-    return true;
-  }
-  compose(inputs: Readonly<ImmutableRecord> = {}): TrackSnapshot {
-    this.assertActive();
-    if (!this.#dirty && this.#lastSnapshot && this.#lastInputs !== undefined && (this.#lastInputs === inputs || equalValues(this.#lastInputs, inputs))) return this.#lastSnapshot;
-    let values: ImmutableRecord = { ...rendererNeutralState(this.#timeline.state), ...inputs };
-    for (const plugin of this.#plugins.plugins) {
-      const composed = plugin.compose(values, this.#progress);
-      if (!isRecord(composed)) throw new CompositionOutputError(`Plugin "${plugin.name}" must return a renderer-neutral record.`);
-      values = composed as ImmutableRecord;
-    }
-    const frozenValues = freezeComposition(values);
-    const snapshot = Object.freeze({ progress: this.#progress, values: frozenValues });
-    this.#lastInputs = freezeValue({ ...inputs });
-    this.#lastSnapshot = snapshot;
-    this.#dirty = false;
-    return snapshot;
-  }
-  dispose(): void {
-    if (this.#disposed) return;
-    this.#disposed = true;
-    this.#timeline.kill();
-    this.#lastSnapshot = undefined;
-    this.#lastInputs = undefined;
-  }
+  readonly #timeline: InterpolationTimeline; readonly #plugins: ResolvedPlugins; #progress = 0; #dirty = true; #disposed = false; #lastSnapshot: TrackSnapshot | undefined; #lastInputs: Readonly<ImmutableRecord> | undefined;
+  constructor(options: TrackOptions) { this.#plugins = options.plugins ?? EMPTY_RESOLVED_PLUGINS; this.#timeline = options.interpolator.create(preparedConfig(options.interpolationConfig, this.#plugins)); }
+  get progress(): number { return this.#progress; } get dirty(): boolean { return this.#dirty; }
+  setProgress(value: number): boolean { this.assertActive(); if (!Number.isFinite(value)) throw new TypeError("Track progress must be finite."); const next = Math.max(0, Math.min(1, value)); if (Object.is(next, this.#progress)) return false; this.#progress = next; this.#timeline.progress(next); this.#dirty = true; return true; }
+  compose(inputs: Readonly<ImmutableRecord> = {}): TrackSnapshot { this.assertActive(); if (!this.#dirty && this.#lastSnapshot && this.#lastInputs !== undefined && (this.#lastInputs === inputs || equalValues(this.#lastInputs, inputs))) return this.#lastSnapshot; let values: ImmutableRecord = { ...rendererNeutralState(this.#timeline.state), ...inputs }; for (const plugin of this.#plugins.plugins) { const composed = plugin.compose(values, this.#progress); if (!isRecord(composed)) throw new CompositionOutputError(`Plugin "${plugin.name}" must return a renderer-neutral record.`); values = composed as ImmutableRecord; } const snapshot = Object.freeze({ progress: this.#progress, values: freezeComposition(values) }); this.#lastInputs = freezeValue({ ...inputs }); this.#lastSnapshot = snapshot; this.#dirty = false; return snapshot; }
+  dispose(): void { if (this.#disposed) return; this.#disposed = true; this.#timeline.kill(); this.#lastSnapshot = undefined; this.#lastInputs = undefined; }
   private assertActive(): void { if (this.#disposed) throw new Error("Track is disposed."); }
 }
