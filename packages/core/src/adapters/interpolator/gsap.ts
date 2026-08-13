@@ -22,22 +22,11 @@ interface AuthoredStop {
   readonly ease?: unknown;
 }
 
-interface CompiledSegment {
-  readonly key: string;
-  readonly value: unknown;
-  readonly start: number;
-  readonly duration: number;
-  readonly ease?: unknown;
-}
+type PercentKeyframe = Record<string, unknown>;
 
 interface CompiledKeyframes {
+  readonly keyframes: Record<string, PercentKeyframe>;
   readonly initial: Record<string, unknown>;
-  readonly segments: readonly CompiledSegment[];
-  /**
-   * The latest authored stop position across every property, normalized. Read from the authored
-   * `p` directly rather than summed from segment lengths, so it carries no accumulated rounding.
-   */
-  readonly end: number;
 }
 
 function readStops(property: unknown): readonly AuthoredStop[] {
@@ -61,61 +50,49 @@ function readDuration(config: unknown): number {
   return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
 }
 
-function compileKeyframes(config: unknown): CompiledKeyframes {
-  if (!config || typeof config !== "object" || !("keyframes" in config))
-    return { initial: {}, segments: [], end: 0 };
-  const keyframes = (config as { keyframes?: unknown }).keyframes;
-  if (!keyframes || typeof keyframes !== "object" || Array.isArray(keyframes))
-    return { initial: {}, segments: [], end: 0 };
-
-  const initial: Record<string, unknown> = {};
-  const segments: CompiledSegment[] = [];
-  let end = 0;
-  for (const [key, property] of Object.entries(keyframes)) {
-    const stops = readStops(property);
-    const first = stops[0];
-    if (first === undefined) continue;
-    initial[key] = first.v;
-    for (let index = 1; index < stops.length; index += 1) {
-      const previous = stops[index - 1];
-      const stop = stops[index];
-      if (previous === undefined || stop === undefined) continue;
-      segments.push({
-        key,
-        value: stop.v,
-        start: previous.p,
-        duration: Math.max(0, stop.p - previous.p),
-        ...(stop.ease === undefined ? {} : { ease: stop.ease }),
-      });
-    }
-    const last = stops[stops.length - 1];
-    if (last !== undefined) end = Math.max(end, last.p);
-  }
-  return { initial, segments, end };
+function toPercentKey(position: number): string {
+  return `${position * 100}%`;
 }
 
 /**
- * Schedules the authored end so the timeline's own duration is the authored duration.
- *
- * A timeline reports its duration as the end of its latest scheduled child. Because each
- * authored interval is scheduled as its own tween, a track whose last stop sits before the end
- * leaves nothing scheduled at the authored end, and the timeline is short by exactly the unused
- * tail. That is not a tail-only bug: `progress(v)` is a fraction of the timeline's own duration,
- * so a short timeline rescales every authored position by `1 / end`, and
- * `InterpolationTimeline.duration` reports the short number to consumers as well.
- *
- * One zero-length tween at the authored end fixes both, and it is scheduled only when the
- * authored stops stop short. The target is an adapter-owned anchor, never the published proxy:
- * a key added to the proxy would flow through `Track.compose` into a published patch and reach
- * the renderer as a value nobody authored.
- *
- * An `end` beyond 1 is left alone. Authored positions outside `[0, 1]` are a validation concern
- * (P1-10), and silently trimming them here would hide the authored mistake.
+ * Compile all authored properties into the oracle's single shared GSAP keyframe map.
+ * Positions remain absolute, and ease belongs to the shared percent entry, so collisions
+ * are visible instead of being hidden by independent per-property tweens.
  */
-function pinAuthoredEnd(timeline: GsapTimelineLike, end: number, duration: number): void {
-  if (duration <= 0 || end >= 1) return;
-  const anchor: Record<string, unknown> = { authoredEnd: 0 };
-  timeline.to(anchor, { authoredEnd: 1, duration: 0 }, duration);
+function compileKeyframes(config: unknown): CompiledKeyframes {
+  if (!config || typeof config !== "object" || !("keyframes" in config))
+    return { keyframes: {}, initial: {} };
+  const authored = (config as { keyframes?: unknown }).keyframes;
+  if (!authored || typeof authored !== "object" || Array.isArray(authored))
+    return { keyframes: {}, initial: {} };
+
+  const keyframes: Record<string, PercentKeyframe> = {};
+  const initial: Record<string, unknown> = {};
+  const ensure = (percent: string): PercentKeyframe => (keyframes[percent] ??= {});
+
+  for (const [key, property] of Object.entries(authored)) {
+    const stops = readStops(property);
+    const first = stops[0];
+    if (!first) continue;
+    initial[key] = first.v;
+
+    // GSAP starts from the proxy's current value. Add an explicit 0% hold for properties whose
+    // first authored stop is later, otherwise their leading hold is left undefined.
+    ensure("0%")[key] = first.v;
+    for (const stop of stops) {
+      const frame = ensure(toPercentKey(stop.p));
+      if (frame[key] !== undefined && !Object.is(frame[key], stop.v)) {
+        throw new TypeError(`Conflicting values for "${key}" at ${toPercentKey(stop.p)}.`);
+      }
+      frame[key] = stop.v;
+      if (stop.ease !== undefined) {
+        if (frame.ease !== undefined && !Object.is(frame.ease, stop.ease))
+          throw new TypeError(`Ease collision at ${toPercentKey(stop.p)}.`);
+        frame.ease = stop.ease;
+      }
+    }
+  }
+  return { keyframes, initial };
 }
 
 export function createGsapInterpolator(gsap: GsapLike): Interpolator {
@@ -126,18 +103,11 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
       const compiled = compileKeyframes(config);
       Object.assign(proxy, compiled.initial);
       const duration = readDuration(config);
-      for (const segment of compiled.segments) {
-        timeline.to(
-          proxy,
-          {
-            [segment.key]: segment.value,
-            duration: segment.duration * duration,
-            ease: segment.ease ?? "none",
-          },
-          segment.start * duration,
-        );
-      }
-      pinAuthoredEnd(timeline, compiled.end, duration);
+      timeline.to(proxy, {
+        keyframes: compiled.keyframes,
+        duration,
+        paused: true,
+      });
       function progress(): number;
       function progress(value: number): void;
       function progress(value?: number): number | void {
