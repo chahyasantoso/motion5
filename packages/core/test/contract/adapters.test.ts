@@ -22,7 +22,7 @@ describe("adapter ports", () => {
     let killed = false;
     const tween: GsapTweenLike = {
       duration: () => 2,
-      progress(next?: number): number | GsapTweenLike {
+      progress: (next?: number) => {
         if (next === undefined) return value;
         value = next;
         return tween;
