@@ -1,0 +1,12 @@
+quality (node 24)	Typecheck	﻿2026-08-13T07:54:22.9916408Z ##[group]Run npm run typecheck
+quality (node 24)	Typecheck	2026-08-13T07:54:22.9916908Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Typecheck	2026-08-13T07:54:22.9973774Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Typecheck	2026-08-13T07:54:22.9974202Z ##[endgroup]
+quality (node 24)	Typecheck	2026-08-13T07:54:23.0944484Z 
+quality (node 24)	Typecheck	2026-08-13T07:54:23.0944891Z > motion5@0.0.0 typecheck
+quality (node 24)	Typecheck	2026-08-13T07:54:23.0945449Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Typecheck	2026-08-13T07:54:23.0946224Z 
+quality (node 24)	Typecheck	2026-08-13T07:54:25.1002661Z ##[error]packages/core/test/unit/scripts/public-declaration-surface.test.ts(23,3): error TS2322: Type '(string | undefined)[]' is not assignable to type 'string[]'.
+quality (node 24)	Typecheck	2026-08-13T07:54:25.1010446Z   Type 'string | undefined' is not assignable to type 'string'.
+quality (node 24)	Typecheck	2026-08-13T07:54:25.1011445Z     Type 'undefined' is not assignable to type 'string'.
+quality (node 24)	Typecheck	2026-08-13T07:54:25.1285524Z ##[error]Process completed with exit code 2.
