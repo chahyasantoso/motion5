@@ -44,7 +44,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
-          BASE_BRANCH: ${{ github.event.pull_request.base.ref }}
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
           SOURCE_PR: ${{ github.event.pull_request.html_url }}
         run: |
           set -euo pipefail
@@ -66,7 +66,7 @@ jobs:
           existing="$(gh pr list \
             --repo "${GITHUB_REPOSITORY}" \
             --head "${bot_branch}" \
-            --base "${BASE_BRANCH}" \
+            --base "${SOURCE_BRANCH}" \
             --state open \
             --json number \
             --jq '.[0].number // empty')"
@@ -77,7 +77,7 @@ jobs:
 
           gh pr create \
             --repo "${GITHUB_REPOSITORY}" \
-            --base "${BASE_BRANCH}" \
+            --base "${SOURCE_BRANCH}" \
             --head "${bot_branch}" \
             --title "chore: format PR #${PR_NUMBER}" \
-            --body "Automated formatting-only repair for ${SOURCE_PR}. This PR is generated from the current source head and never rewrites it directly. Merge this PR into the source PR branch, then rerun the source PR checks."
+            --body "Automated formatting-only repair for ${SOURCE_PR}. This PR targets the source PR branch and never rewrites it directly. Merge this PR, then rerun the source PR checks."
