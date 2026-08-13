@@ -1,4 +1,5 @@
 import type { Diagnostic } from "../contract/v5";
+import { equalValues } from "../domain/values";
 
 export type PatchStatus = "ready" | "blocked" | "error";
 
@@ -43,26 +44,50 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   return Object.freeze(value);
 }
 
-function sameRecord(
-  a: Readonly<Record<string, unknown>>,
-  b: Readonly<Record<string, unknown>>,
-): boolean {
-  const aKeys = Object.keys(a).sort();
-  const bKeys = Object.keys(b).sort();
-  if (aKeys.length !== bKeys.length) return false;
-  return aKeys.every((key, index) => key === bKeys[index] && Object.is(a[key], b[key]));
+function sameIds(a: readonly string[] | undefined, b: readonly string[] | undefined): boolean {
+  if (a === undefined || b === undefined) return a === b;
+  if (a.length !== b.length) return false;
+  return a.every((id, index) => id === b[index]);
+}
+
+/**
+ * Field-wise diagnostic equality. The previous spelling compared `JSON.stringify` output on
+ * both sides, which allocated two strings in the hottest path in the system and made equality
+ * depend on key insertion order: the same authored mistake could look like a change.
+ */
+function sameDiagnostic(a: Diagnostic, b: Diagnostic): boolean {
+  return (
+    a.ruleId === b.ruleId &&
+    a.path === b.path &&
+    a.message === b.message &&
+    a.severity === b.severity &&
+    sameIds(a.ids, b.ids)
+  );
 }
 
 function sameDiagnostics(a: readonly Diagnostic[], b: readonly Diagnostic[]): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
+  if (a.length !== b.length) return false;
+  return a.every((item, index) => {
+    const other = b[index];
+    return other !== undefined && sameDiagnostic(item, other);
+  });
 }
 
+/**
+ * Change detection is structural on purpose. A composed value record is rebuilt on every
+ * flush, so every nested record or array inside it is a new object. An identity compare per
+ * key therefore reports a change on every frame: the revision bumps, every node and batch
+ * listener runs, and consumers re-render values that never moved. `equalValues` is the single
+ * structural compare in the codebase, so the registry reuses it instead of keeping a weaker
+ * second spelling. Values that are not renderer-neutral (host objects, functions) compare as
+ * changed, which republishes rather than silently suppressing a real update.
+ */
 function samePatch(a: Patch | undefined, b: Patch): boolean {
   return (
     a !== undefined &&
-    sameRecord(a.values, b.values) &&
+    equalValues(a.values, b.values) &&
     Object.is(a.sourceProgress, b.sourceProgress) &&
-    sameRecord(a.sourceRevisions, b.sourceRevisions) &&
+    equalValues(a.sourceRevisions, b.sourceRevisions) &&
     a.status === b.status &&
     sameDiagnostics(a.diagnostics, b.diagnostics)
   );
@@ -143,8 +168,20 @@ export class PatchRegistry {
       patches: [...this.#batch],
       diagnostics: [...this.#batchDiagnostics],
     }) as PatchBatch;
-    const nodeListeners = new Map(this.#nodeListeners);
-    const batchListeners = new Set(this.#batchListeners);
+    // Both listener kinds are snapshotted into arrays before anything is notified, so both
+    // obey one rule: the batch reaches exactly the listeners that existed when it settled.
+    // Iterating the live node-listener Sets meant a listener released by an earlier listener
+    // was skipped, while a listener added by an earlier listener was handed a batch that
+    // predated it, and node listeners behaved differently from batch listeners for the same
+    // event. Subscribing or unsubscribing from inside a listener now takes effect on the
+    // next batch.
+    const nodeListeners = new Map<string, readonly PatchListener[]>(
+      [...this.#nodeListeners].map(([nodeId, listeners]): [string, readonly PatchListener[]] => [
+        nodeId,
+        [...listeners],
+      ]),
+    );
+    const batchListeners: readonly BatchListener[] = [...this.#batchListeners];
     this.#batchOpen = false;
     this.#batch = [];
     this.#batchDiagnostics = [];
