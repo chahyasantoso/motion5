@@ -11,12 +11,12 @@ on:
       base:
         description: Base for failing-first comparison
         required: false
-        default: ''
+        default: ""
         type: string
       failing_first_exception:
         description: Documented reason this ref adds no new behavioral test
         required: false
-        default: ''
+        default: ""
         type: string
 
 permissions:
