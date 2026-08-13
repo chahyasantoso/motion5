@@ -45,6 +45,31 @@
     {
       "id": "s6-unsupported-use",
       "test": "packages/core/test/integration/plugin-use-contract.test.ts"
+    },
+    { "id": "x3-key-ownership", "test": "packages/core/test/unit/domain/plugins.test.ts" },
+    {
+      "id": "x3-contribution-cascade",
+      "test": "packages/core/test/unit/domain/plugin-contribution-completeness.test.ts"
+    },
+    {
+      "id": "x3-order-independence",
+      "test": "packages/core/test/unit/domain/s7-plugin-evidence.test.ts"
+    },
+    {
+      "id": "p0-3-sparse-percent-map",
+      "test": "packages/core/test/contract/gsap-sparse-percent-map.test.ts"
+    },
+    {
+      "id": "p0-3-ease-collision",
+      "test": "packages/core/test/contract/gsap-sparse-percent-map.test.ts"
+    },
+    {
+      "id": "s7-plugin-evidence",
+      "test": "packages/core/test/unit/domain/s7-plugin-evidence.test.ts"
+    },
+    {
+      "id": "s7-audit-workflow",
+      "test": "packages/core/test/unit/scripts/s7-recovery-audit.test.ts"
     }
   ]
 }
