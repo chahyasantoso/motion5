@@ -20,9 +20,12 @@ async function declarationFiles(directory: string): Promise<string[]> {
 }
 
 function importedSpecifiers(source: string): string[] {
-  return [...source.matchAll(/(?:from|import)\s*["']([^"']+)["']/g)].map(
-    ([, specifier]) => specifier,
-  );
+  const specifiers: string[] = [];
+  for (const match of source.matchAll(/(?:from|import)\s*["']([^"']+)["']/g)) {
+    const specifier = match[1];
+    if (specifier !== undefined) specifiers.push(specifier);
+  }
+  return specifiers;
 }
 
 describe("public declaration surface (P1-9)", () => {
