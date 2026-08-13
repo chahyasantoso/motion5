@@ -1,0 +1,375 @@
+quality (node 24)	Unit tests	﻿2026-08-13T07:47:41.6889560Z ##[group]Run npm test
+quality (node 24)	Unit tests	2026-08-13T07:47:41.6890057Z ^[[36;1mnpm test^[[0m
+quality (node 24)	Unit tests	2026-08-13T07:47:41.6931425Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Unit tests	2026-08-13T07:47:41.6931730Z ##[endgroup]
+quality (node 24)	Unit tests	2026-08-13T07:47:41.8164162Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:41.8164821Z > motion5@0.0.0 test
+quality (node 24)	Unit tests	2026-08-13T07:47:41.8165205Z > vitest run
+quality (node 24)	Unit tests	2026-08-13T07:47:41.8165380Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:42.1042307Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:42.1044426Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:42.1049791Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:42.4885742Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-state.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:42.5484164Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-reentrancy.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:42.5553049Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-authored-duration.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:42.7255541Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-absolute-stops.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:42.7611766Z  ^[[32m✓^[[39m packages/core/test/contract/v5-validator.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:42.7858005Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugins.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:42.9814095Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-flat-inputs.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:42.9892355Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/boundary-scan.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 47^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:43.0333712Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/clock-tick-identity.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:43.1744035Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-structural-change.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:43.1813495Z  ^[[32m✓^[[39m packages/core/test/unit/graph/order.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:43.2323062Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ir-validation.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:43.3769193Z  ^[[32m✓^[[39m packages/core/test/contract/adapters.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:43.4123156Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/composition-output-shape.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:43.4382086Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:43.5905786Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:43.6027113Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:43.6387071Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:43.7735542Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:43.8321914Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:43.8723914Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:43.9843627Z  ^[[32m✓^[[39m packages/core/test/migration/v4-to-v5.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.0163586Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.0822536Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.2016420Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.2093238Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/scheduler-reentrancy.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.2537929Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.3913496Z  ^[[32m✓^[[39m packages/react/test/patch-store-lifecycle.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.4347609Z ^[[90mstderr^[[2m | packages/react/test/public-package-surface.test.ts^[[2m > ^[[22m^[[2mReact public package surface (C2)^[[2m > ^[[22m^[[2mrenders and updates through the package entry alone
+quality (node 24)	Unit tests	2026-08-13T07:47:44.4349971Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Unit tests	2026-08-13T07:47:44.4351615Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T07:47:44.4352849Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T07:47:44.4353923Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T07:47:44.4354595Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:44.4411085Z  ^[[32m✓^[[39m packages/react/test/public-package-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.4502964Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.5773553Z  ^[[32m✓^[[39m packages/core/test/contract/ports.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.6433027Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.6895742Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.7861680Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.8605031Z  ^[[32m✓^[[39m packages/core/test/unit/domain/lifecycle.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.8679942Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:44.9876360Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.0763963Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/acceptance-scan.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.0808148Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-paused-timeline.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.1715534Z  ^[[32m✓^[[39m packages/core/test/unit/domain/values.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.2677894Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-projection-validation.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.2854914Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.3556045Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.4587727Z  ^[[32m✓^[[39m packages/react/test/patch-store.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.4803174Z  ^[[32m✓^[[39m packages/core/test/unit/domain/triggers.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.5962461Z ^[[90mstderr^[[2m | packages/react/test/public-hook-render.test.ts^[[2m > ^[[22m^[[2mReact public hook render/update (C2)^[[2m > ^[[22m^[[2mrenders the current patch and updates after publication
+quality (node 24)	Unit tests	2026-08-13T07:47:45.5965257Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Unit tests	2026-08-13T07:47:45.5967775Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T07:47:45.5991520Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T07:47:45.5993060Z  ^[[32m✓^[[39m packages/react/test/public-hook-render.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.6005027Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T07:47:45.6005837Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:45.6176807Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/mutation-config.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.6715851Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.7853305Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track-contribution.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.8190767Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.8508022Z  ^[[31m❯^[[39m packages/core/test/unit/scripts/public-declaration-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:45.8510075Z ^[[31m     ^[[31m×^[[31m keeps public patch contracts out of runtime internals^[[39m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.0033480Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.0238965Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.0439035Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1448179Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1481082Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1481932Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1482251Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1485249Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/public-declaration-surface.test.ts^[[2m > ^[[22mpublic declaration surface (P1-9)^[[2m > ^[[22mkeeps public patch contracts out of runtime internals
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1492120Z ^[[31m^[[1mAssertionError^[[22m: expected 'import type {\n  Diagnostic,\n  Patch…' not to match /(?:Patch|PatchBatch|PatchList…/runtime\^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1492786Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1493213Z ^[[32m- Expected:^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1493804Z /(?:Patch|PatchBatch|PatchListener).*from ["']\.\/runtime\//s
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1494209Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1494408Z ^[[31m+ Received:^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1494753Z "import type {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1495081Z   Diagnostic,
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1495440Z   Patch,
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1495723Z   PatchBatch,
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1496012Z   PatchListener,
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1496356Z   ProjectDefinition,
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1496732Z } from \"./contract/v5\";
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1497284Z import { validateV5 } from \"./contract/validate-v5\";
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1497968Z import { PluginRegistry } from \"./domain/plugins\";
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1498534Z import { Track } from \"./domain/track\";
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1499186Z import type { ImmutableRecord } from \"./domain/values\";
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1499918Z import { assertClock, type Clock } from \"./ports/clock\";
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1500826Z import { assertInterpolator, type Interpolator } from \"./ports/interpolator\";
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1502519Z import { assertScheduler, type Scheduler } from \"./ports/scheduler\";
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1503377Z import { ProjectRuntime } from \"./runtime/project-runtime\";
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1503788Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1504032Z export interface EngineOptions {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1504452Z   readonly clock: Clock;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1504940Z   readonly interpolator: Interpolator;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1505421Z   readonly scheduler: Scheduler;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1505885Z   readonly plugins?: PluginRegistry;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1506296Z }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1506458Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1506684Z export interface ProjectHandle {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1507236Z   mount(nodeId: string, instance?: object): object;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1507906Z   unmount(nodeId: string): void;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1508457Z   seek(nodeId: string, progress: number): PatchBatch;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1509119Z   subscribe(nodeId: string, listener: PatchListener): () => void;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1509650Z   dispose(): void;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1509968Z }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1510109Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1510412Z class RuntimeProjectHandle implements ProjectHandle {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1510944Z   readonly #runtime: ProjectRuntime;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1511734Z   constructor(runtime: ProjectRuntime) {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1512151Z     this.#runtime = runtime;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1512997Z   }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1513469Z   mount(nodeId: string, instance: object = {}): object {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1514071Z     return this.#runtime.mount(nodeId, instance);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1514508Z   }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1514838Z   unmount(nodeId: string): void {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1515275Z     this.#runtime.unmount(nodeId);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1515674Z   }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1515972Z   seek(nodeId: string, progress: number): PatchBatch {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1516362Z     return this.#runtime.seek(nodeId, progress);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1516660Z   }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1516983Z   subscribe(nodeId: string, listener: PatchListener): () => void {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1517539Z     return this.#runtime.graph.registry.subscribeNode(nodeId, listener);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1517920Z   }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1518116Z   dispose(): void {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1518352Z     this.#runtime.dispose();
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1518594Z   }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1518781Z }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1518880Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1519219Z function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1519623Z   return diagnostics
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1520004Z     .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1520376Z     .join(\" \");
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1520586Z }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1520696Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1521045Z function assertValidProject(project: unknown): asserts project is ProjectDefinition {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1521812Z   const result = validateV5(project);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1522213Z   if (!result.valid) {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1522450Z     throw new TypeError(
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1522789Z       result.diagnostics.length === 0
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1523326Z         ? \"Project failed v5 validation.\"
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1523893Z         : describeDiagnostics(result.diagnostics),
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1524308Z     );
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1524585Z   }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1524849Z }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1525006Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1525179Z export class Engine {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1525573Z   readonly #options: EngineOptions;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1526079Z   readonly #plugins: PluginRegistry | undefined;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1526619Z   constructor(options: EngineOptions) {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1527124Z     assertClock(options.clock);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1527627Z     assertInterpolator(options.interpolator);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1528188Z     assertScheduler(options.scheduler);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1528658Z     this.#options = options;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1529113Z     this.#plugins = options.plugins;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1529521Z   }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1529684Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1529976Z   load(project: ProjectDefinition): ProjectHandle {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1531084Z     assertValidProject(project);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1531929Z     const tracks = new Map<string, Track>();
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1532388Z     const nodes = new Map<
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1532748Z       string,
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1533316Z       { duration?: number; keyframes?: Readonly<Record<string, unknown>> }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1533934Z     >();
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1534331Z     for (const motion of project.motions)
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1535103Z       for (const track of motion.tracks) nodes.set(`${motion.id}/${track.id}`, track);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1536060Z     for (const track of project.freeTracks ?? []) nodes.set(`~/${track.id}`, track);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1536574Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1536818Z     const compile = (nodeId: string): Track => {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1537386Z       const existing = tracks.get(nodeId);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1537891Z       if (existing) return existing;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1538390Z       const definition = nodes.get(nodeId);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1539135Z       if (!definition) throw new TypeError(`Unknown graph node \"${nodeId}\".`);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1539945Z       const resolved = this.#plugins?.resolveForKeyframes(
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1540515Z         definition.keyframes ?? {},
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1540824Z         `${nodeId}.keyframes`,
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1541067Z       );
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1541653Z       if (resolved?.diagnostics.some(({ severity }) => severity === \"error\"))
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1542257Z         throw new TypeError(describeDiagnostics(resolved.diagnostics));
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1542753Z       const track = new Track({
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1543082Z         interpolator: this.#options.interpolator,
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1543434Z         interpolationConfig: definition,
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1543792Z         ...(resolved ? { plugins: resolved } : {}),
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1544090Z       });
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1544318Z       tracks.set(nodeId, track);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1544575Z       return track;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1544802Z     };
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1544922Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1545013Z     try {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1545301Z       for (const nodeId of nodes.keys()) compile(nodeId);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1545626Z       const compose =
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1545902Z         (node: {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1546218Z           id: string;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1546861Z           track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> };
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1547497Z         }) =>
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1547790Z         (inputs: Readonly<Record<string, unknown>>) => {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1548302Z           const snapshot = tracks.get(node.id)!.compose(inputs as Readonly<ImmutableRecord>);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1548733Z           return {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1548989Z             values: snapshot.values,
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1549317Z             sourceProgress: snapshot.progress,
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1549642Z             sourceRevisions: {},
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1549894Z           };
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1550114Z         };
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1550393Z       const runtime = new ProjectRuntime(project, {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1550734Z         clock: this.#options.clock,
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1551043Z         scheduler: this.#options.scheduler,
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1551511Z         compose,
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1551905Z         setProgress: (nodeId, progress) => tracks.get(nodeId)!.setProgress(progress),
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1552343Z         disposeComposition: () => {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1552701Z           for (const track of tracks.values()) track.dispose();
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1553044Z           tracks.clear();
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1553275Z         },
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1553466Z       });
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1553727Z       return new RuntimeProjectHandle(runtime);
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1554027Z     } catch (error) {
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1554351Z       for (const track of tracks.values()) track.dispose();
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1554674Z       throw error;
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1554888Z     }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1555080Z   }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1555639Z }
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1555834Z "
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1555934Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1556552Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/public-declaration-surface.test.ts:^[[2m15:24^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1557345Z     ^[[90m 13|^[[39m     // Engine may import ProjectRuntime for its private implementation…
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1558120Z     ^[[90m 14|^[[39m     // that matters here is that public Patch types do not come from r…
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1559166Z     ^[[90m 15|^[[39m     expect(engine).not.toMatch(/(?:Patch|PatchBatch|PatchListener).*fr…
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1559857Z     ^[[90m   |^[[39m                        ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1560507Z     ^[[90m 16|^[[39m     ^[[34mexpect^[[39m(engine)^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m'from "./contract/v5"'^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1561557Z     ^[[90m 17|^[[39m     ^[[34mexpect^[[39m(entry)^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m"PatchBatch"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1561925Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1562188Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1562422Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1562454Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1562924Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m54 passed^[[39m^[[22m^[[90m (55)^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1563691Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m194 passed^[[39m^[[22m^[[90m (195)^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1564223Z ^[[2m   Start at ^[[22m 07:47:42
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1564876Z ^[[2m   Duration ^[[22m 4.02s^[[2m (transform 909ms, setup 0ms, import 2.44s, tests 547ms, environment 7ms)^[[22m
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1565254Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1565266Z 
+quality (node 24)	Unit tests	2026-08-13T07:47:46.1626896Z ##[error]AssertionError: expected 'import type {\n  Diagnostic,\n  Patch…' not to match /(?:Patch|PatchBatch|PatchList…/runtime\
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- Expected:
+quality (node 24)	Unit tests	/(?:Patch|PatchBatch|PatchListener).*from ["']\.\/runtime\//s
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	+ Received:
+quality (node 24)	Unit tests	"import type {
+quality (node 24)	Unit tests	  Diagnostic,
+quality (node 24)	Unit tests	  Patch,
+quality (node 24)	Unit tests	  PatchBatch,
+quality (node 24)	Unit tests	  PatchListener,
+quality (node 24)	Unit tests	  ProjectDefinition,
+quality (node 24)	Unit tests	} from \"./contract/v5\";
+quality (node 24)	Unit tests	import { validateV5 } from \"./contract/validate-v5\";
+quality (node 24)	Unit tests	import { PluginRegistry } from \"./domain/plugins\";
+quality (node 24)	Unit tests	import { Track } from \"./domain/track\";
+quality (node 24)	Unit tests	import type { ImmutableRecord } from \"./domain/values\";
+quality (node 24)	Unit tests	import { assertClock, type Clock } from \"./ports/clock\";
+quality (node 24)	Unit tests	import { assertInterpolator, type Interpolator } from \"./ports/interpolator\";
+quality (node 24)	Unit tests	import { assertScheduler, type Scheduler } from \"./ports/scheduler\";
+quality (node 24)	Unit tests	import { ProjectRuntime } from \"./runtime/project-runtime\";
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	export interface EngineOptions {
+quality (node 24)	Unit tests	  readonly clock: Clock;
+quality (node 24)	Unit tests	  readonly interpolator: Interpolator;
+quality (node 24)	Unit tests	  readonly scheduler: Scheduler;
+quality (node 24)	Unit tests	  readonly plugins?: PluginRegistry;
+quality (node 24)	Unit tests	}
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	export interface ProjectHandle {
+quality (node 24)	Unit tests	  mount(nodeId: string, instance?: object): object;
+quality (node 24)	Unit tests	  unmount(nodeId: string): void;
+quality (node 24)	Unit tests	  seek(nodeId: string, progress: number): PatchBatch;
+quality (node 24)	Unit tests	  subscribe(nodeId: string, listener: PatchListener): () => void;
+quality (node 24)	Unit tests	  dispose(): void;
+quality (node 24)	Unit tests	}
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	class RuntimeProjectHandle implements ProjectHandle {
+quality (node 24)	Unit tests	  readonly #runtime: ProjectRuntime;
+quality (node 24)	Unit tests	  constructor(runtime: ProjectRuntime) {
+quality (node 24)	Unit tests	    this.#runtime = runtime;
+quality (node 24)	Unit tests	  }
+quality (node 24)	Unit tests	  mount(nodeId: string, instance: object = {}): object {
+quality (node 24)	Unit tests	    return this.#runtime.mount(nodeId, instance);
+quality (node 24)	Unit tests	  }
+quality (node 24)	Unit tests	  unmount(nodeId: string): void {
+quality (node 24)	Unit tests	    this.#runtime.unmount(nodeId);
+quality (node 24)	Unit tests	  }
+quality (node 24)	Unit tests	  seek(nodeId: string, progress: number): PatchBatch {
+quality (node 24)	Unit tests	    return this.#runtime.seek(nodeId, progress);
+quality (node 24)	Unit tests	  }
+quality (node 24)	Unit tests	  subscribe(nodeId: string, listener: PatchListener): () => void {
+quality (node 24)	Unit tests	    return this.#runtime.graph.registry.subscribeNode(nodeId, listener);
+quality (node 24)	Unit tests	  }
+quality (node 24)	Unit tests	  dispose(): void {
+quality (node 24)	Unit tests	    this.#runtime.dispose();
+quality (node 24)	Unit tests	  }
+quality (node 24)	Unit tests	}
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
+quality (node 24)	Unit tests	  return diagnostics
+quality (node 24)	Unit tests	    .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
+quality (node 24)	Unit tests	    .join(\" \");
+quality (node 24)	Unit tests	}
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	function assertValidProject(project: unknown): asserts project is ProjectDefinition {
+quality (node 24)	Unit tests	  const result = validateV5(project);
+quality (node 24)	Unit tests	  if (!result.valid) {
+quality (node 24)	Unit tests	    throw new TypeError(
+quality (node 24)	Unit tests	      result.diagnostics.length === 0
+quality (node 24)	Unit tests	        ? \"Project failed v5 validation.\"
+quality (node 24)	Unit tests	        : describeDiagnostics(result.diagnostics),
+quality (node 24)	Unit tests	    );
+quality (node 24)	Unit tests	  }
+quality (node 24)	Unit tests	}
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	export class Engine {
+quality (node 24)	Unit tests	  readonly #options: EngineOptions;
+quality (node 24)	Unit tests	  readonly #plugins: PluginRegistry | undefined;
+quality (node 24)	Unit tests	  constructor(options: EngineOptions) {
+quality (node 24)	Unit tests	    assertClock(options.clock);
+quality (node 24)	Unit tests	    assertInterpolator(options.interpolator);
+quality (node 24)	Unit tests	    assertScheduler(options.scheduler);
+quality (node 24)	Unit tests	    this.#options = options;
+quality (node 24)	Unit tests	    this.#plugins = options.plugins;
+quality (node 24)	Unit tests	  }
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	  load(project: ProjectDefinition): ProjectHandle {
+quality (node 24)	Unit tests	    assertValidProject(project);
+quality (node 24)	Unit tests	    const tracks = new Map<string, Track>();
+quality (node 24)	Unit tests	    const nodes = new Map<
+quality (node 24)	Unit tests	      string,
+quality (node 24)	Unit tests	      { duration?: number; keyframes?: Readonly<Record<string, unknown>> }
+quality (node 24)	Unit tests	    >();
+quality (node 24)	Unit tests	    for (const motion of project.motions)
+quality (node 24)	Unit tests	      for (const track of motion.tracks) nodes.set(`${motion.id}/${track.id}`, track);
+quality (node 24)	Unit tests	    for (const track of project.freeTracks ?? []) nodes.set(`~/${track.id}`, track);
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	    const compile = (nodeId: string): Track => {
+quality (node 24)	Unit tests	      const existing = tracks.get(nodeId);
+quality (node 24)	Unit tests	      if (existing) return existing;
+quality (node 24)	Unit tests	      const definition = nodes.get(nodeId);
+quality (node 24)	Unit tests	      if (!definition) throw new TypeError(`Unknown graph node \"${nodeId}\".`);
+quality (node 24)	Unit tests	      const resolved = this.#plugins?.resolveForKeyframes(
+quality (node 24)	Unit tests	        definition.keyframes ?? {},
+quality (node 24)	Unit tests	        `${nodeId}.keyframes`,
+quality (node 24)	Unit tests	      );
+quality (node 24)	Unit tests	      if (resolved?.diagnostics.some(({ severity }) => severity === \"error\"))
+quality (node 24)	Unit tests	        throw new TypeError(describeDiagnostics(resolved.diagnostics));
+quality (node 24)	Unit tests	      const track = new Track({
+quality (node 24)	Unit tests	        interpolator: this.#options.interpolator,
+quality (node 24)	Unit tests	        interpolationConfig: definition,
+quality (node 24)	Unit tests	        ...(resolved ? { plugins: resolved } : {}),
+quality (node 24)	Unit tests	      });
+quality (node 24)	Unit tests	      tracks.set(nodeId, track);
+quality (node 24)	Unit tests	      return track;
+quality (node 24)	Unit tests	    };
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	    try {
+quality (node 24)	Unit tests	      for (const nodeId of nodes.keys()) compile(nodeId);
+quality (node 24)	Unit tests	      const compose =
+quality (node 24)	Unit tests	        (
+quality (node 24)	Unit tests	2026-08-13T07:47:46.2114902Z ##[error]Process completed with exit code 1.
