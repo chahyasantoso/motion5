@@ -150,7 +150,7 @@ jobs:
           cache: npm
       - name: Replay new tests against base and ref
         run: |
-          set -uo pipefail
+          set -euo pipefail
           mkdir -p audit-logs
           ref_sha=$(git rev-parse HEAD)
           base_sha=${AUDIT_BASE:+$(git rev-parse "$AUDIT_BASE")}
