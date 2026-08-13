@@ -1,19 +1,14 @@
 import type { Interpolator, InterpolationTimeline } from "../../ports/interpolator";
 
-export interface GsapTimelineLike {
+export interface GsapTweenLike {
   readonly duration: () => number;
   progress(): number;
-  progress(value: number): GsapTimelineLike;
-  to(
-    target: Record<string, unknown>,
-    vars: Record<string, unknown>,
-    position?: number,
-  ): GsapTimelineLike;
+  progress(value: number): GsapTweenLike;
   kill(): void;
 }
 
 export interface GsapLike {
-  timeline(config?: unknown): GsapTimelineLike;
+  to(target: Record<string, unknown>, vars: Record<string, unknown>): GsapTweenLike;
 }
 
 interface AuthoredStop {
@@ -54,11 +49,6 @@ function toPercentKey(position: number): string {
   return `${position * 100}%`;
 }
 
-/**
- * Compile all authored properties into the oracle's single shared GSAP keyframe map.
- * Positions remain absolute, and ease belongs to the shared percent entry, so collisions
- * are visible instead of being hidden by independent per-property tweens.
- */
 function compileKeyframes(config: unknown): CompiledKeyframes {
   if (!config || typeof config !== "object" || !("keyframes" in config))
     return { keyframes: {}, initial: {} };
@@ -75,19 +65,16 @@ function compileKeyframes(config: unknown): CompiledKeyframes {
     const first = stops[0];
     if (!first) continue;
     initial[key] = first.v;
-
-    // GSAP starts from the proxy's current value. Add an explicit 0% hold for properties whose
-    // first authored stop is later, otherwise their leading hold is left undefined.
     ensure("0%")[key] = first.v;
     for (const stop of stops) {
-      const frame = ensure(toPercentKey(stop.p));
-      if (frame[key] !== undefined && !Object.is(frame[key], stop.v)) {
-        throw new TypeError(`Conflicting values for "${key}" at ${toPercentKey(stop.p)}.`);
-      }
+      const percent = toPercentKey(stop.p);
+      const frame = ensure(percent);
+      if (frame[key] !== undefined && !Object.is(frame[key], stop.v))
+        throw new TypeError(`Conflicting values for "${key}" at ${percent}.`);
       frame[key] = stop.v;
       if (stop.ease !== undefined) {
         if (frame.ease !== undefined && !Object.is(frame.ease, stop.ease))
-          throw new TypeError(`Ease collision at ${toPercentKey(stop.p)}.`);
+          throw new TypeError(`Ease collision at ${percent}.`);
         frame.ease = stop.ease;
       }
     }
@@ -98,12 +85,10 @@ function compileKeyframes(config: unknown): CompiledKeyframes {
 export function createGsapInterpolator(gsap: GsapLike): Interpolator {
   return {
     create(config): InterpolationTimeline {
-      const proxy: Record<string, unknown> = {};
-      const timeline = gsap.timeline({ paused: true });
       const compiled = compileKeyframes(config);
-      Object.assign(proxy, compiled.initial);
+      const proxy: Record<string, unknown> = { ...compiled.initial };
       const duration = readDuration(config);
-      timeline.to(proxy, {
+      const tween = gsap.to(proxy, {
         keyframes: compiled.keyframes,
         duration,
         paused: true,
@@ -111,17 +96,17 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
       function progress(): number;
       function progress(value: number): void;
       function progress(value?: number): number | void {
-        if (value === undefined) return timeline.progress();
-        timeline.progress(value);
+        if (value === undefined) return tween.progress();
+        tween.progress(value);
       }
       return {
         get duration() {
-          return timeline.duration();
+          return tween.duration();
         },
         state: proxy,
         progress,
         kill(): void {
-          timeline.kill();
+          tween.kill();
         },
       };
     },
