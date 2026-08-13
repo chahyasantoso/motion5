@@ -179,7 +179,7 @@ export function validateV5(input: unknown): ValidationResult {
     for (const [trackIndex, rawTrack] of rawMotion.tracks.entries()) {
       const trackPath = `${path}.tracks[${trackIndex}]`;
       if (!validateTrackShape(rawTrack, trackPath, localIds, diagnostics)) continue;
-      allTracks.push(rawTrack as RawObject);
+      allTracks.push(rawTrack as unknown as RawObject);
     }
   }
 
@@ -187,7 +187,7 @@ export function validateV5(input: unknown): ValidationResult {
     const path = `freeTracks[${index}]`;
     const localIds = freeIds;
     if (!validateTrackShape(rawTrack, path, localIds, diagnostics)) continue;
-    allTracks.push(rawTrack as RawObject);
+    allTracks.push(rawTrack as unknown as RawObject);
   }
 
   const perspective = input.perspective;
