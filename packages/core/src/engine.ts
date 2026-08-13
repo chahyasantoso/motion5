@@ -29,7 +29,15 @@ export interface ProjectHandle {
   dispose(): void;
 }
 
-function createHandle(runtime: ProjectRuntime): ProjectHandle {
+type RuntimeLike = {
+  mount(nodeId: string, instance?: object): object;
+  unmount(nodeId: string): void;
+  seek(nodeId: string, progress: number): PatchBatch;
+  graph: { registry: { subscribeNode(nodeId: string, listener: PatchListener): () => void } };
+  dispose(): void;
+};
+
+function createHandle(runtime: RuntimeLike): ProjectHandle {
   return {
     mount: (nodeId, instance = {}) => runtime.mount(nodeId, instance),
     unmount: (nodeId) => runtime.unmount(nodeId),
