@@ -1,0 +1,23 @@
+boundaries (node 24)	Boundary scan and planted fixtures	﻿2026-08-13T03:28:08.2668192Z ##[group]Run npm run test:boundaries
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:08.2668623Z ^[[36;1mnpm run test:boundaries^[[0m
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:08.2716020Z shell: /usr/bin/bash -e {0}
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:08.2716299Z ##[endgroup]
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:08.3782076Z 
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:08.3782781Z > motion5@0.0.0 test:boundaries
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:08.3784038Z > node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:08.3785342Z 
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:08.4229050Z ackages/core/src/contract/v5.ts: banned compatibility symbol
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T03:28:08.4364185Z ##[error]Process completed with exit code 1.
+quality (node 24)	Format check	﻿2026-08-13T03:28:08.2078322Z ##[group]Run npm run format:check
+quality (node 24)	Format check	2026-08-13T03:28:08.2078673Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Format check	2026-08-13T03:28:08.2101981Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Format check	2026-08-13T03:28:08.2102297Z ##[endgroup]
+quality (node 24)	Format check	2026-08-13T03:28:08.2804551Z 
+quality (node 24)	Format check	2026-08-13T03:28:08.2805189Z > motion5@0.0.0 format:check
+quality (node 24)	Format check	2026-08-13T03:28:08.2805615Z > prettier . --check
+quality (node 24)	Format check	2026-08-13T03:28:08.2805771Z 
+quality (node 24)	Format check	2026-08-13T03:28:08.3456421Z Checking formatting...
+quality (node 24)	Format check	2026-08-13T03:28:09.1822795Z [^[[33mwarn^[[39m] packages/core/src/graph/ir.ts
+quality (node 24)	Format check	2026-08-13T03:28:09.5131481Z [^[[33mwarn^[[39m] packages/core/test/unit/runtime/publisher-flat-inputs.test.ts
+quality (node 24)	Format check	2026-08-13T03:28:09.7106262Z [^[[33mwarn^[[39m] Code style issues found in 2 files. Run Prettier with --write to fix.
+quality (node 24)	Format check	2026-08-13T03:28:09.7338742Z ##[error]Process completed with exit code 1.
