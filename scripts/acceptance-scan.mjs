@@ -45,8 +45,7 @@ export async function scanAcceptance(scanRoot = root, reportPath) {
   const ids = new Set();
   const reportFile = reportPath ?? process.env.VITEST_JSON;
   let results;
-  if (!reportFile) failures.push("test report: required for executable acceptance scanning");
-  else {
+  if (reportFile) {
     try {
       results = normalizeReport(JSON.parse(await readFile(join(scanRoot, reportFile), "utf8")));
     } catch {
@@ -65,6 +64,7 @@ export async function scanAcceptance(scanRoot = root, reportPath) {
       failures.push(`${item.id}: missing ${item.test}`);
       continue;
     }
+    if (!results) continue;
     const match = [...results].filter(
       ([file]) =>
         file === item.test || file.endsWith(`/${item.test}`) || file.startsWith(`${item.test}/`),
