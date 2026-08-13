@@ -5,8 +5,7 @@ import {
   type TrackDefinition,
 } from "./v5";
 import { SUPPORTED_TRIGGER_TYPES } from "./v5";
-
-const OBSERVATION_ROLES = ["input", "output"] as const;
+import { buildGraphIR } from "../graph/ir";
 
 export interface ValidationResult {
   readonly valid: boolean;
@@ -15,7 +14,6 @@ export interface ValidationResult {
 }
 
 type RawObject = Record<string, unknown>;
-type Edge = { source: string; target: string; path: string };
 
 function issue(
   ruleId: string,
@@ -32,6 +30,7 @@ function issue(
     ...(ids.length > 0 ? { ids: Object.freeze([...ids]) } : {}),
   });
 }
+
 function isObject(value: unknown): value is RawObject {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -115,6 +114,7 @@ function validateId(
     );
   return diagnostics;
 }
+
 function usesThreeD(track: RawObject): boolean {
   const keyframes = isObject(track.keyframes) ? track.keyframes : null;
   if (!keyframes) return false;
@@ -130,6 +130,7 @@ function usesThreeD(track: RawObject): boolean {
     path.points.some((point) => isObject(point) && typeof point.z === "number" && point.z !== 0)
   );
 }
+
 function validateTrackShape(
   track: unknown,
   path: string,
@@ -161,128 +162,31 @@ function validateTrackShape(
     );
   return true;
 }
-function addObservationDiagnostics(
-  track: RawObject,
-  path: string,
-  ownerId: string,
-  localIds: ReadonlySet<string>,
-  freeIds: ReadonlySet<string>,
-  qualifiedIds: ReadonlySet<string>,
-  edges: Edge[],
-  diagnostics: Diagnostic[],
-): void {
-  if (!Array.isArray(track.observes)) return;
-  const seen = new Set<string>();
-  for (const [index, raw] of track.observes.entries()) {
-    const edgePath = `${path}.observes[${index}]`;
-    if (!isObject(raw)) {
-      diagnostics.push(issue("observation-shape", edgePath, "Observation must be an object."));
-      continue;
-    }
-    const source = raw.source;
-    const role = raw.role ?? "output";
-    const target = raw.target;
-    if (typeof source !== "string" || source.length === 0) {
-      diagnostics.push(
-        issue(
-          "observation-source",
-          `${edgePath}.source`,
-          "Observation source must be a non-empty string.",
-        ),
-      );
-      continue;
-    }
-    if (!OBSERVATION_ROLES.includes(role as (typeof OBSERVATION_ROLES)[number]))
-      diagnostics.push(
-        issue(
-          "observation-role",
-          `${edgePath}.role`,
-          "Observation role must be 'input' or 'output'.",
-        ),
-      );
-    if (role === "output" && target !== undefined)
-      diagnostics.push(
-        issue(
-          "observation-output-target",
-          `${edgePath}.target`,
-          "Output observations must not define target.",
-        ),
-      );
-    const projection = raw.projection;
-    if (role === "input" && projection !== undefined && !isObject(projection))
-      diagnostics.push(
-        issue(
-          "observation-input-projection",
-          `${edgePath}.projection`,
-          "Input projection must be an object.",
-        ),
-      );
-    const qualifiedSource =
-      source.startsWith("~/") || source.includes("/")
-        ? source
-        : localIds.has(source)
-          ? `${ownerId}/${source}`
-          : source;
-    const sourceKnown = qualifiedIds.has(qualifiedSource) || freeIds.has(source);
-    if (!sourceKnown)
-      diagnostics.push(
-        issue(
-          "observation-unknown-source",
-          `${edgePath}.source`,
-          `Unknown observation source '${source}'.`,
-          "error",
-          [source],
-        ),
-      );
-    const edgeKey = `${qualifiedSource}|${role}|${role === "input" ? String(target) : ""}`;
-    if (seen.has(edgeKey))
-      diagnostics.push(
-        issue(
-          "observation-duplicate-edge",
-          edgePath,
-          `Duplicate observation edge '${edgeKey}'.`,
-          "error",
-          [source],
-        ),
-      );
-    seen.add(edgeKey);
-    if (
-      source === ownerId ||
-      qualifiedSource === `${ownerId}/${ownerId}` ||
-      qualifiedSource === ownerId
-    )
-      diagnostics.push(
-        issue(
-          "observation-self-reference",
-          `${edgePath}.source`,
-          `Track '${ownerId}' cannot observe itself.`,
-          "error",
-          [ownerId],
-        ),
-      );
-    if (sourceKnown && typeof track.id === "string")
-      edges.push({ source: qualifiedSource, target: `${ownerId}/${track.id}`, path: edgePath });
+
+function clone(value: unknown, seen = new WeakMap<object, unknown>()): unknown {
+  if (value === null || typeof value !== "object") return value;
+  const existing = seen.get(value);
+  if (existing !== undefined) return existing;
+  if (Array.isArray(value)) {
+    const result: unknown[] = [];
+    seen.set(value, result);
+    for (const item of value) result.push(clone(item, seen));
+    return result;
   }
+  const result: Record<string, unknown> = {};
+  seen.set(value, result);
+  for (const [key, child] of Object.entries(value)) result[key] = clone(child, seen);
+  return result;
 }
-function hasCycle(nodes: ReadonlySet<string>, edges: Edge[]): boolean {
-  const outgoing = new Map<string, string[]>();
-  for (const node of nodes) outgoing.set(node, []);
-  for (const edge of edges)
-    if (outgoing.has(edge.source) && outgoing.has(edge.target))
-      outgoing.get(edge.source)?.push(edge.target);
-  const visiting = new Set<string>();
-  const visited = new Set<string>();
-  const visit = (node: string): boolean => {
-    if (visiting.has(node)) return true;
-    if (visited.has(node)) return false;
-    visiting.add(node);
-    for (const next of outgoing.get(node) ?? []) if (visit(next)) return true;
-    visiting.delete(node);
-    visited.add(node);
-    return false;
-  };
-  return [...nodes].some(visit);
+
+function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
+  if (value === null || typeof value !== "object") return value;
+  if (seen.has(value)) return value;
+  seen.add(value);
+  for (const child of Object.values(value)) deepFreeze(child, seen);
+  return Object.freeze(value);
 }
+
 export function validateV5(input: unknown): ValidationResult {
   const diagnostics: Diagnostic[] = [];
   if (!isObject(input))
@@ -291,6 +195,7 @@ export function validateV5(input: unknown): ValidationResult {
       diagnostics: [issue("project-shape", "$", "Project must be an object.")],
       value: null,
     };
+
   if (input.schemaVersion !== AUTHORED_SCHEMA_VERSION)
     diagnostics.push(
       issue(
@@ -310,21 +215,13 @@ export function validateV5(input: unknown): ValidationResult {
     diagnostics.push(issue("motions-shape", "motions", "motions must be an array."));
   if (input.freeTracks !== undefined && !Array.isArray(input.freeTracks))
     diagnostics.push(issue("free-tracks-shape", "freeTracks", "freeTracks must be an array."));
+
   const motions = Array.isArray(input.motions) ? input.motions : [];
   const freeTracks = Array.isArray(input.freeTracks) ? input.freeTracks : [];
   const motionIds = new Set<string>();
   const freeIds = new Set<string>();
-  const qualifiedIds = new Set<string>();
-  const nodes = new Set<string>();
-  const motionRecords: Array<{
-    raw: RawObject;
-    path: string;
-    id: string;
-    tracks: RawObject[];
-    localIds: Set<string>;
-  }> = [];
-  const freeRecords: Array<{ raw: RawObject; path: string; id: string }> = [];
   const allTracks: RawObject[] = [];
+
   for (const [index, rawMotion] of motions.entries()) {
     const path = `motions[${index}]`;
     if (!isObject(rawMotion)) {
@@ -362,58 +259,20 @@ export function validateV5(input: unknown): ValidationResult {
       continue;
     }
     const localIds = new Set<string>();
-    const tracks: RawObject[] = [];
     for (const [trackIndex, rawTrack] of rawMotion.tracks.entries()) {
       const trackPath = `${path}.tracks[${trackIndex}]`;
       if (!validateTrackShape(rawTrack, trackPath, localIds, diagnostics)) continue;
-      const track = rawTrack as unknown as RawObject;
-      tracks.push(track);
-      allTracks.push(track);
-      if (id && typeof track.id === "string" && track.id.length > 0) {
-        const qualified = `${id}/${track.id}`;
-        qualifiedIds.add(qualified);
-        nodes.add(qualified);
-      }
+      allTracks.push(rawTrack as unknown as RawObject);
     }
-    motionRecords.push({ raw: rawMotion, path, id, tracks, localIds });
   }
+
   for (const [index, rawTrack] of freeTracks.entries()) {
     const path = `freeTracks[${index}]`;
-    if (!validateTrackShape(rawTrack, path, freeIds, diagnostics)) continue;
-    const track = rawTrack as unknown as RawObject;
-    const id = typeof track.id === "string" ? track.id : "";
-    if (id) {
-      freeIds.add(id);
-      qualifiedIds.add(`~/${id}`);
-      nodes.add(`~/${id}`);
-    }
-    allTracks.push(track);
-    freeRecords.push({ raw: track, path, id });
+    const localIds = freeIds;
+    if (!validateTrackShape(rawTrack, path, localIds, diagnostics)) continue;
+    allTracks.push(rawTrack as unknown as RawObject);
   }
-  const edges: Edge[] = [];
-  for (const record of motionRecords)
-    for (const track of record.tracks)
-      addObservationDiagnostics(
-        track,
-        `${record.path}.tracks[${record.tracks.indexOf(track)}]`,
-        record.id,
-        record.localIds,
-        freeIds,
-        qualifiedIds,
-        edges,
-        diagnostics,
-      );
-  for (const record of freeRecords)
-    addObservationDiagnostics(
-      record.raw,
-      record.path,
-      "~",
-      new Set(),
-      freeIds,
-      qualifiedIds,
-      edges,
-      diagnostics,
-    );
+
   const perspective = input.perspective;
   if (
     perspective !== undefined &&
@@ -438,12 +297,13 @@ export function validateV5(input: unknown): ValidationResult {
             [String(track.id ?? "")],
           ),
         );
-  if (hasCycle(nodes, edges))
-    diagnostics.push(issue("observation-cycle", "motions", "Observation graph contains a cycle."));
+
+  const hasErrors = diagnostics.some(({ severity }) => severity === "error");
+  if (!hasErrors) {
+    const graph = buildGraphIR(input as unknown as ProjectDefinition);
+    diagnostics.push(...graph.diagnostics);
+  }
   const valid = !diagnostics.some(({ severity }) => severity === "error");
-  return {
-    valid,
-    diagnostics: Object.freeze(diagnostics),
-    value: valid ? (input as unknown as ProjectDefinition) : null,
-  };
+  const accepted = valid ? deepFreeze(clone(input) as ProjectDefinition) : null;
+  return { valid, diagnostics: Object.freeze(diagnostics), value: accepted };
 }

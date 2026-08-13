@@ -53,15 +53,16 @@ function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
     .join(" ");
 }
 
-function assertValidProject(project: unknown): asserts project is ProjectDefinition {
+function assertValidProject(project: unknown): ProjectDefinition {
   const result = validateV5(project);
-  if (!result.valid) {
+  if (!result.valid || result.value === null) {
     throw new TypeError(
       result.diagnostics.length === 0
         ? "Project failed v5 validation."
         : describeDiagnostics(result.diagnostics),
     );
   }
+  return result.value;
 }
 
 export class Engine {
@@ -76,15 +77,15 @@ export class Engine {
   }
 
   load(project: ProjectDefinition): ProjectHandle {
-    assertValidProject(project);
+    const acceptedProject = assertValidProject(project);
     const tracks = new Map<string, Track>();
     const nodes = new Map<
       string,
       { duration?: number; keyframes?: Readonly<Record<string, unknown>> }
     >();
-    for (const motion of project.motions)
+    for (const motion of acceptedProject.motions)
       for (const track of motion.tracks) nodes.set(`${motion.id}/${track.id}`, track);
-    for (const track of project.freeTracks ?? []) nodes.set(`~/${track.id}`, track);
+    for (const track of acceptedProject.freeTracks ?? []) nodes.set(`~/${track.id}`, track);
 
     const compile = (nodeId: string): Track => {
       const existing = tracks.get(nodeId);
@@ -121,7 +122,7 @@ export class Engine {
             sourceRevisions: {},
           };
         };
-      const runtime = new ProjectRuntime(project, {
+      const runtime = new ProjectRuntime(acceptedProject, {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
         compose,
