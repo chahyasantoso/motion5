@@ -56,30 +56,29 @@ Last reviewed: 2026-08-13
 - Dispatch P0-3 against base `2f38b5b0`.
 - Fix P0-4 and land flat projected inputs (X-1).
 - Repair acceptance to prove mapped tests actually ran, require assertion-level failing-first evidence, and put build/end-to-end on the required CI path.
-- Re-baseline mutation after the gates are honest, rerun rescue checks, then open the final rescue-to-main PR.
-=======
-| ID    | Slice                                           | Status               |
-| ----- | ----------------------------------------------- | -------------------- |
-| W0    | Rescue loop and audit baseline                  | Done                 |
-| A1    | Final-value memo consistency                    | Done, gate open      |
-| A2    | Preserve subscriber errors                      | Done, gate open      |
-| A3    | Guard subscriber-triggered reentrancy           | Done, gate open      |
-| B1    | Prepare-stage plugin contribution               | Done                 |
-| B2    | Real GSAP multi-stop compilation                | Done                 |
-| C1    | React store resubscription                      | Done                 |
-| C2    | React hook and public exports                   | Done, gate open      |
-| C3    | DOM metadata, serialization, and clear coverage | Done, gate open      |
-| D1    | Discover consumer packages                      | Done                 |
-| D2    | Planted boundary self-test                      | Done                 |
-| D3    | Acceptance evidence gates                       | Done                 |
-| E1    | Required declaration build                      | Done, gate open      |
-| E2    | Real end-to-end product path                    | Done                 |
-| E3    | Mutation baseline and ratchet                   | Done                 |
-| P0-1  | Clock and batch identity                        | Done                 |
-| P0-2  | GSAP clock ownership                            | Done                 |
-| P0-3  | Absolute multi-property stop compilation        | Done                 |
-| P0-3b | Authored-duration pinning                       | Green, pending merge |
-| P0-4  | DOM transform rendering and removal             | Not started          |
+- # Re-baseline mutation after the gates are honest, rerun rescue checks, then open the final rescue-to-main PR.
+  | ID    | Slice                                           | Status               |
+  | ----- | ----------------------------------------------- | -------------------- |
+  | W0    | Rescue loop and audit baseline                  | Done                 |
+  | A1    | Final-value memo consistency                    | Done, gate open      |
+  | A2    | Preserve subscriber errors                      | Done, gate open      |
+  | A3    | Guard subscriber-triggered reentrancy           | Done, gate open      |
+  | B1    | Prepare-stage plugin contribution               | Done                 |
+  | B2    | Real GSAP multi-stop compilation                | Done                 |
+  | C1    | React store resubscription                      | Done                 |
+  | C2    | React hook and public exports                   | Done, gate open      |
+  | C3    | DOM metadata, serialization, and clear coverage | Done, gate open      |
+  | D1    | Discover consumer packages                      | Done                 |
+  | D2    | Planted boundary self-test                      | Done                 |
+  | D3    | Acceptance evidence gates                       | Done                 |
+  | E1    | Required declaration build                      | Done, gate open      |
+  | E2    | Real end-to-end product path                    | Done                 |
+  | E3    | Mutation baseline and ratchet                   | Done                 |
+  | P0-1  | Clock and batch identity                        | Done                 |
+  | P0-2  | GSAP clock ownership                            | Done                 |
+  | P0-3  | Absolute multi-property stop compilation        | Done                 |
+  | P0-3b | Authored-duration pinning                       | Green, pending merge |
+  | P0-4  | DOM transform rendering and removal             | Not started          |
 
 ## Current next action
 
@@ -106,4 +105,4 @@ Previous audit runs [#31656822276](https://github.com/chahyasantoso/motion5/acti
 - Fix P0-4 and land flat projected inputs (X-1).
 - Repair the remaining governance gates: acceptance must prove mapped tests actually ran, failing-first must require assertion-level failures, and CI must require build and end-to-end.
 - Re-baseline mutation after the gates are honest, rerun rescue checks, and open the final rescue-to-main PR.
->>>>>>> origin/rescue/restore-motionpath-parity
+  > > > > > > > origin/rescue/restore-motionpath-parity
