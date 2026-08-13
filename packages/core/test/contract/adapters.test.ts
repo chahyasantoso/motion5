@@ -9,7 +9,14 @@ describe("adapter ports", () => {
     const seam = createRealGsapSeam();
     const timeline = seam.interpolator.create({
       duration: 2,
-      keyframes: { x: { stops: [{ p: 0, v: 0 }, { p: 1, v: 100 }] } },
+      keyframes: {
+        x: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 1, v: 100 },
+          ],
+        },
+      },
     });
     expect(timeline.state).toMatchObject({ x: 0 });
     timeline.progress(0.5);

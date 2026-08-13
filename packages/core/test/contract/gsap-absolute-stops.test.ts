@@ -7,8 +7,20 @@ describe("GSAP absolute multi-property stops (P0-3)", () => {
     const timeline = seam.interpolator.create({
       duration: 1,
       keyframes: {
-        x: { stops: [{ p: 0, v: 0 }, { p: 0.5, v: 50 }, { p: 1, v: 100 }] },
-        y: { stops: [{ p: 0.2, v: 20 }, { p: 0.25, v: 25 }, { p: 1, v: 100 }] },
+        x: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 0.5, v: 50 },
+            { p: 1, v: 100 },
+          ],
+        },
+        y: {
+          stops: [
+            { p: 0.2, v: 20 },
+            { p: 0.25, v: 25 },
+            { p: 1, v: 100 },
+          ],
+        },
       },
     });
 

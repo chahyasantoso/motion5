@@ -110,21 +110,37 @@ function validateStops(
     const stopPath = `${path}.stops[${index}].p`;
     if (!validStop(stop)) {
       diagnostics.push(
-        diagnostic("plugin-contribution-stop-position", stopPath, "Contributed stop p must be finite."),
+        diagnostic(
+          "plugin-contribution-stop-position",
+          stopPath,
+          "Contributed stop p must be finite.",
+        ),
       );
       continue;
     }
     if (stop.p < 0 || stop.p > 1)
       diagnostics.push(
-        diagnostic("plugin-contribution-stop-range", stopPath, "Contributed stop p must be between 0 and 1."),
+        diagnostic(
+          "plugin-contribution-stop-range",
+          stopPath,
+          "Contributed stop p must be between 0 and 1.",
+        ),
       );
     if (previous !== undefined && stop.p < previous)
       diagnostics.push(
-        diagnostic("plugin-contribution-stop-order", stopPath, "Contributed stop positions must be monotonic."),
+        diagnostic(
+          "plugin-contribution-stop-order",
+          stopPath,
+          "Contributed stop positions must be monotonic.",
+        ),
       );
     if (seen.has(stop.p))
       diagnostics.push(
-        diagnostic("plugin-contribution-stop-duplicate", stopPath, "Contributed stop positions must be unique."),
+        diagnostic(
+          "plugin-contribution-stop-duplicate",
+          stopPath,
+          "Contributed stop positions must be unique.",
+        ),
       );
     seen.add(stop.p);
     previous = stop.p;
@@ -206,7 +222,10 @@ function prepareContributions(
       }
     }
   }
-  return Object.freeze({ keyframes: Object.freeze(keyframes), tweenVars: Object.freeze(tweenVars) });
+  return Object.freeze({
+    keyframes: Object.freeze(keyframes),
+    tweenVars: Object.freeze(tweenVars),
+  });
 }
 
 function result(
@@ -286,10 +305,17 @@ export class PluginRegistry {
     names.forEach((name, index) => {
       const itemPath = `${path}[${index}]`;
       if (typeof name !== "string" || !name.trim())
-        diagnostics.push(diagnostic("plugin-name", itemPath, "Plugin name must be a non-empty string."));
+        diagnostics.push(
+          diagnostic("plugin-name", itemPath, "Plugin name must be a non-empty string."),
+        );
       else if (requested.has(name))
         diagnostics.push(
-          diagnostic("plugin-duplicate-use", itemPath, `Plugin "${name}" is requested more than once.`, [name]),
+          diagnostic(
+            "plugin-duplicate-use",
+            itemPath,
+            `Plugin "${name}" is requested more than once.`,
+            [name],
+          ),
         );
       else {
         requested.add(name);
@@ -325,8 +351,7 @@ export class PluginRegistry {
     }
     plugins.sort(
       (a, b) =>
-        comparePlugins(a, b) ||
-        (this.#orders.get(a.name) ?? 0) - (this.#orders.get(b.name) ?? 0),
+        comparePlugins(a, b) || (this.#orders.get(a.name) ?? 0) - (this.#orders.get(b.name) ?? 0),
     );
     const owners = new Map<string, string>();
     for (const plugin of plugins)
