@@ -10,10 +10,14 @@ function createRecordingInterpolator(): {
   const interpolator = createGsapInterpolator({
     to(target, vars): GsapTweenLike {
       configs.push(vars);
+      let current = 0;
       return {
         duration: () => 1,
-        progress(value?: number) {
-          if (value === undefined) return 0;
+        progress(): number;
+        progress(value: number): GsapTweenLike;
+        progress(value?: number): number | GsapTweenLike {
+          if (value === undefined) return current;
+          current = value;
           Object.assign(target, { progress: value });
           return this;
         },
@@ -65,6 +69,6 @@ describe("S2 sparse percent-keyframe compilation", () => {
           y: { stops: [{ p: 0, v: 0 }, { p: 0.5, v: 50, ease: "power2.out" }, { p: 1, v: 100 }] },
         },
       }),
-    ).not.toThrow();
+    ).toThrow(/plugin-contribution-ease-collision/);
   });
 });
