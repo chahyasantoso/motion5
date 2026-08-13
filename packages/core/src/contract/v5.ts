@@ -23,6 +23,12 @@ export interface AuthoredProperty {
   readonly stops: readonly AuthoredStop[];
 }
 
+/** Input projection: pick preserves selected source keys; map renames source keys to output keys. */
+export interface InputProjection {
+  readonly pick?: readonly string[];
+  readonly map?: Readonly<Record<string, string>>;
+}
+
 export interface TrackDefinition {
   readonly id: string;
   readonly duration?: number;
@@ -34,7 +40,9 @@ export interface TrackDefinition {
 export interface ObservationDefinition {
   readonly source: string;
   readonly role?: "input" | "output";
+  /** Transitional label; projected input keys come from projection. */
   readonly target?: string;
+  readonly projection?: InputProjection;
 }
 
 export interface MotionDefinition {

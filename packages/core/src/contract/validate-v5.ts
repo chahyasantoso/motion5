@@ -200,20 +200,21 @@ function addObservationDiagnostics(
           "Observation role must be 'input' or 'output'.",
         ),
       );
-    if (role === "input" && (typeof target !== "string" || target.length === 0))
-      diagnostics.push(
-        issue(
-          "observation-input-target",
-          `${edgePath}.target`,
-          "Input observations require a non-empty target.",
-        ),
-      );
     if (role === "output" && target !== undefined)
       diagnostics.push(
         issue(
           "observation-output-target",
           `${edgePath}.target`,
           "Output observations must not define target.",
+        ),
+      );
+    const projection = raw.projection;
+    if (role === "input" && projection !== undefined && !isObject(projection))
+      diagnostics.push(
+        issue(
+          "observation-input-projection",
+          `${edgePath}.projection`,
+          "Input projection must be an object.",
         ),
       );
     const qualifiedSource =

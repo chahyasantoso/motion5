@@ -1,4 +1,4 @@
-import type { Diagnostic } from "../contract/v5";
+import type { Diagnostic, InputProjection } from "../contract/v5";
 import { edgeKey, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
 import { PatchRegistry, REENTRANT_BATCH_MESSAGE, type PatchBatch } from "./patch-registry";
 
@@ -7,67 +7,83 @@ export interface PublisherComposition {
   readonly sourceProgress: number;
   readonly sourceRevisions: Readonly<Record<string, number>>;
 }
-
 export interface PublisherNode extends GraphNode {
   readonly compose: (inputs: Readonly<Record<string, unknown>>) => PublisherComposition;
 }
-
 export interface PublisherSnapshot extends GraphIR {
   readonly nodes: readonly PublisherNode[];
 }
-
 export interface PublisherFailure {
   readonly nodeId: string;
   readonly error: unknown;
 }
 
+class InputObservationError extends Error {
+  constructor(
+    readonly ruleId: "observation-input-shape" | "observation-input-collision",
+    message: string,
+  ) {
+    super(message);
+    this.name = ruleId;
+  }
+}
 function diagnostic(nodeId: string, error: unknown): Diagnostic {
+  const ruleId = error instanceof InputObservationError ? error.ruleId : "composition-failure";
   return Object.freeze({
-    ruleId: "composition-failure",
+    ruleId,
     path: nodeId,
     message: error instanceof Error ? error.message : String(error),
     severity: "error",
     ids: Object.freeze([nodeId]),
   });
 }
-
 function compareEdgeKeys(a: GraphEdge, b: GraphEdge): number {
   const left = edgeKey(a);
   const right = edgeKey(b);
   return left < right ? -1 : left > right ? 1 : 0;
 }
-
 function mergeValues(
   base: Readonly<Record<string, unknown>>,
   overlay: Readonly<Record<string, unknown>> | undefined,
 ): Readonly<Record<string, unknown>> {
-  if (overlay === undefined) return base;
-  return Object.freeze({ ...base, ...overlay });
+  return overlay === undefined ? base : Object.freeze({ ...base, ...overlay });
+}
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function projectValues(
+  source: Readonly<Record<string, unknown>>,
+  projection: InputProjection | undefined,
+): Readonly<Record<string, unknown>> {
+  if (projection === undefined) return source;
+  if (projection.pick !== undefined)
+    return Object.fromEntries(
+      projection.pick.filter((key) => key in source).map((key) => [key, source[key]]),
+    );
+  if (projection.map !== undefined)
+    return Object.fromEntries(
+      Object.entries(projection.map)
+        .filter(([sourceKey]) => sourceKey in source)
+        .map(([sourceKey, targetKey]) => [targetKey, source[sourceKey]]),
+    );
+  throw new InputObservationError(
+    "observation-input-shape",
+    "Input projection must define pick or map.",
+  );
 }
 
-/**
- * One-way publication over an immutable, validated snapshot. It owns traversal and failure
- * containment, but exposes no topology mutation methods. Dirty composition is memoized per
- * flush, and a failure blocks only the downstream closure of that node.
- */
 export class GraphPublisher {
   readonly #registry: PatchRegistry;
-
   constructor(registry: PatchRegistry) {
     this.#registry = registry;
   }
-
   flush(snapshot: PublisherSnapshot, seeds: readonly string[], tick: number): PatchBatch {
-    // Traversal is not a scheduler. Deciding what to do with a flush requested from inside a
-    // subscriber belongs to the runtime that owns ticks and seeds, so refuse it here before
-    // any batch state is touched instead of silently nesting a publication.
     if (this.#registry.notifying) throw new Error(REENTRANT_BATCH_MESSAGE);
     const byId = new Map(snapshot.nodes.map((node) => [node.id, node]));
     const dependents = new Map<string, string[]>();
     for (const node of snapshot.nodes) dependents.set(node.id, []);
     for (const node of snapshot.nodes)
       for (const edge of node.edges) dependents.get(edge.sourceId)?.push(node.id);
-
     const affected = new Set<string>();
     const queue = [...seeds];
     for (let index = 0; index < queue.length; index += 1) {
@@ -76,7 +92,6 @@ export class GraphPublisher {
       affected.add(id);
       queue.push(...(dependents.get(id) ?? []));
     }
-
     const failed = new Map<string, Diagnostic>();
     const blocked = new Set<string>();
     const memo = new Map<string, PublisherComposition>();
@@ -109,10 +124,29 @@ export class GraphPublisher {
         }
         try {
           const inputs: Record<string, unknown> = {};
-          for (const edge of node.edges) {
-            if (edge.role !== "input") continue;
-            inputs[edge.target ?? ""] =
+          const inputKeys = new Map<string, string>();
+          for (const edge of node.edges
+            .filter(({ role }) => role === "input")
+            .sort(compareEdgeKeys)) {
+            const sourceValues =
               memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
+            if (sourceValues === undefined) continue;
+            if (!isRecord(sourceValues))
+              throw new InputObservationError(
+                "observation-input-shape",
+                `Input observation source "${edge.sourceId}" must be a record.`,
+              );
+            const projected = projectValues(sourceValues, edge.projection);
+            for (const [key, value] of Object.entries(projected)) {
+              const previous = inputKeys.get(key);
+              if (previous !== undefined)
+                throw new InputObservationError(
+                  "observation-input-collision",
+                  `Input key "${key}" from ${edgeKey(edge)} collides with ${previous}.`,
+                );
+              inputKeys.set(key, edgeKey(edge));
+              inputs[key] = value;
+            }
           }
           const composed = node.compose(inputs);
           let values = composed.values;
@@ -123,9 +157,6 @@ export class GraphPublisher {
               memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
             values = mergeValues(values, sourceValues);
           }
-          // Memoize the value actually published, not the pre-merge composition. A same-flush
-          // input-role consumer of this node must see what it published, not what it computed
-          // before its own output-role merges were applied.
           memo.set(id, { ...composed, values });
           this.#registry.publish({
             nodeId: id,
@@ -148,14 +179,10 @@ export class GraphPublisher {
       }
       return this.#registry.closeBatch();
     } catch (error) {
-      // Best-effort cleanup only. If the registry is already closed (e.g. this error IS
-      // the closeBatch() call above having already fully closed and reset state before a
-      // subscriber threw), this recovery call will itself throw -- that secondary failure
-      // must never replace the original error being propagated below.
       try {
         this.#registry.closeBatch();
       } catch {
-        // intentionally swallowed; see comment above
+        /* Preserve the original flush failure. */
       }
       throw error;
     }

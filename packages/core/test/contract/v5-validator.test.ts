@@ -123,7 +123,7 @@ describe("schema v5 validator", () => {
     );
   });
 
-  it("rejects invalid observation roles, targets, unknown sources, self references, and cycles", () => {
+  it("rejects invalid observation roles, unknown sources, self references, and cycles", () => {
     const result = validateV5({
       schemaVersion: 5,
       motions: [
@@ -139,7 +139,7 @@ describe("schema v5 validator", () => {
     });
     expect(result.valid).toBe(false);
     expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(
-      expect.arrayContaining(["observation-input-target", "observation-cycle"]),
+      expect.arrayContaining(["observation-cycle"]),
     );
   });
 
