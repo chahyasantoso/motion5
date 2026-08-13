@@ -8,17 +8,28 @@ import { createRealGsapSeam } from "../support/real-gsap";
 describe("GSAP interpolator clock ownership (P0-2)", () => {
   it("creates a paused parent timeline so the project clock is the only clock owner", () => {
     let receivedVars: Record<string, unknown> | undefined;
+    let currentDuration = 1;
     let currentProgress = 0;
+    function duration(): number;
+    function duration(value: number): GsapTimelineLike;
+    function duration(value?: number): number | GsapTimelineLike {
+      if (value === undefined) return currentDuration;
+      currentDuration = value;
+      return timeline;
+    }
+    function progress(): number;
+    function progress(value: number): GsapTimelineLike;
+    function progress(value?: number): number | GsapTimelineLike {
+      if (value === undefined) return currentProgress;
+      currentProgress = value;
+      return timeline;
+    }
     const timeline: GsapTimelineLike = {
-      duration: () => 1,
-      progress(value?: number): number | GsapTimelineLike {
-        if (value === undefined) return currentProgress;
-        currentProgress = value;
-        return timeline;
-      },
+      duration,
+      progress,
       to: () => timeline,
       kill() {},
-    } as GsapTimelineLike;
+    };
     const interpolator = createGsapInterpolator({
       timeline(vars) {
         receivedVars = vars;
