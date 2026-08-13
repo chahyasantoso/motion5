@@ -71,7 +71,7 @@ describe("plugin registry", () => {
         path: "keyframes.transform",
         message: 'Plugins "first" and "second" both claim output "transform".',
         severity: "error",
-        ids: ["first", "second", "transform"],
+        ids: ["first", "second", "transform"].sort(),
       },
     ]);
   });
