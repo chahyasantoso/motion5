@@ -1,5 +1,7 @@
-# Automatically formats pull requests opened from branches in this repository.
-# Fork pull requests are never given write access; quality CI reports formatting drift.
+# Checks formatting on pull requests without mutating their head branches.
+# A GITHUB_TOKEN push does not trigger another workflow run, so auto-committing
+# here created unchecked heads. Formatting drift now fails this check and is
+# fixed in the same PR commit that CI evaluates.
 name: Format
 
 on:
@@ -11,39 +13,26 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: read
 
 jobs:
   format-pr:
-    name: prettier --write (same-repository PR)
+    name: prettier --check
     if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
+          ref: ${{ github.event.pull_request.head.sha }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
-          fetch-depth: 0
+          fetch-depth: 1
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Apply formatter
-        run: npm run format
-      - name: Commit formatting changes
-        env:
-          TARGET_BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: |
-          if git diff --quiet; then
-            echo "No formatting drift."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -m "chore: apply prettier"
-          git push origin "HEAD:${TARGET_BRANCH}"
+      - name: Check formatting
+        run: npm run format:check

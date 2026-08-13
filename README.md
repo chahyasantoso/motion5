@@ -4,6 +4,8 @@ motion5 is a renderer-neutral, transactional dataflow animation runtime. It eval
 
 > **Status:** Phase 4 is reopened. The 2026-08-10 consolidated audit found that R1-R8 repaired the graph infrastructure and adapter boundaries, but not the animation value pipeline. `Engine.load()` currently publishes empty or input-only patches, Track instances are rebuilt on every flush, and the plugin/keyframe compiler is not implemented. Start with [the consolidated audit](docs/PHASE-3-4-CONSOLIDATED-AUDIT.md), [the recovery plan](docs/PHASE-3-4-RECOVERY-PLAN.md), and [the implementor brief](docs/IMPLEMENTOR-BRIEF-MOTIONPATH-TO-MOTION5.md). Do not resume P4-05, packaging, or performance hardening until the Phase 0R/1R recovery work has real failing-first evidence.
 
+> **Workflow handoff:** GitHub-MCP implementors should read [RECOVERY.md](RECOVERY.md), [the formatter workflow](docs/FORMAT-WORKFLOW.md), and [the PR workflow](docs/PR-WORKFLOW.md) before making changes. Failed CI and recovery-audit logs are archived on the separate `ci-logs` branch.
+
 > **Lineage:** motion5 is a clean-room successor to [motionpath](https://github.com/chahyasantoso/motionpath), a data-first animation runtime built on GSAP. motionpath is the behavioral oracle for what these animations should do. motion5 is a different answer to how the runtime should own that behavior.
 
 ## Why motion5 exists
@@ -54,7 +56,7 @@ npm test
 
 ## Documentation map
 
-Read in this order: [Session status](docs/SESSION-STATUS.md), [Consolidated audit](docs/PHASE-3-4-CONSOLIDATED-AUDIT.md), [Recovery plan](docs/PHASE-3-4-RECOVERY-PLAN.md), [Implementor brief](docs/IMPLEMENTOR-BRIEF-MOTIONPATH-TO-MOTION5.md), [PRD](docs/PRD.md), [TRD](docs/TRD.md), [Architecture](docs/ARCHITECTURE.md), [Authored schema](docs/AUTHORED-SCHEMA.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md), [Testing strategy](docs/TESTING-STRATEGY.md), [CI workflow](docs/CI-WORKFLOW.md), [PR workflow](docs/PR-WORKFLOW.md), and [Decision records](docs/DECISIONS.md).
+Read in this order: [Session status](docs/SESSION-STATUS.md), [Consolidated audit](docs/PHASE-3-4-CONSOLIDATED-AUDIT.md), [Recovery plan](docs/PHASE-3-4-RECOVERY-PLAN.md), [Implementor brief](docs/IMPLEMENTOR-BRIEF-MOTIONPATH-TO-MOTION5.md), [Formatter and CI handoff](docs/FORMAT-WORKFLOW.md), [PR workflow](docs/PR-WORKFLOW.md), [CI workflow](docs/CI-WORKFLOW.md), [PRD](docs/PRD.md), [TRD](docs/TRD.md), [Architecture](docs/ARCHITECTURE.md), [Authored schema](docs/AUTHORED-SCHEMA.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md), [Testing strategy](docs/TESTING-STRATEGY.md), and [Decision records](docs/DECISIONS.md).
 
 ## Contributing rule of thumb
 

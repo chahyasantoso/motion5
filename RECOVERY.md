@@ -13,22 +13,29 @@ The live checklist is [`progress/STATUS.md`](progress/STATUS.md). It owns every 
 ## Current baseline
 
 - Repository: `chahyasantoso/motion5`
-- Main baseline reviewed: commit `1d59c087231c3c3f9c3cde6822d34835ee94705a`
 - Oracle: `chahyasantoso/motionpath`
-- Oracle revision inspected for this handoff: `1bc8d044347fa3b1732e6dad3bc8437ad23e2687`
-- Rescue branch to create locally: `rescue/restore-motionpath-parity`
+- Current rescue branch: `rescue/restore-motionpath-parity`
+- Archive branch for failed CI and recovery-audit logs: `ci-logs`
 
 ## Rules
 
-Freeze feature work on `main`. Create the rescue branch once, then one short-lived fix branch from the latest rescue tip for each slice. Merge each slice back into rescue only after failing-first evidence, implementation, and CI evidence exist. Merge rescue into `main` once, after all wave gates pass.
+Freeze feature work on `main`. Create one short-lived fix branch from the latest rescue tip for each slice. Merge each slice back into rescue only after failing-first evidence, implementation, and CI evidence exist. Merge rescue into `main` once all wave gates pass.
 
 At session start: read this file and [`progress/STATUS.md`](progress/STATUS.md), inspect current branches and CI artifacts, then pick one slice. At session end: update the status table with the commit and evidence links. Never mark a slice done from code inspection or generic green tests.
 
-## Baseline verdict
+## Implementor workflow
 
-A1 and A2 are implemented on main but must be verified on rescue. Remaining gaps are GSAP final-stop compilation, unused plugin contribution, subscriber-triggered reentrancy, React resubscription/hooks/public exports, hardcoded and weak boundary scanning, missing required build, missing honest end-to-end proof, and missing mutation baseline.
+The implementor works through GitHub MCP, so it cannot assume a persistent local checkout. Use the repository workflows as the enforcement layer:
 
-DOM `clear()` matches the oracle's cache-teardown behavior; the real DOM gaps are plugin metadata filtering, output serialization, and explicit clear coverage.
+1. Push the test-only failing-first commit.
+2. Wait for the red CI run and record the assertion-level failures.
+3. Push the smallest implementation commit.
+4. Wait for the green required checks on the exact head SHA.
+5. If formatting drift is found, a separate bot PR named `chore/format-pr-<number>` may be opened against the implementation branch. Review and merge it manually; it is never auto-merged and never writes to the implementation branch.
+6. Wait for the source PR checks to rerun after the formatter PR merge.
+7. Record source run URLs and, when needed, durable logs from `ci-logs/logs/<run-id>/`.
+
+Normal CI has read-only permissions. The repair bot is the only workflow with write permissions, and only for its own formatting branch and PR. Fork PRs are excluded from repair automation.
 
 ## Manual audit reality
 
