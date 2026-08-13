@@ -7,9 +7,14 @@ describe("GSAP interpolator clock ownership (P0-2)", () => {
     let receivedVars: Record<string, unknown> | undefined;
     const tween: GsapTweenLike = {
       duration: () => 1,
-      progress: (value?: number) => (value === undefined ? 0 : tween),
+      progress,
       kill() {},
     };
+    function progress(): number;
+    function progress(value: number): GsapTweenLike;
+    function progress(value?: number): number | GsapTweenLike {
+      return value === undefined ? 0 : tween;
+    }
     const interpolator = createGsapInterpolator({
       to(_target, vars) {
         receivedVars = vars;
