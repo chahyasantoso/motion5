@@ -53,7 +53,14 @@ describe("composition and output-shape diagnostics", () => {
           tracks: [
             {
               id: "arm",
-              keyframes: { opacity: { stops: [{ p: 0, v: 0 }, { p: 1, v: 1 }] } },
+              keyframes: {
+                opacity: {
+                  stops: [
+                    { p: 0, v: 0 },
+                    { p: 1, v: 1 },
+                  ],
+                },
+              },
             },
           ],
         },
@@ -96,9 +103,9 @@ describe("composition and output-shape diagnostics", () => {
       2,
     );
 
-    expect(batch.patches.find(({ nodeId }) => nodeId === "hero/observer")?.diagnostics[0]?.ruleId).toBe(
-      "observation-output-shape",
-    );
+    expect(
+      batch.patches.find(({ nodeId }) => nodeId === "hero/observer")?.diagnostics[0]?.ruleId,
+    ).toBe("observation-output-shape");
   });
 
   it("does not publish malformed composition values as ready patches", () => {

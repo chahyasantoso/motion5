@@ -68,11 +68,15 @@ function isRendererNeutral(value: unknown, seen = new WeakSet<object>()): boolea
   seen.add(value);
   if (Array.isArray(value)) return value.every((item) => isRendererNeutral(item, seen));
   if (!isRecord(value)) return false;
-  return Object.entries(value).every(([key, item]) => !key.startsWith("_") && isRendererNeutral(item, seen));
+  return Object.entries(value).every(
+    ([key, item]) => !key.startsWith("_") && isRendererNeutral(item, seen),
+  );
 }
 function validateComposition(values: unknown): asserts values is Readonly<Record<string, unknown>> {
   if (!isRecord(values) || !isRendererNeutral(values))
-    throw new CompositionOutputError("Composition output must contain only renderer-neutral values.");
+    throw new CompositionOutputError(
+      "Composition output must contain only renderer-neutral values.",
+    );
 }
 function mergeValues(
   base: Readonly<Record<string, unknown>>,
