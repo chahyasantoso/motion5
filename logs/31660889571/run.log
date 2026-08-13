@@ -1,0 +1,593 @@
+prettier --check	Set up job	﻿2026-08-13T02:27:45.0818756Z Current runner version: '2.336.0'
+prettier --check	Set up job	2026-08-13T02:27:45.0845985Z ##[group]Runner Image Provisioner
+prettier --check	Set up job	2026-08-13T02:27:45.0846833Z Hosted Compute Agent
+prettier --check	Set up job	2026-08-13T02:27:45.0847559Z Version: 20260729.566
+prettier --check	Set up job	2026-08-13T02:27:45.0848208Z Commit: cf7153fe6e25b664e8693c24944bf2b00355d109
+prettier --check	Set up job	2026-08-13T02:27:45.0848924Z Build Date: 2026-07-29T19:17:02Z
+prettier --check	Set up job	2026-08-13T02:27:45.0849691Z Worker ID: {385fbfca-0c47-4aab-9442-5008d22383c5}
+prettier --check	Set up job	2026-08-13T02:27:45.0850573Z Azure Region: eastus2
+prettier --check	Set up job	2026-08-13T02:27:45.0851207Z ##[endgroup]
+prettier --check	Set up job	2026-08-13T02:27:45.0852613Z ##[group]Operating System
+prettier --check	Set up job	2026-08-13T02:27:45.0853256Z Ubuntu
+prettier --check	Set up job	2026-08-13T02:27:45.0853923Z 24.04.4
+prettier --check	Set up job	2026-08-13T02:27:45.0854448Z LTS
+prettier --check	Set up job	2026-08-13T02:27:45.0854949Z ##[endgroup]
+prettier --check	Set up job	2026-08-13T02:27:45.0855609Z ##[group]Runner Image
+prettier --check	Set up job	2026-08-13T02:27:45.0856229Z Image: ubuntu-24.04
+prettier --check	Set up job	2026-08-13T02:27:45.0856845Z Version: 20260810.271.1
+prettier --check	Set up job	2026-08-13T02:27:45.0857929Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260810.271/images/ubuntu/Ubuntu2404-Readme.md
+prettier --check	Set up job	2026-08-13T02:27:45.0859721Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260810.271
+prettier --check	Set up job	2026-08-13T02:27:45.0861045Z ##[endgroup]
+prettier --check	Set up job	2026-08-13T02:27:45.0862363Z ##[group]GITHUB_TOKEN Permissions
+prettier --check	Set up job	2026-08-13T02:27:45.0864521Z Contents: read
+prettier --check	Set up job	2026-08-13T02:27:45.0865137Z Metadata: read
+prettier --check	Set up job	2026-08-13T02:27:45.0865855Z PullRequests: read
+prettier --check	Set up job	2026-08-13T02:27:45.0866446Z ##[endgroup]
+prettier --check	Set up job	2026-08-13T02:27:45.0868550Z Secret source: Actions
+prettier --check	Set up job	2026-08-13T02:27:45.0869922Z Prepare workflow directory
+prettier --check	Set up job	2026-08-13T02:27:45.1195842Z Prepare all required actions
+prettier --check	Set up job	2026-08-13T02:27:45.1243343Z Getting action download info
+prettier --check	Set up job	2026-08-13T02:27:45.3250586Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+prettier --check	Set up job	2026-08-13T02:27:45.4796974Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+prettier --check	Set up job	2026-08-13T02:27:45.7064591Z Complete job name: prettier --check
+prettier --check	Run actions/checkout@v4	﻿2026-08-13T02:27:45.7798417Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7807207Z ##[group]Run actions/checkout@v4
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7807910Z with:
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7808372Z   ref: 31c367ee35877f595994c5011a452f67728a6ab7
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7808975Z   repository: chahyasantoso/motion5
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7809500Z   fetch-depth: 1
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7813417Z   token: ***
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7813850Z   ssh-strict: true
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7814288Z   ssh-user: git
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7814732Z   persist-credentials: true
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7815208Z   clean: true
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7815645Z   sparse-checkout-cone-mode: true
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7816152Z   fetch-tags: false
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7816585Z   show-progress: true
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7817075Z   lfs: false
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7817499Z   submodules: false
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7817950Z   set-safe-directory: true
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7818449Z   allow-unsafe-pr-checkout: false
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.7819149Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.8826453Z Syncing repository: chahyasantoso/motion5
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.8828357Z ##[group]Getting Git version info
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.8829066Z Working directory is '/home/runner/work/motion5/motion5'
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.8830401Z [command]/usr/bin/git version
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.8874228Z git version 2.54.0
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.8896313Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.8910326Z Temporarily overriding HOME='/home/runner/work/_temp/7e6eab74-da9f-483c-9c7b-5d62d17b909b' before making global git config changes
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.8912476Z Adding repository directory to the temporary git global config as a safe directory
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.8915426Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/motion5/motion5
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.8962649Z Deleting the contents of '/home/runner/work/motion5/motion5'
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.8966469Z ##[group]Initializing the repository
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.8972115Z [command]/usr/bin/git init /home/runner/work/motion5/motion5
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9047918Z hint: Using 'master' as the name for the initial branch. This default branch name
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9049497Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9051388Z hint: to use in all of your new repositories, which will suppress this warning,
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9052531Z hint: call:
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9053171Z hint:
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9054008Z hint: 	git config --global init.defaultBranch <name>
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9054643Z hint:
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9055643Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9056759Z hint: 'development'. The just-created branch can be renamed via this command:
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9057500Z hint:
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9057914Z hint: 	git branch -m <name>
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9058411Z hint:
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9059031Z hint: Disable this message with "git config set advice.defaultBranchName false"
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9059968Z Initialized empty Git repository in /home/runner/work/motion5/motion5/.git/
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9064142Z [command]/usr/bin/git remote add origin https://github.com/chahyasantoso/motion5
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9105701Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9106978Z ##[group]Disabling automatic garbage collection
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9110692Z [command]/usr/bin/git config --local gc.auto 0
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9142573Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9143627Z ##[group]Setting up auth
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9150746Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9186102Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9528857Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9568657Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9827820Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:45.9866475Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.0107257Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.0147489Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.0148372Z ##[group]Fetching the repository
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.0158878Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 31c367ee35877f595994c5011a452f67728a6ab7
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7028651Z From https://github.com/chahyasantoso/motion5
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7030638Z  * branch            31c367ee35877f595994c5011a452f67728a6ab7 -> FETCH_HEAD
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7061016Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7062335Z ##[group]Determining the checkout info
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7063972Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7069064Z [command]/usr/bin/git sparse-checkout disable
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7118569Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7153049Z ##[group]Checking out the ref
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7156235Z [command]/usr/bin/git checkout --progress --force 31c367ee35877f595994c5011a452f67728a6ab7
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7289593Z Note: switching to '31c367ee35877f595994c5011a452f67728a6ab7'.
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7291078Z 
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7291980Z You are in 'detached HEAD' state. You can look around, make experimental
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7293904Z changes and commit them, and you can discard any commits you make in this
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7296450Z state without impacting any branches by switching back to a branch.
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7298331Z 
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7299327Z If you want to create a new branch to retain commits you create, you may
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7301771Z do so (now or later) by using -c with the switch command. Example:
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7303165Z 
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7303752Z   git switch -c <new-branch-name>
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7304678Z 
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7305198Z Or undo this operation with:
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7306043Z 
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7306673Z   git switch -
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7307563Z 
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7308806Z Turn off this advice by setting config variable advice.detachedHead to false
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7311338Z 
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7312604Z HEAD is now at 31c367e merge rescue into P0-3b
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7317719Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7348408Z [command]/usr/bin/git log -1 --format=%H
+prettier --check	Run actions/checkout@v4	2026-08-13T02:27:46.7378462Z 31c367ee35877f595994c5011a452f67728a6ab7
+prettier --check	Run actions/setup-node@v4	﻿2026-08-13T02:27:46.7757059Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:46.7762958Z ##[group]Run actions/setup-node@v4
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:46.7764146Z with:
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:46.7765011Z   node-version: 24
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:46.7765944Z   cache: npm
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:46.7766846Z   always-auth: false
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:46.7767832Z   check-latest: false
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:46.7777694Z   token: ***
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:46.7778602Z ##[endgroup]
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:46.9251057Z Found in cache @ /opt/hostedtoolcache/node/24.19.0/x64
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:46.9255980Z (node:2187) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:46.9379849Z (Use `node --trace-deprecation ...` to show where the warning was created)
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:46.9384016Z ##[group]Environment details
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:49.0484415Z node: v24.19.0
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:49.0485004Z npm: 11.17.0
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:49.0485388Z yarn: 1.22.22
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:49.0487056Z ##[endgroup]
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:49.0505871Z [command]/opt/hostedtoolcache/node/24.19.0/x64/bin/npm config get cache
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:49.3030342Z /home/runner/.npm
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:49.4100234Z Cache hit for: node-cache-Linux-x64-npm-3c2bed2e4d5560c16cd47e37968a04b8819d6133a5ba040e0974537bdfacd89f
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:49.4203159Z (node:2187) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:49.7267086Z Received 30192685 of 30192685 (100.0%), 110.7 MBs/sec
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:49.7268046Z Cache Size: ~29 MB (30192685 B)
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:49.7293121Z [command]/usr/bin/tar -xf /home/runner/work/_temp/ca83ee33-3e96-4ee4-8f33-41ab2685a671/cache.tzst -P -C /home/runner/work/motion5/motion5 --use-compress-program unzstd
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:49.8281683Z Cache restored successfully
+prettier --check	Run actions/setup-node@v4	2026-08-13T02:27:49.8300565Z Cache restored from key: node-cache-Linux-x64-npm-3c2bed2e4d5560c16cd47e37968a04b8819d6133a5ba040e0974537bdfacd89f
+prettier --check	Install locked dependencies	﻿2026-08-13T02:27:49.8494010Z ##[group]Run npm ci --ignore-scripts --no-audit --no-fund
+prettier --check	Install locked dependencies	2026-08-13T02:27:49.8494560Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund^[[0m
+prettier --check	Install locked dependencies	2026-08-13T02:27:49.8804565Z shell: /usr/bin/bash -e {0}
+prettier --check	Install locked dependencies	2026-08-13T02:27:49.8804894Z ##[endgroup]
+prettier --check	Install locked dependencies	2026-08-13T02:27:53.7692902Z 
+prettier --check	Install locked dependencies	2026-08-13T02:27:53.7700726Z added 219 packages in 4s
+prettier --check	Check formatting	﻿2026-08-13T02:27:53.8321660Z ##[group]Run npm run format:check
+prettier --check	Check formatting	2026-08-13T02:27:53.8322021Z ^[[36;1mnpm run format:check^[[0m
+prettier --check	Check formatting	2026-08-13T02:27:53.8364464Z shell: /usr/bin/bash -e {0}
+prettier --check	Check formatting	2026-08-13T02:27:53.8364754Z ##[endgroup]
+prettier --check	Check formatting	2026-08-13T02:27:53.9369701Z 
+prettier --check	Check formatting	2026-08-13T02:27:53.9370795Z > motion5@0.0.0 format:check
+prettier --check	Check formatting	2026-08-13T02:27:53.9371332Z > prettier . --check
+prettier --check	Check formatting	2026-08-13T02:27:53.9371501Z 
+prettier --check	Check formatting	2026-08-13T02:27:54.0432677Z Checking formatting...
+prettier --check	Check formatting	2026-08-13T02:27:54.1933293Z [^[[31merror^[[39m] .github/workflows/recovery-audit.yml: SyntaxError: All collection items must start at the same column (1:1)
+prettier --check	Check formatting	2026-08-13T02:27:54.1935021Z [^[[31merror^[[39m] ^[[0m^[[31m^[[1m>^[[22m^[[39m^[[90m  1 |^[[39m name^[[33m:^[[39m ^[[33mRecovery^[[39m audit
+prettier --check	Check formatting	2026-08-13T02:27:54.1938385Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1941027Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  2 |^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1941749Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1942441Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  3 |^[[39m on^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1942976Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1943539Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  4 |^[[39m   workflow_dispatch^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1944114Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1944664Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  5 |^[[39m     inputs^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1945156Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1945652Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  6 |^[[39m       ref^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1946133Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1946961Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  7 |^[[39m         description^[[33m:^[[39m ^[[33mBranch^[[39m^[[33m,^[[39m tag^[[33m,^[[39m or commit to audit
+prettier --check	Check formatting	2026-08-13T02:27:54.1947634Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1948214Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  8 |^[[39m         required^[[33m:^[[39m ^[[36mtrue^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1948742Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1949307Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  9 |^[[39m         ^[[36mdefault^[[39m^[[33m:^[[39m main
+prettier --check	Check formatting	2026-08-13T02:27:54.1949827Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1950668Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  10 |^[[39m         type^[[33m:^[[39m string
+prettier --check	Check formatting	2026-08-13T02:27:54.1951269Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1951794Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  11 |^[[39m       base^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1952354Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1953164Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  12 |^[[39m         description^[[33m:^[[39m ^[[33mBase^[[39m ^[[36mfor^[[39m failing^[[33m-^[[39mfirst comparison
+prettier --check	Check formatting	2026-08-13T02:27:54.1953830Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1954473Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  13 |^[[39m         required^[[33m:^[[39m ^[[36mfalse^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1955425Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1956143Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  14 |^[[39m         ^[[36mdefault^[[39m^[[33m:^[[39m ^[[32m''^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1956761Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1957426Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  15 |^[[39m         type^[[33m:^[[39m string
+prettier --check	Check formatting	2026-08-13T02:27:54.1958352Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1959394Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  16 |^[[39m       failing_first_exception^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1961171Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1962568Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  17 |^[[39m         description^[[33m:^[[39m ^[[33mDocumented^[[39m reason ^[[36mthis^[[39m ref adds no ^[[36mnew^[[39m behavioral test
+prettier --check	Check formatting	2026-08-13T02:27:54.1964130Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1965103Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  18 |^[[39m         required^[[33m:^[[39m ^[[36mfalse^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1965969Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1966941Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  19 |^[[39m         ^[[36mdefault^[[39m^[[33m:^[[39m ^[[32m''^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1967840Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1968713Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  20 |^[[39m         type^[[33m:^[[39m string
+prettier --check	Check formatting	2026-08-13T02:27:54.1969547Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1970455Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  21 |^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1971128Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1971968Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  22 |^[[39m permissions^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1972801Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1973718Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  23 |^[[39m   contents^[[33m:^[[39m read
+prettier --check	Check formatting	2026-08-13T02:27:54.1974594Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1975326Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  24 |^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1976049Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1976854Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  25 |^[[39m env^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1977627Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1978689Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  26 |^[[39m   ^[[33mNODE_VERSION^[[39m^[[33m:^[[39m ^[[35m24^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1979660Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1980668Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  27 |^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1981410Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1982259Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  28 |^[[39m jobs^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1983074Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1983953Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  29 |^[[39m   contract^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1984777Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1985770Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  30 |^[[39m     name^[[33m:^[[39m contract surfaces
+prettier --check	Check formatting	2026-08-13T02:27:54.1986717Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1987818Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  31 |^[[39m     runs^[[33m-^[[39mon^[[33m:^[[39m ubuntu^[[33m-^[[39mlatest
+prettier --check	Check formatting	2026-08-13T02:27:54.1988811Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1989909Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  32 |^[[39m     timeout^[[33m-^[[39mminutes^[[33m:^[[39m ^[[35m25^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1991098Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1991931Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  33 |^[[39m     steps^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1992804Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1993990Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  34 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39mcheckout^[[33m@^[[39mv4
+prettier --check	Check formatting	2026-08-13T02:27:54.1994985Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1995875Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  35 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1996732Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.1998129Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  36 |^[[39m           ref^[[33m:^[[39m ${{ inputs^[[33m.^[[39mref }}
+prettier --check	Check formatting	2026-08-13T02:27:54.1999072Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2000337Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  37 |^[[39m           fetch^[[33m-^[[39mdepth^[[33m:^[[39m ^[[35m0^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2001314Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2002878Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  38 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39msetup^[[33m-^[[39mnode^[[33m@^[[39mv4
+prettier --check	Check formatting	2026-08-13T02:27:54.2003996Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2004931Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  39 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2005794Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2007141Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  40 |^[[39m           node^[[33m-^[[39mversion^[[33m:^[[39m ${{ env^[[33m.^[[39m^[[33mNODE_VERSION^[[39m }}
+prettier --check	Check formatting	2026-08-13T02:27:54.2008295Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2009214Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  41 |^[[39m           cache^[[33m:^[[39m npm
+prettier --check	Check formatting	2026-08-13T02:27:54.2010282Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2012020Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  42 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m npm ci ^[[33m--^[[39mignore^[[33m-^[[39mscripts ^[[33m--^[[39mno^[[33m-^[[39maudit ^[[33m--^[[39mno^[[33m-^[[39mfund
+prettier --check	Check formatting	2026-08-13T02:27:54.2013396Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2014584Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  43 |^[[39m       ^[[33m-^[[39m name^[[33m:^[[39m ^[[33mRun^[[39m contract surfaces
+prettier --check	Check formatting	2026-08-13T02:27:54.2015590Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2016529Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  44 |^[[39m         run^[[33m:^[[39m ^[[33m|^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2017389Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2018448Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  45 |^[[39m           ^[[36mset^[[39m ^[[33m-^[[39muo pipefail
+prettier --check	Check formatting	2026-08-13T02:27:54.2019372Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2020795Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  46 |^[[39m           mkdir ^[[33m-^[[39mp audit^[[33m-^[[39mlogs audit^[[33m-^[[39mfragments
+prettier --check	Check formatting	2026-08-13T02:27:54.2021866Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2022856Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  47 |^[[39m           failed^[[33m=^[[39m^[[35m0^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2023745Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2028522Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  48 |^[[39m           run_suite() { name^[[33m=^[[39m^[[32m"$1"^[[39m^[[33m;^[[39m shift^[[33m;^[[39m ^[[36mif^[[39m ^[[32m"$@"^[[39m ^[[33m>^[[39m ^[[32m"audit-logs/$name.log"^[[39m ^[[35m2^[[39m^[[33m>^[[39m^[[33m&^[[39m^[[35m1^[[39m^[[33m;^[[39m then echo ^[[32m"- $name: pass"^[[39m ^[[33m>>^[[39m audit^[[33m-^[[39mfragments^[[33m/^[[39m^[[35m10^[[39m^[[33m-^[[39mcontract^[[33m.^[[39mmd^[[33m;^[[39m ^[[36melse^[[39m echo ^[[32m"- $name: FAIL"^[[39m ^[[33m>>^[[39m audit^[[33m-^[[39mfragments^[[33m/^[[39m^[[35m10^[[39m^[[33m-^[[39mcontract^[[33m.^[[39mmd^[[33m;^[[39m failed^[[33m=^[[39m^[[35m1^[[39m^[[33m;^[[39m fi^[[33m;^[[39m }
+prettier --check	Check formatting	2026-08-13T02:27:54.2032255Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2034000Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  49 |^[[39m           echo ^[[32m"## contract"^[[39m ^[[33m>^[[39m audit^[[33m-^[[39mfragments^[[33m/^[[39m^[[35m10^[[39m^[[33m-^[[39mcontract^[[33m.^[[39mmd
+prettier --check	Check formatting	2026-08-13T02:27:54.2035349Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2036584Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  50 |^[[39m           run_suite gsap^[[33m-^[[39mcontract npm run test^[[33m:^[[39mcontract
+prettier --check	Check formatting	2026-08-13T02:27:54.2037633Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2039818Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  51 |^[[39m           run_suite dom^[[33m-^[[39mcontract npx vitest run packages^[[33m/^[[39mcore^[[33m/^[[39mtest^[[33m/^[[39mintegration^[[33m/^[[39mdom^[[33m-^[[39mpatch^[[33m-^[[39mapply^[[33m.^[[39mtest^[[33m.^[[39mts
+prettier --check	Check formatting	2026-08-13T02:27:54.2042115Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2043567Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  52 |^[[39m           run_suite react^[[33m-^[[39mlifecycle npx vitest run packages^[[33m/^[[39mreact^[[33m/^[[39mtest
+prettier --check	Check formatting	2026-08-13T02:27:54.2045109Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2046312Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  53 |^[[39m           run_suite boundaries npm run test^[[33m:^[[39mboundaries
+prettier --check	Check formatting	2026-08-13T02:27:54.2047353Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2049613Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  54 |^[[39m           run_suite end^[[33m-^[[39mto^[[33m-^[[39mend npx vitest run packages^[[33m/^[[39mcore^[[33m/^[[39mtest^[[33m/^[[39mintegration^[[33m/^[[39mend^[[33m-^[[39mto^[[33m-^[[39mend^[[33m.^[[39mtest^[[33m.^[[39mts
+prettier --check	Check formatting	2026-08-13T02:27:54.2051601Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2052968Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  55 |^[[39m           echo ^[[32m"CONTRACT_FAILED=$failed"^[[39m ^[[33m>>^[[39m ^[[32m"$GITHUB_ENV"^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2054098Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2055183Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  56 |^[[39m       ^[[33m-^[[39m ^[[36mif^[[39m^[[33m:^[[39m always()
+prettier --check	Check formatting	2026-08-13T02:27:54.2056112Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2057456Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  57 |^[[39m         uses^[[33m:^[[39m actions^[[33m/^[[39mupload^[[33m-^[[39martifact^[[33m@^[[39mv4
+prettier --check	Check formatting	2026-08-13T02:27:54.2058594Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2059586Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  58 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2060772Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2062298Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  59 |^[[39m           name^[[33m:^[[39m recovery^[[33m-^[[39maudit^[[33m-^[[39mcontract^[[33m-^[[39m${{ github^[[33m.^[[39mrun_id }}
+prettier --check	Check formatting	2026-08-13T02:27:54.2063554Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2064548Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  60 |^[[39m           path^[[33m:^[[39m ^[[33m|^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2065442Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2066489Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  61 |^[[39m             audit^[[33m-^[[39mfragments^[[33m/^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2067420Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2068430Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  62 |^[[39m             audit^[[33m-^[[39mlogs^[[33m/^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2069353Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2070864Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  63 |^[[39m           ^[[36mif^[[39m^[[33m-^[[39mno^[[33m-^[[39mfiles^[[33m-^[[39mfound^[[33m:^[[39m warn
+prettier --check	Check formatting	2026-08-13T02:27:54.2071951Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2073006Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  64 |^[[39m       ^[[33m-^[[39m ^[[36mif^[[39m^[[33m:^[[39m always()
+prettier --check	Check formatting	2026-08-13T02:27:54.2073935Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2075270Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  65 |^[[39m         run^[[33m:^[[39m test ^[[32m"${CONTRACT_FAILED:-1}"^[[39m ^[[33m=^[[39m ^[[35m0^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2076385Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2077133Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  66 |^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2077883Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2078751Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  67 |^[[39m   mutation^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2079570Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2081020Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  68 |^[[39m     name^[[33m:^[[39m mutation baseline
+prettier --check	Check formatting	2026-08-13T02:27:54.2081928Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2083033Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  69 |^[[39m     runs^[[33m-^[[39mon^[[33m:^[[39m ubuntu^[[33m-^[[39mlatest
+prettier --check	Check formatting	2026-08-13T02:27:54.2084213Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2085313Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  70 |^[[39m     timeout^[[33m-^[[39mminutes^[[33m:^[[39m ^[[35m60^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2086297Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2087160Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  71 |^[[39m     steps^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2087993Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2089215Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  72 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39mcheckout^[[33m@^[[39mv4
+prettier --check	Check formatting	2026-08-13T02:27:54.2091144Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2092134Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  73 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2093014Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2094084Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  74 |^[[39m           ref^[[33m:^[[39m ${{ inputs^[[33m.^[[39mref }}
+prettier --check	Check formatting	2026-08-13T02:27:54.2095064Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2096145Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  75 |^[[39m           fetch^[[33m-^[[39mdepth^[[33m:^[[39m ^[[35m0^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2097103Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2098399Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  76 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39msetup^[[33m-^[[39mnode^[[33m@^[[39mv4
+prettier --check	Check formatting	2026-08-13T02:27:54.2099505Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2100696Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  77 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2101628Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2102910Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  78 |^[[39m           node^[[33m-^[[39mversion^[[33m:^[[39m ${{ env^[[33m.^[[39m^[[33mNODE_VERSION^[[39m }}
+prettier --check	Check formatting	2026-08-13T02:27:54.2104080Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2105037Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  79 |^[[39m           cache^[[33m:^[[39m npm
+prettier --check	Check formatting	2026-08-13T02:27:54.2105911Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2107639Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  80 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m npm ci ^[[33m--^[[39mignore^[[33m-^[[39mscripts ^[[33m--^[[39mno^[[33m-^[[39maudit ^[[33m--^[[39mno^[[33m-^[[39mfund
+prettier --check	Check formatting	2026-08-13T02:27:54.2108991Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2110779Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  81 |^[[39m       ^[[33m-^[[39m name^[[33m:^[[39m ^[[33mRun^[[39m ^[[33mStryker^[[39m and verify its score
+prettier --check	Check formatting	2026-08-13T02:27:54.2111920Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2112883Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  82 |^[[39m         run^[[33m:^[[39m ^[[33m|^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2113751Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2114872Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  83 |^[[39m           ^[[36mset^[[39m ^[[33m-^[[39muo pipefail
+prettier --check	Check formatting	2026-08-13T02:27:54.2115831Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2117052Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  84 |^[[39m           mkdir ^[[33m-^[[39mp audit^[[33m-^[[39mlogs audit^[[33m-^[[39mfragments
+prettier --check	Check formatting	2026-08-13T02:27:54.2118142Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2119139Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  85 |^[[39m           failed^[[33m=^[[39m^[[35m0^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2120261Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2125047Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  86 |^[[39m           ^[[36mif^[[39m npx stryker run ^[[33m>^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39mmutation^[[33m.^[[39mlog ^[[35m2^[[39m^[[33m>^[[39m^[[33m&^[[39m^[[35m1^[[39m^[[33m;^[[39m then echo ^[[32m"- stryker run: pass"^[[39m ^[[33m>^[[39m audit^[[33m-^[[39mfragments^[[33m/^[[39m^[[35m20^[[39m^[[33m-^[[39mmutation^[[33m.^[[39mmd^[[33m;^[[39m ^[[36melse^[[39m echo ^[[32m"- stryker run: FAIL"^[[39m ^[[33m>^[[39m audit^[[33m-^[[39mfragments^[[33m/^[[39m^[[35m20^[[39m^[[33m-^[[39mmutation^[[33m.^[[39mmd^[[33m;^[[39m failed^[[33m=^[[39m^[[35m1^[[39m^[[33m;^[[39m fi
+prettier --check	Check formatting	2026-08-13T02:27:54.2128565Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2130449Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  87 |^[[39m           ^[[36mif^[[39m test ^[[33m-^[[39me reports^[[33m/^[[39mmutation^[[33m/^[[39mmutation^[[33m.^[[39mjson^[[33m;^[[39m then
+prettier --check	Check formatting	2026-08-13T02:27:54.2131798Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2133958Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  88 |^[[39m             node ^[[33m--^[[39minput^[[33m-^[[39mtype^[[33m=^[[39mmodule ^[[33m>>^[[39m audit^[[33m-^[[39mfragments^[[33m/^[[39m^[[35m20^[[39m^[[33m-^[[39mmutation^[[33m.^[[39mmd ^[[33m<<^[[39m^[[32m'NODE'^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2135644Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2137064Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  89 |^[[39m           ^[[36mimport^[[39m { readFile } ^[[36mfrom^[[39m ^[[32m"node:fs/promises"^[[39m^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2138243Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2139934Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  90 |^[[39m           ^[[36mconst^[[39m report ^[[33m=^[[39m ^[[33mJSON^[[39m^[[33m.^[[39mparse(^[[36mawait^[[39m readFile(^[[32m"reports/mutation/mutation.json"^[[39m^[[33m,^[[39m ^[[32m"utf8"^[[39m))^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2141114Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2142464Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  91 |^[[39m           ^[[36mconst^[[39m mutants ^[[33m=^[[39m ^[[33mObject^[[39m^[[33m.^[[39mvalues(report^[[33m.^[[39mfiles ^[[33m?^[[39m^[[33m?^[[39m {})^[[33m.^[[39mflatMap((file) ^[[33m=>^[[39m file^[[33m.^[[39mmutants ^[[33m?^[[39m^[[33m?^[[39m [])^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2143478Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2144701Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  92 |^[[39m           ^[[36mconst^[[39m counts ^[[33m=^[[39m ^[[33mObject^[[39m^[[33m.^[[39mgroupBy(mutants^[[33m,^[[39m (mutant) ^[[33m=>^[[39m mutant^[[33m.^[[39mstatus ^[[33m?^[[39m^[[33m?^[[39m ^[[32m"Unknown"^[[39m)^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2145646Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2146604Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  93 |^[[39m           ^[[36mconst^[[39m count ^[[33m=^[[39m (status) ^[[33m=>^[[39m (counts[status] ^[[33m?^[[39m^[[33m?^[[39m [])^[[33m.^[[39mlength^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2147380Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2149688Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  94 |^[[39m           ^[[36mconst^[[39m killed ^[[33m=^[[39m count(^[[32m"Killed"^[[39m)^[[33m,^[[39m survived ^[[33m=^[[39m count(^[[32m"Survived"^[[39m)^[[33m,^[[39m timeout ^[[33m=^[[39m count(^[[32m"Timeout"^[[39m)^[[33m,^[[39m noCoverage ^[[33m=^[[39m count(^[[32m"NoCoverage"^[[39m)^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2151464Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2152362Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  95 |^[[39m           ^[[36mconst^[[39m denominator ^[[33m=^[[39m killed ^[[33m+^[[39m survived ^[[33m+^[[39m timeout^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2153078Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2154271Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  96 |^[[39m           ^[[36mconst^[[39m derived ^[[33m=^[[39m denominator ^[[33m?^[[39m (killed ^[[33m/^[[39m denominator) ^[[33m*^[[39m ^[[35m100^[[39m ^[[33m:^[[39m ^[[33mNumber^[[39m^[[33m.^[[39m^[[33mNaN^[[39m^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2155156Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2156593Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  97 |^[[39m           ^[[36mconst^[[39m reported ^[[33m=^[[39m ^[[33mNumber^[[39m(report^[[33m.^[[39mmetrics^[[33m?^[[39m^[[33m.^[[39mmutationScore ^[[33m?^[[39m^[[33m?^[[39m report^[[33m.^[[39mmutationScore)^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2157734Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2160586Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  98 |^[[39m           ^[[36mconst^[[39m score ^[[33m=^[[39m ^[[33mNumber^[[39m^[[33m.^[[39misFinite(reported) ^[[33m?^[[39m (reported ^[[33m<=^[[39m ^[[35m1^[[39m ^[[33m?^[[39m reported ^[[33m*^[[39m ^[[35m100^[[39m ^[[33m:^[[39m reported) ^[[33m:^[[39m derived^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2162485Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2164538Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  99 |^[[39m           ^[[36mconst^[[39m threshold ^[[33m=^[[39m ^[[33mNumber^[[39m(report^[[33m.^[[39mthresholds^[[33m?^[[39m^[[33m.^[[39m^[[36mbreak^[[39m ^[[33m?^[[39m^[[33m?^[[39m ^[[35m0^[[39m)^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2166129Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2168110Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 100 |^[[39m           console^[[33m.^[[39mlog(^[[32m`- mutation counts: killed=${killed}, survived=${survived}, timeout=${timeout}, noCoverage=${noCoverage}`^[[39m)^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2169439Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2171811Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 101 |^[[39m           console^[[33m.^[[39mlog(^[[32m`- mutation score: ${Number.isFinite(score) ? score.toFixed(2) : "unavailable"}%`^[[39m)^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2173276Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2174773Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 102 |^[[39m           console^[[33m.^[[39mlog(^[[32m`- mutation threshold: ${threshold.toFixed(2)}%`^[[39m)^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2176001Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2178176Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 103 |^[[39m           ^[[36mif^[[39m (^[[33m!^[[39m^[[33mNumber^[[39m^[[33m.^[[39misFinite(score) ^[[33m||^[[39m score ^[[33m<^[[39m threshold) process^[[33m.^[[39mexitCode ^[[33m=^[[39m ^[[35m1^[[39m^[[33m;^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2179777Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2180890Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 104 |^[[39m           ^[[33mNODE^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2181736Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2183358Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 105 |^[[39m             ^[[36mif^[[39m test ^[[32m"$?"^[[39m ^[[33m-^[[39mne ^[[35m0^[[39m^[[33m;^[[39m then failed^[[33m=^[[39m^[[35m1^[[39m^[[33m;^[[39m fi
+prettier --check	Check formatting	2026-08-13T02:27:54.2184630Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2185528Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 106 |^[[39m           ^[[36melse^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2186365Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2188256Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 107 |^[[39m             echo ^[[32m"- mutation report: MISSING"^[[39m ^[[33m>>^[[39m audit^[[33m-^[[39mfragments^[[33m/^[[39m^[[35m20^[[39m^[[33m-^[[39mmutation^[[33m.^[[39mmd
+prettier --check	Check formatting	2026-08-13T02:27:54.2189700Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2190958Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 108 |^[[39m             failed^[[33m=^[[39m^[[35m1^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2192093Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2192645Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 109 |^[[39m           fi
+prettier --check	Check formatting	2026-08-13T02:27:54.2193131Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2193911Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 110 |^[[39m           echo ^[[32m"MUTATION_FAILED=$failed"^[[39m ^[[33m>>^[[39m ^[[32m"$GITHUB_ENV"^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2194553Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2195442Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 111 |^[[39m       ^[[33m-^[[39m ^[[36mif^[[39m^[[33m:^[[39m always()
+prettier --check	Check formatting	2026-08-13T02:27:54.2195983Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2196704Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 112 |^[[39m         uses^[[33m:^[[39m actions^[[33m/^[[39mupload^[[33m-^[[39martifact^[[33m@^[[39mv4
+prettier --check	Check formatting	2026-08-13T02:27:54.2197452Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2197985Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 113 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2198484Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2199327Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 114 |^[[39m           name^[[33m:^[[39m recovery^[[33m-^[[39maudit^[[33m-^[[39mmutation^[[33m-^[[39m${{ github^[[33m.^[[39mrun_id }}
+prettier --check	Check formatting	2026-08-13T02:27:54.2210535Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2211759Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 115 |^[[39m           path^[[33m:^[[39m ^[[33m|^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2212666Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2213736Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 116 |^[[39m             audit^[[33m-^[[39mfragments^[[33m/^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2214661Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2215673Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 117 |^[[39m             audit^[[33m-^[[39mlogs^[[33m/^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2216590Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2217638Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 118 |^[[39m             reports^[[33m/^[[39mmutation^[[33m/^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2218578Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2219918Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 119 |^[[39m           ^[[36mif^[[39m^[[33m-^[[39mno^[[33m-^[[39mfiles^[[33m-^[[39mfound^[[33m:^[[39m warn
+prettier --check	Check formatting	2026-08-13T02:27:54.2221269Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2222382Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 120 |^[[39m       ^[[33m-^[[39m ^[[36mif^[[39m^[[33m:^[[39m always()
+prettier --check	Check formatting	2026-08-13T02:27:54.2223328Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2224639Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 121 |^[[39m         run^[[33m:^[[39m test ^[[32m"${MUTATION_FAILED:-1}"^[[39m ^[[33m=^[[39m ^[[35m0^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2225725Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2226455Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 122 |^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2227194Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2228096Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 123 |^[[39m   acceptance^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2228941Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2229923Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 124 |^[[39m     name^[[33m:^[[39m acceptance mapping
+prettier --check	Check formatting	2026-08-13T02:27:54.2231046Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2232159Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 125 |^[[39m     runs^[[33m-^[[39mon^[[33m:^[[39m ubuntu^[[33m-^[[39mlatest
+prettier --check	Check formatting	2026-08-13T02:27:54.2233133Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2233998Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 126 |^[[39m     steps^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2234823Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2236034Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 127 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39mcheckout^[[33m@^[[39mv4
+prettier --check	Check formatting	2026-08-13T02:27:54.2237058Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2237974Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 128 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2238838Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2239905Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 129 |^[[39m           ref^[[33m:^[[39m ${{ inputs^[[33m.^[[39mref }}
+prettier --check	Check formatting	2026-08-13T02:27:54.2241356Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2242684Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 130 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39msetup^[[33m-^[[39mnode^[[33m@^[[39mv4
+prettier --check	Check formatting	2026-08-13T02:27:54.2243781Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2244714Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 131 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2245755Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2247084Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 132 |^[[39m           node^[[33m-^[[39mversion^[[33m:^[[39m ${{ env^[[33m.^[[39m^[[33mNODE_VERSION^[[39m }}
+prettier --check	Check formatting	2026-08-13T02:27:54.2248175Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2249095Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 133 |^[[39m           cache^[[33m:^[[39m npm
+prettier --check	Check formatting	2026-08-13T02:27:54.2250173Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2251891Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 134 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m npm ci ^[[33m--^[[39mignore^[[33m-^[[39mscripts ^[[33m--^[[39mno^[[33m-^[[39maudit ^[[33m--^[[39mno^[[33m-^[[39mfund
+prettier --check	Check formatting	2026-08-13T02:27:54.2253217Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2254615Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 135 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m node scripts^[[33m/^[[39macceptance^[[33m-^[[39mscan^[[33m.^[[39mmjs
+prettier --check	Check formatting	2026-08-13T02:27:54.2255768Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2256502Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 136 |^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2257226Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2258194Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 137 |^[[39m   failing^[[33m-^[[39mfirst^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2259097Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2260334Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 138 |^[[39m     name^[[33m:^[[39m failing^[[33m-^[[39mfirst evidence
+prettier --check	Check formatting	2026-08-13T02:27:54.2261296Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2262399Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 139 |^[[39m     runs^[[33m-^[[39mon^[[33m:^[[39m ubuntu^[[33m-^[[39mlatest
+prettier --check	Check formatting	2026-08-13T02:27:54.2263369Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2264634Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 140 |^[[39m     env^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2265456Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2266638Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 141 |^[[39m       ^[[33mAUDIT_BASE^[[39m^[[33m:^[[39m ${{ inputs^[[33m.^[[39mbase }}
+prettier --check	Check formatting	2026-08-13T02:27:54.2267654Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2268525Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 142 |^[[39m     steps^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2269355Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2270707Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 143 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39mcheckout^[[33m@^[[39mv4
+prettier --check	Check formatting	2026-08-13T02:27:54.2271726Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2272638Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 144 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2273513Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2274559Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 145 |^[[39m           ref^[[33m:^[[39m ${{ inputs^[[33m.^[[39mref }}
+prettier --check	Check formatting	2026-08-13T02:27:54.2275464Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2276514Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 146 |^[[39m           fetch^[[33m-^[[39mdepth^[[33m:^[[39m ^[[35m0^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2277437Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2278719Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 147 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39msetup^[[33m-^[[39mnode^[[33m@^[[39mv4
+prettier --check	Check formatting	2026-08-13T02:27:54.2280207Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2281148Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 148 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2282020Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2283357Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 149 |^[[39m           node^[[33m-^[[39mversion^[[33m:^[[39m ${{ env^[[33m.^[[39m^[[33mNODE_VERSION^[[39m }}
+prettier --check	Check formatting	2026-08-13T02:27:54.2284622Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2285548Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 150 |^[[39m           cache^[[33m:^[[39m npm
+prettier --check	Check formatting	2026-08-13T02:27:54.2286404Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2287767Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 151 |^[[39m       ^[[33m-^[[39m name^[[33m:^[[39m ^[[33mReplay^[[39m ^[[36mnew^[[39m tests against base and ref
+prettier --check	Check formatting	2026-08-13T02:27:54.2288877Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2289834Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 152 |^[[39m         run^[[33m:^[[39m ^[[33m|^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2291066Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2292053Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 153 |^[[39m           ^[[36mset^[[39m ^[[33m-^[[39meuo pipefail
+prettier --check	Check formatting	2026-08-13T02:27:54.2292967Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2294025Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 154 |^[[39m           mkdir ^[[33m-^[[39mp audit^[[33m-^[[39mlogs
+prettier --check	Check formatting	2026-08-13T02:27:54.2294974Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2296183Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 155 |^[[39m           ref_sha^[[33m=^[[39m$(git rev^[[33m-^[[39mparse ^[[33mHEAD^[[39m)
+prettier --check	Check formatting	2026-08-13T02:27:54.2297222Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2298826Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 156 |^[[39m           base_sha^[[33m=^[[39m${^[[33mAUDIT_BASE^[[39m^[[33m:^[[39m^[[33m+^[[39m$(git rev^[[33m-^[[39mparse ^[[32m"$AUDIT_BASE"^[[39m)}
+prettier --check	Check formatting	2026-08-13T02:27:54.2300322Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2301873Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 157 |^[[39m           base_sha^[[33m=^[[39m${base_sha^[[33m:^[[39m^[[33m-^[[39m$(git rev^[[33m-^[[39mparse ^[[33mHEAD^[[39m^[[33m^^[[39m)}
+prettier --check	Check formatting	2026-08-13T02:27:54.2303071Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2305660Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 158 |^[[39m           git diff ^[[33m--^[[39mname^[[33m-^[[39monly ^[[33m--^[[39mdiff^[[33m-^[[39mfilter^[[33m=^[[39m^[[33mAM^[[39m ^[[32m"$base_sha"^[[39m ^[[32m"$ref_sha"^[[39m ^[[33m--^[[39m ^[[32m'*.test.ts'^[[39m ^[[33m>^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39m^[[36mnew^[[39m^[[33m-^[[39mtests^[[33m.^[[39mtxt
+prettier --check	Check formatting	2026-08-13T02:27:54.2307528Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2308913Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 159 |^[[39m           test ^[[33m-^[[39ms audit^[[33m-^[[39mlogs^[[33m/^[[39m^[[36mnew^[[39m^[[33m-^[[39mtests^[[33m.^[[39mtxt
+prettier --check	Check formatting	2026-08-13T02:27:54.2310348Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2311468Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 160 |^[[39m           git checkout ^[[33m-^[[39mf ^[[32m"$base_sha"^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2312444Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2313579Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 161 |^[[39m ^[[33m<<^[[39m^[[33m<<^[[39m^[[33m<<^[[39m^[[33m<^[[39m ^[[33mHEAD^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2314581Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2315508Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 162 |^[[39m ^[[33m===^[[39m^[[33m===^[[39m^[[33m=^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2316393Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2318423Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 163 |^[[39m           ^[[33m#^[[39m ^[[33mReplay^[[39m the whole test tree^[[33m,^[[39m not only the spec files^[[33m.^[[39m ^[[33mSeams^[[39m^[[33m,^[[39m helpers^[[33m,^[[39m and fixtures ^[[36mdo^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2320544Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2322267Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 164 |^[[39m           ^[[33m#^[[39m not match ^[[32m'*.test.ts'^[[39m^[[33m,^[[39m so checking out the spec alone leaves it calling a base^[[33m-^[[39mera
+prettier --check	Check formatting	2026-08-13T02:27:54.2323610Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2325740Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 165 |^[[39m           ^[[33m#^[[39m helper^[[33m:^[[39m the base leg then reds ^[[36mwith^[[39m a ^[[33mTypeError^[[39m instead ^[[36mof^[[39m ^[[36mwith^[[39m the behavioral
+prettier --check	Check formatting	2026-08-13T02:27:54.2327208Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2328811Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 166 |^[[39m           ^[[33m#^[[39m assertion the slice exists to prove^[[33m,^[[39m which is evidence ^[[36mof^[[39m nothing^[[33m.^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2330282Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2331845Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 167 |^[[39m ^[[33m>>>^[[39m^[[33m>>>^[[39m^[[33m>^[[39m origin^[[33m/^[[39mrescue^[[33m/^[[39mrestore^[[33m-^[[39mmotionpath^[[33m-^[[39mparity
+prettier --check	Check formatting	2026-08-13T02:27:54.2333106Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2334447Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 168 |^[[39m           git checkout ^[[32m"$ref_sha"^[[39m ^[[33m--^[[39m ^[[32m'packages/*/test/*'^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2335599Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2337432Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 169 |^[[39m           xargs ^[[33m-^[[39ma audit^[[33m-^[[39mlogs^[[33m/^[[39m^[[36mnew^[[39m^[[33m-^[[39mtests^[[33m.^[[39mtxt git checkout ^[[32m"$ref_sha"^[[39m ^[[33m--^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2338878Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2340914Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 170 |^[[39m           git diff ^[[33m--^[[39mname^[[33m-^[[39monly ^[[32m"$base_sha"^[[39m ^[[33m>^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39mreplayed^[[33m-^[[39mfiles^[[33m.^[[39mtxt
+prettier --check	Check formatting	2026-08-13T02:27:54.2342332Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2344839Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 171 |^[[39m           npm ci ^[[33m--^[[39mignore^[[33m-^[[39mscripts ^[[33m--^[[39mno^[[33m-^[[39maudit ^[[33m--^[[39mno^[[33m-^[[39mfund ^[[33m>^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39mbase^[[33m-^[[39minstall^[[33m.^[[39mlog ^[[35m2^[[39m^[[33m>^[[39m^[[33m&^[[39m^[[35m1^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2346737Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2349643Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 172 |^[[39m           ^[[36mif^[[39m xargs ^[[33m-^[[39ma audit^[[33m-^[[39mlogs^[[33m/^[[39m^[[36mnew^[[39m^[[33m-^[[39mtests^[[33m.^[[39mtxt npx vitest run ^[[33m>^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39mbase^[[33m-^[[39mrun^[[33m.^[[39mlog ^[[35m2^[[39m^[[33m>^[[39m^[[33m&^[[39m^[[35m1^[[39m^[[33m;^[[39m then exit ^[[35m1^[[39m^[[33m;^[[39m fi
+prettier --check	Check formatting	2026-08-13T02:27:54.2352069Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2353215Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 173 |^[[39m           git checkout ^[[33m-^[[39mf ^[[32m"$ref_sha"^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2354195Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2356606Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 174 |^[[39m           npm ci ^[[33m--^[[39mignore^[[33m-^[[39mscripts ^[[33m--^[[39mno^[[33m-^[[39maudit ^[[33m--^[[39mno^[[33m-^[[39mfund ^[[33m>^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39mref^[[33m-^[[39minstall^[[33m.^[[39mlog ^[[35m2^[[39m^[[33m>^[[39m^[[33m&^[[39m^[[35m1^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2358527Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2361240Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 175 |^[[39m           xargs ^[[33m-^[[39ma audit^[[33m-^[[39mlogs^[[33m/^[[39m^[[36mnew^[[39m^[[33m-^[[39mtests^[[33m.^[[39mtxt npx vitest run ^[[33m>^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39mref^[[33m-^[[39mrun^[[33m.^[[39mlog ^[[35m2^[[39m^[[33m>^[[39m^[[33m&^[[39m^[[35m1^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2363368Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2364474Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 176 |^[[39m       ^[[33m-^[[39m ^[[36mif^[[39m^[[33m:^[[39m always()
+prettier --check	Check formatting	2026-08-13T02:27:54.2365420Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2366710Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 177 |^[[39m         uses^[[33m:^[[39m actions^[[33m/^[[39mupload^[[33m-^[[39martifact^[[33m@^[[39mv4
+prettier --check	Check formatting	2026-08-13T02:27:54.2368001Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2368930Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 178 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2369798Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2371647Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 179 |^[[39m           name^[[33m:^[[39m recovery^[[33m-^[[39maudit^[[33m-^[[39mfailing^[[33m-^[[39mfirst^[[33m-^[[39m${{ github^[[33m.^[[39mrun_id }}
+prettier --check	Check formatting	2026-08-13T02:27:54.2372950Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2374098Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 180 |^[[39m           path^[[33m:^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2375081Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2376383Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 181 |^[[39m           ^[[36mif^[[39m^[[33m-^[[39mno^[[33m-^[[39mfiles^[[33m-^[[39mfound^[[33m:^[[39m warn
+prettier --check	Check formatting	2026-08-13T02:27:54.2377474Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2378212Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 182 |^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2378917Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2379791Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 183 |^[[39m   build^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2380849Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2381851Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 184 |^[[39m     name^[[33m:^[[39m declaration build
+prettier --check	Check formatting	2026-08-13T02:27:54.2382759Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2383850Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 185 |^[[39m     runs^[[33m-^[[39mon^[[33m:^[[39m ubuntu^[[33m-^[[39mlatest
+prettier --check	Check formatting	2026-08-13T02:27:54.2384809Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2385679Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 186 |^[[39m     steps^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2386473Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2387708Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 187 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39mcheckout^[[33m@^[[39mv4
+prettier --check	Check formatting	2026-08-13T02:27:54.2388739Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2389665Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 188 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2390819Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2391890Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 189 |^[[39m           ref^[[33m:^[[39m ${{ inputs^[[33m.^[[39mref }}
+prettier --check	Check formatting	2026-08-13T02:27:54.2392879Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2394188Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 190 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39msetup^[[33m-^[[39mnode^[[33m@^[[39mv4
+prettier --check	Check formatting	2026-08-13T02:27:54.2395330Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2396275Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 191 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2397157Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2398495Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 192 |^[[39m           node^[[33m-^[[39mversion^[[33m:^[[39m ${{ env^[[33m.^[[39m^[[33mNODE_VERSION^[[39m }}
+prettier --check	Check formatting	2026-08-13T02:27:54.2399654Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2400824Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 193 |^[[39m           cache^[[33m:^[[39m npm
+prettier --check	Check formatting	2026-08-13T02:27:54.2401720Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2403773Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 194 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m npm ci ^[[33m--^[[39mignore^[[33m-^[[39mscripts ^[[33m--^[[39mno^[[33m-^[[39maudit ^[[33m--^[[39mno^[[33m-^[[39mfund
+prettier --check	Check formatting	2026-08-13T02:27:54.2405176Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2407431Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 195 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m npx tsc ^[[33m-^[[39mp tsconfig^[[33m.^[[39mjson ^[[33m--^[[39mdeclaration ^[[33m--^[[39memitDeclarationOnly ^[[33m--^[[39mnoEmit ^[[36mfalse^[[39m ^[[33m--^[[39moutDir dist^[[33m-^[[39maudit
+prettier --check	Check formatting	2026-08-13T02:27:54.2409412Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2410336Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 196 |^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2411050Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2411891Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 197 |^[[39m   report^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2441090Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2442123Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 198 |^[[39m     name^[[33m:^[[39m audit report
+prettier --check	Check formatting	2026-08-13T02:27:54.2443051Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2444185Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 199 |^[[39m     runs^[[33m-^[[39mon^[[33m:^[[39m ubuntu^[[33m-^[[39mlatest
+prettier --check	Check formatting	2026-08-13T02:27:54.2445163Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2446803Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 200 |^[[39m     needs^[[33m:^[[39m [contract^[[33m,^[[39m mutation^[[33m,^[[39m acceptance^[[33m,^[[39m failing^[[33m-^[[39mfirst^[[33m,^[[39m build]
+prettier --check	Check formatting	2026-08-13T02:27:54.2448108Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2449018Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 201 |^[[39m     ^[[36mif^[[39m^[[33m:^[[39m always()
+prettier --check	Check formatting	2026-08-13T02:27:54.2449859Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2450909Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 202 |^[[39m     steps^[[33m:^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2451766Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2453194Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 203 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m echo ^[[32m"Recovery audit completed for ${{ inputs.ref }}"^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2454428Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2455188Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 204 |^[[39m
+prettier --check	Check formatting	2026-08-13T02:27:54.2455682Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m^[[0m
+prettier --check	Check formatting	2026-08-13T02:27:55.9921811Z [^[[33mwarn^[[39m] progress/STATUS.md
+prettier --check	Check formatting	2026-08-13T02:27:56.0889567Z Error occurred when checking code style in the above file.
+prettier --check	Check formatting	2026-08-13T02:27:56.1253542Z ##[error]Process completed with exit code 2.
+prettier --check	Post Run actions/checkout@v4	﻿2026-08-13T02:27:56.1397451Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+prettier --check	Post Run actions/checkout@v4	2026-08-13T02:27:56.1398655Z Post job cleanup.
+prettier --check	Post Run actions/checkout@v4	2026-08-13T02:27:56.2251763Z [command]/usr/bin/git version
+prettier --check	Post Run actions/checkout@v4	2026-08-13T02:27:56.2292556Z git version 2.54.0
+prettier --check	Post Run actions/checkout@v4	2026-08-13T02:27:56.2361597Z Temporarily overriding HOME='/home/runner/work/_temp/83e5922d-1cae-439e-9ab4-b70d551f71a4' before making global git config changes
+prettier --check	Post Run actions/checkout@v4	2026-08-13T02:27:56.2363480Z Adding repository directory to the temporary git global config as a safe directory
+prettier --check	Post Run actions/checkout@v4	2026-08-13T02:27:56.2367421Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/motion5/motion5
+prettier --check	Post Run actions/checkout@v4	2026-08-13T02:27:56.2408943Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+prettier --check	Post Run actions/checkout@v4	2026-08-13T02:27:56.2447226Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+prettier --check	Post Run actions/checkout@v4	2026-08-13T02:27:56.2716755Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+prettier --check	Post Run actions/checkout@v4	2026-08-13T02:27:56.2746342Z http.https://github.com/.extraheader
+prettier --check	Post Run actions/checkout@v4	2026-08-13T02:27:56.2757361Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+prettier --check	Post Run actions/checkout@v4	2026-08-13T02:27:56.2805835Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+prettier --check	Post Run actions/checkout@v4	2026-08-13T02:27:56.3072655Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+prettier --check	Post Run actions/checkout@v4	2026-08-13T02:27:56.3116823Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+prettier --check	Complete job	﻿2026-08-13T02:27:56.3515848Z Cleaning up orphan processes
+prettier --check	Complete job	2026-08-13T02:27:56.3796047Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
