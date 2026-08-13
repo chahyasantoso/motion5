@@ -1,0 +1,139 @@
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	﻿2026-08-13T13:55:02.5943731Z ##[group]Run npx vitest run packages/core/test/integration/end-to-end.test.ts
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:02.5944611Z ^[[36;1mnpx vitest run packages/core/test/integration/end-to-end.test.ts^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:02.5989624Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:02.5989932Z env:
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:02.5990129Z   NODE_VERSION: 24
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:02.5990340Z ##[endgroup]
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.2590642Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.2594496Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.2595172Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7627268Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7679108Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7680137Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Suites 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7680827Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7684060Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m [ packages/core/test/integration/end-to-end.test.ts ]^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7689578Z ^[[31m^[[1mError^[[22m: Transform failed with 2 errors:
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7690125Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7691150Z ^[[31m[PARSE_ERROR] ^[[0m'readonly' type modifier is only permitted on array and tuple literal types.
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7692701Z     ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m packages/core/src/adapters/interpolator/gsap.ts:28:25 ^[[38;5;246m]^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7693760Z     ^[[38;5;246m│^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7700658Z  ^[[38;5;246m28 │^[[0m ^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249mr^[[0m^[[38;5;249me^[[0m^[[38;5;249ma^[[0m^[[38;5;249md^[[0m^[[38;5;249mo^[[0m^[[38;5;249mn^[[0m^[[38;5;249ml^[[0m^[[38;5;249my^[[0m^[[38;5;249m ^[[0m^[[38;5;249md^[[0m^[[38;5;249mi^[[0m^[[38;5;249ma^[[0m^[[38;5;249mg^[[0m^[[38;5;249mn^[[0m^[[38;5;249mo^[[0m^[[38;5;249ms^[[0m^[[38;5;249mt^[[0m^[[38;5;249mi^[[0m^[[38;5;249mc^[[0m^[[38;5;249ms^[[0m^[[38;5;249m:^[[0m^[[38;5;249m ^[[0mreadonly^[[38;5;249m ^[[0m^[[38;5;249mR^[[0m^[[38;5;249me^[[0m^[[38;5;249mt^[[0m^[[38;5;249mu^[[0m^[[38;5;249mr^[[0m^[[38;5;249mn^[[0m^[[38;5;249mT^[[0m^[[38;5;249my^[[0m^[[38;5;249mp^[[0m^[[38;5;249me^[[0m^[[38;5;249m<^[[0m^[[38;5;249mt^[[0m^[[38;5;249my^[[0m^[[38;5;249mp^[[0m^[[38;5;249me^[[0m^[[38;5;249mo^[[0m^[[38;5;249mf^[[0m^[[38;5;249m ^[[0m^[[38;5;249mc^[[0m^[[38;5;249mo^[[0m^[[38;5;249mm^[[0m^[[38;5;249mp^[[0m^[[38;5;249mi^[[0m^[[38;5;249ml^[[0m^[[38;5;249me^[[0m^[[38;5;249mP^[[0m^[[38;5;249me^[[0m^[[38;5;249mr^[[0m^[[38;5;249mc^[[0m^[[38;5;249me^[[0m^[[38;5;249mn^[[0m^[[38;5;249mt^[[0m^[[38;5;249mK^[[0m^[[38;5;249me^[[0m^[[38;5;249my^[[0m^[[38;5;249mf^[[0m^[[38;5;249mr^[[0m^[[38;5;249ma^[[0m^[[38;5;249mm^[[0m^[[38;5;249me^[[0m^[[38;5;249ms^[[0m^[[38;5;249m>^[[0m^[[38;5;249m[^[[0m^[[38;5;249m"^[[0m^[[38;5;249md^[[0m^[[38;5;249mi^[[0m^[[38;5;249ma^[[0m^[[38;5;249mg^[[0m^[[38;5;249mn^[[0m^[[38;5;249mo^[[0m^[[38;5;249ms^[[0m^[[38;5;249mt^[[0m^[[38;5;249mi^[[0m^[[38;5;249mc^[[0m^[[38;5;249ms^[[0m^[[38;5;249m"^[[0m^[[38;5;249m]^[[0m^[[38;5;249m;^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7704659Z  ^[[38;5;240m   │^[[0m                         ────┬───  
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7704935Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7705713Z  ^[[38;5;240m   │^[[0m                             ╰───── 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7706688Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[90m (1)^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7707454Z ^[[38;5;246m────╯^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7707706Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7708545Z ^[[31m[PARSE_ERROR] ^[[0m'readonly' type modifier is only permitted on array and tuple literal types.
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7710134Z     ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m packages/core/src/adapters/interpolator/gsap.ts:29:28 ^[[38;5;246m]^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7711060Z     ^[[38;5;246m│^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7718759Z  ^[[38;5;246m29 │^[[0m ^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249mc^[[0m^[[38;5;249mo^[[0m^[[38;5;249mn^[[0m^[[38;5;249ms^[[0m^[[38;5;249mt^[[0m^[[38;5;249mr^[[0m^[[38;5;249mu^[[0m^[[38;5;249mc^[[0m^[[38;5;249mt^[[0m^[[38;5;249mo^[[0m^[[38;5;249mr^[[0m^[[38;5;249m(^[[0m^[[38;5;249md^[[0m^[[38;5;249mi^[[0m^[[38;5;249ma^[[0m^[[38;5;249mg^[[0m^[[38;5;249mn^[[0m^[[38;5;249mo^[[0m^[[38;5;249ms^[[0m^[[38;5;249mt^[[0m^[[38;5;249mi^[[0m^[[38;5;249mc^[[0m^[[38;5;249ms^[[0m^[[38;5;249m:^[[0m^[[38;5;249m ^[[0mreadonly^[[38;5;249m ^[[0m^[[38;5;249mR^[[0m^[[38;5;249me^[[0m^[[38;5;249mt^[[0m^[[38;5;249mu^[[0m^[[38;5;249mr^[[0m^[[38;5;249mn^[[0m^[[38;5;249mT^[[0m^[[38;5;249my^[[0m^[[38;5;249mp^[[0m^[[38;5;249me^[[0m^[[38;5;249m<^[[0m^[[38;5;249mt^[[0m^[[38;5;249my^[[0m^[[38;5;249mp^[[0m^[[38;5;249me^[[0m^[[38;5;249mo^[[0m^[[38;5;249mf^[[0m^[[38;5;249m ^[[0m^[[38;5;249mc^[[0m^[[38;5;249mo^[[0m^[[38;5;249mm^[[0m^[[38;5;249mp^[[0m^[[38;5;249mi^[[0m^[[38;5;249ml^[[0m^[[38;5;249me^[[0m^[[38;5;249mP^[[0m^[[38;5;249me^[[0m^[[38;5;249mr^[[0m^[[38;5;249mc^[[0m^[[38;5;249me^[[0m^[[38;5;249mn^[[0m^[[38;5;249mt^[[0m^[[38;5;249mK^[[0m^[[38;5;249me^[[0m^[[38;5;249my^[[0m^[[38;5;249mf^[[0m^[[38;5;249mr^[[0m^[[38;5;249ma^[[0m^[[38;5;249mm^[[0m^[[38;5;249me^[[0m^[[38;5;249ms^[[0m^[[38;5;249m>^[[0m^[[38;5;249m[^[[0m^[[38;5;249m"^[[0m^[[38;5;249md^[[0m^[[38;5;249mi^[[0m^[[38;5;249ma^[[0m^[[38;5;249mg^[[0m^[[38;5;249mn^[[0m^[[38;5;249mo^[[0m^[[38;5;249ms^[[0m^[[38;5;249mt^[[0m^[[38;5;249mi^[[0m^[[38;5;249mc^[[0m^[[38;5;249ms^[[0m^[[38;5;249m"^[[0m^[[38;5;249m]^[[0m^[[38;5;249m)^[[0m^[[38;5;249m ^[[0m^[[38;5;249m{^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7722927Z  ^[[38;5;240m   │^[[0m                            ────┬───  
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7723386Z  ^[[38;5;240m   │^[[0m                                ╰───── 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7723755Z ^[[38;5;246m────╯^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7723990Z ^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7724244Z   Plugin: ^[[35mvite:oxc^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7724859Z   File: ^[[36m/home/runner/work/motion5/motion5/packages/core/src/adapters/interpolator/gsap.ts^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7726043Z ^[[90m ^[[2m❯^[[22m transformWithOxc node_modules/vite/dist/node/chunks/node.js:^[[2m4097:19^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7726987Z ^[[90m ^[[2m❯^[[22m TransformPluginContext.transform node_modules/vite/dist/node/chunks/node.js:^[[2m4168:26^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7728032Z ^[[90m ^[[2m❯^[[22m EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/node.js:^[[2m30851:51^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7728929Z ^[[90m ^[[2m❯^[[22m loadAndTransform node_modules/vite/dist/node/chunks/node.js:^[[2m20619:26^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7729294Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7729543Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7729768Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7729996Z ^[[2m      Tests ^[[22m ^[[2mno tests^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7730424Z ^[[2m   Start at ^[[22m 13:55:03
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7731067Z ^[[2m   Duration ^[[22m 494ms^[[2m (transform 260ms, setup 0ms, import 0ms, tests 0ms, environment 0ms)^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.7731460Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T13:55:03.8084698Z ##[error]Process completed with exit code 1.
+integration (node 24)	Run npm run test:integration	﻿2026-08-13T13:55:01.7451232Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:01.7452924Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:01.7499322Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:01.7499620Z env:
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:01.7499828Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:01.7500060Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:01.8653281Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:01.8654091Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:01.8655098Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:01.8657439Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:02.1592590Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:02.1603780Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:02.1604395Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:02.5074952Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:02.5133549Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:02.5875154Z  ^[[32m✓^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:02.6968671Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:02.7510663Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:02.8228255Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:02.9028696Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:02.9948301Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.0425485Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.0992421Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.2202539Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.3803376Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.4827304Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.4953690Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.5803855Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.6815433Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7083200Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7642556Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7673612Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7674464Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Suites 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7674949Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7678646Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m [ packages/core/test/integration/end-to-end.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7685472Z ^[[31m^[[1mError^[[22m: Transform failed with 2 errors:
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7685895Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7686756Z ^[[31m[PARSE_ERROR] ^[[0m'readonly' type modifier is only permitted on array and tuple literal types.
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7688792Z     ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m packages/core/src/adapters/interpolator/gsap.ts:28:25 ^[[38;5;246m]^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7689984Z     ^[[38;5;246m│^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7698608Z  ^[[38;5;246m28 │^[[0m ^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249mr^[[0m^[[38;5;249me^[[0m^[[38;5;249ma^[[0m^[[38;5;249md^[[0m^[[38;5;249mo^[[0m^[[38;5;249mn^[[0m^[[38;5;249ml^[[0m^[[38;5;249my^[[0m^[[38;5;249m ^[[0m^[[38;5;249md^[[0m^[[38;5;249mi^[[0m^[[38;5;249ma^[[0m^[[38;5;249mg^[[0m^[[38;5;249mn^[[0m^[[38;5;249mo^[[0m^[[38;5;249ms^[[0m^[[38;5;249mt^[[0m^[[38;5;249mi^[[0m^[[38;5;249mc^[[0m^[[38;5;249ms^[[0m^[[38;5;249m:^[[0m^[[38;5;249m ^[[0mreadonly^[[38;5;249m ^[[0m^[[38;5;249mR^[[0m^[[38;5;249me^[[0m^[[38;5;249mt^[[0m^[[38;5;249mu^[[0m^[[38;5;249mr^[[0m^[[38;5;249mn^[[0m^[[38;5;249mT^[[0m^[[38;5;249my^[[0m^[[38;5;249mp^[[0m^[[38;5;249me^[[0m^[[38;5;249m<^[[0m^[[38;5;249mt^[[0m^[[38;5;249my^[[0m^[[38;5;249mp^[[0m^[[38;5;249me^[[0m^[[38;5;249mo^[[0m^[[38;5;249mf^[[0m^[[38;5;249m ^[[0m^[[38;5;249mc^[[0m^[[38;5;249mo^[[0m^[[38;5;249mm^[[0m^[[38;5;249mp^[[0m^[[38;5;249mi^[[0m^[[38;5;249ml^[[0m^[[38;5;249me^[[0m^[[38;5;249mP^[[0m^[[38;5;249me^[[0m^[[38;5;249mr^[[0m^[[38;5;249mc^[[0m^[[38;5;249me^[[0m^[[38;5;249mn^[[0m^[[38;5;249mt^[[0m^[[38;5;249mK^[[0m^[[38;5;249me^[[0m^[[38;5;249my^[[0m^[[38;5;249mf^[[0m^[[38;5;249mr^[[0m^[[38;5;249ma^[[0m^[[38;5;249mm^[[0m^[[38;5;249me^[[0m^[[38;5;249ms^[[0m^[[38;5;249m>^[[0m^[[38;5;249m[^[[0m^[[38;5;249m"^[[0m^[[38;5;249md^[[0m^[[38;5;249mi^[[0m^[[38;5;249ma^[[0m^[[38;5;249mg^[[0m^[[38;5;249mn^[[0m^[[38;5;249mo^[[0m^[[38;5;249ms^[[0m^[[38;5;249mt^[[0m^[[38;5;249mi^[[0m^[[38;5;249mc^[[0m^[[38;5;249ms^[[0m^[[38;5;249m"^[[0m^[[38;5;249m]^[[0m^[[38;5;249m;^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7705436Z  ^[[38;5;240m   │^[[0m                         ────┬───  
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7706170Z  ^[[38;5;240m   │^[[0m                             ╰───── 
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7706781Z ^[[38;5;246m────╯^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7707017Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7707847Z ^[[31m[PARSE_ERROR] ^[[0m'readonly' type modifier is only permitted on array and tuple literal types.
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7709353Z     ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m packages/core/src/adapters/interpolator/gsap.ts:29:28 ^[[38;5;246m]^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7710178Z     ^[[38;5;246m│^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7715573Z  ^[[38;5;246m29 │^[[0m ^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249mc^[[0m^[[38;5;249mo^[[0m^[[38;5;249mn^[[0m^[[38;5;249ms^[[0m^[[38;5;249mt^[[0m^[[38;5;249mr^[[0m^[[38;5;249mu^[[0m^[[38;5;249mc^[[0m^[[38;5;249mt^[[0m^[[38;5;249mo^[[0m^[[38;5;249mr^[[0m^[[38;5;249m(^[[0m^[[38;5;249md^[[0m^[[38;5;249mi^[[0m^[[38;5;249ma^[[0m^[[38;5;249mg^[[0m^[[38;5;249mn^[[0m^[[38;5;249mo^[[0m^[[38;5;249ms^[[0m^[[38;5;249mt^[[0m^[[38;5;249mi^[[0m^[[38;5;249mc^[[0m^[[38;5;249ms^[[0m^[[38;5;249m:^[[0m^[[38;5;249m ^[[0mreadonly^[[38;5;249m ^[[0m^[[38;5;249mR^[[0m^[[38;5;249me^[[0m^[[38;5;249mt^[[0m^[[38;5;249mu^[[0m^[[38;5;249mr^[[0m^[[38;5;249mn^[[0m^[[38;5;249mT^[[0m^[[38;5;249my^[[0m^[[38;5;249mp^[[0m^[[38;5;249me^[[0m^[[38;5;249m<^[[0m^[[38;5;249mt^[[0m^[[38;5;249my^[[0m^[[38;5;249mp^[[0m^[[38;5;249me^[[0m^[[38;5;249mo^[[0m^[[38;5;249mf^[[0m^[[38;5;249m ^[[0m^[[38;5;249mc^[[0m^[[38;5;249mo^[[0m^[[38;5;249mm^[[0m^[[38;5;249mp^[[0m^[[38;5;249mi^[[0m^[[38;5;249ml^[[0m^[[38;5;249me^[[0m^[[38;5;249mP^[[0m^[[38;5;249me^[[0m^[[38;5;249mr^[[0m^[[38;5;249mc^[[0m^[[38;5;249me^[[0m^[[38;5;249mn^[[0m^[[38;5;249mt^[[0m^[[38;5;249mK^[[0m^[[38;5;249me^[[0m^[[38;5;249my^[[0m^[[38;5;249mf^[[0m^[[38;5;249mr^[[0m^[[38;5;249ma^[[0m^[[38;5;249mm^[[0m^[[38;5;249me^[[0m^[[38;5;249ms^[[0m^[[38;5;249m>^[[0m^[[38;5;249m[^[[0m^[[38;5;249m"^[[0m^[[38;5;249md^[[0m^[[38;5;249mi^[[0m^[[38;5;249ma^[[0m^[[38;5;249mg^[[0m^[[38;5;249mn^[[0m^[[38;5;249mo^[[0m^[[38;5;249ms^[[0m^[[38;5;249mt^[[0m^[[38;5;249mi^[[0m^[[38;5;249mc^[[0m^[[38;5;249ms^[[0m^[[38;5;249m"^[[0m^[[38;5;249m]^[[0m^[[38;5;249m)^[[0m^[[38;5;249m ^[[0m^[[38;5;249m{^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7719939Z  ^[[38;5;240m   │^[[0m                            ────┬───  
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7720389Z  ^[[38;5;240m   │^[[0m                                ╰───── 
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7720783Z ^[[38;5;246m────╯^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7721028Z ^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7721275Z   Plugin: ^[[35mvite:oxc^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7722340Z   File: ^[[36m/home/runner/work/motion5/motion5/packages/core/src/adapters/interpolator/gsap.ts^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7723512Z ^[[90m ^[[2m❯^[[22m transformWithOxc node_modules/vite/dist/node/chunks/node.js:^[[2m4097:19^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7724586Z ^[[90m ^[[2m❯^[[22m TransformPluginContext.transform node_modules/vite/dist/node/chunks/node.js:^[[2m4168:26^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7725571Z ^[[90m ^[[2m❯^[[22m EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/node.js:^[[2m30851:51^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7726448Z ^[[90m ^[[2m❯^[[22m loadAndTransform node_modules/vite/dist/node/chunks/node.js:^[[2m20619:26^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7726813Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7727050Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7727257Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7727284Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7727739Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m17 passed^[[39m^[[22m^[[90m (18)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7728346Z ^[[2m      Tests ^[[22m ^[[1m^[[32m43 passed^[[39m^[[22m^[[90m (43)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7728749Z ^[[2m   Start at ^[[22m 13:55:02
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7729395Z ^[[2m   Duration ^[[22m 1.58s^[[2m (transform 592ms, setup 0ms, import 1.09s, tests 193ms, environment 3ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.7729791Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T13:55:03.8188122Z ##[error]Process completed with exit code 1.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-08-13T13:55:09.6622285Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T13:55:09.6622753Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T13:55:09.6669175Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T13:55:09.6669443Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T13:55:09.6669650Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T13:55:09.6669856Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T13:55:11.4038028Z ##[error]packages/core/src/adapters/interpolator/gsap.ts(28,25): error TS1354: 'readonly' type modifier is only permitted on array and tuple literal types.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T13:55:11.4048344Z ##[error]packages/core/src/adapters/interpolator/gsap.ts(29,28): error TS1354: 'readonly' type modifier is only permitted on array and tuple literal types.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T13:55:11.4360240Z ##[error]Process completed with exit code 2.
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T13:55:03.8774679Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T13:55:03.8775026Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T13:55:03.8797217Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T13:55:03.8797709Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T13:55:03.8797956Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T13:55:03.8798180Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T13:55:03.9529335Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T13:55:03.9530158Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T13:55:03.9530839Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T13:55:03.9531109Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T13:55:04.4677971Z ##[error]packages/core/test/contract/gsap-sparse-percent-map.test.ts(17,9): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T13:55:04.4685278Z ##[error]packages/core/test/contract/gsap-sparse-percent-map.test.ts(18,9): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T13:55:04.4796704Z ##[error]Process completed with exit code 2.
