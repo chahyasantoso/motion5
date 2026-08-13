@@ -48,20 +48,17 @@ function createHandle(runtime: RuntimeLike): ProjectHandle {
 }
 
 function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
-  return diagnostics
-    .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
-    .join(" ");
+  return diagnostics.map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`).join(" ");
 }
 
-function assertValidProject(project: unknown): asserts project is ProjectDefinition {
+function assertValidProject(project: unknown): ProjectDefinition {
   const result = validateV5(project);
-  if (!result.valid) {
+  if (!result.valid || result.value === null) {
     throw new TypeError(
-      result.diagnostics.length === 0
-        ? "Project failed v5 validation."
-        : describeDiagnostics(result.diagnostics),
+      result.diagnostics.length === 0 ? "Project failed v5 validation." : describeDiagnostics(result.diagnostics),
     );
   }
+  return result.value;
 }
 
 export class Engine {
@@ -76,25 +73,19 @@ export class Engine {
   }
 
   load(project: ProjectDefinition): ProjectHandle {
-    assertValidProject(project);
+    const acceptedProject = assertValidProject(project);
     const tracks = new Map<string, Track>();
-    const nodes = new Map<
-      string,
-      { duration?: number; keyframes?: Readonly<Record<string, unknown>> }
-    >();
-    for (const motion of project.motions)
+    const nodes = new Map<string, { duration?: number; keyframes?: Readonly<Record<string, unknown>> }>();
+    for (const motion of acceptedProject.motions)
       for (const track of motion.tracks) nodes.set(`${motion.id}/${track.id}`, track);
-    for (const track of project.freeTracks ?? []) nodes.set(`~/${track.id}`, track);
+    for (const track of acceptedProject.freeTracks ?? []) nodes.set(`~/${track.id}`, track);
 
     const compile = (nodeId: string): Track => {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
       const definition = nodes.get(nodeId);
       if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
-      const resolved = this.#plugins?.resolveForKeyframes(
-        definition.keyframes ?? {},
-        `${nodeId}.keyframes`,
-      );
+      const resolved = this.#plugins?.resolveForKeyframes(definition.keyframes ?? {}, `${nodeId}.keyframes`);
       if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
         throw new TypeError(describeDiagnostics(resolved.diagnostics));
       const track = new Track({
@@ -109,19 +100,12 @@ export class Engine {
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
       const compose =
-        (node: {
-          id: string;
-          track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> };
-        }) =>
+        (node: { id: string; track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> } }) =>
         (inputs: Readonly<Record<string, unknown>>) => {
           const snapshot = tracks.get(node.id)!.compose(inputs as Readonly<ImmutableRecord>);
-          return {
-            values: snapshot.values,
-            sourceProgress: snapshot.progress,
-            sourceRevisions: {},
-          };
+          return { values: snapshot.values, sourceProgress: snapshot.progress, sourceRevisions: {} };
         };
-      const runtime = new ProjectRuntime(project, {
+      const runtime = new ProjectRuntime(acceptedProject, {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
         compose,
