@@ -65,6 +65,37 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
     runtime.dispose();
   });
 
+  it("retries scheduling after a synchronous scheduler failure", () => {
+    const clock = createManualClock();
+    let attempts = 0;
+    const jobs: Array<() => void> = [];
+    const scheduler = {
+      schedule(job: () => void) {
+        attempts += 1;
+        if (attempts === 1) throw new Error("scheduler unavailable");
+        jobs.push(job);
+        return { cancel() {} };
+      },
+    };
+    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    runtime.attach("hero/arm");
+    const diagnostics: string[] = [];
+    runtime.registry.subscribeNode("hero/arm", () => {
+      runtime.invalidate(["caption/label"]);
+      runtime.invalidate(["caption/label"]);
+    });
+
+    runtime.registry.subscribeBatch(() => undefined);
+    runtime.flush(["hero/arm"], 1);
+
+    expect(attempts).toBe(2);
+    expect(runtime.lastFlushError?.ruleId).toBe("scheduler-failure");
+    jobs.splice(0).forEach((job) => job());
+    expect(runtime.pendingSeeds).toEqual([]);
+    expect(diagnostics).toEqual([]);
+    runtime.dispose();
+  });
+
   it("does not expose the publisher as a second public reentrancy entry point", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
