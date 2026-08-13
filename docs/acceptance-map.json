@@ -2,45 +2,17 @@
   "version": 1,
   "items": [
     { "id": "gsap-contract", "test": "packages/core/test/contract/gsap-multi-stop.test.ts" },
-    {
-      "id": "gsap-clock-ownership",
-      "test": "packages/core/test/contract/gsap-paused-timeline.test.ts"
-    },
-    {
-      "id": "gsap-absolute-stops",
-      "test": "packages/core/test/contract/gsap-absolute-stops.test.ts"
-    },
-    {
-      "id": "gsap-authored-duration",
-      "test": "packages/core/test/contract/gsap-authored-duration.test.ts"
-    },
+    { "id": "gsap-clock-ownership", "test": "packages/core/test/contract/gsap-paused-timeline.test.ts" },
+    { "id": "gsap-absolute-stops", "test": "packages/core/test/contract/gsap-absolute-stops.test.ts" },
+    { "id": "gsap-authored-duration", "test": "packages/core/test/contract/gsap-authored-duration.test.ts" },
     { "id": "dom-contract", "test": "packages/core/test/integration/dom-patch-apply.test.ts" },
     { "id": "react-lifecycle", "test": "packages/react/test" },
     { "id": "boundaries", "test": "packages/core/test/unit/scripts/boundary-scan.test.ts" },
     { "id": "end-to-end", "test": "packages/core/test/integration/end-to-end.test.ts" },
-    {
-      "id": "clock-identity",
-      "test": "packages/core/test/unit/runtime/clock-tick-identity.test.ts"
-    },
-    {
-      "id": "flat-projected-inputs",
-      "test": "packages/core/test/unit/runtime/publisher-flat-inputs.test.ts"
-    },
-    {
-      "id": "registry-change-detection",
-      "test": "packages/core/test/unit/runtime/patch-registry-structural-change.test.ts"
-    },
-    {
-      "id": "registry-listener-snapshots",
-      "test": "packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts"
-    },
-    {
-      "id": "s5-contribution-completeness",
-      "test": "packages/core/test/unit/domain/plugin-contribution-completeness.test.ts"
-    },
-    {
-      "id": "s5-product-path",
-      "test": "packages/core/test/integration/engine-x3-contribution.test.ts"
-    }
+    { "id": "clock-identity", "test": "packages/core/test/unit/runtime/clock-tick-identity.test.ts" },
+    { "id": "flat-projected-inputs", "test": "packages/core/test/unit/runtime/publisher-flat-inputs.test.ts" },
+    { "id": "registry-change-detection", "test": "packages/core/test/unit/runtime/patch-registry-structural-change.test.ts" },
+    { "id": "registry-listener-snapshots", "test": "packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts" },
+    { "id": "s6-unsupported-use", "test": "packages/core/test/integration/plugin-use-contract.test.ts" }
   ]
 }
