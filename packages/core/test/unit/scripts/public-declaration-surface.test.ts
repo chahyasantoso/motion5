@@ -51,73 +51,69 @@ export function declarationCandidates(fromFile: string, specifier: string): stri
 }
 
 describe("public declaration surface (P1-9)", () => {
-  it(
-    "scans the emitted entry declaration closure, not just source strings",
-    async () => {
-      const out = await mkdtemp(join(root, ".tmp-public-dts-"));
-      try {
-        await execFileAsync(
-          "npx",
-          [
-            "tsc",
-            "--declaration",
-            "--emitDeclarationOnly",
-            "--target",
-            "ES2023",
-            "--module",
-            "ESNext",
-            "--moduleResolution",
-            "Bundler",
-            "--strict",
-            "--skipLibCheck",
-            "--outDir",
-            out,
-            "packages/core/src/index.ts",
-          ],
-          { cwd: root },
-        );
-        const emitted = await declarationFiles(out);
-        const emittedByPath = new Set(emitted);
-        const entries = emitted.filter((path) => path.endsWith("index.d.ts"));
-        expect(entries).toHaveLength(1);
-        const entry = entries[0];
-        expect(entry).toBeDefined();
+  it("scans the emitted entry declaration closure, not just source strings", async () => {
+    const out = await mkdtemp(join(root, ".tmp-public-dts-"));
+    try {
+      await execFileAsync(
+        "npx",
+        [
+          "tsc",
+          "--declaration",
+          "--emitDeclarationOnly",
+          "--target",
+          "ES2023",
+          "--module",
+          "ESNext",
+          "--moduleResolution",
+          "Bundler",
+          "--strict",
+          "--skipLibCheck",
+          "--outDir",
+          out,
+          "packages/core/src/index.ts",
+        ],
+        { cwd: root },
+      );
+      const emitted = await declarationFiles(out);
+      const emittedByPath = new Set(emitted);
+      const entries = emitted.filter((path) => path.endsWith("index.d.ts"));
+      expect(entries).toHaveLength(1);
+      const entry = entries[0];
+      expect(entry).toBeDefined();
 
-        const reachable = new Set<string>();
-        const unresolved: string[] = [];
-        const forbidden: string[] = [];
-        const queue = [entry!];
-        while (queue.length > 0) {
-          const current = queue.shift()!;
-          if (reachable.has(current)) continue;
-          reachable.add(current);
-          const shown = relative(out, current).replaceAll("\\", "/");
-          if (FORBIDDEN_DIRECTORY.test(`/${shown}`)) forbidden.push(shown);
-          const source = await readFile(current, "utf8");
-          for (const specifier of importedSpecifiers(source)) {
-            if (!specifier.startsWith(".")) continue;
-            const target = declarationCandidates(current, specifier).find((candidate) =>
-              emittedByPath.has(candidate),
-            );
-            if (target === undefined) {
-              unresolved.push(`${shown} -> ${specifier}`);
-              continue;
-            }
-            queue.push(target);
+      const reachable = new Set<string>();
+      const unresolved: string[] = [];
+      const forbidden: string[] = [];
+      const queue = [entry!];
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        if (reachable.has(current)) continue;
+        reachable.add(current);
+        const shown = relative(out, current).replaceAll("\\", "/");
+        if (FORBIDDEN_DIRECTORY.test(`/${shown}`)) forbidden.push(shown);
+        const source = await readFile(current, "utf8");
+        for (const specifier of importedSpecifiers(source)) {
+          if (!specifier.startsWith(".")) continue;
+          const target = declarationCandidates(current, specifier).find((candidate) =>
+            emittedByPath.has(candidate),
+          );
+          if (target === undefined) {
+            unresolved.push(`${shown} -> ${specifier}`);
+            continue;
           }
+          queue.push(target);
         }
-
-        // Unresolved edges are asserted first. A traversal that silently stopped early would
-        // otherwise report an empty forbidden list and look exactly like a clean boundary.
-        expect(unresolved).toEqual([]);
-        expect(forbidden).toEqual([]);
-        expect(reachable.size).toBeGreaterThan(1);
-      } finally {
-        await rm(out, { recursive: true, force: true });
       }
-    },
-    120_000,
-  );
+
+      // Unresolved edges are asserted first. A traversal that silently stopped early would
+      // otherwise report an empty forbidden list and look exactly like a clean boundary.
+      expect(unresolved).toEqual([]);
+      expect(forbidden).toEqual([]);
+      expect(reachable.size).toBeGreaterThan(1);
+    } finally {
+      await rm(out, { recursive: true, force: true });
+    }
+  }, 120_000);
 
   it("resolves every declaration specifier shape and leaves unknown targets unresolved", () => {
     const emitRoot = join(root, ".fixture-dts");
