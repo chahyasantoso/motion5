@@ -31,9 +31,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ inputs.ref }} }
+        with:
+          ref: ${{ inputs.ref }}
       - uses: actions/setup-node@v4
-        with: { node-version: ${{ env.NODE_VERSION }}, cache: npm }
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: mkdir -p test-results
       - run: npx vitest run --reporter=json --outputFile=test-results/vitest.json
@@ -46,9 +49,13 @@ jobs:
       AUDIT_BASE: ${{ inputs.base }}
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ inputs.ref }}, fetch-depth: 0 }
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
       - uses: actions/setup-node@v4
-        with: { node-version: ${{ env.NODE_VERSION }}, cache: npm }
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Replay assertion-level red against base and green against ref
         run: |
@@ -64,14 +71,22 @@ jobs:
           xargs -a audit-logs/new-tests.txt git checkout "$ref_sha" --
           npm ci --ignore-scripts --no-audit --no-fund > audit-logs/base-install.log 2>&1
           if xargs -a audit-logs/new-tests.txt npx vitest run --reporter=json --outputFile=audit-logs/base.json > audit-logs/base-run.log 2>&1; then
-            echo "base did not fail"; exit 1
+            echo "base did not fail"
+            exit 1
           fi
           node --input-type=module <<'NODE'
           import { readFile } from "node:fs/promises";
           const report = JSON.parse(await readFile("audit-logs/base.json", "utf8"));
           const results = report.testResults ?? [];
-          const assertionFailures = results.filter((test) => test.status === "failed" && !String(test.assertionResults ?? test.message ?? "").match(/Cannot find|failed to resolve|config|transform/i));
-          if (assertionFailures.length === 0) throw new Error("base red was infrastructure/import-resolution, not assertion-level");
+          const assertionFailures = results.filter(
+            (test) =>
+              test.status === "failed" &&
+              !String(test.assertionResults ?? test.message ?? "").match(
+                /Cannot find|failed to resolve|config|transform/i,
+              ),
+          );
+          if (assertionFailures.length === 0)
+            throw new Error("base red was infrastructure/import-resolution, not assertion-level");
           console.log(`assertion-level red: ${assertionFailures.length}`);
           NODE
           git checkout -f "$ref_sha"
@@ -88,9 +103,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ inputs.ref }} }
+        with:
+          ref: ${{ inputs.ref }}
       - uses: actions/setup-node@v4
-        with: { node-version: ${{ env.NODE_VERSION }}, cache: npm }
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npx tsc -p packages/core/tsconfig.build.json
       - run: test -f packages/core/dist/index.js
@@ -102,4 +120,7 @@ jobs:
     needs: [acceptance, failing-first, build]
     if: always()
     steps:
-      - run: test "${{ needs.acceptance.result }}" = success && test "${{ needs.failing-first.result }}" = success && test "${{ needs.build.result }}" = success
+      - run: |
+          test "${{ needs.acceptance.result }}" = success
+          test "${{ needs.failing-first.result }}" = success
+          test "${{ needs.build.result }}" = success
