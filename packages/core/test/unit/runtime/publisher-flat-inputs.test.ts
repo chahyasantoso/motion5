@@ -105,16 +105,32 @@ describe("flat projected input observations (X-1)", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
     const sourceA = node("hero/a", [], () => ({
-      values: { value: 1 }, sourceProgress: 0, sourceRevisions: {},
+      values: { value: 1 },
+      sourceProgress: 0,
+      sourceRevisions: {},
     }));
     const sourceB = node("hero/b", [], () => ({
-      values: { value: 2 }, sourceProgress: 0, sourceRevisions: {},
+      values: { value: 2 },
+      sourceProgress: 0,
+      sourceRevisions: {},
     }));
     const observer = node(
       "hero/observer",
       [
-        { observerId: "hero/observer", sourceId: "hero/a", role: "input", target: "a", projection: { map: { value: "shared" } } } as never,
-        { observerId: "hero/observer", sourceId: "hero/b", role: "input", target: "b", projection: { map: { value: "shared" } } } as never,
+        {
+          observerId: "hero/observer",
+          sourceId: "hero/a",
+          role: "input",
+          target: "a",
+          projection: { map: { value: "shared" } },
+        } as never,
+        {
+          observerId: "hero/observer",
+          sourceId: "hero/b",
+          role: "input",
+          target: "b",
+          projection: { map: { value: "shared" } },
+        } as never,
       ],
       (inputs) => ({ values: inputs, sourceProgress: 0, sourceRevisions: {} }),
     );
@@ -126,8 +142,8 @@ describe("flat projected input observations (X-1)", () => {
     } as GraphIR & { nodes: readonly PublisherNode[] };
 
     const batch = publisher.flush(snapshot, ["hero/a", "hero/b"], 1);
-    expect(batch.patches.find((patch) => patch.nodeId === "hero/observer")?.diagnostics[0]?.ruleId).toBe(
-      "observation-input-collision",
-    );
+    expect(
+      batch.patches.find((patch) => patch.nodeId === "hero/observer")?.diagnostics[0]?.ruleId,
+    ).toBe("observation-input-collision");
   });
 });
