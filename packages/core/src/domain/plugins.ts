@@ -18,7 +18,7 @@ export interface PluginDefinition {
   readonly priority?: number;
   readonly outputs?: readonly string[];
   readonly internalKeys?: readonly string[];
-  readonly serializers?: Readonly<Record<string, OutputSerializer>>;
+  readonly outputSerializers?: Readonly<Record<string, OutputSerializer>>;
   readonly contribute?: PluginContributor;
   readonly compose: PluginComposer;
 }
@@ -27,15 +27,10 @@ export interface ResolvedPlugins {
   readonly plugins: readonly PluginDefinition[];
   readonly diagnostics: readonly Diagnostic[];
   readonly internalKeys: readonly string[];
-  readonly serializers: Readonly<Record<string, OutputSerializer>>;
+  readonly outputSerializers: Readonly<Record<string, OutputSerializer>>;
 }
 
-function diagnostic(
-  ruleId: string,
-  path: string,
-  message: string,
-  ids?: readonly string[],
-): Diagnostic {
+function diagnostic(ruleId: string, path: string, message: string, ids?: readonly string[]): Diagnostic {
   return { ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) };
 }
 function assertName(name: unknown): asserts name is string {
@@ -56,11 +51,11 @@ function assertMetadata(plugin: PluginDefinition): void {
     throw new TypeError("Plugin priority must be finite when provided.");
   if (plugin.internalKeys !== undefined && !Array.isArray(plugin.internalKeys))
     throw new TypeError("Plugin internalKeys must be an array when provided.");
-  if (plugin.serializers !== undefined && typeof plugin.serializers !== "object")
-    throw new TypeError("Plugin serializers must be an object when provided.");
-  if (plugin.serializers)
-    for (const serializer of Object.values(plugin.serializers))
-      if (typeof serializer !== "function") throw new TypeError("Plugin serializers must be functions.");
+  if (plugin.outputSerializers !== undefined && typeof plugin.outputSerializers !== "object")
+    throw new TypeError("Plugin outputSerializers must be an object when provided.");
+  for (const serializer of Object.values(plugin.outputSerializers ?? {}))
+    if (typeof serializer !== "function")
+      throw new TypeError("Plugin outputSerializers must contain functions.");
 }
 function claims(plugin: PluginDefinition, key: string): boolean {
   return Boolean(plugin.keys?.includes(key) || plugin.claimsKey?.(key));
@@ -69,11 +64,11 @@ function stageRank(stage: string | undefined): number {
   return stage === "prepare" ? 0 : stage === "compose" ? 1 : 2;
 }
 function comparePlugins(left: PluginDefinition, right: PluginDefinition): number {
-  return (
-    stageRank(left.stage) - stageRank(right.stage) || (left.priority ?? 0) - (right.priority ?? 0)
-  );
+  return stageRank(left.stage) - stageRank(right.stage) ||
+    (left.priority ?? 0) - (right.priority ?? 0);
 }
 
+/** Owns registration, validation, deterministic resolution, and immutable metadata aggregation. */
 export class PluginRegistry {
   readonly #plugins = new Map<string, PluginDefinition>();
   #registrationOrder = 0;
@@ -83,14 +78,17 @@ export class PluginRegistry {
     assertName(plugin?.name);
     assertComposer(plugin?.compose);
     assertMetadata(plugin);
-    if (this.#plugins.has(plugin.name)) throw new Error(`Plugin "${plugin.name}" is already registered.`);
+    if (this.#plugins.has(plugin.name))
+      throw new Error(`Plugin "${plugin.name}" is already registered.`);
     const detached = Object.freeze({
       ...plugin,
       ...(plugin.keys ? { keys: Object.freeze([...plugin.keys]) } : {}),
       ...(plugin.inputs ? { inputs: Object.freeze([...plugin.inputs]) } : {}),
       ...(plugin.outputs ? { outputs: Object.freeze([...plugin.outputs]) } : {}),
       ...(plugin.internalKeys ? { internalKeys: Object.freeze([...plugin.internalKeys]) } : {}),
-      ...(plugin.serializers ? { serializers: Object.freeze({ ...plugin.serializers }) } : {}),
+      ...(plugin.outputSerializers
+        ? { outputSerializers: Object.freeze({ ...plugin.outputSerializers }) }
+        : {}),
     });
     this.#plugins.set(plugin.name, detached);
     this.#orders.set(plugin.name, this.#registrationOrder++);
@@ -137,7 +135,8 @@ export class PluginRegistry {
     for (const plugin of plugins)
       for (const output of plugin.outputs ?? []) {
         const owner = owners.get(output);
-        if (owner) diagnostics.push(diagnostic("plugin-duplicate-output", `${path}.${output}`, `Plugins "${owner}" and "${plugin.name}" both claim output "${output}".`, [owner, plugin.name, output]));
+        if (owner)
+          diagnostics.push(diagnostic("plugin-duplicate-output", `${path}.${output}`, `Plugins "${owner}" and "${plugin.name}" both claim output "${output}".`, [owner, plugin.name, output]));
         else owners.set(output, plugin.name);
       }
     return this.#result(plugins, diagnostics);
@@ -145,13 +144,27 @@ export class PluginRegistry {
 
   has(name: string): boolean { return this.#plugins.has(name); }
   get size(): number { return this.#plugins.size; }
+
   #result(plugins: PluginDefinition[], diagnostics: Diagnostic[]): ResolvedPlugins {
     const internalKeys = [...new Set(plugins.flatMap((plugin) => plugin.internalKeys ?? []))].sort();
-    const serializers: Record<string, OutputSerializer> = {};
-    for (const plugin of plugins) for (const [key, serializer] of Object.entries(plugin.serializers ?? {})) {
-      if (serializers[key] !== undefined) diagnostics.push(diagnostic("plugin-duplicate-serializer", `plugins.${key}`, `Multiple plugins provide a serializer for output "${key}".`, [key]));
-      else serializers[key] = serializer;
+    const outputSerializers: Record<string, OutputSerializer> = {};
+    for (const plugin of plugins) {
+      const declaredOutputs = new Set(plugin.outputs ?? []);
+      for (const [key, serializer] of Object.entries(plugin.outputSerializers ?? {})) {
+        if (!declaredOutputs.has(key)) {
+          diagnostics.push(diagnostic("plugin-serializer-without-output", `plugins.${key}`, `Plugin "${plugin.name}" provides a serializer without owning output "${key}".`, [plugin.name, key]));
+          continue;
+        }
+        if (outputSerializers[key] !== undefined)
+          diagnostics.push(diagnostic("plugin-duplicate-serializer", `plugins.${key}`, `Multiple plugins provide a serializer for output "${key}".`, [key]));
+        else outputSerializers[key] = serializer;
+      }
     }
-    return Object.freeze({ plugins: Object.freeze(plugins), diagnostics: Object.freeze(diagnostics), internalKeys: Object.freeze(internalKeys), serializers: Object.freeze(serializers) });
+    return Object.freeze({
+      plugins: Object.freeze(plugins),
+      diagnostics: Object.freeze(diagnostics),
+      internalKeys: Object.freeze(internalKeys),
+      outputSerializers: Object.freeze(outputSerializers),
+    });
   }
 }
