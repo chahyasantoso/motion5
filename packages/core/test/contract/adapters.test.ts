@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createBrowserClock } from "../../src/adapters/browser-clock";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
-import { createGsapInterpolator, type GsapTweenLike } from "../../src/adapters/interpolator/gsap";
+import { createGsapInterpolator, type GsapTimelineLike } from "../../src/adapters/interpolator/gsap";
 import { createRealGsapSeam } from "../support/real-gsap";
 
 describe("adapter ports", () => {
@@ -9,14 +9,7 @@ describe("adapter ports", () => {
     const seam = createRealGsapSeam();
     const timeline = seam.interpolator.create({
       duration: 2,
-      keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
-      },
+      keyframes: { x: { stops: [{ p: 0, v: 0 }, { p: 1, v: 100 }] } },
     });
     expect(timeline.state).toMatchObject({ x: 0 });
     timeline.progress(0.5);
@@ -24,24 +17,25 @@ describe("adapter ports", () => {
     timeline.kill();
   });
 
-  it("adapts a GSAP-like tween without leaking the engine object", () => {
+  it("adapts a GSAP-like paused timeline without leaking the engine object", () => {
     let value = 0;
     let killed = false;
-    const tween: GsapTweenLike = {
-      duration: () => 2,
-      progress,
+    const timeline: GsapTimelineLike = {
+      duration(value?: number): number | GsapTimelineLike {
+        if (value === undefined) return 2;
+        return this;
+      },
+      progress(next?: number): number | GsapTimelineLike {
+        if (next === undefined) return value;
+        value = next;
+        return this;
+      },
+      to: () => timeline,
       kill: () => {
         killed = true;
       },
-    };
-    function progress(): number;
-    function progress(next: number): GsapTweenLike;
-    function progress(next?: number): number | GsapTweenLike {
-      if (next === undefined) return value;
-      value = next;
-      return tween;
-    }
-    const interpolator = createGsapInterpolator({ to: () => tween });
+    } as GsapTimelineLike;
+    const interpolator = createGsapInterpolator({ timeline: () => timeline });
     const adapted = interpolator.create({});
     expect(adapted.duration).toBe(2);
     adapted.progress(0.5);
@@ -73,15 +67,7 @@ describe("adapter ports", () => {
   it("applies perspective once and never applies blocked patches", () => {
     const stage: { style: { perspective?: string }; opacity?: number } = { style: {} };
     const adapter = createDomPatchAdapter(stage, 1200);
-    adapter.apply({
-      nodeId: "hero/arm",
-      revision: 1,
-      values: { opacity: 1 },
-      sourceProgress: 0,
-      sourceRevisions: {},
-      status: "blocked",
-      diagnostics: [],
-    });
+    adapter.apply({ nodeId: "hero/arm", revision: 1, values: { opacity: 1 }, sourceProgress: 0, sourceRevisions: {}, status: "blocked", diagnostics: [] });
     expect(stage.style.perspective).toBe("1200px");
     expect(stage.opacity).toBeUndefined();
   });
