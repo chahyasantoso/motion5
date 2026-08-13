@@ -1,0 +1,337 @@
+quality (node 24)	Unit tests	﻿2026-08-13T08:43:30.9593878Z ##[group]Run npm test
+quality (node 24)	Unit tests	2026-08-13T08:43:30.9594199Z ^[[36;1mnpm test^[[0m
+quality (node 24)	Unit tests	2026-08-13T08:43:30.9638894Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Unit tests	2026-08-13T08:43:30.9639175Z ##[endgroup]
+quality (node 24)	Unit tests	2026-08-13T08:43:31.0733883Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:31.0734436Z > motion5@0.0.0 test
+quality (node 24)	Unit tests	2026-08-13T08:43:31.0734881Z > vitest run
+quality (node 24)	Unit tests	2026-08-13T08:43:31.0735055Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:31.3686939Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:31.3702494Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:31.3703560Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:31.8637339Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-authored-duration.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:31.8837350Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-reentrancy.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:32.0870691Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-state.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:32.1514260Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-absolute-stops.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:32.3063985Z  ^[[32m✓^[[39m packages/core/test/contract/v5-validator.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:32.3986927Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugins.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:32.6074417Z  ^[[31m❯^[[39m packages/core/test/contract/validation-owner.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m | ^[[22m^[[31m5 failed^[[39m^[[2m)^[[22m^[[32m 36^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:32.6077332Z ^[[31m     ^[[31m×^[[31m accepts a track observing a sibling named after its own motion^[[39m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:32.6079484Z ^[[31m     ^[[31m×^[[31m reports an actual self-reference identically from both owners^[[39m^[[32m 4^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:32.6107715Z ^[[31m     ^[[31m×^[[31m reports a cycle identically from both owners^[[39m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:32.6150744Z ^[[31m     ^[[31m×^[[31m spells edge identity the same way in both owners^[[39m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:32.6157798Z      ^[[32m✓^[[39m keeps two observers of one source out of each other's duplicate check^[[32m 1^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:32.6187710Z ^[[31m     ^[[31m×^[[31m mints a frozen snapshot instead of returning the caller's object^[[39m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:32.7268458Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/boundary-scan.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 63^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:32.8446418Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-flat-inputs.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:32.9811391Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/clock-tick-identity.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:33.0538381Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-structural-change.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:33.2139496Z  ^[[32m✓^[[39m packages/core/test/unit/graph/order.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:33.2777815Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ir-validation.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:33.4798862Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/composition-output-shape.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:33.4853011Z  ^[[32m✓^[[39m packages/core/test/contract/adapters.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:33.6815315Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:33.7534117Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/scheduler-reentrancy.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:33.9290057Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:33.9478844Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:34.1439270Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:34.1557663Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:34.1684134Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/public-declaration-surface.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[33m 2544^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:34.1710129Z      ^[[33m^[[2m✓^[[22m^[[39m scans the emitted entry declaration closure, not just source strings ^[[33m 2541^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:34.3584753Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:34.3688468Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:34.3931775Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:34.5824531Z  ^[[32m✓^[[39m packages/core/test/migration/v4-to-v5.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:34.6078339Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:34.6438483Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:34.7908894Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:34.8039896Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:34.8989517Z ^[[90mstderr^[[2m | packages/react/test/public-package-surface.test.ts^[[2m > ^[[22m^[[2mReact public package surface (C2)^[[2m > ^[[22m^[[2mrenders and updates through the package entry alone
+quality (node 24)	Unit tests	2026-08-13T08:43:34.9011538Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Unit tests	2026-08-13T08:43:34.9014078Z  ^[[32m✓^[[39m packages/react/test/public-package-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:34.9047757Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T08:43:34.9049028Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T08:43:34.9050316Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T08:43:34.9051163Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:35.0022997Z  ^[[32m✓^[[39m packages/react/test/patch-store-lifecycle.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:35.0089577Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:35.1193461Z  ^[[32m✓^[[39m packages/core/test/contract/ports.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:35.1927969Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:35.2918591Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:35.3473102Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:35.4346883Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:35.4746870Z  ^[[32m✓^[[39m packages/core/test/unit/domain/lifecycle.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:35.5602331Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:35.6473319Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/acceptance-scan.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:35.7235385Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-paused-timeline.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:35.7257880Z  ^[[32m✓^[[39m packages/core/test/unit/domain/values.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:35.8403389Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-projection-validation.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:35.9250532Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:35.9682444Z  ^[[32m✓^[[39m packages/core/test/unit/domain/triggers.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.0239085Z  ^[[32m✓^[[39m packages/react/test/patch-store.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.1741535Z ^[[90mstderr^[[2m | packages/react/test/public-hook-render.test.ts^[[2m > ^[[22m^[[2mReact public hook render/update (C2)^[[2m > ^[[22m^[[2mrenders the current patch and updates after publication
+quality (node 24)	Unit tests	2026-08-13T08:43:36.1769708Z  ^[[32m✓^[[39m packages/react/test/public-hook-render.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.1771554Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Unit tests	2026-08-13T08:43:36.1791849Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T08:43:36.1793167Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T08:43:36.1794292Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T08:43:36.1794812Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.1934467Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/mutation-config.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.2718770Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.3764090Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.3976853Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track-contribution.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.4888534Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.5866665Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.5938526Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6508136Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6541661Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6542237Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 5 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6542539Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6546974Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/contract/validation-owner.test.ts^[[2m > ^[[22mone observation-validation owner (P1-12)^[[2m > ^[[22maccepts a track observing a sibling named after its own motion
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6552924Z ^[[31m^[[1mAssertionError^[[22m: expected [ { …(4) } ] to deeply equal []^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6553497Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6553734Z ^[[32m- Expected^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6554500Z ^[[31m+ Received^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6554918Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6555108Z ^[[32m- []^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6555474Z ^[[31m+ [^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6555833Z ^[[31m+   {^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6556457Z ^[[31m+     "ids": [^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6556940Z ^[[31m+       "hero",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6557372Z ^[[31m+     ],^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6558011Z ^[[31m+     "message": "Track 'hero' cannot observe itself.",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6558578Z ^[[31m+     "path": "motions[0].tracks[1].observes[0].source",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6559083Z ^[[31m+     "ruleId": "observation-self-reference",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6559426Z ^[[31m+   },^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6559643Z ^[[31m+ ]^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6559755Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6560194Z ^[[36m ^[[2m❯^[[22m packages/core/test/contract/validation-owner.test.ts:^[[2m51:38^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6599915Z     ^[[90m 49|^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6600977Z     ^[[90m 50|^[[39m     ^[[34mexpect^[[39m(^[[34mgraphErrors^[[39m(project))^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6602421Z     ^[[90m 51|^[[39m     ^[[34mexpect^[[39m(^[[34mvalidatorErrors^[[39m(project))^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6603578Z     ^[[90m   |^[[39m                                      ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6604953Z     ^[[90m 52|^[[39m     ^[[34mexpect^[[39m(^[[34mvalidateV5^[[39m(project)^[[33m.^[[39mvalid)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6606092Z     ^[[90m 53|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6606759Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6607265Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6607634Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6609412Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/contract/validation-owner.test.ts^[[2m > ^[[22mone observation-validation owner (P1-12)^[[2m > ^[[22mreports an actual self-reference identically from both owners
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6611446Z ^[[31m^[[1mAssertionError^[[22m: expected [ { …(4) } ] to deeply equal [ { …(4) } ]^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6612035Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6612271Z ^[[32m- Expected^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6612722Z ^[[31m+ Received^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6612971Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6613149Z ^[[2m  [^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6613510Z ^[[2m    {^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6613924Z ^[[32m-     "ids": [^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6614416Z ^[[32m-       "hero/arm",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6614889Z ^[[32m-     ],^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6615616Z ^[[32m-     "message": "Observation cannot reference itself.",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6616830Z ^[[32m-     "path": "hero/arm",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6617595Z ^[[32m-     "ruleId": "observation-self-reference",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6618234Z ^[[31m+     "ids": [],^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6618973Z ^[[31m+     "message": "Observation graph contains a cycle.",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6619700Z ^[[31m+     "path": "motions",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6620346Z ^[[31m+     "ruleId": "observation-cycle",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6620868Z ^[[2m    },^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6621232Z ^[[2m  ]^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6621443Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6622193Z ^[[36m ^[[2m❯^[[22m packages/core/test/contract/validation-owner.test.ts:^[[2m62:38^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6623384Z     ^[[90m 60|^[[39m     // The validator misses this rule entirely and only trips its recu…
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6624577Z     ^[[90m 61|^[[39m     ^[[90m// names the same mistake `observation-cycle` at a different path.^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6626007Z     ^[[90m 62|^[[39m     ^[[34mexpect^[[39m(^[[34mvalidatorErrors^[[39m(project))^[[33m.^[[39m^[[34mtoEqual^[[39m(fromGraph)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6627532Z     ^[[90m   |^[[39m                                      ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6628165Z     ^[[90m 63|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6628451Z     ^[[90m 64|^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6628583Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6628924Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6629297Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6630900Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/contract/validation-owner.test.ts^[[2m > ^[[22mone observation-validation owner (P1-12)^[[2m > ^[[22mreports a cycle identically from both owners
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6633529Z ^[[31m^[[1mAssertionError^[[22m: expected [ { …(4) } ] to deeply equal [ { ruleId: 'graph-cycle', …(3) } ]^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6634207Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6634428Z ^[[32m- Expected^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6634871Z ^[[31m+ Received^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6635086Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6635261Z ^[[2m  [^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6635616Z ^[[2m    {^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6636020Z ^[[32m-     "ids": [^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6636696Z ^[[32m-       "hero/a",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6637170Z ^[[32m-       "hero/b",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6637606Z ^[[32m-     ],^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6638467Z ^[[32m-     "message": "Observation cycle detected: hero/a -> hero/b -> hero/a.",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6639299Z ^[[32m-     "path": "hero/a",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6639894Z ^[[32m-     "ruleId": "graph-cycle",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6640456Z ^[[31m+     "ids": [],^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6641007Z ^[[31m+     "message": "Observation graph contains a cycle.",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6641440Z ^[[31m+     "path": "motions",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6641812Z ^[[31m+     "ruleId": "observation-cycle",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6642114Z ^[[2m    },^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6642354Z ^[[2m  ]^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6642468Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6642884Z ^[[36m ^[[2m❯^[[22m packages/core/test/contract/validation-owner.test.ts:^[[2m76:38^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6643568Z     ^[[90m 74|^[[39m     // validator is a second answer to a question the ordering pass al…
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6644126Z     ^[[90m 75|^[[39m     ^[[90m// cannot name the participating nodes.^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6644850Z     ^[[90m 76|^[[39m     ^[[34mexpect^[[39m(^[[34mvalidatorErrors^[[39m(project))^[[33m.^[[39m^[[34mtoEqual^[[39m(fromGraph)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6645474Z     ^[[90m   |^[[39m                                      ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6645842Z     ^[[90m 77|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6646106Z     ^[[90m 78|^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6646588Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6646851Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6647072Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6647970Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/contract/validation-owner.test.ts^[[2m > ^[[22mone observation-validation owner (P1-12)^[[2m > ^[[22mspells edge identity the same way in both owners
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6649131Z ^[[31m^[[1mAssertionError^[[22m: expected [ { …(4) } ] to deeply equal [ { …(4) } ]^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6649457Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6649587Z ^[[32m- Expected^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6649837Z ^[[31m+ Received^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6649965Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6650069Z ^[[2m  [^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6650275Z ^[[2m    {^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6650506Z ^[[2m      "ids": [^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6650771Z ^[[32m-       "hero/arm",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6651056Z ^[[32m-       "hero/b",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6651339Z ^[[31m+       "b",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6651701Z ^[[2m      ],^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6652620Z ^[[32m-     "message": "Duplicate observation edge \"hero/arm|hero/b|output|\".",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6653533Z ^[[32m-     "path": "hero/arm",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6654217Z ^[[32m-     "ruleId": "observation-duplicate",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6655159Z ^[[31m+     "message": "Duplicate observation edge 'hero/b|output|'.",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6656087Z ^[[31m+     "path": "motions[0].tracks[1].observes[1]",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6657114Z ^[[31m+     "ruleId": "observation-duplicate-edge",^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6657695Z ^[[2m    },^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6658058Z ^[[2m  ]^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6658250Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6658993Z ^[[36m ^[[2m❯^[[22m packages/core/test/contract/validation-owner.test.ts:^[[2m87:38^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6660269Z     ^[[90m 85|^[[39m     ^[[35mconst^[[39m fromGraph ^[[33m=^[[39m ^[[34mgraphErrors^[[39m(project)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6661483Z     ^[[90m 86|^[[39m     expect(fromGraph.map(({ ruleId }) => ruleId)).toEqual(["observatio…
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6662928Z     ^[[90m 87|^[[39m     ^[[34mexpect^[[39m(^[[34mvalidatorErrors^[[39m(project))^[[33m.^[[39m^[[34mtoEqual^[[39m(fromGraph)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6664458Z     ^[[90m   |^[[39m                                      ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6665092Z     ^[[90m 88|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6665552Z     ^[[90m 89|^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6665764Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6666352Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6666716Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6667741Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/contract/validation-owner.test.ts^[[2m > ^[[22mone observation-validation owner (P1-12)^[[2m > ^[[22mmints a frozen snapshot instead of returning the caller's object
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6669204Z ^[[31m^[[1mAssertionError^[[22m: expected { schemaVersion: 5, motions: [ …(1) ] } not to be { schemaVersion: 5, motions: [ …(1) ] } // Object.is equality^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6669752Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6669987Z ^[[2mCompared values have no visual difference.^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6670222Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6670644Z ^[[36m ^[[2m❯^[[22m packages/core/test/contract/validation-owner.test.ts:^[[2m108:26^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6671443Z     ^[[90m106|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m.^[[39mvalue^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6672220Z     ^[[90m107|^[[39m     ^[[34mexpect^[[39m(accepted)^[[33m.^[[39m^[[34mtoBeDefined^[[39m()^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6672946Z     ^[[90m108|^[[39m     ^[[34mexpect^[[39m(accepted)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoBe^[[39m(project)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6673493Z     ^[[90m   |^[[39m                          ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6674244Z     ^[[90m109|^[[39m     ^[[34mexpect^[[39m(^[[33mObject^[[39m^[[33m.^[[39m^[[34misFrozen^[[39m(accepted))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6675071Z     ^[[90m110|^[[39m     expect(Object.isFrozen(accepted?.motions[0]?.tracks[0])).toBe(true…
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6675398Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6675628Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6675835Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6675877Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6676602Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m55 passed^[[39m^[[22m^[[90m (56)^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6677397Z ^[[2m      Tests ^[[22m ^[[1m^[[31m5 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m201 passed^[[39m^[[22m^[[90m (206)^[[39m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6677910Z ^[[2m   Start at ^[[22m 08:43:31
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6678816Z ^[[2m   Duration ^[[22m 5.26s^[[2m (transform 998ms, setup 0ms, import 2.61s, tests 3.24s, environment 9ms)^[[22m
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6679223Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6679242Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6705267Z ##[error]AssertionError: expected [ { …(4) } ] to deeply equal []
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- Expected
+quality (node 24)	Unit tests	+ Received
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- []
+quality (node 24)	Unit tests	+ [
+quality (node 24)	Unit tests	+   {
+quality (node 24)	Unit tests	+     "ids": [
+quality (node 24)	Unit tests	+       "hero",
+quality (node 24)	Unit tests	+     ],
+quality (node 24)	Unit tests	+     "message": "Track 'hero' cannot observe itself.",
+quality (node 24)	Unit tests	+     "path": "motions[0].tracks[1].observes[0].source",
+quality (node 24)	Unit tests	+     "ruleId": "observation-self-reference",
+quality (node 24)	Unit tests	+   },
+quality (node 24)	Unit tests	+ ]
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	 ❯ packages/core/test/contract/validation-owner.test.ts:51:38
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6717892Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6723440Z ##[error]AssertionError: expected [ { …(4) } ] to deeply equal [ { …(4) } ]
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- Expected
+quality (node 24)	Unit tests	+ Received
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	  [
+quality (node 24)	Unit tests	    {
+quality (node 24)	Unit tests	-     "ids": [
+quality (node 24)	Unit tests	-       "hero/arm",
+quality (node 24)	Unit tests	-     ],
+quality (node 24)	Unit tests	-     "message": "Observation cannot reference itself.",
+quality (node 24)	Unit tests	-     "path": "hero/arm",
+quality (node 24)	Unit tests	-     "ruleId": "observation-self-reference",
+quality (node 24)	Unit tests	+     "ids": [],
+quality (node 24)	Unit tests	+     "message": "Observation graph contains a cycle.",
+quality (node 24)	Unit tests	+     "path": "motions",
+quality (node 24)	Unit tests	+     "ruleId": "observation-cycle",
+quality (node 24)	Unit tests	    },
+quality (node 24)	Unit tests	  ]
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	 ❯ packages/core/test/contract/validation-owner.test.ts:62:38
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6727205Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6731015Z ##[error]AssertionError: expected [ { …(4) } ] to deeply equal [ { ruleId: 'graph-cycle', …(3) } ]
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- Expected
+quality (node 24)	Unit tests	+ Received
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	  [
+quality (node 24)	Unit tests	    {
+quality (node 24)	Unit tests	-     "ids": [
+quality (node 24)	Unit tests	-       "hero/a",
+quality (node 24)	Unit tests	-       "hero/b",
+quality (node 24)	Unit tests	-     ],
+quality (node 24)	Unit tests	-     "message": "Observation cycle detected: hero/a -> hero/b -> hero/a.",
+quality (node 24)	Unit tests	-     "path": "hero/a",
+quality (node 24)	Unit tests	-     "ruleId": "graph-cycle",
+quality (node 24)	Unit tests	+     "ids": [],
+quality (node 24)	Unit tests	+     "message": "Observation graph contains a cycle.",
+quality (node 24)	Unit tests	+     "path": "motions",
+quality (node 24)	Unit tests	+     "ruleId": "observation-cycle",
+quality (node 24)	Unit tests	    },
+quality (node 24)	Unit tests	  ]
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	 ❯ packages/core/test/contract/validation-owner.test.ts:76:38
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6733334Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6737380Z ##[error]AssertionError: expected [ { …(4) } ] to deeply equal [ { …(4) } ]
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- Expected
+quality (node 24)	Unit tests	+ Received
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	  [
+quality (node 24)	Unit tests	    {
+quality (node 24)	Unit tests	      "ids": [
+quality (node 24)	Unit tests	-       "hero/arm",
+quality (node 24)	Unit tests	-       "hero/b",
+quality (node 24)	Unit tests	+       "b",
+quality (node 24)	Unit tests	      ],
+quality (node 24)	Unit tests	-     "message": "Duplicate observation edge \"hero/arm|hero/b|output|\".",
+quality (node 24)	Unit tests	-     "path": "hero/arm",
+quality (node 24)	Unit tests	-     "ruleId": "observation-duplicate",
+quality (node 24)	Unit tests	+     "message": "Duplicate observation edge 'hero/b|output|'.",
+quality (node 24)	Unit tests	+     "path": "motions[0].tracks[1].observes[1]",
+quality (node 24)	Unit tests	+     "ruleId": "observation-duplicate-edge",
+quality (node 24)	Unit tests	    },
+quality (node 24)	Unit tests	  ]
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	 ❯ packages/core/test/contract/validation-owner.test.ts:87:38
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6739491Z 
+quality (node 24)	Unit tests	2026-08-13T08:43:36.6741581Z ##[error]AssertionError: expected { schemaVersion: 5, motions: [ …(1) ] } not to be { schemaVersion: 5, motions: [ …(1) ] } // Object.is equality
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	Compared values have no visual difference.
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	 ❯ packages/core/test/contract/validation-owner.test.ts:108:26
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-13T08:43:36.7122374Z ##[error]Process completed with exit code 1.
