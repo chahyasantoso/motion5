@@ -28,6 +28,8 @@ const allowedPublicExports = new Set([
   "GoldenFixture",
   "GoldenValidationFixture",
   "Engine",
+  "ProjectHandle",
+  "PatchBatchLike",
   "PluginRegistry",
   "PluginDefinition",
   "ResolvedPlugins",
@@ -113,14 +115,6 @@ async function scanFiles(directory, scanRoot, violations) {
   }
 }
 
-/**
- * Scans the files sitting directly in `packages/core/src`, which is where the
- * package entries live. Only `engine.ts` used to be checked, so `index.ts` was
- * inspected for export names alone and `internal.ts` was never read: either one
- * could import a renderer or carry banned vocabulary unnoticed. Nested
- * `adapters/` stays out, because the DOM and GSAP adapters exist to touch those
- * boundaries.
- */
 async function scanCoreEntries(scanRoot, violations) {
   const directory = join(scanRoot, "packages", "core", "src");
   let entries;
