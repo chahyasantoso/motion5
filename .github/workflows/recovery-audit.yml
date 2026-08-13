@@ -158,7 +158,13 @@ jobs:
           git diff --name-only --diff-filter=AM "$base_sha" "$ref_sha" -- '*.test.ts' > audit-logs/new-tests.txt
           test -s audit-logs/new-tests.txt
           git checkout -f "$base_sha"
+          # Replay the whole test tree, not only the spec files. Seams, helpers, and fixtures do
+          # not match '*.test.ts', so checking out the spec alone leaves it calling a base-era
+          # helper: the base leg then reds with a TypeError instead of with the behavioral
+          # assertion the slice exists to prove, which is evidence of nothing.
+          git checkout "$ref_sha" -- 'packages/*/test/*'
           xargs -a audit-logs/new-tests.txt git checkout "$ref_sha" --
+          git diff --name-only "$base_sha" > audit-logs/replayed-files.txt
           npm ci --ignore-scripts --no-audit --no-fund > audit-logs/base-install.log 2>&1
           if xargs -a audit-logs/new-tests.txt npx vitest run > audit-logs/base-run.log 2>&1; then exit 1; fi
           git checkout -f "$ref_sha"
