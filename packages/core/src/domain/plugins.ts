@@ -1,6 +1,6 @@
+import { validateKeyframes } from "../contract/validate-v5";
 import type { AuthoredProperty, AuthoredStop, Diagnostic } from "../contract/v5";
 import type { ImmutableRecord } from "./values";
-
 export type PluginComposer = (
   values: Readonly<ImmutableRecord>,
   progress: number,
@@ -44,7 +44,6 @@ export interface PluginDefinition {
   readonly contribute?: PluginContributor;
   readonly compose: PluginComposer;
 }
-
 const VALID_STAGES = new Set(["prepare", "compose"]);
 function diagnostic(
   ruleId: string,
@@ -65,75 +64,6 @@ function stageRank(stage: string): number {
 }
 function comparePlugins(a: PluginDefinition, b: PluginDefinition): number {
   return stageRank(a.stage ?? "compose") - stageRank(b.stage ?? "compose");
-}
-function validStop(stop: unknown): stop is AuthoredStop {
-  return isRecord(stop) && typeof stop.p === "number" && Number.isFinite(stop.p) && "v" in stop;
-}
-function validProperty(
-  value: unknown,
-  path: string,
-  diagnostics: Diagnostic[],
-): value is AuthoredProperty {
-  if (!isRecord(value) || !Array.isArray(value.stops)) {
-    diagnostics.push(
-      diagnostic(
-        "plugin-contribution-stops-shape",
-        path,
-        "Contributed property must contain a stops array.",
-      ),
-    );
-    return false;
-  }
-  let previous: number | undefined;
-  const seen = new Set<number>();
-  let valid = true;
-  for (const [index, stop] of value.stops.entries()) {
-    const stopPath = `${path}.stops[${index}].p`;
-    if (!validStop(stop)) {
-      diagnostics.push(
-        diagnostic(
-          "plugin-contribution-stop-position",
-          stopPath,
-          "Contributed stop p must be finite.",
-        ),
-      );
-      valid = false;
-      continue;
-    }
-    if (stop.p < 0 || stop.p > 1) {
-      diagnostics.push(
-        diagnostic(
-          "plugin-contribution-stop-range",
-          stopPath,
-          "Contributed stop p must be between 0 and 1.",
-        ),
-      );
-      valid = false;
-    }
-    if (previous !== undefined && stop.p < previous) {
-      diagnostics.push(
-        diagnostic(
-          "plugin-contribution-stop-order",
-          stopPath,
-          "Contributed stop positions must be monotonic.",
-        ),
-      );
-      valid = false;
-    }
-    if (seen.has(stop.p)) {
-      diagnostics.push(
-        diagnostic(
-          "plugin-contribution-stop-duplicate",
-          stopPath,
-          "Contributed stop positions must be unique.",
-        ),
-      );
-      valid = false;
-    }
-    seen.add(stop.p);
-    previous = stop.p;
-  }
-  return valid;
 }
 function normalizeContribution(
   value: unknown,
@@ -169,6 +99,11 @@ function normalizeContribution(
       : {}),
     ...(isRecord(value.tweenVars) ? { tweenVars: value.tweenVars } : {}),
   };
+}
+function readStops(value: unknown): readonly AuthoredStop[] {
+  return isRecord(value) && Array.isArray(value.stops)
+    ? (value.stops as readonly AuthoredStop[])
+    : [];
 }
 function prepareContributions(
   authored: Readonly<Record<string, unknown>>,
@@ -235,7 +170,18 @@ function prepareContributions(
         );
         continue;
       }
-      if (validProperty(property, `${path}.${output}`, diagnostics)) {
+      const before = diagnostics.length;
+      validateKeyframes({ [output]: property }, path, diagnostics, {
+        ruleIdPrefix: "plugin-contribution-",
+        ruleIdAliases: {
+          "stop-position": "stop",
+          "stop-position-range": "stop-range",
+          "stop-position-order": "stop-order",
+          "stop-position-duplicate": "stop-duplicate",
+        },
+      });
+      const invalid = diagnostics.slice(before).some(({ severity }) => severity === "error");
+      if (!invalid) {
         keyOwners.set(output, plugin.name);
         keyframes[output] = property;
       }
@@ -302,10 +248,6 @@ function result(
     preparation,
   });
 }
-function readStops(value: unknown): readonly AuthoredStop[] {
-  return isRecord(value) && Array.isArray(value.stops) ? value.stops.filter(validStop) : [];
-}
-
 export class PluginRegistry {
   readonly #plugins = new Map<string, PluginDefinition>();
   readonly #keyOwners = new Map<string, PluginDefinition>();

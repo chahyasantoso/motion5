@@ -1,11 +1,9 @@
 import type { InterpolationTimeline, Interpolator } from "./interpolator";
 import type { Cancel, Scheduler } from "./scheduler";
-
 interface FakeStop {
   readonly p: number;
   readonly v: unknown;
 }
-
 function readStops(config: unknown): Record<string, readonly FakeStop[]> {
   if (!config || typeof config !== "object" || !("keyframes" in config)) return {};
   const keyframes = (config as { keyframes?: unknown }).keyframes;
@@ -19,12 +17,10 @@ function readStops(config: unknown): Record<string, readonly FakeStop[]> {
   }
   return result;
 }
-
 function interpolate(a: unknown, b: unknown, amount: number): unknown {
   if (typeof a === "number" && typeof b === "number") return a + (b - a) * amount;
   return amount < 1 ? a : b;
 }
-
 function valueAt(stops: readonly FakeStop[], progress: number): unknown {
   const first = stops[0];
   if (!first) return undefined;
@@ -36,14 +32,11 @@ function valueAt(stops: readonly FakeStop[], progress: number): unknown {
     const next = stops[index];
     const previous = stops[index - 1];
     if (!next || !previous) continue;
-    if (progress <= next.p) {
-      const amount = (progress - previous.p) / (next.p - previous.p);
-      return interpolate(previous.v, next.v, amount);
-    }
+    if (progress <= next.p)
+      return interpolate(previous.v, next.v, (progress - previous.p) / (next.p - previous.p));
   }
   return last.v;
 }
-
 export function createFakeInterpolator(): Interpolator {
   return {
     create(config) {
@@ -81,15 +74,12 @@ export function createFakeInterpolator(): Interpolator {
     },
   };
 }
-
 export interface ScheduledJob<Options = unknown> {
   readonly job: () => void;
   readonly options: Options | undefined;
   readonly cancel: Cancel;
 }
-
 type ActiveScheduledJob<Options> = ScheduledJob<Options> & { cancelled: boolean };
-
 export function createFakeScheduler<Options = unknown>(): Scheduler<() => void, Options> & {
   readonly pending: readonly ScheduledJob<Options>[];
   flush(): void;

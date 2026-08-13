@@ -12,9 +12,11 @@ export interface ValidationResult {
   readonly diagnostics: readonly Diagnostic[];
   readonly value: ProjectDefinition | null;
 }
-
+export interface KeyframeValidationOptions {
+  readonly ruleIdPrefix?: string;
+  readonly ruleIdAliases?: Readonly<Record<string, string>>;
+}
 type RawObject = Record<string, unknown>;
-
 function issue(
   ruleId: string,
   path: string,
@@ -27,33 +29,41 @@ function issue(
     path,
     message,
     severity,
-    ...(ids.length > 0 ? { ids: Object.freeze([...ids]) } : {}),
+    ...(ids.length ? { ids: Object.freeze([...ids]) } : {}),
   });
 }
-
 function isObject(value: unknown): value is RawObject {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
-
-function validateKeyframes(keyframes: unknown, path: string, diagnostics: Diagnostic[]): void {
+export function validateKeyframes(
+  keyframes: unknown,
+  path: string,
+  diagnostics: Diagnostic[],
+  options: KeyframeValidationOptions = {},
+): void {
+  const prefix = options.ruleIdPrefix ?? "";
+  const aliases = options.ruleIdAliases ?? {};
+  const add = (
+    ruleId: string,
+    rulePath: string,
+    message: string,
+    severity: Diagnostic["severity"] = "error",
+  ) =>
+    diagnostics.push(issue(`${prefix}${aliases[ruleId] ?? ruleId}`, rulePath, message, severity));
   if (keyframes === undefined) return;
   if (!isObject(keyframes)) {
-    diagnostics.push(issue("keyframes-shape", path, "Track keyframes must be an object."));
+    add("keyframes-shape", path, "Track keyframes must be an object.");
     return;
   }
   for (const [key, rawProperty] of Object.entries(keyframes)) {
     const propertyPath = `${path}.${key}`;
     if (!isObject(rawProperty)) {
-      diagnostics.push(
-        issue("stops-shape", `${propertyPath}.stops`, "Authored properties require a stops array."),
-      );
+      add("stops-shape", `${propertyPath}.stops`, "Authored properties require a stops array.");
       continue;
     }
     if (Object.keys(rawProperty).length === 0) continue;
     if (!Array.isArray(rawProperty.stops)) {
-      diagnostics.push(
-        issue("stops-shape", `${propertyPath}.stops`, "Authored properties require a stops array."),
-      );
+      add("stops-shape", `${propertyPath}.stops`, "Authored properties require a stops array.");
       continue;
     }
     let previous: number | undefined;
@@ -61,38 +71,25 @@ function validateKeyframes(keyframes: unknown, path: string, diagnostics: Diagno
     for (const [index, rawStop] of rawProperty.stops.entries()) {
       const stopPath = `${propertyPath}.stops[${index}]`;
       if (!isObject(rawStop) || typeof rawStop.p !== "number" || !Number.isFinite(rawStop.p)) {
-        diagnostics.push(
-          issue("stop-position", `${stopPath}.p`, "Stop p must be a finite number."),
-        );
+        add("stop-position", `${stopPath}.p`, "Stop p must be a finite number.");
         continue;
       }
       const position = rawStop.p;
       if (position < 0 || position > 1)
-        diagnostics.push(
-          issue("stop-position-range", `${stopPath}.p`, "Stop p must be between 0 and 1."),
-        );
+        add("stop-position-range", `${stopPath}.p`, "Stop p must be between 0 and 1.");
       if (previous !== undefined && position < previous)
-        diagnostics.push(
-          issue("stop-position-order", `${stopPath}.p`, "Stop positions must be monotonic."),
-        );
+        add("stop-position-order", `${stopPath}.p`, "Stop positions must be monotonic.");
       if (positions.has(position))
-        diagnostics.push(
-          issue("stop-position-duplicate", `${stopPath}.p`, "Stop positions must be unique."),
-        );
+        add("stop-position-duplicate", `${stopPath}.p`, "Stop positions must be unique.");
       positions.add(position);
       previous = position;
     }
     if (positions.size > 0 && !positions.has(0))
-      diagnostics.push(
-        issue("stop-missing-start", propertyPath, "Stop sequence does not define p=0.", "warning"),
-      );
+      add("stop-missing-start", propertyPath, "Stop sequence does not define p=0.", "warning");
     if (positions.size > 0 && !positions.has(1))
-      diagnostics.push(
-        issue("stop-missing-end", propertyPath, "Stop sequence does not define p=1.", "warning"),
-      );
+      add("stop-missing-end", propertyPath, "Stop sequence does not define p=1.", "warning");
   }
 }
-
 function validateId(
   value: unknown,
   path: string,
@@ -100,7 +97,7 @@ function validateId(
   reservedTilde = false,
 ): Diagnostic[] {
   const diagnostics: Diagnostic[] = [];
-  if (typeof value !== "string" || value.length === 0) {
+  if (typeof value !== "string" || !value.length) {
     diagnostics.push(issue("id-shape", path, `${label} id must be a non-empty string.`));
     return diagnostics;
   }
@@ -114,7 +111,6 @@ function validateId(
     );
   return diagnostics;
 }
-
 function usesThreeD(track: RawObject): boolean {
   const keyframes = isObject(track.keyframes) ? track.keyframes : null;
   if (!keyframes) return false;
@@ -130,7 +126,6 @@ function usesThreeD(track: RawObject): boolean {
     path.points.some((point) => isObject(point) && typeof point.z === "number" && point.z !== 0)
   );
 }
-
 function validateTrackShape(
   track: unknown,
   path: string,
@@ -143,7 +138,7 @@ function validateTrackShape(
   }
   diagnostics.push(...validateId(track.id, `${path}.id`, "Track"));
   validateKeyframes(track.keyframes, `${path}.keyframes`, diagnostics);
-  if (typeof track.id === "string" && track.id.length > 0) {
+  if (typeof track.id === "string" && track.id.length) {
     if (seenIds.has(track.id))
       diagnostics.push(
         issue(
@@ -162,7 +157,6 @@ function validateTrackShape(
     );
   return true;
 }
-
 function clone(value: unknown, seen = new WeakMap<object, unknown>()): unknown {
   if (value === null || typeof value !== "object") return value;
   const existing = seen.get(value);
@@ -178,7 +172,6 @@ function clone(value: unknown, seen = new WeakMap<object, unknown>()): unknown {
   for (const [key, child] of Object.entries(value)) result[key] = clone(child, seen);
   return result;
 }
-
 function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   if (value === null || typeof value !== "object") return value;
   if (seen.has(value)) return value;
@@ -186,7 +179,6 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   for (const child of Object.values(value)) deepFreeze(child, seen);
   return Object.freeze(value);
 }
-
 export function validateV5(input: unknown): ValidationResult {
   const diagnostics: Diagnostic[] = [];
   if (!isObject(input))
@@ -195,7 +187,6 @@ export function validateV5(input: unknown): ValidationResult {
       diagnostics: [issue("project-shape", "$", "Project must be an object.")],
       value: null,
     };
-
   if (input.schemaVersion !== AUTHORED_SCHEMA_VERSION)
     diagnostics.push(
       issue(
@@ -206,7 +197,7 @@ export function validateV5(input: unknown): ValidationResult {
     );
   if (
     input.projectId !== undefined &&
-    (typeof input.projectId !== "string" || input.projectId.length === 0)
+    (typeof input.projectId !== "string" || !input.projectId.length)
   )
     diagnostics.push(
       issue("project-id", "projectId", "projectId must be a non-empty string when present."),
@@ -215,13 +206,11 @@ export function validateV5(input: unknown): ValidationResult {
     diagnostics.push(issue("motions-shape", "motions", "motions must be an array."));
   if (input.freeTracks !== undefined && !Array.isArray(input.freeTracks))
     diagnostics.push(issue("free-tracks-shape", "freeTracks", "freeTracks must be an array."));
-
   const motions = Array.isArray(input.motions) ? input.motions : [];
   const freeTracks = Array.isArray(input.freeTracks) ? input.freeTracks : [];
   const motionIds = new Set<string>();
   const freeIds = new Set<string>();
   const allTracks: RawObject[] = [];
-
   for (const [index, rawMotion] of motions.entries()) {
     const path = `motions[${index}]`;
     if (!isObject(rawMotion)) {
@@ -261,18 +250,15 @@ export function validateV5(input: unknown): ValidationResult {
     const localIds = new Set<string>();
     for (const [trackIndex, rawTrack] of rawMotion.tracks.entries()) {
       const trackPath = `${path}.tracks[${trackIndex}]`;
-      if (!validateTrackShape(rawTrack, trackPath, localIds, diagnostics)) continue;
-      allTracks.push(rawTrack as unknown as RawObject);
+      if (validateTrackShape(rawTrack, trackPath, localIds, diagnostics))
+        allTracks.push(rawTrack as unknown as RawObject);
     }
   }
-
   for (const [index, rawTrack] of freeTracks.entries()) {
     const path = `freeTracks[${index}]`;
-    const localIds = freeIds;
-    if (!validateTrackShape(rawTrack, path, localIds, diagnostics)) continue;
-    allTracks.push(rawTrack as unknown as RawObject);
+    if (validateTrackShape(rawTrack, path, freeIds, diagnostics))
+      allTracks.push(rawTrack as unknown as RawObject);
   }
-
   const perspective = input.perspective;
   if (
     perspective !== undefined &&
@@ -297,13 +283,12 @@ export function validateV5(input: unknown): ValidationResult {
             [String(track.id ?? "")],
           ),
         );
-
-  const hasErrors = diagnostics.some(({ severity }) => severity === "error");
-  if (!hasErrors) {
-    const graph = buildGraphIR(input as unknown as ProjectDefinition);
-    diagnostics.push(...graph.diagnostics);
-  }
+  if (!diagnostics.some(({ severity }) => severity === "error"))
+    diagnostics.push(...buildGraphIR(input as unknown as ProjectDefinition).diagnostics);
   const valid = !diagnostics.some(({ severity }) => severity === "error");
-  const accepted = valid ? deepFreeze(clone(input) as ProjectDefinition) : null;
-  return { valid, diagnostics: Object.freeze(diagnostics), value: accepted };
+  return {
+    valid,
+    diagnostics: Object.freeze(diagnostics),
+    value: valid ? deepFreeze(clone(input) as ProjectDefinition) : null,
+  };
 }
