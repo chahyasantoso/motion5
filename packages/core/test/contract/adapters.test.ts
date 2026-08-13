@@ -7,10 +7,7 @@ import { createRealGsapSeam } from "../support/real-gsap";
 describe("adapter ports", () => {
   it("compiles authored stops onto an adapter-owned proxy state", () => {
     const seam = createRealGsapSeam();
-    const timeline = seam.interpolator.create({
-      duration: 2,
-      keyframes: { x: { stops: [{ p: 0, v: 0 }, { p: 1, v: 100 }] } },
-    });
+    const timeline = seam.interpolator.create({ duration: 2, keyframes: { x: { stops: [{ p: 0, v: 0 }, { p: 1, v: 100 }] } } });
     expect(timeline.state).toMatchObject({ x: 0 });
     timeline.progress(0.5);
     expect(timeline.state).toMatchObject({ x: 50 });
@@ -19,10 +16,12 @@ describe("adapter ports", () => {
 
   it("adapts a GSAP-like paused timeline without leaking the engine object", () => {
     let value = 0;
+    let durationValue = 2;
     let killed = false;
     const timeline: GsapTimelineLike = {
       duration(value?: number): number | GsapTimelineLike {
-        if (value === undefined) return 2;
+        if (value === undefined) return durationValue;
+        durationValue = value;
         return this;
       },
       progress(next?: number): number | GsapTimelineLike {
@@ -31,9 +30,7 @@ describe("adapter ports", () => {
         return this;
       },
       to: () => timeline,
-      kill: () => {
-        killed = true;
-      },
+      kill: () => { killed = true; },
     } as GsapTimelineLike;
     const interpolator = createGsapInterpolator({ timeline: () => timeline });
     const adapted = interpolator.create({});
@@ -47,15 +44,7 @@ describe("adapter ports", () => {
   it("ticks through an injected frame source and cancels on dispose", () => {
     const frames: ((time: number) => void)[] = [];
     let cancelled = 0;
-    const clock = createBrowserClock({
-      requestFrame(listener) {
-        frames.push(listener);
-        return frames.length;
-      },
-      cancelFrame() {
-        cancelled += 1;
-      },
-    });
+    const clock = createBrowserClock({ requestFrame(listener) { frames.push(listener); return frames.length; }, cancelFrame() { cancelled += 1; } });
     const ticks: number[] = [];
     clock.subscribe(({ tick }) => ticks.push(tick));
     frames.shift()?.(10);
