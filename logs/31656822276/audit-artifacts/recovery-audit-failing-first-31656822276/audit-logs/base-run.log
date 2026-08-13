@@ -1,0 +1,71 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/motion5/motion5[39m
+
+ [31m❯[39m packages/core/test/contract/gsap-paused-timeline.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m packages/core/test/contract/gsap-absolute-stops.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m packages/core/test/integration/end-to-end.test.ts [2m([22m[2m0 test[22m[2m)[22m
+ [31m❯[39m packages/core/test/contract/gsap-multi-stop.test.ts [2m([22m[2m0 test[22m[2m)[22m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Suites 4 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/contract/gsap-absolute-stops.test.ts[2m [ packages/core/test/contract/gsap-absolute-stops.test.ts ][22m
+[31m[1mError[22m: Cannot find module '../support/real-gsap' imported from /home/runner/work/motion5/motion5/packages/core/test/contract/gsap-absolute-stops.test.ts[39m
+[36m [2m❯[22m packages/core/test/contract/gsap-absolute-stops.test.ts:[2m6:1[22m[39m
+    [90m  4|[39m   type [33mGsapTimelineLike[39m[33m,[39m
+    [90m  5|[39m } [35mfrom[39m [32m"../../src/adapters/interpolator/gsap"[39m[33m;[39m
+    [90m  6|[39m [35mimport[39m { createRealGsapSeam[33m,[39m readNumber } [35mfrom[39m [32m"../support/real-gsap"[39m[33m;[39m
+    [90m   |[39m [31m^[39m
+    [90m  7|[39m
+    [90m  8|[39m type [33mTween[39m [33m=[39m {
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/contract/gsap-multi-stop.test.ts[2m [ packages/core/test/contract/gsap-multi-stop.test.ts ][22m
+[31m[1mError[22m: Cannot find module '../support/real-gsap' imported from /home/runner/work/motion5/motion5/packages/core/test/contract/gsap-multi-stop.test.ts[39m
+[36m [2m❯[22m packages/core/test/contract/gsap-multi-stop.test.ts:[2m2:1[22m[39m
+    [90m  1|[39m [35mimport[39m { describe[33m,[39m expect[33m,[39m it } [35mfrom[39m [32m"vitest"[39m[33m;[39m
+    [90m  2|[39m [35mimport[39m { createRealGsapSeam } [35mfrom[39m [32m"../support/real-gsap"[39m[33m;[39m
+    [90m   |[39m [31m^[39m
+    [90m  3|[39m
+    [90m  4|[39m [34mdescribe[39m([32m"GSAP multi-stop compilation (B2)"[39m[33m,[39m () [33m=>[39m {
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/contract/gsap-paused-timeline.test.ts[2m [ packages/core/test/contract/gsap-paused-timeline.test.ts ][22m
+[31m[1mError[22m: Cannot find module '../support/real-gsap' imported from /home/runner/work/motion5/motion5/packages/core/test/contract/gsap-paused-timeline.test.ts[39m
+[36m [2m❯[22m packages/core/test/contract/gsap-paused-timeline.test.ts:[2m6:1[22m[39m
+    [90m  4|[39m   type [33mGsapTimelineLike[39m[33m,[39m
+    [90m  5|[39m } [35mfrom[39m [32m"../../src/adapters/interpolator/gsap"[39m[33m;[39m
+    [90m  6|[39m [35mimport[39m { createRealGsapSeam } [35mfrom[39m [32m"../support/real-gsap"[39m[33m;[39m
+    [90m   |[39m [31m^[39m
+    [90m  7|[39m
+    [90m  8|[39m [34mdescribe[39m([32m"GSAP interpolator clock ownership (P0-2)"[39m[33m,[39m () [33m=>[39m {
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/integration/end-to-end.test.ts[2m [ packages/core/test/integration/end-to-end.test.ts ][22m
+[31m[1mError[22m: Cannot find module '../support/real-gsap' imported from /home/runner/work/motion5/motion5/packages/core/test/integration/end-to-end.test.ts[39m
+[36m [2m❯[22m packages/core/test/integration/end-to-end.test.ts:[2m7:1[22m[39m
+    [90m  5|[39m [35mimport[39m { createManualClock } [35mfrom[39m [32m"../../src/ports/clock"[39m[33m;[39m
+    [90m  6|[39m [35mimport[39m { createFakeScheduler } [35mfrom[39m [32m"../../src/ports/fakes"[39m[33m;[39m
+    [90m  7|[39m [35mimport[39m { createRealGsapSeam } [35mfrom[39m [32m"../support/real-gsap"[39m[33m;[39m
+    [90m   |[39m [31m^[39m
+    [90m  8|[39m
+    [90m  9|[39m [35mconst[39m project[33m:[39m [33mProjectDefinition[39m [33m=[39m {
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m4 failed[39m[22m[90m (4)[39m
+[2m      Tests [22m [2mno tests[22m
+[2m   Start at [22m 01:10:13
+[2m   Duration [22m 430ms[2m (transform 327ms, setup 0ms, import 0ms, tests 0ms, environment 0ms)[22m
+
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/contract/gsap-absolute-stops.test.ts,title=packages/core/test/contract/gsap-absolute-stops.test.ts,line=6,column=1::Error: Cannot find module '../support/real-gsap' imported from /home/runner/work/motion5/motion5/packages/core/test/contract/gsap-absolute-stops.test.ts%0A ❯ packages/core/test/contract/gsap-absolute-stops.test.ts:6:1%0A%0A⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯%0ASerialized Error: { code: 'ERR_MODULE_NOT_FOUND' }%0A
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/contract/gsap-multi-stop.test.ts,title=packages/core/test/contract/gsap-multi-stop.test.ts,line=2,column=1::Error: Cannot find module '../support/real-gsap' imported from /home/runner/work/motion5/motion5/packages/core/test/contract/gsap-multi-stop.test.ts%0A ❯ packages/core/test/contract/gsap-multi-stop.test.ts:2:1%0A%0A⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯%0ASerialized Error: { code: 'ERR_MODULE_NOT_FOUND' }%0A
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/contract/gsap-paused-timeline.test.ts,title=packages/core/test/contract/gsap-paused-timeline.test.ts,line=6,column=1::Error: Cannot find module '../support/real-gsap' imported from /home/runner/work/motion5/motion5/packages/core/test/contract/gsap-paused-timeline.test.ts%0A ❯ packages/core/test/contract/gsap-paused-timeline.test.ts:6:1%0A%0A⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯%0ASerialized Error: { code: 'ERR_MODULE_NOT_FOUND' }%0A
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/integration/end-to-end.test.ts,title=packages/core/test/integration/end-to-end.test.ts,line=7,column=1::Error: Cannot find module '../support/real-gsap' imported from /home/runner/work/motion5/motion5/packages/core/test/integration/end-to-end.test.ts%0A ❯ packages/core/test/integration/end-to-end.test.ts:7:1%0A%0A⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯%0ASerialized Error: { code: 'ERR_MODULE_NOT_FOUND' }%0A
