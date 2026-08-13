@@ -1,0 +1,114 @@
+quality (node 24)	Typecheck	﻿2026-08-13T08:50:28.1241169Z ##[group]Run npm run typecheck
+quality (node 24)	Typecheck	2026-08-13T08:50:28.1241560Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Typecheck	2026-08-13T08:50:28.1286161Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Typecheck	2026-08-13T08:50:28.1286438Z ##[endgroup]
+quality (node 24)	Typecheck	2026-08-13T08:50:28.2294328Z 
+quality (node 24)	Typecheck	2026-08-13T08:50:28.2295057Z > motion5@0.0.0 typecheck
+quality (node 24)	Typecheck	2026-08-13T08:50:28.2295576Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Typecheck	2026-08-13T08:50:28.2296060Z 
+quality (node 24)	Typecheck	2026-08-13T08:50:30.0912259Z ##[error]packages/core/src/contract/validate-v5.ts(182,22): error TS2352: Conversion of type 'TrackDefinition' to type 'RawObject' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+quality (node 24)	Typecheck	2026-08-13T08:50:30.0921219Z   Index signature for type 'string' is missing in type 'TrackDefinition'.
+quality (node 24)	Typecheck	2026-08-13T08:50:30.0924012Z ##[error]packages/core/src/contract/validate-v5.ts(190,20): error TS2352: Conversion of type 'TrackDefinition' to type 'RawObject' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+quality (node 24)	Typecheck	2026-08-13T08:50:30.0925831Z   Index signature for type 'string' is missing in type 'TrackDefinition'.
+quality (node 24)	Typecheck	2026-08-13T08:50:30.1215637Z ##[error]Process completed with exit code 2.
+integration (node 24)	Integration tests	﻿2026-08-13T08:50:30.5333927Z ##[group]Run npm run test:integration
+integration (node 24)	Integration tests	2026-08-13T08:50:30.5334292Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Integration tests	2026-08-13T08:50:30.5382067Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Integration tests	2026-08-13T08:50:30.5382345Z ##[endgroup]
+integration (node 24)	Integration tests	2026-08-13T08:50:30.6409890Z 
+integration (node 24)	Integration tests	2026-08-13T08:50:30.6410388Z > motion5@0.0.0 test:integration
+integration (node 24)	Integration tests	2026-08-13T08:50:30.6410835Z > vitest run packages/core/test/integration
+integration (node 24)	Integration tests	2026-08-13T08:50:30.6411063Z 
+integration (node 24)	Integration tests	2026-08-13T08:50:31.1084548Z 
+integration (node 24)	Integration tests	2026-08-13T08:50:31.1088611Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:31.1089284Z 
+integration (node 24)	Integration tests	2026-08-13T08:50:31.4337589Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:31.4396309Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:31.4429181Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:31.6534559Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:31.6753285Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:31.7079938Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:31.8760889Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:31.8822275Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:31.9018169Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.0909539Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.2525952Z  ^[[31m❯^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.2528276Z      ^[[32m✓^[[39m serializes the minimal project deterministically^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.2529456Z      ^[[32m✓^[[39m accepts a project with a shared free track^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.2530517Z      ^[[32m✓^[[39m preserves warnings without rejecting the project^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.2531683Z ^[[31m     ^[[31m×^[[31m rejects cycles before runtime mounting^[[39m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.2533045Z      ^[[32m✓^[[39m migrates a v4 document without changing its source^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.2782924Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.2884179Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4480308Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4681646Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4865460Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4900390Z 
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4901204Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4901657Z 
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4904836Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/contract-baseline.test.ts^[[2m > ^[[22mP0-05 v5 contract integration^[[2m > ^[[22mrejects cycles before runtime mounting
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4911348Z ^[[31m^[[1mAssertionError^[[22m: expected [ { ruleId: 'graph-cycle', …(4) } ] to deep equally contain ObjectContaining{…}^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4912198Z 
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4912658Z ^[[32m- Expected:^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4913034Z ObjectContaining {
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4913741Z   "ruleId": "observation-cycle",
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4914316Z   "severity": "error",
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4915379Z }
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4915551Z 
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4915830Z ^[[31m+ Received:^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4916163Z [
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4916428Z   {
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4916741Z     "ids": [
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4917054Z       "rig/a",
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4917514Z       "rig/b",
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4917797Z     ],
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4918306Z     "message": "Observation cycle detected: rig/a -> rig/b -> rig/a.",
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4918879Z     "path": "rig/a",
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4919241Z     "ruleId": "graph-cycle",
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4919524Z     "severity": "error",
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4919766Z   },
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4919948Z ]
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4920058Z 
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4920552Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/contract-baseline.test.ts:^[[2m38:32^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4951050Z     ^[[90m 36|^[[39m     ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(cyclicProject)^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4952182Z     ^[[90m 37|^[[39m     ^[[34mexpect^[[39m(result^[[33m.^[[39mvalid)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mfalse^[[39m)^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4953058Z     ^[[90m 38|^[[39m     ^[[34mexpect^[[39m(result^[[33m.^[[39mdiagnostics)^[[33m.^[[39m^[[34mtoContainEqual^[[39m(
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4953817Z     ^[[90m   |^[[39m                                ^[[31m^^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4954552Z     ^[[90m 39|^[[39m       expect.objectContaining({ ruleId: "observation-cycle", severity:…
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4955044Z     ^[[90m 40|^[[39m     )^[[33m;^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4955229Z 
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4955502Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4955727Z 
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4956371Z 
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4968575Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m15 passed^[[39m^[[22m^[[90m (16)^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4970184Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m38 passed^[[39m^[[22m^[[90m (39)^[[39m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4971128Z ^[[2m   Start at ^[[22m 08:50:31
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4972333Z ^[[2m   Duration ^[[22m 1.37s^[[2m (transform 646ms, setup 0ms, import 1.28s, tests 152ms, environment 3ms)^[[22m
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4972973Z 
+integration (node 24)	Integration tests	2026-08-13T08:50:32.4983221Z 
+integration (node 24)	Integration tests	2026-08-13T08:50:32.5005361Z ##[error]AssertionError: expected [ { ruleId: 'graph-cycle', …(4) } ] to deep equally contain ObjectContaining{…}
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	- Expected:
+integration (node 24)	Integration tests	ObjectContaining {
+integration (node 24)	Integration tests	  "ruleId": "observation-cycle",
+integration (node 24)	Integration tests	  "severity": "error",
+integration (node 24)	Integration tests	}
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	+ Received:
+integration (node 24)	Integration tests	[
+integration (node 24)	Integration tests	  {
+integration (node 24)	Integration tests	    "ids": [
+integration (node 24)	Integration tests	      "rig/a",
+integration (node 24)	Integration tests	      "rig/b",
+integration (node 24)	Integration tests	    ],
+integration (node 24)	Integration tests	    "message": "Observation cycle detected: rig/a -> rig/b -> rig/a.",
+integration (node 24)	Integration tests	    "path": "rig/a",
+integration (node 24)	Integration tests	    "ruleId": "graph-cycle",
+integration (node 24)	Integration tests	    "severity": "error",
+integration (node 24)	Integration tests	  },
+integration (node 24)	Integration tests	]
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	 ❯ packages/core/test/integration/contract-baseline.test.ts:38:32
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	
+integration (node 24)	Integration tests	2026-08-13T08:50:32.5340188Z ##[error]Process completed with exit code 1.
