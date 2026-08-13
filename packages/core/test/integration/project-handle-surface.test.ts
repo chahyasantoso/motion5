@@ -24,7 +24,7 @@ describe("public project handle surface (P1-9)", () => {
     runtime.dispose();
   });
 
-  it("keeps only lifecycle operations on the consumer handle", () => {
+  it("keeps only lifecycle and observation operations on the consumer handle", () => {
     const runtime = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
@@ -33,7 +33,7 @@ describe("public project handle surface (P1-9)", () => {
     const prototype = Object.getPrototypeOf(runtime) as object;
     const names = Object.getOwnPropertyNames(prototype).sort();
 
-    expect(names).toEqual(["constructor", "dispose", "mount", "seek", "unmount"]);
+    expect(names).toEqual(["constructor", "dispose", "mount", "seek", "subscribe", "unmount"]);
     runtime.dispose();
   });
 });
