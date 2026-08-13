@@ -2,6 +2,17 @@ import { describe, expect, it } from "vitest";
 import { createRealGsapSeam, readNumber } from "../support/real-gsap";
 
 /**
+ * The surface a consumer actually sees. `rendererNeutralState` strips underscore-prefixed keys
+ * before anything is published, and real GSAP stamps its own `_gsap` cache onto every target it
+ * animates, so the raw proxy always carries bookkeeping that never reaches a patch. Filtering it
+ * here is what makes the assertion about authored values rather than about GSAP internals; an
+ * unauthored key without an underscore, such as the pin's own `authoredEnd`, still shows up.
+ */
+function authoredKeys(state: Readonly<Record<string, unknown>>): readonly string[] {
+  return Object.keys(state).filter((key) => !key.startsWith("_"));
+}
+
+/**
  * P0-3b. A timeline's real duration must be the authored duration, whatever the authored stops
  * do at the tail.
  *
@@ -154,10 +165,14 @@ describe("GSAP authored-duration pinning (P0-3b)", () => {
 
     expect(short.created[0]?.tweenCount()).toBe(2);
 
-    // Whatever pins the duration must not reach the adapter-owned proxy: an extra key here
-    // would flow through Track.compose into a published patch and on to the renderer.
+    // Whatever pins the duration must not reach the adapter-owned proxy: an extra authored key
+    // here would flow through Track.compose into a published patch and on to the renderer. The
+    // pinned and unpinned proxies must therefore expose the same authored surface.
+    completeTimeline.progress(1);
     shortTimeline.progress(1);
-    expect(Object.keys(shortTimeline.state)).toEqual(["x"]);
+    expect(authoredKeys(shortTimeline.state)).toEqual(["x"]);
+    expect(authoredKeys(shortTimeline.state)).toEqual(authoredKeys(completeTimeline.state));
+    expect(shortTimeline.state).not.toHaveProperty("authoredEnd");
 
     completeTimeline.kill();
     shortTimeline.kill();
