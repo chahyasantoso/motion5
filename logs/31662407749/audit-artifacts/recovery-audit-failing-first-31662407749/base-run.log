@@ -1,0 +1,56 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/motion5/motion5[39m
+
+ [32m✓[39m packages/core/test/contract/gsap-paused-timeline.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [31m❯[39m packages/core/test/contract/gsap-absolute-stops.test.ts [2m([22m[2m2 tests[22m[2m | [22m[31m2 failed[39m[2m)[22m[32m 19[2mms[22m[39m
+[31m     [31m×[31m preserves each property's absolute positions and independent timing[39m[32m 14[2mms[22m[39m
+[31m     [31m×[31m keeps per-property grids and the leading hold intact on real GSAP[39m[32m 3[2mms[22m[39m
+ [32m✓[39m packages/core/test/integration/end-to-end.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m packages/core/test/contract/gsap-multi-stop.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 6[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 2 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/contract/gsap-absolute-stops.test.ts[2m > [22mGSAP absolute multi-property stops (P0-3)[2m > [22mpreserves each property's absolute positions and independent timing
+[31m[1mAssertionError[22m: expected { x: 50, y: 25 } to deeply equal { x: +0 }[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[2m  {[22m
+[32m-   "x": 0,[39m
+[31m+   "x": 50,[39m
+[31m+   "y": 25,[39m
+[2m  }[22m
+
+[36m [2m❯[22m packages/core/test/contract/gsap-absolute-stops.test.ts:[2m88:24[22m[39m
+    [90m 86|[39m
+    [90m 87|[39m     timeline[33m.[39m[34mprogress[39m([34m0[39m)[33m;[39m
+    [90m 88|[39m     [34mexpect[39m(fake[33m.[39mstate)[33m.[39m[34mtoEqual[39m({ x[33m:[39m [34m0[39m })[33m;[39m
+    [90m   |[39m                        [31m^[39m
+    [90m 89|[39m     timeline[33m.[39m[34mprogress[39m([34m0.2[39m)[33m;[39m
+    [90m 90|[39m     [34mexpect[39m(fake[33m.[39mstate)[33m.[39m[34mtoEqual[39m({ x[33m:[39m [34m20[39m[33m,[39m y[33m:[39m [34m20[39m })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/contract/gsap-absolute-stops.test.ts[2m > [22mGSAP absolute multi-property stops (P0-3)[2m > [22mkeeps per-property grids and the leading hold intact on real GSAP
+[31m[1mAssertionError[22m: expected 0.8 to be close to 1, received difference is 0.19999999999999996, but expected 5e-11[39m
+[36m [2m❯[22m packages/core/test/contract/gsap-absolute-stops.test.ts:[2m128:31[22m[39m
+    [90m126|[39m
+    [90m127|[39m     // Authored positions are absolute, so the last stop at p = 1 is t…
+    [90m128|[39m     [34mexpect[39m(timeline[33m.[39mduration)[33m.[39m[34mtoBeCloseTo[39m([34m1[39m[33m,[39m [34m10[39m)[33m;[39m
+    [90m   |[39m                               [31m^[39m
+    [90m129|[39m
+    [90m130|[39m     timeline[33m.[39m[34mprogress[39m([34m0[39m)[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (4)[39m
+[2m      Tests [22m [1m[31m2 failed[39m[22m[2m | [22m[1m[32m4 passed[39m[22m[90m (6)[39m
+[2m   Start at [22m 02:57:43
+[2m   Duration [22m 567ms[2m (transform 452ms, setup 0ms, import 739ms, tests 42ms, environment 0ms)[22m
+
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/contract/gsap-absolute-stops.test.ts,title=packages/core/test/contract/gsap-absolute-stops.test.ts > GSAP absolute multi-property stops (P0-3) > preserves each property's absolute positions and independent timing,line=88,column=24::AssertionError: expected { x: 50, y: 25 } to deeply equal { x: +0 }%0A%0A- Expected%0A+ Received%0A%0A  {%0A-   "x": 0,%0A+   "x": 50,%0A+   "y": 25,%0A  }%0A%0A ❯ packages/core/test/contract/gsap-absolute-stops.test.ts:88:24%0A%0A
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/contract/gsap-absolute-stops.test.ts,title=packages/core/test/contract/gsap-absolute-stops.test.ts > GSAP absolute multi-property stops (P0-3) > keeps per-property grids and the leading hold intact on real GSAP,line=128,column=31::AssertionError: expected 0.8 to be close to 1, received difference is 0.19999999999999996, but expected 5e-11%0A ❯ packages/core/test/contract/gsap-absolute-stops.test.ts:128:31%0A%0A
