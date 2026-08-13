@@ -2,16 +2,23 @@ import type { Diagnostic } from "../../contract/v5";
 import { compilePercentKeyframes } from "../../domain/keyframe-compiler";
 import type { Interpolator, InterpolationTimeline } from "../../ports/interpolator";
 
-export interface GsapTimelineLike {
+export interface GsapTweenLike {
   readonly duration: () => number;
   progress(): number;
-  progress(value: number): GsapTimelineLike;
+  progress(value: number): GsapTweenLike;
+  kill(): void;
+}
+export interface GsapTimelineLike {
+  duration(): number;
   duration(value: number): GsapTimelineLike;
+  progress(): number;
+  progress(value: number): GsapTimelineLike;
   to(target: Record<string, unknown>, vars: Record<string, unknown>, position?: number): GsapTimelineLike;
   kill(): void;
 }
 export interface GsapLike {
-  timeline(vars?: Record<string, unknown>): GsapTimelineLike;
+  timeline?: (vars?: Record<string, unknown>) => GsapTimelineLike;
+  to?: (target: Record<string, unknown>, vars: Record<string, unknown>) => GsapTweenLike;
 }
 
 interface AuthoredStop {
@@ -41,7 +48,6 @@ function readStops(value: unknown): readonly AuthoredStop[] {
 function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
   return diagnostics.map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`).join(" ");
 }
-
 export class KeyframeCompilationError extends TypeError {
   readonly diagnostics: readonly Diagnostic[];
   constructor(diagnostics: readonly Diagnostic[]) {
@@ -58,38 +64,61 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
       if (compiled.diagnostics.length > 0) throw new KeyframeCompilationError(compiled.diagnostics);
       const proxy: Record<string, unknown> = { ...compiled.initial };
       const duration = readDuration(config);
-      const timeline = gsap.timeline({ paused: true });
       const authored = isRecord(config) && isRecord(config.keyframes) ? config.keyframes : {};
       const tweenVars = readTweenVars(config);
-      for (const [key, property] of Object.entries(authored)) {
-        const stops = readStops(property);
-        for (let index = 1; index < stops.length; index += 1) {
-          const previous = stops[index - 1];
-          const next = stops[index];
-          if (!previous || !next) continue;
-          const vars: Record<string, unknown> = {
-            ...tweenVars,
-            [key]: next.v,
-            duration: (next.p - previous.p) * duration,
-          };
-          if (next.ease !== undefined) vars.ease = next.ease;
-          timeline.to(proxy, vars, previous.p * duration);
+      const parent = gsap.timeline?.({ paused: true });
+      if (parent) {
+        for (const [key, property] of Object.entries(authored)) {
+          const stops = readStops(property);
+          if (stops.length === 0) continue;
+          if (stops[0] && stops[0].p > 0) {
+            parent.to(proxy, { [key]: stops[0].v, duration: 0 }, 0);
+          }
+          for (let index = 1; index < stops.length; index += 1) {
+            const previous = stops[index - 1];
+            const next = stops[index];
+            if (!previous || !next) continue;
+            const vars: Record<string, unknown> = {
+              ...tweenVars,
+              [key]: next.v,
+              duration: (next.p - previous.p) * duration,
+            };
+            if (next.ease !== undefined) vars.ease = next.ease;
+            parent.to(proxy, vars, previous.p * duration);
+          }
+          if (stops.at(-1)?.p < 1) {
+            parent.to(proxy, { [key]: stops.at(-1)?.v, duration: 0 }, duration);
+          }
         }
+        parent.duration(duration);
+        return {
+          get duration() {
+            return parent.duration();
+          },
+          state: proxy,
+          progress(value?: number): number | void {
+            if (value === undefined) return parent.progress();
+            parent.progress(value);
+          },
+          kill(): void {
+            parent.kill();
+          },
+        };
       }
-      timeline.duration(duration);
-      return {
-        get duration() {
-          return timeline.duration();
-        },
-        state: proxy,
-        progress(value?: number): number | void {
-          if (value === undefined) return timeline.progress();
-          timeline.progress(value);
-        },
-        kill(): void {
-          timeline.kill();
-        },
-      };
+      if (!gsap.to) throw new TypeError("GSAP adapter requires timeline().");
+      const tween = gsap.to(proxy, {
+        ...tweenVars,
+        keyframes: compiled.keyframes,
+        duration,
+        paused: true,
+      });
+      function progress(): number;
+      function progress(value: number): void;
+      function progress(value?: number): number | void {
+        if (value === undefined) return tween.progress();
+        tween.progress(value);
+      }
+      return { get duration() { return tween.duration(); }, state: proxy, progress, kill: () => tween.kill() };
     },
   };
 }
