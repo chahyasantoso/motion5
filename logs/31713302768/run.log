@@ -1,0 +1,90 @@
+integration (node 24)	Run npm run test:integration	﻿2026-08-13T15:03:24.1020679Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:24.1021135Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:24.1065999Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:24.1066504Z env:
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:24.1066715Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:24.1066932Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:24.2088870Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:24.2089814Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:24.5741739Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:24.5742312Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:24.5742356Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:24.5743818Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:24.5744976Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.0049310Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.0057463Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.1218392Z  ^[[31m❯^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 45^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.1247367Z      ^[[32m✓^[[39m passes contribution context and creates the prepared timeline at load^[[32m 30^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.1249591Z ^[[31m     ^[[31m×^[[31m rejects contribution collisions during Engine.load, before timelines exist^[[39m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.1251628Z      ^[[32m✓^[[39m rejects malformed contributions during Engine.load^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.1253200Z      ^[[32m✓^[[39m rejects authored ease collisions before any timeline is created^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.1254968Z      ^[[32m✓^[[39m merges contributed keyframes into compiler diagnostics before timeline creation^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.2562405Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.2674251Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.3740897Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.5262738Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.5520292Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.6335613Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.7513101Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:25.7908878Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.0538220Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.0742450Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.1023348Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.2871427Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.3292688Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.3396798Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4576067Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4648508Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4649438Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4650046Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4669906Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mrejects contribution collisions during Engine.load, before timelines exist
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4672460Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw an error^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4673038Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4673327Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4673806Z null
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4674005Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4674295Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4674705Z undefined
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4674904Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4675949Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m29:128^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4752953Z     ^[[90m 27|^[[39m     registry.register({ name: "second", claimsKey: (key) => key === "x…
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4754509Z     ^[[90m 28|^[[39m     const interpolator = createFakeInterpolator(); const create = vi.s…
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4756000Z     ^[[90m 29|^[[39m     expect(() => new Engine({ ...options(), interpolator, plugins: reg…
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4757611Z     ^[[90m   |^[[39m                                                                                                                                ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4758253Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4759208Z     ^[[90m 30|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4760569Z     ^[[90m 31|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4761097Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4761710Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4762253Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4771978Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m17 passed^[[39m^[[22m^[[90m (18)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4801900Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m45 passed^[[39m^[[22m^[[90m (46)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4831143Z ^[[2m   Start at ^[[22m 15:03:24
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4841946Z ^[[2m   Duration ^[[22m 1.87s^[[2m (transform 764ms, setup 0ms, import 1.48s, tests 250ms, environment 3ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4842716Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4842729Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.4867485Z ##[error]AssertionError: expected [Function] to throw an error
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	null
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	undefined
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:29:128
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-13T15:03:26.5132855Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T15:03:33.3037529Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T15:03:33.3037884Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T15:03:33.3083953Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T15:03:33.3084238Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T15:03:33.3084443Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T15:03:33.3084658Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T15:03:33.4095558Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T15:03:33.4096046Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T15:03:33.4096975Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T15:03:33.4097250Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T15:03:35.4145276Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(21,58): error TS2304: Cannot find name 'vi'.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:03:35.4154308Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(21,160): error TS2304: Cannot find name 'vi'.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:03:35.4451414Z ##[error]Process completed with exit code 2.
