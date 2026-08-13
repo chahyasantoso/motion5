@@ -17,9 +17,10 @@ function createRecordingInterpolator(): {
         if (value === undefined) return current;
         current = value;
         Object.assign(target, { progress: value });
-        return this;
+        return tween;
       }
-      return { duration: () => 1, progress, kill() {} };
+      const tween: GsapTweenLike = { duration: () => 1, progress, kill() {} };
+      return tween;
     },
   });
   return { interpolator, configs };
