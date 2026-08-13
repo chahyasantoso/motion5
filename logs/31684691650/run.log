@@ -1,0 +1,940 @@
+quality (node 24)	Unit tests	﻿2026-08-13T09:01:39.0894551Z ##[group]Run npm test
+quality (node 24)	Unit tests	2026-08-13T09:01:39.0895077Z ^[[36;1mnpm test^[[0m
+quality (node 24)	Unit tests	2026-08-13T09:01:39.0940007Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Unit tests	2026-08-13T09:01:39.0940302Z ##[endgroup]
+quality (node 24)	Unit tests	2026-08-13T09:01:39.2111534Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:39.2112299Z > motion5@0.0.0 test
+quality (node 24)	Unit tests	2026-08-13T09:01:39.2112803Z > vitest run
+quality (node 24)	Unit tests	2026-08-13T09:01:39.2112965Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:39.5059935Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:39.5082994Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:39.5084306Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:39.9851225Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-authored-duration.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:40.0514263Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-reentrancy.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:40.2456689Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-state.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:40.3363779Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-absolute-stops.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:40.4969509Z  ^[[32m✓^[[39m packages/core/test/contract/v5-validator.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:40.5813408Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugins.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:40.7674319Z  ^[[32m✓^[[39m packages/core/test/contract/validation-owner.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:40.9043627Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/boundary-scan.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 65^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:41.0153200Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-flat-inputs.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:41.1769593Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/clock-tick-identity.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:41.2414038Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-structural-change.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:41.4202686Z  ^[[32m✓^[[39m packages/core/test/unit/graph/order.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:41.5142243Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ir-validation.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:41.7173849Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/composition-output-shape.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:41.7912059Z  ^[[32m✓^[[39m packages/core/test/contract/adapters.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:41.9758642Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/scheduler-reentrancy.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:42.0406065Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:42.2005502Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:42.2750166Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:42.4064431Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/public-declaration-surface.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[33m 2625^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:42.4067344Z      ^[[33m^[[2m✓^[[22m^[[39m scans the emitted entry declaration closure, not just source strings ^[[33m 2621^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:42.4319219Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:42.5063312Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:42.6358040Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:42.6807138Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:42.7382953Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:42.8432064Z  ^[[32m✓^[[39m packages/core/test/migration/v4-to-v5.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:42.9003143Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:42.9783875Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.0363633Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.0924069Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.2248996Z  ^[[31m❯^[[39m packages/core/test/unit/scripts/governance-gates.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m5 failed^[[39m^[[2m)^[[22m^[[32m 39^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.2262958Z ^[[31m     ^[[31m×^[[31m builds publishable package declarations instead of declaring source as the package^[[39m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.2264876Z ^[[31m     ^[[31m×^[[31m requires acceptance to prove mapped tests passed in the executed report^[[39m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.2266627Z ^[[31m     ^[[31m×^[[31m requires failing-first to distinguish assertion red from infrastructure red^[[39m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.2268334Z ^[[31m     ^[[31m×^[[31m reports mutation score with one denominator and enforces a threshold^[[39m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.2269722Z ^[[31m     ^[[31m×^[[31m puts build and end-to-end on the required CI path^[[39m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.2774974Z  ^[[32m✓^[[39m packages/react/test/patch-store-lifecycle.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.3052215Z ^[[90mstderr^[[2m | packages/react/test/public-package-surface.test.ts^[[2m > ^[[22m^[[2mReact public package surface (C2)^[[2m > ^[[22m^[[2mrenders and updates through the package entry alone
+quality (node 24)	Unit tests	2026-08-13T09:01:43.3054901Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Unit tests	2026-08-13T09:01:43.3056593Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T09:01:43.3058343Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T09:01:43.3059660Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T09:01:43.3060584Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:43.3078371Z  ^[[32m✓^[[39m packages/react/test/public-package-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.4628164Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.4673135Z  ^[[32m✓^[[39m packages/core/test/contract/ports.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.5303722Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.6854121Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.7120336Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.7933362Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.9003322Z  ^[[32m✓^[[39m packages/core/test/unit/domain/lifecycle.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.9172015Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:43.9908075Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/acceptance-scan.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:44.1356029Z  ^[[32m✓^[[39m packages/core/test/unit/domain/values.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:44.1555137Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-paused-timeline.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:44.1575334Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-projection-validation.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:44.3284485Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:44.3591456Z  ^[[32m✓^[[39m packages/core/test/unit/domain/triggers.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:44.3863360Z  ^[[32m✓^[[39m packages/react/test/patch-store.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:44.5404653Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/mutation-config.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:44.5776042Z ^[[90mstderr^[[2m | packages/react/test/public-hook-render.test.ts^[[2m > ^[[22m^[[2mReact public hook render/update (C2)^[[2m > ^[[22m^[[2mrenders the current patch and updates after publication
+quality (node 24)	Unit tests	2026-08-13T09:01:44.5789547Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Unit tests	2026-08-13T09:01:44.5791193Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T09:01:44.5804179Z  ^[[32m✓^[[39m packages/react/test/public-hook-render.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:44.5812108Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T09:01:44.5831127Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T09:01:44.5831836Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:44.6081891Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:44.7446524Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:44.7867233Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track-contribution.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:44.8333357Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:44.9568632Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:44.9899686Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0239035Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0274231Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0275542Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 5 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0276033Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0283129Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/governance-gates.test.ts^[[2m > ^[[22mrecovery governance gates (G-1/G-3/G-4/G-5/G-7)^[[2m > ^[[22mbuilds publishable package declarations instead of declaring source as the package
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0288281Z ^[[31m^[[1mAssertionError^[[22m: expected './src/index.ts' to be './dist/index.d.ts' // Object.is equality^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0289587Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0290103Z Expected: ^[[32m"./^[[7mdist^[[27m/index.^[[7md.^[[27mts"^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0291241Z Received: ^[[31m"./^[[7msrc^[[27m/index.ts"^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0291635Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0292460Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/governance-gates.test.ts:^[[2m19:31^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0319331Z     ^[[90m 17|^[[39m     }^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0320922Z     ^[[90m 18|^[[39m     ^[[35mconst^[[39m entry ^[[33m=^[[39m packageJson^[[33m.^[[39mexports^[[33m?.^[[39m[^[[32m"."^[[39m]^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0322776Z     ^[[90m 19|^[[39m     ^[[34mexpect^[[39m(packageJson^[[33m.^[[39mtypes)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"./dist/index.d.ts"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0324059Z     ^[[90m   |^[[39m                               ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0325297Z     ^[[90m 20|^[[39m     ^[[34mexpect^[[39m(entry^[[33m?.^[[39mtypes)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"./dist/index.d.ts"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0327069Z     ^[[90m 21|^[[39m     ^[[34mexpect^[[39m(entry^[[33m?.^[[39m^[[35mdefault^[[39m)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"./dist/index.js"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0327919Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0328489Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0328897Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0331177Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/governance-gates.test.ts^[[2m > ^[[22mrecovery governance gates (G-1/G-3/G-4/G-5/G-7)^[[2m > ^[[22mrequires acceptance to prove mapped tests passed in the executed report
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0333707Z ^[[31m^[[1mAssertionError^[[22m: expected 'import { access, readFile } from "nod…' to contain 'testResults'^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0334487Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0334764Z ^[[32m- Expected^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0335406Z ^[[31m+ Received^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0335607Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0335892Z ^[[32m- testResults^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0336483Z ^[[31m+ import { access, readFile } from "node:fs/promises";^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0337118Z ^[[31m+ import { fileURLToPath } from "node:url";^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0337693Z ^[[31m+ import { join } from "node:path";^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0338116Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0338653Z ^[[31m+ const root = fileURLToPath(new URL("..", import.meta.url));^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0339162Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0339694Z ^[[31m+ export async function readAcceptanceMap(scanRoot = root) {^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0340533Z ^[[31m+   const path = join(scanRoot, "docs", "acceptance-map.json");^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0341687Z ^[[31m+   return JSON.parse(await readFile(path, "utf8"));^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0342837Z ^[[31m+ }^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0343298Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0343931Z ^[[31m+ async function exists(path) {^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0344626Z ^[[31m+   try {^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0345266Z ^[[31m+     await access(path);^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0345941Z ^[[31m+     return true;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0346549Z ^[[31m+   } catch {^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0347135Z ^[[31m+     return false;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0347714Z ^[[31m+   }^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0348162Z ^[[31m+ }^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0348598Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0349412Z ^[[31m+ export async function scanAcceptance(scanRoot = root) {^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0350490Z ^[[31m+   const map = await readAcceptanceMap(scanRoot);^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0351751Z ^[[31m+   if (!map || map.version !== 1 || !Array.isArray(map.items))^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0352529Z ^[[31m+     throw new Error("Acceptance map must have version 1 and an items array.");^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0353147Z ^[[31m+   const failures = [];^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0353619Z ^[[31m+   const ids = new Set();^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0354113Z ^[[31m+   for (const item of map.items) {^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0355133Z ^[[31m+     if (!item || typeof item.id !== "string" || typeof item.test !== "string") {^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0356105Z ^[[31m+       failures.push("Each acceptance item requires string id and test fields.");^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0357037Z ^[[31m+       continue;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0357559Z ^[[31m+     }^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0358147Z ^[[31m+     if (ids.has(item.id)) failures.push(`${item.id}: duplicate id`);^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0358728Z ^[[31m+     ids.add(item.id);^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0359272Z ^[[31m+     if (!(await exists(join(scanRoot, item.test))))^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0359894Z ^[[31m+       failures.push(`${item.id}: missing ${item.test}`);^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0360371Z ^[[31m+   }^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0361105Z ^[[31m+   return failures;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0361537Z ^[[31m+ }^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0361888Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0362321Z ^[[31m+ export async function main(scanRoot = root) {^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0362929Z ^[[31m+   const failures = await scanAcceptance(scanRoot);^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0363455Z ^[[31m+   if (failures.length) {^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0363959Z ^[[31m+     console.error(failures.join("\n"));^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0364425Z ^[[31m+     return 1;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0364912Z ^[[31m+   }^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0365429Z ^[[31m+   console.log("acceptance mapping passed");^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0365928Z ^[[31m+   return 0;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0366294Z ^[[31m+ }^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0366621Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0367289Z ^[[31m+ if (process.argv[1] === fileURLToPath(import.meta.url)) process.exitCode = await main();^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0367876Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0368042Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0368567Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/governance-gates.test.ts:^[[2m29:20^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0369393Z     ^[[90m 27|^[[39m   it("requires acceptance to prove mapped tests passed in the executed…
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0371023Z     ^[[90m 28|^[[39m     ^[[35mconst^[[39m source ^[[33m=^[[39m ^[[35mawait^[[39m ^[[34mtext^[[39m(^[[32m"scripts/acceptance-scan.mjs"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0372032Z     ^[[90m 29|^[[39m     ^[[34mexpect^[[39m(source)^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m"testResults"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0372713Z     ^[[90m   |^[[39m                    ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0373814Z     ^[[90m 30|^[[39m     ^[[34mexpect^[[39m(source)^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m"passed"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0374661Z     ^[[90m 31|^[[39m     ^[[34mexpect^[[39m(source)^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m"skipped"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0375072Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0375369Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0375892Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0377814Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/governance-gates.test.ts^[[2m > ^[[22mrecovery governance gates (G-1/G-3/G-4/G-5/G-7)^[[2m > ^[[22mrequires failing-first to distinguish assertion red from infrastructure red
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0380303Z ^[[31m^[[1mAssertionError^[[22m: expected 'name: Recovery audit\n\non:\n  workfl…' to contain '--reporter=json'^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0381388Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0381639Z ^[[32m- Expected^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0382028Z ^[[31m+ Received^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0382241Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0382454Z ^[[32m- --reporter=json^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0383045Z ^[[31m+ name: Recovery audit^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0383536Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0383916Z ^[[31m+ on:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0384317Z ^[[31m+   workflow_dispatch:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0384718Z ^[[31m+     inputs:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0385105Z ^[[31m+       ref:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0385610Z ^[[31m+         description: Branch, tag, or commit to audit^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0386142Z ^[[31m+         required: true^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0386566Z ^[[31m+         default: main^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0386993Z ^[[31m+         type: string^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0387393Z ^[[31m+       base:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0387915Z ^[[31m+         description: Base for failing-first comparison^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0388444Z ^[[31m+         required: false^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0388883Z ^[[31m+         default: ""^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0389300Z ^[[31m+         type: string^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0390125Z ^[[31m+       failing_first_exception:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0391065Z ^[[31m+         description: Documented reason this ref adds no new behavioral test^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0391708Z ^[[31m+         required: false^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0392145Z ^[[31m+         default: ""^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0392581Z ^[[31m+         type: string^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0392966Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0393344Z ^[[31m+ permissions:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0393752Z ^[[31m+   contents: read^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0394120Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0394449Z ^[[31m+ env:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0394839Z ^[[31m+   NODE_VERSION: 24^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0395219Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0395552Z ^[[31m+ jobs:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0395936Z ^[[31m+   contract:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0396372Z ^[[31m+     name: contract surfaces^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0396844Z ^[[31m+     runs-on: ubuntu-latest^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0397307Z ^[[31m+     timeout-minutes: 25^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0397727Z ^[[31m+     steps:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0398171Z ^[[31m+       - uses: actions/checkout@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0398610Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0399063Z ^[[31m+           ref: ${{ inputs.ref }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0399536Z ^[[31m+           fetch-depth: 0^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0400076Z ^[[31m+       - uses: actions/setup-node@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0400522Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0401307Z ^[[31m+           node-version: ${{ env.NODE_VERSION }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0401823Z ^[[31m+           cache: npm^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0402396Z ^[[31m+       - run: npm ci --ignore-scripts --no-audit --no-fund^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0402961Z ^[[31m+       - name: Run contract surfaces^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0403401Z ^[[31m+         run: |^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0403836Z ^[[31m+           set -uo pipefail^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0404362Z ^[[31m+           mkdir -p audit-logs audit-fragments^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0404865Z ^[[31m+           failed=0^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0406295Z ^[[31m+           run_suite() { name="$1"; shift; if "$@" > "audit-logs/$name.log" 2>&1; then echo "- $name: pass" >> audit-fragments/10-contract.md; else echo "- $name: FAIL" >> audit-fragments/10-contract.md; failed=1; fi; }^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0407406Z ^[[31m+           echo "## contract" > audit-fragments/10-contract.md^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0408059Z ^[[31m+           run_suite gsap-contract npm run test:contract^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0408885Z ^[[31m+           run_suite dom-contract npx vitest run packages/core/test/integration/dom-patch-apply.test.ts^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0409857Z ^[[31m+           run_suite react-lifecycle npx vitest run packages/react/test^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0410638Z ^[[31m+           run_suite boundaries npm run test:boundaries^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0411869Z ^[[31m+           run_suite end-to-end npx vitest run packages/core/test/integration/end-to-end.test.ts^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0412626Z ^[[31m+           echo "CONTRACT_FAILED=$failed" >> "$GITHUB_ENV"^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0413167Z ^[[31m+       - if: always()^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0413657Z ^[[31m+         uses: actions/upload-artifact@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0414110Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0414932Z ^[[31m+           name: recovery-audit-contract-${{ github.run_id }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0415725Z ^[[31m+           path: |^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0416386Z ^[[31m+             audit-fragments/^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0417026Z ^[[31m+             audit-logs/^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0417529Z ^[[31m+           if-no-files-found: warn^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0418251Z ^[[31m+       - if: always()^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0419166Z ^[[31m+         run: test "${CONTRACT_FAILED:-1}" = 0^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0419844Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0420250Z ^[[31m+   mutation:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0421150Z ^[[31m+     name: mutation baseline^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0421927Z ^[[31m+     runs-on: ubuntu-latest^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0422678Z ^[[31m+     timeout-minutes: 60^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0423811Z ^[[31m+     steps:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0424573Z ^[[31m+       - uses: actions/checkout@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0425264Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0426022Z ^[[31m+           ref: ${{ inputs.ref }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0426777Z ^[[31m+           fetch-depth: 0^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0427540Z ^[[31m+       - uses: actions/setup-node@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0428255Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0429037Z ^[[31m+           node-version: ${{ env.NODE_VERSION }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0429890Z ^[[31m+           cache: npm^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0431029Z ^[[31m+       - run: npm ci --ignore-scripts --no-audit --no-fund^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0432057Z ^[[31m+       - name: Run Stryker and verify its score^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0432781Z ^[[31m+         run: |^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0433404Z ^[[31m+           set -uo pipefail^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0434200Z ^[[31m+           mkdir -p audit-logs audit-fragments^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0434954Z ^[[31m+           failed=0^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0437093Z ^[[31m+           if npx stryker run > audit-logs/mutation.log 2>&1; then echo "- stryker run: pass" > audit-fragments/20-mutation.md; else echo "- stryker run: FAIL" > audit-fragments/20-mutation.md; failed=1; fi^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0438987Z ^[[31m+           if test -e reports/mutation/mutation.json; then^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0440200Z ^[[31m+             node --input-type=module >> audit-fragments/20-mutation.md <<'NODE'^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0441586Z ^[[31m+           import { readFile } from "node:fs/promises";^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0442940Z ^[[31m+           const report = JSON.parse(await readFile("reports/mutation/mutation.json", "utf8"));^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0444554Z ^[[31m+           const mutants = Object.values(report.files ?? {}).flatMap((file) => file.mutants ?? []);^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0445992Z ^[[31m+           const counts = Object.groupBy(mutants, (mutant) => mutant.status ?? "Unknown");^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0447138Z ^[[31m+           const count = (status) => (counts[status] ?? []).length;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0448152Z ^[[31m+           const killed = count("Killed"), survived = count("Survived"), timeout = count("Timeout"), noCoverage = count("NoCoverage");^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0449035Z ^[[31m+           const denominator = killed + survived + timeout;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0449806Z ^[[31m+           const derived = denominator ? (killed / denominator) * 100 : Number.NaN;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0450924Z ^[[31m+           const reported = Number(report.metrics?.mutationScore ?? report.mutationScore);^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0452083Z ^[[31m+           const score = Number.isFinite(reported) ? (reported <= 1 ? reported * 100 : reported) : derived;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0452918Z ^[[31m+           const threshold = Number(report.thresholds?.break ?? 0);^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0453924Z ^[[31m+           console.log(`- mutation counts: killed=${killed}, survived=${survived}, timeout=${timeout}, noCoverage=${noCoverage}`);^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0455024Z ^[[31m+           console.log(`- mutation score: ${Number.isFinite(score) ? score.toFixed(2) : "unavailable"}%`);^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0455893Z ^[[31m+           console.log(`- mutation threshold: ${threshold.toFixed(2)}%`);^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0456681Z ^[[31m+           if (!Number.isFinite(score) || score < threshold) process.exitCode = 1;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0457254Z ^[[31m+           NODE^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0457753Z ^[[31m+             if test "$?" -ne 0; then failed=1; fi^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0458204Z ^[[31m+           else^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0458830Z ^[[31m+             echo "- mutation report: MISSING" >> audit-fragments/20-mutation.md^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0459402Z ^[[31m+             failed=1^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0459856Z ^[[31m+           fi^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0460383Z ^[[31m+           echo "MUTATION_FAILED=$failed" >> "$GITHUB_ENV"^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0461141Z ^[[31m+       - if: always()^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0462523Z ^[[31m+         uses: actions/upload-artifact@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0463157Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0464130Z ^[[31m+           name: recovery-audit-mutation-${{ github.run_id }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0487580Z ^[[31m+           path: |^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0488311Z ^[[31m+             audit-fragments/^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0489042Z ^[[31m+             audit-logs/^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0489723Z ^[[31m+             reports/mutation/^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0490252Z ^[[31m+           if-no-files-found: warn^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0491015Z ^[[31m+       - if: always()^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0491781Z ^[[31m+         run: test "${MUTATION_FAILED:-1}" = 0^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0492386Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0492748Z ^[[31m+   acceptance:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0493201Z ^[[31m+     name: acceptance mapping^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0493675Z ^[[31m+     runs-on: ubuntu-latest^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0494087Z ^[[31m+     steps:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0494561Z ^[[31m+       - uses: actions/checkout@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0494990Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0495435Z ^[[31m+           ref: ${{ inputs.ref }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0495949Z ^[[31m+       - uses: actions/setup-node@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0496421Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0496922Z ^[[31m+           node-version: ${{ env.NODE_VERSION }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0497409Z ^[[31m+           cache: npm^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0497994Z ^[[31m+       - run: npm ci --ignore-scripts --no-audit --no-fund^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0498609Z ^[[31m+       - run: node scripts/acceptance-scan.mjs^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0499052Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0499401Z ^[[31m+   failing-first:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0499906Z ^[[31m+     name: failing-first evidence^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0500397Z ^[[31m+     runs-on: ubuntu-latest^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0501034Z ^[[31m+     env:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0501497Z ^[[31m+       AUDIT_BASE: ${{ inputs.base }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0501957Z ^[[31m+     steps:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0502423Z ^[[31m+       - uses: actions/checkout@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0502856Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0503312Z ^[[31m+           ref: ${{ inputs.ref }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0503779Z ^[[31m+           fetch-depth: 0^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0504260Z ^[[31m+       - uses: actions/setup-node@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0504716Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0505207Z ^[[31m+           node-version: ${{ env.NODE_VERSION }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0505703Z ^[[31m+           cache: npm^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0506235Z ^[[31m+       - name: Replay new tests against base and ref^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0506732Z ^[[31m+         run: |^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0507169Z ^[[31m+           set -euo pipefail^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0507643Z ^[[31m+           mkdir -p audit-logs^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0508157Z ^[[31m+           ref_sha=$(git rev-parse HEAD)^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0508805Z ^[[31m+           base_sha=${AUDIT_BASE:+$(git rev-parse "$AUDIT_BASE")}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0509489Z ^[[31m+           base_sha=${base_sha:-$(git rev-parse HEAD^)}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0510366Z ^[[31m+           git diff --name-only --diff-filter=AM "$base_sha" "$ref_sha" -- '*.test.ts' > audit-logs/new-tests.txt^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0511411Z ^[[31m+           test -s audit-logs/new-tests.txt^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0511961Z ^[[31m+           git checkout -f "$base_sha"^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0512730Z ^[[31m+           # Replay the whole test tree, not only the spec files. Seams, helpers, and fixtures do^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0513633Z ^[[31m+           # not match '*.test.ts', so checking out the spec alone leaves it calling a base-era^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0514518Z ^[[31m+           # helper: the base leg then reds with a TypeError instead of with the behavioral^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0515340Z ^[[31m+           # assertion the slice exists to prove, which is evidence of nothing.^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0516832Z ^[[31m+           git checkout "$ref_sha" -- 'packages/*/test/*'^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0517581Z ^[[31m+           xargs -a audit-logs/new-tests.txt git checkout "$ref_sha" --^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0518354Z ^[[31m+           git diff --name-only "$base_sha" > audit-logs/replayed-files.txt^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0519205Z ^[[31m+           npm ci --ignore-scripts --no-audit --no-fund > audit-logs/base-install.log 2>&1^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0520190Z ^[[31m+           if xargs -a audit-logs/new-tests.txt npx vitest run > audit-logs/base-run.log 2>&1; then exit 1; fi^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0521098Z ^[[31m+           git checkout -f "$ref_sha"^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0521837Z ^[[31m+           npm ci --ignore-scripts --no-audit --no-fund > audit-logs/ref-install.log 2>&1^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0522708Z ^[[31m+           xargs -a audit-logs/new-tests.txt npx vitest run > audit-logs/ref-run.log 2>&1^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0523330Z ^[[31m+       - if: always()^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0523842Z ^[[31m+         uses: actions/upload-artifact@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0524302Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0524880Z ^[[31m+           name: recovery-audit-failing-first-${{ github.run_id }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0525452Z ^[[31m+           path: audit-logs/^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0525933Z ^[[31m+           if-no-files-found: warn^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0526331Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0526677Z ^[[31m+   build:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0527097Z ^[[31m+     name: declaration build^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0527581Z ^[[31m+     runs-on: ubuntu-latest^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0528011Z ^[[31m+     steps:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0528453Z ^[[31m+       - uses: actions/checkout@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0528896Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0529350Z ^[[31m+           ref: ${{ inputs.ref }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0529849Z ^[[31m+       - uses: actions/setup-node@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0530280Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0530987Z ^[[31m+           node-version: ${{ env.NODE_VERSION }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0531543Z ^[[31m+           cache: npm^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0532109Z ^[[31m+       - run: npm ci --ignore-scripts --no-audit --no-fund^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0533038Z ^[[31m+       - run: npx tsc -p tsconfig.json --declaration --emitDeclarationOnly --noEmit false --outDir dist-audit^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0533701Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0534054Z ^[[31m+   report:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0534474Z ^[[31m+     name: audit report^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0534929Z ^[[31m+     runs-on: ubuntu-latest^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0535545Z ^[[31m+     needs: [contract, mutation, acceptance, failing-first, build]^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0536078Z ^[[31m+     if: always()^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0536474Z ^[[31m+     steps:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0537036Z ^[[31m+       - run: echo "Recovery audit completed for ${{ inputs.ref }}"^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0537523Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0537689Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0538199Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/governance-gates.test.ts:^[[2m37:20^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0539079Z     ^[[90m 35|^[[39m   it("requires failing-first to distinguish assertion red from infrast…
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0540047Z     ^[[90m 36|^[[39m     ^[[35mconst^[[39m source ^[[33m=^[[39m ^[[35mawait^[[39m ^[[34mtext^[[39m(^[[32m".github/workflows/recovery-audit.yml"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0541176Z     ^[[90m 37|^[[39m     ^[[34mexpect^[[39m(source)^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m"--reporter=json"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0541834Z     ^[[90m   |^[[39m                    ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0542545Z     ^[[90m 38|^[[39m     ^[[34mexpect^[[39m(source)^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m"assertion-level"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0543440Z     ^[[90m 39|^[[39m     ^[[34mexpect^[[39m(source)^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m"import-resolution"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0543878Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0544168Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0544614Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0545823Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/governance-gates.test.ts^[[2m > ^[[22mrecovery governance gates (G-1/G-3/G-4/G-5/G-7)^[[2m > ^[[22mreports mutation score with one denominator and enforces a threshold
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0547282Z ^[[31m^[[1mAssertionError^[[22m: expected 'import { readFile } from "node:fs/pro…' to contain 'mutant.status !== "NoCoverage"'^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0547807Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0548001Z ^[[32m- Expected^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0548382Z ^[[31m+ Received^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0548560Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0548826Z ^[[32m- mutant.status !== "NoCoverage"^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0549368Z ^[[31m+ import { readFile } from "node:fs/promises";^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0549812Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0550373Z ^[[31m+ const path = process.argv[2] ?? "reports/mutation/mutation.json";^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0551459Z ^[[31m+ const report = JSON.parse(await readFile(path, "utf8"));^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0552017Z ^[[31m+ const counts = {};^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0552590Z ^[[31m+ for (const file of Object.values(report.files ?? {})) {^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0553429Z ^[[31m+   for (const mutant of file.mutants ?? []) counts[mutant.status] = (counts[mutant.status] ?? 0) + 1;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0554036Z ^[[31m+ }^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0554621Z ^[[31m+ const total = Object.values(counts).reduce((sum, value) => sum + value, 0);^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0555259Z ^[[31m+ const killed = counts.Killed ?? 0;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0555852Z ^[[31m+ const score = total === 0 ? 0 : (killed / total) * 100;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0556660Z ^[[31m+ console.log(JSON.stringify({ total, score: Number(score.toFixed(2)), counts }, null, 2));^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0557263Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0557434Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0557930Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/governance-gates.test.ts:^[[2m45:20^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0558727Z     ^[[90m 43|^[[39m   it("reports mutation score with one denominator and enforces a thres…
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0559676Z     ^[[90m 44|^[[39m     ^[[35mconst^[[39m source ^[[33m=^[[39m ^[[35mawait^[[39m ^[[34mtext^[[39m(^[[32m"scripts/mutation-summary.mjs"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0560849Z     ^[[90m 45|^[[39m     ^[[34mexpect^[[39m(source)^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m'mutant.status !== "NoCoverage"'^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0561558Z     ^[[90m   |^[[39m                    ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0562248Z     ^[[90m 46|^[[39m     ^[[34mexpect^[[39m(source)^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m"threshold"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0563129Z     ^[[90m 47|^[[39m     ^[[34mexpect^[[39m(source)^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m"process.exitCode"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0563558Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0563862Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0564129Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0565107Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/governance-gates.test.ts^[[2m > ^[[22mrecovery governance gates (G-1/G-3/G-4/G-5/G-7)^[[2m > ^[[22mputs build and end-to-end on the required CI path
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0566402Z ^[[31m^[[1mAssertionError^[[22m: expected 'name: CI\n\non:\n  # Pull requests al…' to contain 'build:'^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0566833Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0567025Z ^[[32m- Expected^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0567384Z ^[[31m+ Received^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0567570Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0567747Z ^[[32m- build:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0568107Z ^[[31m+ name: CI^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0568450Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0568779Z ^[[31m+ on:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0569407Z ^[[31m+   # Pull requests already run the full required suite. Do not also run the same^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0570265Z ^[[31m+   # workflow from pushes to feature branches, or every PR head gets duplicate checks.^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0571178Z ^[[31m+   push:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0571655Z ^[[31m+     branches: [main, "rescue/**"]^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0572114Z ^[[31m+   pull_request:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0572605Z ^[[31m+     branches: [main, "rescue/**", "fix/**"]^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0573517Z ^[[31m+     types: [opened, synchronize, reopened]^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0574036Z ^[[31m+   workflow_dispatch:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0574432Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0574794Z ^[[31m+ concurrency:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0575342Z ^[[31m+   group: ci-${{ github.workflow }}-${{ github.ref }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0575897Z ^[[31m+   cancel-in-progress: true^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0576287Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0576648Z ^[[31m+ permissions:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0577038Z ^[[31m+   contents: read^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0577396Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0577718Z ^[[31m+ jobs:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0578072Z ^[[31m+   quality:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0578486Z ^[[31m+     name: quality (node 24)^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0578953Z ^[[31m+     runs-on: ubuntu-latest^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0579406Z ^[[31m+     timeout-minutes: 15^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0579799Z ^[[31m+     steps:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0580220Z ^[[31m+       - uses: actions/checkout@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0580664Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0581432Z ^[[31m+           ref: ${{ github.event.pull_request.head.sha || github.sha }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0582121Z ^[[31m+       - uses: actions/setup-node@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0582726Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0583369Z ^[[31m+           node-version: 24^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0583925Z ^[[31m+           cache: npm^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0584412Z ^[[31m+       - name: Install locked dependencies^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0585021Z ^[[31m+         run: npm ci --ignore-scripts --no-audit --no-fund^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0585540Z ^[[31m+       - name: Typecheck^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0585996Z ^[[31m+         run: npm run typecheck^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0586451Z ^[[31m+       - name: Unit tests^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0586886Z ^[[31m+         run: npm test^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0587260Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0587619Z ^[[31m+   integration:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0588070Z ^[[31m+     name: integration (node 24)^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0588547Z ^[[31m+     runs-on: ubuntu-latest^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0589076Z ^[[31m+     timeout-minutes: 15^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0589472Z ^[[31m+     steps:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0589898Z ^[[31m+       - uses: actions/checkout@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0590349Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0591293Z ^[[31m+           ref: ${{ github.event.pull_request.head.sha || github.sha }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0591958Z ^[[31m+       - uses: actions/setup-node@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0592426Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0592885Z ^[[31m+           node-version: 24^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0593355Z ^[[31m+           cache: npm^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0593857Z ^[[31m+       - name: Install locked dependencies^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0594469Z ^[[31m+         run: npm ci --ignore-scripts --no-audit --no-fund^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0595030Z ^[[31m+       - name: Integration tests^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0595535Z ^[[31m+         run: npm run test:integration^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0595960Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0596329Z ^[[31m+   boundaries:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0596761Z ^[[31m+     name: boundaries (node 24)^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0597235Z ^[[31m+     runs-on: ubuntu-latest^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0597686Z ^[[31m+     timeout-minutes: 15^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0598089Z ^[[31m+     steps:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0598527Z ^[[31m+       - uses: actions/checkout@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0598960Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0599596Z ^[[31m+           ref: ${{ github.event.pull_request.head.sha || github.sha }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0600199Z ^[[31m+       - uses: actions/setup-node@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0600660Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0601373Z ^[[31m+           node-version: 24^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0601828Z ^[[31m+           cache: npm^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0602374Z ^[[31m+       - name: Install locked dependencies^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0603065Z ^[[31m+         run: npm ci --ignore-scripts --no-audit --no-fund^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0604192Z ^[[31m+       - name: Boundary scan and planted fixtures^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0604765Z ^[[31m+         run: npm run test:boundaries^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0605222Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0605600Z ^[[31m+   performance:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0606126Z ^[[31m+     name: performance (node 24, advisory)^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0606685Z ^[[31m+     runs-on: ubuntu-latest^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0607180Z ^[[31m+     continue-on-error: true^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0607688Z ^[[31m+     timeout-minutes: 15^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0608116Z ^[[31m+     steps:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0608598Z ^[[31m+       - uses: actions/checkout@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0609060Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0609693Z ^[[31m+           ref: ${{ github.event.pull_request.head.sha || github.sha }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0610315Z ^[[31m+       - uses: actions/setup-node@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0611028Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0611526Z ^[[31m+           node-version: 24^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0612019Z ^[[31m+           cache: npm^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0612560Z ^[[31m+       - name: Install locked dependencies^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0613218Z ^[[31m+         run: npm ci --ignore-scripts --no-audit --no-fund^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0613827Z ^[[31m+       - name: Run deterministic benchmark^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0614362Z ^[[31m+         run: npm run benchmark^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0614886Z ^[[31m+       - name: Upload benchmark report^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0615389Z ^[[31m+         if: always()^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0615894Z ^[[31m+         uses: actions/upload-artifact@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0616385Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0617016Z ^[[31m+           name: motion5-benchmark-report^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0617738Z ^[[31m+           path: performance/benchmark-report.json^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0618441Z ^[[31m+           if-no-files-found: error^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0619142Z ^[[31m+       - name: Upload failure diagnostics^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0619759Z ^[[31m+         if: failure()^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0620408Z ^[[31m+         uses: actions/upload-artifact@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0621239Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0621913Z ^[[31m+           name: motion5-performance-failure-diagnostics^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0622586Z ^[[31m+           path: |^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0623137Z ^[[31m+             performance/benchmark-report.json^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0623707Z ^[[31m+             test-results/**^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0624243Z ^[[31m+           if-no-files-found: ignore^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0624683Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0625074Z ^[[31m+   format:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0625595Z ^[[31m+     name: prettier after behavioral green^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0626212Z ^[[31m+     needs: [quality, integration, boundaries]^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0626727Z ^[[31m+     if: >-^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0627260Z ^[[31m+       github.event_name == 'pull_request' &&^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0628027Z ^[[31m+       github.event.pull_request.head.repo.full_name == github.repository^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0628668Z ^[[31m+     runs-on: ubuntu-latest^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0629191Z ^[[31m+     timeout-minutes: 15^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0629626Z ^[[31m+     env:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0630193Z ^[[31m+       HAS_PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN != '' }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0630956Z ^[[31m+     steps:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0631612Z ^[[31m+       - name: Check out the exact tested PR head^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0632192Z ^[[31m+         uses: actions/checkout@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0632663Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0633233Z ^[[31m+           ref: ${{ github.event.pull_request.head.sha }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0634020Z ^[[31m+           repository: ${{ github.event.pull_request.head.repo.full_name }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0634666Z ^[[31m+           fetch-depth: 1^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0635404Z ^[[31m+           token: ${{ secrets.PERSONAL_ACCESS_TOKEN || github.token }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0636504Z ^[[31m+       - uses: actions/setup-node@v4^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0637098Z ^[[31m+         with:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0637646Z ^[[31m+           node-version: 24^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0638212Z ^[[31m+           cache: npm^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0638852Z ^[[31m+       - name: Install locked dependencies^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0639649Z ^[[31m+         run: npm ci --ignore-scripts --no-audit --no-fund^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0640375Z ^[[31m+       - name: Apply Prettier^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0641278Z ^[[31m+         run: npm run format^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0641956Z ^[[31m+       - name: Push formatting child commit^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0642549Z ^[[31m+         if: env.HAS_PAT == 'true'^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0643042Z ^[[31m+         env:^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0643674Z ^[[31m+           TARGET_BRANCH: ${{ github.event.pull_request.head.ref }}^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0644237Z ^[[31m+         run: |^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0644751Z ^[[31m+           if git diff --quiet; then^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0645322Z ^[[31m+             echo "Already formatted."^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0645848Z ^[[31m+             exit 0^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0646286Z ^[[31m+           fi^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0646848Z ^[[31m+           git config user.name "${{ github.actor }}"^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0647625Z ^[[31m+           git config user.email "${{ github.actor }}@users.noreply.github.com"^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0648283Z ^[[31m+           git add -A^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0648832Z ^[[31m+           git commit -m "chore: apply prettier"^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0649471Z ^[[31m+           git push origin "HEAD:${TARGET_BRANCH}"^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0650234Z ^[[31m+           echo "Pushed a formatting child commit; CI will verify the new head."^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0651362Z ^[[31m+       - name: Fail with formatting evidence when PAT is unavailable^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0652047Z ^[[31m+         if: env.HAS_PAT != 'true'^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0652535Z ^[[31m+         run: |^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0653011Z ^[[31m+           if git diff --quiet; then^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0653577Z ^[[31m+             echo "Already formatted."^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0654098Z ^[[31m+             exit 0^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0654507Z ^[[31m+           fi^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0654967Z ^[[31m+           git --no-pager diff^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0655707Z ^[[31m+           echo "Formatting drift found, but PERSONAL_ACCESS_TOKEN is unavailable."^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0656339Z ^[[31m+           exit 1^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0656745Z ^[[31m+^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0656915Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0657480Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/governance-gates.test.ts:^[[2m53:20^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0658548Z     ^[[90m 51|^[[39m   ^[[34mit^[[39m(^[[32m"puts build and end-to-end on the required CI path"^[[39m^[[33m,^[[39m ^[[35masync^[[39m () ^[[33m=>^[[39m {
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0659682Z     ^[[90m 52|^[[39m     ^[[35mconst^[[39m source ^[[33m=^[[39m ^[[35mawait^[[39m ^[[34mtext^[[39m(^[[32m".github/workflows/ci.yml"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0660956Z     ^[[90m 53|^[[39m     ^[[34mexpect^[[39m(source)^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m"build:"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0661670Z     ^[[90m   |^[[39m                    ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0662468Z     ^[[90m 54|^[[39m     ^[[34mexpect^[[39m(source)^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m"end-to-end:"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0663525Z     ^[[90m 55|^[[39m     ^[[34mexpect^[[39m(source)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m"continue-on-error: true"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0664054Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0664381Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0664663Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0664692Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0665253Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m56 passed^[[39m^[[22m^[[90m (57)^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0666216Z ^[[2m      Tests ^[[22m ^[[1m^[[31m5 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m206 passed^[[39m^[[22m^[[90m (211)^[[39m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0667246Z ^[[2m   Start at ^[[22m 09:01:39
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0668067Z ^[[2m   Duration ^[[22m 5.50s^[[2m (transform 1.03s, setup 0ms, import 2.73s, tests 3.35s, environment 10ms)^[[22m
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0668548Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0668555Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0693721Z ##[error]AssertionError: expected './src/index.ts' to be './dist/index.d.ts' // Object.is equality
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	Expected: "./dist/index.d.ts"
+quality (node 24)	Unit tests	Received: "./src/index.ts"
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	 ❯ packages/core/test/unit/scripts/governance-gates.test.ts:19:31
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0702621Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0716317Z ##[error]AssertionError: expected 'import { access, readFile } from "nod…' to contain 'testResults'
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- Expected
+quality (node 24)	Unit tests	+ Received
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- testResults
+quality (node 24)	Unit tests	+ import { access, readFile } from "node:fs/promises";
+quality (node 24)	Unit tests	+ import { fileURLToPath } from "node:url";
+quality (node 24)	Unit tests	+ import { join } from "node:path";
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ const root = fileURLToPath(new URL("..", import.meta.url));
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ export async function readAcceptanceMap(scanRoot = root) {
+quality (node 24)	Unit tests	+   const path = join(scanRoot, "docs", "acceptance-map.json");
+quality (node 24)	Unit tests	+   return JSON.parse(await readFile(path, "utf8"));
+quality (node 24)	Unit tests	+ }
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ async function exists(path) {
+quality (node 24)	Unit tests	+   try {
+quality (node 24)	Unit tests	+     await access(path);
+quality (node 24)	Unit tests	+     return true;
+quality (node 24)	Unit tests	+   } catch {
+quality (node 24)	Unit tests	+     return false;
+quality (node 24)	Unit tests	+   }
+quality (node 24)	Unit tests	+ }
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ export async function scanAcceptance(scanRoot = root) {
+quality (node 24)	Unit tests	+   const map = await readAcceptanceMap(scanRoot);
+quality (node 24)	Unit tests	+   if (!map || map.version !== 1 || !Array.isArray(map.items))
+quality (node 24)	Unit tests	+     throw new Error("Acceptance map must have version 1 and an items array.");
+quality (node 24)	Unit tests	+   const failures = [];
+quality (node 24)	Unit tests	+   const ids = new Set();
+quality (node 24)	Unit tests	+   for (const item of map.items) {
+quality (node 24)	Unit tests	+     if (!item || typeof item.id !== "string" || typeof item.test !== "string") {
+quality (node 24)	Unit tests	+       failures.push("Each acceptance item requires string id and test fields.");
+quality (node 24)	Unit tests	+       continue;
+quality (node 24)	Unit tests	+     }
+quality (node 24)	Unit tests	+     if (ids.has(item.id)) failures.push(`${item.id}: duplicate id`);
+quality (node 24)	Unit tests	+     ids.add(item.id);
+quality (node 24)	Unit tests	+     if (!(await exists(join(scanRoot, item.test))))
+quality (node 24)	Unit tests	+       failures.push(`${item.id}: missing ${item.test}`);
+quality (node 24)	Unit tests	+   }
+quality (node 24)	Unit tests	+   return failures;
+quality (node 24)	Unit tests	+ }
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ export async function main(scanRoot = root) {
+quality (node 24)	Unit tests	+   const failures = await scanAcceptance(scanRoot);
+quality (node 24)	Unit tests	+   if (failures.length) {
+quality (node 24)	Unit tests	+     console.error(failures.join("\n"));
+quality (node 24)	Unit tests	+     return 1;
+quality (node 24)	Unit tests	+   }
+quality (node 24)	Unit tests	+   console.log("acceptance mapping passed");
+quality (node 24)	Unit tests	+   return 0;
+quality (node 24)	Unit tests	+ }
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ if (process.argv[1] === fileURLToPath(import.meta.url)) process.exitCode = await main();
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	 ❯ packages/core/test/unit/scripts/governance-gates.test.ts:29:20
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0722889Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0763913Z ##[error]AssertionError: expected 'name: Recovery audit\n\non:\n  workfl…' to contain '--reporter=json'
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- Expected
+quality (node 24)	Unit tests	+ Received
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- --reporter=json
+quality (node 24)	Unit tests	+ name: Recovery audit
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ on:
+quality (node 24)	Unit tests	+   workflow_dispatch:
+quality (node 24)	Unit tests	+     inputs:
+quality (node 24)	Unit tests	+       ref:
+quality (node 24)	Unit tests	+         description: Branch, tag, or commit to audit
+quality (node 24)	Unit tests	+         required: true
+quality (node 24)	Unit tests	+         default: main
+quality (node 24)	Unit tests	+         type: string
+quality (node 24)	Unit tests	+       base:
+quality (node 24)	Unit tests	+         description: Base for failing-first comparison
+quality (node 24)	Unit tests	+         required: false
+quality (node 24)	Unit tests	+         default: ""
+quality (node 24)	Unit tests	+         type: string
+quality (node 24)	Unit tests	+       failing_first_exception:
+quality (node 24)	Unit tests	+         description: Documented reason this ref adds no new behavioral test
+quality (node 24)	Unit tests	+         required: false
+quality (node 24)	Unit tests	+         default: ""
+quality (node 24)	Unit tests	+         type: string
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ permissions:
+quality (node 24)	Unit tests	+   contents: read
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ env:
+quality (node 24)	Unit tests	+   NODE_VERSION: 24
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ jobs:
+quality (node 24)	Unit tests	+   contract:
+quality (node 24)	Unit tests	+     name: contract surfaces
+quality (node 24)	Unit tests	+     runs-on: ubuntu-latest
+quality (node 24)	Unit tests	+     timeout-minutes: 25
+quality (node 24)	Unit tests	+     steps:
+quality (node 24)	Unit tests	+       - uses: actions/checkout@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           ref: ${{ inputs.ref }}
+quality (node 24)	Unit tests	+           fetch-depth: 0
+quality (node 24)	Unit tests	+       - uses: actions/setup-node@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           node-version: ${{ env.NODE_VERSION }}
+quality (node 24)	Unit tests	+           cache: npm
+quality (node 24)	Unit tests	+       - run: npm ci --ignore-scripts --no-audit --no-fund
+quality (node 24)	Unit tests	+       - name: Run contract surfaces
+quality (node 24)	Unit tests	+         run: |
+quality (node 24)	Unit tests	+           set -uo pipefail
+quality (node 24)	Unit tests	+           mkdir -p audit-logs audit-fragments
+quality (node 24)	Unit tests	+           failed=0
+quality (node 24)	Unit tests	+           run_suite() { name="$1"; shift; if "$@" > "audit-logs/$name.log" 2>&1; then echo "- $name: pass" >> audit-fragments/10-contract.md; else echo "- $name: FAIL" >> audit-fragments/10-contract.md; failed=1; fi; }
+quality (node 24)	Unit tests	+           echo "## contract" > audit-fragments/10-contract.md
+quality (node 24)	Unit tests	+           run_suite gsap-contract npm run test:contract
+quality (node 24)	Unit tests	+           run_suite dom-contract npx vitest run packages/core/test/integration/dom-patch-apply.test.ts
+quality (node 24)	Unit tests	+           run_suite react-lifecycle npx vitest run packages/react/test
+quality (node 24)	Unit tests	+           run_suite boundaries npm run test:boundaries
+quality (node 24)	Unit tests	+           run_suite end-to-end npx vitest run packages/core/test/integration/end-to-end.test.ts
+quality (node 24)	Unit tests	+           echo "CONTRACT_FAILED=$failed" >> "$GITHUB_ENV"
+quality (node 24)	Unit tests	+       - if: always()
+quality (node 24)	Unit tests	+         uses: actions/upload-artifact@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           name: recovery-audit-contract-${{ github.run_id }}
+quality (node 24)	Unit tests	+           path: |
+quality (node 24)	Unit tests	+             audit-fragments/
+quality (node 24)	Unit tests	+             audit-logs/
+quality (node 24)	Unit tests	+           if-no-files-found: warn
+quality (node 24)	Unit tests	+       - if: always()
+quality (node 24)	Unit tests	+         run: test "${CONTRACT_FAILED:-1}" = 0
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+   mutation:
+quality (node 24)	Unit tests	+     name: mutation baseline
+quality (node 24)	Unit tests	+     runs-on: ubuntu-latest
+quality (node 24)	Unit tests	+     timeout-minutes: 60
+quality (node 24)	Unit tests	+     steps:
+quality (node 24)	Unit tests	+       - uses: actions/checkout@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           ref: ${{ inputs.ref }}
+quality (node 24)	Unit tests	+           fetch-depth: 0
+quality (node 24)	Unit tests	+       - uses: actions/setup-node@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           node-version: ${{ env.NODE_VERSION }}
+quality (node 24)	Unit tests	+           cache: npm
+quality (node 24)	Unit tests	+       - run: npm ci --ignore-scripts --no-audit --no-fund
+quality (node 24)	Unit tests	+       - name: Run Stryker and verify its score
+quality (node 24)	Unit tests	+         run: |
+quality (node 24)	Unit tests	+           set -uo pipefail
+quality (node 24)	Unit tests	+           mkdir -p audit-logs audit-fragments
+quality (node 24)	Unit tests	+           failed=0
+quality (node 24)	Unit tests	+           if npx stryker run > audit-logs/mutation.log 2>&1; then echo "- stryker run: pass" > audit-fragments/20-mutation.md; else echo "- stryker run: FAIL" > audit-fragments/20-mutation.md; failed=1; fi
+quality (node 24)	Unit tests	+           if test -e reports/mutation/mutation.json; then
+quality (node 24)	Unit tests	+             node --input-type=module >> audit-fragments/20-mutation.md <<'NODE'
+quality (node 24)	Unit tests	+           import { readFile } from "node:fs/promises";
+quality (node 24)	Unit tests	+           const report = JSON.parse(await readFile("reports/mutation/mutation.json", "utf8"));
+quality (node 24)	Unit tests	+           const mutants = Object.values(report.files ?? {}).flatMap((file) => file.mutants ?? []);
+quality (node 24)	Unit tests	+           const counts = Object.groupBy(mutants, (mutant) => mutant.status ?? "Unknown");
+quality (node 24)	Unit tests	+           const count = (status) => (counts[status] ?? []).length;
+quality (node 24)	Unit tests	+           const killed = count("Killed"), survived = count("Survived"), timeout = count("Timeout"), noCoverage = count("NoCoverage");
+quality (node 24)	Unit tests	+           const denominator = killed + survived + timeout;
+quality (node 24)	Unit tests	+           const derived = denominator ? (killed / denominator) * 100 : Number.NaN;
+quality (node 24)	Unit tests	+           const reported = Number(report.metrics?.mutationScore ?? report.mutationScore);
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0777362Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0783909Z ##[error]AssertionError: expected 'import { readFile } from "node:fs/pro…' to contain 'mutant.status !== "NoCoverage"'
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- Expected
+quality (node 24)	Unit tests	+ Received
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- mutant.status !== "NoCoverage"
+quality (node 24)	Unit tests	+ import { readFile } from "node:fs/promises";
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ const path = process.argv[2] ?? "reports/mutation/mutation.json";
+quality (node 24)	Unit tests	+ const report = JSON.parse(await readFile(path, "utf8"));
+quality (node 24)	Unit tests	+ const counts = {};
+quality (node 24)	Unit tests	+ for (const file of Object.values(report.files ?? {})) {
+quality (node 24)	Unit tests	+   for (const mutant of file.mutants ?? []) counts[mutant.status] = (counts[mutant.status] ?? 0) + 1;
+quality (node 24)	Unit tests	+ }
+quality (node 24)	Unit tests	+ const total = Object.values(counts).reduce((sum, value) => sum + value, 0);
+quality (node 24)	Unit tests	+ const killed = counts.Killed ?? 0;
+quality (node 24)	Unit tests	+ const score = total === 0 ? 0 : (killed / total) * 100;
+quality (node 24)	Unit tests	+ console.log(JSON.stringify({ total, score: Number(score.toFixed(2)), counts }, null, 2));
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	 ❯ packages/core/test/unit/scripts/governance-gates.test.ts:45:20
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0787897Z 
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0833566Z ##[error]AssertionError: expected 'name: CI\n\non:\n  # Pull requests al…' to contain 'build:'
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- Expected
+quality (node 24)	Unit tests	+ Received
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- build:
+quality (node 24)	Unit tests	+ name: CI
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ on:
+quality (node 24)	Unit tests	+   # Pull requests already run the full required suite. Do not also run the same
+quality (node 24)	Unit tests	+   # workflow from pushes to feature branches, or every PR head gets duplicate checks.
+quality (node 24)	Unit tests	+   push:
+quality (node 24)	Unit tests	+     branches: [main, "rescue/**"]
+quality (node 24)	Unit tests	+   pull_request:
+quality (node 24)	Unit tests	+     branches: [main, "rescue/**", "fix/**"]
+quality (node 24)	Unit tests	+     types: [opened, synchronize, reopened]
+quality (node 24)	Unit tests	+   workflow_dispatch:
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ concurrency:
+quality (node 24)	Unit tests	+   group: ci-${{ github.workflow }}-${{ github.ref }}
+quality (node 24)	Unit tests	+   cancel-in-progress: true
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ permissions:
+quality (node 24)	Unit tests	+   contents: read
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+ jobs:
+quality (node 24)	Unit tests	+   quality:
+quality (node 24)	Unit tests	+     name: quality (node 24)
+quality (node 24)	Unit tests	+     runs-on: ubuntu-latest
+quality (node 24)	Unit tests	+     timeout-minutes: 15
+quality (node 24)	Unit tests	+     steps:
+quality (node 24)	Unit tests	+       - uses: actions/checkout@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+quality (node 24)	Unit tests	+       - uses: actions/setup-node@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           node-version: 24
+quality (node 24)	Unit tests	+           cache: npm
+quality (node 24)	Unit tests	+       - name: Install locked dependencies
+quality (node 24)	Unit tests	+         run: npm ci --ignore-scripts --no-audit --no-fund
+quality (node 24)	Unit tests	+       - name: Typecheck
+quality (node 24)	Unit tests	+         run: npm run typecheck
+quality (node 24)	Unit tests	+       - name: Unit tests
+quality (node 24)	Unit tests	+         run: npm test
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+   integration:
+quality (node 24)	Unit tests	+     name: integration (node 24)
+quality (node 24)	Unit tests	+     runs-on: ubuntu-latest
+quality (node 24)	Unit tests	+     timeout-minutes: 15
+quality (node 24)	Unit tests	+     steps:
+quality (node 24)	Unit tests	+       - uses: actions/checkout@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+quality (node 24)	Unit tests	+       - uses: actions/setup-node@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           node-version: 24
+quality (node 24)	Unit tests	+           cache: npm
+quality (node 24)	Unit tests	+       - name: Install locked dependencies
+quality (node 24)	Unit tests	+         run: npm ci --ignore-scripts --no-audit --no-fund
+quality (node 24)	Unit tests	+       - name: Integration tests
+quality (node 24)	Unit tests	+         run: npm run test:integration
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+   boundaries:
+quality (node 24)	Unit tests	+     name: boundaries (node 24)
+quality (node 24)	Unit tests	+     runs-on: ubuntu-latest
+quality (node 24)	Unit tests	+     timeout-minutes: 15
+quality (node 24)	Unit tests	+     steps:
+quality (node 24)	Unit tests	+       - uses: actions/checkout@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+quality (node 24)	Unit tests	+       - uses: actions/setup-node@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           node-version: 24
+quality (node 24)	Unit tests	+           cache: npm
+quality (node 24)	Unit tests	+       - name: Install locked dependencies
+quality (node 24)	Unit tests	+         run: npm ci --ignore-scripts --no-audit --no-fund
+quality (node 24)	Unit tests	+       - name: Boundary scan and planted fixtures
+quality (node 24)	Unit tests	+         run: npm run test:boundaries
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+   performance:
+quality (node 24)	Unit tests	+     name: performance (node 24, advisory)
+quality (node 24)	Unit tests	+     runs-on: ubuntu-latest
+quality (node 24)	Unit tests	+     continue-on-error: true
+quality (node 24)	Unit tests	+     timeout-minutes: 15
+quality (node 24)	Unit tests	+     steps:
+quality (node 24)	Unit tests	+       - uses: actions/checkout@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           ref: ${{ github.event.pull_request.head.sha || github.sha }}
+quality (node 24)	Unit tests	+       - uses: actions/setup-node@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           node-version: 24
+quality (node 24)	Unit tests	+           cache: npm
+quality (node 24)	Unit tests	+       - name: Install locked dependencies
+quality (node 24)	Unit tests	+         run: npm ci --ignore-scripts --no-audit --no-fund
+quality (node 24)	Unit tests	+       - name: Run deterministic benchmark
+quality (node 24)	Unit tests	+         run: npm run benchmark
+quality (node 24)	Unit tests	+       - name: Upload benchmark report
+quality (node 24)	Unit tests	+         if: always()
+quality (node 24)	Unit tests	+         uses: actions/upload-artifact@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           name: motion5-benchmark-report
+quality (node 24)	Unit tests	+           path: performance/benchmark-report.json
+quality (node 24)	Unit tests	+           if-no-files-found: error
+quality (node 24)	Unit tests	+       - name: Upload failure diagnostics
+quality (node 24)	Unit tests	+         if: failure()
+quality (node 24)	Unit tests	+         uses: actions/upload-artifact@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           name: motion5-performance-failure-diagnostics
+quality (node 24)	Unit tests	+           path: |
+quality (node 24)	Unit tests	+             performance/benchmark-report.json
+quality (node 24)	Unit tests	+             test-results/**
+quality (node 24)	Unit tests	+           if-no-files-found: ignore
+quality (node 24)	Unit tests	+
+quality (node 24)	Unit tests	+   format:
+quality (node 24)	Unit tests	+     name: prettier after behavioral green
+quality (node 24)	Unit tests	+     needs: [quality, integration, boundaries]
+quality (node 24)	Unit tests	+     if: >-
+quality (node 24)	Unit tests	+       github.event_name == 'pull_request' &&
+quality (node 24)	Unit tests	+       github.event.pull_request.head.repo.full_name == github.repository
+quality (node 24)	Unit tests	+     runs-on: ubuntu-latest
+quality (node 24)	Unit tests	+     timeout-minutes: 15
+quality (node 24)	Unit tests	+     env:
+quality (node 24)	Unit tests	+       HAS_PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN != '' }}
+quality (node 24)	Unit tests	+     steps:
+quality (node 24)	Unit tests	+       - name: Check out the exact tested PR head
+quality (node 24)	Unit tests	+         uses: actions/checkout@v4
+quality (node 24)	Unit tests	+         with:
+quality (node 24)	Unit tests	+           ref: ${{ github.event.pull_request.head.sha }}
+quality (node 24)	Unit tests	+           repository: ${{ github.event.pull_request.head.repo.full_name }}
+quality (node 24)	Unit tests	+           fetch-depth: 1
+quality (node 24)	Unit tests	+           token: ${{ secrets.PERSONAL_
+quality (node 24)	Unit tests	2026-08-13T09:01:45.0856812Z ##[error]Process completed with exit code 1.
