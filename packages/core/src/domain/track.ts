@@ -55,7 +55,7 @@ function freezeComposition(values: unknown): ImmutableRecord {
   if (!isRecord(values))
     throw new CompositionOutputError("Composition output must be a renderer-neutral record.");
   try {
-    return freezeValue(values) as ImmutableRecord;
+    return freezeValue(values as ImmutableRecord);
   } catch (error) {
     throw new CompositionOutputError(
       `Composition output is not renderer-neutral: ${error instanceof Error ? error.message : String(error)}`,
