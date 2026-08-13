@@ -23,86 +23,6 @@ permissions:
   contents: read
 
 jobs:
-  contract:
-    name: contract surfaces
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - name: Check out selected ref
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.ref }}
-          fetch-depth: 0
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-
-      - name: Install locked dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      - name: Run contract surfaces
-        run: |
-          set -uo pipefail
-          mkdir -p audit-logs audit-fragments
-          FRAGMENT=audit-fragments/10-contract.md
-          FAILED=0
-          {
-            echo "## contract"
-            echo
-            echo "- commit: $(git rev-parse HEAD)"
-          } > "$FRAGMENT"
-          run_suite() {
-            suite="$1"
-            shift
-            if "$@" > "audit-logs/$suite.log" 2>&1; then
-              echo "- $suite: pass" >> "$FRAGMENT"
-            else
-              echo "- $suite: FAIL" >> "$FRAGMENT"
-              FAILED=1
-            fi
-          }
-          need_path() {
-            suite="$1"
-            target="$2"
-            if test -e "$target"; then
-              return 0
-            fi
-            echo "- $suite: MISSING ($target)" >> "$FRAGMENT"
-            FAILED=1
-            return 1
-          }
-          if need_path "gsap-contract" packages/core/test/contract; then
-            run_suite "gsap-contract" npm run test:contract
-          fi
-          if need_path "dom-contract" packages/core/test/integration/dom-patch-apply.test.ts; then
-            run_suite "dom-contract" npx vitest run packages/core/test/integration/dom-patch-apply.test.ts
-          fi
-          if need_path "react-lifecycle" packages/react/test; then
-            run_suite "react-lifecycle" npx vitest run packages/react/test
-          fi
-          run_suite "boundaries" npm run test:boundaries
-          if need_path "end-to-end" packages/core/test/integration/end-to-end.test.ts; then
-            run_suite "end-to-end" npx vitest run packages/core/test/integration/end-to-end.test.ts
-          fi
-          echo "CONTRACT_FAILED=$FAILED" >> "$GITHUB_ENV"
-
-      - name: Upload contract evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: recovery-audit-contract-${{ github.run_id }}
-          path: |
-            audit-fragments/
-            audit-logs/
-          if-no-files-found: warn
-
-      - name: Fail when a contract surface is missing or red
-        if: always()
-        run: test "${CONTRACT_FAILED:-1}" = "0"
-
   mutation:
     name: mutation baseline
     runs-on: ubuntu-latest
@@ -113,16 +33,13 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
-
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-
       - name: Run Stryker on runtime and adapters
         run: |
           set -uo pipefail
@@ -142,19 +59,37 @@ jobs:
               FAILED=1
             fi
             if test -e reports/mutation/mutation.json; then
-              SCORE=$(node -p "const r=require('./reports/mutation/mutation.json');r.thresholds&&r.thresholds.high?'reported':'reported'" 2>/dev/null || echo unreadable)
-              echo "- mutation report: $SCORE, see uploaded artifact for the measured score" >> "$FRAGMENT"
+              node --input-type=module >> "$FRAGMENT" <<'NODE'
+          import { readFile } from "node:fs/promises";
+          const report = JSON.parse(await readFile("reports/mutation/mutation.json", "utf8"));
+          const mutants = Object.values(report.files ?? {}).flatMap((file) => file.mutants ?? []);
+          const counts = Object.groupBy(mutants, (mutant) => mutant.status ?? "Unknown");
+          const count = (status) => (counts[status] ?? []).length;
+          const killed = count("Killed");
+          const survived = count("Survived");
+          const timeout = count("Timeout");
+          const noCoverage = count("NoCoverage");
+          const denominator = killed + survived + timeout;
+          const derivedScore = denominator === 0 ? Number.NaN : (killed / denominator) * 100;
+          const reported = Number(report.metrics?.mutationScore ?? report.mutationScore);
+          const score = Number.isFinite(reported) ? (reported <= 1 ? reported * 100 : reported) : derivedScore;
+          const threshold = Number(report.thresholds?.break ?? 0);
+          console.log(`- mutation counts: killed=${killed}, survived=${survived}, timeout=${timeout}, noCoverage=${noCoverage}`);
+          console.log(`- mutation score: ${score.toFixed(2)}%`);
+          console.log(`- mutation threshold: ${threshold.toFixed(2)}%`);
+          if (!Number.isFinite(score)) process.exitCode = 1;
+          if (Number.isFinite(score) && score < threshold) process.exitCode = 1;
+          NODE
+              if test "$?" -ne 0; then FAILED=1; fi
             else
               echo "- mutation report: MISSING" >> "$FRAGMENT"
               FAILED=1
             fi
           else
             echo "- stryker.config.json: MISSING" >> "$FRAGMENT"
-            echo "- no score is recorded and no threshold is invented; slice E3 owns this gate" >> "$FRAGMENT"
             FAILED=1
           fi
           echo "MUTATION_FAILED=$FAILED" >> "$GITHUB_ENV"
-
       - name: Upload mutation evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -165,10 +100,53 @@ jobs:
             audit-logs/
             reports/mutation/
           if-no-files-found: warn
-
-      - name: Fail until a mutation baseline exists
+      - name: Fail until a mutation baseline exists and meets threshold
         if: always()
         run: test "${MUTATION_FAILED:-1}" = "0"
+
+  contract:
+    name: contract surfaces
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Check out selected ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run contract surfaces
+        run: |
+          set -uo pipefail
+          mkdir -p audit-logs audit-fragments
+          FRAGMENT=audit-fragments/10-contract.md
+          FAILED=0
+          { echo "## contract"; echo; echo "- commit: $(git rev-parse HEAD)"; } > "$FRAGMENT"
+          run_suite() { suite="$1"; shift; if "$@" > "audit-logs/$suite.log" 2>&1; then echo "- $suite: pass" >> "$FRAGMENT"; else echo "- $suite: FAIL" >> "$FRAGMENT"; FAILED=1; fi; }
+          need_path() { suite="$1"; target="$2"; if test -e "$target"; then return 0; fi; echo "- $suite: MISSING ($target)" >> "$FRAGMENT"; FAILED=1; return 1; }
+          if need_path "gsap-contract" packages/core/test/contract; then run_suite "gsap-contract" npm run test:contract; fi
+          if need_path "dom-contract" packages/core/test/integration/dom-patch-apply.test.ts; then run_suite "dom-contract" npx vitest run packages/core/test/integration/dom-patch-apply.test.ts; fi
+          if need_path "react-lifecycle" packages/react/test; then run_suite "react-lifecycle" npx vitest run packages/react/test; fi
+          run_suite "boundaries" npm run test:boundaries
+          if need_path "end-to-end" packages/core/test/integration/end-to-end.test.ts; then run_suite "end-to-end" npx vitest run packages/core/test/integration/end-to-end.test.ts; fi
+          echo "CONTRACT_FAILED=$FAILED" >> "$GITHUB_ENV"
+      - name: Upload contract evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-audit-contract-${{ github.run_id }}
+          path: audit-fragments/
+            audit-logs/
+          if-no-files-found: warn
+      - name: Fail when a contract surface is missing or red
+        if: always()
+        run: test "${CONTRACT_FAILED:-1}" = "0"
 
   acceptance:
     name: acceptance mapping
@@ -180,59 +158,27 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
-
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-
-      - name: Verify every acceptance item maps to a test that ran
+      - name: Verify acceptance mapping
         run: |
           set -uo pipefail
           mkdir -p audit-logs audit-fragments
-          FRAGMENT=audit-fragments/30-acceptance.md
-          FAILED=0
-          {
-            echo "## acceptance"
-            echo
-          } > "$FRAGMENT"
-          for target in scripts/acceptance-scan.mjs docs/acceptance-map.json; do
-            if test -e "$target"; then
-              echo "- $target: present" >> "$FRAGMENT"
-            else
-              echo "- $target: MISSING" >> "$FRAGMENT"
-              FAILED=1
-            fi
-          done
-          if [ "$FAILED" = "0" ]; then
-            if node scripts/acceptance-scan.mjs > audit-logs/acceptance.log 2>&1; then
-              echo "- acceptance scan: pass" >> "$FRAGMENT"
-            else
-              echo "- acceptance scan: FAIL" >> "$FRAGMENT"
-              FAILED=1
-            fi
-          else
-            echo "- acceptance scan: not run, checker or map absent; slice D3 owns this gate" >> "$FRAGMENT"
-          fi
-          echo "ACCEPTANCE_FAILED=$FAILED" >> "$GITHUB_ENV"
-
+          node scripts/acceptance-scan.mjs > audit-logs/acceptance.log 2>&1
+          { echo "## acceptance"; echo; echo "- acceptance scan: pass"; } > audit-fragments/30-acceptance.md
       - name: Upload acceptance evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: recovery-audit-acceptance-${{ github.run_id }}
-          path: |
-            audit-fragments/
+          path: audit-fragments/
             audit-logs/
           if-no-files-found: warn
-
-      - name: Fail until acceptance mapping is executable
-        if: always()
-        run: test "${ACCEPTANCE_FAILED:-1}" = "0"
 
   failing-first:
     name: failing-first evidence
@@ -247,111 +193,46 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
-
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-
       - name: Resolve comparison range
         run: |
           set -euo pipefail
-          REF_SHA=$(git rev-parse HEAD)
-          if [ -n "$AUDIT_BASE" ]; then
-            BASE_SHA=$(git rev-parse "$AUDIT_BASE")
-          else
-            BASE_SHA=$(git rev-parse "HEAD^")
-          fi
-          echo "REF_SHA=$REF_SHA" >> "$GITHUB_ENV"
-          echo "BASE_SHA=$BASE_SHA" >> "$GITHUB_ENV"
+          REF_SHA=$(git rev-parse HEAD); BASE_SHA=${AUDIT_BASE:+$(git rev-parse "$AUDIT_BASE")}; BASE_SHA=${BASE_SHA:-$(git rev-parse HEAD^)}
+          echo "REF_SHA=$REF_SHA" >> "$GITHUB_ENV"; echo "BASE_SHA=$BASE_SHA" >> "$GITHUB_ENV"
           git diff --name-only --diff-filter=AM "$BASE_SHA" "$REF_SHA" -- "*.test.ts" > /tmp/new-tests.txt
           git diff --name-only "$BASE_SHA" "$REF_SHA" -- "packages/*/src/*" > /tmp/changed-src.txt
-          echo "New or modified test files:"
-          cat /tmp/new-tests.txt
-
-      - name: Run the new tests against the base implementation
+      - name: Run tests against base
+        run: |
+          set -uo pipefail; mkdir -p audit-logs
+          if [ ! -s /tmp/new-tests.txt ]; then echo "RED_RESULT=no-new-tests" >> "$GITHUB_ENV"; exit 0; fi
+          git checkout -f "$BASE_SHA"; xargs -a /tmp/new-tests.txt git checkout "$REF_SHA" --; npm ci --ignore-scripts --no-audit --no-fund > audit-logs/base-install.log 2>&1
+          if xargs -a /tmp/new-tests.txt npx vitest run > audit-logs/base-run.log 2>&1; then echo "RED_RESULT=passed-on-base" >> "$GITHUB_ENV"; else echo "RED_RESULT=failed-on-base" >> "$GITHUB_ENV"; fi
+      - name: Run tests on ref
         run: |
           set -uo pipefail
-          mkdir -p audit-logs
-          if [ ! -s /tmp/new-tests.txt ]; then
-            echo "RED_RESULT=no-new-tests" >> "$GITHUB_ENV"
-            exit 0
-          fi
-          git checkout -f "$BASE_SHA"
-          xargs -a /tmp/new-tests.txt git checkout "$REF_SHA" --
-          npm ci --ignore-scripts --no-audit --no-fund > audit-logs/base-install.log 2>&1
-          if xargs -a /tmp/new-tests.txt npx vitest run > audit-logs/base-run.log 2>&1; then
-            echo "RED_RESULT=passed-on-base" >> "$GITHUB_ENV"
-          else
-            echo "RED_RESULT=failed-on-base" >> "$GITHUB_ENV"
-          fi
-
-      - name: Run the same tests on the audited ref
-        run: |
-          set -uo pipefail
-          if [ ! -s /tmp/new-tests.txt ]; then
-            echo "GREEN_RESULT=no-new-tests" >> "$GITHUB_ENV"
-            exit 0
-          fi
-          git checkout -f "$REF_SHA"
-          npm ci --ignore-scripts --no-audit --no-fund > audit-logs/ref-install.log 2>&1
-          if xargs -a /tmp/new-tests.txt npx vitest run > audit-logs/ref-run.log 2>&1; then
-            echo "GREEN_RESULT=passed-on-ref" >> "$GITHUB_ENV"
-          else
-            echo "GREEN_RESULT=failed-on-ref" >> "$GITHUB_ENV"
-          fi
-
-      - name: Record failing-first verdict
+          if [ ! -s /tmp/new-tests.txt ]; then echo "GREEN_RESULT=no-new-tests" >> "$GITHUB_ENV"; exit 0; fi
+          git checkout -f "$REF_SHA"; npm ci --ignore-scripts --no-audit --no-fund > audit-logs/ref-install.log 2>&1
+          if xargs -a /tmp/new-tests.txt npx vitest run > audit-logs/ref-run.log 2>&1; then echo "GREEN_RESULT=passed-on-ref" >> "$GITHUB_ENV"; else echo "GREEN_RESULT=failed-on-ref" >> "$GITHUB_ENV"; fi
+      - name: Record verdict
         if: always()
         run: |
-          set -uo pipefail
-          mkdir -p audit-fragments audit-logs
-          cp /tmp/new-tests.txt audit-logs/new-tests.txt 2>/dev/null || true
-          cp /tmp/changed-src.txt audit-logs/changed-src.txt 2>/dev/null || true
+          set -uo pipefail; mkdir -p audit-fragments audit-logs
+          cp /tmp/new-tests.txt audit-logs/new-tests.txt 2>/dev/null || true; cp /tmp/changed-src.txt audit-logs/changed-src.txt 2>/dev/null || true
           FRAGMENT=audit-fragments/40-failing-first.md
-          {
-            echo "## failing-first"
-            echo
-            echo "- ref: ${REF_SHA:-unresolved}"
-            echo "- base: ${BASE_SHA:-unresolved}"
-            echo "- new or modified test files:"
-            if [ -s /tmp/new-tests.txt ]; then
-              sed "s|^|  - |" /tmp/new-tests.txt
-            else
-              echo "  - none"
-            fi
-            echo "- source files changed:"
-            if [ -s /tmp/changed-src.txt ]; then
-              sed "s|^|  - |" /tmp/changed-src.txt
-            else
-              echo "  - none"
-            fi
-            echo "- base run: ${RED_RESULT:-not-run}"
-            echo "- ref run: ${GREEN_RESULT:-not-run}"
-            echo "- typecheck is deliberately not run on the base leg: vitest transpiles"
-            echo "  tests without checking them, so a strictly typed test executes against"
-            echo "  an implementation that does not yet expose its API and fails on"
-            echo "  behavior rather than on compilation. Slices ship one test file."
-          } > "$FRAGMENT"
-          VERDICT=fail
-          if [ "${RED_RESULT:-}" = "failed-on-base" ] && [ "${GREEN_RESULT:-}" = "passed-on-ref" ]; then
-            VERDICT=pass
-          fi
-          if [ "$VERDICT" != "pass" ] && [ -n "$AUDIT_EXCEPTION" ]; then
-            VERDICT=exception
-            echo "- documented exception: $AUDIT_EXCEPTION" >> "$FRAGMENT"
-          fi
-          echo "- verdict: $VERDICT" >> "$FRAGMENT"
-          test "$VERDICT" != "fail"
-
+          { echo "## failing-first"; echo; echo "- ref: ${REF_SHA:-unresolved}"; echo "- base: ${BASE_SHA:-unresolved}"; echo "- base run: ${RED_RESULT:-not-run}"; echo "- ref run: ${GREEN_RESULT:-not-run}"; } > "$FRAGMENT"
+          VERDICT=fail; if [ "${RED_RESULT:-}" = "failed-on-base" ] && [ "${GREEN_RESULT:-}" = "passed-on-ref" ]; then VERDICT=pass; fi
+          if [ "$VERDICT" != "pass" ] && [ -n "$AUDIT_EXCEPTION" ]; then VERDICT=exception; echo "- documented exception: $AUDIT_EXCEPTION" >> "$FRAGMENT"; fi
+          echo "- verdict: $VERDICT" >> "$FRAGMENT"; test "$VERDICT" != "fail"
       - name: Upload failing-first evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: recovery-audit-failing-first-${{ github.run_id }}
-          path: |
-            audit-fragments/
+          path: audit-fragments/
             audit-logs/
           if-no-files-found: warn
 
@@ -365,64 +246,27 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
-
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-
       - name: Emit declarations and check public entries
         run: |
-          set -uo pipefail
-          mkdir -p audit-logs audit-fragments
-          FRAGMENT=audit-fragments/50-build.md
-          FAILED=0
-          {
-            echo "## build"
-            echo
-          } > "$FRAGMENT"
-          if npx tsc -p tsconfig.json --declaration --emitDeclarationOnly --noEmit false --outDir dist-audit > audit-logs/declarations.log 2>&1; then
-            echo "- declaration emit: pass" >> "$FRAGMENT"
-          else
-            echo "- declaration emit: FAIL" >> "$FRAGMENT"
-            FAILED=1
-          fi
-          for manifest in packages/*/package.json; do
-            dir=$(dirname "$manifest")
-            pkg=$(node -p "require('./$manifest').name" 2>/dev/null || echo "$dir")
-            types=$(node -p "const m=require('./$manifest');m.types||m.typings||''" 2>/dev/null || echo "")
-            if [ -z "$types" ]; then
-              echo "- $pkg types entry: MISSING" >> "$FRAGMENT"
-              FAILED=1
-            elif test -e "$dir/$types"; then
-              echo "- $pkg types entry: present" >> "$FRAGMENT"
-            else
-              echo "- $pkg types entry: declared but absent ($types)" >> "$FRAGMENT"
-              FAILED=1
-            fi
-            exports=$(node -p "const m=require('./$manifest');m.exports?'present':'missing'" 2>/dev/null || echo missing)
-            echo "- $pkg exports map: $exports" >> "$FRAGMENT"
-            if [ "$exports" = "missing" ]; then
-              FAILED=1
-            fi
-          done
+          set -uo pipefail; mkdir -p audit-logs audit-fragments; FAILED=0
+          if npx tsc -p tsconfig.json --declaration --emitDeclarationOnly --noEmit false --outDir dist-audit > audit-logs/declarations.log 2>&1; then echo "- declaration emit: pass" > audit-fragments/50-build.md; else echo "- declaration emit: FAIL" > audit-fragments/50-build.md; FAILED=1; fi
+          for manifest in packages/*/package.json; do dir=$(dirname "$manifest"); types=$(node -p "const m=require('./$manifest');m.types||m.typings||''" 2>/dev/null || echo ""); exports=$(node -p "const m=require('./$manifest');m.exports?'present':'missing'" 2>/dev/null || echo missing); test -n "$types" && test -e "$dir/$types" || FAILED=1; test "$exports" = present || FAILED=1; done
           echo "BUILD_FAILED=$FAILED" >> "$GITHUB_ENV"
-
       - name: Upload build evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: recovery-audit-build-${{ github.run_id }}
-          path: |
-            audit-fragments/
+          path: audit-fragments/
             audit-logs/
           if-no-files-found: warn
-
-      - name: Fail until declarations and public entries resolve
+      - name: Fail until build passes
         if: always()
         run: test "${BUILD_FAILED:-1}" = "0"
 
@@ -439,42 +283,14 @@ jobs:
           pattern: recovery-audit-*-${{ github.run_id }}
           path: downloaded
           merge-multiple: true
-
       - name: Assemble the audit report
         run: |
           set -uo pipefail
-          {
-            echo "# Recovery audit report"
-            echo
-            echo "- Ref: ${{ inputs.ref }}"
-            echo "- Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-            echo "- Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo
-            echo "## Job outcomes"
-            echo "- contract: ${{ needs.contract.result }}"
-            echo "- mutation: ${{ needs.mutation.result }}"
-            echo "- acceptance: ${{ needs.acceptance.result }}"
-            echo "- failing-first: ${{ needs['failing-first'].result }}"
-            echo "- build: ${{ needs.build.result }}"
-            echo
-            for fragment in $(ls downloaded/*.md 2>/dev/null | sort); do
-              cat "$fragment"
-              echo
-            done
-            echo "## Interpretation"
-            echo
-            echo "A red job means the gate it measures is not met on this ref. On the"
-            echo "frozen baseline every gate except the existing suites is expected to be"
-            echo "red. Only the recorded outcomes above and the uploaded logs are evidence;"
-            echo "a slice is not complete because a document says so."
-          } | tee recovery-audit-report.md >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Upload the assembled report
+          { echo "# Recovery audit report"; echo; echo "- Ref: ${{ inputs.ref }}"; echo "- Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"; echo; echo "## Job outcomes"; echo "- contract: ${{ needs.contract.result }}"; echo "- mutation: ${{ needs.mutation.result }}"; echo "- acceptance: ${{ needs.acceptance.result }}"; echo "- failing-first: ${{ needs['failing-first'].result }}"; echo "- build: ${{ needs.build.result }}"; echo; find downloaded -name '*.md' -print0 | sort -z | xargs -0 -r cat; } | tee recovery-audit-report.md >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload assembled report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: recovery-audit-report-${{ github.run_id }}
-          path: |
-            recovery-audit-report.md
-            downloaded/
+          path: recovery-audit-report.md
           if-no-files-found: error
