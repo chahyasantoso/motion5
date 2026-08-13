@@ -1,8 +1,8 @@
 # Motion5 recovery status
 
-This is the single source of truth for recovery progress. `WAVE-PLAN.md` contains the detailed plan; this file records live status and evidence.
+This is the single source of truth for recovery progress. `WAVE-PLAN.md` contains the detailed plan; this file records live status and executable evidence.
 
-Last reviewed: 2026-08-13
+Last reviewed: 2026-08-14
 
 ## Board
 
@@ -40,17 +40,17 @@ Last reviewed: 2026-08-13
 | S5    | Contribution completeness                       | Done, gate open |
 | S6    | Remove dead `use` contract                      | Done, gate open |
 
-## Current next action
+## S7 exit evidence
 
 Rerun the recovery audit against the completed S6 head. Do not open rescue → main until the audit is clean and the required checks remain green.
 
-## Evidence
+## Recovery evidence chain
 
 - S5: PR #91, merged and awaiting the recovery audit.
 - S6: [PR #92](https://github.com/chahyasantoso/motion5/pull/92), green workflow [#31718629183](https://github.com/chahyasantoso/motion5/actions/runs/31718629183), head [`9b6e50e`](https://github.com/chahyasantoso/motion5/commit/9b6e50eeb58beeded1124604b9274a88007d7c0f).
 - S6 contract evidence: [`9b6e50e`](https://github.com/chahyasantoso/motion5/commit/9b6e50eeb58beeded1124604b9274a88007d7c0f) removes the `TrackDefinition.use` API, rejects legacy entries at load, removes the empty resolver, preserves authored-key resolution, and restores acceptance coverage.
 
-## Reopened gates
+## Current next action
 
 - C3/X-2: plugin metadata and the full `contribute()` contract remain open.
 - G-1/G-3/G-4/G-5/G-6/G-7: unified governance implementation is merged; rerun the recovery audit on the completed S6 head before calling the rescue complete.
