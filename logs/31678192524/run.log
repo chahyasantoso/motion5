@@ -1,0 +1,11 @@
+quality (node 24)	Typecheck	﻿2026-08-13T07:32:56.5482684Z ##[group]Run npm run typecheck
+quality (node 24)	Typecheck	2026-08-13T07:32:56.5483025Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Typecheck	2026-08-13T07:32:56.5527154Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Typecheck	2026-08-13T07:32:56.5527444Z ##[endgroup]
+quality (node 24)	Typecheck	2026-08-13T07:32:56.6557643Z 
+quality (node 24)	Typecheck	2026-08-13T07:32:56.6558467Z > motion5@0.0.0 typecheck
+quality (node 24)	Typecheck	2026-08-13T07:32:56.6559038Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Typecheck	2026-08-13T07:32:56.6559550Z 
+quality (node 24)	Typecheck	2026-08-13T07:32:58.5083327Z ##[error]packages/core/test/integration/end-to-end.test.ts(57,15): error TS2345: Argument of type '{ values: Readonly<Record<string, unknown>>; }' is not assignable to parameter of type 'Patch'.
+quality (node 24)	Typecheck	2026-08-13T07:32:58.5091704Z   Type '{ values: Readonly<Record<string, unknown>>; }' is missing the following properties from type 'Patch': nodeId, revision, sourceProgress, sourceRevisions, and 2 more.
+quality (node 24)	Typecheck	2026-08-13T07:32:58.5369112Z ##[error]Process completed with exit code 2.
