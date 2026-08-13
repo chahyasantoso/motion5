@@ -13,6 +13,11 @@ export interface CreatedTimeline {
   paused(): boolean;
   /** Real GSAP's own duration for the adapter's timeline. */
   duration(): number;
+  /**
+   * How many tweens the adapter scheduled. Lets a test prove that a scheduling change is
+   * conditional, instead of trusting that it only fires when it should.
+   */
+  tweenCount(): number;
 }
 
 export interface RealGsapSeam {
@@ -40,15 +45,18 @@ export function createRealGsapSeam(): RealGsapSeam {
       // The port types the config as `unknown` on purpose; narrowing it here would let the seam
       // decide what GSAP receives, which is the behavior under test.
       const real = gsap.timeline(config as Parameters<typeof gsap.timeline>[0]);
+      let tweens = 0;
       created.push({
         config,
         paused: () => real.paused(),
         duration: () => real.duration(),
+        tweenCount: () => tweens,
       });
       const timeline: GsapTimelineLike = {
         duration: () => real.duration(),
         progress,
         to(target, vars, position) {
+          tweens += 1;
           real.to(target, vars, position);
           return timeline;
         },
