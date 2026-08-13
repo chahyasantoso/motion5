@@ -1,0 +1,24 @@
+quality (node 24)	Typecheck	﻿2026-08-13T05:45:17.9320992Z ##[group]Run npm run typecheck
+quality (node 24)	Typecheck	2026-08-13T05:45:17.9321372Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Typecheck	2026-08-13T05:45:17.9348067Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Typecheck	2026-08-13T05:45:17.9348493Z ##[endgroup]
+quality (node 24)	Typecheck	2026-08-13T05:45:18.0198752Z 
+quality (node 24)	Typecheck	2026-08-13T05:45:18.0199673Z > motion5@0.0.0 typecheck
+quality (node 24)	Typecheck	2026-08-13T05:45:18.0200357Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Typecheck	2026-08-13T05:45:18.0200650Z 
+quality (node 24)	Typecheck	2026-08-13T05:45:19.4206943Z ##[error]packages/core/src/graph/ir.ts(37,3): error TS2322: Type 'Readonly<{ map: Readonly<{ [x: string]: unknown; }>; }>' is not assignable to type 'InputProjection'.
+quality (node 24)	Typecheck	2026-08-13T05:45:19.4213347Z   Types of property 'map' are incompatible.
+quality (node 24)	Typecheck	2026-08-13T05:45:19.4213989Z     Type 'Readonly<{ [x: string]: unknown; }>' is not assignable to type 'Readonly<Record<string, string>>'.
+quality (node 24)	Typecheck	2026-08-13T05:45:19.4214749Z       'string' index signatures are incompatible.
+quality (node 24)	Typecheck	2026-08-13T05:45:19.4215219Z         Type 'unknown' is not assignable to type 'string'.
+quality (node 24)	Typecheck	2026-08-13T05:45:19.4367869Z ##[error]Process completed with exit code 2.
+boundaries (node 24)	Boundary scan and planted fixtures	﻿2026-08-13T05:45:14.3883778Z ##[group]Run npm run test:boundaries
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:45:14.3884136Z ^[[36;1mnpm run test:boundaries^[[0m
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:45:14.3934061Z shell: /usr/bin/bash -e {0}
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:45:14.3934346Z ##[endgroup]
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:45:14.4908817Z 
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:45:14.4909476Z > motion5@0.0.0 test:boundaries
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:45:14.4910410Z > node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:45:14.4910846Z 
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:45:14.5314342Z ackages/core/src/contract/v5.ts: banned compatibility symbol
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:45:14.5462962Z ##[error]Process completed with exit code 1.
