@@ -31,24 +31,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ inputs.ref }} }
+        with:
+          ref: ${{ inputs.ref }}
       - uses: actions/setup-node@v4
-        with: { node-version: ${{ env.NODE_VERSION }}, cache: npm }
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: mkdir -p audit-logs/contract
       - run: npx vitest run packages/core/test/contract packages/core/test/integration packages/react/test --reporter=json --outputFile=audit-logs/contract/vitest.json | tee audit-logs/contract/vitest.log
       - if: always()
         uses: actions/upload-artifact@v4
-        with: { name: recovery-audit-contract-${{ github.run_id }}, path: audit-logs/contract/, if-no-files-found: error }
+        with:
+          name: recovery-audit-contract-${{ github.run_id }}
+          path: audit-logs/contract/
+          if-no-files-found: error
 
   mutation:
     name: mutation baseline and ratchet
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ inputs.ref }} }
+        with:
+          ref: ${{ inputs.ref }}
       - uses: actions/setup-node@v4
-        with: { node-version: ${{ env.NODE_VERSION }}, cache: npm }
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: mkdir -p audit-logs/mutation reports/mutation
       - run: npx stryker run 2>&1 | tee audit-logs/mutation/stryker.log
@@ -67,9 +76,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ inputs.ref }} }
+        with:
+          ref: ${{ inputs.ref }}
       - uses: actions/setup-node@v4
-        with: { node-version: ${{ env.NODE_VERSION }}, cache: npm }
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: mkdir -p audit-logs/acceptance
       # acceptance-map.json is consumed against the executed Vitest report below.
@@ -77,7 +89,10 @@ jobs:
       - run: node scripts/acceptance-scan.mjs audit-logs/acceptance/vitest.json | tee audit-logs/acceptance/result.log
       - if: always()
         uses: actions/upload-artifact@v4
-        with: { name: recovery-audit-acceptance-${{ github.run_id }}, path: audit-logs/acceptance/, if-no-files-found: error }
+        with:
+          name: recovery-audit-acceptance-${{ github.run_id }}
+          path: audit-logs/acceptance/
+          if-no-files-found: error
 
   failing-first:
     name: failing-first evidence
@@ -87,9 +102,13 @@ jobs:
       FAILING_FIRST_EXCEPTION: ${{ inputs.failing_first_exception }}
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ inputs.ref }}, fetch-depth: 0 }
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
       - uses: actions/setup-node@v4
-        with: { node-version: ${{ env.NODE_VERSION }}, cache: npm }
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Replay assertion-level red against base and green against ref
         run: |
@@ -122,16 +141,22 @@ jobs:
           xargs -a audit-logs/failing-first/new-tests.txt npx vitest run --reporter=json --outputFile=audit-logs/failing-first/ref.json > audit-logs/failing-first/ref-run.log 2>&1
       - if: always()
         uses: actions/upload-artifact@v4
-        with: { name: recovery-audit-failing-first-${{ github.run_id }}, path: audit-logs/failing-first/, if-no-files-found: error }
+        with:
+          name: recovery-audit-failing-first-${{ github.run_id }}
+          path: audit-logs/failing-first/
+          if-no-files-found: error
 
   build:
     name: declaration build and end-to-end
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: { ref: ${{ inputs.ref }} }
+        with:
+          ref: ${{ inputs.ref }}
       - uses: actions/setup-node@v4
-        with: { node-version: ${{ env.NODE_VERSION }}, cache: npm }
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: mkdir -p audit-logs/build
       - run: npx tsc -p packages/core/tsconfig.build.json 2>&1 | tee audit-logs/build/tsc.log
@@ -139,7 +164,10 @@ jobs:
       - run: npx vitest run packages/core/test/integration/end-to-end.test.ts 2>&1 | tee audit-logs/build/end-to-end.log
       - if: always()
         uses: actions/upload-artifact@v4
-        with: { name: recovery-audit-build-${{ github.run_id }}, path: audit-logs/build/, if-no-files-found: error }
+        with:
+          name: recovery-audit-build-${{ github.run_id }}
+          path: audit-logs/build/
+          if-no-files-found: error
 
   report:
     name: audit report
@@ -163,4 +191,7 @@ jobs:
           for result in "${{ needs.contract.result }}" "${{ needs.mutation.result }}" "${{ needs.acceptance.result }}" "${{ needs.failing-first.result }}" "${{ needs.build.result }}"; do test "$result" = success; done
       - if: always()
         uses: actions/upload-artifact@v4
-        with: { name: ci-logs-recovery-audit-${{ github.run_id }}, path: ci-logs/, if-no-files-found: error }
+        with:
+          name: ci-logs-recovery-audit-${{ github.run_id }}
+          path: ci-logs/
+          if-no-files-found: error
