@@ -1,0 +1,121 @@
+integration (node 24)	Run npm run test:integration	﻿2026-08-13T14:16:42.1019790Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:42.1020243Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:42.1048762Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:42.1049260Z env:
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:42.1049629Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:42.1049932Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:42.2373395Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:42.2374518Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:42.2375482Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:42.2375788Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:42.8813155Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:42.8844348Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:42.8845369Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:43.2668356Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:43.2677658Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:43.3518351Z  ^[[32m✓^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:43.4363318Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:43.4755512Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:43.5858041Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:43.6193844Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:43.6848930Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:43.7608879Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:43.7962647Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:43.9061145Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.0015810Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.1524841Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.1557522Z ^[[31m     ^[[31m×^[[31m writes authored GSAP output through a patch into the DOM adapter^[[39m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.1607181Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.1647534Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3524772Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3553741Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3708414Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3733152Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3734267Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3734885Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3748403Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m > ^[[22mreal end-to-end product path (E2)^[[2m > ^[[22mwrites authored GSAP output through a patch into the DOM adapter
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3750379Z ^[[31m^[[1mAssertionError^[[22m: expected 0.75 to be close to 0.5, received difference is 0.25, but expected 5e-11^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3751619Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/end-to-end.test.ts:^[[2m56:35^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3779372Z     ^[[90m 54|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3780093Z     ^[[90m 55|^[[39m     ^[[34mexpect^[[39m(patch)^[[33m.^[[39m^[[34mtoBeDefined^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3781350Z     ^[[90m 56|^[[39m     ^[[34mexpect^[[39m(patch^[[33m?.^[[39mvalues^[[33m.^[[39mopacity)^[[33m.^[[39m^[[34mtoBeCloseTo^[[39m(^[[34m0.5^[[39m^[[33m,^[[39m ^[[34m10^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3782320Z     ^[[90m   |^[[39m                                   ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3782752Z     ^[[90m 57|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3783348Z     ^[[90m 58|^[[39m     dom^[[33m.^[[39m^[[34mapply^[[39m(patch^[[33m!^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3783690Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3784087Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3784466Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3784507Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3793509Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m17 passed^[[39m^[[22m^[[90m (18)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3794720Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m44 passed^[[39m^[[22m^[[90m (45)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3795512Z ^[[2m   Start at ^[[22m 14:16:42
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3796334Z ^[[2m   Duration ^[[22m 1.48s^[[2m (transform 691ms, setup 0ms, import 1.33s, tests 176ms, environment 2ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3796705Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3807332Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.3827943Z ##[error]AssertionError: expected 0.75 to be close to 0.5, received difference is 0.25, but expected 5e-11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/end-to-end.test.ts:56:35
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-13T14:16:44.4825352Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	﻿2026-08-13T14:16:47.4933922Z ##[group]Run npx vitest run packages/core/test/integration/end-to-end.test.ts
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:47.4934543Z ^[[36;1mnpx vitest run packages/core/test/integration/end-to-end.test.ts^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:47.4978857Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:47.4979123Z env:
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:47.4979324Z   NODE_VERSION: 24
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:47.4979537Z ##[endgroup]
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.2311937Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.2316256Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.2316848Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.6992900Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.6995145Z ^[[31m     ^[[31m×^[[31m writes authored GSAP output through a patch into the DOM adapter^[[39m^[[32m 10^[[2mms^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7020614Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7021447Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7022103Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7026215Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m > ^[[22mreal end-to-end product path (E2)^[[2m > ^[[22mwrites authored GSAP output through a patch into the DOM adapter
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7031570Z ^[[31m^[[1mAssertionError^[[22m: expected 0.75 to be close to 0.5, received difference is 0.25, but expected 5e-11^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7033065Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/end-to-end.test.ts:^[[2m56:35^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7059877Z     ^[[90m 54|^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7060970Z     ^[[90m 55|^[[39m     ^[[34mexpect^[[39m(patch)^[[33m.^[[39m^[[34mtoBeDefined^[[39m()^[[33m;^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7062349Z     ^[[90m 56|^[[39m     ^[[34mexpect^[[39m(patch^[[33m?.^[[39mvalues^[[33m.^[[39mopacity)^[[33m.^[[39m^[[34mtoBeCloseTo^[[39m(^[[34m0.5^[[39m^[[33m,^[[39m ^[[34m10^[[39m)^[[33m;^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7063263Z     ^[[90m   |^[[39m                                   ^[[31m^^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7063629Z     ^[[90m 57|^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7064068Z     ^[[90m 58|^[[39m     dom^[[33m.^[[39m^[[34mapply^[[39m(patch^[[33m!^[[39m)^[[33m;^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7064485Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7064826Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7065249Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7065269Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7069057Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[90m (1)^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7070595Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[90m (1)^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7071600Z ^[[2m   Start at ^[[22m 14:16:48
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7072830Z ^[[2m   Duration ^[[22m 454ms^[[2m (transform 262ms, setup 0ms, import 316ms, tests 12ms, environment 0ms)^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7073642Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7084590Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7105925Z ##[error]AssertionError: expected 0.75 to be close to 0.5, received difference is 0.25, but expected 5e-11
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	 ❯ packages/core/test/integration/end-to-end.test.ts:56:35
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T14:16:48.7557026Z ##[error]Process completed with exit code 1.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-08-13T14:16:47.0697476Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:16:47.0697987Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:16:47.0745122Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:16:47.0745450Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:16:47.0745675Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:16:47.0745926Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:16:48.9868775Z ##[error]packages/core/src/adapters/interpolator/gsap.ts(58,76): error TS2322: Type '(value?: number | undefined) => number | void' is not assignable to type '{ (): number; (value: number): void; }'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:16:48.9880737Z   Type 'number | void' is not assignable to type 'number'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:16:48.9881557Z     Type 'void' is not assignable to type 'number'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:16:49.0218418Z ##[error]Process completed with exit code 2.
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T14:16:41.6117757Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T14:16:41.6118083Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T14:16:41.6145642Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T14:16:41.6145947Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T14:16:41.6146351Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T14:16:41.6146598Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T14:16:41.6885722Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T14:16:41.6886284Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T14:16:41.6886784Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T14:16:41.6886944Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T14:16:42.9331364Z ##[error]packages/core/src/adapters/interpolator/gsap.ts(58,76): error TS2322: Type '(value?: number | undefined) => number | void' is not assignable to type '{ (): number; (value: number): void; }'.
+quality (node 24)	Run npm run typecheck	2026-08-13T14:16:42.9339840Z   Type 'number | void' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-13T14:16:42.9340477Z     Type 'void' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-13T14:16:42.9482484Z ##[error]Process completed with exit code 2.
