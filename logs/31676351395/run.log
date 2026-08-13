@@ -1,0 +1,11 @@
+quality (node 24)	Typecheck	﻿2026-08-13T07:05:45.5135683Z ##[group]Run npm run typecheck
+quality (node 24)	Typecheck	2026-08-13T07:05:45.5136054Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Typecheck	2026-08-13T07:05:45.5186279Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Typecheck	2026-08-13T07:05:45.5186585Z ##[endgroup]
+quality (node 24)	Typecheck	2026-08-13T07:05:45.6314498Z 
+quality (node 24)	Typecheck	2026-08-13T07:05:45.6315302Z > motion5@0.0.0 typecheck
+quality (node 24)	Typecheck	2026-08-13T07:05:45.6316007Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Typecheck	2026-08-13T07:05:45.6316918Z 
+quality (node 24)	Typecheck	2026-08-13T07:05:47.6617415Z ##[error]packages/core/src/domain/track.ts(58,24): error TS2345: Argument of type 'Record<string, unknown>' is not assignable to parameter of type 'ImmutableValue'.
+quality (node 24)	Typecheck	2026-08-13T07:05:47.6626700Z   Type 'Record<string, unknown>' is missing the following properties from type 'readonly ImmutableValue[]': length, concat, join, slice, and 26 more.
+quality (node 24)	Typecheck	2026-08-13T07:05:47.6937618Z ##[error]Process completed with exit code 2.
