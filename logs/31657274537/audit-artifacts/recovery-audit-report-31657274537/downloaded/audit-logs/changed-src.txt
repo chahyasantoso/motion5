@@ -1,0 +1,1 @@
+packages/core/src/adapters/interpolator/gsap.ts

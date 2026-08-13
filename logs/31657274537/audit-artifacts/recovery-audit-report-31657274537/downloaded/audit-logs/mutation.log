@@ -1,0 +1,1963 @@
+[32m01:18:29 (2447) INFO ProjectReader[39m Found 7 of 145 file(s) to be mutated.
+[32m01:18:29 (2447) INFO Instrumenter[39m Instrumented 7 source file(s) with 545 mutant(s)
+[32m01:18:29 (2447) INFO ConcurrencyTokenProvider[39m Creating 4 test runner process(es).
+[32m01:18:30 (2447) INFO BroadcastReporter[39m Detected that current console does not support the "progress" reporter, downgrading to "progress-append-only" reporter
+[32m01:18:31 (2447) INFO DryRunExecutor[39m Starting initial test run (vitest test runner with "perTest" coverage analysis). This may take a while.
+[32m01:18:34 (2447) INFO DryRunExecutor[39m Initial test run succeeded. Ran 54 tests in 3 seconds (net 143.98132800000144 ms, overhead 3686.0186719999983 ms).
+Mutation testing 3% (elapsed: <1m, remaining: ~4m) 119/545 tested (22 survived, 0 timed out)
+Mutation testing 9% (elapsed: <1m, remaining: ~3m) 160/545 tested (47 survived, 0 timed out)
+Mutation testing 16% (elapsed: <1m, remaining: ~2m) 213/545 tested (74 survived, 1 timed out)
+Mutation testing 25% (elapsed: <1m, remaining: ~1m) 271/545 tested (95 survived, 2 timed out)
+Mutation testing 38% (elapsed: <1m, remaining: ~1m) 344/545 tested (117 survived, 2 timed out)
+Mutation testing 52% (elapsed: ~1m, remaining: <1m) 412/545 tested (131 survived, 2 timed out)
+Mutation testing 69% (elapsed: ~1m, remaining: <1m) 454/545 tested (139 survived, 2 timed out)
+Mutation testing 86% (elapsed: ~1m, remaining: <1m) 492/545 tested (145 survived, 2 timed out)
+Mutation testing 98% (elapsed: ~1m, remaining: <1m) 543/545 tested (157 survived, 2 timed out)
+
+All tests
+  core/test
+    contract
+      adapters.test.ts
+        ✓ adapter ports compiles authored stops onto an adapter-owned proxy state (killed 1)
+        ✓ adapter ports adapts a GSAP-like timeline without leaking the engine object (killed 2)
+        ✓ adapter ports ticks through an injected frame source and cancels on dispose (killed 7)
+        ✓ adapter ports applies perspective once and never applies blocked patches (killed 6)
+      gsap-absolute-stops.test.ts
+        ✓ GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing (killed 5)
+        ✓ GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP (killed 1)
+      gsap-multi-stop.test.ts
+        ✓ GSAP multi-stop compilation (B2) interpolates authored stops at 0, 0.5, and 1 using real GSAP state (killed 2)
+      gsap-paused-timeline.test.ts
+        ~ GSAP interpolator clock ownership (P0-2) creates a paused timeline so the project clock is the only clock owner (covered 48)
+        ~ GSAP interpolator clock ownership (P0-2) is paused according to real GSAP, not according to the fixture (covered 110)
+    integration
+      dom-patch-apply.test.ts
+        ✓ DOM patch adapter contract (C3) resolves each node, filters internal values, diffs writes, removes omitted keys, and clears cache (killed 17)
+        ✓ DOM patch adapter contract (C3) does not write blocked, error, or unresolved patches (killed 1)
+      end-to-end.test.ts
+        ✓ real end-to-end product path (E2) writes authored GSAP output through a patch into the DOM adapter (killed 68)
+      engine-headless.test.ts
+        ✓ Engine publishes a progress change through the existing graph runtime (killed 6)
+        ~ Engine keeps one clock owner while clock progress publishes once (covered 160)
+        ~ Engine still resolves authored-key plugins during progress updates (covered 163)
+      flush-output-merge.test.ts
+        ✓ GraphPublisher output edges merges output source values over the composed patch (killed 6)
+        ✓ GraphPublisher output edges uses canonical edge order when output sources collide (killed 6)
+      graph-publisher.test.ts
+        ✓ GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch (killed 8)
+        ✓ GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue (killed 11)
+        ✘ GraphPublisher does not expose topology mutation methods (covered 0)
+      graph-runtime.test.ts
+        ✓ GraphRuntime I-13 owns one registry, one publisher, one state, and one clock subscription (killed 2)
+        ✓ GraphRuntime I-13 keeps ticks monotonic across detach and reattach (killed 7)
+        ✓ GraphRuntime publishes only attached seeds and stops after disposal (killed 4)
+      membership-gating.test.ts
+        ✓ GraphRuntime membership starts empty and publishes only attached nodes by default (killed 1)
+      partial-seed-inputs.test.ts
+        ✓ GraphPublisher partial-seed inputs uses the last published value for an unseeded input source (killed 1)
+      project-runtime.test.ts
+        ✓ ProjectRuntime TR-R-14 mounts through one project-owned GraphRuntime (killed 8)
+        ✓ ProjectRuntime rejects invalid candidates before constructing a replacement runtime (killed 1)
+        ✓ ProjectRuntime releases every mounted instance and clock subscription on repeated dispose (killed 2)
+      publisher-output-merge-consistency.test.ts
+        ✓ GraphPublisher: memo/registry consistency (recovery A1) a same-flush input-role consumer of a node sees exactly what that node published, including its own output-role merge (killed 9)
+        ✓ GraphPublisher: memo/registry consistency (recovery A1) a node reprocessed on a later flush, while its input source is not, still resolves the source's merged value via the registry fallback (killed 2)
+    unit
+      runtime
+        clock-tick-identity.test.ts
+          ✓ clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame (killed 15)
+          ✓ clock and batch identity are independent (P0-1) separates the clock's frame number from batch identity (killed 4)
+          ✓ clock and batch identity are independent (P0-1) reports a failed flush as a diagnostic instead of propagating it into the clock (killed 13)
+          ✓ clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws (killed 21)
+        patch-registry-subscriber-errors.test.ts
+          ~ PatchRegistry: subscriber error handling (recovery A2) a throwing node subscriber does not prevent other subscribers from being notified (covered 78)
+          ~ PatchRegistry: subscriber error handling (recovery A2) closeBatch always fully resets its internal state, even when a subscriber throws, so the next beginBatch succeeds (covered 78)
+          ~ PatchRegistry: subscriber error handling (recovery A2) the real caller's original error is not replaced by a recovery close attempt (GraphPublisher-shaped scenario) (covered 79)
+          ~ PatchRegistry: subscriber error handling (recovery A2) GraphPublisher.flush() surfaces the real subscriber error, not a masked 'No patch batch is open' (covered 121)
+        patch-registry.test.ts
+          ✓ PatchRegistry I-7 deeply freezes published patches and batches (killed 11)
+          ✓ PatchRegistry I-8 suppresses unchanged republish and advances revisions only on change (killed 10)
+          ✓ PatchRegistry I-6 notifies node subscribers before batch subscribers and safely snapshots listeners (killed 3)
+          ~ PatchRegistry does not notify subscribers for an unchanged publish (covered 86)
+          ✓ PatchRegistry rejects opening a second empty batch and closing without an open batch (killed 4)
+        publisher-reentrancy.test.ts
+          ✓ subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush (killed 45)
+          ✓ subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it (killed 8)
+          ~ subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up (covered 197)
+          ✓ subscriber-triggered reentrancy (recovery A3) refuses to open a second batch while subscribers are being notified (killed 5)
+          ✓ subscriber-triggered reentrancy (recovery A3) rejects a direct publisher flush from inside a subscriber and stays reusable (killed 5)
+      placeholder.test.ts
+        ✘ @motion5/core placeholder surface pins the authored schema contract at version 5 (covered 0)
+        ✘ @motion5/core placeholder surface versions the runtime independently of the authored schema (covered 0)
+  react/test
+    patch-store-lifecycle.test.ts
+      ✓ React patch store lifecycle (C1) receives patches again after the last listener leaves and a new one arrives (killed 1)
+      ~ React patch store lifecycle (C1) survives a StrictMode-style double mount without duplicating deliveries (covered 86)
+    patch-store.test.ts
+      ✓ React patch consumer boundary keeps one frozen snapshot per revision and unsubscribes cleanly (killed 12)
+    public-hook-render.test.ts
+      ✓ React public hook render/update (C2) renders the current patch and updates after publication (killed 16)
+
+[NoCoverage] ArrayDeclaration
+packages/core/src/adapters/interpolator/gsap.ts:34:83
+-     if (!property || typeof property !== "object" || !("stops" in property)) return [];
++     if (!property || typeof property !== "object" || !("stops" in property)) return ["Stryker was here"];
+
+[NoCoverage] ArrayDeclaration
+packages/core/src/adapters/interpolator/gsap.ts:36:37
+-     if (!Array.isArray(stops)) return [];
++     if (!Array.isArray(stops)) return ["Stryker was here"];
+
+[NoCoverage] ObjectLiteral
+packages/core/src/adapters/interpolator/gsap.ts:62:12
+-       return { initial: {}, segments: [] };
++       return {};
+
+[NoCoverage] ArrayDeclaration
+packages/core/src/adapters/interpolator/gsap.ts:62:37
+-       return { initial: {}, segments: [] };
++       return { initial: {}, segments: ["Stryker was here"] };
+
+[NoCoverage] ObjectLiteral
+packages/core/src/adapters/interpolator/gsap.ts:80:44
+-           ...(stop.ease === undefined ? {} : { ease: stop.ease }),
++           ...(stop.ease === undefined ? {} : {}),
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:34:7
+-     if (!property || typeof property !== "object" || !("stops" in property)) return [];
++     if (false) return [];
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:34:7
+-     if (!property || typeof property !== "object" || !("stops" in property)) return [];
++     if ((!property || typeof property !== "object") && !("stops" in property)) return [];
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:34:7
+-     if (!property || typeof property !== "object" || !("stops" in property)) return [];
++     if (false || !("stops" in property)) return [];
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:34:7
+-     if (!property || typeof property !== "object" || !("stops" in property)) return [];
++     if (!property && typeof property !== "object" || !("stops" in property)) return [];
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:34:20
+-     if (!property || typeof property !== "object" || !("stops" in property)) return [];
++     if (!property || false || !("stops" in property)) return [];
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:36:7
+-     if (!Array.isArray(stops)) return [];
++     if (false) return [];
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] MethodExpression
+packages/core/src/adapters/interpolator/gsap.ts:37:10
+-     return stops.filter((stop): stop is AuthoredStop =>
+-       Boolean(
+-         stop &&
+-           typeof stop === "object" &&
+-           typeof (stop as { p?: unknown }).p === "number" &&
+-           Number.isFinite((stop as { p: number }).p) &&
+-           "v" in stop,
+-       ),
+-     );
++     return stops;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:39:7
+-         stop &&
+-           typeof stop === "object" &&
+-           typeof (stop as { p?: unknown }).p === "number" &&
+-           Number.isFinite((stop as { p: number }).p) &&
+-           "v" in stop,
++         true,
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:39:7
+-         stop &&
+-           typeof stop === "object" &&
+-           typeof (stop as { p?: unknown }).p === "number" &&
+-           Number.isFinite((stop as { p: number }).p) &&
+-           "v" in stop,
++         stop && typeof stop === "object" && typeof (stop as {
++     p?: unknown;
++   }).p === "number" && Number.isFinite((stop as {
++     p: number;
++   }).p) || "v" in stop,
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:39:7
+-         stop &&
+-           typeof stop === "object" &&
+-           typeof (stop as { p?: unknown }).p === "number" &&
+-           Number.isFinite((stop as { p: number }).p) &&
++         true &&
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:39:7
+-         stop &&
+-           typeof stop === "object" &&
+-           typeof (stop as { p?: unknown }).p === "number" &&
+-           Number.isFinite((stop as { p: number }).p) &&
++         stop && typeof stop === "object" && typeof (stop as {
++     p?: unknown;
++   }).p === "number" || Number.isFinite((stop as {
++     p: number;
++   }).p) &&
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:39:7
+-         stop &&
+-           typeof stop === "object" &&
+-           typeof (stop as { p?: unknown }).p === "number" &&
++         true &&
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:39:7
+-         stop &&
+-           typeof stop === "object" &&
+-           typeof (stop as { p?: unknown }).p === "number" &&
++         stop && typeof stop === "object" || typeof (stop as {
++     p?: unknown;
++   }).p === "number" &&
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:39:7
+-         stop &&
+-           typeof stop === "object" &&
++         true &&
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:39:7
+-         stop &&
+-           typeof stop === "object" &&
++         stop || typeof stop === "object" &&
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:40:9
+-           typeof stop === "object" &&
++           true &&
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:41:9
+-           typeof (stop as { p?: unknown }).p === "number" &&
++           true &&
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:49:7
+-     if (!config || typeof config !== "object") return 1;
++     if (true) return 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:49:7
+-     if (!config || typeof config !== "object") return 1;
++     if (false) return 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:49:7
+-     if (!config || typeof config !== "object") return 1;
++     if (!config && typeof config !== "object") return 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] BooleanLiteral
+packages/core/src/adapters/interpolator/gsap.ts:49:7
+-     if (!config || typeof config !== "object") return 1;
++     if (config || typeof config !== "object") return 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:49:18
+-     if (!config || typeof config !== "object") return 1;
++     if (!config || false) return 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/adapters/interpolator/gsap.ts:49:36
+-     if (!config || typeof config !== "object") return 1;
++     if (!config || typeof config !== "") return 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/adapters/interpolator/gsap.ts:49:18
+-     if (!config || typeof config !== "object") return 1;
++     if (!config || typeof config === "object") return 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:51:10
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return false ? duration : 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:51:10
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return typeof duration === "number" && Number.isFinite(duration) || duration >= 0 ? duration : 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:51:10
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return typeof duration === "number" || Number.isFinite(duration) && duration >= 0 ? duration : 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:51:10
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return true && duration >= 0 ? duration : 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:51:10
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return true && Number.isFinite(duration) && duration >= 0 ? duration : 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:51:71
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return typeof duration === "number" && Number.isFinite(duration) && true ? duration : 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/adapters/interpolator/gsap.ts:51:10
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return typeof duration !== "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/adapters/interpolator/gsap.ts:51:30
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return typeof duration === "" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/adapters/interpolator/gsap.ts:51:71
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return typeof duration === "number" && Number.isFinite(duration) && duration > 0 ? duration : 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/adapters/interpolator/gsap.ts:51:71
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return typeof duration === "number" && Number.isFinite(duration) && duration < 0 ? duration : 1;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:58:7
+-     if (!config || typeof config !== "object" || !("keyframes" in config))
++     if (false)
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:58:7
+-     if (!config || typeof config !== "object" || !("keyframes" in config))
++     if ((!config || typeof config !== "object") && !("keyframes" in config))
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:58:7
+-     if (!config || typeof config !== "object" || !("keyframes" in config))
++     if (false || !("keyframes" in config))
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:58:7
+-     if (!config || typeof config !== "object" || !("keyframes" in config))
++     if (!config && typeof config !== "object" || !("keyframes" in config))
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/adapters/interpolator/gsap.ts:59:37
+-       return { initial: {}, segments: [] };
++       return { initial: {}, segments: ["Stryker was here"] };
+Tests ran:
+    adapter ports adapts a GSAP-like timeline without leaking the engine object
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:58:18
+-     if (!config || typeof config !== "object" || !("keyframes" in config))
++     if (!config || false || !("keyframes" in config))
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:61:7
+-     if (!keyframes || typeof keyframes !== "object" || Array.isArray(keyframes))
++     if (false)
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 4 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:61:7
+-     if (!keyframes || typeof keyframes !== "object" || Array.isArray(keyframes))
++     if ((!keyframes || typeof keyframes !== "object") && Array.isArray(keyframes))
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 4 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:61:7
+-     if (!keyframes || typeof keyframes !== "object" || Array.isArray(keyframes))
++     if (false || Array.isArray(keyframes))
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 4 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:61:7
+-     if (!keyframes || typeof keyframes !== "object" || Array.isArray(keyframes))
++     if (!keyframes && typeof keyframes !== "object" || Array.isArray(keyframes))
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 4 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:61:21
+-     if (!keyframes || typeof keyframes !== "object" || Array.isArray(keyframes))
++     if (!keyframes || false || Array.isArray(keyframes))
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 4 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/adapters/interpolator/gsap.ts:65:39
+-     const segments: CompiledSegment[] = [];
++     const segments: CompiledSegment[] = ["Stryker was here"];
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 4 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:69:9
+-       if (first === undefined) continue;
++       if (false) continue;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/adapters/interpolator/gsap.ts:71:25
+-       for (let index = 1; index < stops.length; index += 1) {
++       for (let index = 1; index <= stops.length; index += 1) {
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:74:11
+-         if (previous === undefined || stop === undefined) continue;
++         if (false) continue;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:74:11
+-         if (previous === undefined || stop === undefined) continue;
++         if (previous === undefined && stop === undefined) continue;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:74:11
+-         if (previous === undefined || stop === undefined) continue;
++         if (false || stop === undefined) continue;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:74:37
+-         if (previous === undefined || stop === undefined) continue;
++         if (previous === undefined || false) continue;
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:80:13
+-           ...(stop.ease === undefined ? {} : { ease: stop.ease }),
++           ...(true ? {} : { ease: stop.ease }),
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:80:13
+-           ...(stop.ease === undefined ? {} : { ease: stop.ease }),
++           ...(false ? {} : { ease: stop.ease }),
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/adapters/interpolator/gsap.ts:80:13
+-           ...(stop.ease === undefined ? {} : { ease: stop.ease }),
++           ...(stop.ease !== undefined ? {} : { ease: stop.ease }),
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ArithmeticOperator
+packages/core/src/adapters/interpolator/gsap.ts:100:23
+-               duration: segment.duration * duration,
++               duration: segment.duration / duration,
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[Survived] ArithmeticOperator
+packages/core/src/adapters/interpolator/gsap.ts:103:11
+-             segment.start * duration,
++             segment.start / duration,
+Tests ran:
+    GSAP absolute multi-property stops (P0-3) preserves each property's absolute positions and independent timing
+    GSAP absolute multi-property stops (P0-3) keeps per-property grids and the leading hold intact on real GSAP
+    adapter ports compiles authored stops onto an adapter-owned proxy state
+  and 3 more tests!
+
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/browser-clock.ts:46:37
+-         if (disposed) throw new Error("Clock is disposed.");
++         if (disposed) throw new Error("");
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/browser-clock.ts:15:9
+-       if (disposed) return;
++       if (false) return;
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] MethodExpression
+packages/core/src/adapters/browser-clock.ts:16:19
+-       const delta = Math.max(0, time - previous);
++       const delta = Math.min(0, time - previous);
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] ArithmeticOperator
+packages/core/src/adapters/browser-clock.ts:16:31
+-       const delta = Math.max(0, time - previous);
++       const delta = Math.max(0, time + previous);
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/browser-clock.ts:32:15
+-             if (!hasError) {
++             if (true) {
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/browser-clock.ts:39:11
+-         if (!disposed) handle = source.requestFrame(frame);
++         if (true) handle = source.requestFrame(frame);
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] ArrowFunction
+packages/core/src/adapters/browser-clock.ts:48:14
+-         return () => listeners.delete(listener);
++         return () => undefined;
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/browser-clock.ts:46:11
+-         if (disposed) throw new Error("Clock is disposed.");
++         if (false) throw new Error("Clock is disposed.");
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/browser-clock.ts:51:11
+-         if (disposed) return;
++         if (false) return;
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] BooleanLiteral
+packages/core/src/adapters/browser-clock.ts:52:18
+-         disposed = true;
++         disposed = false;
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/browser-clock.ts:53:11
+-         if (handle !== undefined) source.cancelFrame(handle);
++         if (true) source.cancelFrame(handle);
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[NoCoverage] MethodExpression
+packages/core/src/adapters/dom.ts:23:32
+-       if (key in target.style || key.startsWith("--")) target.style[key] = value;
++       if (key in target.style || key.endsWith("--")) target.style[key] = value;
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/dom.ts:23:47
+-       if (key in target.style || key.startsWith("--")) target.style[key] = value;
++       if (key in target.style || key.startsWith("")) target.style[key] = value;
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:23:9
+-       if (key in target.style || key.startsWith("--")) target.style[key] = value;
++       if (true) target.style[key] = value;
+Tests ran:
+    real end-to-end product path (E2) writes authored GSAP output through a patch into the DOM adapter
+
+
+[Survived] ArrowFunction
+packages/core/src/adapters/dom.ts:40:38
+-     resolveTarget: DomTargetResolver = () => stage,
++     resolveTarget: DomTargetResolver = () => undefined,
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:43:7
+-     if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
++     if (true && perspective > 0)
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+    DOM patch adapter contract (C3) resolves each node, filters internal values, diffs writes, removes omitted keys, and clears cache
+    DOM patch adapter contract (C3) does not write blocked, error, or unresolved patches
+  and 1 more test!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/dom.ts:43:7
+-     if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
++     if (perspective !== undefined && Number.isFinite(perspective) || perspective > 0)
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+    DOM patch adapter contract (C3) resolves each node, filters internal values, diffs writes, removes omitted keys, and clears cache
+    DOM patch adapter contract (C3) does not write blocked, error, or unresolved patches
+  and 1 more test!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:43:7
+-     if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
++     if (true)
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+    DOM patch adapter contract (C3) resolves each node, filters internal values, diffs writes, removes omitted keys, and clears cache
+    DOM patch adapter contract (C3) does not write blocked, error, or unresolved patches
+  and 1 more test!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:43:68
+-     if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
++     if (perspective !== undefined && Number.isFinite(perspective) && true)
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+
+
+[Survived] EqualityOperator
+packages/core/src/adapters/dom.ts:43:68
+-     if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
++     if (perspective !== undefined && Number.isFinite(perspective) && perspective >= 0)
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:43:7
+-     if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
++     if (true && Number.isFinite(perspective) && perspective > 0)
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+    DOM patch adapter contract (C3) resolves each node, filters internal values, diffs writes, removes omitted keys, and clears cache
+    DOM patch adapter contract (C3) does not write blocked, error, or unresolved patches
+  and 1 more test!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/dom.ts:43:7
+-     if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
++     if (perspective !== undefined || Number.isFinite(perspective) && perspective > 0)
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+    DOM patch adapter contract (C3) resolves each node, filters internal values, diffs writes, removes omitted keys, and clears cache
+    DOM patch adapter contract (C3) does not write blocked, error, or unresolved patches
+  and 1 more test!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:50:11
+-         if (target === undefined) return;
++         if (false) return;
+Tests ran:
+    DOM patch adapter contract (C3) resolves each node, filters internal values, diffs writes, removes omitted keys, and clears cache
+    real end-to-end product path (E2) writes authored GSAP output through a patch into the DOM adapter
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:56:52
+-         for (const key of Object.keys(previous)) if (!(key in next)) dirty[key] = undefined;
++         for (const key of Object.keys(previous)) if (false) dirty[key] = undefined;
+Tests ran:
+    DOM patch adapter contract (C3) resolves each node, filters internal values, diffs writes, removes omitted keys, and clears cache
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:62:11
+-         if (target === undefined) return;
++         if (false) return;
+Tests ran:
+    DOM patch adapter contract (C3) resolves each node, filters internal values, diffs writes, removes omitted keys, and clears cache
+
+
+[NoCoverage] ArrayDeclaration
+packages/core/src/runtime/graph-publisher.ts:77:44
+-         queue.push(...(dependents.get(id) ?? []));
++         queue.push(...(dependents.get(id) ?? ["Stryker was here"]));
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:114:35
+-               inputs[edge.target ?? ""] =
++               inputs[edge.target ?? "Stryker was here!"] =
+
+[NoCoverage] OptionalChaining
+packages/core/src/runtime/graph-publisher.ts:123:50
+-                 memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
++                 memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId).values;
+
+[Survived] BlockStatement
+packages/core/src/runtime/graph-publisher.ts:24:65
+-   function diagnostic(nodeId: string, error: unknown): Diagnostic {
+-     return Object.freeze({
+-       ruleId: "composition-failure",
+-       path: nodeId,
+-       message: error instanceof Error ? error.message : String(error),
+-       severity: "error",
+-       ids: Object.freeze([nodeId]),
+-     });
+-   }
++   function diagnostic(nodeId: string, error: unknown): Diagnostic {}
+Tests ran:
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] ObjectLiteral
+packages/core/src/runtime/graph-publisher.ts:25:24
+-     return Object.freeze({
+-       ruleId: "composition-failure",
+-       path: nodeId,
+-       message: error instanceof Error ? error.message : String(error),
+-       severity: "error",
+-       ids: Object.freeze([nodeId]),
+-     });
++     return Object.freeze({});
+Tests ran:
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:29:15
+-       severity: "error",
++       severity: "",
+Tests ran:
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:26:13
+-       ruleId: "composition-failure",
++       ruleId: "",
+Tests ran:
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/graph-publisher.ts:30:24
+-       ids: Object.freeze([nodeId]),
++       ids: Object.freeze([]),
+Tests ran:
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:37:10
+-     return left < right ? -1 : left > right ? 1 : 0;
++     return true ? -1 : left > right ? 1 : 0;
+Tests ran:
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+    GraphPublisher output edges uses canonical edge order when output sources collide
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:37:30
+-     return left < right ? -1 : left > right ? 1 : 0;
++     return left < right ? -1 : true ? 1 : 0;
+Tests ran:
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/graph-publisher.ts:37:10
+-     return left < right ? -1 : left > right ? 1 : 0;
++     return left <= right ? -1 : left > right ? 1 : 0;
+Tests ran:
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+    GraphPublisher output edges uses canonical edge order when output sources collide
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:37:30
+-     return left < right ? -1 : left > right ? 1 : 0;
++     return left < right ? -1 : false ? 1 : 0;
+Tests ran:
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/graph-publisher.ts:37:30
+-     return left < right ? -1 : left > right ? 1 : 0;
++     return left < right ? -1 : left >= right ? 1 : 0;
+Tests ran:
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/graph-publisher.ts:37:30
+-     return left < right ? -1 : left > right ? 1 : 0;
++     return left < right ? -1 : left <= right ? 1 : 0;
+Tests ran:
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:44:7
+-     if (overlay === undefined) return base;
++     if (false) return base;
+Tests ran:
+    GraphPublisher: memo/registry consistency (recovery A1) a same-flush input-role consumer of a node sees exactly what that node published, including its own output-role merge
+    GraphPublisher: memo/registry consistency (recovery A1) a node reprocessed on a later flush, while its input source is not, still resolves the source's merged value via the registry fallback
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+  and 2 more tests!
+
+
+[Survived] OptionalChaining
+packages/core/src/runtime/graph-publisher.ts:69:38
+-         for (const edge of node.edges) dependents.get(edge.sourceId)?.push(node.id);
++         for (const edge of node.edges) dependents.get(edge.sourceId).push(node.id);
+Tests ran:
+    GraphPublisher: memo/registry consistency (recovery A1) a same-flush input-role consumer of a node sees exactly what that node published, including its own output-role merge
+    GraphPublisher: memo/registry consistency (recovery A1) a node reprocessed on a later flush, while its input source is not, still resolves the source's merged value via the registry fallback
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+  and 4 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:64:9
+-       if (this.#registry.notifying) throw new Error(REENTRANT_BATCH_MESSAGE);
++       if (false) throw new Error(REENTRANT_BATCH_MESSAGE);
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 19 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/graph-publisher.ts:67:64
+-       for (const node of snapshot.nodes) dependents.set(node.id, []);
++       for (const node of snapshot.nodes) dependents.set(node.id, ["Stryker was here"]);
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 19 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/graph-publisher.ts:73:25
+-       for (let index = 0; index < queue.length; index += 1) {
++       for (let index = 0; index <= queue.length; index += 1) {
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 19 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:75:11
+-         if (id === undefined || affected.has(id)) continue;
++         if (false) continue;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 19 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/graph-publisher.ts:75:11
+-         if (id === undefined || affected.has(id)) continue;
++         if (id === undefined && affected.has(id)) continue;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 19 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:75:11
+-         if (id === undefined || affected.has(id)) continue;
++         if (false || affected.has(id)) continue;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 19 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/graph-publisher.ts:98:26
+-               diagnostics: [
+-                 Object.freeze({
+-                   ruleId: "blocked-upstream",
+-                   path: id,
+-                   message: `Blocked by upstream failure at ${sourceFailure}.`,
+-                   severity: "error",
+-                   ids: Object.freeze([sourceFailure, id]),
+-                 }),
+-               ],
++               diagnostics: [],
+Tests ran:
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] ObjectLiteral
+packages/core/src/runtime/graph-publisher.ts:99:29
+-                 Object.freeze({
+-                   ruleId: "blocked-upstream",
+-                   path: id,
+-                   message: `Blocked by upstream failure at ${sourceFailure}.`,
+-                   severity: "error",
+-                   ids: Object.freeze([sourceFailure, id]),
+-                 }),
++                 Object.freeze({}),
+Tests ran:
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:100:25
+-                   ruleId: "blocked-upstream",
++                   ruleId: "",
+Tests ran:
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:102:26
+-                   message: `Blocked by upstream failure at ${sourceFailure}.`,
++                   message: ``,
+Tests ran:
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:103:27
+-                   severity: "error",
++                   severity: "",
+Tests ran:
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/graph-publisher.ts:104:36
+-                   ids: Object.freeze([sourceFailure, id]),
++                   ids: Object.freeze([]),
+Tests ran:
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:88:13
+-           if (node === undefined) continue;
++           if (false) continue;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 19 more tests!
+
+
+[Survived] OptionalChaining
+packages/core/src/runtime/graph-publisher.ts:115:50
+-                 memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
++                 memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId).values;
+Tests ran:
+    GraphPublisher: memo/registry consistency (recovery A1) a node reprocessed on a later flush, while its input source is not, still resolves the source's merged value via the registry fallback
+    GraphPublisher partial-seed inputs uses the last published value for an unseeded input source
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:113:17
+-               if (edge.role !== "input") continue;
++               if (false) continue;
+Tests ran:
+    GraphPublisher: memo/registry consistency (recovery A1) a same-flush input-role consumer of a node sees exactly what that node published, including its own output-role merge
+    GraphPublisher: memo/registry consistency (recovery A1) a node reprocessed on a later flush, while its input source is not, still resolves the source's merged value via the registry fallback
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+  and 3 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/graph-publisher.ts:123:15
+-                 memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
++                 memo.get(edge.sourceId)?.values && this.#registry.get(edge.sourceId)?.values;
+Tests ran:
+    GraphPublisher: memo/registry consistency (recovery A1) a same-flush input-role consumer of a node sees exactly what that node published, including its own output-role merge
+    GraphPublisher: memo/registry consistency (recovery A1) a node reprocessed on a later flush, while its input source is not, still resolves the source's merged value via the registry fallback
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+  and 2 more tests!
+
+
+[Survived] OptionalChaining
+packages/core/src/runtime/graph-publisher.ts:123:15
+-                 memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
++                 memo.get(edge.sourceId).values ?? this.#registry.get(edge.sourceId)?.values;
+Tests ran:
+    GraphPublisher: memo/registry consistency (recovery A1) a same-flush input-role consumer of a node sees exactly what that node published, including its own output-role merge
+    GraphPublisher: memo/registry consistency (recovery A1) a node reprocessed on a later flush, while its input source is not, still resolves the source's merged value via the registry fallback
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+  and 2 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/graph-publisher.ts:145:26
+-               diagnostics: [failure],
++               diagnostics: [],
+Tests ran:
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] BlockStatement
+packages/core/src/runtime/graph-publisher.ts:155:11
+-         try {
+-           this.#registry.closeBatch();
+-         } catch {
++         try {} catch {
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) rejects a direct publisher flush from inside a subscriber and stays reusable
+    clock and batch identity are independent (P0-1) reports a failed flush as a diagnostic instead of propagating it into the clock
+    PatchRegistry: subscriber error handling (recovery A2) GraphPublisher.flush() surfaces the real subscriber error, not a masked 'No patch batch is open'
+
+
+[Survived] ObjectLiteral
+packages/core/src/runtime/graph-publisher.ts:129:24
+-             memo.set(id, { ...composed, values });
++             memo.set(id, {});
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 19 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/graph-publisher.ts:136:26
+-               diagnostics: [],
++               diagnostics: ["Stryker was here"],
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 19 more tests!
+
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:33:21
+-       path: ids[0] ?? "",
++       path: ids[0] ?? "Stryker was here!",
+
+[NoCoverage] BlockStatement
+packages/core/src/runtime/graph-runtime.ts:106:48
+-     get lastFlushError(): Diagnostic | undefined {
+-       return this.#lastFlushError;
+-     }
++     get lastFlushError(): Diagnostic | undefined {}
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:120:27
+-         throw new TypeError(`Unknown graph node \"${nodeId}\".`);
++         throw new TypeError(``);
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:144:55
+-         if (!Number.isFinite(tick)) throw new TypeError("Runtime ticks must be finite.");
++         if (!Number.isFinite(tick)) throw new TypeError("");
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:145:55
+-         if (tick < this.#lastTick) throw new RangeError("Runtime ticks must be monotonic.");
++         if (tick < this.#lastTick) throw new RangeError("");
+
+[NoCoverage] BlockStatement
+packages/core/src/runtime/graph-runtime.ts:191:39
+-       if (event.tick <= this.#lastTick) {
+-         this.#report(
+-           CLOCK_REGRESSION_RULE,
+-           `Clock tick ${event.tick} did not advance past ${this.#lastTick}.`,
+-         );
+-         return;
+-       }
++       if (event.tick <= this.#lastTick) {}
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:194:9
+-           `Clock tick ${event.tick} did not advance past ${this.#lastTick}.`,
++           ``,
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:216:41
+-       if (this.#disposed) throw new Error("GraphRuntime is disposed.");
++       if (this.#disposed) throw new Error("");
+
+[Survived] LogicalOperator
+packages/core/src/runtime/graph-runtime.ts:33:11
+-       path: ids[0] ?? "",
++       path: ids[0] && "",
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:35:7
+-         "A flush requested while subscribers were being notified was queued as one follow-up " +
++         "" +
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:36:7
+-         "invalidation for the next tick.",
++         "",
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:37:15
+-       severity: "warning",
++       severity: "",
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+
+
+[Survived] BlockStatement
+packages/core/src/runtime/graph-runtime.ts:94:35
+-     get publisher(): GraphPublisher {
+-       return this.#publisher;
+-     }
++     get publisher(): GraphPublisher {}
+Tests ran:
+    GraphRuntime I-13 owns one registry, one publisher, one state, and one clock subscription
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:119:9
+-       if (!this.#binding.graph.nodeById[nodeId])
++       if (false)
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 12 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:144:11
+-         if (!Number.isFinite(tick)) throw new TypeError("Runtime ticks must be finite.");
++         if (false) throw new TypeError("Runtime ticks must be finite.");
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 7 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:145:11
+-         if (tick < this.#lastTick) throw new RangeError("Runtime ticks must be monotonic.");
++         if (false) throw new RangeError("Runtime ticks must be monotonic.");
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 7 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/graph-runtime.ts:145:11
+-         if (tick < this.#lastTick) throw new RangeError("Runtime ticks must be monotonic.");
++         if (tick <= this.#lastTick) throw new RangeError("Runtime ticks must be monotonic.");
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 7 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:186:9
+-       if (this.#disposed) return;
++       if (false) return;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:179:9
+-       if (this.#disposed) return;
++       if (false) return;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 13 more tests!
+
+
+[Survived] BooleanLiteral
+packages/core/src/runtime/graph-runtime.ts:180:22
+-       this.#disposed = true;
++       this.#disposed = false;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 13 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:191:9
+-       if (event.tick <= this.#lastTick) {
++       if (false) {
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 5 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/graph-runtime.ts:191:9
+-       if (event.tick <= this.#lastTick) {
++       if (event.tick < this.#lastTick) {
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 5 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/graph-runtime.ts:210:26
+-         ids: Object.freeze([...this.#members]),
++         ids: Object.freeze([]),
+Tests ran:
+    clock and batch identity are independent (P0-1) reports a failed flush as a diagnostic instead of propagating it into the clock
+
+
+[Survived] OptionalChaining
+packages/core/src/runtime/graph-runtime.ts:213:5
+-       this.#onFlushError?.(diagnostic);
++       this.#onFlushError(diagnostic);
+Tests ran:
+    clock and batch identity are independent (P0-1) reports a failed flush as a diagnostic instead of propagating it into the clock
+
+
+[Survived] BlockStatement
+packages/core/src/runtime/graph-runtime.ts:215:23
+-     #assertLive(): void {
+-       if (this.#disposed) throw new Error("GraphRuntime is disposed.");
+-     }
++     #assertLive(): void {}
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 12 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:216:9
+-       if (this.#disposed) throw new Error("GraphRuntime is disposed.");
++       if (false) throw new Error("GraphRuntime is disposed.");
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 12 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:12:38
+-   export const CLOCK_REGRESSION_RULE = "clock-tick-regression";
++   export const CLOCK_REGRESSION_RULE = "";
+Ran all tests for this mutant.
+
+[NoCoverage] BooleanLiteral
+packages/core/src/runtime/patch-registry.ts:52:45
+-     if (aKeys.length !== bKeys.length) return false;
++     if (aKeys.length !== bKeys.length) return true;
+
+[NoCoverage] BlockStatement
+packages/core/src/runtime/patch-registry.ts:175:25
+-           } catch (error) {
+-             if (!hasError) {
+-               hasError = true;
+-               firstError = error;
+-             }
+-           }
++           } catch (error) {}
+
+[NoCoverage] BooleanLiteral
+packages/core/src/runtime/patch-registry.ts:176:15
+-             if (!hasError) {
++             if (hasError) {
+
+[NoCoverage] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:176:15
+-             if (!hasError) {
++             if (true) {
+
+[NoCoverage] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:176:15
+-             if (!hasError) {
++             if (false) {
+
+[NoCoverage] BlockStatement
+packages/core/src/runtime/patch-registry.ts:176:26
+-             if (!hasError) {
+-               hasError = true;
+-               firstError = error;
+-             }
++             if (!hasError) {}
+
+[NoCoverage] BooleanLiteral
+packages/core/src/runtime/patch-registry.ts:177:24
+-               hasError = true;
++               hasError = false;
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:39:7
+-     if (value === null || typeof value !== "object") return value;
++     if (false || typeof value !== "object") return value;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 32 more tests!
+
+
+[Survived] MethodExpression
+packages/core/src/runtime/patch-registry.ts:50:17
+-     const aKeys = Object.keys(a).sort();
++     const aKeys = Object.keys(a);
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+  and 14 more tests!
+
+
+[Survived] MethodExpression
+packages/core/src/runtime/patch-registry.ts:51:17
+-     const bKeys = Object.keys(b).sort();
++     const bKeys = Object.keys(b);
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+  and 14 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:40:7
+-     if (seen.has(value)) return value;
++     if (false) return value;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 32 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:52:7
+-     if (aKeys.length !== bKeys.length) return false;
++     if (false) return false;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+  and 14 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:57:10
+-     return JSON.stringify(a) === JSON.stringify(b);
++     return true;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+    PatchRegistry I-8 suppresses unchanged republish and advances revisions only on change
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:53:38
+-     return aKeys.every((key, index) => key === bKeys[index] && Object.is(a[key], b[key]));
++     return aKeys.every((key, index) => true && Object.is(a[key], b[key]));
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+  and 13 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:66:5
+-       a.status === b.status &&
++       true &&
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+    PatchRegistry I-8 suppresses unchanged republish and advances revisions only on change
+  and 5 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:75:21
+-     #batch: Patch[] = [];
++     #batch: Patch[] = ["Stryker was here"];
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 35 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:76:37
+-     #batchDiagnostics: Diagnostic[] = [];
++     #batchDiagnostics: Diagnostic[] = ["Stryker was here"];
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 35 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:78:27
+-     #batchSeeds: string[] = [];
++     #batchSeeds: string[] = ["Stryker was here"];
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 35 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:104:30
+-       this.#batchDiagnostics = [];
++       this.#batchDiagnostics = ["Stryker was here"];
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 32 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:116:41
+-         diagnostics: input.diagnostics ?? [],
++         diagnostics: input.diagnostics ?? ["Stryker was here"],
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) refuses to open a second batch while subscribers are being notified
+    PatchRegistry: subscriber error handling (recovery A2) a throwing node subscriber does not prevent other subscribers from being notified
+    PatchRegistry: subscriber error handling (recovery A2) closeBatch always fully resets its internal state, even when a subscriber throws, so the next beginBatch succeeds
+  and 9 more tests!
+
+
+[Survived] ArrowFunction
+packages/core/src/runtime/patch-registry.ts:135:12
+-       return () => this.#batchListeners.delete(listener);
++       return () => undefined;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 5 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:149:19
+-       this.#batch = [];
++       this.#batch = ["Stryker was here"];
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 32 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:150:30
+-       this.#batchDiagnostics = [];
++       this.#batchDiagnostics = ["Stryker was here"];
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 32 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:151:24
+-       this.#batchSeeds = [];
++       this.#batchSeeds = ["Stryker was here"];
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 32 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:165:17
+-               if (!hasError) {
++               if (true) {
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) rejects a direct publisher flush from inside a subscriber and stays reusable
+    clock and batch identity are independent (P0-1) reports a failed flush as a diagnostic instead of propagating it into the clock
+    PatchRegistry: subscriber error handling (recovery A2) a throwing node subscriber does not prevent other subscribers from being notified
+  and 3 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/patch-registry.ts:36:3
+-     "Queue one follow-up invalidation instead of recursing.";
++     "";
+Ran all tests for this mutant.
+
+[NoCoverage] BlockStatement
+packages/core/src/runtime/project-runtime.ts:31:36
+-     get project(): ProjectDefinition {
+-       return this.#project;
+-     }
++     get project(): ProjectDefinition {}
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/project-runtime.ts:68:41
+-       if (this.#disposed) throw new Error("ProjectRuntime is disposed.");
++       if (this.#disposed) throw new Error("");
+
+[Survived] StringLiteral
+packages/core/src/runtime/project-runtime.ts:42:58
+-       if (this.#instances.has(nodeId)) throw new TypeError(`Node "${nodeId}" is already mounted.`);
++       if (this.#instances.has(nodeId)) throw new TypeError(``);
+Tests ran:
+    ProjectRuntime TR-R-14 mounts through one project-owned GraphRuntime
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/project-runtime.ts:50:9
+-       if (instance === undefined) return;
++       if (false) return;
+Tests ran:
+    ProjectRuntime TR-R-14 mounts through one project-owned GraphRuntime
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/project-runtime.ts:60:9
+-       if (this.#disposed) return;
++       if (false) return;
+Tests ran:
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+    Engine publishes a progress change through the existing graph runtime
+    Engine keeps one clock owner while clock progress publishes once
+  and 4 more tests!
+
+
+[Survived] BooleanLiteral
+packages/core/src/runtime/project-runtime.ts:61:22
+-       this.#disposed = true;
++       this.#disposed = false;
+Tests ran:
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+    Engine publishes a progress change through the existing graph runtime
+    Engine keeps one clock owner while clock progress publishes once
+  and 4 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/project-runtime.ts:62:26
+-       for (const nodeId of [...this.#instances.keys()]) this.#graph.detach(nodeId);
++       for (const nodeId of []) this.#graph.detach(nodeId);
+Tests ran:
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+    Engine publishes a progress change through the existing graph runtime
+    Engine keeps one clock owner while clock progress publishes once
+  and 4 more tests!
+
+
+[Survived] BlockStatement
+packages/core/src/runtime/project-runtime.ts:67:23
+-     #assertLive(): void {
+-       if (this.#disposed) throw new Error("ProjectRuntime is disposed.");
+-     }
++     #assertLive(): void {}
+Tests ran:
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+    Engine publishes a progress change through the existing graph runtime
+    Engine keeps one clock owner while clock progress publishes once
+  and 4 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/project-runtime.ts:68:9
+-       if (this.#disposed) throw new Error("ProjectRuntime is disposed.");
++       if (false) throw new Error("ProjectRuntime is disposed.");
+Tests ran:
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+    Engine publishes a progress change through the existing graph runtime
+    Engine keeps one clock owner while clock progress publishes once
+  and 4 more tests!
+
+
+Ran 4.08 tests per mutant on average.
+---------------------|------------------|----------|-----------|------------|----------|----------|
+                     | % Mutation score |          |           |            |          |          |
+File                 |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
+---------------------|--------|---------|----------|-----------|------------|----------|----------|
+All files            |  65.87 |   69.44 |      357 |         2 |        158 |       28 |        0 |
+ adapters            |  59.53 |   61.84 |      127 |         1 |         79 |        8 |        0 |
+  interpolator       |  49.59 |   51.69 |       60 |         1 |         57 |        5 |        0 |
+   gsap.ts           |  49.59 |   51.69 |       60 |         1 |         57 |        5 |        0 |
+  browser-clock.ts   |  71.79 |   73.68 |       28 |         0 |         10 |        1 |        0 |
+  dom.ts             |  73.58 |   76.47 |       39 |         0 |         12 |        2 |        0 |
+ runtime             |  70.00 |   74.52 |      230 |         1 |         79 |       20 |        0 |
+  graph-publisher.ts |  62.24 |   64.21 |       60 |         1 |         34 |        3 |        0 |
+  graph-runtime.ts   |  69.66 |   76.54 |       62 |         0 |         19 |        8 |        0 |
+  patch-registry.ts  |  77.39 |   82.41 |       89 |         0 |         19 |        7 |        0 |
+  project-runtime.ts |  67.86 |   73.08 |       19 |         0 |          7 |        2 |        0 |
+---------------------|--------|---------|----------|-----------|------------|----------|----------|
+[32m01:20:05 (2447) INFO MutationTestReportHelper[39m Final mutation score of 65.87 is greater than or equal to break threshold 65.42
+[32m01:20:05 (2447) INFO JsonReporter[39m Your report can be found at: file:///home/runner/work/motion5/motion5/reports/mutation/mutation.json
+[32m01:20:05 (2447) INFO HtmlReporter[39m Your report can be found at: file:///home/runner/work/motion5/motion5/reports/mutation/mutation.html
+[32m01:20:05 (2447) INFO MutationTestExecutor[39m Done in 1 minute and 36 seconds.
