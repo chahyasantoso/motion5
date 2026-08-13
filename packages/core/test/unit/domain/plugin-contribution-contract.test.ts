@@ -25,32 +25,13 @@ describe("plugin contribution contract (X-3)", () => {
       },
       compose,
     });
-    registry.resolveForKeyframes({ x: stops(1) }, "track.keyframes", {
-      id: "hero/arm",
-      duration: 2,
-    });
-    expect(calls).toEqual([
-      [
-        "x",
-        [
-          { p: 0, v: 1 },
-          { p: 1, v: 2 },
-        ],
-        { id: "hero/arm", duration: 2 },
-        true,
-      ],
-    ]);
+    registry.resolveForKeyframes({ x: stops(1) }, "track.keyframes", { id: "hero/arm", duration: 2 });
+    expect(calls).toEqual([["x", [{ p: 0, v: 1 }, { p: 1, v: 2 }], { id: "hero/arm", duration: 2 }, true]]);
   });
 
   it("preserves both keyframes and tweenVars from one explicit contribution", () => {
     const registry = new PluginRegistry();
-    registry.register({
-      name: "derived",
-      keys: ["x"],
-      stage: "prepare",
-      contribute: () => ({ keyframes: { derived: stops(4) }, tweenVars: { overwrite: "auto" } }),
-      compose,
-    });
+    registry.register({ name: "derived", keys: ["x"], stage: "prepare", contribute: () => ({ keyframes: { derived: stops(4) }, tweenVars: { overwrite: "auto" } }), compose });
     const resolved = registry.resolveForKeyframes({ x: stops(1) });
     expect(resolved.diagnostics).toEqual([]);
     expect(resolved.preparation.keyframes).toEqual({ derived: stops(4) });
@@ -59,53 +40,17 @@ describe("plugin contribution contract (X-3)", () => {
 
   it("rejects duplicate contributed outputs and conflicting tween vars", () => {
     const registry = new PluginRegistry();
-    registry.register({
-      name: "first",
-      keys: ["x"],
-      stage: "prepare",
-      contribute: () => ({ keyframes: { derived: stops(1) }, tweenVars: { overwrite: "auto" } }),
-      compose,
-    });
-    registry.register({
-      name: "second",
-      keys: ["x"],
-      stage: "prepare",
-      contribute: () => ({ keyframes: { derived: stops(2) }, tweenVars: { overwrite: "all" } }),
-      compose,
-    });
-    const rules = registry
-      .resolveForKeyframes({ x: stops(1) })
-      .diagnostics.map(({ ruleId }) => ruleId);
-    expect(rules).toEqual(
-      expect.arrayContaining([
-        "plugin-contribution-key-collision",
-        "plugin-contribution-tween-vars-conflict",
-      ]),
-    );
+    registry.register({ name: "first", claimsKey: (key) => key === "x", stage: "prepare", contribute: () => ({ keyframes: { derived: stops(1) }, tweenVars: { overwrite: "auto" } }), compose });
+    registry.register({ name: "second", claimsKey: (key) => key === "x", stage: "prepare", contribute: () => ({ keyframes: { derived: stops(2) }, tweenVars: { overwrite: "all" } }), compose });
+    const rules = registry.resolveForKeyframes({ x: stops(1) }).diagnostics.map(({ ruleId }) => ruleId);
+    expect(rules).toEqual(expect.arrayContaining(["plugin-contribution-key-collision", "plugin-contribution-tween-vars-conflict"]));
   });
 
   it("rejects malformed contributed stops instead of installing them", () => {
     const registry = new PluginRegistry();
-    registry.register({
-      name: "bad",
-      keys: ["x"],
-      stage: "prepare",
-      contribute: () => ({
-        keyframes: {
-          derived: {
-            stops: [
-              { p: 0.8, v: 1 },
-              { p: 0.2, v: 2 },
-            ],
-          },
-        },
-      }),
-      compose,
-    });
+    registry.register({ name: "bad", keys: ["x"], stage: "prepare", contribute: () => ({ keyframes: { derived: { stops: [{ p: 0.8, v: 1 }, { p: 0.2, v: 2 }] } } }), compose });
     const resolved = registry.resolveForKeyframes({ x: stops(1) });
-    expect(resolved.diagnostics.map(({ ruleId }) => ruleId)).toContain(
-      "plugin-contribution-stop-order",
-    );
+    expect(resolved.diagnostics.map(({ ruleId }) => ruleId)).toContain("plugin-contribution-stop-order");
     expect(resolved.preparation.keyframes).toEqual({});
   });
 });
