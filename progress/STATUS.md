@@ -38,24 +38,24 @@ Last reviewed: 2026-08-13
 | P1-9  | Narrow public project handle                    | Done, merged    |
 | P1-12 | One observation-validation owner                | Done, merged    |
 | S5    | Contribution completeness                       | Done, gate open |
-| S6    | Remove dead `use` contract                      | In progress     |
+| S6    | Remove dead `use` contract                      | Done, gate open |
 
 ## Current next action
 
-**S6:** finish the dead `use` contract slice, then rerun the recovery audit on the final head. Do not open rescue → main until the full required matrix is green.
+Rerun the recovery audit against the completed S6 head. Do not open rescue → main until the audit is clean and the required checks remain green.
 
 ## Evidence
 
 - S5: PR #91, merged and awaiting the recovery audit.
-- S6: PR #92, failing-first coverage and implementation are on this branch; final evidence is pending the required matrix.
+- S6: [PR #92](https://github.com/chahyasantoso/motion5/pull/92), green workflow [#31718629183](https://github.com/chahyasantoso/motion5/actions/runs/31718629183), head [`9b6e50e`](https://github.com/chahyasantoso/motion5/commit/9b6e50eeb58beeded1124604b9274a88007d7c0f).
+- S6 contract evidence: [`9b6e50e`](https://github.com/chahyasantoso/motion5/commit/9b6e50eeb58beeded1124604b9274a88007d7c0f) removes the `TrackDefinition.use` API, rejects legacy entries at load, removes the empty resolver, preserves authored-key resolution, and restores acceptance coverage.
 
 ## Reopened gates
 
 - C3/X-2: plugin metadata and the full `contribute()` contract remain open.
-- G-1/G-3/G-4/G-5/G-6/G-7: unified governance implementation is merged; rerun the recovery audit on the merged rescue head before calling the rescue complete.
+- G-1/G-3/G-4/G-5/G-6/G-7: unified governance implementation is merged; rerun the recovery audit on the completed S6 head before calling the rescue complete.
 
 ## Remaining work
 
-- S6: complete the dead `use` contract and record the green required matrix.
-- Rerun the recovery audit against the merged rescue head and fix any evidence-only failures.
+- Rerun the recovery audit against the completed S6 head and fix any evidence-only failures.
 - Open rescue → main after the audit is clean.
