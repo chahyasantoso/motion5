@@ -6,6 +6,7 @@ import type {
   ProjectDefinition,
 } from "./contract/v5";
 import { validateV5 } from "./contract/validate-v5";
+import { compilePercentKeyframes } from "./domain/keyframe-compiler";
 import { PluginRegistry } from "./domain/plugins";
 import { Track } from "./domain/track";
 import type { ImmutableRecord } from "./domain/values";
@@ -86,6 +87,12 @@ export class Engine {
       if (existing) return existing;
       const definition = nodes.get(nodeId);
       if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
+      const keyframeCompilation = compilePercentKeyframes(
+        definition,
+        `${nodeId}.keyframes`,
+      );
+      if (keyframeCompilation.diagnostics.some(({ severity }) => severity === "error"))
+        throw new TypeError(describeDiagnostics(keyframeCompilation.diagnostics));
       const resolved = this.#plugins?.resolveForKeyframes(
         definition.keyframes ?? {},
         `${nodeId}.keyframes`,
