@@ -29,26 +29,14 @@ export interface ProjectHandle {
   dispose(): void;
 }
 
-class RuntimeProjectHandle implements ProjectHandle {
-  readonly #runtime: ProjectRuntime;
-  constructor(runtime: ProjectRuntime) {
-    this.#runtime = runtime;
-  }
-  mount(nodeId: string, instance: object = {}): object {
-    return this.#runtime.mount(nodeId, instance);
-  }
-  unmount(nodeId: string): void {
-    this.#runtime.unmount(nodeId);
-  }
-  seek(nodeId: string, progress: number): PatchBatch {
-    return this.#runtime.seek(nodeId, progress);
-  }
-  subscribe(nodeId: string, listener: PatchListener): () => void {
-    return this.#runtime.graph.registry.subscribeNode(nodeId, listener);
-  }
-  dispose(): void {
-    this.#runtime.dispose();
-  }
+function createHandle(runtime: ProjectRuntime): ProjectHandle {
+  return {
+    mount: (nodeId, instance = {}) => runtime.mount(nodeId, instance),
+    unmount: (nodeId) => runtime.unmount(nodeId),
+    seek: (nodeId, progress) => runtime.seek(nodeId, progress),
+    subscribe: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
+    dispose: () => runtime.dispose(),
+  };
 }
 
 function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
@@ -135,7 +123,7 @@ export class Engine {
           tracks.clear();
         },
       });
-      return new RuntimeProjectHandle(runtime);
+      return createHandle(runtime);
     } catch (error) {
       for (const track of tracks.values()) track.dispose();
       throw error;

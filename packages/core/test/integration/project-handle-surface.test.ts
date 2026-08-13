@@ -20,20 +20,7 @@ describe("public project handle surface (P1-9)", () => {
     expect((runtime as unknown as { binding?: unknown }).binding).toBeUndefined();
     expect((runtime as unknown as { registry?: unknown }).registry).toBeUndefined();
     expect((runtime as unknown as { publisher?: unknown }).publisher).toBeUndefined();
-    expect(Object.keys(runtime)).toEqual([]);
-    runtime.dispose();
-  });
-
-  it("keeps only lifecycle and observation operations on the consumer handle", () => {
-    const runtime = new Engine({
-      clock: createManualClock(),
-      interpolator: createFakeInterpolator(),
-      scheduler: createFakeScheduler(),
-    }).load(project);
-    const prototype = Object.getPrototypeOf(runtime) as object;
-    const names = Object.getOwnPropertyNames(prototype).sort();
-
-    expect(names).toEqual(["constructor", "dispose", "mount", "seek", "subscribe", "unmount"]);
+    expect(Object.keys(runtime).sort()).toEqual(["dispose", "mount", "seek", "subscribe", "unmount"]);
     runtime.dispose();
   });
 });
