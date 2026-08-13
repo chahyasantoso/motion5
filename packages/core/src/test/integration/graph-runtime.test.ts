@@ -1,0 +1,28 @@
+import { describe, expect, it, vi } from "vitest";
+import type { ProjectDefinition } from "../../src/contract/v5";
+import { createManualClock } from "../../src/ports/clock";
+import { GraphRuntime } from "../../src/runtime/graph-runtime";
+
+const project: ProjectDefinition = {
+  schemaVersion: 5,
+  motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
+};
+
+const compose = (node: { id: string }) => () => ({
+  values: { node: node.id },
+  sourceProgress: 0,
+  sourceRevisions: {},
+});
+
+describe("GraphRuntime", () => {
+  it("TR-R-14 mounts through one project-owned GraphRuntime", () => {
+    const clock = createManualClock();
+    const runtime = new GraphRuntime(project, clock, compose);
+    const subscriptions = vi.spyOn(clock, "subscribe");
+    expect(runtime.registry).toBe(runtime.registry);
+    expect(runtime.publisher).toBe(runtime.publisher);
+    expect(runtime.state).toBe(runtime.binding.state);
+    runtime.dispose();
+    expect(subscriptions).not.toHaveBeenCalled();
+  });
+});
