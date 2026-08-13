@@ -1,18 +1,16 @@
 import type { Patch } from "../runtime/patch-registry";
+import type { ResolvedPlugins } from "../domain/plugins";
 
 export interface StageLike {
   style: { perspective?: string; [key: string]: unknown };
   [key: string]: unknown;
 }
-
 export interface DomTarget {
   style: { removeProperty?: (property: string) => void; [key: string]: unknown };
   [key: string]: unknown;
 }
-
 export type DomTargetResolver = (nodeId: string) => DomTarget | undefined;
 export type DomPatchWriter = (target: DomTarget, values: Readonly<Record<string, unknown>>) => void;
-
 export interface DomPatchAdapter {
   apply(patch: Patch): void;
   clear(target?: DomTarget): void;
@@ -20,7 +18,6 @@ export interface DomPatchAdapter {
 
 const transformKeys = new Set(["x", "y", "z", "rotation", "rotationX", "rotationY", "scale"]);
 const transformState = new WeakMap<object, Record<string, unknown>>();
-
 function transformValue(key: string, value: unknown): string {
   if (key === "scale") return `scale(${String(value)})`;
   if (key === "rotation") return `rotate(${String(value)}deg)`;
@@ -28,7 +25,6 @@ function transformValue(key: string, value: unknown): string {
   if (key === "rotationY") return `rotateY(${String(value)}deg)`;
   return `${key}(${String(value)}px)`;
 }
-
 function composeTransform(values: Readonly<Record<string, unknown>>): string {
   const parts: string[] = [];
   if ("x" in values || "y" in values || "z" in values) {
@@ -41,12 +37,10 @@ function composeTransform(values: Readonly<Record<string, unknown>>): string {
     if (key in values) parts.push(transformValue(key, values[key]));
   return parts.join(" ");
 }
-
 function removeStyleProperty(target: DomTarget, key: string): void {
   if (typeof target.style.removeProperty === "function") target.style.removeProperty(key);
   else target.style[key] = undefined;
 }
-
 function defaultWriter(target: DomTarget, values: Readonly<Record<string, unknown>>): void {
   const state = transformState.get(target) ?? {};
   const hadTransform = Object.keys(state).length > 0;
@@ -64,21 +58,26 @@ function defaultWriter(target: DomTarget, values: Readonly<Record<string, unknow
   else if (hadTransform) removeStyleProperty(target, "transform");
   transformState.set(target, state);
 }
-
-function renderableValues(values: Readonly<Record<string, unknown>>): Record<string, unknown> {
+function renderableValues(
+  values: Readonly<Record<string, unknown>>,
+  metadata?: ResolvedPlugins,
+): Record<string, unknown> {
   const result: Record<string, unknown> = {};
+  const internalKeys = metadata?.internalKeys ?? [];
+  const outputSerializers = metadata?.outputSerializers ?? {};
   for (const [key, value] of Object.entries(values)) {
-    if (key.startsWith("_") || key === "offset") continue;
-    result[key] = value;
+    if (key.startsWith("_") || key === "offset" || internalKeys.includes(key)) continue;
+    const serializer = outputSerializers[key];
+    result[key] = serializer ? serializer(value) : value;
   }
   return result;
 }
-
 export function createDomPatchAdapter(
   stage: StageLike,
   perspective?: number,
   resolveTarget: DomTargetResolver = () => stage,
   write: DomPatchWriter = defaultWriter,
+  metadata?: ResolvedPlugins,
 ): DomPatchAdapter {
   if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
     stage.style.perspective = `${perspective}px`;
@@ -88,7 +87,7 @@ export function createDomPatchAdapter(
       if (patch.status !== "ready") return;
       const target = resolveTarget(patch.nodeId);
       if (target === undefined) return;
-      const next = renderableValues(patch.values);
+      const next = renderableValues(patch.values, metadata);
       const previous = lastApplied.get(target) ?? {};
       const dirty: Record<string, unknown> = {};
       for (const [key, value] of Object.entries(next))
