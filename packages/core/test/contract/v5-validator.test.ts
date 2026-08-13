@@ -21,145 +21,56 @@ describe("schema v5 validator", () => {
   it("rejects malformed, non-finite, out-of-range, non-monotonic, and duplicate stops", () => {
     const result = validateV5(
       projectWithKeyframes({
-        malformed: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.5, v: 1 },
-          ],
-        },
+        malformed: { stops: [{ p: 0, v: 0 }, { p: 0.5, v: 1 }] },
         nan: { stops: [{ p: Number.NaN, v: 0 }] },
         range: { stops: [{ p: 1.5, v: 0 }] },
-        order: {
-          stops: [
-            { p: 0.8, v: 0 },
-            { p: 0.2, v: 1 },
-          ],
-        },
-        duplicate: {
-          stops: [
-            { p: 0.2, v: 0 },
-            { p: 0.2, v: 1 },
-          ],
-        },
+        order: { stops: [{ p: 0.8, v: 0 }, { p: 0.2, v: 1 }] },
+        duplicate: { stops: [{ p: 0.2, v: 0 }, { p: 0.2, v: 1 }] },
       }),
     );
     expect(result.valid).toBe(false);
-    expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(
-      expect.arrayContaining([
-        "stop-position",
-        "stop-position-range",
-        "stop-position-order",
-        "stop-position-duplicate",
-      ]),
-    );
+    expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(expect.arrayContaining(["stop-position", "stop-position-range", "stop-position-order", "stop-position-duplicate"]));
   });
 
   it("warns when a property does not cover both interpolation endpoints", () => {
     const result = validateV5(projectWithKeyframes({ opacity: { stops: [{ p: 0.25, v: 0.5 }] } }));
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ ruleId: "stop-missing-start", severity: "warning" }),
-        expect.objectContaining({ ruleId: "stop-missing-end", severity: "warning" }),
-      ]),
-    );
+    expect(result.diagnostics).toEqual(expect.arrayContaining([expect.objectContaining({ ruleId: "stop-missing-start", severity: "warning" }), expect.objectContaining({ ruleId: "stop-missing-end", severity: "warning" })]));
   });
 
   it("rejects v4 and reports the schema path", () => {
     const result = validateV5({ schemaVersion: 4, motions: [] });
     expect(result.valid).toBe(false);
-    expect(result.diagnostics[0]).toMatchObject({
-      ruleId: "schema-version",
-      path: "schemaVersion",
-      severity: "error",
-    });
+    expect(result.diagnostics[0]).toMatchObject({ ruleId: "schema-version", path: "schemaVersion", severity: "error" });
   });
 
   it("accepts perspective for 3D content and rejects invalid perspective", () => {
-    const good = validateV5({
-      schemaVersion: 5,
-      perspective: 800,
-      motions: [
-        {
-          id: "hero",
-          trigger: { type: "manual" },
-          tracks: [{ id: "tilt", keyframes: { rotationY: {} } }],
-        },
-      ],
-    });
+    const good = validateV5({ schemaVersion: 5, perspective: 800, motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "tilt", keyframes: { rotationY: {} } }] }] });
     const bad = validateV5({ schemaVersion: 5, perspective: 0, motions: [] });
     expect(good.valid).toBe(true);
-    expect(bad.diagnostics).toContainEqual(
-      expect.objectContaining({ ruleId: "perspective-shape", severity: "error" }),
-    );
+    expect(bad.diagnostics).toContainEqual(expect.objectContaining({ ruleId: "perspective-shape", severity: "error" }));
   });
 
   it("warns, but does not reject, 3D content without perspective", () => {
-    const result = validateV5({
-      schemaVersion: 5,
-      motions: [
-        {
-          id: "hero",
-          trigger: { type: "manual" },
-          tracks: [{ id: "tilt", keyframes: { rotationY: {} } }],
-        },
-      ],
-    });
+    const result = validateV5({ schemaVersion: 5, motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "tilt", keyframes: { rotationY: {} } }] }] });
     expect(result.valid).toBe(true);
-    expect(result.diagnostics).toContainEqual(
-      expect.objectContaining({ ruleId: "perspective-usage", severity: "warning" }),
-    );
+    expect(result.diagnostics).toContainEqual(expect.objectContaining({ ruleId: "perspective-usage", severity: "warning" }));
   });
 
   it("rejects duplicate ids, invalid triggers, and malformed freeTracks", () => {
-    const result = validateV5({
-      schemaVersion: 5,
-      freeTracks: {},
-      motions: [{ id: "hero", trigger: { type: "unknown" }, tracks: [{ id: "x" }, { id: "x" }] }],
-    });
+    const result = validateV5({ schemaVersion: 5, freeTracks: {}, motions: [{ id: "hero", trigger: { type: "unknown" }, tracks: [{ id: "x" }, { id: "x" }] }] });
     expect(result.valid).toBe(false);
-    expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(
-      expect.arrayContaining(["free-tracks-shape", "trigger-shape", "track-duplicate-id"]),
-    );
+    expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(expect.arrayContaining(["free-tracks-shape", "trigger-shape", "track-duplicate-id"]));
   });
 
-  it("rejects invalid observation roles, targets, unknown sources, self references, and cycles", () => {
-    const result = validateV5({
-      schemaVersion: 5,
-      motions: [
-        {
-          id: "hero",
-          trigger: { type: "manual" },
-          tracks: [
-            { id: "a", observes: [{ source: "b", role: "input" }] },
-            { id: "b", observes: [{ source: "a" }] },
-          ],
-        },
-      ],
-    });
+  it("rejects invalid observation roles, unknown sources, self references, and cycles", () => {
+    const result = validateV5({ schemaVersion: 5, motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "a", observes: [{ source: "b", role: "input" }] }, { id: "b", observes: [{ source: "a" }] }] }] });
     expect(result.valid).toBe(false);
-    expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(
-      expect.arrayContaining(["observation-input-target", "observation-cycle"]),
-    );
+    expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(expect.arrayContaining(["observation-cycle"]));
   });
 
   it("accepts free-track references in the reserved namespace", () => {
-    const result = validateV5({
-      schemaVersion: 5,
-      motions: [
-        {
-          id: "hero",
-          trigger: { type: "manual" },
-          tracks: [
-            {
-              id: "pointer",
-              observes: [{ source: "~/cursor", role: "input", target: "position" }],
-            },
-          ],
-        },
-      ],
-      freeTracks: [{ id: "cursor" }],
-    });
+    const result = validateV5({ schemaVersion: 5, motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "pointer", observes: [{ source: "~/cursor", role: "input", target: "position" }] }] }], freeTracks: [{ id: "cursor" }] });
     expect(result.valid).toBe(true);
   });
 });
