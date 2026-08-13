@@ -1,10 +1,4 @@
-import type {
-  Diagnostic,
-  Patch,
-  PatchBatch,
-  PatchListener,
-  PatchStatus,
-} from "../contract/v5";
+import type { Diagnostic, Patch, PatchBatch, PatchListener, PatchStatus } from "../contract/v5";
 import { equalValues } from "../domain/values";
 
 export type { Patch, PatchBatch, PatchListener, PatchStatus } from "../contract/v5";
