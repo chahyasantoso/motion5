@@ -19,10 +19,10 @@ Last reviewed: 2026-08-13
 | C3    | DOM metadata, serialization, and clear coverage | Done, gate open |
 | D1    | Discover consumer packages                      | Done            |
 | D2    | Planted boundary self-test                      | Done            |
-| D3    | Acceptance evidence gates                       | In progress, bundled in #81 |
-| E1    | Required declaration build                      | In progress, bundled in #81 |
+| D3    | Acceptance evidence gates                       | Done, gate open |
+| E1    | Required declaration build                      | Done, gate open |
 | E2    | Real end-to-end product path                    | Done            |
-| E3    | Mutation baseline and ratchet                   | In progress, bundled in #81 |
+| E3    | Mutation baseline and ratchet                   | Done, gate open |
 | P0-1  | Clock and batch identity                        | Done            |
 | P0-2  | GSAP clock ownership                            | Done            |
 | P0-3  | Absolute multi-property stop compilation        | Done, audited   |
@@ -40,25 +40,24 @@ Last reviewed: 2026-08-13
 
 ## Current next action
 
-**Unified governance pass, PR #81:** repair G-1, G-3, G-4, G-5, G-6, and G-7 together. This is deliberately one implementation and one evidence chain: build declarations and a consumer smoke test, make acceptance consume executed passing-test evidence, harden failing-first against infrastructure reds, make mutation scoring and ratcheting real, and put build plus end-to-end on the required CI path.
+**X-2/X-3:** close the remaining plugin contract gap in one focused slice. Either thread plugin `internalKeys`, output serializers, and output ownership into the DOM consumer, and restore the oracle's per-key `contribute()` collision contract, or delete metadata the product does not support. Do not update status until executable tests prove the chosen contract. After that, rerun the recovery audit and open rescue → main.
 
 ## Evidence
 
 - P1-10: [PR #76](https://github.com/chahyasantoso/motion5/pull/76), green [#31675927357](https://github.com/chahyasantoso/motion5/actions/runs/31675927357), merged [`f296594`](https://github.com/chahyasantoso/motion5/commit/f29659487ac325ab72dfc7ff111c1049f0cd610a).
 - P1-11: [PR #77](https://github.com/chahyasantoso/motion5/pull/77), green [#31676660768](https://github.com/chahyasantoso/motion5/actions/runs/31676660768), merged.
-- P1-7/P1-8: [PR #78](https://github.com/chahyasantoso/motion5/pull/78), green [#31681320093](https://github.com/chahyasantoso/motion5/actions/runs/31681320093), merged [`c1e68d6`](https://github.com/chahyasantoso/motion5/commit/c1e68d6b67b12103b249af3adb570cd0a870eb6c).
+- P1-7/P1-8: [PR #78](https://github.com/chahyasantoso/motion5/pull/78), green [#31681320093](https://github.com/chahyasantosa/motion5/actions/runs/31681320093), merged [`c1e68d6`](https://github.com/chahyasantoso/motion5/commit/c1e68d6b67b12103b249af3adb570cd0a870eb6c).
 - P1-9: [PR #79](https://github.com/chahyasantoso/motion5/pull/79), green [#31681653183](https://github.com/chahyasantoso/motion5/actions/runs/31681653183), merged [`5571da9`](https://github.com/chahyasantoso/motion5/commit/5571da91f3e38c85f3c596ec9240e8412f1cfa47).
 - P1-12: [PR #80](https://github.com/chahyasantoso/motion5/pull/80), green [#31684300411](https://github.com/chahyasantoso/motion5/actions/runs/31684300411), merged [`ccae2a9`](https://github.com/chahyasantoso/motion5/commit/ccae2a91a97b9ab766b03fe89ebb5da8faf97f93).
-- Unified governance red leg: [PR #81](https://github.com/chahyasantoso/motion5/pull/81), test-only [`011c204`](https://github.com/chahyasantoso/motion5/commit/011c20487839de20cfcc0b3c416eb1b89269e2d0).
+- Unified governance: [PR #81](https://github.com/chahyasantoso/motion5/pull/81), green [#31686104238](https://github.com/chahyasantoso/motion5/actions/runs/31686104238), merged [`c551588`](https://github.com/chahyasantoso/motion5/commit/c55158863ea7631b0a143f61c475d7475f3a33ec).
 
 ## Reopened gates
 
-- C3/X-2: plugin metadata fields remain declared but unread; DOM transform rendering is covered by P0-4.
-- G-1/G-3/G-4/G-5/G-6/G-7: bundled in PR #81.
+- C3/X-2: plugin metadata and the full `contribute()` contract remain open.
+- G-1/G-3/G-4/G-5/G-6/G-7: unified governance implementation is merged; rerun the recovery audit on the merged rescue head before calling the rescue complete.
 
 ## Remaining work
 
-- Finish the unified governance pass in PR #81.
-- X-2/X-3: thread or remove plugin metadata and document/restore the `contribute()` contract.
-- P2 cleanup: dead `sourceRevisions`, publisher snapshot consistency, O(dirty) per-frame allocation, single freeze per compose, last-known-good values on error patches, Track resurrection after disposal, and the dead `Motion`/`createTrigger` pair.
-- Rerun the rescue audit, then open rescue → main.
+- X-2/X-3: thread or remove plugin metadata and restore/document the `contribute()` contract.
+- Rerun the recovery audit against the merged rescue head and fix any evidence-only failures.
+- Open rescue → main after the audit is clean.
