@@ -53,9 +53,7 @@ describe("DOM plugin metadata (X-2)", () => {
     const resolved = registry.resolveForKeyframes({ path: {} });
     expect(resolved.diagnostics).toEqual([]);
     expect(resolved.internalKeys).toEqual(["path"]);
-    expect(resolved.outputSerializers?.transform?.({ x: 1, y: 2 })).toBe(
-      "translate(1px, 2px)",
-    );
+    expect(resolved.outputSerializers?.transform?.({ x: 1, y: 2 })).toBe("translate(1px, 2px)");
     const writes: Record<string, unknown>[] = [];
     const stage = { style: {} as Record<string, unknown> };
     const adapter = createDomPatchAdapter(
