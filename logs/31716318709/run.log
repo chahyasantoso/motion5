@@ -1,0 +1,248 @@
+integration (node 24)	Run npm run test:integration	﻿2026-08-13T15:36:53.0583730Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.0584022Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.0623885Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.0624104Z env:
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.0624416Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.0624589Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.1580335Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.1581045Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.1581623Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.1581920Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.3779731Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.3783239Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.3784095Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.6249920Z  ^[[31m❯^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.6808329Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.6845868Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.7925632Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.8792447Z  ^[[31m❯^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.9006374Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:53.9376517Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.0766679Z  ^[[31m❯^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.1462548Z  ^[[31m❯^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.1556938Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.2544875Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.3574781Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.3628149Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.4286534Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.5369007Z  ^[[31m❯^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.5407509Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.5736296Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6492076Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6513582Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6514697Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Suites 6 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6515083Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6518472Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/dom-plugin-metadata.test.ts^[[2m [ packages/core/test/integration/dom-plugin-metadata.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6520171Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m [ packages/core/test/integration/end-to-end.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6521760Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-headless.test.ts^[[2m [ packages/core/test/integration/engine-headless.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6524084Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-load-validation.test.ts^[[2m [ packages/core/test/integration/engine-load-validation.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6526454Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/project-handle-surface.test.ts^[[2m [ packages/core/test/integration/project-handle-surface.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6527636Z ^[[31m^[[1mError^[[22m: Transform failed with 1 error:
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6527950Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6528386Z ^[[31m[PARSE_ERROR] ^[[0mExpected `,` or `)` but found `Identifier`
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6529082Z  - `,` or `)` expected in packages/core/src/domain/plugins.ts at 10717..10723
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6529775Z  - Opened here in packages/core/src/domain/plugins.ts at 10485..10486
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6530289Z ^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6530668Z   Plugin: ^[[35mvite:oxc^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6531378Z   File: ^[[36m/home/runner/work/motion5/motion5/packages/core/src/domain/plugins.ts^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6532480Z ^[[90m ^[[2m❯^[[22m transformWithOxc node_modules/vite/dist/node/chunks/node.js:^[[2m4097:19^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6533743Z ^[[90m ^[[2m❯^[[22m TransformPluginContext.transform node_modules/vite/dist/node/chunks/node.js:^[[2m4168:26^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6535298Z ^[[90m ^[[2m❯^[[22m EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/node.js:^[[2m30851:51^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6536564Z ^[[90m ^[[2m❯^[[22m loadAndTransform node_modules/vite/dist/node/chunks/node.js:^[[2m20619:26^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6537708Z ^[[90m ^[[2m❯^[[22m fetchModule node_modules/vite/dist/node/chunks/node.js:^[[2m34251:15^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6538184Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6538587Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6538863Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6540200Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m [ packages/core/test/integration/engine-x3-contribution.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6541317Z ^[[31m^[[1mError^[[22m: Transform failed with 1 error:
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6541621Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6542031Z ^[[31m[PARSE_ERROR] ^[[0mExpected `,` or `)` but found `Identifier`
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6542682Z  - `,` or `)` expected in packages/core/src/domain/plugins.ts at 10717..10723
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6543357Z  - Opened here in packages/core/src/domain/plugins.ts at 10485..10486
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6543870Z ^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6544186Z   Plugin: ^[[35mvite:oxc^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6545057Z   File: ^[[36m/home/runner/work/motion5/motion5/packages/core/src/domain/plugins.ts^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6546140Z ^[[90m ^[[2m❯^[[22m transformWithOxc node_modules/vite/dist/node/chunks/node.js:^[[2m4097:19^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6547385Z ^[[90m ^[[2m❯^[[22m TransformPluginContext.transform node_modules/vite/dist/node/chunks/node.js:^[[2m4168:26^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6548718Z ^[[90m ^[[2m❯^[[22m EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/node.js:^[[2m30851:51^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6549937Z ^[[90m ^[[2m❯^[[22m loadAndTransform node_modules/vite/dist/node/chunks/node.js:^[[2m20619:26^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6550434Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6550784Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6551045Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6551079Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6551698Z ^[[2m Test Files ^[[22m ^[[1m^[[31m6 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m12 passed^[[39m^[[22m^[[90m (18)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6552524Z ^[[2m      Tests ^[[22m ^[[1m^[[32m30 passed^[[39m^[[22m^[[90m (30)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6553078Z ^[[2m   Start at ^[[22m 15:36:53
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6553938Z ^[[2m   Duration ^[[22m 1.26s^[[2m (transform 375ms, setup 0ms, import 580ms, tests 88ms, environment 2ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.6554616Z 
+integration (node 24)	Run npm run test:integration	2026-08-13T15:36:54.7012250Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	﻿2026-08-13T15:36:54.1491785Z ##[group]Run npx vitest run packages/core/test/integration/end-to-end.test.ts
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:54.1492401Z ^[[36;1mnpx vitest run packages/core/test/integration/end-to-end.test.ts^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:54.1542746Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:54.1543030Z env:
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:54.1543248Z   NODE_VERSION: 24
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:54.1543469Z ##[endgroup]
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:54.8555554Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:54.8559828Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:54.8560484Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1590871Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1620791Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1621729Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Suites 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1622429Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1625841Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m [ packages/core/test/integration/end-to-end.test.ts ]^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1631639Z ^[[31m^[[1mError^[[22m: Transform failed with 1 error:
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1632077Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1632623Z ^[[31m[PARSE_ERROR] ^[[0mExpected `,` or `)` but found `Identifier`
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1633523Z  - `,` or `)` expected in packages/core/src/domain/plugins.ts at 10717..10723
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1634427Z  - Opened here in packages/core/src/domain/plugins.ts at 10485..10486
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1635090Z ^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1635966Z   Plugin: ^[[35mvite:oxc^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1637005Z   File: ^[[36m/home/runner/work/motion5/motion5/packages/core/src/domain/plugins.ts^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1638678Z ^[[90m ^[[2m❯^[[22m transformWithOxc node_modules/vite/dist/node/chunks/node.js:^[[2m4097:19^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1640460Z ^[[90m ^[[2m❯^[[22m TransformPluginContext.transform node_modules/vite/dist/node/chunks/node.js:^[[2m4168:26^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1642446Z ^[[90m ^[[2m❯^[[22m EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/node.js:^[[2m30851:51^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1643373Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1644392Z ^[[90m ^[[2m❯^[[22m loadAndTransform node_modules/vite/dist/node/chunks/node.js:^[[2m20619:26^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1645443Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1646243Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[90m (1)^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1647015Z ^[[2m      Tests ^[[22m ^[[2mno tests^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1648012Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1648649Z ^[[2m   Start at ^[[22m 15:36:54
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1649092Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1649928Z ^[[2m   Duration ^[[22m 290ms^[[2m (transform 113ms, setup 0ms, import 0ms, tests 0ms, environment 0ms)^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1650747Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:36:55.1955097Z ##[error]Process completed with exit code 1.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-08-13T15:36:47.5736388Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:47.5736914Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:47.5788035Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:47.5788468Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:47.5788755Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:47.5789074Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7156816Z ##[error]packages/core/src/domain/plugins.ts(51,1574): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7167114Z ##[error]packages/core/src/domain/plugins.ts(51,1594): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7169092Z ##[error]packages/core/src/domain/plugins.ts(51,1603): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7171132Z ##[error]packages/core/src/domain/plugins.ts(51,1619): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7172913Z ##[error]packages/core/src/domain/plugins.ts(51,1627): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7174686Z ##[error]packages/core/src/domain/plugins.ts(51,1632): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7176599Z ##[error]packages/core/src/domain/plugins.ts(51,1636): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7178496Z ##[error]packages/core/src/domain/plugins.ts(51,1645): error TS1003: Identifier expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7180245Z ##[error]packages/core/src/domain/plugins.ts(51,1757): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7182339Z ##[error]packages/core/src/domain/plugins.ts(51,1779): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7184127Z ##[error]packages/core/src/domain/plugins.ts(51,1788): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7185915Z ##[error]packages/core/src/domain/plugins.ts(51,1804): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7187644Z ##[error]packages/core/src/domain/plugins.ts(51,1812): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7189454Z ##[error]packages/core/src/domain/plugins.ts(51,1817): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7191456Z ##[error]packages/core/src/domain/plugins.ts(51,1823): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7193377Z ##[error]packages/core/src/domain/plugins.ts(51,1834): error TS1003: Identifier expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7195395Z ##[error]packages/core/src/domain/plugins.ts(52,240): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7197228Z ##[error]packages/core/src/domain/plugins.ts(52,241): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7199033Z ##[error]packages/core/src/domain/plugins.ts(52,249): error TS1005: ']' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7200991Z ##[error]packages/core/src/domain/plugins.ts(52,256): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7202825Z ##[error]packages/core/src/domain/plugins.ts(52,497): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7204640Z ##[error]packages/core/src/domain/plugins.ts(52,504): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7206519Z ##[error]packages/core/src/domain/plugins.ts(52,514): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7208536Z ##[error]packages/core/src/domain/plugins.ts(52,517): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7210348Z ##[error]packages/core/src/domain/plugins.ts(52,527): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7212324Z ##[error]packages/core/src/domain/plugins.ts(52,532): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7214115Z ##[error]packages/core/src/domain/plugins.ts(52,537): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7215940Z ##[error]packages/core/src/domain/plugins.ts(52,542): error TS1003: Identifier expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7217747Z ##[error]packages/core/src/domain/plugins.ts(52,693): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7219461Z ##[error]packages/core/src/domain/plugins.ts(52,700): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7221345Z ##[error]packages/core/src/domain/plugins.ts(52,710): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7223104Z ##[error]packages/core/src/domain/plugins.ts(52,713): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7224846Z ##[error]packages/core/src/domain/plugins.ts(52,717): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7226658Z ##[error]packages/core/src/domain/plugins.ts(52,728): error TS1003: Identifier expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7228881Z ##[error]packages/core/src/domain/plugins.ts(53,502): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7231232Z ##[error]packages/core/src/domain/plugins.ts(53,503): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7233039Z ##[error]packages/core/src/domain/plugins.ts(53,511): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7234810Z ##[error]packages/core/src/domain/plugins.ts(53,520): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7236588Z ##[error]packages/core/src/domain/plugins.ts(53,523): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7238370Z ##[error]packages/core/src/domain/plugins.ts(53,534): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7240174Z ##[error]packages/core/src/domain/plugins.ts(53,541): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7242183Z ##[error]packages/core/src/domain/plugins.ts(53,548): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7243982Z ##[error]packages/core/src/domain/plugins.ts(53,557): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7245781Z ##[error]packages/core/src/domain/plugins.ts(53,561): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7247638Z ##[error]packages/core/src/domain/plugins.ts(53,570): error TS1003: Identifier expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7249468Z ##[error]packages/core/src/domain/plugins.ts(53,1014): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7251394Z ##[error]packages/core/src/domain/plugins.ts(53,1015): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7253182Z ##[error]packages/core/src/domain/plugins.ts(53,1023): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7254971Z ##[error]packages/core/src/domain/plugins.ts(53,1035): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7256729Z ##[error]packages/core/src/domain/plugins.ts(53,1043): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7258478Z ##[error]packages/core/src/domain/plugins.ts(53,1054): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7260228Z ##[error]packages/core/src/domain/plugins.ts(53,1058): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7262210Z ##[error]packages/core/src/domain/plugins.ts(53,1075): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7264040Z ##[error]packages/core/src/domain/plugins.ts(53,1080): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7265893Z ##[error]packages/core/src/domain/plugins.ts(53,1086): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7267705Z ##[error]packages/core/src/domain/plugins.ts(53,1093): error TS1005: ',' expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7269576Z ##[error]packages/core/src/domain/plugins.ts(53,1105): error TS1003: Identifier expected.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7271645Z ##[error]packages/core/src/domain/plugins.ts(56,1): error TS1160: Unterminated template literal.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T15:36:49.7515248Z ##[error]Process completed with exit code 2.
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T15:36:47.3600696Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:47.3601086Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:47.3648028Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:47.3648307Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:47.3648510Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:47.3648998Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:47.4863151Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:47.4864005Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:47.4865045Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:47.4865536Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3479433Z ##[error]packages/core/src/domain/plugins.ts(51,1574): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3490530Z ##[error]packages/core/src/domain/plugins.ts(51,1594): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3492739Z ##[error]packages/core/src/domain/plugins.ts(51,1603): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3494816Z ##[error]packages/core/src/domain/plugins.ts(51,1619): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3496914Z ##[error]packages/core/src/domain/plugins.ts(51,1627): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3499117Z ##[error]packages/core/src/domain/plugins.ts(51,1632): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3501094Z ##[error]packages/core/src/domain/plugins.ts(51,1636): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3503181Z ##[error]packages/core/src/domain/plugins.ts(51,1645): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3505269Z ##[error]packages/core/src/domain/plugins.ts(51,1757): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3507340Z ##[error]packages/core/src/domain/plugins.ts(51,1779): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3509608Z ##[error]packages/core/src/domain/plugins.ts(51,1788): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3511682Z ##[error]packages/core/src/domain/plugins.ts(51,1804): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3513791Z ##[error]packages/core/src/domain/plugins.ts(51,1812): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3515860Z ##[error]packages/core/src/domain/plugins.ts(51,1817): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3517928Z ##[error]packages/core/src/domain/plugins.ts(51,1823): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3520364Z ##[error]packages/core/src/domain/plugins.ts(51,1834): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3522510Z ##[error]packages/core/src/domain/plugins.ts(52,240): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3524556Z ##[error]packages/core/src/domain/plugins.ts(52,241): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3526591Z ##[error]packages/core/src/domain/plugins.ts(52,249): error TS1005: ']' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3528667Z ##[error]packages/core/src/domain/plugins.ts(52,256): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3531071Z ##[error]packages/core/src/domain/plugins.ts(52,497): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3533074Z ##[error]packages/core/src/domain/plugins.ts(52,504): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3535139Z ##[error]packages/core/src/domain/plugins.ts(52,514): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3537223Z ##[error]packages/core/src/domain/plugins.ts(52,517): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3539517Z ##[error]packages/core/src/domain/plugins.ts(52,527): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3541638Z ##[error]packages/core/src/domain/plugins.ts(52,532): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3543588Z ##[error]packages/core/src/domain/plugins.ts(52,537): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3545605Z ##[error]packages/core/src/domain/plugins.ts(52,542): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3547878Z ##[error]packages/core/src/domain/plugins.ts(52,693): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3550284Z ##[error]packages/core/src/domain/plugins.ts(52,700): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3552584Z ##[error]packages/core/src/domain/plugins.ts(52,710): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3554624Z ##[error]packages/core/src/domain/plugins.ts(52,713): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3556675Z ##[error]packages/core/src/domain/plugins.ts(52,717): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3559748Z ##[error]packages/core/src/domain/plugins.ts(52,728): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3562199Z ##[error]packages/core/src/domain/plugins.ts(53,502): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3564198Z ##[error]packages/core/src/domain/plugins.ts(53,503): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3566189Z ##[error]packages/core/src/domain/plugins.ts(53,511): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3568175Z ##[error]packages/core/src/domain/plugins.ts(53,520): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3570411Z ##[error]packages/core/src/domain/plugins.ts(53,523): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3572342Z ##[error]packages/core/src/domain/plugins.ts(53,534): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3574301Z ##[error]packages/core/src/domain/plugins.ts(53,541): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3576249Z ##[error]packages/core/src/domain/plugins.ts(53,548): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3578216Z ##[error]packages/core/src/domain/plugins.ts(53,557): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3580427Z ##[error]packages/core/src/domain/plugins.ts(53,561): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3582483Z ##[error]packages/core/src/domain/plugins.ts(53,570): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3584590Z ##[error]packages/core/src/domain/plugins.ts(53,1014): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3586706Z ##[error]packages/core/src/domain/plugins.ts(53,1015): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3588899Z ##[error]packages/core/src/domain/plugins.ts(53,1023): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3590946Z ##[error]packages/core/src/domain/plugins.ts(53,1035): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3592970Z ##[error]packages/core/src/domain/plugins.ts(53,1043): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3594987Z ##[error]packages/core/src/domain/plugins.ts(53,1054): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3597034Z ##[error]packages/core/src/domain/plugins.ts(53,1058): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3599436Z ##[error]packages/core/src/domain/plugins.ts(53,1075): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3601484Z ##[error]packages/core/src/domain/plugins.ts(53,1080): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3603501Z ##[error]packages/core/src/domain/plugins.ts(53,1086): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3605475Z ##[error]packages/core/src/domain/plugins.ts(53,1093): error TS1005: ',' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3607542Z ##[error]packages/core/src/domain/plugins.ts(53,1105): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3609983Z ##[error]packages/core/src/domain/plugins.ts(56,1): error TS1160: Unterminated template literal.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:36:48.3745330Z ##[error]Process completed with exit code 2.
