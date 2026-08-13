@@ -1,0 +1,420 @@
+quality (node 24)	Format check	﻿2026-08-13T02:37:05.5734449Z ##[group]Run npm run format:check
+quality (node 24)	Format check	2026-08-13T02:37:05.5734804Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Format check	2026-08-13T02:37:05.5781155Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Format check	2026-08-13T02:37:05.5781453Z ##[endgroup]
+quality (node 24)	Format check	2026-08-13T02:37:05.6865634Z 
+quality (node 24)	Format check	2026-08-13T02:37:05.6866594Z > motion5@0.0.0 format:check
+quality (node 24)	Format check	2026-08-13T02:37:05.6867091Z > prettier . --check
+quality (node 24)	Format check	2026-08-13T02:37:05.6867291Z 
+quality (node 24)	Format check	2026-08-13T02:37:05.8033868Z Checking formatting...
+quality (node 24)	Format check	2026-08-13T02:37:05.9647778Z [^[[31merror^[[39m] .github/workflows/recovery-audit.yml: SyntaxError: All collection items must start at the same column (1:1)
+quality (node 24)	Format check	2026-08-13T02:37:05.9649932Z [^[[31merror^[[39m] ^[[0m^[[31m^[[1m>^[[22m^[[39m^[[90m  1 |^[[39m name^[[33m:^[[39m ^[[33mRecovery^[[39m audit
+quality (node 24)	Format check	2026-08-13T02:37:05.9654594Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9658140Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  2 |^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9660318Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9661919Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  3 |^[[39m on^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9663240Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9664673Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  4 |^[[39m   workflow_dispatch^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9666340Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9668129Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  5 |^[[39m     inputs^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9669612Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9671075Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  6 |^[[39m       ref^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9672468Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9674518Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  7 |^[[39m         description^[[33m:^[[39m ^[[33mBranch^[[39m^[[33m,^[[39m tag^[[33m,^[[39m or commit to audit
+quality (node 24)	Format check	2026-08-13T02:37:05.9676569Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9678200Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  8 |^[[39m         required^[[33m:^[[39m ^[[36mtrue^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9679658Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9681191Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  9 |^[[39m         ^[[36mdefault^[[39m^[[33m:^[[39m main
+quality (node 24)	Format check	2026-08-13T02:37:05.9682613Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9684017Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  10 |^[[39m         type^[[33m:^[[39m string
+quality (node 24)	Format check	2026-08-13T02:37:05.9685426Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9687242Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  11 |^[[39m       base^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9688646Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9690573Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  12 |^[[39m         description^[[33m:^[[39m ^[[33mBase^[[39m ^[[36mfor^[[39m failing^[[33m-^[[39mfirst comparison
+quality (node 24)	Format check	2026-08-13T02:37:05.9692288Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9693490Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  13 |^[[39m         required^[[33m:^[[39m ^[[36mfalse^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9694246Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9695053Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  14 |^[[39m         ^[[36mdefault^[[39m^[[33m:^[[39m ^[[32m''^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9696238Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9697004Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  15 |^[[39m         type^[[33m:^[[39m string
+quality (node 24)	Format check	2026-08-13T02:37:05.9697708Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9698475Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  16 |^[[39m       failing_first_exception^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9699638Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9700752Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  17 |^[[39m         description^[[33m:^[[39m ^[[33mDocumented^[[39m reason ^[[36mthis^[[39m ref adds no ^[[36mnew^[[39m behavioral test
+quality (node 24)	Format check	2026-08-13T02:37:05.9701720Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9702469Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  18 |^[[39m         required^[[33m:^[[39m ^[[36mfalse^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9703167Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9703929Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  19 |^[[39m         ^[[36mdefault^[[39m^[[33m:^[[39m ^[[32m''^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9704620Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9705304Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  20 |^[[39m         type^[[33m:^[[39m string
+quality (node 24)	Format check	2026-08-13T02:37:05.9706781Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9707804Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  21 |^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9708784Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9710078Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  22 |^[[39m permissions^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9711098Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9712159Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  23 |^[[39m   contents^[[33m:^[[39m read
+quality (node 24)	Format check	2026-08-13T02:37:05.9713150Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9714000Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  24 |^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9714777Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9715882Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  25 |^[[39m env^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9716759Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9717448Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  26 |^[[39m   ^[[33mNODE_VERSION^[[39m^[[33m:^[[39m ^[[35m24^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9718026Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9718461Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  27 |^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9718899Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9719403Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  28 |^[[39m jobs^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9719882Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9720394Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  29 |^[[39m   contract^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9720884Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9721459Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  30 |^[[39m     name^[[33m:^[[39m contract surfaces
+quality (node 24)	Format check	2026-08-13T02:37:05.9721986Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9722627Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  31 |^[[39m     runs^[[33m-^[[39mon^[[33m:^[[39m ubuntu^[[33m-^[[39mlatest
+quality (node 24)	Format check	2026-08-13T02:37:05.9723197Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9723824Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  32 |^[[39m     timeout^[[33m-^[[39mminutes^[[33m:^[[39m ^[[35m25^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9724392Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9724918Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  33 |^[[39m     steps^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9725475Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9726599Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  34 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39mcheckout^[[33m@^[[39mv4
+quality (node 24)	Format check	2026-08-13T02:37:05.9727218Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9727758Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  35 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9728266Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9729156Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  36 |^[[39m           ref^[[33m:^[[39m ${{ inputs^[[33m.^[[39mref }}
+quality (node 24)	Format check	2026-08-13T02:37:05.9730100Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9731447Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  37 |^[[39m           fetch^[[33m-^[[39mdepth^[[33m:^[[39m ^[[35m0^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9732573Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9733979Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  38 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39msetup^[[33m-^[[39mnode^[[33m@^[[39mv4
+quality (node 24)	Format check	2026-08-13T02:37:05.9735243Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9736610Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  39 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9737655Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9739152Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  40 |^[[39m           node^[[33m-^[[39mversion^[[33m:^[[39m ${{ env^[[33m.^[[39m^[[33mNODE_VERSION^[[39m }}
+quality (node 24)	Format check	2026-08-13T02:37:05.9740433Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9741445Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  41 |^[[39m           cache^[[33m:^[[39m npm
+quality (node 24)	Format check	2026-08-13T02:37:05.9742648Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9744444Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  42 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m npm ci ^[[33m--^[[39mignore^[[33m-^[[39mscripts ^[[33m--^[[39mno^[[33m-^[[39maudit ^[[33m--^[[39mno^[[33m-^[[39mfund
+quality (node 24)	Format check	2026-08-13T02:37:05.9746232Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9747529Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  43 |^[[39m       ^[[33m-^[[39m name^[[33m:^[[39m ^[[33mRun^[[39m contract surfaces
+quality (node 24)	Format check	2026-08-13T02:37:05.9748681Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9749742Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  44 |^[[39m         run^[[33m:^[[39m ^[[33m|^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9750725Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9751883Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  45 |^[[39m           ^[[36mset^[[39m ^[[33m-^[[39muo pipefail
+quality (node 24)	Format check	2026-08-13T02:37:05.9752902Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9754286Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  46 |^[[39m           mkdir ^[[33m-^[[39mp audit^[[33m-^[[39mlogs audit^[[33m-^[[39mfragments
+quality (node 24)	Format check	2026-08-13T02:37:05.9755483Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9756848Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  47 |^[[39m           failed^[[33m=^[[39m^[[35m0^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9757859Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9763274Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  48 |^[[39m           run_suite() { name^[[33m=^[[39m^[[32m"$1"^[[39m^[[33m;^[[39m shift^[[33m;^[[39m ^[[36mif^[[39m ^[[32m"$@"^[[39m ^[[33m>^[[39m ^[[32m"audit-logs/$name.log"^[[39m ^[[35m2^[[39m^[[33m>^[[39m^[[33m&^[[39m^[[35m1^[[39m^[[33m;^[[39m then echo ^[[32m"- $name: pass"^[[39m ^[[33m>>^[[39m audit^[[33m-^[[39mfragments^[[33m/^[[39m^[[35m10^[[39m^[[33m-^[[39mcontract^[[33m.^[[39mmd^[[33m;^[[39m ^[[36melse^[[39m echo ^[[32m"- $name: FAIL"^[[39m ^[[33m>>^[[39m audit^[[33m-^[[39mfragments^[[33m/^[[39m^[[35m10^[[39m^[[33m-^[[39mcontract^[[33m.^[[39mmd^[[33m;^[[39m failed^[[33m=^[[39m^[[35m1^[[39m^[[33m;^[[39m fi^[[33m;^[[39m }
+quality (node 24)	Format check	2026-08-13T02:37:05.9767185Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9769096Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  49 |^[[39m           echo ^[[32m"## contract"^[[39m ^[[33m>^[[39m audit^[[33m-^[[39mfragments^[[33m/^[[39m^[[35m10^[[39m^[[33m-^[[39mcontract^[[33m.^[[39mmd
+quality (node 24)	Format check	2026-08-13T02:37:05.9770583Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9772003Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  50 |^[[39m           run_suite gsap^[[33m-^[[39mcontract npm run test^[[33m:^[[39mcontract
+quality (node 24)	Format check	2026-08-13T02:37:05.9773209Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9775925Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  51 |^[[39m           run_suite dom^[[33m-^[[39mcontract npx vitest run packages^[[33m/^[[39mcore^[[33m/^[[39mtest^[[33m/^[[39mintegration^[[33m/^[[39mdom^[[33m-^[[39mpatch^[[33m-^[[39mapply^[[33m.^[[39mtest^[[33m.^[[39mts
+quality (node 24)	Format check	2026-08-13T02:37:05.9778148Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9779823Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  52 |^[[39m           run_suite react^[[33m-^[[39mlifecycle npx vitest run packages^[[33m/^[[39mreact^[[33m/^[[39mtest
+quality (node 24)	Format check	2026-08-13T02:37:05.9781180Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9782503Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  53 |^[[39m           run_suite boundaries npm run test^[[33m:^[[39mboundaries
+quality (node 24)	Format check	2026-08-13T02:37:05.9783650Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9786340Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  54 |^[[39m           run_suite end^[[33m-^[[39mto^[[33m-^[[39mend npx vitest run packages^[[33m/^[[39mcore^[[33m/^[[39mtest^[[33m/^[[39mintegration^[[33m/^[[39mend^[[33m-^[[39mto^[[33m-^[[39mend^[[33m.^[[39mtest^[[33m.^[[39mts
+quality (node 24)	Format check	2026-08-13T02:37:05.9788255Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9789765Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  55 |^[[39m           echo ^[[32m"CONTRACT_FAILED=$failed"^[[39m ^[[33m>>^[[39m ^[[32m"$GITHUB_ENV"^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9791314Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9792517Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  56 |^[[39m       ^[[33m-^[[39m ^[[36mif^[[39m^[[33m:^[[39m always()
+quality (node 24)	Format check	2026-08-13T02:37:05.9793563Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9795018Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  57 |^[[39m         uses^[[33m:^[[39m actions^[[33m/^[[39mupload^[[33m-^[[39martifact^[[33m@^[[39mv4
+quality (node 24)	Format check	2026-08-13T02:37:05.9796472Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9797529Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  58 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9798523Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9800227Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  59 |^[[39m           name^[[33m:^[[39m recovery^[[33m-^[[39maudit^[[33m-^[[39mcontract^[[33m-^[[39m${{ github^[[33m.^[[39mrun_id }}
+quality (node 24)	Format check	2026-08-13T02:37:05.9801633Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9802723Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  60 |^[[39m           path^[[33m:^[[39m ^[[33m|^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9803725Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9804903Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  61 |^[[39m             audit^[[33m-^[[39mfragments^[[33m/^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9806313Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9807453Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  62 |^[[39m             audit^[[33m-^[[39mlogs^[[33m/^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9808486Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9809940Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  63 |^[[39m           ^[[36mif^[[39m^[[33m-^[[39mno^[[33m-^[[39mfiles^[[33m-^[[39mfound^[[33m:^[[39m warn
+quality (node 24)	Format check	2026-08-13T02:37:05.9811207Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9812404Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  64 |^[[39m       ^[[33m-^[[39m ^[[36mif^[[39m^[[33m:^[[39m always()
+quality (node 24)	Format check	2026-08-13T02:37:05.9813452Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9815061Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  65 |^[[39m         run^[[33m:^[[39m test ^[[32m"${CONTRACT_FAILED:-1}"^[[39m ^[[33m=^[[39m ^[[35m0^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9817066Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9817726Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  66 |^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9818298Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9818975Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  67 |^[[39m   mutation^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9819515Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9820441Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  68 |^[[39m     name^[[33m:^[[39m mutation baseline
+quality (node 24)	Format check	2026-08-13T02:37:05.9820987Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9821659Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  69 |^[[39m     runs^[[33m-^[[39mon^[[33m:^[[39m ubuntu^[[33m-^[[39mlatest
+quality (node 24)	Format check	2026-08-13T02:37:05.9822240Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9822904Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  70 |^[[39m     timeout^[[33m-^[[39mminutes^[[33m:^[[39m ^[[35m60^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9823478Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9823996Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  71 |^[[39m     steps^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9824491Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9825213Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  72 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39mcheckout^[[33m@^[[39mv4
+quality (node 24)	Format check	2026-08-13T02:37:05.9826410Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9826985Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  73 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9827738Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9828377Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  74 |^[[39m           ref^[[33m:^[[39m ${{ inputs^[[33m.^[[39mref }}
+quality (node 24)	Format check	2026-08-13T02:37:05.9828935Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9829564Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  75 |^[[39m           fetch^[[33m-^[[39mdepth^[[33m:^[[39m ^[[35m0^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9830107Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9830862Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  76 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39msetup^[[33m-^[[39mnode^[[33m@^[[39mv4
+quality (node 24)	Format check	2026-08-13T02:37:05.9831490Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9832038Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  77 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9832558Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9833332Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  78 |^[[39m           node^[[33m-^[[39mversion^[[33m:^[[39m ${{ env^[[33m.^[[39m^[[33mNODE_VERSION^[[39m }}
+quality (node 24)	Format check	2026-08-13T02:37:05.9833977Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9834508Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  79 |^[[39m           cache^[[33m:^[[39m npm
+quality (node 24)	Format check	2026-08-13T02:37:05.9835007Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9836308Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  80 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m npm ci ^[[33m--^[[39mignore^[[33m-^[[39mscripts ^[[33m--^[[39mno^[[33m-^[[39maudit ^[[33m--^[[39mno^[[33m-^[[39mfund
+quality (node 24)	Format check	2026-08-13T02:37:05.9837141Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9837926Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  81 |^[[39m       ^[[33m-^[[39m name^[[33m:^[[39m ^[[33mRun^[[39m ^[[33mStryker^[[39m and verify its score
+quality (node 24)	Format check	2026-08-13T02:37:05.9838580Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9839145Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  82 |^[[39m         run^[[33m:^[[39m ^[[33m|^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9839659Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9840263Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  83 |^[[39m           ^[[36mset^[[39m ^[[33m-^[[39muo pipefail
+quality (node 24)	Format check	2026-08-13T02:37:05.9840800Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9841512Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  84 |^[[39m           mkdir ^[[33m-^[[39mp audit^[[33m-^[[39mlogs audit^[[33m-^[[39mfragments
+quality (node 24)	Format check	2026-08-13T02:37:05.9842119Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9842695Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  85 |^[[39m           failed^[[33m=^[[39m^[[35m0^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9843218Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9846124Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  86 |^[[39m           ^[[36mif^[[39m npx stryker run ^[[33m>^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39mmutation^[[33m.^[[39mlog ^[[35m2^[[39m^[[33m>^[[39m^[[33m&^[[39m^[[35m1^[[39m^[[33m;^[[39m then echo ^[[32m"- stryker run: pass"^[[39m ^[[33m>^[[39m audit^[[33m-^[[39mfragments^[[33m/^[[39m^[[35m20^[[39m^[[33m-^[[39mmutation^[[33m.^[[39mmd^[[33m;^[[39m ^[[36melse^[[39m echo ^[[32m"- stryker run: FAIL"^[[39m ^[[33m>^[[39m audit^[[33m-^[[39mfragments^[[33m/^[[39m^[[35m20^[[39m^[[33m-^[[39mmutation^[[33m.^[[39mmd^[[33m;^[[39m failed^[[33m=^[[39m^[[35m1^[[39m^[[33m;^[[39m fi
+quality (node 24)	Format check	2026-08-13T02:37:05.9847922Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9848826Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  87 |^[[39m           ^[[36mif^[[39m test ^[[33m-^[[39me reports^[[33m/^[[39mmutation^[[33m/^[[39mmutation^[[33m.^[[39mjson^[[33m;^[[39m then
+quality (node 24)	Format check	2026-08-13T02:37:05.9849563Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9850784Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  88 |^[[39m             node ^[[33m--^[[39minput^[[33m-^[[39mtype^[[33m=^[[39mmodule ^[[33m>>^[[39m audit^[[33m-^[[39mfragments^[[33m/^[[39m^[[35m20^[[39m^[[33m-^[[39mmutation^[[33m.^[[39mmd ^[[33m<<^[[39m^[[32m'NODE'^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9851856Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9852675Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  89 |^[[39m           ^[[36mimport^[[39m { readFile } ^[[36mfrom^[[39m ^[[32m"node:fs/promises"^[[39m^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9853344Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9854558Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  90 |^[[39m           ^[[36mconst^[[39m report ^[[33m=^[[39m ^[[33mJSON^[[39m^[[33m.^[[39mparse(^[[36mawait^[[39m readFile(^[[32m"reports/mutation/mutation.json"^[[39m^[[33m,^[[39m ^[[32m"utf8"^[[39m))^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9855777Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9857222Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  91 |^[[39m           ^[[36mconst^[[39m mutants ^[[33m=^[[39m ^[[33mObject^[[39m^[[33m.^[[39mvalues(report^[[33m.^[[39mfiles ^[[33m?^[[39m^[[33m?^[[39m {})^[[33m.^[[39mflatMap((file) ^[[33m=>^[[39m file^[[33m.^[[39mmutants ^[[33m?^[[39m^[[33m?^[[39m [])^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9858268Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9859519Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  92 |^[[39m           ^[[36mconst^[[39m counts ^[[33m=^[[39m ^[[33mObject^[[39m^[[33m.^[[39mgroupBy(mutants^[[33m,^[[39m (mutant) ^[[33m=>^[[39m mutant^[[33m.^[[39mstatus ^[[33m?^[[39m^[[33m?^[[39m ^[[32m"Unknown"^[[39m)^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9860471Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9861446Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  93 |^[[39m           ^[[36mconst^[[39m count ^[[33m=^[[39m (status) ^[[33m=>^[[39m (counts[status] ^[[33m?^[[39m^[[33m?^[[39m [])^[[33m.^[[39mlength^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9862216Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9863727Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  94 |^[[39m           ^[[36mconst^[[39m killed ^[[33m=^[[39m count(^[[32m"Killed"^[[39m)^[[33m,^[[39m survived ^[[33m=^[[39m count(^[[32m"Survived"^[[39m)^[[33m,^[[39m timeout ^[[33m=^[[39m count(^[[32m"Timeout"^[[39m)^[[33m,^[[39m noCoverage ^[[33m=^[[39m count(^[[32m"NoCoverage"^[[39m)^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9864851Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9865869Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  95 |^[[39m           ^[[36mconst^[[39m denominator ^[[33m=^[[39m killed ^[[33m+^[[39m survived ^[[33m+^[[39m timeout^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9866603Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9867811Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  96 |^[[39m           ^[[36mconst^[[39m derived ^[[33m=^[[39m denominator ^[[33m?^[[39m (killed ^[[33m/^[[39m denominator) ^[[33m*^[[39m ^[[35m100^[[39m ^[[33m:^[[39m ^[[33mNumber^[[39m^[[33m.^[[39m^[[33mNaN^[[39m^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9868728Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9870166Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  97 |^[[39m           ^[[36mconst^[[39m reported ^[[33m=^[[39m ^[[33mNumber^[[39m(report^[[33m.^[[39mmetrics^[[33m?^[[39m^[[33m.^[[39mmutationScore ^[[33m?^[[39m^[[33m?^[[39m report^[[33m.^[[39mmutationScore)^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9871191Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9872607Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  98 |^[[39m           ^[[36mconst^[[39m score ^[[33m=^[[39m ^[[33mNumber^[[39m^[[33m.^[[39misFinite(reported) ^[[33m?^[[39m (reported ^[[33m<=^[[39m ^[[35m1^[[39m ^[[33m?^[[39m reported ^[[33m*^[[39m ^[[35m100^[[39m ^[[33m:^[[39m reported) ^[[33m:^[[39m derived^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9873661Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9874807Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  99 |^[[39m           ^[[36mconst^[[39m threshold ^[[33m=^[[39m ^[[33mNumber^[[39m(report^[[33m.^[[39mthresholds^[[33m?^[[39m^[[33m.^[[39m^[[36mbreak^[[39m ^[[33m?^[[39m^[[33m?^[[39m ^[[35m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9876045Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9877200Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 100 |^[[39m           console^[[33m.^[[39mlog(^[[32m`- mutation counts: killed=${killed}, survived=${survived}, timeout=${timeout}, noCoverage=${noCoverage}`^[[39m)^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9878250Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9879273Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 101 |^[[39m           console^[[33m.^[[39mlog(^[[32m`- mutation score: ${Number.isFinite(score) ? score.toFixed(2) : "unavailable"}%`^[[39m)^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9880110Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9880986Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 102 |^[[39m           console^[[33m.^[[39mlog(^[[32m`- mutation threshold: ${threshold.toFixed(2)}%`^[[39m)^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9881686Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9882869Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 103 |^[[39m           ^[[36mif^[[39m (^[[33m!^[[39m^[[33mNumber^[[39m^[[33m.^[[39misFinite(score) ^[[33m||^[[39m score ^[[33m<^[[39m threshold) process^[[33m.^[[39mexitCode ^[[33m=^[[39m ^[[35m1^[[39m^[[33m;^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9883772Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9884289Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 104 |^[[39m           ^[[33mNODE^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9884783Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9885862Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 105 |^[[39m             ^[[36mif^[[39m test ^[[32m"$?"^[[39m ^[[33m-^[[39mne ^[[35m0^[[39m^[[33m;^[[39m then failed^[[33m=^[[39m^[[35m1^[[39m^[[33m;^[[39m fi
+quality (node 24)	Format check	2026-08-13T02:37:05.9886601Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9887119Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 106 |^[[39m           ^[[36melse^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9887605Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9888656Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 107 |^[[39m             echo ^[[32m"- mutation report: MISSING"^[[39m ^[[33m>>^[[39m audit^[[33m-^[[39mfragments^[[33m/^[[39m^[[35m20^[[39m^[[33m-^[[39mmutation^[[33m.^[[39mmd
+quality (node 24)	Format check	2026-08-13T02:37:05.9889481Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9890050Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 108 |^[[39m             failed^[[33m=^[[39m^[[35m1^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9890573Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9891045Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 109 |^[[39m           fi
+quality (node 24)	Format check	2026-08-13T02:37:05.9891504Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9892277Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 110 |^[[39m           echo ^[[32m"MUTATION_FAILED=$failed"^[[39m ^[[33m>>^[[39m ^[[32m"$GITHUB_ENV"^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9892935Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9893693Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 111 |^[[39m       ^[[33m-^[[39m ^[[36mif^[[39m^[[33m:^[[39m always()
+quality (node 24)	Format check	2026-08-13T02:37:05.9894236Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9894977Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 112 |^[[39m         uses^[[33m:^[[39m actions^[[33m/^[[39mupload^[[33m-^[[39martifact^[[33m@^[[39mv4
+quality (node 24)	Format check	2026-08-13T02:37:05.9895937Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9896538Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 113 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9897061Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9897942Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 114 |^[[39m           name^[[33m:^[[39m recovery^[[33m-^[[39maudit^[[33m-^[[39mmutation^[[33m-^[[39m${{ github^[[33m.^[[39mrun_id }}
+quality (node 24)	Format check	2026-08-13T02:37:05.9898659Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9899231Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 115 |^[[39m           path^[[33m:^[[39m ^[[33m|^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9899767Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9900378Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 116 |^[[39m             audit^[[33m-^[[39mfragments^[[33m/^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9901106Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9901698Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 117 |^[[39m             audit^[[33m-^[[39mlogs^[[33m/^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9902236Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9902841Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 118 |^[[39m             reports^[[33m/^[[39mmutation^[[33m/^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9903389Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9904130Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 119 |^[[39m           ^[[36mif^[[39m^[[33m-^[[39mno^[[33m-^[[39mfiles^[[33m-^[[39mfound^[[33m:^[[39m warn
+quality (node 24)	Format check	2026-08-13T02:37:05.9904754Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9905391Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 120 |^[[39m       ^[[33m-^[[39m ^[[36mif^[[39m^[[33m:^[[39m always()
+quality (node 24)	Format check	2026-08-13T02:37:05.9906136Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9906913Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 121 |^[[39m         run^[[33m:^[[39m test ^[[32m"${MUTATION_FAILED:-1}"^[[39m ^[[33m=^[[39m ^[[35m0^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9907545Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9907979Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 122 |^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9908411Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9908935Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 123 |^[[39m   acceptance^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9909434Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9910011Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 124 |^[[39m     name^[[33m:^[[39m acceptance mapping
+quality (node 24)	Format check	2026-08-13T02:37:05.9910539Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9911185Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 125 |^[[39m     runs^[[33m-^[[39mon^[[33m:^[[39m ubuntu^[[33m-^[[39mlatest
+quality (node 24)	Format check	2026-08-13T02:37:05.9911756Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9912274Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 126 |^[[39m     steps^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9912754Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9913456Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 127 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39mcheckout^[[33m@^[[39mv4
+quality (node 24)	Format check	2026-08-13T02:37:05.9914058Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9914594Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 128 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9915098Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9915982Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 129 |^[[39m           ref^[[33m:^[[39m ${{ inputs^[[33m.^[[39mref }}
+quality (node 24)	Format check	2026-08-13T02:37:05.9916814Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9917567Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 130 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39msetup^[[33m-^[[39mnode^[[33m@^[[39mv4
+quality (node 24)	Format check	2026-08-13T02:37:05.9918212Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9918750Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 131 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9919257Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9920018Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 132 |^[[39m           node^[[33m-^[[39mversion^[[33m:^[[39m ${{ env^[[33m.^[[39m^[[33mNODE_VERSION^[[39m }}
+quality (node 24)	Format check	2026-08-13T02:37:05.9920659Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9921195Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 133 |^[[39m           cache^[[33m:^[[39m npm
+quality (node 24)	Format check	2026-08-13T02:37:05.9921695Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9922683Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 134 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m npm ci ^[[33m--^[[39mignore^[[33m-^[[39mscripts ^[[33m--^[[39mno^[[33m-^[[39maudit ^[[33m--^[[39mno^[[33m-^[[39mfund
+quality (node 24)	Format check	2026-08-13T02:37:05.9923598Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9924450Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 135 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m node scripts^[[33m/^[[39macceptance^[[33m-^[[39mscan^[[33m.^[[39mmjs
+quality (node 24)	Format check	2026-08-13T02:37:05.9925141Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9925832Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 136 |^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9926393Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9926970Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 137 |^[[39m   failing^[[33m-^[[39mfirst^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9927505Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9928140Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 138 |^[[39m     name^[[33m:^[[39m failing^[[33m-^[[39mfirst evidence
+quality (node 24)	Format check	2026-08-13T02:37:05.9928709Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9929355Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 139 |^[[39m     runs^[[33m-^[[39mon^[[33m:^[[39m ubuntu^[[33m-^[[39mlatest
+quality (node 24)	Format check	2026-08-13T02:37:05.9930442Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9931211Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 140 |^[[39m     env^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9931721Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9932410Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 141 |^[[39m       ^[[33mAUDIT_BASE^[[39m^[[33m:^[[39m ${{ inputs^[[33m.^[[39mbase }}
+quality (node 24)	Format check	2026-08-13T02:37:05.9933001Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9933509Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 142 |^[[39m     steps^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9933993Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9934711Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 143 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39mcheckout^[[33m@^[[39mv4
+quality (node 24)	Format check	2026-08-13T02:37:05.9935312Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9936265Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 144 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9936795Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9937421Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 145 |^[[39m           ref^[[33m:^[[39m ${{ inputs^[[33m.^[[39mref }}
+quality (node 24)	Format check	2026-08-13T02:37:05.9937975Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9938596Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 146 |^[[39m           fetch^[[33m-^[[39mdepth^[[33m:^[[39m ^[[35m0^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9939249Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9940429Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 147 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39msetup^[[33m-^[[39mnode^[[33m@^[[39mv4
+quality (node 24)	Format check	2026-08-13T02:37:05.9941282Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9941833Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 148 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9942353Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9943121Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 149 |^[[39m           node^[[33m-^[[39mversion^[[33m:^[[39m ${{ env^[[33m.^[[39m^[[33mNODE_VERSION^[[39m }}
+quality (node 24)	Format check	2026-08-13T02:37:05.9943766Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9944297Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 150 |^[[39m           cache^[[33m:^[[39m npm
+quality (node 24)	Format check	2026-08-13T02:37:05.9944800Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9945824Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 151 |^[[39m       ^[[33m-^[[39m name^[[33m:^[[39m ^[[33mReplay^[[39m ^[[36mnew^[[39m tests against base and ref
+quality (node 24)	Format check	2026-08-13T02:37:05.9946536Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9947096Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 152 |^[[39m         run^[[33m:^[[39m ^[[33m|^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9947610Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9948376Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 153 |^[[39m           ^[[36mset^[[39m ^[[33m-^[[39meuo pipefail
+quality (node 24)	Format check	2026-08-13T02:37:05.9948929Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9949547Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 154 |^[[39m           mkdir ^[[33m-^[[39mp audit^[[33m-^[[39mlogs
+quality (node 24)	Format check	2026-08-13T02:37:05.9950098Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9950789Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 155 |^[[39m           ref_sha^[[33m=^[[39m$(git rev^[[33m-^[[39mparse ^[[33mHEAD^[[39m)
+quality (node 24)	Format check	2026-08-13T02:37:05.9951382Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9952319Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 156 |^[[39m           base_sha^[[33m=^[[39m${^[[33mAUDIT_BASE^[[39m^[[33m:^[[39m^[[33m+^[[39m$(git rev^[[33m-^[[39mparse ^[[32m"$AUDIT_BASE"^[[39m)}
+quality (node 24)	Format check	2026-08-13T02:37:05.9953064Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9953933Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 157 |^[[39m           base_sha^[[33m=^[[39m${base_sha^[[33m:^[[39m^[[33m-^[[39m$(git rev^[[33m-^[[39mparse ^[[33mHEAD^[[39m^[[33m^^[[39m)}
+quality (node 24)	Format check	2026-08-13T02:37:05.9954634Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9956491Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 158 |^[[39m           git diff ^[[33m--^[[39mname^[[33m-^[[39monly ^[[33m--^[[39mdiff^[[33m-^[[39mfilter^[[33m=^[[39m^[[33mAM^[[39m ^[[32m"$base_sha"^[[39m ^[[32m"$ref_sha"^[[39m ^[[33m--^[[39m ^[[32m'*.test.ts'^[[39m ^[[33m>^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39m^[[36mnew^[[39m^[[33m-^[[39mtests^[[33m.^[[39mtxt
+quality (node 24)	Format check	2026-08-13T02:37:05.9957791Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9959089Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 159 |^[[39m           test ^[[33m-^[[39ms audit^[[33m-^[[39mlogs^[[33m/^[[39m^[[36mnew^[[39m^[[33m-^[[39mtests^[[33m.^[[39mtxt
+quality (node 24)	Format check	2026-08-13T02:37:05.9959815Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9960458Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 160 |^[[39m           git checkout ^[[33m-^[[39mf ^[[32m"$base_sha"^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9961030Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9961694Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 161 |^[[39m ^[[33m<<^[[39m^[[33m<<^[[39m^[[33m<<^[[39m^[[33m<^[[39m ^[[33mHEAD^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9962267Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9962831Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 162 |^[[39m ^[[33m===^[[39m^[[33m===^[[39m^[[33m=^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9963357Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9964515Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 163 |^[[39m           ^[[33m#^[[39m ^[[33mReplay^[[39m the whole test tree^[[33m,^[[39m not only the spec files^[[33m.^[[39m ^[[33mSeams^[[39m^[[33m,^[[39m helpers^[[33m,^[[39m and fixtures ^[[36mdo^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9965958Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9966976Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 164 |^[[39m           ^[[33m#^[[39m not match ^[[32m'*.test.ts'^[[39m^[[33m,^[[39m so checking out the spec alone leaves it calling a base^[[33m-^[[39mera
+quality (node 24)	Format check	2026-08-13T02:37:05.9967759Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9968809Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 165 |^[[39m           ^[[33m#^[[39m helper^[[33m:^[[39m the base leg then reds ^[[36mwith^[[39m a ^[[33mTypeError^[[39m instead ^[[36mof^[[39m ^[[36mwith^[[39m the behavioral
+quality (node 24)	Format check	2026-08-13T02:37:05.9969641Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9970585Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 166 |^[[39m           ^[[33m#^[[39m assertion the slice exists to prove^[[33m,^[[39m which is evidence ^[[36mof^[[39m nothing^[[33m.^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9971334Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9972235Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 167 |^[[39m ^[[33m>>>^[[39m^[[33m>>>^[[39m^[[33m>^[[39m origin^[[33m/^[[39mrescue^[[33m/^[[39mrestore^[[33m-^[[39mmotionpath^[[33m-^[[39mparity
+quality (node 24)	Format check	2026-08-13T02:37:05.9973227Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9974002Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 168 |^[[39m           git checkout ^[[32m"$ref_sha"^[[39m ^[[33m--^[[39m ^[[32m'packages/*/test/*'^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9974667Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9976153Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 169 |^[[39m           xargs ^[[33m-^[[39ma audit^[[33m-^[[39mlogs^[[33m/^[[39m^[[36mnew^[[39m^[[33m-^[[39mtests^[[33m.^[[39mtxt git checkout ^[[32m"$ref_sha"^[[39m ^[[33m--^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9977324Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9978406Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 170 |^[[39m           git diff ^[[33m--^[[39mname^[[33m-^[[39monly ^[[32m"$base_sha"^[[39m ^[[33m>^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39mreplayed^[[33m-^[[39mfiles^[[33m.^[[39mtxt
+quality (node 24)	Format check	2026-08-13T02:37:05.9979251Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9980798Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 171 |^[[39m           npm ci ^[[33m--^[[39mignore^[[33m-^[[39mscripts ^[[33m--^[[39mno^[[33m-^[[39maudit ^[[33m--^[[39mno^[[33m-^[[39mfund ^[[33m>^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39mbase^[[33m-^[[39minstall^[[33m.^[[39mlog ^[[35m2^[[39m^[[33m>^[[39m^[[33m&^[[39m^[[35m1^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9981868Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9983549Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 172 |^[[39m           ^[[36mif^[[39m xargs ^[[33m-^[[39ma audit^[[33m-^[[39mlogs^[[33m/^[[39m^[[36mnew^[[39m^[[33m-^[[39mtests^[[33m.^[[39mtxt npx vitest run ^[[33m>^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39mbase^[[33m-^[[39mrun^[[33m.^[[39mlog ^[[35m2^[[39m^[[33m>^[[39m^[[33m&^[[39m^[[35m1^[[39m^[[33m;^[[39m then exit ^[[35m1^[[39m^[[33m;^[[39m fi
+quality (node 24)	Format check	2026-08-13T02:37:05.9984771Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9985429Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 173 |^[[39m           git checkout ^[[33m-^[[39mf ^[[32m"$ref_sha"^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9986171Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9987591Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 174 |^[[39m           npm ci ^[[33m--^[[39mignore^[[33m-^[[39mscripts ^[[33m--^[[39mno^[[33m-^[[39maudit ^[[33m--^[[39mno^[[33m-^[[39mfund ^[[33m>^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39mref^[[33m-^[[39minstall^[[33m.^[[39mlog ^[[35m2^[[39m^[[33m>^[[39m^[[33m&^[[39m^[[35m1^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9988647Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9990048Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 175 |^[[39m           xargs ^[[33m-^[[39ma audit^[[33m-^[[39mlogs^[[33m/^[[39m^[[36mnew^[[39m^[[33m-^[[39mtests^[[33m.^[[39mtxt npx vitest run ^[[33m>^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39mref^[[33m-^[[39mrun^[[33m.^[[39mlog ^[[35m2^[[39m^[[33m>^[[39m^[[33m&^[[39m^[[35m1^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9991283Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9991899Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 176 |^[[39m       ^[[33m-^[[39m ^[[36mif^[[39m^[[33m:^[[39m always()
+quality (node 24)	Format check	2026-08-13T02:37:05.9992443Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9993193Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 177 |^[[39m         uses^[[33m:^[[39m actions^[[33m/^[[39mupload^[[33m-^[[39martifact^[[33m@^[[39mv4
+quality (node 24)	Format check	2026-08-13T02:37:05.9993831Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9994372Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 178 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9994883Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9996121Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 179 |^[[39m           name^[[33m:^[[39m recovery^[[33m-^[[39maudit^[[33m-^[[39mfailing^[[33m-^[[39mfirst^[[33m-^[[39m${{ github^[[33m.^[[39mrun_id }}
+quality (node 24)	Format check	2026-08-13T02:37:05.9996916Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9997577Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 180 |^[[39m           path^[[33m:^[[39m audit^[[33m-^[[39mlogs^[[33m/^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9998152Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:05.9999045Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 181 |^[[39m           ^[[36mif^[[39m^[[33m-^[[39mno^[[33m-^[[39mfiles^[[33m-^[[39mfound^[[33m:^[[39m warn
+quality (node 24)	Format check	2026-08-13T02:37:05.9999672Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0000097Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 182 |^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0000527Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0001022Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 183 |^[[39m   build^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0001506Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0002075Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 184 |^[[39m     name^[[33m:^[[39m declaration build
+quality (node 24)	Format check	2026-08-13T02:37:06.0002606Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0003250Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 185 |^[[39m     runs^[[33m-^[[39mon^[[33m:^[[39m ubuntu^[[33m-^[[39mlatest
+quality (node 24)	Format check	2026-08-13T02:37:06.0003824Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0004334Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 186 |^[[39m     steps^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0004815Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0005670Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 187 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39mcheckout^[[33m@^[[39mv4
+quality (node 24)	Format check	2026-08-13T02:37:06.0006293Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0006829Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 188 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0007337Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0007949Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 189 |^[[39m           ref^[[33m:^[[39m ${{ inputs^[[33m.^[[39mref }}
+quality (node 24)	Format check	2026-08-13T02:37:06.0008496Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0009241Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 190 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39msetup^[[33m-^[[39mnode^[[33m@^[[39mv4
+quality (node 24)	Format check	2026-08-13T02:37:06.0009888Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0010419Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 191 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0010931Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0011716Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 192 |^[[39m           node^[[33m-^[[39mversion^[[33m:^[[39m ${{ env^[[33m.^[[39m^[[33mNODE_VERSION^[[39m }}
+quality (node 24)	Format check	2026-08-13T02:37:06.0012364Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0012903Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 193 |^[[39m           cache^[[33m:^[[39m npm
+quality (node 24)	Format check	2026-08-13T02:37:06.0013409Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0014575Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 194 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m npm ci ^[[33m--^[[39mignore^[[33m-^[[39mscripts ^[[33m--^[[39mno^[[33m-^[[39maudit ^[[33m--^[[39mno^[[33m-^[[39mfund
+quality (node 24)	Format check	2026-08-13T02:37:06.0015364Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0017071Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 195 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m npx tsc ^[[33m-^[[39mp tsconfig^[[33m.^[[39mjson ^[[33m--^[[39mdeclaration ^[[33m--^[[39memitDeclarationOnly ^[[33m--^[[39mnoEmit ^[[36mfalse^[[39m ^[[33m--^[[39moutDir dist^[[33m-^[[39maudit
+quality (node 24)	Format check	2026-08-13T02:37:06.0018110Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0018545Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 196 |^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0018976Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0019479Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 197 |^[[39m   report^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0019971Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0020525Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 198 |^[[39m     name^[[33m:^[[39m audit report
+quality (node 24)	Format check	2026-08-13T02:37:06.0021042Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0021842Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 199 |^[[39m     runs^[[33m-^[[39mon^[[33m:^[[39m ubuntu^[[33m-^[[39mlatest
+quality (node 24)	Format check	2026-08-13T02:37:06.0022421Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0023366Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 200 |^[[39m     needs^[[33m:^[[39m [contract^[[33m,^[[39m mutation^[[33m,^[[39m acceptance^[[33m,^[[39m failing^[[33m-^[[39mfirst^[[33m,^[[39m build]
+quality (node 24)	Format check	2026-08-13T02:37:06.0024124Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0024685Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 201 |^[[39m     ^[[36mif^[[39m^[[33m:^[[39m always()
+quality (node 24)	Format check	2026-08-13T02:37:06.0025206Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0048242Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 202 |^[[39m     steps^[[33m:^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0049150Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0050037Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 203 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m echo ^[[32m"Recovery audit completed for ${{ inputs.ref }}"^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0050750Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0051210Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 204 |^[[39m
+quality (node 24)	Format check	2026-08-13T02:37:06.0051683Z [^[[31merror^[[39m]  ^[[90m     |^[[39m ^[[31m^[[1m^^[[22m^[[39m^[[0m
+quality (node 24)	Format check	2026-08-13T02:37:08.0796112Z Error occurred when checking code style in the above file.
+quality (node 24)	Format check	2026-08-13T02:37:08.1269381Z ##[error]Process completed with exit code 2.
