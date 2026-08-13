@@ -1,0 +1,22 @@
+prettier after behavioral green	Run npm run format:check	﻿2026-08-13T09:07:04.8410845Z ##[group]Run npm run format:check
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:04.8411224Z ^[[36;1mnpm run format:check^[[0m
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:04.8457623Z shell: /usr/bin/bash -e {0}
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:04.8458122Z env:
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:04.8458337Z   NODE_VERSION: 24
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:04.8458554Z ##[endgroup]
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:04.9544369Z 
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:04.9544878Z > motion5@0.0.0 format:check
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:04.9545490Z > prettier . --check
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:04.9545696Z 
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:05.0829673Z Checking formatting...
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:05.2469143Z [^[[31merror^[[39m] .github/workflows/recovery-audit.yml: SyntaxError: Separator , missing in flow map (34:23)
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:05.2470689Z [^[[31merror^[[39m] ^[[0m ^[[90m 32 |^[[39m     steps^[[33m:^[[39m
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:05.2471478Z [^[[31merror^[[39m]  ^[[90m 33 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39mcheckout^[[33m@^[[39mv4
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:05.2472418Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 34 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m { ref^[[33m:^[[39m ${{ inputs^[[33m.^[[39mref }} }
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:05.2474391Z [^[[31merror^[[39m]  ^[[90m    |^[[39m                       ^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:05.2475880Z [^[[31merror^[[39m]  ^[[90m 35 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39msetup^[[33m-^[[39mnode^[[33m@^[[39mv4
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:05.2477015Z [^[[31merror^[[39m]  ^[[90m 36 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m { node^[[33m-^[[39mversion^[[33m:^[[39m ${{ env^[[33m.^[[39m^[[33mNODE_VERSION^[[39m }}^[[33m,^[[39m cache^[[33m:^[[39m npm }
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:05.2478277Z [^[[31merror^[[39m]  ^[[90m 37 |^[[39m       ^[[33m-^[[39m run^[[33m:^[[39m npm ci ^[[33m--^[[39mignore^[[33m-^[[39mscripts ^[[33m--^[[39mno^[[33m-^[[39maudit ^[[33m--^[[39mno^[[33m-^[[39mfund^[[0m
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:07.3318168Z [^[[33mwarn^[[39m] scripts/acceptance-scan.mjs
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:07.3892823Z Error occurred when checking code style in the above file.
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:07:07.4277333Z ##[error]Process completed with exit code 2.
