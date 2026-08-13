@@ -1,5 +1,6 @@
-import type { Interpolator, InterpolationTimeline } from "../../ports/interpolator";
+import type { Diagnostic } from "../../contract/v5";
 import { compilePercentKeyframes } from "../../domain/keyframe-compiler";
+import type { Interpolator, InterpolationTimeline } from "../../ports/interpolator";
 
 export interface GsapTweenLike {
   readonly duration: () => number;
@@ -25,8 +26,8 @@ function readTweenVars(config: unknown): Readonly<Record<string, unknown>> {
 }
 
 export class KeyframeCompilationError extends TypeError {
-  readonly diagnostics: readonly ReturnType<typeof compilePercentKeyframes>["diagnostics"];
-  constructor(diagnostics: readonly ReturnType<typeof compilePercentKeyframes>["diagnostics"]) {
+  readonly diagnostics: readonly Diagnostic[];
+  constructor(diagnostics: readonly Diagnostic[]) {
     super(diagnostics.map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`).join(" "));
     this.name = "keyframe-compilation";
     this.diagnostics = diagnostics;

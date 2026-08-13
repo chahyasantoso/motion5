@@ -11,18 +11,15 @@ function createRecordingInterpolator(): {
     to(target, vars): GsapTweenLike {
       configs.push(vars);
       let current = 0;
-      return {
-        duration: () => 1,
-        progress(): number;
-        progress(value: number): GsapTweenLike;
-        progress(value?: number): number | GsapTweenLike {
-          if (value === undefined) return current;
-          current = value;
-          Object.assign(target, { progress: value });
-          return this;
-        },
-        kill() {},
-      };
+      function progress(): number;
+      function progress(value: number): GsapTweenLike;
+      function progress(value?: number): number | GsapTweenLike {
+        if (value === undefined) return current;
+        current = value;
+        Object.assign(target, { progress: value });
+        return this;
+      }
+      return { duration: () => 1, progress, kill() {} };
     },
   });
   return { interpolator, configs };
@@ -59,7 +56,7 @@ describe("S2 sparse percent-keyframe compilation", () => {
     expect(keyframes["25%"]?.ease).toBeUndefined();
   });
 
-  it("reports an ease collision as a structured diagnostic instead of throwing", () => {
+  it("reports an ease collision as a structured diagnostic instead of an unstructured throw", () => {
     const seam = createRecordingInterpolator();
     expect(() =>
       seam.interpolator.create({
