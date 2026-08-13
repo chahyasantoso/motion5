@@ -43,6 +43,7 @@ function removeStyleProperty(target: DomTarget, key: string): void {
 
 function defaultWriter(target: DomTarget, values: Readonly<Record<string, unknown>>): void {
   const state = transformState.get(target) ?? {};
+  const hadTransform = Object.keys(state).length > 0;
   for (const [key, value] of Object.entries(values)) {
     if (transformKeys.has(key)) {
       if (value === undefined) delete state[key];
@@ -54,7 +55,7 @@ function defaultWriter(target: DomTarget, values: Readonly<Record<string, unknow
     else target[key] = value;
   }
   if (Object.keys(state).length > 0) target.style.transform = composeTransform(state);
-  else removeStyleProperty(target, "transform");
+  else if (hadTransform) removeStyleProperty(target, "transform");
   transformState.set(target, state);
 }
 
