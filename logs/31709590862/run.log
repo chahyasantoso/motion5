@@ -1,0 +1,22 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T14:19:56.9658858Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T14:19:56.9659223Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T14:19:56.9702635Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T14:19:56.9703166Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T14:19:56.9703397Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T14:19:56.9703619Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T14:19:57.0823306Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T14:19:57.0824382Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T14:19:57.0825288Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T14:19:57.0825719Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T14:19:59.2181208Z ##[error]packages/core/src/adapters/interpolator/gsap.ts(61,41): error TS18048: 'parent' is possibly 'undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-13T14:19:59.2189734Z ##[error]packages/core/src/adapters/interpolator/gsap.ts(62,9): error TS18048: 'parent' is possibly 'undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-13T14:19:59.2507576Z ##[error]Process completed with exit code 2.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-08-13T14:20:05.9837186Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:20:05.9837717Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:20:05.9882133Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:20:05.9882418Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:20:05.9882608Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:20:05.9882825Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:20:07.7311894Z ##[error]packages/core/src/adapters/interpolator/gsap.ts(61,41): error TS18048: 'parent' is possibly 'undefined'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:20:07.7321970Z ##[error]packages/core/src/adapters/interpolator/gsap.ts(62,9): error TS18048: 'parent' is possibly 'undefined'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-13T14:20:07.7626002Z ##[error]Process completed with exit code 2.
