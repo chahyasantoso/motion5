@@ -1,0 +1,88 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/motion5/motion5[39m
+
+ [31m❯[39m packages/core/test/contract/gsap-authored-duration.test.ts [2m([22m[2m5 tests[22m[2m | [22m[31m5 failed[39m[2m)[22m[32m 11[2mms[22m[39m
+[31m     [31m×[31m keeps the authored duration when the last stop ends before the end[39m[32m 6[2mms[22m[39m
+[31m     [31m×[31m scales the pinned duration by the configured track duration[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m holds every property independently when the grids end at different positions[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m reports the authored duration for a track with no authored stops[39m[32m 1[2mms[22m[39m
+[31m     [31m×[31m pins only when the tail is short, and never through the published proxy[39m[32m 1[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 5 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/contract/gsap-authored-duration.test.ts[2m > [22mGSAP authored-duration pinning (P0-3b)[2m > [22mkeeps the authored duration when the last stop ends before the end
+[31m[1mAssertionError[22m: expected 0.5 to be close to 1, received difference is 0.5, but expected 5e-11[39m
+[36m [2m❯[22m packages/core/test/contract/gsap-authored-duration.test.ts:[2m45:31[22m[39m
+    [90m 43|[39m     [35mconst[39m x [33m=[39m ()[33m:[39m number [33m=>[39m [34mreadNumber[39m(timeline[33m.[39mstate[33m,[39m [32m"x"[39m)[33m;[39m
+    [90m 44|[39m
+    [90m 45|[39m     [34mexpect[39m(timeline[33m.[39mduration)[33m.[39m[34mtoBeCloseTo[39m([34m1[39m[33m,[39m [34m10[39m)[33m;[39m
+    [90m   |[39m                               [31m^[39m
+    [90m 46|[39m
+    [90m 47|[39m     // Inside the authored ramp, progress still maps to the authored g…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/contract/gsap-authored-duration.test.ts[2m > [22mGSAP authored-duration pinning (P0-3b)[2m > [22mscales the pinned duration by the configured track duration
+[31m[1mAssertionError[22m: expected 1 to be close to 2, received difference is 1, but expected 5e-11[39m
+[36m [2m❯[22m packages/core/test/contract/gsap-authored-duration.test.ts:[2m79:31[22m[39m
+    [90m 77|[39m     })[33m;[39m
+    [90m 78|[39m
+    [90m 79|[39m     [34mexpect[39m(timeline[33m.[39mduration)[33m.[39m[34mtoBeCloseTo[39m([34m2[39m[33m,[39m [34m10[39m)[33m;[39m
+    [90m   |[39m                               [31m^[39m
+    [90m 80|[39m     [34mexpect[39m(seam[33m.[39mcreated[[34m0[39m][33m?.[39m[34mduration[39m())[33m.[39m[34mtoBeCloseTo[39m([34m2[39m[33m,[39m [34m10[39m)[33m;[39m
+    [90m 81|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/contract/gsap-authored-duration.test.ts[2m > [22mGSAP authored-duration pinning (P0-3b)[2m > [22mholds every property independently when the grids end at different positions
+[31m[1mAssertionError[22m: expected 0.75 to be close to 1, received difference is 0.25, but expected 5e-11[39m
+[36m [2m❯[22m packages/core/test/contract/gsap-authored-duration.test.ts:[2m110:31[22m[39m
+    [90m108|[39m     [35mconst[39m y [33m=[39m ()[33m:[39m number [33m=>[39m [34mreadNumber[39m(timeline[33m.[39mstate[33m,[39m [32m"y"[39m)[33m;[39m
+    [90m109|[39m
+    [90m110|[39m     [34mexpect[39m(timeline[33m.[39mduration)[33m.[39m[34mtoBeCloseTo[39m([34m1[39m[33m,[39m [34m10[39m)[33m;[39m
+    [90m   |[39m                               [31m^[39m
+    [90m111|[39m
+    [90m112|[39m     // Both properties are mid-ramp on their own grids at the same aut…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/contract/gsap-authored-duration.test.ts[2m > [22mGSAP authored-duration pinning (P0-3b)[2m > [22mreports the authored duration for a track with no authored stops
+[31m[1mAssertionError[22m: expected +0 to be close to 3, received difference is 3, but expected 5e-11[39m
+[36m [2m❯[22m packages/core/test/contract/gsap-authored-duration.test.ts:[2m130:31[22m[39m
+    [90m128|[39m     const timeline = seam.interpolator.create({ duration: 3, keyframes…
+    [90m129|[39m
+    [90m130|[39m     [34mexpect[39m(timeline[33m.[39mduration)[33m.[39m[34mtoBeCloseTo[39m([34m3[39m[33m,[39m [34m10[39m)[33m;[39m
+    [90m   |[39m                               [31m^[39m
+    [90m131|[39m
+    [90m132|[39m     timeline[33m.[39m[34mkill[39m()[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m packages/core/test/contract/gsap-authored-duration.test.ts[2m > [22mGSAP authored-duration pinning (P0-3b)[2m > [22mpins only when the tail is short, and never through the published proxy
+[31m[1mTypeError[22m: complete.created[0]?.tweenCount is not a function[39m
+[36m [2m❯[22m packages/core/test/contract/gsap-authored-duration.test.ts:[2m150:33[22m[39m
+    [90m148|[39m
+    [90m149|[39m     // A grid that already reaches the end needs no help, and must not…
+    [90m150|[39m     [34mexpect[39m(complete[33m.[39mcreated[[34m0[39m][33m?.[39m[34mtweenCount[39m())[33m.[39m[34mtoBe[39m([34m1[39m)[33m;[39m
+    [90m   |[39m                                 [31m^[39m
+    [90m151|[39m     [34mexpect[39m(completeTimeline[33m.[39mduration)[33m.[39m[34mtoBeCloseTo[39m([34m1[39m[33m,[39m [34m10[39m)[33m;[39m
+    [90m152|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m5 failed[39m[22m[90m (5)[39m
+[2m   Start at [22m 02:04:02
+[2m   Duration [22m 335ms[2m (transform 143ms, setup 0ms, import 183ms, tests 11ms, environment 0ms)[22m
+
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/contract/gsap-authored-duration.test.ts,title=packages/core/test/contract/gsap-authored-duration.test.ts > GSAP authored-duration pinning (P0-3b) > keeps the authored duration when the last stop ends before the end,line=45,column=31::AssertionError: expected 0.5 to be close to 1, received difference is 0.5, but expected 5e-11%0A ❯ packages/core/test/contract/gsap-authored-duration.test.ts:45:31%0A%0A
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/contract/gsap-authored-duration.test.ts,title=packages/core/test/contract/gsap-authored-duration.test.ts > GSAP authored-duration pinning (P0-3b) > scales the pinned duration by the configured track duration,line=79,column=31::AssertionError: expected 1 to be close to 2, received difference is 1, but expected 5e-11%0A ❯ packages/core/test/contract/gsap-authored-duration.test.ts:79:31%0A%0A
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/contract/gsap-authored-duration.test.ts,title=packages/core/test/contract/gsap-authored-duration.test.ts > GSAP authored-duration pinning (P0-3b) > holds every property independently when the grids end at different positions,line=110,column=31::AssertionError: expected 0.75 to be close to 1, received difference is 0.25, but expected 5e-11%0A ❯ packages/core/test/contract/gsap-authored-duration.test.ts:110:31%0A%0A
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/contract/gsap-authored-duration.test.ts,title=packages/core/test/contract/gsap-authored-duration.test.ts > GSAP authored-duration pinning (P0-3b) > reports the authored duration for a track with no authored stops,line=130,column=31::AssertionError: expected +0 to be close to 3, received difference is 3, but expected 5e-11%0A ❯ packages/core/test/contract/gsap-authored-duration.test.ts:130:31%0A%0A
+
+::error file=/home/runner/work/motion5/motion5/packages/core/test/contract/gsap-authored-duration.test.ts,title=packages/core/test/contract/gsap-authored-duration.test.ts > GSAP authored-duration pinning (P0-3b) > pins only when the tail is short%2C and never through the published proxy,line=150,column=33::TypeError: complete.created[0]?.tweenCount is not a function%0A ❯ packages/core/test/contract/gsap-authored-duration.test.ts:150:33%0A%0A
