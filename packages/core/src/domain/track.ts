@@ -1,7 +1,7 @@
 import type { ImmutableRecord } from "./values";
 import { equalValues, freezeValue } from "./values";
 import type { InterpolationTimeline, Interpolator } from "../ports/interpolator";
-import type { PluginDefinition, ResolvedPlugins } from "./plugins";
+import type { ResolvedPlugins } from "./plugins";
 
 export interface TrackSnapshot {
   readonly progress: number;
@@ -24,15 +24,19 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   const prototype = Object.getPrototypeOf(value);
   return prototype === Object.prototype || prototype === null;
 }
-function prepareConfig(config: unknown, plugins: readonly PluginDefinition[]): unknown {
-  if (!isRecord(config) || !isRecord(config.keyframes)) return config;
-  let keyframes = { ...config.keyframes };
-  for (const plugin of plugins) {
-    if (plugin.stage !== "prepare" || plugin.contribute === undefined) continue;
-    const contribution = plugin.contribute(Object.freeze({ ...keyframes }));
-    if (isRecord(contribution)) keyframes = { ...keyframes, ...contribution };
-  }
-  return Object.freeze({ ...config, keyframes: Object.freeze(keyframes) });
+function preparedConfig(config: unknown, plugins: ResolvedPlugins): unknown {
+  if (!isRecord(config)) return config;
+  const preparation = plugins.preparation;
+  if (!preparation) return config;
+  const keyframes =
+    isRecord(config.keyframes) && isRecord(preparation.keyframes)
+      ? { ...config.keyframes, ...preparation.keyframes }
+      : config.keyframes;
+  return Object.freeze({
+    ...config,
+    ...(keyframes === undefined ? {} : { keyframes: Object.freeze(keyframes) }),
+    ...(preparation.tweenVars ?? {}),
+  });
 }
 function rendererNeutralState(state: Readonly<Record<string, unknown>>): ImmutableRecord {
   if (!isRecord(state))
@@ -55,22 +59,20 @@ function freezeComposition(values: unknown): ImmutableRecord {
 const EMPTY_RESOLVED_PLUGINS: ResolvedPlugins = Object.freeze({
   plugins: Object.freeze([]),
   diagnostics: Object.freeze([]),
-  internalKeys: Object.freeze([]),
-  outputSerializers: Object.freeze({}),
 });
 export class Track {
   readonly #timeline: InterpolationTimeline;
   readonly #plugins: ResolvedPlugins;
-  #progress: number;
+  #progress = 0;
   #dirty = true;
   #disposed = false;
   #lastSnapshot: TrackSnapshot | undefined;
   #lastInputs: Readonly<ImmutableRecord> | undefined;
   constructor(options: TrackOptions) {
     this.#plugins = options.plugins ?? EMPTY_RESOLVED_PLUGINS;
-    const preparedConfig = prepareConfig(options.interpolationConfig, this.#plugins.plugins);
-    this.#timeline = options.interpolator.create(preparedConfig);
-    this.#progress = 0;
+    this.#timeline = options.interpolator.create(
+      preparedConfig(options.interpolationConfig, this.#plugins),
+    );
   }
   get progress(): number {
     return this.#progress;
@@ -106,8 +108,7 @@ export class Track {
         );
       values = composed as ImmutableRecord;
     }
-    const frozenValues = freezeComposition(values);
-    const snapshot = Object.freeze({ progress: this.#progress, values: frozenValues });
+    const snapshot = Object.freeze({ progress: this.#progress, values: freezeComposition(values) });
     this.#lastInputs = freezeValue({ ...inputs });
     this.#lastSnapshot = snapshot;
     this.#dirty = false;
