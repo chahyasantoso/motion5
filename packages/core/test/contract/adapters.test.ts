@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createBrowserClock } from "../../src/adapters/browser-clock";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
-import { createGsapInterpolator, type GsapTimelineLike } from "../../src/adapters/interpolator/gsap";
+import { createGsapInterpolator, type GsapTweenLike } from "../../src/adapters/interpolator/gsap";
 import { createRealGsapSeam } from "../support/real-gsap";
 
 describe("adapter ports", () => {
@@ -11,32 +11,27 @@ describe("adapter ports", () => {
       duration: 2,
       keyframes: { x: { stops: [{ p: 0, v: 0 }, { p: 1, v: 100 }] } },
     });
-    expect(timeline.state).toEqual({ x: 0 });
+    expect(timeline.state).toMatchObject({ x: 0 });
     timeline.progress(0.5);
     expect(timeline.state).toMatchObject({ x: 50 });
     timeline.kill();
   });
 
-  it("adapts a GSAP-like timeline without leaking the engine object", () => {
+  it("adapts a GSAP-like tween without leaking the engine object", () => {
     let value = 0;
     let killed = false;
-    let timeline: GsapTimelineLike;
-    function progress(): number;
-    function progress(next: number): GsapTimelineLike;
-    function progress(next?: number): number | GsapTimelineLike {
-      if (next === undefined) return value;
-      value = next;
-      return timeline;
-    }
-    timeline = {
+    const tween: GsapTweenLike = {
       duration: () => 2,
-      progress,
-      to: () => timeline,
+      progress(next?: number): number | GsapTweenLike {
+        if (next === undefined) return value;
+        value = next;
+        return tween;
+      },
       kill: () => {
         killed = true;
       },
     };
-    const interpolator = createGsapInterpolator({ timeline: () => timeline });
+    const interpolator = createGsapInterpolator({ to: () => tween });
     const adapted = interpolator.create({});
     expect(adapted.duration).toBe(2);
     adapted.progress(0.5);
