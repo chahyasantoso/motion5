@@ -1,0 +1,123 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T15:10:14.1420907Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:14.1421271Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:14.1465099Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:14.1465625Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:14.1465879Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:14.1466129Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:14.2537546Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:14.2538534Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:14.2539239Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:14.2539578Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0096653Z ##[error]packages/core/src/contract/validate-v5.ts(23,54): error TS1005: '}' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0105928Z ##[error]packages/core/src/contract/validate-v5.ts(24,119): error TS1005: ';' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0107506Z ##[error]packages/core/src/contract/validate-v5.ts(24,130): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0109074Z ##[error]packages/core/src/contract/validate-v5.ts(24,132): error TS1443: Module declaration names may only use ' or " quoted strings.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0110538Z ##[error]packages/core/src/contract/validate-v5.ts(26,69): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0111935Z ##[error]packages/core/src/contract/validate-v5.ts(26,80): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0113529Z ##[error]packages/core/src/contract/validate-v5.ts(26,82): error TS1443: Module declaration names may only use ' or " quoted strings.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0115240Z ##[error]packages/core/src/contract/validate-v5.ts(27,86): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0116570Z ##[error]packages/core/src/contract/validate-v5.ts(27,97): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0118148Z ##[error]packages/core/src/contract/validate-v5.ts(27,99): error TS1443: Module declaration names may only use ' or " quoted strings.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0119636Z ##[error]packages/core/src/contract/validate-v5.ts(28,68): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0120981Z ##[error]packages/core/src/contract/validate-v5.ts(28,79): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0122471Z ##[error]packages/core/src/contract/validate-v5.ts(28,81): error TS1443: Module declaration names may only use ' or " quoted strings.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0123995Z ##[error]packages/core/src/contract/validate-v5.ts(35,235): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0125369Z ##[error]packages/core/src/contract/validate-v5.ts(35,244): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0126718Z ##[error]packages/core/src/contract/validate-v5.ts(35,247): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0128110Z ##[error]packages/core/src/contract/validate-v5.ts(35,252): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0129427Z ##[error]packages/core/src/contract/validate-v5.ts(35,255): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0130679Z ##[error]packages/core/src/contract/validate-v5.ts(35,267): error TS1005: ';' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0131945Z ##[error]packages/core/src/contract/validate-v5.ts(35,274): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0133302Z ##[error]packages/core/src/contract/validate-v5.ts(35,382): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0134755Z ##[error]packages/core/src/contract/validate-v5.ts(35,391): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0136060Z ##[error]packages/core/src/contract/validate-v5.ts(35,405): error TS1005: ';' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0137394Z ##[error]packages/core/src/contract/validate-v5.ts(35,410): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0138691Z ##[error]packages/core/src/contract/validate-v5.ts(35,414): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0139947Z ##[error]packages/core/src/contract/validate-v5.ts(35,426): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0141241Z ##[error]packages/core/src/contract/validate-v5.ts(37,292): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0142912Z ##[error]packages/core/src/contract/validate-v5.ts(37,299): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0144736Z ##[error]packages/core/src/contract/validate-v5.ts(37,302): error TS1443: Module declaration names may only use ' or " quoted strings.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0146116Z ##[error]packages/core/src/contract/validate-v5.ts(37,352): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0147489Z ##[error]packages/core/src/contract/validate-v5.ts(37,359): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0148947Z ##[error]packages/core/src/contract/validate-v5.ts(37,369): error TS1443: Module declaration names may only use ' or " quoted strings.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0150314Z ##[error]packages/core/src/contract/validate-v5.ts(37,514): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0151619Z ##[error]packages/core/src/contract/validate-v5.ts(37,521): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0153110Z ##[error]packages/core/src/contract/validate-v5.ts(37,524): error TS1443: Module declaration names may only use ' or " quoted strings.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0154762Z ##[error]packages/core/src/contract/validate-v5.ts(37,528): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0156046Z ##[error]packages/core/src/contract/validate-v5.ts(37,534): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0157296Z ##[error]packages/core/src/contract/validate-v5.ts(37,551): error TS1005: ';' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0158529Z ##[error]packages/core/src/contract/validate-v5.ts(37,565): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0159808Z ##[error]packages/core/src/contract/validate-v5.ts(37,726): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0161087Z ##[error]packages/core/src/contract/validate-v5.ts(37,733): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0162536Z ##[error]packages/core/src/contract/validate-v5.ts(37,742): error TS1443: Module declaration names may only use ' or " quoted strings.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0164028Z ##[error]packages/core/src/contract/validate-v5.ts(44,115): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0165334Z ##[error]packages/core/src/contract/validate-v5.ts(44,124): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0166612Z ##[error]packages/core/src/contract/validate-v5.ts(44,138): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0167892Z ##[error]packages/core/src/contract/validate-v5.ts(44,164): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0169126Z ##[error]packages/core/src/contract/validate-v5.ts(50,19): error TS1005: ';' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0170271Z ##[error]packages/core/src/contract/validate-v5.ts(50,28): error TS1005: ']' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0171508Z ##[error]packages/core/src/contract/validate-v5.ts(50,35): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0172711Z ##[error]packages/core/src/contract/validate-v5.ts(51,51): error TS1005: ';' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0174028Z ##[error]packages/core/src/contract/validate-v5.ts(51,58): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0175498Z ##[error]packages/core/src/contract/validate-v5.ts(51,61): error TS1443: Module declaration names may only use ' or " quoted strings.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0176894Z ##[error]packages/core/src/contract/validate-v5.ts(51,227): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0178238Z ##[error]packages/core/src/contract/validate-v5.ts(51,234): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0179720Z ##[error]packages/core/src/contract/validate-v5.ts(51,237): error TS1443: Module declaration names may only use ' or " quoted strings.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0181091Z ##[error]packages/core/src/contract/validate-v5.ts(51,241): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0182617Z ##[error]packages/core/src/contract/validate-v5.ts(51,248): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0183935Z ##[error]packages/core/src/contract/validate-v5.ts(51,259): error TS1005: ';' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0185295Z ##[error]packages/core/src/contract/validate-v5.ts(51,273): error TS1003: Identifier expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0186576Z ##[error]packages/core/src/contract/validate-v5.ts(52,185): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0187877Z ##[error]packages/core/src/contract/validate-v5.ts(52,192): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0189353Z ##[error]packages/core/src/contract/validate-v5.ts(52,200): error TS1443: Module declaration names may only use ' or " quoted strings.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0190758Z ##[error]packages/core/src/contract/validate-v5.ts(53,92): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0192050Z ##[error]packages/core/src/contract/validate-v5.ts(53,99): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0193515Z ##[error]packages/core/src/contract/validate-v5.ts(53,106): error TS1443: Module declaration names may only use ' or " quoted strings.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0195167Z ##[error]packages/core/src/contract/validate-v5.ts(54,127): error TS1434: Unexpected keyword or identifier.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0196557Z ##[error]packages/core/src/contract/validate-v5.ts(54,134): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0197763Z ##[error]packages/core/src/contract/validate-v5.ts(54,143): error TS1005: ']' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0198921Z ##[error]packages/core/src/contract/validate-v5.ts(56,73): error TS1005: ';' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0200054Z ##[error]packages/core/src/contract/validate-v5.ts(56,85): error TS1005: ']' expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0201313Z ##[error]packages/core/src/contract/validate-v5.ts(56,92): error TS1128: Declaration or statement expected.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0202644Z ##[error]packages/core/src/contract/validate-v5.ts(62,1): error TS1160: Unterminated template literal.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:10:15.0321283Z ##[error]Process completed with exit code 2.
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	﻿2026-08-13T15:10:13.2208039Z ##[group]Run npx vitest run packages/core/test/integration/end-to-end.test.ts
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.2208780Z ^[[36;1mnpx vitest run packages/core/test/integration/end-to-end.test.ts^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.2233040Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.2233386Z env:
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.2233707Z   NODE_VERSION: 24
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.2233998Z ##[endgroup]
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.6649373Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.6652023Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.6653860Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8600354Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8642891Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8643978Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Suites 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8644573Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8646519Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m [ packages/core/test/integration/end-to-end.test.ts ]^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8650656Z ^[[31m^[[1mError^[[22m: Transform failed with 1 error:
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8651125Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8651433Z ^[[31m[PARSE_ERROR] ^[[0mExpected `}` but found `]`
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8652267Z     ^[[38;5;246m╭^[[0m^[[38;5;246m─^[[0m^[[38;5;246m[^[[0m packages/core/src/contract/validate-v5.ts:23:54 ^[[38;5;246m]^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8652869Z     ^[[38;5;246m│^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8656818Z  ^[[38;5;246m23 │^[[0m ^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249m ^[[0m^[[38;5;249mc^[[0m^[[38;5;249mo^[[0m^[[38;5;249mn^[[0m^[[38;5;249ms^[[0m^[[38;5;249mt^[[0m^[[38;5;249m ^[[0m^[[38;5;249ms^[[0m^[[38;5;249mt^[[0m^[[38;5;249mo^[[0m^[[38;5;249mp^[[0m^[[38;5;249mP^[[0m^[[38;5;249ma^[[0m^[[38;5;249mt^[[0m^[[38;5;249mh^[[0m^[[38;5;249m ^[[0m^[[38;5;249m=^[[0m^[[38;5;249m ^[[0m^[[38;5;249m`^[[0m^[[38;5;249m$^[[0m^[[38;5;249m{^[[0m^[[38;5;249mp^[[0m^[[38;5;249mr^[[0m^[[38;5;249mo^[[0m^[[38;5;249mp^[[0m^[[38;5;249me^[[0m^[[38;5;249mr^[[0m^[[38;5;249mt^[[0m^[[38;5;249my^[[0m^[[38;5;249mP^[[0m^[[38;5;249ma^[[0m^[[38;5;249mt^[[0m^[[38;5;249mh^[[0m^[[38;5;249m}^[[0m^[[38;5;249m.^[[0m^[[38;5;249ms^[[0m^[[38;5;249mt^[[0m^[[38;5;249mo^[[0m^[[38;5;249mp^[[0m^[[38;5;249ms^[[0m^[[38;5;249m[^[[0m^[[38;5;249m$^[[0m^[[38;5;249m{^[[0m^[[38;5;249mi^[[0m^[[38;5;249mn^[[0m^[[38;5;249md^[[0m^[[38;5;249me^[[0m^[[38;5;249mx^[[0m]^[[38;5;249m}^[[0m^[[38;5;249m`^[[0m^[[38;5;249m;^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8658968Z  ^[[38;5;240m   │^[[0m                                                      ┬  
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8659485Z  ^[[38;5;240m   │^[[0m                                                      ╰── `}` expected
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8660017Z ^[[38;5;246m────╯^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8660454Z ^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8660801Z   Plugin: ^[[35mvite:oxc^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8661532Z   File: ^[[36m/home/runner/work/motion5/motion5/packages/core/src/contract/validate-v5.ts^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8662459Z ^[[90m ^[[2m❯^[[22m transformWithOxc node_modules/vite/dist/node/chunks/node.js:^[[2m4097:19^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8663330Z ^[[90m ^[[2m❯^[[22m TransformPluginContext.transform node_modules/vite/dist/node/chunks/node.js:^[[2m4168:26^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8664721Z ^[[90m ^[[2m❯^[[22m EnvironmentPluginContainer.transform node_modules/vite/dist/node/chunks/node.js:^[[2m30851:51^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8665675Z ^[[90m ^[[2m❯^[[22m loadAndTransform node_modules/vite/dist/node/chunks/node.js:^[[2m20619:26^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8666008Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8666237Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8666465Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8666492Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8666840Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[90m (1)^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8667263Z ^[[2m      Tests ^[[22m ^[[2mno tests^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8667629Z ^[[2m   Start at ^[[22m 15:10:13
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8668236Z ^[[2m   Duration ^[[22m 185ms^[[2m (transform 33ms, setup 0ms, import 0ms, tests 0ms, environment 0ms)^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8668566Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-13T15:10:13.8871071Z ##[error]Process completed with exit code 1.
