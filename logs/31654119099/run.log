@@ -1,0 +1,182 @@
+quality (node 24)	Unit tests	﻿2026-08-13T00:21:30.2833944Z ##[group]Run npm test
+quality (node 24)	Unit tests	2026-08-13T00:21:30.2834254Z ^[[36;1mnpm test^[[0m
+quality (node 24)	Unit tests	2026-08-13T00:21:30.2882557Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Unit tests	2026-08-13T00:21:30.2882828Z ##[endgroup]
+quality (node 24)	Unit tests	2026-08-13T00:21:30.4259259Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:30.4260363Z > motion5@0.0.0 test
+quality (node 24)	Unit tests	2026-08-13T00:21:30.4260774Z > vitest run
+quality (node 24)	Unit tests	2026-08-13T00:21:30.4260933Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:30.8740802Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:30.8745864Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:30.8746794Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:31.3813985Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-state.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:31.4146303Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-reentrancy.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:31.4569176Z  ^[[31m❯^[[39m packages/core/test/contract/gsap-authored-duration.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m5 failed^[[39m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:31.4572472Z ^[[31m     ^[[31m×^[[31m keeps the authored duration when the last stop ends before the end^[[39m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:31.4574980Z ^[[31m     ^[[31m×^[[31m scales the pinned duration by the configured track duration^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:31.4577301Z ^[[31m     ^[[31m×^[[31m holds every property independently when the grids end at different positions^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:31.4579570Z ^[[31m     ^[[31m×^[[31m reports the authored duration for a track with no authored stops^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:31.4581759Z ^[[31m     ^[[31m×^[[31m pins only when the tail is short, and never through the published proxy^[[39m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:31.6675063Z  ^[[32m✓^[[39m packages/core/test/contract/v5-validator.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:31.6733143Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-absolute-stops.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:31.6815575Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugins.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:31.8939038Z  ^[[32m✓^[[39m packages/core/test/unit/graph/order.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:31.9217256Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/clock-tick-identity.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:31.9657412Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/boundary-scan.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 61^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:32.1173425Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ir-validation.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:32.1256992Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:32.1766870Z  ^[[32m✓^[[39m packages/core/test/contract/adapters.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:32.3264290Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:32.3388167Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:32.3852245Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:32.5147307Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:32.5589493Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:32.6209808Z  ^[[32m✓^[[39m packages/core/test/migration/v4-to-v5.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:32.7066943Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:32.7649078Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:32.8497322Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:32.9457187Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:33.0225004Z  ^[[32m✓^[[39m packages/react/test/public-package-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:33.0256564Z ^[[90mstderr^[[2m | packages/react/test/public-package-surface.test.ts^[[2m > ^[[22m^[[2mReact public package surface (C2)^[[2m > ^[[22m^[[2mrenders and updates through the package entry alone
+quality (node 24)	Unit tests	2026-08-13T00:21:33.0259631Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Unit tests	2026-08-13T00:21:33.0261111Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T00:21:33.0262463Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T00:21:33.0263823Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T00:21:33.0264832Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:33.0764868Z  ^[[32m✓^[[39m packages/react/test/patch-store-lifecycle.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:33.1787275Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:33.2204764Z  ^[[32m✓^[[39m packages/core/test/contract/ports.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:33.3087016Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:33.3737921Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:33.4895833Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:33.5441233Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:33.5912461Z  ^[[32m✓^[[39m packages/core/test/unit/domain/lifecycle.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:33.6935971Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:33.7577951Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/acceptance-scan.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:33.8610322Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-paused-timeline.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:33.8827384Z  ^[[32m✓^[[39m packages/core/test/unit/domain/values.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:33.9522575Z  ^[[32m✓^[[39m packages/core/test/unit/domain/triggers.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.0527111Z  ^[[32m✓^[[39m packages/react/test/patch-store.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.1419186Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/mutation-config.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.1507124Z ^[[90mstderr^[[2m | packages/react/test/public-hook-render.test.ts^[[2m > ^[[22m^[[2mReact public hook render/update (C2)^[[2m > ^[[22m^[[2mrenders the current patch and updates after publication
+quality (node 24)	Unit tests	2026-08-13T00:21:34.1519764Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Unit tests	2026-08-13T00:21:34.1540718Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T00:21:34.1541994Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T00:21:34.1543390Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T00:21:34.1547178Z  ^[[32m✓^[[39m packages/react/test/public-hook-render.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.1548368Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.2881295Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.3577558Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track-contribution.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.3876876Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5216017Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5455384Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5802840Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5840526Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5841233Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 5 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5841632Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5846038Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/contract/gsap-authored-duration.test.ts^[[2m > ^[[22mGSAP authored-duration pinning (P0-3b)^[[2m > ^[[22mkeeps the authored duration when the last stop ends before the end
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5852659Z ^[[31m^[[1mAssertionError^[[22m: expected 0.5 to be close to 1, received difference is 0.5, but expected 5e-11^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5854265Z ^[[36m ^[[2m❯^[[22m packages/core/test/contract/gsap-authored-duration.test.ts:^[[2m34:31^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5899685Z     ^[[90m 32|^[[39m     ^[[35mconst^[[39m x ^[[33m=^[[39m ()^[[33m:^[[39m number ^[[33m=>^[[39m ^[[34mreadNumber^[[39m(timeline^[[33m.^[[39mstate^[[33m,^[[39m ^[[32m"x"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5901267Z     ^[[90m 33|^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5903073Z     ^[[90m 34|^[[39m     ^[[34mexpect^[[39m(timeline^[[33m.^[[39mduration)^[[33m.^[[39m^[[34mtoBeCloseTo^[[39m(^[[34m1^[[39m^[[33m,^[[39m ^[[34m10^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5905058Z     ^[[90m   |^[[39m                               ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5906129Z     ^[[90m 35|^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5907371Z     ^[[90m 36|^[[39m     // Inside the authored ramp, progress still maps to the authored g…
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5907950Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5908418Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5908796Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5910539Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/contract/gsap-authored-duration.test.ts^[[2m > ^[[22mGSAP authored-duration pinning (P0-3b)^[[2m > ^[[22mscales the pinned duration by the configured track duration
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5912610Z ^[[31m^[[1mAssertionError^[[22m: expected 1 to be close to 2, received difference is 1, but expected 5e-11^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5914096Z ^[[36m ^[[2m❯^[[22m packages/core/test/contract/gsap-authored-duration.test.ts:^[[2m68:31^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5915370Z     ^[[90m 66|^[[39m     })^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5916014Z     ^[[90m 67|^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5917254Z     ^[[90m 68|^[[39m     ^[[34mexpect^[[39m(timeline^[[33m.^[[39mduration)^[[33m.^[[39m^[[34mtoBeCloseTo^[[39m(^[[34m2^[[39m^[[33m,^[[39m ^[[34m10^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5918830Z     ^[[90m   |^[[39m                               ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5920350Z     ^[[90m 69|^[[39m     ^[[34mexpect^[[39m(seam^[[33m.^[[39mcreated[^[[34m0^[[39m]^[[33m?.^[[39m^[[34mduration^[[39m())^[[33m.^[[39m^[[34mtoBeCloseTo^[[39m(^[[34m2^[[39m^[[33m,^[[39m ^[[34m10^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5921397Z     ^[[90m 70|^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5921556Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5921813Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5922223Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5924190Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/contract/gsap-authored-duration.test.ts^[[2m > ^[[22mGSAP authored-duration pinning (P0-3b)^[[2m > ^[[22mholds every property independently when the grids end at different positions
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5925978Z ^[[31m^[[1mAssertionError^[[22m: expected 0.75 to be close to 1, received difference is 0.25, but expected 5e-11^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5927003Z ^[[36m ^[[2m❯^[[22m packages/core/test/contract/gsap-authored-duration.test.ts:^[[2m99:31^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5928273Z     ^[[90m 97|^[[39m     ^[[35mconst^[[39m y ^[[33m=^[[39m ()^[[33m:^[[39m number ^[[33m=>^[[39m ^[[34mreadNumber^[[39m(timeline^[[33m.^[[39mstate^[[33m,^[[39m ^[[32m"y"^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5928968Z     ^[[90m 98|^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5930066Z     ^[[90m 99|^[[39m     ^[[34mexpect^[[39m(timeline^[[33m.^[[39mduration)^[[33m.^[[39m^[[34mtoBeCloseTo^[[39m(^[[34m1^[[39m^[[33m,^[[39m ^[[34m10^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5930805Z     ^[[90m   |^[[39m                               ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5931138Z     ^[[90m100|^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5931609Z     ^[[90m101|^[[39m     // Both properties are mid-ramp on their own grids at the same aut…
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5932180Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5932524Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5932737Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5933727Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/contract/gsap-authored-duration.test.ts^[[2m > ^[[22mGSAP authored-duration pinning (P0-3b)^[[2m > ^[[22mreports the authored duration for a track with no authored stops
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5935580Z ^[[31m^[[1mAssertionError^[[22m: expected +0 to be close to 3, received difference is 3, but expected 5e-11^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5936483Z ^[[36m ^[[2m❯^[[22m packages/core/test/contract/gsap-authored-duration.test.ts:^[[2m119:31^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5937230Z     ^[[90m117|^[[39m     const timeline = seam.interpolator.create({ duration: 3, keyframes…
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5937693Z     ^[[90m118|^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5938378Z     ^[[90m119|^[[39m     ^[[34mexpect^[[39m(timeline^[[33m.^[[39mduration)^[[33m.^[[39m^[[34mtoBeCloseTo^[[39m(^[[34m3^[[39m^[[33m,^[[39m ^[[34m10^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5939070Z     ^[[90m   |^[[39m                               ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5939394Z     ^[[90m120|^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5939770Z     ^[[90m121|^[[39m     timeline^[[33m.^[[39m^[[34mkill^[[39m()^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5940049Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5940301Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5940518Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5941539Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/contract/gsap-authored-duration.test.ts^[[2m > ^[[22mGSAP authored-duration pinning (P0-3b)^[[2m > ^[[22mpins only when the tail is short, and never through the published proxy
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5942627Z ^[[31m^[[1mAssertionError^[[22m: expected 1 to be 2 // Object.is equality^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5942931Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5943052Z ^[[32m- Expected^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5943321Z ^[[31m+ Received^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5943449Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5943556Z ^[[32m- 2^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5943766Z ^[[31m+ 1^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5943879Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5944337Z ^[[36m ^[[2m❯^[[22m packages/core/test/contract/gsap-authored-duration.test.ts:^[[2m155:44^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5945243Z     ^[[90m153|^[[39m     })^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5945533Z     ^[[90m154|^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5946268Z     ^[[90m155|^[[39m     ^[[34mexpect^[[39m(short^[[33m.^[[39mcreated[^[[34m0^[[39m]^[[33m?.^[[39m^[[34mtweenCount^[[39m())^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m2^[[39m)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5947265Z     ^[[90m   |^[[39m                                            ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5947610Z     ^[[90m156|^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5948071Z     ^[[90m157|^[[39m     // Whatever pins the duration must not reach the adapter-owned pro…
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5948397Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5948630Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5948971Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5949001Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5949467Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m44 passed^[[39m^[[22m^[[90m (45)^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5950586Z ^[[2m      Tests ^[[22m ^[[1m^[[31m5 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m162 passed^[[39m^[[22m^[[90m (167)^[[39m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5951149Z ^[[2m   Start at ^[[22m 00:21:30
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5951794Z ^[[2m   Duration ^[[22m 3.69s^[[2m (transform 1.01s, setup 0ms, import 2.43s, tests 547ms, environment 8ms)^[[22m
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5952204Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5952211Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5976359Z ##[error]AssertionError: expected 0.5 to be close to 1, received difference is 0.5, but expected 5e-11
+quality (node 24)	Unit tests	 ❯ packages/core/test/contract/gsap-authored-duration.test.ts:34:31
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5984179Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5986334Z ##[error]AssertionError: expected 1 to be close to 2, received difference is 1, but expected 5e-11
+quality (node 24)	Unit tests	 ❯ packages/core/test/contract/gsap-authored-duration.test.ts:68:31
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5987450Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5988986Z ##[error]AssertionError: expected 0.75 to be close to 1, received difference is 0.25, but expected 5e-11
+quality (node 24)	Unit tests	 ❯ packages/core/test/contract/gsap-authored-duration.test.ts:99:31
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5990022Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5991532Z ##[error]AssertionError: expected +0 to be close to 3, received difference is 3, but expected 5e-11
+quality (node 24)	Unit tests	 ❯ packages/core/test/contract/gsap-authored-duration.test.ts:119:31
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5992985Z 
+quality (node 24)	Unit tests	2026-08-13T00:21:34.5995169Z ##[error]AssertionError: expected 1 to be 2 // Object.is equality
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- Expected
+quality (node 24)	Unit tests	+ Received
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	- 2
+quality (node 24)	Unit tests	+ 1
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	 ❯ packages/core/test/contract/gsap-authored-duration.test.ts:155:44
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-13T00:21:34.6399780Z ##[error]Process completed with exit code 1.
