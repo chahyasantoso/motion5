@@ -37,6 +37,7 @@ describe("S2 sparse percent-keyframe compilation", () => {
       },
     });
     const keyframes = seam.configs[0]?.keyframes as Record<string, Record<string, unknown>>;
+    expect(Object.keys(keyframes)).toEqual(["0%", "20%", "25%", "50%", "100%"]);
     expect(keyframes["0%"]?.y).toBe(20);
     expect(keyframes["20%"]?.x).toBeUndefined();
     expect(keyframes["50%"]?.y).toBeUndefined();

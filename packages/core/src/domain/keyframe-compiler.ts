@@ -15,6 +15,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function toPercentKey(position: number): string {
   return `${position * 100}%`;
 }
+function percentValue(percent: string): number {
+  return Number.parseFloat(percent.slice(0, -1));
+}
 function readStops(value: unknown): readonly AuthoredStop[] {
   if (!isRecord(value) || !Array.isArray(value.stops)) return [];
   return value.stops.filter(
@@ -63,7 +66,9 @@ export function compilePercentKeyframes(config: unknown, path = "keyframes"): Co
     if (!first || !last) continue;
     initial[key] = first.v;
 
-    // Boundary values preserve leading/trailing holds without resampling sibling grids.
+    // These are property-local boundary holds. They prevent a track that starts or
+    // ends late from acquiring GSAP's implicit neutral value, without resampling
+    // any sibling property onto this property's grid.
     if (first.p > 0) addValue("0%", key, first.v);
     for (const stop of stops) {
       const percent = toPercentKey(stop.p);
@@ -73,12 +78,13 @@ export function compilePercentKeyframes(config: unknown, path = "keyframes"): Co
     if (last.p < 1) addValue("100%", key, last.v);
   }
 
+  const orderedKeyframes = Object.fromEntries(
+    Object.entries(keyframes)
+      .sort(([left], [right]) => percentValue(left) - percentValue(right))
+      .map(([percent, frame]) => [percent, Object.freeze(frame)]),
+  );
   return Object.freeze({
-    keyframes: Object.freeze(
-      Object.fromEntries(
-        Object.entries(keyframes).map(([percent, frame]) => [percent, Object.freeze(frame)]),
-      ),
-    ),
+    keyframes: Object.freeze(orderedKeyframes),
     initial: Object.freeze(initial),
     diagnostics: Object.freeze(diagnostics),
   });
