@@ -37,27 +37,25 @@ Last reviewed: 2026-08-13
 | P1-8  | One reentrancy policy, one flush entry point    | Done, merged    |
 | P1-9  | Narrow public project handle                    | Done, merged    |
 | P1-12 | One observation-validation owner                | Done, merged    |
+| S5    | Contribution completeness                       | Done, gate open |
+| S6    | Remove dead `use` contract                      | Done, gate open |
 
 ## Current next action
 
-**X-2/X-3:** close the remaining plugin contract gap in one focused slice. Either thread plugin `internalKeys`, output serializers, and output ownership into the DOM consumer, and restore the oracle's per-key `contribute()` collision contract, or delete metadata the product does not support. Do not update status until executable tests prove the chosen contract. After that, rerun the recovery audit and open rescue → main.
+Rerun the recovery audit against the completed S6 head. Do not open rescue → main until the audit is clean and the required checks remain green.
 
 ## Evidence
 
-- P1-10: [PR #76](https://github.com/chahyasantoso/motion5/pull/76), green [#31675927357](https://github.com/chahyasantoso/motion5/actions/runs/31675927357), merged [`f296594`](https://github.com/chahyasantoso/motion5/commit/f29659487ac325ab72dfc7ff111c1049f0cd610a).
-- P1-11: [PR #77](https://github.com/chahyasantoso/motion5/pull/77), green [#31676660768](https://github.com/chahyasantoso/motion5/actions/runs/31676660768), merged.
-- P1-7/P1-8: [PR #78](https://github.com/chahyasantoso/motion5/pull/78), green [#31681320093](https://github.com/chahyasantosa/motion5/actions/runs/31681320093), merged [`c1e68d6`](https://github.com/chahyasantoso/motion5/commit/c1e68d6b67b12103b249af3adb570cd0a870eb6c).
-- P1-9: [PR #79](https://github.com/chahyasantoso/motion5/pull/79), green [#31681653183](https://github.com/chahyasantoso/motion5/actions/runs/31681653183), merged [`5571da9`](https://github.com/chahyasantoso/motion5/commit/5571da91f3e38c85f3c596ec9240e8412f1cfa47).
-- P1-12: [PR #80](https://github.com/chahyasantoso/motion5/pull/80), green [#31684300411](https://github.com/chahyasantoso/motion5/actions/runs/31684300411), merged [`ccae2a9`](https://github.com/chahyasantoso/motion5/commit/ccae2a91a97b9ab766b03fe89ebb5da8faf97f93).
-- Unified governance: [PR #81](https://github.com/chahyasantoso/motion5/pull/81), green [#31686104238](https://github.com/chahyasantoso/motion5/actions/runs/31686104238), merged [`c551588`](https://github.com/chahyasantoso/motion5/commit/c55158863ea7631b0a143f61c475d7475f3a33ec).
+- S5: PR #91, merged and awaiting the recovery audit.
+- S6: [PR #92](https://github.com/chahyasantoso/motion5/pull/92), green workflow [#31718629183](https://github.com/chahyasantoso/motion5/actions/runs/31718629183), head [`9b6e50e`](https://github.com/chahyasantoso/motion5/commit/9b6e50eeb58beeded1124604b9274a88007d7c0f).
+- S6 contract evidence: [`9b6e50e`](https://github.com/chahyasantoso/motion5/commit/9b6e50eeb58beeded1124604b9274a88007d7c0f) removes the `TrackDefinition.use` API, rejects legacy entries at load, removes the empty resolver, preserves authored-key resolution, and restores acceptance coverage.
 
 ## Reopened gates
 
 - C3/X-2: plugin metadata and the full `contribute()` contract remain open.
-- G-1/G-3/G-4/G-5/G-6/G-7: unified governance implementation is merged; rerun the recovery audit on the merged rescue head before calling the rescue complete.
+- G-1/G-3/G-4/G-5/G-6/G-7: unified governance implementation is merged; rerun the recovery audit on the completed S6 head before calling the rescue complete.
 
 ## Remaining work
 
-- X-2/X-3: thread or remove plugin metadata and restore/document the `contribute()` contract.
-- Rerun the recovery audit against the merged rescue head and fix any evidence-only failures.
+- Rerun the recovery audit against the completed S6 head and fix any evidence-only failures.
 - Open rescue → main after the audit is clean.

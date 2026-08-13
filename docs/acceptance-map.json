@@ -41,6 +41,10 @@
     {
       "id": "s5-product-path",
       "test": "packages/core/test/integration/engine-x3-contribution.test.ts"
+    },
+    {
+      "id": "s6-unsupported-use",
+      "test": "packages/core/test/integration/plugin-use-contract.test.ts"
     }
   ]
 }

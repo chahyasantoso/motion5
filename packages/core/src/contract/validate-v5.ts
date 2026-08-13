@@ -137,6 +137,16 @@ function validateTrackShape(
     return false;
   }
   diagnostics.push(...validateId(track.id, `${path}.id`, "Track"));
+  if ("use" in track)
+    diagnostics.push(
+      issue(
+        "plugin-contribution-unsupported-entry",
+        `${path}.use`,
+        "Track use is not supported; resolve plugins from authored keyframes.",
+        "error",
+        [String(track.use)],
+      ),
+    );
   validateKeyframes(track.keyframes, `${path}.keyframes`, diagnostics);
   if (typeof track.id === "string" && track.id.length) {
     if (seenIds.has(track.id))

@@ -47,7 +47,7 @@ export interface PluginDefinition {
 }
 
 const VALID_STAGES = new Set(["prepare", "compose"]);
-const RESERVED_TWEEN_VARS = new Set(["keyframes", "duration", "paused", "id", "use", "observes"]);
+const RESERVED_TWEEN_VARS = new Set(["keyframes", "duration", "paused", "id", "observes"]);
 function diagnostic(
   ruleId: string,
   path: string,
@@ -358,41 +358,6 @@ export class PluginRegistry {
     for (const key of keys) this.#keyOwners.set(key, frozen);
     for (const input of inputs) this.#inputOwners.set(input, frozen);
     if (keys.length === 0 && plugin.claimsKey) this.#predicates.push(frozen);
-  }
-  resolve(names: readonly string[], path = "plugins"): ResolvedPlugins {
-    const plugins: PluginDefinition[] = [];
-    const diagnostics: Diagnostic[] = [];
-    const requested = new Set<string>();
-    names.forEach((name, index) => {
-      const itemPath = `${path}[${index}]`;
-      if (typeof name !== "string" || !name.trim())
-        diagnostics.push(
-          diagnostic("plugin-name", itemPath, "Plugin name must be a non-empty string."),
-        );
-      else if (requested.has(name))
-        diagnostics.push(
-          diagnostic(
-            "plugin-duplicate-use",
-            itemPath,
-            `Plugin "${name}" is requested more than once.`,
-            [name],
-          ),
-        );
-      else {
-        requested.add(name);
-        const plugin = this.#plugins.get(name);
-        if (!plugin)
-          diagnostics.push(
-            diagnostic("plugin-unknown", itemPath, `Plugin "${name}" is not registered.`, [name]),
-          );
-        else plugins.push(plugin);
-      }
-    });
-    return result(
-      plugins,
-      diagnostics,
-      Object.freeze({ keyframes: Object.freeze({}), tweenVars: Object.freeze({}) }),
-    );
   }
   resolveForKeyframes(
     authored: Readonly<Record<string, unknown>>,
