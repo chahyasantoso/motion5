@@ -1,8 +1,10 @@
 name: CI
 
 on:
+  # Pull requests already run the full required suite. Do not also run the same
+  # workflow from pushes to feature branches, or every PR head gets duplicate checks.
   push:
-    branches: [main, "rescue/**", "fix/**"]
+    branches: [main, "rescue/**"]
   pull_request:
     branches: [main, "rescue/**", "fix/**"]
     types: [opened, synchronize, reopened]
