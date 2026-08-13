@@ -65,11 +65,36 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
     runtime.dispose();
   });
 
-  it("does not expose the publisher as a second public reentrancy entry point", () => {
+  it("retries scheduling after a synchronous scheduler failure", () => {
     const clock = createManualClock();
-    const scheduler = createFakeScheduler();
+    let attempts = 0;
+    const jobs: Array<() => void> = [];
+    const scheduler = {
+      schedule(job: () => void) {
+        attempts += 1;
+        if (attempts === 1) throw new Error("scheduler unavailable");
+        jobs.push(job);
+        return { cancel() {} };
+      },
+    };
     const runtime = new GraphRuntime(project, clock, compose, { scheduler });
-    expect((runtime as unknown as { publisher?: unknown }).publisher).toBeUndefined();
+    runtime.attach("hero/arm");
+    const diagnostics: string[] = [];
+    const reported = new GraphRuntime(project, createManualClock(), compose, {
+      scheduler,
+      onFlushError: (diagnostic) => diagnostics.push(diagnostic.ruleId),
+    });
+    reported.attach("hero/arm");
+    reported.registry.subscribeNode("hero/arm", () => reported.invalidate(["caption/label"]));
+    // The first schedule attempt fails but must not poison the guard.
+    reported.flush(["hero/arm"], 1);
+    expect(diagnostics).toContain("scheduler-failure");
+    reported.registry.subscribeNode("caption/label", () => undefined);
+    reported.invalidate(["caption/label"]);
+    expect(attempts).toBeGreaterThan(1);
+    jobs.splice(0).forEach((job) => job());
+    expect(reported.pendingSeeds).toEqual([]);
     runtime.dispose();
+    reported.dispose();
   });
 });

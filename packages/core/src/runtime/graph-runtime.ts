@@ -12,6 +12,7 @@ export type ComposeResolver = (node: GraphNode) => ComposeNode;
 export const DEFERRED_FLUSH_RULE = "reentrant-flush-deferred";
 export const CLOCK_REGRESSION_RULE = "clock-tick-regression";
 export const FLUSH_FAILURE_RULE = "flush-failure";
+export const SCHEDULER_FAILURE_RULE = "scheduler-failure";
 
 export interface GraphRuntimeOptions {
   readonly scheduler?: Scheduler;
@@ -164,15 +165,22 @@ export class GraphRuntime {
   #scheduleDrain(): void {
     if (this.#scheduler === undefined || this.#scheduledDrain || this.#disposed) return;
     this.#scheduledDrain = true;
-    this.#scheduler.schedule(() => {
+    try {
+      this.#scheduler.schedule(() => {
+        this.#scheduledDrain = false;
+        if (this.#disposed || this.#pendingSeeds.size === 0) return;
+        try {
+          this.flush([]);
+        } catch (error) {
+          this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describe(error)}`);
+        }
+      });
+    } catch (error) {
+      // Scheduling is an injected boundary. Clear the guard before reporting so a later
+      // invalidation can retry instead of leaving pending seeds permanently stranded.
       this.#scheduledDrain = false;
-      if (this.#disposed || this.#pendingSeeds.size === 0) return;
-      try {
-        this.flush([]);
-      } catch (error) {
-        this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describe(error)}`);
-      }
-    });
+      this.#report(SCHEDULER_FAILURE_RULE, `Deferred flush scheduling failed: ${describe(error)}`);
+    }
   }
 
   #onTick(event: ClockTick): void {
