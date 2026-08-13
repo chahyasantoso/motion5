@@ -139,7 +139,7 @@ describe("schema v5 validator", () => {
     });
     expect(result.valid).toBe(false);
     expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(
-      expect.arrayContaining(["observation-cycle"]),
+      expect.arrayContaining(["graph-cycle"]),
     );
   });
 

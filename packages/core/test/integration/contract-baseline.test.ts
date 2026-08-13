@@ -36,7 +36,7 @@ describe("P0-05 v5 contract integration", () => {
     const result = validateV5(cyclicProject);
     expect(result.valid).toBe(false);
     expect(result.diagnostics).toContainEqual(
-      expect.objectContaining({ ruleId: "observation-cycle", severity: "error" }),
+      expect.objectContaining({ ruleId: "graph-cycle", severity: "error" }),
     );
   });
 
