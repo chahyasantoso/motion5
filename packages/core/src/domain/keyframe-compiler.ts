@@ -6,7 +6,12 @@ export interface CompiledKeyframes {
   readonly diagnostics: readonly Diagnostic[];
 }
 
-function diagnostic(ruleId: string, path: string, message: string, ids: readonly string[]): Diagnostic {
+function diagnostic(
+  ruleId: string,
+  path: string,
+  message: string,
+  ids: readonly string[],
+): Diagnostic {
   return Object.freeze({ ruleId, path, message, severity: "error", ids: Object.freeze([...ids]) });
 }
 function isRecord(value: unknown): value is Record<string, unknown> {

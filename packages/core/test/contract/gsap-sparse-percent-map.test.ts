@@ -32,8 +32,20 @@ describe("S2 sparse percent-keyframe compilation", () => {
     seam.interpolator.create({
       duration: 1,
       keyframes: {
-        x: { stops: [{ p: 0, v: 0 }, { p: 0.5, v: 50 }, { p: 1, v: 100 }] },
-        y: { stops: [{ p: 0.2, v: 20 }, { p: 0.25, v: 25 }, { p: 1, v: 100 }] },
+        x: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 0.5, v: 50 },
+            { p: 1, v: 100 },
+          ],
+        },
+        y: {
+          stops: [
+            { p: 0.2, v: 20 },
+            { p: 0.25, v: 25 },
+            { p: 1, v: 100 },
+          ],
+        },
       },
     });
     const keyframes = seam.configs[0]?.keyframes as Record<string, Record<string, unknown>>;
@@ -48,8 +60,19 @@ describe("S2 sparse percent-keyframe compilation", () => {
     seam.interpolator.create({
       duration: 1,
       keyframes: {
-        x: { stops: [{ p: 0, v: 0 }, { p: 0.5, v: 50, ease: "power2.out" }, { p: 1, v: 100 }] },
-        y: { stops: [{ p: 0, v: 0 }, { p: 1, v: 100 }] },
+        x: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 0.5, v: 50, ease: "power2.out" },
+            { p: 1, v: 100 },
+          ],
+        },
+        y: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 1, v: 100 },
+          ],
+        },
       },
     });
     const keyframes = seam.configs[0]?.keyframes as Record<string, Record<string, unknown>>;
@@ -64,8 +87,20 @@ describe("S2 sparse percent-keyframe compilation", () => {
       seam.interpolator.create({
         duration: 1,
         keyframes: {
-          x: { stops: [{ p: 0, v: 0 }, { p: 0.5, v: 50, ease: "power1.out" }, { p: 1, v: 100 }] },
-          y: { stops: [{ p: 0, v: 0 }, { p: 0.5, v: 50, ease: "power2.out" }, { p: 1, v: 100 }] },
+          x: {
+            stops: [
+              { p: 0, v: 0 },
+              { p: 0.5, v: 50, ease: "power1.out" },
+              { p: 1, v: 100 },
+            ],
+          },
+          y: {
+            stops: [
+              { p: 0, v: 0 },
+              { p: 0.5, v: 50, ease: "power2.out" },
+              { p: 1, v: 100 },
+            ],
+          },
         },
       }),
     ).toThrow(/plugin-contribution-ease-collision/);

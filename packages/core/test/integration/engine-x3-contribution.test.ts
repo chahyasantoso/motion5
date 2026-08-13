@@ -85,7 +85,12 @@ describe("X-3 contribution through the product load path", () => {
       stage: "prepare",
       contribute: () => ({
         keyframes: {
-          derived: { stops: [{ p: 0.8, v: 1 }, { p: 0.2, v: 2 }] },
+          derived: {
+            stops: [
+              { p: 0.8, v: 1 },
+              { p: 0.2, v: 2 },
+            ],
+          },
         },
       }),
       compose,
@@ -106,8 +111,20 @@ describe("X-3 contribution through the product load path", () => {
     expect(() =>
       new Engine({ ...options(), interpolator }).load(
         projectWith({
-          x: { stops: [{ p: 0, v: 0 }, { p: 0.5, v: 50, ease: "power1.out" }, { p: 1, v: 100 }] },
-          y: { stops: [{ p: 0, v: 0 }, { p: 0.5, v: 50, ease: "power2.out" }, { p: 1, v: 100 }] },
+          x: {
+            stops: [
+              { p: 0, v: 0 },
+              { p: 0.5, v: 50, ease: "power1.out" },
+              { p: 1, v: 100 },
+            ],
+          },
+          y: {
+            stops: [
+              { p: 0, v: 0 },
+              { p: 0.5, v: 50, ease: "power2.out" },
+              { p: 1, v: 100 },
+            ],
+          },
         }) as never,
       ),
     ).toThrow(/plugin-contribution-ease-collision/);

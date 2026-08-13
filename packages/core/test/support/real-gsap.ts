@@ -1,6 +1,9 @@
 import { gsap } from "gsap";
 import type { Interpolator } from "../../src/ports/interpolator";
-import { createGsapInterpolator, type GsapTimelineLike } from "../../src/adapters/interpolator/gsap";
+import {
+  createGsapInterpolator,
+  type GsapTimelineLike,
+} from "../../src/adapters/interpolator/gsap";
 
 export interface CreatedTimeline {
   readonly config: unknown;

@@ -87,10 +87,7 @@ export class Engine {
       if (existing) return existing;
       const definition = nodes.get(nodeId);
       if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
-      const keyframeCompilation = compilePercentKeyframes(
-        definition,
-        `${nodeId}.keyframes`,
-      );
+      const keyframeCompilation = compilePercentKeyframes(definition, `${nodeId}.keyframes`);
       if (keyframeCompilation.diagnostics.some(({ severity }) => severity === "error"))
         throw new TypeError(describeDiagnostics(keyframeCompilation.diagnostics));
       const resolved = this.#plugins?.resolveForKeyframes(
