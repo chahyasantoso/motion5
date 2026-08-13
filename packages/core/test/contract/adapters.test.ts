@@ -33,7 +33,7 @@ describe("adapter ports", () => {
       kill: () => { killed = true; },
     } as GsapTimelineLike;
     const interpolator = createGsapInterpolator({ timeline: () => timeline });
-    const adapted = interpolator.create({});
+    const adapted = interpolator.create({ duration: 2 });
     expect(adapted.duration).toBe(2);
     adapted.progress(0.5);
     expect(adapted.progress()).toBe(0.5);
