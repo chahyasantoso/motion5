@@ -44,4 +44,33 @@ describe("GSAP absolute multi-property stops (P0-3)", () => {
     expect(readNumber(timeline.state, "y")).toBeCloseTo(100, 6);
     timeline.kill();
   });
+
+  it("does not resample a sibling property into a non-linear authored track", () => {
+    const seam = createRealGsapSeam();
+    const timeline = seam.interpolator.create({
+      duration: 1,
+      keyframes: {
+        x: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 0.5, v: 100, ease: "power2.out" },
+            { p: 1, v: 100 },
+          ],
+        },
+        y: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 0.25, v: 25 },
+            { p: 1, v: 100 },
+          ],
+        },
+      },
+    });
+
+    timeline.progress(0.25);
+    expect(readNumber(timeline.state, "y")).toBeCloseTo(25, 3);
+    timeline.progress(0.5);
+    expect(readNumber(timeline.state, "y")).toBeCloseTo(50, 3);
+    timeline.kill();
+  });
 });
