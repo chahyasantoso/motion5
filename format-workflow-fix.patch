@@ -1,0 +1,126 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 516f29e..261f8d0 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -16,8 +16,8 @@ permissions:
+   contents: read
+ 
+ jobs:
+-  quality:
+-    name: quality (node 24)
++  format:
++    name: format (node 24)
+     runs-on: ubuntu-latest
+     timeout-minutes: 15
+     steps:
+@@ -32,6 +32,21 @@ jobs:
+         run: npm ci --ignore-scripts --no-audit --no-fund
+       - name: Format check
+         run: npm run format:check
++
++  quality:
++    name: quality (node 24)
++    runs-on: ubuntu-latest
++    timeout-minutes: 15
++    steps:
++      - uses: actions/checkout@v4
++        with:
++          ref: ${{ github.event.pull_request.head.sha || github.sha }}
++      - uses: actions/setup-node@v4
++        with:
++          node-version: 24
++          cache: npm
++      - name: Install locked dependencies
++        run: npm ci --ignore-scripts --no-audit --no-fund
+       - name: Typecheck
+         run: npm run typecheck
+       - name: Unit tests
+diff --git a/.github/workflows/format.yml b/.github/workflows/format.yml
+index c0ae1c5..b885053 100644
+--- a/.github/workflows/format.yml
++++ b/.github/workflows/format.yml
+@@ -1,7 +1,14 @@
+-# Checks formatting on pull requests without mutating their head branches.
+-# A GITHUB_TOKEN push does not trigger another workflow run, so auto-committing
+-# here created unchecked heads. Formatting drift now fails this check and is
+-# fixed in the same PR commit that CI evaluates.
++# Auto-fixes formatting on pull requests and pushes the fix back to the PR branch.
++#
++# Pushes here use PERSONAL_ACCESS_TOKEN, not the default GITHUB_TOKEN. GitHub does not let a
++# GITHUB_TOKEN-authored push trigger further workflow runs (loop protection), which is what
++# made an earlier version of this job dangerous: the auto-fix commit would show a green PR with
++# a HEAD that CI had never actually evaluated. A push authored with a personal access token is
++# treated like an ordinary push and re-triggers CI normally, so the corrected head is always the
++# one CI actually checked.
++#
++# If PERSONAL_ACCESS_TOKEN is not configured, this job still runs prettier --check (read-only)
++# so PRs are never silently unformatted -- it just cannot push the fix for the implementor.
+ name: Format
+ 
+ on:
+@@ -14,25 +21,59 @@ concurrency:
+ 
+ permissions:
+   contents: read
+-  pull-requests: read
+ 
+ jobs:
+-  format-pr:
+-    name: prettier --check
++  format-fix:
++    name: prettier --write
+     if: github.event.pull_request.head.repo.full_name == github.repository
+     runs-on: ubuntu-latest
+     timeout-minutes: 15
++    env:
++      HAS_PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN != '' }}
+     steps:
+       - uses: actions/checkout@v4
+         with:
+-          ref: ${{ github.event.pull_request.head.sha }}
++          ref: ${{ github.event.pull_request.head.ref }}
+           repository: ${{ github.event.pull_request.head.repo.full_name }}
+           fetch-depth: 1
++          token: ${{ secrets.PERSONAL_ACCESS_TOKEN || github.token }}
++
+       - uses: actions/setup-node@v4
+         with:
+           node-version: 24
+           cache: npm
++
+       - name: Install locked dependencies
+         run: npm ci --ignore-scripts --no-audit --no-fund
+-      - name: Check formatting
+-        run: npm run format:check
++
++      - name: Apply prettier
++        run: npx prettier --write .
++
++      - name: Push the fix, if PERSONAL_ACCESS_TOKEN is configured and anything changed
++        if: env.HAS_PAT == 'true'
++        run: |
++          if git diff --quiet; then
++            echo "Already formatted, nothing to push."
++            exit 0
++          fi
++          git config user.name "${{ github.actor }}"
++          git config user.email "${{ github.actor }}@users.noreply.github.com"
++          git commit -am "chore: apply prettier"
++          git push origin HEAD:${{ github.event.pull_request.head.ref }}
++          echo "Pushed a formatting fix. CI will re-run on the new commit automatically."
++
++      - name: Report exact corrected file contents (no PAT configured, or push not possible)
++        if: env.HAS_PAT != 'true'
++        run: |
++          if git diff --quiet; then
++            echo "Already formatted."
++            exit 0
++          fi
++          echo "PERSONAL_ACCESS_TOKEN is not configured, so this job cannot push the fix."
++          echo "Replace each file below with the EXACT content shown -- do not hand-format."
++          for f in $(git diff --name-only); do
++            echo "===== FILE: $f ====="
++            cat "$f"
++            echo "===== END: $f ====="
++          done
++          exit 1
