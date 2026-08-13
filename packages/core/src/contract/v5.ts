@@ -40,7 +40,7 @@ export interface TrackDefinition {
 export interface ObservationDefinition {
   readonly source: string;
   readonly role?: "input" | "output";
-  /** Legacy label retained for authored compatibility; projections define input keys. */
+  /** Legacy label retained for authored input; projections define input keys. */
   readonly target?: string;
   readonly projection?: InputProjection;
 }
