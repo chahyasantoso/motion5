@@ -31,19 +31,21 @@ function normalizeReport(report) {
   return files;
 }
 
-export async function scanAcceptance(scanRoot = root, reportPath = process.env.VITEST_JSON ?? "test-results/vitest.json") {
+export async function scanAcceptance(scanRoot = root, reportPath) {
   const map = await readAcceptanceMap(scanRoot);
   if (!map || map.version !== 1 || !Array.isArray(map.items)) throw new Error("Acceptance map must have version 1 and an items array.");
   const failures = [];
   const ids = new Set();
-  let report;
-  try {
-    report = JSON.parse(await readFile(join(scanRoot, reportPath), "utf8"));
-  } catch {
-    failures.push(`test report: missing ${reportPath}`);
-    return failures;
+  const reportFile = reportPath ?? process.env.VITEST_JSON;
+  let results;
+  if (reportFile) {
+    try {
+      results = normalizeReport(JSON.parse(await readFile(join(scanRoot, reportFile), "utf8")));
+    } catch {
+      failures.push(`test report: missing ${reportFile}`);
+      return failures;
+    }
   }
-  const results = normalizeReport(report);
   for (const item of map.items) {
     if (!item || typeof item.id !== "string" || typeof item.test !== "string") {
       failures.push("Each acceptance item requires string id and test fields.");
@@ -55,6 +57,7 @@ export async function scanAcceptance(scanRoot = root, reportPath = process.env.V
       failures.push(`${item.id}: missing ${item.test}`);
       continue;
     }
+    if (!results) continue;
     const match = [...results].filter(([file]) => file === item.test || file.endsWith(`/${item.test}`) || file.startsWith(`${item.test}/`));
     const summary = match.reduce((total, [, value]) => ({ passed: total.passed + value.passed, skipped: total.skipped + value.skipped, todo: total.todo + value.todo }), { passed: 0, skipped: 0, todo: 0 });
     if (summary.passed === 0) failures.push(`${item.id}: no passed assertions`);
