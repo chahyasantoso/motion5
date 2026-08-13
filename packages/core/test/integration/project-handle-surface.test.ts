@@ -20,7 +20,13 @@ describe("public project handle surface (P1-9)", () => {
     expect((runtime as unknown as { binding?: unknown }).binding).toBeUndefined();
     expect((runtime as unknown as { registry?: unknown }).registry).toBeUndefined();
     expect((runtime as unknown as { publisher?: unknown }).publisher).toBeUndefined();
-    expect(Object.keys(runtime).sort()).toEqual(["dispose", "mount", "seek", "subscribe", "unmount"]);
+    expect(Object.keys(runtime).sort()).toEqual([
+      "dispose",
+      "mount",
+      "seek",
+      "subscribe",
+      "unmount",
+    ]);
     runtime.dispose();
   });
 });
