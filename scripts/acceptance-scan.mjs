@@ -22,9 +22,7 @@ function normalizeReport(report) {
   for (const result of report.testResults ?? []) {
     const file = result.testFile ?? result.file ?? result.name;
     if (!file) continue;
-    const assertions = Array.isArray(result.assertionResults)
-      ? result.assertionResults
-      : [result];
+    const assertions = Array.isArray(result.assertionResults) ? result.assertionResults : [result];
     const current = files.get(file) ?? { passed: 0, failed: 0, skipped: 0, todo: 0 };
     for (const assertion of assertions) {
       current.passed += assertion.status === "passed" ? 1 : 0;
