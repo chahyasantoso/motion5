@@ -113,7 +113,14 @@ export class Track {
       ...rendererNeutralState(this.#timeline.state),
       ...inputs,
     };
-    for (const plugin of this.#plugins.plugins) values = plugin.compose(values, this.#progress);
+    for (const plugin of this.#plugins.plugins) {
+      const composed = plugin.compose(values, this.#progress);
+      if (!isRecord(composed))
+        throw new CompositionOutputError(
+          `Plugin "${plugin.name}" must return a renderer-neutral record.`,
+        );
+      values = composed as ImmutableRecord;
+    }
     const frozenValues = freezeComposition(values);
     const snapshot = Object.freeze({
       progress: this.#progress,
