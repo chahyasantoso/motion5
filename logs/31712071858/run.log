@@ -1,0 +1,14 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T14:49:47.5992338Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T14:49:47.5992828Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T14:49:47.6015515Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T14:49:47.6015854Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T14:49:47.6016175Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T14:49:47.6016444Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T14:49:47.7575097Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T14:49:47.7575961Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T14:49:47.7576418Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T14:49:47.7576743Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T14:49:49.3226952Z ##[error]packages/core/test/contract/gsap-paused-timeline.test.ts(12,40): error TS2352: Conversion of type '{ duration: () => number; progress(value?: number | undefined): number | GsapTimelineLike; to: () => GsapTimelineLike; kill(): void; }' to type 'GsapTimelineLike' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+quality (node 24)	Run npm run typecheck	2026-08-13T14:49:49.3236386Z   The types returned by 'duration(...)' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-13T14:49:49.3237353Z     Type 'number' is not comparable to type 'GsapTimelineLike'.
+quality (node 24)	Run npm run typecheck	2026-08-13T14:49:49.3393915Z ##[error]Process completed with exit code 2.
