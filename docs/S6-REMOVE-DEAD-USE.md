@@ -1,3 +1,3 @@
 # S6: remove dead plugin use
 
-`TrackDefinition.use` is removed from the authored contract. Legacy input carrying `use` is rejected at validation with `plugin-contribution-unsupported-entry`; plugin resolution remains keyframe-owned, with no empty resolve/preparation path.
+Rerun marker after fixing the missing parenthesis in the retained plugin priority validation guard. `TrackDefinition.use` is removed and legacy `use` entries are rejected with `plugin-contribution-unsupported-entry`.
