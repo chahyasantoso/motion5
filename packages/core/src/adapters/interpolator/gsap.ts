@@ -51,7 +51,7 @@ function compileKeyframes(config: unknown): { keyframes: Record<string, PercentK
   const orderedPositions = [...positions].sort((a, b) => a - b);
   const keyframes: Record<string, PercentKeyframe> = {};
   for (const position of orderedPositions) {
-    const frame: PercentKeyframe = {};
+    const frame: PercentKeyframe = { ease: "none" };
     for (const [key, property] of properties) frame[key] = numericValueAt(property.stops, position);
     const authoredAtPosition = [...properties.values()].flatMap(({ stops }) => stops.filter((stop) => stop.p === position));
     const eases = authoredAtPosition.map((stop) => stop.ease).filter((ease) => ease !== undefined);
