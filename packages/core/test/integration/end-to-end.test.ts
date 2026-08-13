@@ -4,6 +4,7 @@ import { createDomPatchAdapter } from "../../src/adapters/dom";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeScheduler } from "../../src/ports/fakes";
+import type { Patch } from "../../src/runtime/patch-registry";
 import { createRealGsapSeam } from "../support/real-gsap";
 
 const project: ProjectDefinition = {
@@ -44,7 +45,7 @@ describe("real end-to-end product path (E2)", () => {
     }).load(project);
 
     runtime.mount("hero/arm");
-    let patch: { values: Readonly<Record<string, unknown>> } | undefined;
+    let patch: Patch | undefined;
     runtime.subscribe("hero/arm", (next) => {
       patch = next;
     });
