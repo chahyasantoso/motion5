@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   NODE_VERSION: 24
@@ -122,13 +122,45 @@ jobs:
     needs: [quality, integration, boundaries, build, end-to-end]
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    env:
+      HAS_PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out the exact tested PR head
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          fetch-depth: 1
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN || github.token }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npm run format:check
+      - name: Apply Prettier
+        run: npm run format
+      - name: Push formatting child commit
+        if: env.HAS_PAT == 'true'
+        env:
+          TARGET_BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          if git diff --quiet; then
+            echo "Already formatted."
+            exit 0
+          fi
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: apply prettier"
+          git push origin "HEAD:${TARGET_BRANCH}"
+          echo "Pushed a formatting child commit; CI will verify the new head."
+      - name: Fail with formatting evidence when PAT is unavailable
+        if: env.HAS_PAT != 'true'
+        run: |
+          if git diff --quiet; then
+            echo "Already formatted."
+            exit 0
+          fi
+          git --no-pager diff
+          echo "Formatting drift found, but PERSONAL_ACCESS_TOKEN is unavailable."
+          exit 1
