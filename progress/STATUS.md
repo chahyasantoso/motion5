@@ -29,12 +29,12 @@ Last reviewed: 2026-08-13
 | P0-3b | Authored-duration pinning                       | Done, audited                          |
 | P0-4  | DOM transform rendering and removal             | Done, audited                          |
 | X-1   | Flat projected input observations               | Done, merged                           |
-| P1-5  | Structural registry change detection            | Green leg pushed, pending merge of #75 |
-| P1-6  | Listener snapshots before notification          | Green leg pushed, pending merge of #75 |
+| P1-5  | Structural registry change detection            | Red then green, pending merge of #75   |
+| P1-6  | Listener snapshots before notification          | Red then green, pending merge of #75   |
 
 ## Current next action
 
-**P1-5 and P1-6:** record the green run on [PR #75](https://github.com/chahyasantoso/motion5/pull/75) and merge. Then open P1-7 and P1-8: give `GraphRuntime` the scheduler so a deferred seed drains without a clock tick, and collapse the two reentrancy policies onto one flush entry point.
+**P1-5 and P1-6:** merge [PR #75](https://github.com/chahyasantoso/motion5/pull/75) on the recorded green run. Then open P1-7 and P1-8: give `GraphRuntime` the scheduler so a deferred seed drains without a clock tick, and collapse the two reentrancy policies onto one flush entry point.
 
 ## Evidence
 
@@ -42,7 +42,7 @@ Last reviewed: 2026-08-13
 - P0-3b audit: [run #31661988752](https://github.com/chahyasantoso/motion5/actions/runs/31661988752), ref [`d8aa0c66`](https://github.com/chahyasantoso/motion5/commit/d8aa0c66a9b7a3bfa2fbef4af0508d10feb44902), base [`8e93de4e`](https://github.com/chahyasantoso/motion5/commit/8e93de4ea1a448aaaade35ce95e7c47d0cfbe9a3), all six jobs passed.
 - P0-4: [PR #69](https://github.com/chahyasantoso/motion5/pull/69), red run [#31662690572](https://github.com/chahyasantoso/motion5/actions/runs/31662690572), green run [#31663009087](https://github.com/chahyasantoso/motion5/actions/runs/31663009087), merged at [`e83f0f2`](https://github.com/chahyasantoso/motion5/commit/e83f0f2236e0b84bd2012200592e81f787cabb32).
 - X-1: [PR #70](https://github.com/chahyasantoso/motion5/pull/70), red leg on test-only commit [`32d6e1f`](https://github.com/chahyasantoso/motion5/commit/32d6e1f98e876944d9c290843be3e3c0c955aeef085c2), green run [#31672259863](https://github.com/chahyasantoso/motion5/actions/runs/31672259863), merged at [`e1f026b`](https://github.com/chahyasantoso/motion5/commit/e1f026b4460324ff144f6c6d664312cba2c95613).
-- P1-5 and P1-6: [PR #75](https://github.com/chahyasantoso/motion5/pull/75), red leg on test-only commit [`1b6643f`](https://github.com/chahyasantoso/motion5/commit/1b6643fc102b3e712896299dd46df8301aa22f6c); the green run is recorded in the pull request thread.
+- P1-5 and P1-6: [PR #75](https://github.com/chahyasantoso/motion5/pull/75), red run [#31674529566](https://github.com/chahyasantoso/motion5/actions/runs/31674529566) on test-only commit [`1b6643f`](https://github.com/chahyasantoso/motion5/commit/1b6643fc102b3e712896299dd46df8301aa22f6c), green run [#31674734838](https://github.com/chahyasantoso/motion5/actions/runs/31674734838), formatted head [`0e7a1c5`](https://github.com/chahyasantoso/motion5/commit/0e7a1c5859e981576b3420c7b9055bb429c40aeb) verified by [run #31674778385](https://github.com/chahyasantoso/motion5/actions/runs/31674778385). Details in `progress/P1-5-6.md`.
 
 ## Reopened gates
 
