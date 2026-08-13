@@ -1,5 +1,5 @@
-# PR formatting now runs as the final CI job, after behavioral checks pass.
-# This manual fallback cannot rewrite a red-test commit.
+# PR formatting now runs as the final job in CI, after behavioral checks pass.
+# This legacy entry point remains manual so it cannot rewrite a red-test commit.
 name: Format fallback (manual)
 
 on:
