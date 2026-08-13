@@ -10,9 +10,9 @@ describe("public declaration surface (P1-9)", () => {
     const engine = await readFile(join(root, "packages/core/src/engine.ts"), "utf8");
     const entry = await readFile(join(root, "packages/core/src/index.ts"), "utf8");
 
-    // Engine may import ProjectRuntime for its private implementation closure. The boundary
-    // that matters here is that public Patch types do not come from runtime/patch-registry.
-    expect(engine).not.toMatch(/(?:Patch|PatchBatch|PatchListener).*from ["']\.\/runtime\//s);
+    // ProjectRuntime is a private implementation import and is allowed. The forbidden leak is
+    // a public Patch contract imported from the internal patch registry module.
+    expect(engine).not.toContain('"./runtime/patch-registry"');
     expect(engine).toContain('from "./contract/v5"');
     expect(entry).toContain("PatchBatch");
     expect(entry).toContain("PatchListener");
