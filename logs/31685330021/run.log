@@ -1,0 +1,14 @@
+prettier after behavioral green	Run npm run format:check	﻿2026-08-13T09:10:26.1846958Z ##[group]Run npm run format:check
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:10:26.1847310Z ^[[36;1mnpm run format:check^[[0m
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:10:26.1894686Z shell: /usr/bin/bash -e {0}
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:10:26.1895176Z env:
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:10:26.1895410Z   NODE_VERSION: 24
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:10:26.1895630Z ##[endgroup]
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:10:26.2965107Z 
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:10:26.2965836Z > motion5@0.0.0 format:check
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:10:26.2966339Z > prettier . --check
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:10:26.2966512Z 
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:10:26.4194968Z Checking formatting...
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:10:28.5796645Z [^[[33mwarn^[[39m] scripts/acceptance-scan.mjs
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:10:28.6400815Z [^[[33mwarn^[[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+prettier after behavioral green	Run npm run format:check	2026-08-13T09:10:28.6823496Z ##[error]Process completed with exit code 1.
