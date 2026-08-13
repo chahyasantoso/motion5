@@ -17,12 +17,13 @@ const compose = (node: { id: string }) => () => ({
 describe("GraphRuntime", () => {
   it("TR-R-14 mounts through one project-owned GraphRuntime", () => {
     const clock = createManualClock();
-    const runtime = new GraphRuntime(project, clock, compose);
     const subscriptions = vi.spyOn(clock, "subscribe");
+    const runtime = new GraphRuntime(project, clock, compose);
+
+    expect(subscriptions).toHaveBeenCalledTimes(1);
     expect(runtime.registry).toBe(runtime.registry);
     expect((runtime as unknown as { publisher?: unknown }).publisher).toBeUndefined();
     expect(runtime.state).toBe(runtime.binding.state);
     runtime.dispose();
-    expect(subscriptions).not.toHaveBeenCalled();
   });
 });
