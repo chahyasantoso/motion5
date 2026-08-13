@@ -33,7 +33,8 @@ function normalizeReport(report) {
 
 export async function scanAcceptance(scanRoot = root, reportPath) {
   const map = await readAcceptanceMap(scanRoot);
-  if (!map || map.version !== 1 || !Array.isArray(map.items)) throw new Error("Acceptance map must have version 1 and an items array.");
+  if (!map || map.version !== 1 || !Array.isArray(map.items))
+    throw new Error("Acceptance map must have version 1 and an items array.");
   const failures = [];
   const ids = new Set();
   const reportFile = reportPath ?? process.env.VITEST_JSON;
@@ -58,8 +59,18 @@ export async function scanAcceptance(scanRoot = root, reportPath) {
       continue;
     }
     if (!results) continue;
-    const match = [...results].filter(([file]) => file === item.test || file.endsWith(`/${item.test}`) || file.startsWith(`${item.test}/`));
-    const summary = match.reduce((total, [, value]) => ({ passed: total.passed + value.passed, skipped: total.skipped + value.skipped, todo: total.todo + value.todo }), { passed: 0, skipped: 0, todo: 0 });
+    const match = [...results].filter(
+      ([file]) =>
+        file === item.test || file.endsWith(`/${item.test}`) || file.startsWith(`${item.test}/`),
+    );
+    const summary = match.reduce(
+      (total, [, value]) => ({
+        passed: total.passed + value.passed,
+        skipped: total.skipped + value.skipped,
+        todo: total.todo + value.todo,
+      }),
+      { passed: 0, skipped: 0, todo: 0 },
+    );
     if (summary.passed === 0) failures.push(`${item.id}: no passed assertions`);
     if (summary.skipped > 0) failures.push(`${item.id}: skipped assertions`);
     if (summary.todo > 0) failures.push(`${item.id}: todo assertions`);
@@ -77,4 +88,5 @@ export async function main(scanRoot = root, reportPath) {
   return 0;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) process.exitCode = await main(root, process.argv[2]);
+if (process.argv[1] === fileURLToPath(import.meta.url))
+  process.exitCode = await main(root, process.argv[2]);
