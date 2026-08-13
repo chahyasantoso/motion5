@@ -43,10 +43,7 @@ function readStops(value: unknown): readonly AuthoredStop[] {
  * when that stop is after 0%. This preserves the leading hold without inventing a 0%
  * keyframe, unlike the oracle's 0%-only proxy seeding.
  */
-export function compilePercentKeyframes(
-  keyframes: unknown,
-  path = "keyframes",
-): CompiledKeyframes {
+export function compilePercentKeyframes(keyframes: unknown, path = "keyframes"): CompiledKeyframes {
   if (!isRecord(keyframes))
     return Object.freeze({
       map: Object.freeze({}),
