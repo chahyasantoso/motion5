@@ -1,0 +1,2 @@
+packages/core/test/contract/gsap-authored-duration.test.ts
+packages/core/test/support/real-gsap.ts
