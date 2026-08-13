@@ -7,7 +7,11 @@
     "configFile": "vitest.stryker.config.ts",
     "related": true
   },
-  "mutate": ["packages/core/src/runtime/**/*.ts", "packages/core/src/adapters/**/*.ts"],
+  "mutate": [
+    "packages/core/src/domain/plugins.ts",
+    "packages/core/src/domain/keyframe-compiler.ts",
+    "packages/core/src/adapters/interpolator/**/*.ts"
+  ],
   "reporters": ["clear-text", "progress", "json", "html"],
   "jsonReporter": {
     "fileName": "reports/mutation/mutation.json"
