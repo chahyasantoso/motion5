@@ -1,16 +1,13 @@
 import type { Interpolator, InterpolationTimeline } from "../../ports/interpolator";
-
 export interface GsapTweenLike {
   readonly duration: () => number;
   progress(): number;
   progress(value: number): GsapTweenLike;
   kill(): void;
 }
-
 export interface GsapLike {
   to(target: Record<string, unknown>, vars: Record<string, unknown>): GsapTweenLike;
 }
-
 interface AuthoredStop {
   readonly p: number;
   readonly v: unknown;
@@ -22,7 +19,6 @@ interface PropertyCompilation {
   readonly first: AuthoredStop;
   readonly last: AuthoredStop;
 }
-
 function readStops(property: unknown): readonly AuthoredStop[] {
   if (!property || typeof property !== "object" || !("stops" in property)) return [];
   const stops = (property as { stops?: unknown }).stops;
@@ -41,6 +37,13 @@ function readDuration(config: unknown): number {
   if (!config || typeof config !== "object") return 1;
   const duration = (config as { duration?: unknown }).duration;
   return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
+}
+function readTweenVars(config: unknown): Readonly<Record<string, unknown>> {
+  if (!config || typeof config !== "object") return {};
+  const vars = (config as { tweenVars?: unknown }).tweenVars;
+  return vars && typeof vars === "object" && !Array.isArray(vars)
+    ? (vars as Readonly<Record<string, unknown>>)
+    : {};
 }
 function toPercentKey(position: number): string {
   return `${position * 100}%`;
@@ -78,9 +81,8 @@ function compileKeyframes(config: unknown): {
     properties.set(key, { stops, first, last });
     for (const stop of stops) positions.add(stop.p);
   }
-  const orderedPositions = [...positions].sort((a, b) => a - b);
   const keyframes: Record<string, PercentKeyframe> = {};
-  for (const position of orderedPositions) {
+  for (const position of [...positions].sort((a, b) => a - b)) {
     const frame: PercentKeyframe = { ease: "none" };
     for (const [key, property] of properties) frame[key] = numericValueAt(property.stops, position);
     const authoredAtPosition = [...properties.values()].flatMap(({ stops }) =>
@@ -96,13 +98,14 @@ function compileKeyframes(config: unknown): {
   for (const [key, property] of properties) initial[key] = property.first.v;
   return { keyframes, initial };
 }
-
 export function createGsapInterpolator(gsap: GsapLike): Interpolator {
   return {
     create(config): InterpolationTimeline {
       const compiled = compileKeyframes(config);
       const proxy: Record<string, unknown> = { ...compiled.initial };
+      const tweenVars = readTweenVars(config);
       const tween = gsap.to(proxy, {
+        ...tweenVars,
         keyframes: compiled.keyframes,
         duration: readDuration(config),
         paused: true,

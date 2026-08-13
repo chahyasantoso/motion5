@@ -5,23 +5,33 @@ export type PluginComposer = (
   values: Readonly<ImmutableRecord>,
   progress: number,
 ) => ImmutableRecord;
-export type PluginContributor = (keyframes: Readonly<Record<string, unknown>>) => unknown;
-export type PluginKeyClaim = (key: string) => boolean;
-export type OutputSerializer = (value: unknown) => unknown;
-
-export interface ContributionResult {
+export interface TrackConfigView {
+  readonly id?: string;
+  readonly duration?: number;
+}
+export interface Contribution {
   readonly keyframes?: Readonly<Record<string, AuthoredProperty>>;
   readonly tweenVars?: Readonly<Record<string, unknown>>;
 }
+export type PluginContributor = (
+  key: string,
+  stops: readonly AuthoredStop[],
+  track: TrackConfigView,
+) => Contribution | undefined;
+export type PluginKeyClaim = (key: string) => boolean;
+export type OutputSerializer = (value: unknown) => unknown;
 
+export interface PreparedContribution {
+  readonly keyframes: Readonly<Record<string, AuthoredProperty>>;
+  readonly tweenVars: Readonly<Record<string, unknown>>;
+}
 export interface ResolvedPlugins {
   readonly plugins: readonly PluginDefinition[];
   readonly diagnostics: readonly Diagnostic[];
-  readonly internalKeys?: readonly string[];
-  readonly outputSerializers?: Readonly<Record<string, OutputSerializer>>;
-  readonly preparation?: ContributionResult;
+  readonly internalKeys: readonly string[];
+  readonly outputSerializers: Readonly<Record<string, OutputSerializer>>;
+  readonly preparation: PreparedContribution;
 }
-
 export interface PluginDefinition {
   readonly name: string;
   readonly keys?: readonly string[];
@@ -37,7 +47,6 @@ export interface PluginDefinition {
 }
 
 const VALID_STAGES = new Set(["prepare", "compose"]);
-
 function diagnostic(
   ruleId: string,
   path: string,
@@ -46,50 +55,22 @@ function diagnostic(
 ): Diagnostic {
   return { ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) };
 }
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
-
-function assertMetadata(plugin: PluginDefinition): void {
-  if (plugin.keys !== undefined && !Array.isArray(plugin.keys))
-    throw new TypeError("Plugin keys must be an array when provided.");
-  if (plugin.claimsKey !== undefined && typeof plugin.claimsKey !== "function")
-    throw new TypeError("Plugin claimsKey must be a function when provided.");
-  if (plugin.inputs !== undefined && !Array.isArray(plugin.inputs))
-    throw new TypeError("Plugin inputs must be an array when provided.");
-  if (plugin.outputs !== undefined && !Array.isArray(plugin.outputs))
-    throw new TypeError("Plugin outputs must be an array when provided.");
-  if (plugin.stage !== undefined && !VALID_STAGES.has(plugin.stage))
-    throw new TypeError(`Unknown plugin stage "${plugin.stage}".`);
-  if (plugin.priority !== undefined && !Number.isFinite(plugin.priority))
-    throw new TypeError("Plugin priority must be finite when provided.");
-  if (plugin.internalKeys !== undefined && !Array.isArray(plugin.internalKeys))
-    throw new TypeError("Plugin internalKeys must be an array when provided.");
-  if (plugin.outputSerializers !== undefined && typeof plugin.outputSerializers !== "object")
-    throw new TypeError("Plugin outputSerializers must be an object when provided.");
-  for (const serializer of Object.values(plugin.outputSerializers ?? {}))
-    if (typeof serializer !== "function")
-      throw new TypeError("Plugin outputSerializers must contain functions.");
-}
-
 function claims(plugin: PluginDefinition, key: string): boolean {
   return Boolean(plugin.keys?.includes(key) || plugin.claimsKey?.(key));
 }
-
 function stageRank(stage: string | undefined): number {
   return stage === "prepare" ? 0 : stage === "compose" ? 1 : 2;
 }
-
 function comparePlugins(a: PluginDefinition, b: PluginDefinition): number {
-  return stageRank(a.stage) - stageRank(b.stage) || (a.priority ?? 0) - (b.priority ?? 0);
+  return stageRank(a.stage) - stageRank(b.stage);
 }
-
 function validStop(stop: unknown): stop is AuthoredStop {
   return isRecord(stop) && typeof stop.p === "number" && Number.isFinite(stop.p) && "v" in stop;
 }
-
-function validateStops(
+function validProperty(
   value: unknown,
   path: string,
   diagnostics: Diagnostic[],
@@ -106,6 +87,7 @@ function validateStops(
   }
   let previous: number | undefined;
   const seen = new Set<number>();
+  let valid = true;
   for (const [index, stop] of value.stops.entries()) {
     const stopPath = `${path}.stops[${index}].p`;
     if (!validStop(stop)) {
@@ -116,9 +98,10 @@ function validateStops(
           "Contributed stop p must be finite.",
         ),
       );
+      valid = false;
       continue;
     }
-    if (stop.p < 0 || stop.p > 1)
+    if (stop.p < 0 || stop.p > 1) {
       diagnostics.push(
         diagnostic(
           "plugin-contribution-stop-range",
@@ -126,7 +109,9 @@ function validateStops(
           "Contributed stop p must be between 0 and 1.",
         ),
       );
-    if (previous !== undefined && stop.p < previous)
+      valid = false;
+    }
+    if (previous !== undefined && stop.p < previous) {
       diagnostics.push(
         diagnostic(
           "plugin-contribution-stop-order",
@@ -134,7 +119,9 @@ function validateStops(
           "Contributed stop positions must be monotonic.",
         ),
       );
-    if (seen.has(stop.p))
+      valid = false;
+    }
+    if (seen.has(stop.p)) {
       diagnostics.push(
         diagnostic(
           "plugin-contribution-stop-duplicate",
@@ -142,83 +129,134 @@ function validateStops(
           "Contributed stop positions must be unique.",
         ),
       );
+      valid = false;
+    }
     seen.add(stop.p);
     previous = stop.p;
   }
-  return true;
+  return valid;
 }
-
-function normalizeContribution(value: unknown): ContributionResult {
-  if (!isRecord(value)) return {};
-  if ("keyframes" in value || "tweenVars" in value)
-    return {
-      ...(isRecord(value.keyframes)
-        ? { keyframes: value.keyframes as Readonly<Record<string, AuthoredProperty>> }
-        : {}),
-      ...(isRecord(value.tweenVars) ? { tweenVars: value.tweenVars } : {}),
-    };
-  return { keyframes: value as Readonly<Record<string, AuthoredProperty>> };
+function normalizeContribution(
+  value: unknown,
+  plugin: PluginDefinition,
+  path: string,
+  diagnostics: Diagnostic[],
+): Contribution {
+  if (value === undefined) return {};
+  if (!isRecord(value)) {
+    diagnostics.push(
+      diagnostic(
+        "plugin-contribution-shape",
+        path,
+        `Plugin "${plugin.name}" must return a contribution object.`,
+        [plugin.name],
+      ),
+    );
+    return {};
+  }
+  const allowed = new Set(["keyframes", "tweenVars"]);
+  for (const key of Object.keys(value))
+    if (!allowed.has(key))
+      diagnostics.push(
+        diagnostic(
+          "plugin-contribution-shape",
+          `${path}.${key}`,
+          `Plugin "${plugin.name}" returned an unknown contribution field.`,
+          [plugin.name, key],
+        ),
+      );
+  return {
+    ...(isRecord(value.keyframes)
+      ? { keyframes: value.keyframes as Readonly<Record<string, AuthoredProperty>> }
+      : {}),
+    ...(isRecord(value.tweenVars) ? { tweenVars: value.tweenVars } : {}),
+  };
 }
-
 function prepareContributions(
   authored: Readonly<Record<string, unknown>>,
   plugins: readonly PluginDefinition[],
+  track: TrackConfigView,
+  path: string,
   diagnostics: Diagnostic[],
-): ContributionResult {
+): PreparedContribution {
   const keyframes: Record<string, AuthoredProperty> = {};
   const tweenVars: Record<string, unknown> = {};
   const authoredKeys = new Set(Object.keys(authored));
   const keyOwners = new Map<string, string>();
   const tweenOwners = new Map<string, string>();
-
-  for (const plugin of plugins) {
-    if (plugin.stage !== "prepare" || !plugin.contribute) continue;
-    const contribution = normalizeContribution(
-      plugin.contribute(Object.freeze({ ...authored, ...keyframes })),
-    );
-    for (const [key, property] of Object.entries(contribution.keyframes ?? {})) {
-      if (authoredKeys.has(key)) {
+  const preparePlugins = plugins.filter(
+    (plugin) => plugin.stage === "prepare" && plugin.contribute,
+  );
+  for (const key of Object.keys(authored).sort()) {
+    const owners = preparePlugins.filter((plugin) => claims(plugin, key));
+    for (const plugin of owners) {
+      let contribution: Contribution;
+      try {
+        contribution = normalizeContribution(
+          plugin.contribute!(
+            key,
+            readStops(authored[key]),
+            Object.freeze({ id: track.id, duration: track.duration }),
+          ),
+          plugin,
+          `${path}.${key}`,
+          diagnostics,
+        );
+      } catch (error) {
         diagnostics.push(
           diagnostic(
-            "plugin-contribution-output-collision",
-            `keyframes.${key}`,
-            `Plugin "${plugin.name}" attempted to overwrite authored key "${key}".`,
+            "plugin-contribution-failure",
+            `${path}.${key}`,
+            `Plugin "${plugin.name}" failed: ${error instanceof Error ? error.message : String(error)}.`,
             [plugin.name, key],
           ),
         );
         continue;
       }
-      const owner = keyOwners.get(key);
-      if (owner) {
-        diagnostics.push(
-          diagnostic(
-            "plugin-contribution-key-collision",
-            `keyframes.${key}`,
-            `Plugins "${owner}" and "${plugin.name}" both contributed key "${key}".`,
-            [owner, plugin.name, key],
-          ),
-        );
-        continue;
+      for (const [output, property] of Object.entries(contribution.keyframes ?? {})) {
+        if (authoredKeys.has(output)) {
+          diagnostics.push(
+            diagnostic(
+              "plugin-contribution-output-collision",
+              `${path}.${output}`,
+              `Plugin "${plugin.name}" attempted to overwrite authored key "${output}".`,
+              [plugin.name, output],
+            ),
+          );
+          continue;
+        }
+        const owner = keyOwners.get(output);
+        if (owner) {
+          diagnostics.push(
+            diagnostic(
+              "plugin-contribution-key-collision",
+              `${path}.${output}`,
+              `Plugins "${owner}" and "${plugin.name}" both contributed key "${output}".`,
+              [owner, plugin.name, output].sort(),
+            ),
+          );
+          continue;
+        }
+        if (validProperty(property, `${path}.${output}`, diagnostics)) {
+          keyOwners.set(output, plugin.name);
+          keyframes[output] = property;
+        }
       }
-      if (validateStops(property, `keyframes.${key}`, diagnostics)) {
-        keyOwners.set(key, plugin.name);
-        keyframes[key] = property;
-      }
-    }
-    for (const [key, value] of Object.entries(contribution.tweenVars ?? {})) {
-      const owner = tweenOwners.get(key);
-      if (owner)
-        diagnostics.push(
-          diagnostic(
-            "plugin-contribution-tween-vars-collision",
-            `tweenVars.${key}`,
-            `Plugins "${owner}" and "${plugin.name}" both contributed tween var "${key}".`,
-            [owner, plugin.name, key],
-          ),
-        );
-      else {
-        tweenOwners.set(key, plugin.name);
-        tweenVars[key] = value;
+      for (const [name, value] of Object.entries(contribution.tweenVars ?? {})) {
+        const owner = tweenOwners.get(name);
+        if (owner && !Object.is(tweenVars[name], value))
+          diagnostics.push(
+            diagnostic(
+              "plugin-contribution-tween-vars-conflict",
+              `${path}.tweenVars.${name}`,
+              `Plugins "${owner}" and "${plugin.name}" contributed conflicting tween var "${name}".`,
+              [owner, plugin.name, name].sort(),
+            ),
+          );
+        else {
+          tweenOwners.set(name, owner ?? plugin.name);
+          tweenVars[name] = value;
+        }
       }
     }
   }
@@ -227,11 +265,10 @@ function prepareContributions(
     tweenVars: Object.freeze(tweenVars),
   });
 }
-
 function result(
   plugins: PluginDefinition[],
   diagnostics: Diagnostic[],
-  preparation?: ContributionResult,
+  preparation: PreparedContribution,
 ): ResolvedPlugins {
   const internalKeys = Object.freeze(
     [...new Set(plugins.flatMap((plugin) => plugin.internalKeys ?? []))].sort(),
@@ -264,22 +301,35 @@ function result(
     plugins: Object.freeze(plugins),
     diagnostics: Object.freeze(diagnostics),
     internalKeys,
-    outputSerializers,
-    ...(preparation ? { preparation } : {}),
+    outputSerializers: Object.freeze(outputSerializers),
+    preparation,
   });
+}
+function readStops(value: unknown): readonly AuthoredStop[] {
+  return isRecord(value) && Array.isArray(value.stops) ? value.stops.filter(validStop) : [];
 }
 
 export class PluginRegistry {
   readonly #plugins = new Map<string, PluginDefinition>();
+  #orders = new Map<string, number>();
   #registrationOrder = 0;
-  readonly #orders = new Map<string, number>();
-
   register(plugin: PluginDefinition): void {
-    if (typeof plugin?.name !== "string" || plugin.name.trim() === "")
+    if (typeof plugin?.name !== "string" || !plugin.name.trim())
       throw new TypeError("Plugin name must be a non-empty string.");
     if (typeof plugin.compose !== "function")
       throw new TypeError("Plugin compose must be a function.");
-    assertMetadata(plugin);
+    if (plugin.keys !== undefined && !Array.isArray(plugin.keys))
+      throw new TypeError("Plugin keys must be an array when provided.");
+    if (plugin.claimsKey !== undefined && typeof plugin.claimsKey !== "function")
+      throw new TypeError("Plugin claimsKey must be a function when provided.");
+    if (plugin.inputs !== undefined && !Array.isArray(plugin.inputs))
+      throw new TypeError("Plugin inputs must be an array when provided.");
+    if (plugin.outputs !== undefined && !Array.isArray(plugin.outputs))
+      throw new TypeError("Plugin outputs must be an array when provided.");
+    if (plugin.stage !== undefined && !VALID_STAGES.has(plugin.stage))
+      throw new TypeError(`Unknown plugin stage "${plugin.stage}".`);
+    if (plugin.priority !== undefined && !Number.isFinite(plugin.priority))
+      throw new TypeError("Plugin priority must be finite when provided.");
     if (this.#plugins.has(plugin.name))
       throw new Error(`Plugin "${plugin.name}" is already registered.`);
     this.#plugins.set(
@@ -289,15 +339,10 @@ export class PluginRegistry {
         ...(plugin.keys ? { keys: Object.freeze([...plugin.keys]) } : {}),
         ...(plugin.inputs ? { inputs: Object.freeze([...plugin.inputs]) } : {}),
         ...(plugin.outputs ? { outputs: Object.freeze([...plugin.outputs]) } : {}),
-        ...(plugin.internalKeys ? { internalKeys: Object.freeze([...plugin.internalKeys]) } : {}),
-        ...(plugin.outputSerializers
-          ? { outputSerializers: Object.freeze({ ...plugin.outputSerializers }) }
-          : {}),
       }),
     );
     this.#orders.set(plugin.name, this.#registrationOrder++);
   }
-
   resolve(names: readonly string[], path = "plugins"): ResolvedPlugins {
     const plugins: PluginDefinition[] = [];
     const diagnostics: Diagnostic[] = [];
@@ -327,18 +372,22 @@ export class PluginRegistry {
         else plugins.push(plugin);
       }
     });
-    return result(plugins, diagnostics);
+    return result(
+      plugins,
+      diagnostics,
+      Object.freeze({ keyframes: Object.freeze({}), tweenVars: Object.freeze({}) }),
+    );
   }
-
   resolveForKeyframes(
     authored: Readonly<Record<string, unknown>>,
     path = "keyframes",
+    track: TrackConfigView = {},
   ): ResolvedPlugins {
     const plugins: PluginDefinition[] = [];
     const diagnostics: Diagnostic[] = [];
     for (const key of Object.keys(authored)) {
       const matches = [...this.#plugins.values()].filter((plugin) => claims(plugin, key));
-      if (matches.length === 0)
+      if (!matches.length)
         diagnostics.push(
           diagnostic(
             "plugin-unknown-key",
@@ -351,7 +400,9 @@ export class PluginRegistry {
     }
     plugins.sort(
       (a, b) =>
-        comparePlugins(a, b) || (this.#orders.get(a.name) ?? 0) - (this.#orders.get(b.name) ?? 0),
+        comparePlugins(a, b) ||
+        (a.priority ?? 0) - (b.priority ?? 0) ||
+        (this.#orders.get(a.name) ?? 0) - (this.#orders.get(b.name) ?? 0),
     );
     const owners = new Map<string, string>();
     for (const plugin of plugins)
@@ -368,14 +419,15 @@ export class PluginRegistry {
           );
         else owners.set(output, plugin.name);
       }
-    const preparation = prepareContributions(authored, plugins, diagnostics);
-    return result(plugins, diagnostics, preparation);
+    return result(
+      plugins,
+      diagnostics,
+      prepareContributions(authored, plugins, track, path, diagnostics),
+    );
   }
-
   has(name: string): boolean {
     return this.#plugins.has(name);
   }
-
   get size(): number {
     return this.#plugins.size;
   }

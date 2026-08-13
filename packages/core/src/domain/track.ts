@@ -27,15 +27,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function preparedConfig(config: unknown, plugins: ResolvedPlugins): unknown {
   if (!isRecord(config)) return config;
   const preparation = plugins.preparation;
-  if (!preparation) return config;
-  const keyframes =
-    isRecord(config.keyframes) && isRecord(preparation.keyframes)
-      ? { ...config.keyframes, ...preparation.keyframes }
-      : config.keyframes;
+  const authoredKeyframes = isRecord(config.keyframes) ? config.keyframes : {};
+  const keyframes = { ...authoredKeyframes, ...preparation.keyframes };
   return Object.freeze({
     ...config,
-    ...(keyframes === undefined ? {} : { keyframes: Object.freeze(keyframes) }),
-    ...(preparation.tweenVars ?? {}),
+    keyframes: Object.freeze(keyframes),
+    tweenVars: preparation.tweenVars,
   });
 }
 function rendererNeutralState(state: Readonly<Record<string, unknown>>): ImmutableRecord {
@@ -59,6 +56,9 @@ function freezeComposition(values: unknown): ImmutableRecord {
 const EMPTY_RESOLVED_PLUGINS: ResolvedPlugins = Object.freeze({
   plugins: Object.freeze([]),
   diagnostics: Object.freeze([]),
+  internalKeys: Object.freeze([]),
+  outputSerializers: Object.freeze({}),
+  preparation: Object.freeze({ keyframes: Object.freeze({}), tweenVars: Object.freeze({}) }),
 });
 export class Track {
   readonly #timeline: InterpolationTimeline;

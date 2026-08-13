@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { Track } from "../../../src/domain/track";
 import type { ImmutableRecord } from "../../../src/domain/values";
 
+const emptyPreparation = { keyframes: Object.freeze({}), tweenVars: Object.freeze({}) } as const;
 function createInterpolator() {
   const progressCalls: number[] = [];
   const timeline = {
@@ -13,42 +14,41 @@ function createInterpolator() {
     },
     kill: vi.fn(),
   };
-  return {
-    progressCalls,
-    interpolator: { create: vi.fn(() => timeline) },
-  };
+  return { progressCalls, interpolator: { create: vi.fn(() => timeline) } };
 }
-
 function createPlugin(
   name: string,
   compose: (values: Readonly<ImmutableRecord>, progress: number) => ImmutableRecord,
 ) {
   return { name, compose };
 }
+function plugins(...items: ReturnType<typeof createPlugin>[]) {
+  return {
+    plugins: Object.freeze(items),
+    diagnostics: Object.freeze([]),
+    internalKeys: Object.freeze([]),
+    outputSerializers: Object.freeze({}),
+    preparation: emptyPreparation,
+  };
+}
 
 describe("Track leaf", () => {
   it("clamps progress and marks the leaf dirty only when progress changes", () => {
     const fake = createInterpolator();
     const track = new Track({ interpolator: fake.interpolator });
-
     expect(track.setProgress(2)).toBe(true);
     expect(track.progress).toBe(1);
     expect(track.setProgress(1)).toBe(false);
     expect(fake.progressCalls).toEqual([1]);
     expect(track.dirty).toBe(true);
   });
-
   it("rejects non-finite progress and composes local values once per dirty state", () => {
     const fake = createInterpolator();
     const compose = vi.fn((values: Readonly<ImmutableRecord>) => ({ ...values, opacity: 1 }));
     const track = new Track({
       interpolator: fake.interpolator,
-      plugins: {
-        plugins: Object.freeze([createPlugin("opacity", compose)]),
-        diagnostics: Object.freeze([]),
-      },
+      plugins: plugins(createPlugin("opacity", compose)),
     });
-
     expect(() => track.setProgress(Number.NaN)).toThrow(/finite/);
     const first = track.compose({ x: 1 });
     const second = track.compose({ x: 1 });
@@ -56,25 +56,19 @@ describe("Track leaf", () => {
     expect(compose).toHaveBeenCalledTimes(1);
     expect(first.values).toEqual({ x: 1, opacity: 1 });
   });
-
   it("recomposes a clean track when its inputs change", () => {
     const fake = createInterpolator();
     const compose = vi.fn((values: Readonly<ImmutableRecord>) => ({ ...values }));
     const track = new Track({
       interpolator: fake.interpolator,
-      plugins: {
-        plugins: Object.freeze([createPlugin("passthrough", compose)]),
-        diagnostics: Object.freeze([]),
-      },
+      plugins: plugins(createPlugin("passthrough", compose)),
     });
-
     const first = track.compose({ x: 1 });
     const second = track.compose({ x: 2 });
     expect(second).not.toBe(first);
     expect(second.values).toEqual({ x: 2 });
     expect(compose).toHaveBeenCalledTimes(2);
   });
-
   it("is a leaf with no composite or graph API", () => {
     const track = new Track({ interpolator: createInterpolator().interpolator });
     expect("children" in track).toBe(false);
@@ -83,7 +77,6 @@ describe("Track leaf", () => {
     expect("observe" in track).toBe(false);
     expect("composeGraph" in track).toBe(false);
   });
-
   it("disposes once and rejects future work", () => {
     const fake = createInterpolator();
     const track = new Track({ interpolator: fake.interpolator });

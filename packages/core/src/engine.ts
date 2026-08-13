@@ -20,7 +20,6 @@ export interface EngineOptions {
   readonly scheduler: Scheduler;
   readonly plugins?: PluginRegistry;
 }
-
 export interface ProjectHandle {
   mount(nodeId: string, instance?: object): object;
   unmount(nodeId: string): void;
@@ -28,7 +27,6 @@ export interface ProjectHandle {
   subscribe(nodeId: string, listener: PatchListener): () => void;
   dispose(): void;
 }
-
 type RuntimeLike = {
   mount(nodeId: string, instance?: object): object;
   unmount(nodeId: string): void;
@@ -36,7 +34,6 @@ type RuntimeLike = {
   graph: { registry: { subscribeNode(nodeId: string, listener: PatchListener): () => void } };
   dispose(): void;
 };
-
 function createHandle(runtime: RuntimeLike): ProjectHandle {
   return {
     mount: (nodeId, instance = {}) => runtime.mount(nodeId, instance),
@@ -46,22 +43,19 @@ function createHandle(runtime: RuntimeLike): ProjectHandle {
     dispose: () => runtime.dispose(),
   };
 }
-
 function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
   return diagnostics
     .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
     .join(" ");
 }
-
 function assertValidProject(project: unknown): ProjectDefinition {
   const result = validateV5(project);
-  if (!result.valid || result.value === null) {
+  if (!result.valid || result.value === null)
     throw new TypeError(
       result.diagnostics.length === 0
         ? "Project failed v5 validation."
         : describeDiagnostics(result.diagnostics),
     );
-  }
   return result.value;
 }
 
@@ -75,18 +69,18 @@ export class Engine {
     this.#options = options;
     this.#plugins = options.plugins;
   }
-
   load(project: ProjectDefinition): ProjectHandle {
     const acceptedProject = assertValidProject(project);
     const tracks = new Map<string, Track>();
     const nodes = new Map<
       string,
-      { duration?: number; keyframes?: Readonly<Record<string, unknown>> }
+      { id: string; duration?: number; keyframes?: Readonly<Record<string, unknown>> }
     >();
     for (const motion of acceptedProject.motions)
-      for (const track of motion.tracks) nodes.set(`${motion.id}/${track.id}`, track);
-    for (const track of acceptedProject.freeTracks ?? []) nodes.set(`~/${track.id}`, track);
-
+      for (const track of motion.tracks)
+        nodes.set(`${motion.id}/${track.id}`, { ...track, id: track.id });
+    for (const track of acceptedProject.freeTracks ?? [])
+      nodes.set(`~/${track.id}`, { ...track, id: track.id });
     const compile = (nodeId: string): Track => {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
@@ -95,6 +89,7 @@ export class Engine {
       const resolved = this.#plugins?.resolveForKeyframes(
         definition.keyframes ?? {},
         `${nodeId}.keyframes`,
+        { id: nodeId, duration: definition.duration },
       );
       if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
         throw new TypeError(describeDiagnostics(resolved.diagnostics));
@@ -106,7 +101,6 @@ export class Engine {
       tracks.set(nodeId, track);
       return track;
     };
-
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
       const compose =
