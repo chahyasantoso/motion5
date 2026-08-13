@@ -6,6 +6,7 @@ import type { ImmutableRecord } from "./domain/values";
 import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
+import type { Patch, PatchListener } from "./runtime/patch-registry";
 import { ProjectRuntime } from "./runtime/project-runtime";
 
 export interface EngineOptions {
@@ -13,6 +14,21 @@ export interface EngineOptions {
   readonly interpolator: Interpolator;
   readonly scheduler: Scheduler;
   readonly plugins?: PluginRegistry;
+}
+
+export interface ProjectHandle {
+  mount(nodeId: string, instance?: object): object;
+  unmount(nodeId: string): void;
+  seek(nodeId: string, progress: number): PatchBatchLike;
+  subscribe(nodeId: string, listener: PatchListener): () => void;
+  dispose(): void;
+}
+
+export interface PatchBatchLike {
+  readonly tick: number;
+  readonly seeds: readonly string[];
+  readonly patches: readonly Patch[];
+  readonly diagnostics: readonly Diagnostic[];
 }
 
 function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
@@ -43,7 +59,7 @@ export class Engine {
     this.#plugins = options.plugins;
   }
 
-  load(project: ProjectDefinition): ProjectRuntime {
+  load(project: ProjectDefinition): ProjectHandle {
     assertValidProject(project);
     const tracks = new Map<string, Track>();
     const nodes = new Map<
@@ -89,7 +105,7 @@ export class Engine {
             sourceRevisions: {},
           };
         };
-      return new ProjectRuntime(project, {
+      const runtime = new ProjectRuntime(project, {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
         compose,
@@ -99,6 +115,13 @@ export class Engine {
           tracks.clear();
         },
       });
+      return {
+        mount: (nodeId, instance = {}) => runtime.mount(nodeId, instance),
+        unmount: (nodeId) => runtime.unmount(nodeId),
+        seek: (nodeId, progress) => runtime.seek(nodeId, progress),
+        subscribe: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
+        dispose: () => runtime.dispose(),
+      };
     } catch (error) {
       for (const track of tracks.values()) track.dispose();
       throw error;
