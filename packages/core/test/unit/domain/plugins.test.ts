@@ -52,13 +52,20 @@ describe("plugin registry", () => {
     ).toEqual(["early", "same", "late"]);
   });
 
-  it("retains the compile-time contribution hook and rejects duplicate output ownership", () => {
+  it("retains and invokes the compile-time contribution hook", () => {
     const registry = new PluginRegistry();
-    const contribute = vi.fn();
-    registry.register(plugin("first", { keys: ["x"], outputs: ["transform"], contribute }));
+    const contribute = vi.fn(() => undefined);
+    registry.register(plugin("first", { keys: ["x"], stage: "prepare", contribute }));
+    const resolved = registry.resolveForKeyframes({ x: { stops: [] } });
+    expect(resolved.plugins[0]?.contribute).toBe(contribute);
+    expect(contribute).toHaveBeenCalledOnce();
+  });
+
+  it("rejects duplicate output ownership deterministically", () => {
+    const registry = new PluginRegistry();
+    registry.register(plugin("first", { keys: ["x"], outputs: ["transform"] }));
     registry.register(plugin("second", { keys: ["y"], outputs: ["transform"] }));
     const resolved = registry.resolveForKeyframes({ x: {}, y: {} });
-    expect(resolved.plugins[0]?.contribute).toBe(contribute);
     expect(resolved.diagnostics).toEqual([
       {
         ruleId: "plugin-duplicate-output",
@@ -77,45 +84,46 @@ describe("plugin registry", () => {
     expect(registry.size).toBe(1);
   });
 
-  it("reports unknown plugins as deterministic load diagnostics", () => {
+  it("rejects duplicate exact key ownership at registration", () => {
     const registry = new PluginRegistry();
-    registry.register(plugin("known"));
-    const resolved = registry.resolve(["missing", "known", "missing"], "track.use");
-    expect(resolved.plugins.map(({ name }) => name)).toEqual(["known"]);
-    expect(resolved.diagnostics).toEqual([
-      {
-        ruleId: "plugin-unknown",
-        path: "track.use[0]",
-        message: 'Plugin "missing" is not registered.',
-        severity: "error",
-        ids: ["missing"],
-      },
-      {
-        ruleId: "plugin-duplicate-use",
-        path: "track.use[2]",
-        message: 'Plugin "missing" is requested more than once.',
-        severity: "error",
-        ids: ["missing"],
-      },
-    ]);
+    registry.register(plugin("first", { keys: ["x"] }));
+    expect(() => registry.register(plugin("second", { keys: ["x"] }))).toThrow(
+      /plugin-key-collision/,
+    );
+    expect(registry.size).toBe(1);
   });
 
-  it("rejects malformed registrations", () => {
+  it("lets exact ownership beat a predicate fallback", () => {
     const registry = new PluginRegistry();
-    expect(() => registry.register({ name: "", compose: plugin("x").compose })).toThrow(
-      /non-empty/,
-    );
-    expect(() => registry.register({ name: "x", compose: undefined as never })).toThrow(/function/);
+    const predicate = vi.fn(() => true);
+    const exact = vi.fn(() => undefined);
+    registry.register(plugin("predicate", { claimsKey: predicate, stage: "prepare", contribute: predicate }));
+    registry.register(plugin("exact", { keys: ["x"], stage: "prepare", contribute: exact }));
+    registry.resolveForKeyframes({ x: { stops: [] } });
+    expect(exact).toHaveBeenCalledOnce();
+    expect(predicate).not.toHaveBeenCalled();
   });
 
-  it("rejects malformed plugin metadata instead of poisoning resolution order", () => {
+  it("rejects a contributor without prepare stage", () => {
     const registry = new PluginRegistry();
-    expect(() => registry.register(plugin("bad-keys", { keys: "x" }))).toThrow(/keys/);
-    expect(() => registry.register(plugin("bad-claim", { claimsKey: 1 }))).toThrow(/claimsKey/);
-    expect(() => registry.register(plugin("bad-priority", { priority: Number.NaN }))).toThrow(
-      /priority/,
+    expect(() => registry.register(plugin("unstaged", { keys: ["x"], contribute: () => undefined }))).toThrow(
+      /requires stage "prepare"/,
     );
-    expect(() => registry.register(plugin("bad-stage", { stage: "typo" }))).toThrow(/stage/);
+  });
+
+  it("rejects fractional priorities", () => {
+    const registry = new PluginRegistry();
+    expect(() => registry.register(plugin("fractional", { priority: 1.5 }))).toThrow(
+      /finite integer/,
+    );
+  });
+
+  it("rejects duplicate input ownership at registration", () => {
+    const registry = new PluginRegistry();
+    registry.register(plugin("first", { inputs: ["source"] }));
+    expect(() => registry.register(plugin("second", { inputs: ["source"] }))).toThrow(
+      /plugin-input-collision/,
+    );
   });
 
   it("detaches resolved plugins from later registry mutation", () => {
@@ -127,5 +135,19 @@ describe("plugin registry", () => {
     expect(Object.isFrozen(resolved.plugins)).toBe(true);
     expect(Object.isFrozen(resolved.plugins[0])).toBe(true);
     expect(resolved.plugins[0]?.compose).toBe(original.compose);
+  });
+
+  it("rejects malformed registrations", () => {
+    const registry = new PluginRegistry();
+    expect(() => registry.register({ name: "", compose: plugin("x").compose })).toThrow(
+      /non-empty/,
+    );
+    expect(() => registry.register({ name: "x", compose: undefined as never })).toThrow(/function/);
+    expect(() => registry.register(plugin("bad-keys", { keys: "x" }))).toThrow(/keys/);
+    expect(() => registry.register(plugin("bad-claim", { claimsKey: 1 }))).toThrow(/claimsKey/);
+    expect(() => registry.register(plugin("bad-priority", { priority: Number.NaN }))).toThrow(
+      /priority/,
+    );
+    expect(() => registry.register(plugin("bad-stage", { stage: "typo" }))).toThrow(/stage/);
   });
 });
