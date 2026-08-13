@@ -1,0 +1,12 @@
+quality (node 24)	Format check	﻿2026-08-13T03:27:12.5314549Z ##[group]Run npm run format:check
+quality (node 24)	Format check	2026-08-13T03:27:12.5314821Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Format check	2026-08-13T03:27:12.5354373Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Format check	2026-08-13T03:27:12.5354728Z ##[endgroup]
+quality (node 24)	Format check	2026-08-13T03:27:12.6154741Z 
+quality (node 24)	Format check	2026-08-13T03:27:12.6155351Z > motion5@0.0.0 format:check
+quality (node 24)	Format check	2026-08-13T03:27:12.6155736Z > prettier . --check
+quality (node 24)	Format check	2026-08-13T03:27:12.6155864Z 
+quality (node 24)	Format check	2026-08-13T03:27:12.6847385Z Checking formatting...
+quality (node 24)	Format check	2026-08-13T03:27:14.1523135Z [^[[33mwarn^[[39m] packages/core/test/unit/runtime/publisher-flat-inputs.test.ts
+quality (node 24)	Format check	2026-08-13T03:27:14.3745982Z [^[[33mwarn^[[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+quality (node 24)	Format check	2026-08-13T03:27:14.4070464Z ##[error]Process completed with exit code 1.
