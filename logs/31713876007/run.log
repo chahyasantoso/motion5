@@ -1,0 +1,12 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T15:09:31.4646802Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T15:09:31.4647152Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T15:09:31.4697349Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T15:09:31.4697863Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T15:09:31.4698083Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T15:09:31.4698303Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T15:09:31.5737596Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T15:09:31.5738884Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T15:09:31.5739897Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T15:09:31.5740458Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T15:09:33.6965302Z ##[error]packages/core/test/contract/s4-validation-owner.test.ts(2,10): error TS2459: Module '"../../src/contract/validate-v5"' declares 'validateKeyframes' locally, but it is not exported.
+quality (node 24)	Run npm run typecheck	2026-08-13T15:09:33.7303286Z ##[error]Process completed with exit code 2.
