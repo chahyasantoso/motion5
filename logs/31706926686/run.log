@@ -1,0 +1,14 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-13T13:49:58.5535283Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T13:49:58.5535619Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-13T13:49:58.5559673Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-13T13:49:58.5559945Z env:
+quality (node 24)	Run npm run typecheck	2026-08-13T13:49:58.5560147Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-13T13:49:58.5560349Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-13T13:49:58.6552526Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T13:49:58.6553309Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-13T13:49:58.6553944Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-13T13:49:58.6554246Z 
+quality (node 24)	Run npm run typecheck	2026-08-13T13:50:00.4681311Z ##[error]packages/core/test/contract/gsap-sparse-percent-map.test.ts(15,9): error TS2322: Type '(value?: number | undefined) => 0 | GsapTweenLike' is not assignable to type '{ (): number; (value: number): GsapTweenLike; }'.
+quality (node 24)	Run npm run typecheck	2026-08-13T13:50:00.4692459Z   Type '0 | GsapTweenLike' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-13T13:50:00.4693478Z     Type 'GsapTweenLike' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-13T13:50:00.4882361Z ##[error]Process completed with exit code 2.
