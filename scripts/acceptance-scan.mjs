@@ -19,13 +19,19 @@ async function exists(path) {
 
 function normalizeReport(report) {
   const files = new Map();
-  for (const assertion of report.testResults ?? []) {
-    const file = assertion.testFile ?? assertion.file ?? assertion.name;
+  for (const result of report.testResults ?? []) {
+    const file = result.testFile ?? result.file ?? result.name;
     if (!file) continue;
-    const current = files.get(file) ?? { passed: 0, skipped: 0, todo: 0 };
-    current.passed += assertion.status === "passed" ? 1 : 0;
-    current.skipped += assertion.status === "skipped" ? 1 : 0;
-    current.todo += assertion.status === "todo" ? 1 : 0;
+    const assertions = Array.isArray(result.assertionResults)
+      ? result.assertionResults
+      : [result];
+    const current = files.get(file) ?? { passed: 0, failed: 0, skipped: 0, todo: 0 };
+    for (const assertion of assertions) {
+      current.passed += assertion.status === "passed" ? 1 : 0;
+      current.failed += assertion.status === "failed" ? 1 : 0;
+      current.skipped += assertion.status === "skipped" ? 1 : 0;
+      current.todo += assertion.status === "todo" ? 1 : 0;
+    }
     files.set(file, current);
   }
   return files;
@@ -39,7 +45,8 @@ export async function scanAcceptance(scanRoot = root, reportPath) {
   const ids = new Set();
   const reportFile = reportPath ?? process.env.VITEST_JSON;
   let results;
-  if (reportFile) {
+  if (!reportFile) failures.push("test report: required for executable acceptance scanning");
+  else {
     try {
       results = normalizeReport(JSON.parse(await readFile(join(scanRoot, reportFile), "utf8")));
     } catch {
@@ -58,7 +65,6 @@ export async function scanAcceptance(scanRoot = root, reportPath) {
       failures.push(`${item.id}: missing ${item.test}`);
       continue;
     }
-    if (!results) continue;
     const match = [...results].filter(
       ([file]) =>
         file === item.test || file.endsWith(`/${item.test}`) || file.startsWith(`${item.test}/`),
@@ -66,12 +72,14 @@ export async function scanAcceptance(scanRoot = root, reportPath) {
     const summary = match.reduce(
       (total, [, value]) => ({
         passed: total.passed + value.passed,
+        failed: total.failed + value.failed,
         skipped: total.skipped + value.skipped,
         todo: total.todo + value.todo,
       }),
-      { passed: 0, skipped: 0, todo: 0 },
+      { passed: 0, failed: 0, skipped: 0, todo: 0 },
     );
     if (summary.passed === 0) failures.push(`${item.id}: no passed assertions`);
+    if (summary.failed > 0) failures.push(`${item.id}: failed assertions`);
     if (summary.skipped > 0) failures.push(`${item.id}: skipped assertions`);
     if (summary.todo > 0) failures.push(`${item.id}: todo assertions`);
   }
