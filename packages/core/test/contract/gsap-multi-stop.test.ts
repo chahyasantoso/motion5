@@ -1,38 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { gsap } from "gsap";
-import {
-  createGsapInterpolator,
-  type GsapTimelineLike,
-} from "../../src/adapters/interpolator/gsap";
+import { createRealGsapSeam } from "../support/real-gsap";
 
 describe("GSAP multi-stop compilation (B2)", () => {
   it("interpolates authored stops at 0, 0.5, and 1 using real GSAP state", () => {
-    const interpolator = createGsapInterpolator({
-      timeline: (): GsapTimelineLike => {
-        const real = gsap.timeline({ paused: true });
-        const timeline: GsapTimelineLike = {
-          duration: () => real.duration(),
-          progress,
-          to(target, vars) {
-            real.to(target, vars);
-            return timeline;
-          },
-          kill() {
-            real.kill();
-          },
-        };
-        function progress(): number;
-        function progress(value: number): GsapTimelineLike;
-        function progress(value?: number): number | GsapTimelineLike {
-          if (value === undefined) return real.progress();
-          real.progress(value);
-          return timeline;
-        }
-        return timeline;
-      },
-    });
+    const seam = createRealGsapSeam();
 
-    const timeline = interpolator.create({
+    const timeline = seam.interpolator.create({
       duration: 1,
       keyframes: {
         x: {

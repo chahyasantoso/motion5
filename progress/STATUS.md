@@ -2,40 +2,42 @@
 
 This is the single source of truth for recovery progress. `WAVE-PLAN.md` contains the detailed plan; this file records live status and evidence.
 
-Last reviewed: 2026-08-12
+Last reviewed: 2026-08-13
 
 ## Board
 
-| ID  | Slice                                           | Status          |
-| --- | ----------------------------------------------- | --------------- |
-| W0  | Rescue loop and audit baseline                  | Done            |
-| A1  | Final-value memo consistency                    | Done, gate open |
-| A2  | Preserve subscriber errors                      | Done, gate open |
-| A3  | Guard subscriber-triggered reentrancy           | Done, gate open |
-| B1  | Prepare-stage plugin contribution               | Done            |
-| B2  | Real GSAP multi-stop compilation                | Done            |
-| C1  | React store resubscription                      | Done            |
-| C2  | React hook and public exports                   | Done, gate open |
-| C3  | DOM metadata, serialization, and clear coverage | Done, gate open |
-| D1  | Discover consumer packages                      | Done            |
-| D2  | Planted boundary self-test                      | Done            |
-| D3  | Acceptance evidence gates                       | Done            |
-| E1  | Required declaration build                      | Done, gate open |
-| E2  | Real end-to-end product path                    | Done            |
-| E3  | Mutation baseline and ratchet                   | Done            |
+| ID    | Slice                                           | Status               |
+| ----- | ----------------------------------------------- | -------------------- |
+| W0    | Rescue loop and audit baseline                  | Done                 |
+| A1    | Final-value memo consistency                    | Done, gate open      |
+| A2    | Preserve subscriber errors                      | Done, gate open      |
+| A3    | Guard subscriber-triggered reentrancy           | Done, gate open      |
+| B1    | Prepare-stage plugin contribution               | Done                 |
+| B2    | Real GSAP multi-stop compilation                | Done                 |
+| C1    | React store resubscription                      | Done                 |
+| C2    | React hook and public exports                   | Done, gate open      |
+| C3    | DOM metadata, serialization, and clear coverage | Done, gate open      |
+| D1    | Discover consumer packages                      | Done                 |
+| D2    | Planted boundary self-test                      | Done                 |
+| D3    | Acceptance evidence gates                       | Done                 |
+| E1    | Required declaration build                      | Done, gate open      |
+| E2    | Real end-to-end product path                    | Done                 |
+| E3    | Mutation baseline and ratchet                   | Done                 |
+| P0-1  | Clock and batch identity                        | Done                 |
+| P0-2  | GSAP clock ownership                            | Done                 |
+| P0-3  | Absolute multi-property stop compilation        | Green, pending merge |
+| P0-3b | Authored-duration pinning                       | Not started          |
+| P0-4  | DOM transform rendering and removal             | Not started          |
 
 ## Current next action
 
-**Blocked on the post-E3 review.** The final rescue-to-main PR does not open until the four blocking defects in [`docs/CODE-REVIEW-POST-E3.md`](../docs/CODE-REVIEW-POST-E3.md) are fixed and their gates measure the property they claim to gate.
+**Merge [#67](https://github.com/chahyasantoso/motion5/pull/67), then open P0-3b.** P0-3 is green on [`6a0bdb7`](https://github.com/chahyasantoso/motion5/commit/6a0bdb7dcdad9a51792105c5546e21a845d4961d) and, as of that commit, is proven against real GSAP rather than against a hand-rolled double. Its recovery audit has not been dispatched; see the note under P0-3's exit criterion.
 
-Blocking defects, in the order they should be fixed:
+## P0 progress
 
-1. **P0-1** `ProjectRuntime.seek()` advances the same counter the clock checks, so the next real tick throws from inside the clock's listener loop and the RAF is never rescheduled. One seek kills every animation for the page's lifetime.
-2. **P0-2** the GSAP adapter creates an unpaused timeline, adding a second ticker and letting proxy state drift behind `Track`'s dirty flag. Every existing GSAP test hand-rolls its own paused timeline, so the line is never executed.
-3. **P0-3** stop compilation indexes segments by stop ordinal shared across properties, so per-property timing and easing are corrupted and stop positions are treated as deltas rather than absolute positions.
-4. **P0-4** the default DOM writer assigns non-CSS keys (`x`, `y`, `rotation`, `scale`) as expando properties, so transforms never render, and omitted-key removal writes `undefined` into a `CSSStyleDeclaration`, which is a silent no-op.
-
-The E3 merge commit is [`d66e316e`](https://github.com/chahyasantoso/motion5/commit/d66e316e9408447b8262dbe3cc2f7bfbc4742cbf).
+- **P0-1 complete:** merged via [PR #65](https://github.com/chahyasantoso/motion5/pull/65), merge commit [`5a215ce`](https://github.com/chahyasantoso/motion5/commit/5a215cecb20269187589c6350f5e7af470f72643). Clock frame identity is separate from batch identity, seek no longer consumes a clock tick, clock-driven flush failures are contained, and browser frame rescheduling survives listener errors. Recovery audit [run #31613418248](https://github.com/chahyasantoso/motion5/actions/runs/31613418248) passed all five jobs against base [`c7aae62a`](https://github.com/chahyasantoso/motion5/commit/c7aae62a94897aa84a652cd13f42fb4fddfd67b5).
+- **P0-2 complete:** merged via [PR #66](https://github.com/chahyasantoso/motion5/pull/66), merge commit [`2f38b5b0`](https://github.com/chahyasantoso/motion5/commit/2f38b5b0f7e6994ba1fe4fb3eb13ab4813acfd3a). The GSAP adapter creates paused timelines and the contract test observes the adapter's own `timeline({ paused: true })` call. Recovery audit [run #31616138632](https://github.com/chahyasantoso/motion5/actions/runs/31616138632) passed all five jobs against base [`5a215ce`](https://github.com/chahyasantoso/motion5/commit/5a215cecb20269187589c6350f5e7af470f72643). **One piece of the review's P0-2 fix landed late:** `createRealGsapInterpolator` was still hand-rolling a paused timeline inside `end-to-end.test.ts` after this merge, and was removed on the P0-3 branch in [`6a0bdb7`](https://github.com/chahyasantoso/motion5/commit/6a0bdb7dcdad9a51792105c5546e21a845d4961d).
+- **P0-3 green, pending merge:** PR [#67](https://github.com/chahyasantoso/motion5/pull/67), implementation [`1d838acd`](https://github.com/chahyasantoso/motion5/commit/1d838acd92cde5b76b0a90f9997ac9765084dc05), test-model repair [`92f9f8b2`](https://github.com/chahyasantoso/motion5/commit/92f9f8b2a14f099ca258a2b573d34d4fba64f262), real-edge evidence [`6a0bdb7`](https://github.com/chahyasantoso/motion5/commit/6a0bdb7dcdad9a51792105c5546e21a845d4961d), progress note [`P0-3.md`](P0-3.md). CI [run #31652628046](https://github.com/chahyasantoso/motion5/actions/runs/31652628046) is green on all jobs. Stop positions now compile as absolute normalized positions with one segment per authored interval, using GSAP's position argument rather than the shared percent-keyframe map the review suggested; the real-GSAP test proves the two are equivalent instead of asserting it.
 
 ## Reopened gates
 
@@ -44,6 +46,9 @@ The E3 merge commit is [`d66e316e`](https://github.com/chahyasantoso/motion5/com
 
 ## Recent evidence
 
+- P0-3 green CI: [run #31652628046](https://github.com/chahyasantoso/motion5/actions/runs/31652628046) on [`6a0bdb7`](https://github.com/chahyasantoso/motion5/commit/6a0bdb7dcdad9a51792105c5546e21a845d4961d). Quality, integration, boundaries, performance, and formatter all green.
+- Real-GSAP seam: [`packages/core/test/support/real-gsap.ts`](../packages/core/test/support/real-gsap.ts). One pass-through seam replaces two hand-rolled wrappers that each repaired the adapter's own defects: they hardcoded `{ paused: true }` (hiding P0-2) and dropped the tween position argument (hiding P0-3). The seam forwards config and positions verbatim and exposes real GSAP's `paused()` and `duration()`.
+- P0-3 CI red diagnosis (superseded): [run #31616782139](https://github.com/chahyasantoso/motion5/actions/runs/31616782139), quality failed at `gsap-absolute-stops.test.ts:81` with expected `{ x: 25, y: 25 }` but received `{ x: 25, y: 20 }`. That was a defect in the deterministic test model, repaired by [`92f9f8b2`](https://github.com/chahyasantoso/motion5/commit/92f9f8b2a14f099ca258a2b573d34d4fba64f262) without weakening the assertion.
 - Post-E3 code review: [`docs/CODE-REVIEW-POST-E3.md`](../docs/CODE-REVIEW-POST-E3.md), commit [`515354bb`](https://github.com/chahyasantoso/motion5/commit/515354bbf11a338ca50dde3e400a532b2ab5b049). Four blocking defects, eight high-severity findings, seven governance-gate gaps, three unported oracle behaviors. Source-traced, not executed.
 - E2 merged via clean replay PR [#63](https://github.com/chahyasantoso/motion5/pull/63), merge commit [`4b4abdd1`](https://github.com/chahyasantoso/motion5/commit/4b4abdd1c3ddcb57bc1ce6c2444a54ce65bf38de).
 - E2 audit: [run #31594467503](https://github.com/chahyasantoso/motion5/actions/runs/31594467503), contract, acceptance, failing-first, and build green; mutation assigned to E3.
@@ -53,7 +58,9 @@ The E3 merge commit is [`d66e316e`](https://github.com/chahyasantoso/motion5/com
 
 ## Remaining work
 
-- Fix P0-1 through P0-4 and land the flat projected-input change (X-1) that unblocks the registry churn finding.
+- Dispatch the P0-3 recovery audit against [`6a0bdb7`](https://github.com/chahyasantoso/motion5/commit/6a0bdb7dcdad9a51792105c5546e21a845d4961d) with base [`2f38b5b0`](https://github.com/chahyasantoso/motion5/commit/2f38b5b0f7e6994ba1fe4fb3eb13ab4813acfd3a). CI green is not the same evidence as the audit's failing-first leg.
+- P0-3b: pin the timeline's real duration to the authored duration. GSAP derives a timeline's duration from its latest scheduled child, so any final stop with `p < 1` rescales the whole progress mapping and shortens the public `duration`.
+- Fix P0-4 and land the flat projected-input change (X-1) that unblocks the registry churn finding.
 - Repair the gates that cannot currently fail: acceptance must prove tests ran, failing-first must require an assertion-level failure, the mutation job must actually print the score it enforces, and `ci.yml` must require build and end-to-end.
 - Re-dispatch the recovery audit and re-baseline mutation once the gates are honest.
 - Rerun rescue checks.

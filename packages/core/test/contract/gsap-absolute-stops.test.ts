@@ -1,0 +1,155 @@
+import { describe, expect, it } from "vitest";
+import {
+  createGsapInterpolator,
+  type GsapTimelineLike,
+} from "../../src/adapters/interpolator/gsap";
+import { createRealGsapSeam, readNumber } from "../support/real-gsap";
+
+type Tween = {
+  target: Record<string, unknown>;
+  vars: Record<string, unknown>;
+  position: number | undefined;
+};
+
+function createDeterministicTimeline(): {
+  readonly timeline: GsapTimelineLike;
+  readonly state: Record<string, unknown>;
+} {
+  const state: Record<string, unknown> = {};
+  const tweens: Tween[] = [];
+  let currentProgress = 0;
+  const timeline: GsapTimelineLike = {
+    duration: () => 1,
+    progress,
+    to(target, vars, position) {
+      tweens.push({ target, vars, position });
+      return timeline;
+    },
+    kill() {},
+  };
+  function progress(): number;
+  function progress(value: number): GsapTimelineLike;
+  function progress(value?: number): number | GsapTimelineLike {
+    if (value === undefined) return currentProgress;
+    currentProgress = value;
+    const byKey = new Map<string, Tween[]>();
+    for (const tween of tweens) {
+      for (const key of Object.keys(tween.vars)) {
+        if (key === "duration" || key === "ease") continue;
+        const entries = byKey.get(key) ?? [];
+        entries.push(tween);
+        byKey.set(key, entries);
+      }
+    }
+    for (const [key, entries] of byKey) {
+      const eligible = entries.filter((tween) => (tween.position ?? 0) <= currentProgress);
+      const active = eligible.at(-1);
+      if (active === undefined) continue;
+      const start = active.position ?? 0;
+      const duration = typeof active.vars.duration === "number" ? active.vars.duration : 0;
+      const end = start + duration;
+      const previous = eligible.at(-2);
+      const valueAtStart = previous?.vars[key] ?? active.target[key];
+      const valueAtEnd = active.vars[key];
+      const amount = end <= start ? 1 : Math.min(1, (currentProgress - start) / duration);
+      if (typeof valueAtStart === "number" && typeof valueAtEnd === "number")
+        state[key] = valueAtStart + (valueAtEnd - valueAtStart) * amount;
+      else if (amount >= 1) state[key] = valueAtEnd;
+    }
+    return timeline;
+  }
+  return { timeline, state };
+}
+
+describe("GSAP absolute multi-property stops (P0-3)", () => {
+  it("preserves each property's absolute positions and independent timing", () => {
+    const fake = createDeterministicTimeline();
+    const timeline = createGsapInterpolator({ timeline: () => fake.timeline }).create({
+      duration: 1,
+      keyframes: {
+        x: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 0.5, v: 50 },
+            { p: 1, v: 100 },
+          ],
+        },
+        y: {
+          stops: [
+            { p: 0.2, v: 20 },
+            { p: 0.25, v: 25 },
+            { p: 1, v: 100 },
+          ],
+        },
+      },
+    });
+
+    timeline.progress(0);
+    expect(fake.state).toEqual({ x: 0 });
+    timeline.progress(0.2);
+    expect(fake.state).toEqual({ x: 20, y: 20 });
+    timeline.progress(0.25);
+    expect(fake.state).toEqual({ x: 25, y: 25 });
+    timeline.progress(0.5);
+    expect(fake.state).toEqual({ x: 50, y: 50 });
+    timeline.progress(1);
+    expect(fake.state).toEqual({ x: 100, y: 100 });
+  });
+
+  it("keeps per-property grids and the leading hold intact on real GSAP", () => {
+    // The deterministic double above states the invariant. This states it against the library
+    // that actually schedules the tweens: the seam forwards each segment's absolute position
+    // instead of dropping it, so a regression to shared ordinal segments fails here.
+    const seam = createRealGsapSeam();
+    const timeline = seam.interpolator.create({
+      duration: 1,
+      keyframes: {
+        x: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 0.5, v: 50 },
+            { p: 1, v: 100 },
+          ],
+        },
+        y: {
+          stops: [
+            { p: 0.2, v: 20 },
+            { p: 0.25, v: 25 },
+            { p: 1, v: 100 },
+          ],
+        },
+      },
+    });
+
+    const x = (): number => readNumber(timeline.state, "x");
+    const y = (): number => readNumber(timeline.state, "y");
+
+    // Authored positions are absolute, so the last stop at p = 1 is the timeline's end.
+    expect(timeline.duration).toBeCloseTo(1, 10);
+
+    timeline.progress(0);
+    expect(x()).toBeCloseTo(0, 6);
+    expect(y()).toBeCloseTo(20, 6);
+
+    // y holds at its authored start until its own first stop at 0.2, on its own grid.
+    timeline.progress(0.2);
+    expect(x()).toBeCloseTo(20, 6);
+    expect(y()).toBeCloseTo(20, 6);
+
+    // 0.25 is the end of y's short segment and mid-ramp for x. Shared ordinal segments would
+    // put one property on the other's grid here.
+    timeline.progress(0.25);
+    expect(x()).toBeCloseTo(25, 6);
+    expect(y()).toBeCloseTo(25, 6);
+
+    timeline.progress(0.5);
+    expect(x()).toBeCloseTo(50, 6);
+    expect(y()).toBeCloseTo(50, 6);
+
+    timeline.progress(1);
+    expect(x()).toBeCloseTo(100, 6);
+    expect(y()).toBeCloseTo(100, 6);
+
+    timeline.kill();
+  });
+});
