@@ -68,9 +68,20 @@ describe("composition and output-shape diagnostics", () => {
     runtime.dispose();
   });
 
-  it("diagnoses an output observation whose source publishes a non-record value", () => {
-    const source = node("hero/source", [], () => ({
+  it("diagnoses an output observation whose source has already published a non-record value", () => {
+    const registry = new PatchRegistry();
+    registry.beginBatch(1, ["hero/source"]);
+    registry.publish({
+      nodeId: "hero/source",
       values: ["bad", "output"] as never,
+      sourceProgress: 0,
+      sourceRevisions: {},
+      status: "ready",
+    });
+    registry.closeBatch();
+
+    const source = node("hero/source", [], () => ({
+      values: { ignored: true },
       sourceProgress: 0,
       sourceRevisions: {},
     }));
@@ -79,10 +90,10 @@ describe("composition and output-shape diagnostics", () => {
       [{ observerId: "hero/observer", sourceId: "hero/source", role: "output" }],
       () => ({ values: { local: true }, sourceProgress: 0, sourceRevisions: {} }),
     );
-    const batch = new GraphPublisher(new PatchRegistry()).flush(
+    const batch = new GraphPublisher(registry).flush(
       snapshot([source, observer]),
-      ["hero/source"],
-      1,
+      ["hero/observer"],
+      2,
     );
 
     expect(batch.patches.find(({ nodeId }) => nodeId === "hero/observer")?.diagnostics[0]?.ruleId).toBe(
