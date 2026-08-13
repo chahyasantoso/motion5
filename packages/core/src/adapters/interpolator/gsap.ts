@@ -48,14 +48,20 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
           const previous = stops[index - 1];
           const next = stops[index];
           if (!previous || !next) continue;
-          const vars: Record<string, unknown> = { ...tweenVars, [key]: next.v, duration: (next.p - previous.p) * duration };
+          const vars: Record<string, unknown> = { ...tweenVars, [key]: next.v, duration: (next.p - previous.p) * duration, ease: "none" };
           if (next.ease !== undefined) vars.ease = next.ease;
           parent.to(proxy, vars, previous.p * duration);
         }
         if (last.p < 1) parent.to(proxy, { [key]: last.v, duration: 0 }, duration);
       }
       parent.duration(duration);
-      return { get duration() { return parent.duration(); }, state: proxy, progress(value?: number): number | void { if (value === undefined) return parent.progress(); parent.progress(value); }, kill(): void { parent.kill(); } };
+      function progress(): number;
+      function progress(value: number): void;
+      function progress(value?: number): number | void {
+        if (value === undefined) return parent.progress();
+        parent.progress(value);
+      }
+      return { get duration() { return parent.duration(); }, state: proxy, progress, kill(): void { parent.kill(); } };
     }
     if (!gsap.to) throw new TypeError("GSAP adapter requires timeline().");
     const tween = gsap.to(proxy, { ...tweenVars, keyframes: compiled.keyframes, duration, paused: true });
