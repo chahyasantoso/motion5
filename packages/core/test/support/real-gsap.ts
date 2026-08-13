@@ -1,6 +1,9 @@
 import { gsap } from "gsap";
 import type { Interpolator } from "../../src/ports/interpolator";
-import { createGsapInterpolator, type GsapTweenLike } from "../../src/adapters/interpolator/gsap";
+import {
+  createGsapInterpolator,
+  type GsapTimelineLike,
+} from "../../src/adapters/interpolator/gsap";
 
 export interface CreatedTimeline {
   readonly config: unknown;
@@ -8,17 +11,15 @@ export interface CreatedTimeline {
   duration(): number;
   tweenCount(): number;
 }
-
 export interface RealGsapSeam {
   readonly interpolator: Interpolator;
   readonly created: readonly CreatedTimeline[];
 }
-
 export function createRealGsapSeam(): RealGsapSeam {
   const created: CreatedTimeline[] = [];
   const interpolator = createGsapInterpolator({
-    to(target, vars): GsapTweenLike {
-      const real = gsap.to(target, vars as Parameters<typeof gsap.to>[1]);
+    timeline(vars): GsapTimelineLike {
+      const real = gsap.timeline(vars as Parameters<typeof gsap.timeline>[0]);
       created.push({
         config: vars,
         paused: () => real.paused(),
@@ -30,7 +31,6 @@ export function createRealGsapSeam(): RealGsapSeam {
   });
   return { interpolator, created };
 }
-
 export function readNumber(state: Readonly<Record<string, unknown>>, key: string): number {
   const value = state[key];
   return typeof value === "number" ? value : Number.NaN;

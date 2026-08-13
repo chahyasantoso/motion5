@@ -6,6 +6,7 @@ import type {
   ProjectDefinition,
 } from "./contract/v5";
 import { validateV5 } from "./contract/validate-v5";
+import { compilePercentKeyframes } from "./domain/keyframe-compiler";
 import { PluginRegistry } from "./domain/plugins";
 import { Track } from "./domain/track";
 import type { ImmutableRecord } from "./domain/values";
@@ -86,13 +87,19 @@ export class Engine {
       if (existing) return existing;
       const definition = nodes.get(nodeId);
       if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
-      const resolved = this.#plugins?.resolveForKeyframes(
-        definition.keyframes ?? {},
-        `${nodeId}.keyframes`,
-        { id: nodeId, duration: definition.duration },
-      );
-      if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
-        throw new TypeError(describeDiagnostics(resolved.diagnostics));
+      const path = `${nodeId}.keyframes`;
+      const resolved = this.#plugins?.resolveForKeyframes(definition.keyframes ?? {}, path, {
+        id: nodeId,
+        duration: definition.duration,
+      });
+      const preparedKeyframes = {
+        ...(definition.keyframes ?? {}),
+        ...(resolved?.preparation.keyframes ?? {}),
+      };
+      const keyframeCompilation = compilePercentKeyframes(preparedKeyframes, path);
+      const diagnostics = [...(resolved?.diagnostics ?? []), ...keyframeCompilation.diagnostics];
+      if (diagnostics.some(({ severity }) => severity === "error"))
+        throw new TypeError(describeDiagnostics(diagnostics));
       const track = new Track({
         interpolator: this.#options.interpolator,
         interpolationConfig: definition,
