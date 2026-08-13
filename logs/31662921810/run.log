@@ -1,0 +1,185 @@
+prettier --check	Set up job	﻿2026-08-13T03:07:01.3736914Z Current runner version: '2.336.0'
+prettier --check	Set up job	2026-08-13T03:07:01.3765885Z ##[group]Runner Image Provisioner
+prettier --check	Set up job	2026-08-13T03:07:01.3766832Z Hosted Compute Agent
+prettier --check	Set up job	2026-08-13T03:07:01.3767533Z Version: 20260707.563
+prettier --check	Set up job	2026-08-13T03:07:01.3768179Z Commit: 02667638d2b423fbc733a8e32a88b44996a3ba6e
+prettier --check	Set up job	2026-08-13T03:07:01.3768885Z Build Date: 2026-07-07T19:33:50Z
+prettier --check	Set up job	2026-08-13T03:07:01.3769663Z Worker ID: {7a43f550-0966-49c5-b1b3-b51bf2428571}
+prettier --check	Set up job	2026-08-13T03:07:01.3770429Z Azure Region: westus3
+prettier --check	Set up job	2026-08-13T03:07:01.3771381Z ##[endgroup]
+prettier --check	Set up job	2026-08-13T03:07:01.3773061Z ##[group]Operating System
+prettier --check	Set up job	2026-08-13T03:07:01.3773752Z Ubuntu
+prettier --check	Set up job	2026-08-13T03:07:01.3774381Z 24.04.4
+prettier --check	Set up job	2026-08-13T03:07:01.3774956Z LTS
+prettier --check	Set up job	2026-08-13T03:07:01.3775580Z ##[endgroup]
+prettier --check	Set up job	2026-08-13T03:07:01.3776209Z ##[group]Runner Image
+prettier --check	Set up job	2026-08-13T03:07:01.3776816Z Image: ubuntu-24.04
+prettier --check	Set up job	2026-08-13T03:07:01.3777421Z Version: 20260720.247.2
+prettier --check	Set up job	2026-08-13T03:07:01.3778536Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260720.247/images/ubuntu/Ubuntu2404-Readme.md
+prettier --check	Set up job	2026-08-13T03:07:01.3780315Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260720.247
+prettier --check	Set up job	2026-08-13T03:07:01.3781648Z ##[endgroup]
+prettier --check	Set up job	2026-08-13T03:07:01.3782996Z ##[group]GITHUB_TOKEN Permissions
+prettier --check	Set up job	2026-08-13T03:07:01.3785204Z Contents: read
+prettier --check	Set up job	2026-08-13T03:07:01.3785917Z Metadata: read
+prettier --check	Set up job	2026-08-13T03:07:01.3786531Z PullRequests: read
+prettier --check	Set up job	2026-08-13T03:07:01.3787149Z ##[endgroup]
+prettier --check	Set up job	2026-08-13T03:07:01.3789991Z Secret source: Actions
+prettier --check	Set up job	2026-08-13T03:07:01.3792019Z Prepare workflow directory
+prettier --check	Set up job	2026-08-13T03:07:01.4139949Z Prepare all required actions
+prettier --check	Set up job	2026-08-13T03:07:01.4189946Z Getting action download info
+prettier --check	Set up job	2026-08-13T03:07:01.7287571Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+prettier --check	Set up job	2026-08-13T03:07:02.3910281Z Download action repository 'actions/setup-node@v4' (SHA:49933ea5288caeca8642d1e84afbd3f7d6820020)
+prettier --check	Set up job	2026-08-13T03:07:02.6310500Z Complete job name: prettier --check
+prettier --check	Run actions/checkout@v4	﻿2026-08-13T03:07:02.7116892Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7126189Z ##[group]Run actions/checkout@v4
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7127044Z with:
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7127617Z   ref: 8198a6269e6ee06363edb6e3d98522a037427249
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7128297Z   repository: chahyasantoso/motion5
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7128892Z   fetch-depth: 1
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7133229Z   token: ***
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7133749Z   ssh-strict: true
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7134254Z   ssh-user: git
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7134771Z   persist-credentials: true
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7135331Z   clean: true
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7135848Z   sparse-checkout-cone-mode: true
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7136439Z   fetch-tags: false
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7136958Z   show-progress: true
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7137533Z   lfs: false
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7138016Z   submodules: false
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7138630Z   set-safe-directory: true
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7139209Z   allow-unsafe-pr-checkout: false
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.7140103Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8164323Z Syncing repository: chahyasantoso/motion5
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8167784Z ##[group]Getting Git version info
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8169306Z Working directory is '/home/runner/work/motion5/motion5'
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8171553Z [command]/usr/bin/git version
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8340095Z git version 2.54.0
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8365720Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8384428Z Temporarily overriding HOME='/home/runner/work/_temp/e34215c3-8d68-477a-a8ee-c950e8f0c600' before making global git config changes
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8386701Z Adding repository directory to the temporary git global config as a safe directory
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8390463Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/motion5/motion5
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8453558Z Deleting the contents of '/home/runner/work/motion5/motion5'
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8457528Z ##[group]Initializing the repository
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8467036Z [command]/usr/bin/git init /home/runner/work/motion5/motion5
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8603978Z hint: Using 'master' as the name for the initial branch. This default branch name
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8605914Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8608837Z hint: to use in all of your new repositories, which will suppress this warning,
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8610905Z hint: call:
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8612502Z hint:
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8613852Z hint: 	git config --global init.defaultBranch <name>
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8615180Z hint:
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8616222Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8617688Z hint: 'development'. The just-created branch can be renamed via this command:
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8618902Z hint:
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8619622Z hint: 	git branch -m <name>
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8620487Z hint:
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8622104Z hint: Disable this message with "git config set advice.defaultBranchName false"
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8623845Z Initialized empty Git repository in /home/runner/work/motion5/motion5/.git/
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8626325Z [command]/usr/bin/git remote add origin https://github.com/chahyasantoso/motion5
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8709897Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8711733Z ##[group]Disabling automatic garbage collection
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8714675Z [command]/usr/bin/git config --local gc.auto 0
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8749139Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8750720Z ##[group]Setting up auth
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8759726Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.8801986Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.9228541Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.9268393Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.9497018Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.9533703Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.9756423Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.9796224Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.9797704Z ##[group]Fetching the repository
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:02.9806291Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 8198a6269e6ee06363edb6e3d98522a037427249
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.8968215Z From https://github.com/chahyasantoso/motion5
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.8971603Z  * branch            8198a6269e6ee06363edb6e3d98522a037427249 -> FETCH_HEAD
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9007758Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9009517Z ##[group]Determining the checkout info
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9011512Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9016441Z [command]/usr/bin/git sparse-checkout disable
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9068703Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9103780Z ##[group]Checking out the ref
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9107485Z [command]/usr/bin/git checkout --progress --force 8198a6269e6ee06363edb6e3d98522a037427249
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9244124Z Note: switching to '8198a6269e6ee06363edb6e3d98522a037427249'.
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9245867Z 
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9247067Z You are in 'detached HEAD' state. You can look around, make experimental
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9249484Z changes and commit them, and you can discard any commits you make in this
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9252509Z state without impacting any branches by switching back to a branch.
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9254358Z 
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9255363Z If you want to create a new branch to retain commits you create, you may
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9258376Z do so (now or later) by using -c with the switch command. Example:
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9260268Z 
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9261319Z   git switch -c <new-branch-name>
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9262613Z 
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9263399Z Or undo this operation with:
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9264600Z 
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9265319Z   git switch -
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9266541Z 
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9267716Z Turn off this advice by setting config variable advice.detachedHead to false
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9269267Z 
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9270061Z HEAD is now at 8198a62 fix(dom): compose x y z as translate3d
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9274416Z ##[endgroup]
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9301718Z [command]/usr/bin/git log -1 --format=%H
+prettier --check	Run actions/checkout@v4	2026-08-13T03:07:03.9329449Z 8198a6269e6ee06363edb6e3d98522a037427249
+prettier --check	Run actions/setup-node@v4	﻿2026-08-13T03:07:03.9710095Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:03.9716128Z ##[group]Run actions/setup-node@v4
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:03.9717257Z with:
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:03.9718099Z   node-version: 24
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:03.9719000Z   cache: npm
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:03.9719868Z   always-auth: false
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:03.9720820Z   check-latest: false
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:03.9731814Z   token: ***
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:03.9732696Z ##[endgroup]
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:04.1315067Z Found in cache @ /opt/hostedtoolcache/node/24.18.0/x64
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:04.1344872Z (node:2348) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:04.1351400Z ##[group]Environment details
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:04.1354311Z (Use `node --trace-deprecation ...` to show where the warning was created)
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:06.3897165Z node: v24.18.0
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:06.3897887Z npm: 11.16.0
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:06.3898398Z yarn: 1.22.22
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:06.3899854Z ##[endgroup]
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:06.3918435Z [command]/opt/hostedtoolcache/node/24.18.0/x64/bin/npm config get cache
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:06.6408713Z /home/runner/.npm
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:06.8979181Z Cache hit for: node-cache-Linux-x64-npm-8c36a8faf413029397ba24876deb09fb7d790b43389ccc09af71bce343174363
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:06.9083333Z (node:2348) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:08.1452377Z Received 12627476 of 41987604 (30.1%), 12.0 MBs/sec
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:08.3020808Z Received 41987604 of 41987604 (100.0%), 34.5 MBs/sec
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:08.3021934Z Cache Size: ~40 MB (41987604 B)
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:08.3156737Z [command]/usr/bin/tar -xf /home/runner/work/_temp/42270b81-04cb-46a0-94c5-dec5e0e2664d/cache.tzst -P -C /home/runner/work/motion5/motion5 --use-compress-program unzstd
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:08.4314952Z Cache restored successfully
+prettier --check	Run actions/setup-node@v4	2026-08-13T03:07:08.4338510Z Cache restored from key: node-cache-Linux-x64-npm-8c36a8faf413029397ba24876deb09fb7d790b43389ccc09af71bce343174363
+prettier --check	Install locked dependencies	﻿2026-08-13T03:07:08.4510597Z ##[group]Run npm ci --ignore-scripts --no-audit --no-fund
+prettier --check	Install locked dependencies	2026-08-13T03:07:08.4511481Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund^[[0m
+prettier --check	Install locked dependencies	2026-08-13T03:07:08.4608802Z shell: /usr/bin/bash -e {0}
+prettier --check	Install locked dependencies	2026-08-13T03:07:08.4609137Z ##[endgroup]
+prettier --check	Install locked dependencies	2026-08-13T03:07:13.5034942Z 
+prettier --check	Install locked dependencies	2026-08-13T03:07:13.5043151Z added 221 packages in 5s
+prettier --check	Check formatting	﻿2026-08-13T03:07:13.5666870Z ##[group]Run npm run format:check
+prettier --check	Check formatting	2026-08-13T03:07:13.5667240Z ^[[36;1mnpm run format:check^[[0m
+prettier --check	Check formatting	2026-08-13T03:07:13.5713886Z shell: /usr/bin/bash -e {0}
+prettier --check	Check formatting	2026-08-13T03:07:13.5714216Z ##[endgroup]
+prettier --check	Check formatting	2026-08-13T03:07:13.6733852Z 
+prettier --check	Check formatting	2026-08-13T03:07:13.6734638Z > motion5@0.0.0 format:check
+prettier --check	Check formatting	2026-08-13T03:07:13.6735448Z > prettier . --check
+prettier --check	Check formatting	2026-08-13T03:07:13.6735663Z 
+prettier --check	Check formatting	2026-08-13T03:07:13.7837676Z Checking formatting...
+prettier --check	Check formatting	2026-08-13T03:07:15.8067989Z [^[[33mwarn^[[39m] progress/STATUS.md
+prettier --check	Check formatting	2026-08-13T03:07:15.9147892Z [^[[33mwarn^[[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+prettier --check	Check formatting	2026-08-13T03:07:15.9484824Z ##[error]Process completed with exit code 1.
+prettier --check	Post Run actions/checkout@v4	﻿2026-08-13T03:07:15.9631751Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+prettier --check	Post Run actions/checkout@v4	2026-08-13T03:07:15.9633055Z Post job cleanup.
+prettier --check	Post Run actions/checkout@v4	2026-08-13T03:07:16.0498646Z [command]/usr/bin/git version
+prettier --check	Post Run actions/checkout@v4	2026-08-13T03:07:16.0545174Z git version 2.54.0
+prettier --check	Post Run actions/checkout@v4	2026-08-13T03:07:16.0592262Z Temporarily overriding HOME='/home/runner/work/_temp/67b819d4-5d85-41ae-af3e-2ff45a2a12df' before making global git config changes
+prettier --check	Post Run actions/checkout@v4	2026-08-13T03:07:16.0594102Z Adding repository directory to the temporary git global config as a safe directory
+prettier --check	Post Run actions/checkout@v4	2026-08-13T03:07:16.0598282Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/motion5/motion5
+prettier --check	Post Run actions/checkout@v4	2026-08-13T03:07:16.0640019Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+prettier --check	Post Run actions/checkout@v4	2026-08-13T03:07:16.0679914Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+prettier --check	Post Run actions/checkout@v4	2026-08-13T03:07:16.0946301Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+prettier --check	Post Run actions/checkout@v4	2026-08-13T03:07:16.0982067Z http.https://github.com/.extraheader
+prettier --check	Post Run actions/checkout@v4	2026-08-13T03:07:16.0995195Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+prettier --check	Post Run actions/checkout@v4	2026-08-13T03:07:16.1051424Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+prettier --check	Post Run actions/checkout@v4	2026-08-13T03:07:16.1311387Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+prettier --check	Post Run actions/checkout@v4	2026-08-13T03:07:16.1390523Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+prettier --check	Complete job	﻿2026-08-13T03:07:16.1846710Z Cleaning up orphan processes
+prettier --check	Complete job	2026-08-13T03:07:16.2145399Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/checkout@v4, actions/setup-node@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
