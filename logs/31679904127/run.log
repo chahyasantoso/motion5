@@ -1,0 +1,106 @@
+quality (node 24)	Unit tests	﻿2026-08-13T07:57:07.7365690Z ##[group]Run npm test
+quality (node 24)	Unit tests	2026-08-13T07:57:07.7366038Z ^[[36;1mnpm test^[[0m
+quality (node 24)	Unit tests	2026-08-13T07:57:07.7409837Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Unit tests	2026-08-13T07:57:07.7410112Z ##[endgroup]
+quality (node 24)	Unit tests	2026-08-13T07:57:07.8603674Z 
+quality (node 24)	Unit tests	2026-08-13T07:57:07.8604302Z > motion5@0.0.0 test
+quality (node 24)	Unit tests	2026-08-13T07:57:07.8604806Z > vitest run
+quality (node 24)	Unit tests	2026-08-13T07:57:07.8604967Z 
+quality (node 24)	Unit tests	2026-08-13T07:57:08.1926072Z 
+quality (node 24)	Unit tests	2026-08-13T07:57:08.1928009Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:08.1929097Z 
+quality (node 24)	Unit tests	2026-08-13T07:57:08.6438375Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-state.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:08.6947112Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-authored-duration.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:08.7035946Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-reentrancy.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:08.8925495Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-absolute-stops.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:08.9088710Z  ^[[32m✓^[[39m packages/core/test/contract/v5-validator.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:08.9368445Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugins.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:09.1273264Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-flat-inputs.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:09.1617618Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/clock-tick-identity.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:09.1721609Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/boundary-scan.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 61^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:09.3527784Z  ^[[32m✓^[[39m packages/core/test/unit/graph/order.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:09.3623050Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-structural-change.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:09.3840207Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ir-validation.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:09.5659733Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:09.5987299Z  ^[[32m✓^[[39m packages/core/test/contract/adapters.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:09.6476306Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/composition-output-shape.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:09.7604787Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:09.8301182Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:09.8482585Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:09.9810359Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:10.0405718Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:10.0846058Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:10.1952042Z  ^[[32m✓^[[39m packages/core/test/migration/v4-to-v5.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:10.2647495Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:10.4311042Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:10.5035791Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/scheduler-reentrancy.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:10.6274423Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:10.6948000Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:10.8988119Z ^[[90mstderr^[[2m | packages/react/test/public-package-surface.test.ts^[[2m > ^[[22m^[[2mReact public package surface (C2)^[[2m > ^[[22m^[[2mrenders and updates through the package entry alone
+quality (node 24)	Unit tests	2026-08-13T07:57:10.8989505Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Unit tests	2026-08-13T07:57:10.8990515Z  ^[[32m✓^[[39m packages/react/test/patch-store-lifecycle.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:10.9026526Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T07:57:10.9040140Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T07:57:10.9056856Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T07:57:10.9076000Z 
+quality (node 24)	Unit tests	2026-08-13T07:57:10.9077171Z  ^[[32m✓^[[39m packages/react/test/public-package-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:11.1437502Z  ^[[32m✓^[[39m packages/core/test/contract/ports.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:11.1977388Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:11.4349786Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 34^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:11.5284886Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:11.6618120Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:11.8178219Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:11.8724315Z  ^[[32m✓^[[39m packages/core/test/unit/domain/lifecycle.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:12.0087026Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:12.1217358Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/acceptance-scan.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:12.2834580Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-paused-timeline.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:12.3728766Z  ^[[32m✓^[[39m packages/core/test/unit/domain/values.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:12.5233934Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-projection-validation.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:12.6456057Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:12.7623605Z  ^[[32m✓^[[39m packages/core/test/unit/domain/triggers.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:12.8627569Z  ^[[32m✓^[[39m packages/react/test/patch-store.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:12.9060211Z  ^[[31m❯^[[39m packages/core/test/unit/scripts/public-declaration-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[33m 2661^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:12.9074792Z ^[[31m     ^[[31m×^[[31m scans the emitted entry declaration closure, not just source strings^[[39m^[[33m 2659^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.0420585Z ^[[90mstderr^[[2m | packages/react/test/public-hook-render.test.ts^[[2m > ^[[22m^[[2mReact public hook render/update (C2)^[[2m > ^[[22m^[[2mrenders the current patch and updates after publication
+quality (node 24)	Unit tests	2026-08-13T07:57:13.0437008Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Unit tests	2026-08-13T07:57:13.0459017Z  ^[[32m✓^[[39m packages/react/test/public-hook-render.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.0466320Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T07:57:13.0496465Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T07:57:13.0498156Z The current testing environment is not configured to support act(...)
+quality (node 24)	Unit tests	2026-08-13T07:57:13.0499177Z 
+quality (node 24)	Unit tests	2026-08-13T07:57:13.1167624Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/mutation-config.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.1775586Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.2513867Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track-contribution.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.3579039Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.3973312Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.4877024Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6167223Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6217232Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6566794Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6598686Z 
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6599383Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6599828Z 
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6603858Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/public-declaration-surface.test.ts^[[2m > ^[[22mpublic declaration surface (P1-9)^[[2m > ^[[22mscans the emitted entry declaration closure, not just source strings
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6608257Z ^[[31m^[[1mAssertionError^[[22m: expected undefined to be defined^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6610159Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/public-declaration-surface.test.ts:^[[2m57:21^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6643341Z     ^[[90m 55|^[[39m       ^[[35mconst^[[39m emitted ^[[33m=^[[39m ^[[35mawait^[[39m ^[[34mdeclarationFiles^[[39m(out)^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6644671Z     ^[[90m 56|^[[39m       const entry = emitted.find((path) => path.endsWith("packages/cor…
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6646100Z     ^[[90m 57|^[[39m       ^[[34mexpect^[[39m(entry)^[[33m.^[[39m^[[34mtoBeDefined^[[39m()^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6646972Z     ^[[90m   |^[[39m                     ^[[31m^^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6648143Z     ^[[90m 58|^[[39m       ^[[35mconst^[[39m reachable ^[[33m=^[[39m ^[[35mnew^[[39m ^[[33mSet^[[39m^[[33m<^[[39mstring^[[33m>^[[39m()^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6649384Z     ^[[90m 59|^[[39m       ^[[35mconst^[[39m queue ^[[33m=^[[39m [entry^[[33m!^[[39m]^[[33m;^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6649915Z 
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6650393Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6650773Z 
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6650802Z 
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6656700Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m54 passed^[[39m^[[22m^[[90m (55)^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6658630Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m193 passed^[[39m^[[22m^[[90m (194)^[[39m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6659561Z ^[[2m   Start at ^[[22m 07:57:08
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6660251Z ^[[2m   Duration ^[[22m 5.45s^[[2m (transform 1.21s, setup 0ms, import 2.94s, tests 3.34s, environment 9ms)^[[22m
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6660764Z 
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6675750Z 
+quality (node 24)	Unit tests	2026-08-13T07:57:13.6698320Z ##[error]AssertionError: expected undefined to be defined
+quality (node 24)	Unit tests	 ❯ packages/core/test/unit/scripts/public-declaration-surface.test.ts:57:21
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	
+quality (node 24)	Unit tests	2026-08-13T07:57:13.7171188Z ##[error]Process completed with exit code 1.
