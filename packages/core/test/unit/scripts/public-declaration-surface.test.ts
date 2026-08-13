@@ -53,7 +53,9 @@ describe("public declaration surface (P1-9)", () => {
         { cwd: root },
       );
       const emitted = await declarationFiles(out);
-      const entry = emitted.find((path) => path.endsWith("packages/core/src/index.d.ts"));
+      const entries = emitted.filter((path) => path.endsWith("index.d.ts"));
+      expect(entries).toHaveLength(1);
+      const entry = entries[0];
       expect(entry).toBeDefined();
       const reachable = new Set<string>();
       const queue = [entry!];
