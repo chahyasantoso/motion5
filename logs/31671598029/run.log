@@ -1,0 +1,24 @@
+boundaries (node 24)	Boundary scan and planted fixtures	﻿2026-08-13T05:48:54.0186347Z ##[group]Run npm run test:boundaries
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:48:54.0186778Z ^[[36;1mnpm run test:boundaries^[[0m
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:48:54.0233079Z shell: /usr/bin/bash -e {0}
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:48:54.0233383Z ##[endgroup]
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:48:54.1366193Z 
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:48:54.1367111Z > motion5@0.0.0 test:boundaries
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:48:54.1368274Z > node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:48:54.1369796Z 
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:48:54.1922083Z ackages/core/src/contract/v5.ts: banned compatibility symbol
+boundaries (node 24)	Boundary scan and planted fixtures	2026-08-13T05:48:54.2057017Z ##[error]Process completed with exit code 1.
+quality (node 24)	Typecheck	﻿2026-08-13T05:48:53.9116570Z ##[group]Run npm run typecheck
+quality (node 24)	Typecheck	2026-08-13T05:48:53.9117012Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Typecheck	2026-08-13T05:48:53.9147200Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Typecheck	2026-08-13T05:48:53.9147631Z ##[endgroup]
+quality (node 24)	Typecheck	2026-08-13T05:48:54.0000690Z 
+quality (node 24)	Typecheck	2026-08-13T05:48:54.0001584Z > motion5@0.0.0 typecheck
+quality (node 24)	Typecheck	2026-08-13T05:48:54.0002189Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Typecheck	2026-08-13T05:48:54.0002369Z 
+quality (node 24)	Typecheck	2026-08-13T05:48:55.4895106Z ##[error]packages/core/src/graph/ir.ts(37,3): error TS2322: Type 'Readonly<{ map: Readonly<{ [x: string]: unknown; }>; }>' is not assignable to type 'InputProjection'.
+quality (node 24)	Typecheck	2026-08-13T05:48:55.4904270Z   Types of property 'map' are incompatible.
+quality (node 24)	Typecheck	2026-08-13T05:48:55.4905312Z     Type 'Readonly<{ [x: string]: unknown; }>' is not assignable to type 'Readonly<Record<string, string>>'.
+quality (node 24)	Typecheck	2026-08-13T05:48:55.4906146Z       'string' index signatures are incompatible.
+quality (node 24)	Typecheck	2026-08-13T05:48:55.4906756Z         Type 'unknown' is not assignable to type 'string'.
+quality (node 24)	Typecheck	2026-08-13T05:48:55.5061049Z ##[error]Process completed with exit code 2.
