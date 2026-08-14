@@ -1,0 +1,3353 @@
+[32m00:35:49 (2239) INFO ProjectReader[39m Found 11 of 189 file(s) to be mutated.
+[32m00:35:49 (2239) INFO Instrumenter[39m Instrumented 11 source file(s) with 1144 mutant(s)
+[32m00:35:49 (2239) INFO ConcurrencyTokenProvider[39m Creating 4 test runner process(es).
+[32m00:35:50 (2239) INFO BroadcastReporter[39m Detected that current console does not support the "progress" reporter, downgrading to "progress-append-only" reporter
+[32m00:35:51 (2239) INFO DryRunExecutor[39m Starting initial test run (vitest test runner with "perTest" coverage analysis). This may take a while.
+[32m00:35:59 (2239) INFO DryRunExecutor[39m Initial test run succeeded. Ran 190 tests in 8 seconds (net 380.12559199999646 ms, overhead 7650.874408000003 ms).
+Mutation testing 1% (elapsed: <1m, remaining: ~15m) 183/1144 tested (23 survived, 0 timed out)
+Mutation testing 4% (elapsed: <1m, remaining: ~7m) 253/1144 tested (38 survived, 0 timed out)
+Mutation testing 8% (elapsed: <1m, remaining: ~5m) 308/1144 tested (50 survived, 1 timed out)
+Mutation testing 11% (elapsed: <1m, remaining: ~4m) 421/1144 tested (77 survived, 1 timed out)
+Mutation testing 16% (elapsed: <1m, remaining: ~4m) 495/1144 tested (86 survived, 1 timed out)
+Mutation testing 20% (elapsed: ~1m, remaining: ~3m) 551/1144 tested (98 survived, 1 timed out)
+Mutation testing 28% (elapsed: ~1m, remaining: ~2m) 607/1144 tested (108 survived, 1 timed out)
+Mutation testing 31% (elapsed: ~1m, remaining: ~2m) 648/1144 tested (123 survived, 1 timed out)
+Mutation testing 36% (elapsed: ~1m, remaining: ~2m) 675/1144 tested (127 survived, 1 timed out)
+Mutation testing 40% (elapsed: ~1m, remaining: ~2m) 722/1144 tested (139 survived, 1 timed out)
+Mutation testing 46% (elapsed: ~1m, remaining: ~2m) 749/1144 tested (145 survived, 2 timed out)
+Mutation testing 49% (elapsed: ~2m, remaining: ~2m) 802/1144 tested (154 survived, 2 timed out)
+Mutation testing 54% (elapsed: ~2m, remaining: ~1m) 864/1144 tested (166 survived, 2 timed out)
+Mutation testing 58% (elapsed: ~2m, remaining: ~1m) 903/1144 tested (178 survived, 2 timed out)
+Mutation testing 63% (elapsed: ~2m, remaining: ~1m) 982/1144 tested (207 survived, 2 timed out)
+Mutation testing 71% (elapsed: ~2m, remaining: ~1m) 1024/1144 tested (213 survived, 2 timed out)
+Mutation testing 74% (elapsed: ~2m, remaining: <1m) 1037/1144 tested (220 survived, 2 timed out)
+Mutation testing 76% (elapsed: ~3m, remaining: <1m) 1052/1144 tested (231 survived, 2 timed out)
+Mutation testing 82% (elapsed: ~3m, remaining: <1m) 1079/1144 tested (235 survived, 2 timed out)
+Mutation testing 87% (elapsed: ~3m, remaining: <1m) 1124/1144 tested (246 survived, 2 timed out)
+Mutation testing 99% (elapsed: ~3m, remaining: <1m) 1143/1144 tested (254 survived, 2 timed out)
+
+All tests
+  core/test
+    contract
+      adapters.test.ts
+        ✓ adapter ports compiles authored stops onto an adapter-owned proxy state (killed 1)
+        ✓ adapter ports adapts a GSAP-like paused timeline without leaking the engine object (killed 2)
+        ✓ adapter ports ticks through an injected frame source and cancels on dispose (killed 6)
+        ✓ adapter ports applies perspective once and never applies blocked patches (killed 5)
+      gsap-absolute-stops.test.ts
+        ✓ GSAP absolute multi-property stops (P0-3) uses one shared paused timeline with independent absolute grids (killed 11)
+        ✓ GSAP absolute multi-property stops (P0-3) preserves authored easing without resampling a linear sibling (killed 1)
+        ✓ GSAP absolute multi-property stops (P0-3) uses tweenVars ease when a stop does not override it (killed 4)
+      gsap-authored-duration.test.ts
+        ✓ GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end (killed 20)
+        ✓ GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration (killed 6)
+        ~ GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions (covered 83)
+        ~ GSAP authored-duration pinning (P0-3b) reports the authored duration for a track with no authored stops (covered 55)
+        ~ GSAP authored-duration pinning (P0-3b) uses one shared tween and never publishes GSAP bookkeeping (covered 83)
+      gsap-multi-stop.test.ts
+        ~ GSAP multi-stop compilation (B2) interpolates authored stops at 0, 0.5, and 1 using real GSAP state (covered 82)
+      gsap-paused-timeline.test.ts
+        ~ GSAP interpolator clock ownership (P0-2) creates a paused parent timeline so the project clock is the only clock owner (covered 53)
+        ~ GSAP interpolator clock ownership (P0-2) is paused according to real GSAP, not according to the fixture (covered 77)
+      s4-validation-owner.test.ts
+        ✘ S4 single authored-stop validator exports the shared validator and reports authored missing-boundary warnings (covered 0)
+        ✘ S4 single authored-stop validator uses the same validation rules for contributed properties with a namespaced prefix (covered 0)
+      v5-validator.test.ts
+        ✘ schema v5 validator accepts the minimal v5 project (covered 0)
+        ✘ schema v5 validator rejects malformed, non-finite, out-of-range, non-monotonic, and duplicate stops (covered 0)
+        ~ schema v5 validator warns when a property does not cover both interpolation endpoints (covered 26)
+        ✘ schema v5 validator rejects v4 and reports the schema path (covered 0)
+        ~ schema v5 validator accepts perspective for 3D content and rejects invalid perspective (covered 26)
+        ~ schema v5 validator warns, but does not reject, 3D content without perspective (covered 26)
+        ✘ schema v5 validator rejects duplicate ids, invalid triggers, and malformed freeTracks (covered 0)
+        ~ schema v5 validator rejects invalid observation roles, unknown sources, self references, and cycles (covered 26)
+        ~ schema v5 validator accepts free-track references in the reserved namespace (covered 29)
+      validation-owner.test.ts
+        ~ one observation-validation owner (P1-12) accepts a track observing a sibling named after its own motion (covered 26)
+        ~ one observation-validation owner (P1-12) reports an actual self-reference identically from both owners (covered 26)
+        ~ one observation-validation owner (P1-12) reports a cycle identically from both owners (covered 26)
+        ~ one observation-validation owner (P1-12) spells edge identity the same way in both owners (covered 26)
+        ~ one observation-validation owner (P1-12) keeps two observers of one source out of each other's duplicate check (covered 26)
+        ~ one observation-validation owner (P1-12) mints a frozen snapshot instead of returning the caller's object (covered 26)
+    integration
+      contract-baseline.test.ts
+        ✘ P0-05 v5 contract integration serializes the minimal project deterministically (covered 0)
+        ~ P0-05 v5 contract integration accepts a project with a shared free track (covered 29)
+        ~ P0-05 v5 contract integration preserves warnings without rejecting the project (covered 26)
+        ~ P0-05 v5 contract integration rejects cycles before runtime mounting (covered 26)
+        ✘ P0-05 v5 contract integration migrates a v4 document without changing its source (covered 0)
+      dom-patch-apply.test.ts
+        ✓ DOM patch adapter contract (C3) resolves each node, filters internal values, diffs writes, removes omitted keys, and clears cache (killed 16)
+        ~ DOM patch adapter contract (C3) does not write blocked, error, or unresolved patches (covered 14)
+      dom-plugin-metadata.test.ts
+        ✓ DOM plugin metadata (X-2) uses resolved internal-key metadata instead of hardcoding underscore filtering (killed 3)
+        ✓ DOM plugin metadata (X-2) serializes plugin-owned outputs before writing to the DOM (killed 1)
+      dom-transform-removal.test.ts
+        ✓ DOM transform and removal contract (P0-4) writes motion transform keys into style.transform (killed 43)
+        ✓ DOM transform and removal contract (P0-4) removes omitted CSS properties instead of assigning undefined (killed 12)
+      end-to-end.test.ts
+        ✓ real end-to-end product path (E2) writes authored GSAP output through a patch into the DOM adapter (killed 64)
+      engine-headless.test.ts
+        ✓ Engine publishes a progress change through the public project handle (killed 50)
+        ~ Engine keeps one clock owner while clock progress publishes once (covered 396)
+        ✓ Engine still resolves authored-key plugins during progress updates (killed 2)
+      engine-load-validation.test.ts
+        ✓ Engine product-load validation (X-1 follow-up) rejects malformed authored stops before constructing a runtime (killed 3)
+        ~ Engine product-load validation (X-1 follow-up) rejects malformed authored stops before any timeline is created (covered 14)
+        ✓ Engine product-load validation (X-1 follow-up) resolves authored plugin ownership during load, not on the first seek (killed 5)
+        ✓ Engine product-load validation (X-1 follow-up) accepts a valid project and creates its timelines during load (killed 2)
+      engine-x3-contribution.test.ts
+        ✓ X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load (killed 23)
+        ~ X-3 contribution through the product load path selects one predicate contributor through Engine.load (covered 130)
+        ✓ X-3 contribution through the product load path rejects malformed contributions during Engine.load (killed 10)
+        ✓ X-3 contribution through the product load path rejects authored ease collisions before any timeline is created (killed 5)
+        ✓ X-3 contribution through the product load path merges contributed keyframes into compiler diagnostics before timeline creation (killed 1)
+      flush-output-merge.test.ts
+        ✓ GraphPublisher output edges merges output source values over the composed patch (killed 5)
+        ✓ GraphPublisher output edges uses canonical edge order when output sources collide (killed 2)
+      graph-publisher.test.ts
+        ✓ GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch (killed 4)
+        ✓ GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue (killed 2)
+        ✘ GraphPublisher does not expose topology mutation methods (covered 0)
+      graph-rollback.test.ts
+        ~ GraphBinding transactions I-2 applies a valid candidate and preserves one live state identity (covered 29)
+        ~ GraphBinding transactions I-2 rejects an invalid candidate before touching the active graph (covered 29)
+        ~ GraphBinding transactions I-2 restores every observable state after live-state apply fails (covered 29)
+        ~ GraphBinding transactions I-2 restores every observable state after publisher scheduling fails (covered 29)
+      graph-runtime.test.ts
+        ✓ GraphRuntime I-13 owns one registry, one state, and one clock subscription (killed 2)
+        ~ GraphRuntime P1-8 keeps the publisher off the public runtime surface (covered 45)
+        ✓ GraphRuntime I-13 keeps ticks monotonic across detach and reattach (killed 4)
+        ✓ GraphRuntime publishes only attached seeds and stops after disposal (killed 4)
+      membership-gating.test.ts
+        ✓ GraphRuntime membership starts empty and publishes only attached nodes by default (killed 7)
+      p2-runtime-smells.test.ts
+        ~ P2 runtime smell hardening preserves the last known good values when a node publishes error (covered 96)
+        ✓ P2 runtime smell hardening derives source revisions from the upstream patches consumed in the flush (killed 9)
+        ✓ P2 runtime smell hardening reports a missing upstream instead of silently composing with an input hole (killed 9)
+        ✓ P2 runtime smell hardening chooses the blocked upstream deterministically by edge key, not authored edge order (killed 14)
+        ✓ P2 runtime smell hardening rejects host objects from interpolator state at the renderer edge (killed 8)
+        ✓ P2 runtime smell hardening kills a timeline exactly once when a Track is disposed repeatedly (killed 1)
+      partial-seed-inputs.test.ts
+        ✓ GraphPublisher partial-seed inputs uses the last published flat value for an unseeded input source (killed 3)
+      plugin-use-contract.test.ts
+        ~ S6 plugin use contract rejects the dead TrackDefinition.use field instead of silently ignoring it (covered 14)
+      project-handle-surface.test.ts
+        ~ public project handle surface (P1-9) does not expose graph internals through Engine.load (covered 129)
+      project-runtime.test.ts
+        ✓ ProjectRuntime TR-R-14 mounts through one project-owned GraphRuntime (killed 6)
+        ✓ ProjectRuntime rejects invalid candidates before constructing a replacement runtime (killed 1)
+        ✓ ProjectRuntime releases every mounted instance and clock subscription on repeated dispose (killed 2)
+      publisher-output-merge-consistency.test.ts
+        ✓ GraphPublisher: memo/registry consistency (recovery A1) a same-flush input-role consumer sees the source's merged flat value (killed 19)
+        ~ GraphPublisher: memo/registry consistency (recovery A1) a later flush resolves the source's merged flat value via registry fallback (covered 236)
+    unit
+      domain
+        motion.test.ts
+          ✓ Motion composite preserves authored order and computes deterministic stagger offsets (killed 20)
+          ✓ Motion composite plays through one clock subscription and scheduler jobs (killed 28)
+          ✓ Motion composite converts clock time into normalized progress using authored duration (killed 5)
+          ✓ Motion composite pausing detaches the clock and play resubscribes without duplicate work (killed 3)
+          ✓ Motion composite clamps seek and rejects non-finite values (killed 6)
+          ✓ Motion composite pauses and disposes owner-first without leaking clock work (killed 6)
+        plugin-contribution-completeness.test.ts
+          ✘ S5 contribution completeness rejects a contributed key with no registered owner (covered 0)
+          ✘ S5 contribution completeness rejects a contributor attempting to overwrite a reserved tween var (covered 0)
+          ✘ S5 contribution completeness bounds a two-hop contribution chain instead of silently accepting it (covered 0)
+        plugin-contribution-contract.test.ts
+          ✘ plugin contribution contract (X-3) passes the authored key, stops, and frozen track view to the contributor (covered 0)
+          ✘ plugin contribution contract (X-3) preserves both keyframes and tweenVars from one explicit contribution (covered 0)
+          ✘ plugin contribution contract (X-3) runs exactly one predicate owner instead of allowing last-write-wins (covered 0)
+          ✘ plugin contribution contract (X-3) rejects malformed contributed stops instead of installing them (covered 0)
+        plugins.test.ts
+          ✘ plugin registry resolves authored keys in deterministic order (covered 0)
+          ✘ plugin registry resolves authored keys and reports unsupported keys (covered 0)
+          ✘ plugin registry orders authored-key plugins by stage, priority, then registration order (covered 0)
+          ✘ plugin registry retains and invokes the compile-time contribution hook (covered 0)
+          ✘ plugin registry rejects duplicate output ownership deterministically (covered 0)
+          ✘ plugin registry rejects duplicate exact key ownership at registration (covered 0)
+          ✘ plugin registry lets exact ownership beat a predicate fallback (covered 0)
+          ✘ plugin registry rejects a contributor without prepare stage (covered 0)
+          ✘ plugin registry rejects fractional priorities (covered 0)
+          ✘ plugin registry rejects duplicate input ownership at registration (covered 0)
+          ✘ plugin registry rejects duplicate registration and malformed metadata (covered 0)
+          ✘ plugin registry detaches resolved plugins from later registry mutation (covered 0)
+        s7-plugin-evidence.test.ts
+          ✘ S7 plugin evidence invokes each owned contributor exactly once and permits identical tween vars (covered 0)
+          ✘ S7 plugin evidence keeps preparation and diagnostics deterministic across registration order (covered 0)
+          ✘ S7 plugin evidence sorts duplicate output diagnostic ids (covered 0)
+        track.test.ts
+          ✓ Track leaf clamps progress and marks the leaf dirty only when progress changes (killed 8)
+          ✓ Track leaf rejects non-finite progress and composes local values once per dirty state (killed 16)
+          ✓ Track leaf recomposes a clean track when its inputs change (killed 3)
+          ~ Track leaf is a leaf with no composite or graph API (covered 20)
+          ✓ Track leaf disposes once and rejects future work (killed 4)
+      graph
+        ids.test.ts
+          ✓ qualified node ids qualifies motion and free tracks exactly once (killed 15)
+          ✓ qualified node ids round-trips qualified ids without losing identity (killed 18)
+          ✓ qualified node ids rejects reserved or malformed authored ids (killed 20)
+          ~ qualified node ids keeps same local names distinct across owners (covered 29)
+          ~ qualified node ids returns frozen identity records (covered 29)
+        ir-validation.test.ts
+          ~ graph IR and candidate validation normalizes motion and free tracks into one frozen node model (covered 29)
+          ~ graph IR and candidate validation resolves local, free, and cross-motion observation sources (covered 29)
+          ~ graph IR and candidate validation rejects unknown, duplicate, self, and role-invalid edges before mount (covered 29)
+          ~ graph IR and candidate validation rejects duplicate motion and node identities (covered 29)
+          ~ graph IR and candidate validation orders diagnostics deterministically (covered 29)
+          ~ graph IR and candidate validation breaks diagnostic ties by code unit, not by locale collation (covered 29)
+        observation-projection-validation.test.ts
+          ~ observation projection validation (X-1) rejects an input projection that is neither pick nor map (covered 26)
+          ~ observation projection validation (X-1) accepts projected input observations without the compatibility target (covered 26)
+        observation-state.test.ts
+          ~ stable observation state I-1 keeps a held reference authoritative across commit and rollback (covered 29)
+          ~ stable observation state I-1 replays the journal in reverse to restore an exact structural snapshot (covered 29)
+          ~ stable observation state releases the journal only after a successful commit (covered 29)
+          ~ stable observation state clears the journal after a rollback so a second rollback is a no-op (covered 29)
+          ✘ stable observation state exposes no rebuild-from-snapshot seam (covered 0)
+          ~ stable observation state refuses duplicates, unknown endpoints, and removal of a connected node (covered 29)
+          ✘ stable observation state indexes both directions and orders snapshots canonically (covered 0)
+          ~ stable observation state hands out frozen snapshots and frozen live edges (covered 29)
+        order.test.ts
+          ✘ canonical order and cycle detection emits every source before its observers and composes a diamond once (covered 0)
+          ✘ canonical order and cycle detection is a pure function of qualified ids and authored order, not of input order (covered 0)
+          ✘ canonical order and cycle detection keeps disconnected components in canonical id order (covered 0)
+          ✘ canonical order and cycle detection reports a self cycle as a single-node path (covered 0)
+          ✘ canonical order and cycle detection names the minimal path of every distinct cycle (covered 0)
+          ~ canonical order and cycle detection carries canonical order on the immutable IR (covered 29)
+          ~ canonical order and cycle detection rejects a cyclic project before mount (covered 26)
+          ✘ canonical order and cycle detection produces byte-identical diagnostics for the same cyclic input (covered 0)
+      runtime
+        clock-tick-identity.test.ts
+          ✓ clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame (killed 16)
+          ✓ clock and batch identity are independent (P0-1) separates the clock's frame number from batch identity (killed 4)
+          ✓ clock and batch identity are independent (P0-1) reports a failed flush as a diagnostic instead of propagating it into the clock (killed 20)
+          ✓ clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws (killed 22)
+        composition-output-shape.test.ts
+          ✓ composition and output-shape diagnostics diagnoses a plugin returning a non-record composition value (killed 6)
+          ✓ composition and output-shape diagnostics diagnoses an output observation whose source has already published a non-record value (killed 24)
+          ✓ composition and output-shape diagnostics does not publish malformed composition values as ready patches (killed 11)
+        patch-registry-listener-snapshot.test.ts
+          ~ PatchRegistry: listener snapshots (recovery P1-6) delivers a settled batch to a node listener that an earlier listener unsubscribed (covered 86)
+          ~ PatchRegistry: listener snapshots (recovery P1-6) does not deliver a settled batch to a node listener subscribed during notification (covered 86)
+          ~ PatchRegistry: listener snapshots (recovery P1-6) node and batch listeners follow the same snapshot rule (covered 89)
+        patch-registry-structural-change.test.ts
+          ✓ PatchRegistry: structural change detection (recovery P1-5) suppresses the republish when a freshly allocated nested record is structurally equal (killed 8)
+          ~ PatchRegistry: structural change detection (recovery P1-5) key insertion order inside a nested record is not a change (covered 89)
+          ✓ PatchRegistry: structural change detection (recovery P1-5) republishes when a nested value actually changes (killed 2)
+          ~ PatchRegistry: structural change detection (recovery P1-5) republishes when only the order of a nested array changes (covered 81)
+          ✓ PatchRegistry: structural change detection (recovery P1-5) republishes when only a source revision changes (killed 1)
+          ✓ PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change (killed 18)
+          ✓ PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes (killed 6)
+        patch-registry-subscriber-errors.test.ts
+          ~ PatchRegistry: subscriber error handling (recovery A2) a throwing node subscriber does not prevent other subscribers from being notified (covered 92)
+          ~ PatchRegistry: subscriber error handling (recovery A2) closeBatch always fully resets its internal state, even when a subscriber throws, so the next beginBatch succeeds (covered 92)
+          ~ PatchRegistry: subscriber error handling (recovery A2) the real caller's original error is not replaced by a recovery close attempt (GraphPublisher-shaped scenario) (covered 93)
+          ~ PatchRegistry: subscriber error handling (recovery A2) GraphPublisher.flush() surfaces the real subscriber error, not a masked 'No patch batch is open' (covered 199)
+        patch-registry.test.ts
+          ✓ PatchRegistry I-7 deeply freezes published patches and batches (killed 15)
+          ✓ PatchRegistry I-8 suppresses unchanged republish and advances revisions only on change (killed 6)
+          ✓ PatchRegistry I-6 notifies node subscribers before batch subscribers and safely snapshots listeners (killed 1)
+          ~ PatchRegistry does not notify subscribers for an unchanged publish (covered 93)
+          ✓ PatchRegistry rejects opening a second empty batch and closing without an open batch (killed 4)
+        publisher-flat-inputs.test.ts
+          ✓ flat projected input observations (X-1) merges an upstream record into the observer source object (killed 7)
+          ✓ flat projected input observations (X-1) applies an explicit pick projection before merging input keys (killed 6)
+          ✓ flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting (killed 11)
+        publisher-reentrancy.test.ts
+          ✓ subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush (killed 18)
+          ✓ subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it (killed 7)
+          ~ subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up (covered 308)
+          ✓ subscriber-triggered reentrancy (recovery A3) refuses to open a second batch while subscribers are being notified (killed 5)
+          ✓ subscriber-triggered reentrancy (recovery A3) rejects a direct publisher flush from inside a subscriber and stays reusable (killed 4)
+        scheduler-reentrancy.test.ts
+          ✓ scheduler-driven reentrancy (P1-7/P1-8) drains a subscriber invalidation with zero clock ticks (killed 22)
+          ✓ scheduler-driven reentrancy (P1-7/P1-8) coalesces repeated invalidations into one scheduled follow-up (killed 4)
+          ✓ scheduler-driven reentrancy (P1-7/P1-8) retries scheduling after a synchronous scheduler failure (killed 5)
+          ~ scheduler-driven reentrancy (P1-7/P1-8) does not expose the publisher as a second public reentrancy entry point (covered 42)
+      placeholder.test.ts
+        ✘ @motion5/core placeholder surface pins the authored schema contract at version 5 (covered 0)
+        ✘ @motion5/core placeholder surface versions the runtime independently of the authored schema (covered 0)
+  react/test
+    patch-store-lifecycle.test.ts
+      ✓ React patch store lifecycle (C1) receives patches again after the last listener leaves and a new one arrives (killed 4)
+      ~ React patch store lifecycle (C1) survives a StrictMode-style double mount without duplicating deliveries (covered 87)
+    patch-store.test.ts
+      ~ React patch consumer boundary keeps one frozen snapshot per revision and unsubscribes cleanly (covered 94)
+    public-hook-render.test.ts
+      ✓ React public hook render/update (C2) renders the current patch and updates after publication (killed 2)
+
+[NoCoverage] BlockStatement
+packages/core/src/adapters/interpolator/gsap.ts:34:74
+-   function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
+-     return diagnostics
+-       .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
+-       .join(" ");
+-   }
++   function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {}
+
+[NoCoverage] ArrowFunction
+packages/core/src/adapters/interpolator/gsap.ts:36:10
+-       .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
++       .map(() => undefined)
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/interpolator/gsap.ts:36:41
+-       .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
++       .map(({ ruleId, path, message }) => ``)
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/interpolator/gsap.ts:37:11
+-       .join(" ");
++       .join("");
+
+[NoCoverage] BlockStatement
+packages/core/src/adapters/interpolator/gsap.ts:41:51
+-     constructor(diagnostics: readonly Diagnostic[]) {
+-       super(describeDiagnostics(diagnostics));
+-       this.name = "keyframe-compilation";
+-       this.diagnostics = diagnostics;
+-     }
++     constructor(diagnostics: readonly Diagnostic[]) {}
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/interpolator/gsap.ts:43:17
+-       this.name = "keyframe-compilation";
++       this.name = "";
+
+[NoCoverage] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:52:55
+-         if (compiled.diagnostics.some(({ severity }) => severity === "error"))
++         if (compiled.diagnostics.some(({ severity }) => true))
+
+[NoCoverage] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:52:55
+-         if (compiled.diagnostics.some(({ severity }) => severity === "error"))
++         if (compiled.diagnostics.some(({ severity }) => false))
+
+[NoCoverage] EqualityOperator
+packages/core/src/adapters/interpolator/gsap.ts:52:55
+-         if (compiled.diagnostics.some(({ severity }) => severity === "error"))
++         if (compiled.diagnostics.some(({ severity }) => severity !== "error"))
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/interpolator/gsap.ts:52:68
+-         if (compiled.diagnostics.some(({ severity }) => severity === "error"))
++         if (compiled.diagnostics.some(({ severity }) => severity === ""))
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:21:10
+-     return value !== null && typeof value === "object" && !Array.isArray(value);
++     return true && typeof value === "object" && !Array.isArray(value);
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 11 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:24:7
+-     if (!isRecord(config)) return 1;
++     if (false) return 1;
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 11 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:26:10
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return typeof duration === "number" && Number.isFinite(duration) || duration >= 0 ? duration : 1;
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 11 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:26:10
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return true && duration >= 0 ? duration : 1;
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 11 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:26:10
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return typeof duration === "number" || Number.isFinite(duration) && duration >= 0 ? duration : 1;
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 11 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:26:10
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return true && Number.isFinite(duration) && duration >= 0 ? duration : 1;
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 11 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:26:71
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return typeof duration === "number" && Number.isFinite(duration) && true ? duration : 1;
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 10 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/adapters/interpolator/gsap.ts:26:71
+-     return typeof duration === "number" && Number.isFinite(duration) && duration >= 0 ? duration : 1;
++     return typeof duration === "number" && Number.isFinite(duration) && duration > 0 ? duration : 1;
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 10 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:29:10
+-     return isRecord(config) && isRecord(config.keyframes) ? config.keyframes : {};
++     return true ? config.keyframes : {};
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 11 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:29:10
+-     return isRecord(config) && isRecord(config.keyframes) ? config.keyframes : {};
++     return isRecord(config) || isRecord(config.keyframes) ? config.keyframes : {};
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 11 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:52:11
+-         if (compiled.diagnostics.some(({ severity }) => severity === "error"))
++         if (false)
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 11 more tests!
+
+
+[Survived] ArrowFunction
+packages/core/src/adapters/interpolator/gsap.ts:52:37
+-         if (compiled.diagnostics.some(({ severity }) => severity === "error"))
++         if (compiled.diagnostics.some(() => undefined))
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 11 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/adapters/interpolator/gsap.ts:61:29
+-           for (let index = 1; index < stops.length; index += 1) {
++           for (let index = 1; index <= stops.length; index += 1) {
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 8 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:64:15
+-             if (!previous || !next) continue;
++             if (false) continue;
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 8 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/interpolator/gsap.ts:64:15
+-             if (!previous || !next) continue;
++             if (!previous && !next) continue;
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 8 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/interpolator/gsap.ts:75:11
+-         if (duration > 0) timeline.to(proxy, { duration: 0 }, duration);
++         if (true) timeline.to(proxy, { duration: 0 }, duration);
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 11 more tests!
+
+
+[Survived] ArithmeticOperator
+packages/core/src/adapters/interpolator/gsap.ts:72:36
+-             timeline.to(proxy, vars, previous.p * duration);
++             timeline.to(proxy, vars, previous.p / duration);
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 8 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/adapters/interpolator/gsap.ts:75:11
+-         if (duration > 0) timeline.to(proxy, { duration: 0 }, duration);
++         if (duration >= 0) timeline.to(proxy, { duration: 0 }, duration);
+Tests ran:
+    GSAP authored-duration pinning (P0-3b) keeps the authored duration when the last stop ends before the end
+    GSAP authored-duration pinning (P0-3b) scales the shared tween by the configured track duration
+    GSAP authored-duration pinning (P0-3b) holds every property independently when grids end at different positions
+  and 11 more tests!
+
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/browser-clock.ts:46:37
+-         if (disposed) throw new Error("Clock is disposed.");
++         if (disposed) throw new Error("");
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/browser-clock.ts:15:9
+-       if (disposed) return;
++       if (false) return;
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] MethodExpression
+packages/core/src/adapters/browser-clock.ts:16:19
+-       const delta = Math.max(0, time - previous);
++       const delta = Math.min(0, time - previous);
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] ArithmeticOperator
+packages/core/src/adapters/browser-clock.ts:16:31
+-       const delta = Math.max(0, time - previous);
++       const delta = Math.max(0, time + previous);
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/browser-clock.ts:32:15
+-             if (!hasError) {
++             if (true) {
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/browser-clock.ts:39:11
+-         if (!disposed) handle = source.requestFrame(frame);
++         if (true) handle = source.requestFrame(frame);
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] ArrowFunction
+packages/core/src/adapters/browser-clock.ts:48:14
+-         return () => listeners.delete(listener);
++         return () => undefined;
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/browser-clock.ts:46:11
+-         if (disposed) throw new Error("Clock is disposed.");
++         if (false) throw new Error("Clock is disposed.");
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/browser-clock.ts:51:11
+-         if (disposed) return;
++         if (false) return;
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] BooleanLiteral
+packages/core/src/adapters/browser-clock.ts:52:18
+-         disposed = true;
++         disposed = false;
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/browser-clock.ts:53:11
+-         if (handle !== undefined) source.cancelFrame(handle);
++         if (true) source.cancelFrame(handle);
+Tests ran:
+    clock and batch identity are independent (P0-1) requests the next animation frame even when a clock listener throws
+    adapter ports ticks through an injected frame source and cancels on dispose
+
+
+[NoCoverage] ConditionalExpression
+packages/core/src/adapters/dom.ts:24:7
+-     if (key === "rotationX") return `rotateX(${String(value)}deg)`;
++     if (true) return `rotateX(${String(value)}deg)`;
+
+[NoCoverage] ConditionalExpression
+packages/core/src/adapters/dom.ts:24:7
+-     if (key === "rotationX") return `rotateX(${String(value)}deg)`;
++     if (false) return `rotateX(${String(value)}deg)`;
+
+[NoCoverage] EqualityOperator
+packages/core/src/adapters/dom.ts:24:7
+-     if (key === "rotationX") return `rotateX(${String(value)}deg)`;
++     if (key !== "rotationX") return `rotateX(${String(value)}deg)`;
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/dom.ts:24:15
+-     if (key === "rotationX") return `rotateX(${String(value)}deg)`;
++     if (key === "") return `rotateX(${String(value)}deg)`;
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/dom.ts:24:35
+-     if (key === "rotationX") return `rotateX(${String(value)}deg)`;
++     if (key === "rotationX") return ``;
+
+[NoCoverage] ConditionalExpression
+packages/core/src/adapters/dom.ts:25:7
+-     if (key === "rotationY") return `rotateY(${String(value)}deg)`;
++     if (true) return `rotateY(${String(value)}deg)`;
+
+[NoCoverage] ConditionalExpression
+packages/core/src/adapters/dom.ts:25:7
+-     if (key === "rotationY") return `rotateY(${String(value)}deg)`;
++     if (false) return `rotateY(${String(value)}deg)`;
+
+[NoCoverage] EqualityOperator
+packages/core/src/adapters/dom.ts:25:7
+-     if (key === "rotationY") return `rotateY(${String(value)}deg)`;
++     if (key !== "rotationY") return `rotateY(${String(value)}deg)`;
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/dom.ts:25:15
+-     if (key === "rotationY") return `rotateY(${String(value)}deg)`;
++     if (key === "") return `rotateY(${String(value)}deg)`;
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/dom.ts:25:35
+-     if (key === "rotationY") return `rotateY(${String(value)}deg)`;
++     if (key === "rotationY") return ``;
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/dom.ts:26:10
+-     return `${key}(${String(value)}px)`;
++     return ``;
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/dom.ts:30:24
+-     if ("x" in values || "y" in values || "z" in values) {
++     if ("x" in values || "" in values || "z" in values) {
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/dom.ts:30:41
+-     if ("x" in values || "y" in values || "z" in values) {
++     if ("x" in values || "y" in values || "" in values) {
+
+[NoCoverage] MethodExpression
+packages/core/src/adapters/dom.ts:54:37
+-       else if (key in target.style || key.startsWith("--")) target.style[key] = value;
++       else if (key in target.style || key.endsWith("--")) target.style[key] = value;
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/dom.ts:54:52
+-       else if (key in target.style || key.startsWith("--")) target.style[key] = value;
++       else if (key in target.style || key.startsWith("")) target.style[key] = value;
+
+[NoCoverage] StringLiteral
+packages/core/src/adapters/dom.ts:58:54
+-     else if (hadTransform) removeStyleProperty(target, "transform");
++     else if (hadTransform) removeStyleProperty(target, "");
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:23:7
+-     if (key === "rotation") return `rotate(${String(value)}deg)`;
++     if (true) return `rotate(${String(value)}deg)`;
+Tests ran:
+    DOM transform and removal contract (P0-4) writes motion transform keys into style.transform
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:30:7
+-     if ("x" in values || "y" in values || "z" in values) {
++     if (true) {
+Tests ran:
+    DOM transform and removal contract (P0-4) writes motion transform keys into style.transform
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/dom.ts:30:7
+-     if ("x" in values || "y" in values || "z" in values) {
++     if ("x" in values && "y" in values || "z" in values) {
+Tests ran:
+    DOM transform and removal contract (P0-4) writes motion transform keys into style.transform
+
+
+[Survived] StringLiteral
+packages/core/src/adapters/dom.ts:30:7
+-     if ("x" in values || "y" in values || "z" in values) {
++     if ("" in values || "y" in values || "z" in values) {
+Tests ran:
+    DOM transform and removal contract (P0-4) writes motion transform keys into style.transform
+
+
+[Survived] StringLiteral
+packages/core/src/adapters/dom.ts:36:34
+-     for (const key of ["rotation", "rotationX", "rotationY", "scale"])
++     for (const key of ["rotation", "", "rotationY", "scale"])
+Tests ran:
+    DOM transform and removal contract (P0-4) writes motion transform keys into style.transform
+
+
+[Survived] StringLiteral
+packages/core/src/adapters/dom.ts:36:47
+-     for (const key of ["rotation", "rotationX", "rotationY", "scale"])
++     for (const key of ["rotation", "rotationX", "", "scale"])
+Tests ran:
+    DOM transform and removal contract (P0-4) writes motion transform keys into style.transform
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:41:7
+-     if (typeof target.style.removeProperty === "function") target.style.removeProperty(key);
++     if (true) target.style.removeProperty(key);
+Tests ran:
+    DOM transform and removal contract (P0-4) removes omitted CSS properties instead of assigning undefined
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:46:24
+-     const hadTransform = Object.keys(state).length > 0;
++     const hadTransform = false;
+Tests ran:
+    real end-to-end product path (E2) writes authored GSAP output through a patch into the DOM adapter
+    DOM transform and removal contract (P0-4) writes motion transform keys into style.transform
+    DOM transform and removal contract (P0-4) removes omitted CSS properties instead of assigning undefined
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:49:11
+-         if (value === undefined) delete state[key];
++         if (false) delete state[key];
+Tests ran:
+    DOM transform and removal contract (P0-4) writes motion transform keys into style.transform
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:54:14
+-       else if (key in target.style || key.startsWith("--")) target.style[key] = value;
++       else if (true) target.style[key] = value;
+Tests ran:
+    real end-to-end product path (E2) writes authored GSAP output through a patch into the DOM adapter
+    DOM transform and removal contract (P0-4) removes omitted CSS properties instead of assigning undefined
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:57:7
+-     if (Object.keys(state).length > 0) target.style.transform = composeTransform(state);
++     if (true) target.style.transform = composeTransform(state);
+Tests ran:
+    real end-to-end product path (E2) writes authored GSAP output through a patch into the DOM adapter
+    DOM transform and removal contract (P0-4) writes motion transform keys into style.transform
+    DOM transform and removal contract (P0-4) removes omitted CSS properties instead of assigning undefined
+
+
+[Survived] EqualityOperator
+packages/core/src/adapters/dom.ts:57:7
+-     if (Object.keys(state).length > 0) target.style.transform = composeTransform(state);
++     if (Object.keys(state).length >= 0) target.style.transform = composeTransform(state);
+Tests ran:
+    real end-to-end product path (E2) writes authored GSAP output through a patch into the DOM adapter
+    DOM transform and removal contract (P0-4) writes motion transform keys into style.transform
+    DOM transform and removal contract (P0-4) removes omitted CSS properties instead of assigning undefined
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:58:12
+-     else if (hadTransform) removeStyleProperty(target, "transform");
++     else if (false) removeStyleProperty(target, "transform");
+Tests ran:
+    real end-to-end product path (E2) writes authored GSAP output through a patch into the DOM adapter
+    DOM transform and removal contract (P0-4) removes omitted CSS properties instead of assigning undefined
+
+
+[Survived] ArrayDeclaration
+packages/core/src/adapters/dom.ts:66:50
+-     const internalKeys = metadata?.internalKeys ?? [];
++     const internalKeys = metadata?.internalKeys ?? ["Stryker was here"];
+Tests ran:
+    DOM patch adapter contract (C3) resolves each node, filters internal values, diffs writes, removes omitted keys, and clears cache
+    real end-to-end product path (E2) writes authored GSAP output through a patch into the DOM adapter
+    DOM transform and removal contract (P0-4) writes motion transform keys into style.transform
+  and 1 more test!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:82:7
+-     if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
++     if (true)
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+    DOM plugin metadata (X-2) uses resolved internal-key metadata instead of hardcoding underscore filtering
+    DOM plugin metadata (X-2) serializes plugin-owned outputs before writing to the DOM
+  and 5 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/dom.ts:82:7
+-     if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
++     if (perspective !== undefined && Number.isFinite(perspective) || perspective > 0)
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+    DOM plugin metadata (X-2) uses resolved internal-key metadata instead of hardcoding underscore filtering
+    DOM plugin metadata (X-2) serializes plugin-owned outputs before writing to the DOM
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:82:7
+-     if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
++     if (true && perspective > 0)
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+    DOM plugin metadata (X-2) uses resolved internal-key metadata instead of hardcoding underscore filtering
+    DOM plugin metadata (X-2) serializes plugin-owned outputs before writing to the DOM
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:82:68
+-     if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
++     if (perspective !== undefined && Number.isFinite(perspective) && true)
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+
+
+[Survived] EqualityOperator
+packages/core/src/adapters/dom.ts:82:68
+-     if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
++     if (perspective !== undefined && Number.isFinite(perspective) && perspective >= 0)
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+
+
+[Survived] LogicalOperator
+packages/core/src/adapters/dom.ts:82:7
+-     if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
++     if (perspective !== undefined || Number.isFinite(perspective) && perspective > 0)
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+    DOM plugin metadata (X-2) uses resolved internal-key metadata instead of hardcoding underscore filtering
+    DOM plugin metadata (X-2) serializes plugin-owned outputs before writing to the DOM
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:82:7
+-     if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
++     if (true && Number.isFinite(perspective) && perspective > 0)
+Tests ran:
+    adapter ports applies perspective once and never applies blocked patches
+    DOM plugin metadata (X-2) uses resolved internal-key metadata instead of hardcoding underscore filtering
+    DOM plugin metadata (X-2) serializes plugin-owned outputs before writing to the DOM
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:89:11
+-         if (target === undefined) return;
++         if (false) return;
+Tests ran:
+    DOM plugin metadata (X-2) uses resolved internal-key metadata instead of hardcoding underscore filtering
+    DOM plugin metadata (X-2) serializes plugin-owned outputs before writing to the DOM
+    DOM patch adapter contract (C3) resolves each node, filters internal values, diffs writes, removes omitted keys, and clears cache
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/adapters/dom.ts:101:11
+-         if (target === undefined) return;
++         if (false) return;
+Tests ran:
+    DOM patch adapter contract (C3) resolves each node, filters internal values, diffs writes, removes omitted keys, and clears cache
+
+
+[Survived] StringLiteral
+packages/core/src/adapters/dom.ts:19:42
+-   const transformKeys = new Set(["x", "y", "z", "rotation", "rotationX", "rotationY", "scale"]);
++   const transformKeys = new Set(["x", "y", "", "rotation", "rotationX", "rotationY", "scale"]);
+Ran all tests for this mutant.
+
+[Survived] StringLiteral
+packages/core/src/adapters/dom.ts:19:59
+-   const transformKeys = new Set(["x", "y", "z", "rotation", "rotationX", "rotationY", "scale"]);
++   const transformKeys = new Set(["x", "y", "z", "rotation", "", "rotationY", "scale"]);
+Ran all tests for this mutant.
+
+[Survived] StringLiteral
+packages/core/src/adapters/dom.ts:19:72
+-   const transformKeys = new Set(["x", "y", "z", "rotation", "rotationX", "rotationY", "scale"]);
++   const transformKeys = new Set(["x", "y", "z", "rotation", "rotationX", "", "scale"]);
+Ran all tests for this mutant.
+
+[NoCoverage] StringLiteral
+packages/core/src/domain/motion.ts:31:27
+-         throw new TypeError("Motion stagger must be a finite non-negative number.");
++         throw new TypeError("");
+
+[NoCoverage] StringLiteral
+packages/core/src/domain/motion.ts:35:25
+-           throw new Error(`Duplicate Motion track id: ${entry.id}.`);
++           throw new Error(``);
+
+[NoCoverage] StringLiteral
+packages/core/src/domain/motion.ts:37:29
+-           throw new TypeError(`Motion track duration must be a finite positive number: ${entry.id}.`);
++           throw new TypeError(``);
+
+[NoCoverage] BlockStatement
+packages/core/src/domain/motion.ts:51:15
+-     get state() {
+-       return this.#lifecycle.state;
+-     }
++     get state() {}
+
+[NoCoverage] BlockStatement
+packages/core/src/domain/motion.ts:54:17
+-     get playing() {
+-       return this.#playing;
+-     }
++     get playing() {}
+
+[NoCoverage] BlockStatement
+packages/core/src/domain/motion.ts:57:18
+-     get position() {
+-       return this.#position;
+-     }
++     get position() {}
+
+[NoCoverage] BlockStatement
+packages/core/src/domain/motion.ts:89:18
+-     reflow(): void {
+-       this.assertActive();
+-       this.schedule();
+-     }
++     reflow(): void {}
+
+[NoCoverage] BlockStatement
+packages/core/src/domain/motion.ts:96:19
+-     destroy(): void {
+-       this.#lifecycle.destroy();
+-     }
++     destroy(): void {}
+
+[NoCoverage] StringLiteral
+packages/core/src/domain/motion.ts:120:64
+-       if (this.#lifecycle.state === "destroyed") throw new Error("Motion is destroyed.");
++       if (this.#lifecycle.state === "destroyed") throw new Error("");
+
+[Survived] BooleanLiteral
+packages/core/src/domain/motion.ts:25:14
+-     #playing = false;
++     #playing = true;
+Tests ran:
+    Motion composite preserves authored order and computes deterministic stagger offsets
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/motion.ts:30:9
+-       if (!Number.isFinite(options.stagger ?? 0) || (options.stagger ?? 0) < 0)
++       if (false)
+Tests ran:
+    Motion composite preserves authored order and computes deterministic stagger offsets
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+  and 3 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/domain/motion.ts:30:9
+-       if (!Number.isFinite(options.stagger ?? 0) || (options.stagger ?? 0) < 0)
++       if (!Number.isFinite(options.stagger ?? 0) && (options.stagger ?? 0) < 0)
+Tests ran:
+    Motion composite preserves authored order and computes deterministic stagger offsets
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+  and 3 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/domain/motion.ts:30:26
+-       if (!Number.isFinite(options.stagger ?? 0) || (options.stagger ?? 0) < 0)
++       if (!Number.isFinite(options.stagger && 0) || (options.stagger ?? 0) < 0)
+Tests ran:
+    Motion composite preserves authored order and computes deterministic stagger offsets
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/motion.ts:30:51
+-       if (!Number.isFinite(options.stagger ?? 0) || (options.stagger ?? 0) < 0)
++       if (!Number.isFinite(options.stagger ?? 0) || false)
+Tests ran:
+    Motion composite preserves authored order and computes deterministic stagger offsets
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+  and 3 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/domain/motion.ts:30:52
+-       if (!Number.isFinite(options.stagger ?? 0) || (options.stagger ?? 0) < 0)
++       if (!Number.isFinite(options.stagger ?? 0) || (options.stagger && 0) < 0)
+Tests ran:
+    Motion composite preserves authored order and computes deterministic stagger offsets
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+  and 3 more tests!
+
+
+[Survived] BlockStatement
+packages/core/src/domain/motion.ts:33:41
+-       for (const entry of options.tracks) {
+-         if (!entry.id || ids.has(entry.id))
+-           throw new Error(`Duplicate Motion track id: ${entry.id}.`);
+-         if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
+-           throw new TypeError(`Motion track duration must be a finite positive number: ${entry.id}.`);
+-         ids.add(entry.id);
+-       }
++       for (const entry of options.tracks) {}
+Tests ran:
+    Motion composite preserves authored order and computes deterministic stagger offsets
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/motion.ts:34:11
+-         if (!entry.id || ids.has(entry.id))
++         if (false)
+Tests ran:
+    Motion composite preserves authored order and computes deterministic stagger offsets
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+  and 3 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/domain/motion.ts:34:11
+-         if (!entry.id || ids.has(entry.id))
++         if (!entry.id && ids.has(entry.id))
+Tests ran:
+    Motion composite preserves authored order and computes deterministic stagger offsets
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+  and 3 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/motion.ts:36:11
+-         if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
++         if (false)
+Tests ran:
+    Motion composite preserves authored order and computes deterministic stagger offsets
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+  and 3 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/domain/motion.ts:36:44
+-         if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
++         if (entry.duration !== undefined && (!Number.isFinite(entry.duration) && entry.duration <= 0))
+Tests ran:
+    Motion composite converts clock time into normalized progress using authored duration
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/motion.ts:36:80
+-         if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
++         if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || false))
+Tests ran:
+    Motion composite converts clock time into normalized progress using authored duration
+
+
+[Survived] EqualityOperator
+packages/core/src/domain/motion.ts:36:80
+-         if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
++         if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration < 0))
+Tests ran:
+    Motion composite converts clock time into normalized progress using authored duration
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/motion.ts:72:9
+-       if (this.#lifecycle.state === "created" || this.#lifecycle.state === "detached") this.mount();
++       if (true) this.mount();
+Tests ran:
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+    Motion composite pausing detaches the clock and play resubscribes without duplicate work
+  and 1 more test!
+
+
+[Survived] BlockStatement
+packages/core/src/domain/motion.ts:75:17
+-     pause(): void {
+-       this.#playing = false;
+-       for (const handle of this.#scheduled) handle.cancel();
+-       this.#scheduled.clear();
+-       this.#unsubscribe?.();
+-       this.#unsubscribe = undefined;
+-       this.#lifecycle.detach();
+-     }
++     pause(): void {}
+Tests ran:
+    Motion composite pausing detaches the clock and play resubscribes without duplicate work
+    Motion composite pauses and disposes owner-first without leaking clock work
+
+
+[Survived] BooleanLiteral
+packages/core/src/domain/motion.ts:76:21
+-       this.#playing = false;
++       this.#playing = true;
+Tests ran:
+    Motion composite pausing detaches the clock and play resubscribes without duplicate work
+    Motion composite pauses and disposes owner-first without leaking clock work
+
+
+[Survived] MethodExpression
+packages/core/src/domain/motion.ts:86:34
+-       this.#position = Math.max(0, Math.min(1, progress));
++       this.#position = Math.max(0, Math.max(1, progress));
+Tests ran:
+    Motion composite clamps seek and rejects non-finite values
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/motion.ts:100:9
+-       if (this.#unsubscribe === undefined)
++       if (true)
+Tests ran:
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+    Motion composite pausing detaches the clock and play resubscribes without duplicate work
+  and 1 more test!
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/motion.ts:104:9
+-       if (!this.#playing || this.#lifecycle.state !== "mounted") return;
++       if (false) return;
+Tests ran:
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+    Motion composite pausing detaches the clock and play resubscribes without duplicate work
+
+
+[Survived] LogicalOperator
+packages/core/src/domain/motion.ts:104:9
+-       if (!this.#playing || this.#lifecycle.state !== "mounted") return;
++       if (!this.#playing && this.#lifecycle.state !== "mounted") return;
+Tests ran:
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+    Motion composite pausing detaches the clock and play resubscribes without duplicate work
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/motion.ts:104:27
+-       if (!this.#playing || this.#lifecycle.state !== "mounted") return;
++       if (!this.#playing || false) return;
+Tests ran:
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+    Motion composite pausing detaches the clock and play resubscribes without duplicate work
+
+
+[Survived] BlockStatement
+packages/core/src/domain/motion.ts:119:32
+-     private assertActive(): void {
+-       if (this.#lifecycle.state === "destroyed") throw new Error("Motion is destroyed.");
+-     }
++     private assertActive(): void {}
+Tests ran:
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+    Motion composite pausing detaches the clock and play resubscribes without duplicate work
+  and 2 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/motion.ts:120:9
+-       if (this.#lifecycle.state === "destroyed") throw new Error("Motion is destroyed.");
++       if (false) throw new Error("Motion is destroyed.");
+Tests ran:
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+    Motion composite pausing detaches the clock and play resubscribes without duplicate work
+  and 2 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/domain/motion.ts:120:35
+-       if (this.#lifecycle.state === "destroyed") throw new Error("Motion is destroyed.");
++       if (this.#lifecycle.state === "") throw new Error("Motion is destroyed.");
+Tests ran:
+    Motion composite plays through one clock subscription and scheduler jobs
+    Motion composite converts clock time into normalized progress using authored duration
+    Motion composite pausing detaches the clock and play resubscribes without duplicate work
+  and 2 more tests!
+
+
+[NoCoverage] ConditionalExpression
+packages/core/src/domain/track.ts:25:44
+-     return prototype === Object.prototype || prototype === null;
++     return prototype === Object.prototype || false;
+
+[NoCoverage] EqualityOperator
+packages/core/src/domain/track.ts:25:44
+-     return prototype === Object.prototype || prototype === null;
++     return prototype === Object.prototype || prototype !== null;
+
+[NoCoverage] StringLiteral
+packages/core/src/domain/track.ts:40:38
+-       throw new CompositionOutputError("Interpolator state must be a renderer-neutral record.");
++       throw new CompositionOutputError("");
+
+[NoCoverage] StringLiteral
+packages/core/src/domain/track.ts:47:38
+-       throw new CompositionOutputError("Composition output must be a renderer-neutral record.");
++       throw new CompositionOutputError("");
+
+[Survived] ConditionalExpression
+packages/core/src/domain/track.ts:23:7
+-     if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
++     if (false || typeof value !== "object" || Array.isArray(value)) return false;
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    P2 runtime smell hardening rejects host objects from interpolator state at the renderer edge
+  and 19 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/track.ts:25:10
+-     return prototype === Object.prototype || prototype === null;
++     return true;
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    P2 runtime smell hardening rejects host objects from interpolator state at the renderer edge
+  and 9 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/track.ts:39:7
+-     if (!isRecord(state))
++     if (false)
+Tests ran:
+    P2 runtime smell hardening rejects host objects from interpolator state at the renderer edge
+    composition and output-shape diagnostics diagnoses a plugin returning a non-record composition value
+    Track leaf rejects non-finite progress and composes local values once per dirty state
+  and 5 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/track.ts:46:7
+-     if (!isRecord(values))
++     if (false)
+Tests ran:
+    P2 runtime smell hardening rejects host objects from interpolator state at the renderer edge
+    Track leaf rejects non-finite progress and composes local values once per dirty state
+    Track leaf recomposes a clean track when its inputs change
+  and 4 more tests!
+
+
+[Survived] BooleanLiteral
+packages/core/src/domain/track.ts:67:12
+-     #dirty = true;
++     #dirty = false;
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    P2 runtime smell hardening rejects host objects from interpolator state at the renderer edge
+  and 19 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/track.ts:98:7
+-         this.#lastInputs !== undefined &&
++         true &&
+Tests ran:
+    Track leaf rejects non-finite progress and composes local values once per dirty state
+    Track leaf recomposes a clean track when its inputs change
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/track.ts:99:8
+-         (this.#lastInputs === inputs || equalValues(this.#lastInputs, inputs))
++         (false || equalValues(this.#lastInputs, inputs))
+Tests ran:
+    Track leaf rejects non-finite progress and composes local values once per dirty state
+    Track leaf recomposes a clean track when its inputs change
+
+
+[Survived] StringLiteral
+packages/core/src/domain/track.ts:107:11
+-             `Plugin "${plugin.name}" must return a renderer-neutral record.`,
++             ``,
+Tests ran:
+    composition and output-shape diagnostics diagnoses a plugin returning a non-record composition value
+
+
+[Survived] ConditionalExpression
+packages/core/src/domain/track.ts:105:11
+-         if (!isRecord(composed))
++         if (false)
+Tests ran:
+    composition and output-shape diagnostics diagnoses a plugin returning a non-record composition value
+    Track leaf rejects non-finite progress and composes local values once per dirty state
+    Track leaf recomposes a clean track when its inputs change
+  and 1 more test!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/domain/track.ts:59:31
+-     internalKeys: Object.freeze([]),
++     internalKeys: Object.freeze(["Stryker was here"]),
+Ran all tests for this mutant.
+
+[Survived] ArrayDeclaration
+packages/core/src/domain/track.ts:58:30
+-     diagnostics: Object.freeze([]),
++     diagnostics: Object.freeze(["Stryker was here"]),
+Ran all tests for this mutant.
+
+[Survived] ObjectLiteral
+packages/core/src/domain/track.ts:61:30
+-     preparation: Object.freeze({ keyframes: Object.freeze({}), tweenVars: Object.freeze({}) }),
++     preparation: Object.freeze({}),
+Ran all tests for this mutant.
+
+[NoCoverage] BlockStatement
+packages/core/src/graph/ids.ts:71:57
+-   export function qualifiedId(value: QualifiedId): string {
+-     return value.value;
+-   }
++   export function qualifiedId(value: QualifiedId): string {}
+
+[Survived] ConditionalExpression
+packages/core/src/graph/ids.ts:17:7
+-     if (typeof value !== "string" || value.length === 0) {
++     if (false || value.length === 0) {
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 67 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/graph/ids.ts:54:25
+-     assertNonEmpty(value, "Qualified id");
++     assertNonEmpty(value, "");
+Tests ran:
+    qualified node ids round-trips qualified ids without losing identity
+    qualified node ids rejects reserved or malformed authored ids
+
+
+[Survived] StringLiteral
+packages/core/src/graph/ids.ts:23:28
+-     assertNonEmpty(motionId, "Motion id");
++     assertNonEmpty(motionId, "");
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 67 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/graph/ids.ts:62:5
+-       separator <= 0 ||
+-       separator === value.length - 1 ||
++       separator <= 0 && separator === value.length - 1 ||
+Tests ran:
+    qualified node ids round-trips qualified ids without losing identity
+    qualified node ids rejects reserved or malformed authored ids
+
+
+[Survived] ConditionalExpression
+packages/core/src/graph/ids.ts:62:5
+-       separator <= 0 ||
+-       separator === value.length - 1 ||
++       false ||
+Tests ran:
+    qualified node ids round-trips qualified ids without losing identity
+    qualified node ids rejects reserved or malformed authored ids
+
+
+[Survived] ConditionalExpression
+packages/core/src/graph/ids.ts:62:5
+-       separator <= 0 ||
++       false ||
+Tests ran:
+    qualified node ids round-trips qualified ids without losing identity
+    qualified node ids rejects reserved or malformed authored ids
+
+
+[Survived] EqualityOperator
+packages/core/src/graph/ids.ts:62:5
+-       separator <= 0 ||
++       separator < 0 ||
+Tests ran:
+    qualified node ids round-trips qualified ids without losing identity
+    qualified node ids rejects reserved or malformed authored ids
+
+
+[Survived] ConditionalExpression
+packages/core/src/graph/ids.ts:63:5
+-       separator === value.length - 1 ||
++       false ||
+Tests ran:
+    qualified node ids round-trips qualified ids without losing identity
+    qualified node ids rejects reserved or malformed authored ids
+
+
+[Survived] ArithmeticOperator
+packages/core/src/graph/ids.ts:63:19
+-       separator === value.length - 1 ||
++       separator === value.length + 1 ||
+Tests ran:
+    qualified node ids round-trips qualified ids without losing identity
+    qualified node ids rejects reserved or malformed authored ids
+
+
+[Survived] StringLiteral
+packages/core/src/graph/ids.ts:29:27
+-     assertNonEmpty(trackId, "Track id");
++     assertNonEmpty(trackId, "");
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 67 more tests!
+
+
+[NoCoverage] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:64:44
+-     return prototype === Object.prototype || prototype === null;
++     return prototype === Object.prototype || false;
+
+[NoCoverage] EqualityOperator
+packages/core/src/runtime/graph-publisher.ts:64:44
+-     return prototype === Object.prototype || prototype === null;
++     return prototype === Object.prototype || prototype !== null;
+
+[NoCoverage] BooleanLiteral
+packages/core/src/runtime/graph-publisher.ts:67:30
+-     if (value === null) return true;
++     if (value === null) return false;
+
+[NoCoverage] MethodExpression
+packages/core/src/runtime/graph-publisher.ts:72:36
+-     if (Array.isArray(value)) return value.every((item) => isRendererNeutral(item, seen));
++     if (Array.isArray(value)) return value.some(item => isRendererNeutral(item, seen));
+
+[NoCoverage] ArrowFunction
+packages/core/src/runtime/graph-publisher.ts:72:48
+-     if (Array.isArray(value)) return value.every((item) => isRendererNeutral(item, seen));
++     if (Array.isArray(value)) return value.every(() => undefined);
+
+[NoCoverage] BooleanLiteral
+packages/core/src/runtime/graph-publisher.ts:73:32
+-     if (!isRecord(value)) return false;
++     if (!isRecord(value)) return true;
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:106:5
+-       "observation-input-shape",
++       "",
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:107:5
+-       "Input projection must define pick or map.",
++       "",
+
+[NoCoverage] ArrayDeclaration
+packages/core/src/runtime/graph-publisher.ts:129:44
+-         queue.push(...(dependents.get(id) ?? []));
++         queue.push(...(dependents.get(id) ?? ["Stryker was here"]));
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:177:17
+-                   "observation-input-shape",
++                   "",
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:178:17
+-                   `Input observation source "${edge.sourceId}" must be a record.`,
++                   ``,
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:203:17
+-                   "observation-missing-upstream",
++                   "",
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:204:17
+-                   `Output observation source "${edge.sourceId}" has no published value.`,
++                   ``,
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:37:17
+-       this.name = "observation-output-shape";
++       this.name = "";
+Tests ran:
+    composition and output-shape diagnostics diagnoses an output observation whose source has already published a non-record value
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:47:9
+-         : "composition-failure";
++         : "";
+Tests ran:
+    P2 runtime smell hardening chooses the blocked upstream deterministically by edge key, not authored edge order
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:43:5
+-       error instanceof InputObservationError ||
+-       error instanceof OutputObservationError ||
+-       error instanceof CompositionOutputError
++       true
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    P2 runtime smell hardening reports a missing upstream instead of silently composing with an input hole
+    P2 runtime smell hardening chooses the blocked upstream deterministically by edge key, not authored edge order
+  and 4 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:52:15
+-       severity: "error",
++       severity: "",
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    P2 runtime smell hardening reports a missing upstream instead of silently composing with an input hole
+    P2 runtime smell hardening chooses the blocked upstream deterministically by edge key, not authored edge order
+  and 4 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/graph-publisher.ts:53:24
+-       ids: Object.freeze([nodeId]),
++       ids: Object.freeze([]),
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    P2 runtime smell hardening reports a missing upstream instead of silently composing with an input hole
+    P2 runtime smell hardening chooses the blocked upstream deterministically by edge key, not authored edge order
+  and 4 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:59:10
+-     return left < right ? -1 : left > right ? 1 : 0;
++     return true ? -1 : left > right ? 1 : 0;
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    P2 runtime smell hardening chooses the blocked upstream deterministically by edge key, not authored edge order
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+  and 2 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:59:30
+-     return left < right ? -1 : left > right ? 1 : 0;
++     return left < right ? -1 : true ? 1 : 0;
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+    GraphPublisher partial-seed inputs uses the last published flat value for an unseeded input source
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/graph-publisher.ts:59:10
+-     return left < right ? -1 : left > right ? 1 : 0;
++     return left <= right ? -1 : left > right ? 1 : 0;
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    P2 runtime smell hardening chooses the blocked upstream deterministically by edge key, not authored edge order
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+  and 2 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:59:30
+-     return left < right ? -1 : left > right ? 1 : 0;
++     return left < right ? -1 : false ? 1 : 0;
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+    GraphPublisher partial-seed inputs uses the last published flat value for an unseeded input source
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/graph-publisher.ts:59:30
+-     return left < right ? -1 : left > right ? 1 : 0;
++     return left < right ? -1 : left >= right ? 1 : 0;
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+    GraphPublisher partial-seed inputs uses the last published flat value for an unseeded input source
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/graph-publisher.ts:59:30
+-     return left < right ? -1 : left > right ? 1 : 0;
++     return left < right ? -1 : left <= right ? 1 : 0;
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+    GraphPublisher partial-seed inputs uses the last published flat value for an unseeded input source
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/graph-publisher.ts:62:7
+-     if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
++     if ((value === null || typeof value !== "object") && Array.isArray(value)) return false;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 28 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:62:7
+-     if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
++     if (false) return false;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 28 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:62:7
+-     if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
++     if (false || Array.isArray(value)) return false;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 28 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/graph-publisher.ts:62:7
+-     if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
++     if (value === null && typeof value !== "object" || Array.isArray(value)) return false;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 28 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:62:7
+-     if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
++     if (false || typeof value !== "object" || Array.isArray(value)) return false;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 28 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:62:25
+-     if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
++     if (value === null || false || Array.isArray(value)) return false;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 28 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:64:10
+-     return prototype === Object.prototype || prototype === null;
++     return true;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 28 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:67:7
+-     if (value === null) return true;
++     if (false) return true;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 28 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:70:7
+-     if (typeof value !== "object" || seen.has(value)) return false;
++     if (false) return false;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 28 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:70:7
+-     if (typeof value !== "object" || seen.has(value)) return false;
++     if (false || seen.has(value)) return false;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 28 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/graph-publisher.ts:70:7
+-     if (typeof value !== "object" || seen.has(value)) return false;
++     if (typeof value !== "object" && seen.has(value)) return false;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 28 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:72:7
+-     if (Array.isArray(value)) return value.every((item) => isRendererNeutral(item, seen));
++     if (false) return value.every((item) => isRendererNeutral(item, seen));
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 28 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:73:7
+-     if (!isRecord(value)) return false;
++     if (false) return false;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 28 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:81:7
+-         "Composition output must contain only renderer-neutral values.",
++         "",
+Tests ran:
+    composition and output-shape diagnostics does not publish malformed composition values as ready patches
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:88:10
+-     return overlay === undefined ? base : Object.freeze({ ...base, ...overlay });
++     return false ? base : Object.freeze({ ...base, ...overlay });
+Tests ran:
+    GraphPublisher: memo/registry consistency (recovery A1) a same-flush input-role consumer sees the source's merged flat value
+    GraphPublisher: memo/registry consistency (recovery A1) a later flush resolves the source's merged flat value via registry fallback
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+  and 2 more tests!
+
+
+[Survived] MethodExpression
+packages/core/src/runtime/graph-publisher.ts:75:23
+-       ([key, item]) => !key.startsWith("_") && isRendererNeutral(item, seen),
++       ([key, item]) => !key.endsWith("_") && isRendererNeutral(item, seen),
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 28 more tests!
+
+
+[Survived] MethodExpression
+packages/core/src/runtime/graph-publisher.ts:97:7
+-         projection.pick.filter((key) => key in source).map((key) => [key, source[key]]),
++         projection.pick.map((key) => [key, source[key]]),
+Tests ran:
+    flat projected input observations (X-1) applies an explicit pick projection before merging input keys
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:99:7
+-     if (projection.map !== undefined)
++     if (true)
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+
+
+[Survived] MethodExpression
+packages/core/src/runtime/graph-publisher.ts:101:7
+-         Object.entries(projection.map)
+-           .filter(([sourceKey]) => sourceKey in source)
++         Object.entries(projection.map)
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/graph-publisher.ts:103:42
+-           .map(([sourceKey, targetKey]) => [targetKey, source[sourceKey]]),
++           .map(([sourceKey, targetKey]) => []),
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:117:9
+-       if (this.#registry.notifying) throw new Error(REENTRANT_BATCH_MESSAGE);
++       if (false) throw new Error(REENTRANT_BATCH_MESSAGE);
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 31 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/graph-publisher.ts:120:64
+-       for (const node of snapshot.nodes) dependents.set(node.id, []);
++       for (const node of snapshot.nodes) dependents.set(node.id, ["Stryker was here"]);
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 31 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/graph-publisher.ts:125:25
+-       for (let index = 0; index < queue.length; index += 1) {
++       for (let index = 0; index <= queue.length; index += 1) {
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 31 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:127:11
+-         if (id === undefined || affected.has(id)) continue;
++         if (false) continue;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 31 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/graph-publisher.ts:127:11
+-         if (id === undefined || affected.has(id)) continue;
++         if (id === undefined && affected.has(id)) continue;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 31 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:127:11
+-         if (id === undefined || affected.has(id)) continue;
++         if (false || affected.has(id)) continue;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 31 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:139:13
+-           if (node === undefined) continue;
++           if (false) continue;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 31 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:151:25
+-                   ruleId: "blocked-upstream",
++                   ruleId: "",
+Tests ran:
+    P2 runtime smell hardening chooses the blocked upstream deterministically by edge key, not authored edge order
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:153:26
+-                   message: `Blocked by upstream failure at ${sourceFailure}.`,
++                   message: ``,
+Tests ran:
+    P2 runtime smell hardening chooses the blocked upstream deterministically by edge key, not authored edge order
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:154:27
+-                   severity: "error",
++                   severity: "",
+Tests ran:
+    P2 runtime smell hardening chooses the blocked upstream deterministically by edge key, not authored edge order
+    GraphPublisher I-9 publishes an error and blocks the downstream closure while unrelated branches continue
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:173:17
+-                   `Input observation source "${edge.sourceId}" has no published value.`,
++                   ``,
+Tests ran:
+    P2 runtime smell hardening reports a missing upstream instead of silently composing with an input hole
+
+
+[Survived] MethodExpression
+packages/core/src/runtime/graph-publisher.ts:165:30
+-             for (const edge of node.edges
+-               .filter(({ role }) => role === "input")
+-               .sort(compareEdgeKeys)) {
++             for (const edge of node.edges.filter(({
++     role
++   }) => role === "input")) {
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 31 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:175:17
+-               if (!isRecord(sourceValues))
++               if (false)
+Tests ran:
+    flat projected input observations (X-1) merges an upstream record into the observer source object
+    flat projected input observations (X-1) applies an explicit pick projection before merging input keys
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+  and 4 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:180:17
+-               if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
++               if (true) sourceRevisions[edge.sourceId] = sourcePatch.revision;
+Tests ran:
+    flat projected input observations (X-1) merges an upstream record into the observer source object
+    flat projected input observations (X-1) applies an explicit pick projection before merging input keys
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+  and 4 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:187:19
+-                     `Input key "${key}" from ${edgeKey(edge)} collides with ${previous}.`,
++                     ``,
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+
+
+[Survived] OptionalChaining
+packages/core/src/runtime/graph-publisher.ts:200:69
+-               const sourceValues = memo.get(edge.sourceId)?.values ?? sourcePatch?.values;
++               const sourceValues = memo.get(edge.sourceId)?.values ?? sourcePatch.values;
+Tests ran:
+    composition and output-shape diagnostics diagnoses an output observation whose source has already published a non-record value
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:201:17
+-               if (sourceValues === undefined)
++               if (false)
+Tests ran:
+    composition and output-shape diagnostics diagnoses an output observation whose source has already published a non-record value
+    GraphPublisher: memo/registry consistency (recovery A1) a same-flush input-role consumer sees the source's merged flat value
+    GraphPublisher: memo/registry consistency (recovery A1) a later flush resolves the source's merged flat value via registry fallback
+  and 3 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-publisher.ts:208:17
+-                   `Output observation source "${edge.sourceId}" must publish a renderer-neutral record.`,
++                   ``,
+Tests ran:
+    composition and output-shape diagnostics diagnoses an output observation whose source has already published a non-record value
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:210:17
+-               if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
++               if (true) sourceRevisions[edge.sourceId] = sourcePatch.revision;
+Tests ran:
+    GraphPublisher: memo/registry consistency (recovery A1) a same-flush input-role consumer sees the source's merged flat value
+    GraphPublisher: memo/registry consistency (recovery A1) a later flush resolves the source's merged flat value via registry fallback
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+  and 2 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-publisher.ts:210:17
+-               if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
++               if (false) sourceRevisions[edge.sourceId] = sourcePatch.revision;
+Tests ran:
+    GraphPublisher: memo/registry consistency (recovery A1) a same-flush input-role consumer sees the source's merged flat value
+    GraphPublisher: memo/registry consistency (recovery A1) a later flush resolves the source's merged flat value via registry fallback
+    GraphPublisher I-5 composes a shared ancestor once and publishes one whole batch
+  and 2 more tests!
+
+
+[Survived] BlockStatement
+packages/core/src/runtime/graph-publisher.ts:240:11
+-         try {
+-           this.#registry.closeBatch();
+-         } catch {
++         try {} catch {
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) rejects a direct publisher flush from inside a subscriber and stays reusable
+    clock and batch identity are independent (P0-1) reports a failed flush as a diagnostic instead of propagating it into the clock
+    PatchRegistry: subscriber error handling (recovery A2) GraphPublisher.flush() surfaces the real subscriber error, not a masked 'No patch batch is open'
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/graph-publisher.ts:225:26
+-               diagnostics: [],
++               diagnostics: ["Stryker was here"],
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 26 more tests!
+
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:25:21
+-       path: ids[0] ?? "",
++       path: ids[0] ?? "Stryker was here!",
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:105:27
+-         throw new TypeError(`Unknown graph node \"${nodeId}\".`);
++         throw new TypeError(``);
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:121:55
+-         if (!Number.isFinite(tick)) throw new TypeError("Runtime ticks must be finite.");
++         if (!Number.isFinite(tick)) throw new TypeError("");
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:122:55
+-         if (tick < this.#lastTick) throw new RangeError("Runtime ticks must be monotonic.");
++         if (tick < this.#lastTick) throw new RangeError("");
+
+[NoCoverage] BlockStatement
+packages/core/src/runtime/graph-runtime.ts:176:25
+-           } catch (error) {
+-             this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describe(error)}`);
+-           }
++           } catch (error) {}
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:177:44
+-             this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describe(error)}`);
++             this.#report(FLUSH_FAILURE_RULE, ``);
+
+[NoCoverage] BlockStatement
+packages/core/src/runtime/graph-runtime.ts:187:39
+-       if (event.tick <= this.#lastTick) {
+-         this.#report(
+-           CLOCK_REGRESSION_RULE,
+-           `Clock tick ${event.tick} did not advance past ${this.#lastTick}.`,
+-         );
+-         return;
+-       }
++       if (event.tick <= this.#lastTick) {}
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:190:9
+-           `Clock tick ${event.tick} did not advance past ${this.#lastTick}.`,
++           ``,
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:212:41
+-       if (this.#disposed) throw new Error("GraphRuntime is disposed.");
++       if (this.#disposed) throw new Error("");
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:27:7
+-         "A flush requested while subscribers were being notified was queued as one follow-up " +
++         "" +
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 3 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/graph-runtime.ts:25:11
+-       path: ids[0] ?? "",
++       path: ids[0] && "",
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 3 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:28:7
+-         "invalidation for the scheduler.",
++         "",
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 3 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:29:15
+-       severity: "warning",
++       severity: "",
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 3 more tests!
+
+
+[Survived] BooleanLiteral
+packages/core/src/runtime/graph-runtime.ts:59:21
+-     #scheduledDrain = false;
++     #scheduledDrain = true;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 24 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:104:9
+-       if (!this.#binding.graph.nodeById[nodeId])
++       if (false)
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 16 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:121:11
+-         if (!Number.isFinite(tick)) throw new TypeError("Runtime ticks must be finite.");
++         if (false) throw new TypeError("Runtime ticks must be finite.");
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 8 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:122:11
+-         if (tick < this.#lastTick) throw new RangeError("Runtime ticks must be monotonic.");
++         if (false) throw new RangeError("Runtime ticks must be monotonic.");
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 8 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/graph-runtime.ts:122:11
+-         if (tick < this.#lastTick) throw new RangeError("Runtime ticks must be monotonic.");
++         if (tick <= this.#lastTick) throw new RangeError("Runtime ticks must be monotonic.");
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 8 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:132:11
+-         if (cached) return cached;
++         if (false) return cached;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 14 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/graph-runtime.ts:137:75
+-       const nodeById = Object.freeze(Object.fromEntries(nodes.map((node) => [node.id, node])));
++       const nodeById = Object.freeze(Object.fromEntries(nodes.map((node) => [])));
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 14 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:151:11
+-         if (this.#pendingSeeds.size > 0) this.#scheduleDrain();
++         if (true) this.#scheduleDrain();
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 14 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:151:11
+-         if (this.#pendingSeeds.size > 0) this.#scheduleDrain();
++         if (false) this.#scheduleDrain();
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 14 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/graph-runtime.ts:151:11
+-         if (this.#pendingSeeds.size > 0) this.#scheduleDrain();
++         if (this.#pendingSeeds.size >= 0) this.#scheduleDrain();
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 14 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/graph-runtime.ts:151:11
+-         if (this.#pendingSeeds.size > 0) this.#scheduleDrain();
++         if (this.#pendingSeeds.size <= 0) this.#scheduleDrain();
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 14 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:159:9
+-       if (this.#disposed) return;
++       if (false) return;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 23 more tests!
+
+
+[Survived] BooleanLiteral
+packages/core/src/runtime/graph-runtime.ts:160:22
+-       this.#disposed = true;
++       this.#disposed = false;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 23 more tests!
+
+
+[Survived] BooleanLiteral
+packages/core/src/runtime/graph-runtime.ts:165:28
+-       this.#scheduledDrain = false;
++       this.#scheduledDrain = true;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 23 more tests!
+
+
+[Survived] BooleanLiteral
+packages/core/src/runtime/graph-runtime.ts:172:32
+-           this.#scheduledDrain = false;
++           this.#scheduledDrain = true;
+Tests ran:
+    scheduler-driven reentrancy (P1-7/P1-8) drains a subscriber invalidation with zero clock ticks
+    scheduler-driven reentrancy (P1-7/P1-8) coalesces repeated invalidations into one scheduled follow-up
+    scheduler-driven reentrancy (P1-7/P1-8) retries scheduling after a synchronous scheduler failure
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:173:13
+-           if (this.#disposed || this.#pendingSeeds.size === 0) return;
++           if (false) return;
+Tests ran:
+    scheduler-driven reentrancy (P1-7/P1-8) drains a subscriber invalidation with zero clock ticks
+    scheduler-driven reentrancy (P1-7/P1-8) coalesces repeated invalidations into one scheduled follow-up
+    scheduler-driven reentrancy (P1-7/P1-8) retries scheduling after a synchronous scheduler failure
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/graph-runtime.ts:173:13
+-           if (this.#disposed || this.#pendingSeeds.size === 0) return;
++           if (this.#disposed && this.#pendingSeeds.size === 0) return;
+Tests ran:
+    scheduler-driven reentrancy (P1-7/P1-8) drains a subscriber invalidation with zero clock ticks
+    scheduler-driven reentrancy (P1-7/P1-8) coalesces repeated invalidations into one scheduled follow-up
+    scheduler-driven reentrancy (P1-7/P1-8) retries scheduling after a synchronous scheduler failure
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:173:31
+-           if (this.#disposed || this.#pendingSeeds.size === 0) return;
++           if (this.#disposed || false) return;
+Tests ran:
+    scheduler-driven reentrancy (P1-7/P1-8) drains a subscriber invalidation with zero clock ticks
+    scheduler-driven reentrancy (P1-7/P1-8) coalesces repeated invalidations into one scheduled follow-up
+    scheduler-driven reentrancy (P1-7/P1-8) retries scheduling after a synchronous scheduler failure
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/graph-runtime.ts:175:22
+-             this.flush([]);
++             this.flush(["Stryker was here"]);
+Tests ran:
+    scheduler-driven reentrancy (P1-7/P1-8) drains a subscriber invalidation with zero clock ticks
+    scheduler-driven reentrancy (P1-7/P1-8) coalesces repeated invalidations into one scheduled follow-up
+    scheduler-driven reentrancy (P1-7/P1-8) retries scheduling after a synchronous scheduler failure
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:182:44
+-         this.#report(SCHEDULER_FAILURE_RULE, `Deferred flush scheduling failed: ${describe(error)}`);
++         this.#report(SCHEDULER_FAILURE_RULE, ``);
+Tests ran:
+    scheduler-driven reentrancy (P1-7/P1-8) retries scheduling after a synchronous scheduler failure
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:186:9
+-       if (this.#disposed) return;
++       if (false) return;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 7 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:187:9
+-       if (event.tick <= this.#lastTick) {
++       if (false) {
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 7 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/graph-runtime.ts:187:9
+-       if (event.tick <= this.#lastTick) {
++       if (event.tick < this.#lastTick) {
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 7 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/graph-runtime.ts:206:26
+-         ids: Object.freeze([...this.#members]),
++         ids: Object.freeze([]),
+Tests ran:
+    clock and batch identity are independent (P0-1) reports a failed flush as a diagnostic instead of propagating it into the clock
+    scheduler-driven reentrancy (P1-7/P1-8) retries scheduling after a synchronous scheduler failure
+
+
+[Survived] BlockStatement
+packages/core/src/runtime/graph-runtime.ts:211:23
+-     #assertLive(): void {
+-       if (this.#disposed) throw new Error("GraphRuntime is disposed.");
+-     }
++     #assertLive(): void {}
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 16 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/graph-runtime.ts:212:9
+-       if (this.#disposed) throw new Error("GraphRuntime is disposed.");
++       if (false) throw new Error("GraphRuntime is disposed.");
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 16 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/graph-runtime.ts:13:38
+-   export const CLOCK_REGRESSION_RULE = "clock-tick-regression";
++   export const CLOCK_REGRESSION_RULE = "";
+Ran all tests for this mutant.
+
+[NoCoverage] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:28:50
+-     if (a === undefined || b === undefined) return a === b;
++     if (a === undefined || b === undefined) return true;
+
+[NoCoverage] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:28:50
+-     if (a === undefined || b === undefined) return a === b;
++     if (a === undefined || b === undefined) return false;
+
+[NoCoverage] EqualityOperator
+packages/core/src/runtime/patch-registry.ts:28:50
+-     if (a === undefined || b === undefined) return a === b;
++     if (a === undefined || b === undefined) return a !== b;
+
+[NoCoverage] BooleanLiteral
+packages/core/src/runtime/patch-registry.ts:29:37
+-     if (a.length !== b.length) return false;
++     if (a.length !== b.length) return true;
+
+[NoCoverage] BooleanLiteral
+packages/core/src/runtime/patch-registry.ts:42:37
+-     if (a.length !== b.length) return false;
++     if (a.length !== b.length) return true;
+
+[NoCoverage] BlockStatement
+packages/core/src/runtime/patch-registry.ts:158:25
+-           } catch (error) {
+-             if (!hasError) {
+-               hasError = true;
+-               firstError = error;
+-             }
+-           }
++           } catch (error) {}
+
+[NoCoverage] BooleanLiteral
+packages/core/src/runtime/patch-registry.ts:159:15
+-             if (!hasError) {
++             if (hasError) {
+
+[NoCoverage] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:159:15
+-             if (!hasError) {
++             if (true) {
+
+[NoCoverage] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:159:15
+-             if (!hasError) {
++             if (false) {
+
+[NoCoverage] BlockStatement
+packages/core/src/runtime/patch-registry.ts:159:26
+-             if (!hasError) {
+-               hasError = true;
+-               firstError = error;
+-             }
++             if (!hasError) {}
+
+[NoCoverage] BooleanLiteral
+packages/core/src/runtime/patch-registry.ts:160:24
+-               hasError = true;
++               hasError = false;
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:28:7
+-     if (a === undefined || b === undefined) return a === b;
++     if (false) return a === b;
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/patch-registry.ts:28:7
+-     if (a === undefined || b === undefined) return a === b;
++     if (a === undefined && b === undefined) return a === b;
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:28:7
+-     if (a === undefined || b === undefined) return a === b;
++     if (false || b === undefined) return a === b;
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:28:26
+-     if (a === undefined || b === undefined) return a === b;
++     if (a === undefined || false) return a === b;
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:29:7
+-     if (a.length !== b.length) return false;
++     if (false) return false;
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:34:5
+-       a.ruleId === b.ruleId &&
+-       a.path === b.path &&
+-       a.message === b.message &&
+-       a.severity === b.severity &&
++       true &&
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/patch-registry.ts:34:5
+-       a.ruleId === b.ruleId &&
+-       a.path === b.path &&
+-       a.message === b.message &&
+-       a.severity === b.severity &&
++       a.ruleId === b.ruleId && a.path === b.path && a.message === b.message || a.severity === b.severity &&
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:34:5
+-       a.ruleId === b.ruleId &&
+-       a.path === b.path &&
+-       a.message === b.message &&
++       true &&
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/patch-registry.ts:34:5
+-       a.ruleId === b.ruleId &&
+-       a.path === b.path &&
+-       a.message === b.message &&
++       a.ruleId === b.ruleId && a.path === b.path || a.message === b.message &&
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:34:5
+-       a.ruleId === b.ruleId &&
+-       a.path === b.path &&
++       true &&
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/patch-registry.ts:34:5
+-       a.ruleId === b.ruleId &&
+-       a.path === b.path &&
++       a.ruleId === b.ruleId || a.path === b.path &&
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:34:5
+-       a.ruleId === b.ruleId &&
++       true &&
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:35:5
+-       a.path === b.path &&
++       true &&
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:36:5
+-       a.message === b.message &&
++       true &&
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:21:7
+-     if (value === null || typeof value !== "object") return value;
++     if (false || typeof value !== "object") return value;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 55 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:37:5
+-       a.severity === b.severity &&
++       true &&
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:45:12
+-       return other !== undefined && sameDiagnostic(item, other);
++       return true && sameDiagnostic(item, other);
+Tests ran:
+    PatchRegistry: structural change detection (recovery P1-5) diagnostics equality is field-wise, so key order is not a change
+    PatchRegistry: structural change detection (recovery P1-5) republishes when a diagnostic field actually changes
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:22:7
+-     if (seen.has(value)) return value;
++     if (false) return value;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 55 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:42:7
+-     if (a.length !== b.length) return false;
++     if (false) return false;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+    PatchRegistry: structural change detection (recovery P1-5) suppresses the republish when a freshly allocated nested record is structurally equal
+  and 9 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:54:5
+-       a.status === b.status &&
++       true &&
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+    P2 runtime smell hardening preserves the last known good values when a node publishes error
+  and 10 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:63:21
+-     #batch: Patch[] = [];
++     #batch: Patch[] = ["Stryker was here"];
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 64 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:64:37
+-     #batchDiagnostics: Diagnostic[] = [];
++     #batchDiagnostics: Diagnostic[] = ["Stryker was here"];
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 64 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:66:27
+-     #batchSeeds: string[] = [];
++     #batchSeeds: string[] = ["Stryker was here"];
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 64 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:83:30
+-       this.#batchDiagnostics = [];
++       this.#batchDiagnostics = ["Stryker was here"];
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 55 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:89:7
+-         input.values === undefined && input.status !== "ready"
++         false
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 54 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:89:7
+-         input.values === undefined && input.status !== "ready"
++         true
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 54 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/patch-registry.ts:89:7
+-         input.values === undefined && input.status !== "ready"
++         input.values === undefined || input.status !== "ready"
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 54 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:89:37
+-         input.values === undefined && input.status !== "ready"
++         input.values === undefined && true
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    P2 runtime smell hardening preserves the last known good values when a node publishes error
+    P2 runtime smell hardening reports a missing upstream instead of silently composing with an input hole
+  and 7 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/patch-registry.ts:89:37
+-         input.values === undefined && input.status !== "ready"
++         input.values === undefined && input.status === "ready"
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    P2 runtime smell hardening preserves the last known good values when a node publishes error
+    P2 runtime smell hardening reports a missing upstream instead of silently composing with an input hole
+  and 7 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/patch-registry.ts:89:54
+-         input.values === undefined && input.status !== "ready"
++         input.values === undefined && input.status !== ""
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    P2 runtime smell hardening preserves the last known good values when a node publishes error
+    P2 runtime smell hardening reports a missing upstream instead of silently composing with an input hole
+  and 7 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/patch-registry.ts:90:12
+-           ? (previous?.sourceProgress ?? input.sourceProgress)
++           ? (previous?.sourceProgress && input.sourceProgress)
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    P2 runtime smell hardening preserves the last known good values when a node publishes error
+    P2 runtime smell hardening reports a missing upstream instead of silently composing with an input hole
+  and 7 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:89:7
+-         input.values === undefined && input.status !== "ready"
++         true && input.status !== "ready"
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 54 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/patch-registry.ts:89:7
+-         input.values === undefined && input.status !== "ready"
++         input.values !== undefined && input.status !== "ready"
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 54 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:93:7
+-         input.values === undefined && input.status !== "ready"
++         false
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 54 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/patch-registry.ts:93:7
+-         input.values === undefined && input.status !== "ready"
++         input.values === undefined || input.status !== "ready"
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 54 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:93:37
+-         input.values === undefined && input.status !== "ready"
++         input.values === undefined && true
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    P2 runtime smell hardening preserves the last known good values when a node publishes error
+    P2 runtime smell hardening reports a missing upstream instead of silently composing with an input hole
+  and 7 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/patch-registry.ts:93:37
+-         input.values === undefined && input.status !== "ready"
++         input.values === undefined && input.status === "ready"
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    P2 runtime smell hardening preserves the last known good values when a node publishes error
+    P2 runtime smell hardening reports a missing upstream instead of silently composing with an input hole
+  and 7 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/patch-registry.ts:93:54
+-         input.values === undefined && input.status !== "ready"
++         input.values === undefined && input.status !== ""
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    P2 runtime smell hardening preserves the last known good values when a node publishes error
+    P2 runtime smell hardening reports a missing upstream instead of silently composing with an input hole
+  and 7 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:93:7
+-         input.values === undefined && input.status !== "ready"
++         true && input.status !== "ready"
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 54 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/patch-registry.ts:94:12
+-           ? (previous?.sourceRevisions ?? input.sourceRevisions ?? {})
++           ? ((previous?.sourceRevisions ?? input.sourceRevisions) && {})
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    P2 runtime smell hardening preserves the last known good values when a node publishes error
+    P2 runtime smell hardening reports a missing upstream instead of silently composing with an input hole
+  and 7 more tests!
+
+
+[Survived] LogicalOperator
+packages/core/src/runtime/patch-registry.ts:94:12
+-           ? (previous?.sourceRevisions ?? input.sourceRevisions ?? {})
++           ? (previous?.sourceRevisions && input.sourceRevisions ?? {})
+Tests ran:
+    flat projected input observations (X-1) rejects colliding projected keys instead of silently overwriting
+    P2 runtime smell hardening preserves the last known good values when a node publishes error
+    P2 runtime smell hardening reports a missing upstream instead of silently composing with an input hole
+  and 7 more tests!
+
+
+[Survived] EqualityOperator
+packages/core/src/runtime/patch-registry.ts:93:7
+-         input.values === undefined && input.status !== "ready"
++         input.values !== undefined && input.status !== "ready"
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 54 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:103:41
+-         diagnostics: input.diagnostics ?? [],
++         diagnostics: input.diagnostics ?? ["Stryker was here"],
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) refuses to open a second batch while subscribers are being notified
+    P2 runtime smell hardening preserves the last known good values when a node publishes error
+    PatchRegistry: structural change detection (recovery P1-5) suppresses the republish when a freshly allocated nested record is structurally equal
+  and 19 more tests!
+
+
+[Survived] ArrowFunction
+packages/core/src/runtime/patch-registry.ts:120:12
+-       return () => this.#batchListeners.delete(listener);
++       return () => undefined;
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 7 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:138:19
+-       this.#batch = [];
++       this.#batch = ["Stryker was here"];
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 55 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:139:30
+-       this.#batchDiagnostics = [];
++       this.#batchDiagnostics = ["Stryker was here"];
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 55 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/patch-registry.ts:140:24
+-       this.#batchSeeds = [];
++       this.#batchSeeds = ["Stryker was here"];
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) defers a subscriber-triggered invalidate instead of running it inside the current flush
+    subscriber-triggered reentrancy (recovery A3) runs the queued follow-up exactly once on the next tick and then clears it
+    subscriber-triggered reentrancy (recovery A3) coalesces several subscriber-triggered invalidations into one follow-up
+  and 55 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/patch-registry.ts:150:17
+-               if (!hasError) {
++               if (true) {
+Tests ran:
+    subscriber-triggered reentrancy (recovery A3) rejects a direct publisher flush from inside a subscriber and stays reusable
+    clock and batch identity are independent (P0-1) reports a failed flush as a diagnostic instead of propagating it into the clock
+    PatchRegistry: subscriber error handling (recovery A2) a throwing node subscriber does not prevent other subscribers from being notified
+  and 3 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/runtime/patch-registry.ts:18:3
+-     "Queue one follow-up invalidation instead of recursing.";
++     "";
+Ran all tests for this mutant.
+
+[NoCoverage] BlockStatement
+packages/core/src/runtime/project-runtime.ts:35:36
+-     get project(): ProjectDefinition {
+-       return this.#project;
+-     }
++     get project(): ProjectDefinition {}
+
+[NoCoverage] StringLiteral
+packages/core/src/runtime/project-runtime.ts:72:41
+-       if (this.#disposed) throw new Error("ProjectRuntime is disposed.");
++       if (this.#disposed) throw new Error("");
+
+[Survived] StringLiteral
+packages/core/src/runtime/project-runtime.ts:46:58
+-       if (this.#instances.has(nodeId)) throw new TypeError(`Node "${nodeId}" is already mounted.`);
++       if (this.#instances.has(nodeId)) throw new TypeError(``);
+Tests ran:
+    ProjectRuntime TR-R-14 mounts through one project-owned GraphRuntime
+
+
+[Survived] ObjectLiteral
+packages/core/src/runtime/project-runtime.ts:27:79
+-         this.#graph = new GraphRuntime(project, options.clock, options.compose, {
+-           scheduler: options.scheduler,
+-         });
++         this.#graph = new GraphRuntime(project, options.clock, options.compose, {});
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+  and 10 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/project-runtime.ts:54:9
+-       if (instance === undefined) return;
++       if (false) return;
+Tests ran:
+    ProjectRuntime TR-R-14 mounts through one project-owned GraphRuntime
+
+
+[Survived] BlockStatement
+packages/core/src/runtime/project-runtime.ts:71:23
+-     #assertLive(): void {
+-       if (this.#disposed) throw new Error("ProjectRuntime is disposed.");
+-     }
++     #assertLive(): void {}
+Tests ran:
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+    composition and output-shape diagnostics diagnoses a plugin returning a non-record composition value
+    Engine publishes a progress change through the public project handle
+  and 5 more tests!
+
+
+[Survived] BooleanLiteral
+packages/core/src/runtime/project-runtime.ts:65:22
+-       this.#disposed = true;
++       this.#disposed = false;
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+  and 9 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/project-runtime.ts:64:9
+-       if (this.#disposed) return;
++       if (false) return;
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+  and 9 more tests!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/runtime/project-runtime.ts:66:26
+-       for (const nodeId of [...this.#instances.keys()]) this.#graph.detach(nodeId);
++       for (const nodeId of []) this.#graph.detach(nodeId);
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+  and 9 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/runtime/project-runtime.ts:72:9
+-       if (this.#disposed) throw new Error("ProjectRuntime is disposed.");
++       if (false) throw new Error("ProjectRuntime is disposed.");
+Tests ran:
+    clock and batch identity are independent (P0-1) keeps the clock running after a seek published without a frame
+    composition and output-shape diagnostics diagnoses a plugin returning a non-record composition value
+    Engine publishes a progress change through the public project handle
+  and 5 more tests!
+
+
+[NoCoverage] StringLiteral
+packages/core/src/engine.ts:58:11
+-           ? "Project failed v5 validation."
++           ? ""
+
+[NoCoverage] StringLiteral
+packages/core/src/engine.ts:90:44
+-         if (!definition) throw new TypeError(`Unknown graph node \"${nodeId}\".`);
++         if (!definition) throw new TypeError(``);
+
+[Survived] ArrowFunction
+packages/core/src/engine.ts:41:12
+-       mount: (nodeId, instance = {}) => runtime.mount(nodeId, instance),
++       mount: () => undefined,
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    composition and output-shape diagnostics diagnoses a plugin returning a non-record composition value
+  and 6 more tests!
+
+
+[Survived] ArrowFunction
+packages/core/src/engine.ts:42:14
+-       unmount: (nodeId) => runtime.unmount(nodeId),
++       unmount: () => undefined,
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    composition and output-shape diagnostics diagnoses a plugin returning a non-record composition value
+  and 6 more tests!
+
+
+[Survived] ArrowFunction
+packages/core/src/engine.ts:45:14
+-       dispose: () => runtime.dispose(),
++       dispose: () => undefined,
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    composition and output-shape diagnostics diagnoses a plugin returning a non-record composition value
+  and 6 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/engine.ts:51:11
+-       .join(" ");
++       .join("");
+Tests ran:
+    X-3 contribution through the product load path rejects malformed contributions during Engine.load
+    X-3 contribution through the product load path rejects authored ease collisions before any timeline is created
+    X-3 contribution through the product load path merges contributed keyframes into compiler diagnostics before timeline creation
+  and 4 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/engine.ts:57:7
+-         result.diagnostics.length === 0
++         false
+Tests ran:
+    Engine product-load validation (X-1 follow-up) rejects malformed authored stops before constructing a runtime
+    Engine product-load validation (X-1 follow-up) rejects malformed authored stops before any timeline is created
+    S6 plugin use contract rejects the dead TrackDefinition.use field instead of silently ignoring it
+
+
+[Survived] LogicalOperator
+packages/core/src/engine.ts:55:7
+-     if (!result.valid || result.value === null)
++     if (!result.valid && result.value === null)
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    X-3 contribution through the product load path rejects malformed contributions during Engine.load
+  and 13 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/engine.ts:55:24
+-     if (!result.valid || result.value === null)
++     if (!result.valid || false)
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    X-3 contribution through the product load path rejects malformed contributions during Engine.load
+  and 10 more tests!
+
+
+[Survived] ObjectLiteral
+packages/core/src/engine.ts:85:51
+-         nodes.set(qualifyFreeTrack(track.id).value, { ...track, id: track.id });
++         nodes.set(qualifyFreeTrack(track.id).value, {});
+Tests ran:
+    Engine publishes a progress change through the public project handle
+    Engine keeps one clock owner while clock progress publishes once
+    Engine still resolves authored-key plugins during progress updates
+
+
+[Survived] ConditionalExpression
+packages/core/src/engine.ts:88:11
+-         if (existing) return existing;
++         if (false) return existing;
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    X-3 contribution through the product load path rejects malformed contributions during Engine.load
+  and 10 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/engine.ts:90:11
+-         if (!definition) throw new TypeError(`Unknown graph node \"${nodeId}\".`);
++         if (false) throw new TypeError(`Unknown graph node \"${nodeId}\".`);
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    X-3 contribution through the product load path rejects malformed contributions during Engine.load
+  and 10 more tests!
+
+
+[Survived] StringLiteral
+packages/core/src/engine.ts:91:20
+-         const path = `${nodeId}.keyframes`;
++         const path = ``;
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    X-3 contribution through the product load path rejects malformed contributions during Engine.load
+  and 10 more tests!
+
+
+[Survived] ConditionalExpression
+packages/core/src/engine.ts:102:46
+-         if (diagnostics.some(({ severity }) => severity === "error"))
++         if (diagnostics.some(({ severity }) => true))
+Tests ran:
+    X-3 contribution through the product load path rejects malformed contributions during Engine.load
+    X-3 contribution through the product load path rejects authored ease collisions before any timeline is created
+    X-3 contribution through the product load path merges contributed keyframes into compiler diagnostics before timeline creation
+  and 1 more test!
+
+
+[Survived] ArrayDeclaration
+packages/core/src/engine.ts:101:57
+-         const diagnostics = [...(resolved?.diagnostics ?? []), ...keyframeCompilation.diagnostics];
++         const diagnostics = [...(resolved?.diagnostics ?? ["Stryker was here"]), ...keyframeCompilation.diagnostics];
+Tests ran:
+    X-3 contribution through the product load path rejects authored ease collisions before any timeline is created
+    Engine product-load validation (X-1 follow-up) accepts a valid project and creates its timelines during load
+    Engine publishes a progress change through the public project handle
+  and 3 more tests!
+
+
+[Survived] BlockStatement
+packages/core/src/engine.ts:132:35
+-           disposeComposition: () => {
+-             for (const track of tracks.values()) track.dispose();
+-             tracks.clear();
+-           },
++           disposeComposition: () => {},
+Tests ran:
+    X-3 contribution through the product load path passes contribution context and creates the prepared timeline at load
+    X-3 contribution through the product load path selects one predicate contributor through Engine.load
+    composition and output-shape diagnostics diagnoses a plugin returning a non-record composition value
+  and 6 more tests!
+
+
+Ran 5.43 tests per mutant on average.
+---------------------|------------------|----------|-----------|------------|----------|----------|
+                     | % Mutation score |          |           |            |          |          |
+File                 |  total | covered | # killed | # timeout | # survived | # no cov | # errors |
+---------------------|--------|---------|----------|-----------|------------|----------|----------|
+All files            |  70.89 |   76.08 |      809 |         2 |        255 |       78 |        0 |
+ adapters            |  70.11 |   77.87 |      189 |         1 |         54 |       27 |        0 |
+  interpolator       |  69.89 |   78.31 |       64 |         1 |         18 |       10 |        0 |
+   gsap.ts           |  69.89 |   78.31 |       64 |         1 |         18 |       10 |        0 |
+  browser-clock.ts   |  71.79 |   73.68 |       28 |         0 |         10 |        1 |        0 |
+  dom.ts             |  69.78 |   78.86 |       97 |         0 |         26 |       16 |        0 |
+ domain              |  74.35 |   79.78 |      142 |         0 |         36 |       13 |        0 |
+  motion.ts          |  64.52 |   71.43 |       60 |         0 |         24 |        9 |        0 |
+  track.ts           |  83.67 |   87.23 |       82 |         0 |         12 |        4 |        0 |
+ graph               |  83.08 |   84.38 |       54 |         0 |         10 |        1 |        0 |
+  ids.ts             |  83.08 |   84.38 |       54 |         0 |         10 |        1 |        0 |
+ runtime             |  68.12 |   72.73 |      375 |         1 |        141 |       35 |        0 |
+  graph-publisher.ts |  70.93 |   75.23 |      160 |         1 |         53 |       13 |        0 |
+  graph-runtime.ts   |  67.74 |   73.04 |       84 |         0 |         31 |        9 |        0 |
+  patch-registry.ts  |  65.12 |   69.57 |      112 |         0 |         49 |       11 |        0 |
+  project-runtime.ts |  65.52 |   70.37 |       19 |         0 |          8 |        2 |        0 |
+ engine.ts           |  75.38 |   77.78 |       49 |         0 |         14 |        2 |        0 |
+---------------------|--------|---------|----------|-----------|------------|----------|----------|
+[32m00:39:31 (2239) INFO MutationTestReportHelper[39m Final mutation score of 70.89 is greater than or equal to break threshold 65.42
+[32m00:39:31 (2239) INFO JsonReporter[39m Your report can be found at: file:///home/runner/work/motion5/motion5/reports/mutation/mutation.json
+[32m00:39:31 (2239) INFO HtmlReporter[39m Your report can be found at: file:///home/runner/work/motion5/motion5/reports/mutation/mutation.html
+[32m00:39:31 (2239) INFO MutationTestExecutor[39m Done in 3 minutes and 42 seconds.

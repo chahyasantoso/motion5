@@ -1,0 +1,10 @@
+{
+  "total": 1066,
+  "score": 75.89,
+  "threshold": 65.42,
+  "counts": {
+    "Killed": 809,
+    "Survived": 255,
+    "Timeout": 2
+  }
+}

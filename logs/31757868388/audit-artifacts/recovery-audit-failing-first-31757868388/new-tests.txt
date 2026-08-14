@@ -1,0 +1,3 @@
+packages/core/test/integration/p2-runtime-smells.test.ts
+packages/core/test/unit/domain/motion.test.ts
+packages/core/test/unit/scripts/mutation-config.test.ts
