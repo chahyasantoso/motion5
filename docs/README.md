@@ -6,7 +6,7 @@ This directory is the project’s working contract. It is intentionally more det
 
 Start with [SESSION-STATUS.md](./SESSION-STATUS.md). It is the only document allowed to claim what has landed. Plans, architecture, and ADRs describe intended behavior unless they explicitly say otherwise.
 
-The current status is **Phase 4 reopened**. The graph infrastructure is substantially repaired, but the authored animation value/compiler pipeline still needs restoration before P4-05 can be accepted.
+The current status is **Phase 6 active**. Phase 5 membership, the generated API report, and the packed package consumer are shipped. P6-03 is reconciling public documentation, followed by performance-budget enforcement and transitional-code deletion.
 
 ## Recovery references
 
@@ -29,7 +29,8 @@ motion5 is a clean-room successor to [motionpath](https://github.com/chahyasanto
 
 ## Delivery and evidence
 
-- [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md): phases, slice-level pull requests, dependencies, test obligations, exit gates, risk register, and the v1 checklist. Treat its completed-slice claims as intent until reconciled with SESSION-STATUS and the recovery plan.
+- [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md): phases, slice-level pull requests, dependencies, test obligations, exit gates, risk register, and the v1 checklist.
+- [PHASE6-DETAILED-PLAN.md](./PHASE6-DETAILED-PLAN.md): Phase 6 hardening intent, allow-lists, package consumer contract, documentation reconciliation, budgets, and deletion checklist.
 - [TESTING-STRATEGY.md](./TESTING-STRATEGY.md): test tiers, determinism rules, migration evidence, invariant evidence, and prohibited evidence.
 - [CI-WORKFLOW.md](./CI-WORKFLOW.md): workflow rules, job contracts, artifacts, required versus advisory gates, and rollout schedule.
 - [PR-WORKFLOW.md](./PR-WORKFLOW.md): branch naming, commit style, pull request contents, review order, merge policy, and reverts.
@@ -37,7 +38,7 @@ motion5 is a clean-room successor to [motionpath](https://github.com/chahyasanto
 
 ## How the documents fit together
 
-PRD says why and what. TRD says what “correct” means, in testable terms. ARCHITECTURE says who owns what. IMPLEMENTATION-PLAN says in what order, and names the evidence for each slice. SESSION-STATUS says what is actually true today. The recovery plan explains the work required to restore the missing value pipeline. DECISIONS says what not to re-litigate.
+PRD says why and what. TRD says what “correct” means, in testable terms. ARCHITECTURE says who owns what. IMPLEMENTATION-PLAN says in what order, and names the evidence for each slice. SESSION-STATUS says what is actually true today. The Phase 6 plan details the remaining hardening work. DECISIONS says what not to re-litigate.
 
 ## Locked scope decisions
 
