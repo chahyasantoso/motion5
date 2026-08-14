@@ -60,7 +60,7 @@ describe("P2 runtime smell hardening", () => {
     publisher.flush(snapshot([source, consumer]), ["source", "consumer"], 1);
     expect(registry.get("consumer")?.sourceRevisions).toEqual({ source: 1 });
   });
-  it("reports a missing upstream instead of silently composing with an input hole", () => {
+  it("reports a missing upstream as a pending reference instead of silently composing with an input hole", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
     const consumer = node(
@@ -69,8 +69,8 @@ describe("P2 runtime smell hardening", () => {
       (inputs) => ({ values: inputs, sourceProgress: 0, sourceRevisions: {} }),
     );
     publisher.flush(snapshot([consumer]), ["consumer"], 1);
-    expect(registry.get("consumer")?.status).toBe("error");
-    expect(registry.get("consumer")?.diagnostics[0]?.ruleId).toBe("observation-missing-upstream");
+    expect(registry.get("consumer")?.status).toBe("blocked");
+    expect(registry.get("consumer")?.diagnostics[0]?.ruleId).toBe("pending-reference");
   });
   it("chooses the blocked upstream deterministically by edge key, not authored edge order", () => {
     const registry = new PatchRegistry();

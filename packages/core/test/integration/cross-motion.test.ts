@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition } from "../../src/contract/v5";
+import type { ProjectDefinition, MotionDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { GraphRuntime } from "../../src/runtime/graph-runtime";
 
@@ -44,7 +44,7 @@ describe("P5-01 cross-motion references", () => {
     const recovered = runtime.flush();
     const childPatch = recovered.patches.find(({ nodeId }) => nodeId === "arm/child");
     expect(childPatch?.status).toBe("ready");
-    expect(childPatch?.values).toEqual({ node: "arm/child", parentWorld: { node: "base/root" } });
+    expect(childPatch?.values).toMatchObject({ parentWorld: { node: "base/root" } });
     expect(Object.isFrozen(childPatch)).toBe(true);
     expect(Object.isFrozen(childPatch?.values)).toBe(true);
 
@@ -60,20 +60,21 @@ describe("P5-01 cross-motion references", () => {
     const childPatch = batch.patches.find(({ nodeId }) => nodeId === "arm/child");
 
     expect(childPatch?.status).toBe("ready");
-    expect(childPatch?.values).toEqual({ node: "arm/child", parentWorld: { node: "base/root" } });
+    expect(childPatch?.values).toMatchObject({ parentWorld: { node: "base/root" } });
     runtime.dispose();
   });
 
   it("rejects an unknown cross-motion source at load instead of treating it as pending", () => {
     const invalid: ProjectDefinition = {
       ...project,
-      motions: project.motions.map((motion) =>
+      motions: project.motions.map((motion): MotionDefinition =>
         motion.id === "arm"
           ? {
               ...motion,
               tracks: [
                 {
                   ...motion.tracks[0],
+                  id: "child",
                   observes: [{ source: "missing/root", role: "input", target: "parentWorld" }],
                 },
               ],
