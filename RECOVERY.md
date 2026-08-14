@@ -4,28 +4,22 @@ This file is the restart point for any human or AI session. Read it before chang
 
 ## Mission
 
-Restore motion5 by adapting the working behavior of `chahyasantoso/motionpath` while preserving motion5's graph ownership and TypeScript boundaries. Do not treat a green test suite as proof unless the test exercises the real behavior at the boundary.
-
-## Single source of truth
-
-The live checklist is [`progress/STATUS.md`](progress/STATUS.md). `WAVE-PLAN.md` is the detailed plan, `progress/<slice>.md` files are optional evidence logs, and neither is a second status system.
+Restore motion5 by adapting the working behavior of `chahyasantoso/motionpath` while preserving motion5's graph ownership and TypeScript boundaries.
 
 ## Current baseline
 
 - Repository: `chahyasantoso/motion5`
 - Current rescue branch: `rescue/restore-motionpath-parity`
-- Active slice: `fix/motion-trigger-lifecycle`
-- Archive branch for failed CI and recovery-audit logs: `ci-logs`
-- Previous rescue merge: [`e53265b`](https://github.com/chahyasantoso/motion5/commit/e53265b97be1c1f1bb766c78abf7bc4f1e1ce44b)
+- Archive branch: `ci-logs`
+- PR 95 merge: [`e53265b`](https://github.com/chahyasantoso/motion5/commit/e53265b97be1c1f1bb766c78abf7bc4f1e1ce44b)
+- PR 96 merge: [`1a26bfe`](https://github.com/chahyasantoso/motion5/commit/1a26bfe50899d8cb3bd7d0bde87d3def2033692d)
 
-## M1 decision
+## M1 decision and evidence
 
-Motion and trigger lifecycle are wired through one Motion owner, the injected scheduler, `ProjectRuntime.seek`, and the existing project clock. Engine-created Motion disables its private clock subscription, so ProjectRuntime remains the only clock owner. `ProjectHandle.signal()` is the public trigger seam.
+Motion and trigger lifecycle are wired through one Motion owner, the injected Scheduler, `ProjectRuntime.seek`, and the existing project clock. `ProjectHandle.signal()` is the public trigger seam. Engine-created Motion does not subscribe to the Clock, so ProjectRuntime remains the sole clock owner.
 
-## Implementor workflow
+Recovery audit [31767593680](https://github.com/chahyasantoso/motion5/actions/runs/31767593680) passed against [`c26a807`](https://github.com/chahyasantoso/motion5/commit/c26a807c8fe74dc6fc79ee4ef92907c6364c408b), with base [`e53265b`](https://github.com/chahyasantoso/motion5/commit/e53265b97be1c1f1bb766c78abf7bc4f1e1ce44b) and blank exception. Only Node 20 action deprecation warnings remain.
 
-Push failing-first tests, verify assertion-level red, implement the smallest owner change, run exact-head CI, dispatch Recovery audit, and record the final SHA and evidence in `progress/STATUS.md`. Never mark a slice done from code inspection or generic green tests.
+## Next action
 
-## M1 final gate
-
-Run Recovery audit with `ref=<final M1 SHA>`, `base=e53265b97be1c1f1bb766c78abf7bc4f1e1ce44b`, blank exception. Merge PR 96 into rescue only after exact-head CI and the audit are green, then open rescue → main after branch-protection verification.
+No runtime/evidence blocker remains from `CODE-REVIEW-POST-E3.md`. Verify branch protection and open the final rescue → main PR. Track Node 20 action modernization separately.
