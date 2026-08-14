@@ -5,16 +5,71 @@
   "threshold": 65.42,
   "definition": "Killed / (Killed + Survived + Timeout), excluding NoCoverage",
   "files": {
-    "packages/core/src/adapters/browser-clock.ts": { "total": 38, "killed": 28, "score": 73.68, "counts": { "Killed": 28, "Survived": 10, "NoCoverage": 1 } },
-    "packages/core/src/adapters/dom.ts": { "total": 123, "killed": 97, "score": 78.86, "counts": { "Killed": 97, "Survived": 26, "NoCoverage": 16 } },
-    "packages/core/src/adapters/interpolator/gsap.ts": { "total": 83, "killed": 64, "score": 77.11, "counts": { "Killed": 64, "Survived": 18, "Timeout": 1, "NoCoverage": 10 } },
-    "packages/core/src/domain/motion.ts": { "total": 84, "killed": 60, "score": 71.43, "counts": { "Killed": 60, "Survived": 24, "NoCoverage": 9 } },
-    "packages/core/src/domain/track.ts": { "total": 94, "killed": 82, "score": 87.23, "counts": { "Killed": 82, "Survived": 12, "NoCoverage": 4 } },
-    "packages/core/src/engine.ts": { "total": 63, "killed": 49, "score": 77.78, "counts": { "Killed": 49, "Survived": 14, "NoCoverage": 2 } },
-    "packages/core/src/graph/ids.ts": { "total": 64, "killed": 54, "score": 84.38, "counts": { "Killed": 54, "Survived": 10, "NoCoverage": 1 } },
-    "packages/core/src/runtime/graph-publisher.ts": { "total": 214, "killed": 160, "score": 74.77, "counts": { "Killed": 160, "Survived": 53, "Timeout": 1, "NoCoverage": 13 } },
-    "packages/core/src/runtime/graph-runtime.ts": { "total": 115, "killed": 84, "score": 73.04, "counts": { "Killed": 84, "Survived": 31, "NoCoverage": 9 } },
-    "packages/core/src/runtime/patch-registry.ts": { "total": 161, "killed": 112, "score": 69.57, "counts": { "Killed": 112, "Survived": 49, "NoCoverage": 11 } },
-    "packages/core/src/runtime/project-runtime.ts": { "total": 27, "killed": 19, "score": 70.37, "counts": { "Killed": 19, "Survived": 8, "NoCoverage": 2 } }
+    "packages/core/src/adapters/browser-clock.ts": {
+      "total": 38,
+      "killed": 28,
+      "score": 73.68,
+      "counts": { "Killed": 28, "Survived": 10, "NoCoverage": 1 }
+    },
+    "packages/core/src/adapters/dom.ts": {
+      "total": 123,
+      "killed": 97,
+      "score": 78.86,
+      "counts": { "Killed": 97, "Survived": 26, "NoCoverage": 16 }
+    },
+    "packages/core/src/adapters/interpolator/gsap.ts": {
+      "total": 83,
+      "killed": 64,
+      "score": 77.11,
+      "counts": { "Killed": 64, "Survived": 18, "Timeout": 1, "NoCoverage": 10 }
+    },
+    "packages/core/src/domain/motion.ts": {
+      "total": 84,
+      "killed": 60,
+      "score": 71.43,
+      "counts": { "Killed": 60, "Survived": 24, "NoCoverage": 9 }
+    },
+    "packages/core/src/domain/track.ts": {
+      "total": 94,
+      "killed": 82,
+      "score": 87.23,
+      "counts": { "Killed": 82, "Survived": 12, "NoCoverage": 4 }
+    },
+    "packages/core/src/engine.ts": {
+      "total": 63,
+      "killed": 49,
+      "score": 77.78,
+      "counts": { "Killed": 49, "Survived": 14, "NoCoverage": 2 }
+    },
+    "packages/core/src/graph/ids.ts": {
+      "total": 64,
+      "killed": 54,
+      "score": 84.38,
+      "counts": { "Killed": 54, "Survived": 10, "NoCoverage": 1 }
+    },
+    "packages/core/src/runtime/graph-publisher.ts": {
+      "total": 214,
+      "killed": 160,
+      "score": 74.77,
+      "counts": { "Killed": 160, "Survived": 53, "Timeout": 1, "NoCoverage": 13 }
+    },
+    "packages/core/src/runtime/graph-runtime.ts": {
+      "total": 115,
+      "killed": 84,
+      "score": 73.04,
+      "counts": { "Killed": 84, "Survived": 31, "NoCoverage": 9 }
+    },
+    "packages/core/src/runtime/patch-registry.ts": {
+      "total": 161,
+      "killed": 112,
+      "score": 69.57,
+      "counts": { "Killed": 112, "Survived": 49, "NoCoverage": 11 }
+    },
+    "packages/core/src/runtime/project-runtime.ts": {
+      "total": 27,
+      "killed": 19,
+      "score": 70.37,
+      "counts": { "Killed": 19, "Survived": 8, "NoCoverage": 2 }
+    }
   }
 }

@@ -62,6 +62,9 @@ const report = {
   measurements,
   passed,
 };
-await writeFile(new URL("./benchmark-report.json", import.meta.url), `${JSON.stringify(report, null, 2)}\n`);
+await writeFile(
+  new URL("./benchmark-report.json", import.meta.url),
+  `${JSON.stringify(report, null, 2)}\n`,
+);
 console.log(JSON.stringify(report, null, 2));
 if (!passed) process.exitCode = 1;
