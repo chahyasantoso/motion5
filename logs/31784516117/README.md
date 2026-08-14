@@ -1,0 +1,23 @@
+# CI log archive: 31784516117
+
+- Workflow: CI
+- Conclusion: failure
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/31784516117
+- Captured: 2026-08-14T08:35:55Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm run typecheck	﻿2026-08-14T08:35:34.0934479Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-14T08:35:34.0934860Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-14T08:35:34.0957119Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-14T08:35:34.0957661Z env:
+quality (node 24)	Run npm run typecheck	2026-08-14T08:35:34.0957939Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-14T08:35:34.0958262Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-14T08:35:34.1743162Z 
+quality (node 24)	Run npm run typecheck	2026-08-14T08:35:34.1744043Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-14T08:35:34.1744713Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-14T08:35:34.1744986Z 
+quality (node 24)	Run npm run typecheck	2026-08-14T08:35:35.7371715Z ##[error]packages/core/test/unit/scripts/packed-consumer-check.test.ts(2,37): error TS2307: Cannot find module '../../../../../scripts/package-consumer-check.mjs' or its corresponding type declarations.
+quality (node 24)	Run npm run typecheck	2026-08-14T08:35:35.7529571Z ##[error]Process completed with exit code 2.
+```
