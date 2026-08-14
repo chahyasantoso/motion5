@@ -1,6 +1,6 @@
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
-import type { TriggerCommand, TriggerDelegate } from "./triggers";
+import type { TriggerCommand, TriggerDelegate, TriggerSignal } from "./triggers";
 import { Lifecycle } from "./lifecycle";
 import { Track } from "./track";
 
@@ -99,6 +99,10 @@ export class Motion {
     this.assertActive();
     if (!Number.isFinite(progress)) throw new TypeError("Motion progress must be finite.");
     this.#setProgress(Math.max(0, Math.min(1, progress)));
+  }
+  signal(signal: TriggerSignal): void {
+    this.assertActive();
+    this.#trigger?.signal(signal);
   }
   reflow(): readonly number[] {
     this.assertActive();
