@@ -1,0 +1,21 @@
+
+> motion5@0.0.0 benchmark
+> node performance/graph-benchmark.mjs
+
+{
+  "budgetVersion": 2,
+  "status": "advisory",
+  "expiresOn": "2026-08-17",
+  "measurements": {
+    "nodes": 1000,
+    "flushes": 100,
+    "traversedNodes": 100000,
+    "publishedPatches": 100000,
+    "retainedNodes": 1000,
+    "dirtySeed": 500,
+    "dirtyClosure": 500,
+    "dirtyRatio": 0.5,
+    "complexity": "linear-dirty-closure"
+  },
+  "passed": true
+}

@@ -1,0 +1,4 @@
+packages/core/test/integration/engine-headless.test.ts
+packages/core/test/integration/motion-trigger-lifecycle.test.ts
+packages/core/test/integration/motion-trigger-types.test.ts
+packages/core/test/integration/project-handle-surface.test.ts
