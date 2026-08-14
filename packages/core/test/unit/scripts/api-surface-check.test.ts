@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkApiSurface } from "../../../../scripts/api-surface-check.mjs";
+import { checkApiSurface } from "../../../../../scripts/api-surface-check.mjs";
 
 describe("P6-01 API surface checker", () => {
   it("accepts the committed public declaration surface", async () => {
