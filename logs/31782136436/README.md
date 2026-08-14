@@ -1,0 +1,42 @@
+# CI log archive: 31782136436
+
+- Workflow: CI
+- Conclusion: failure
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/31782136436
+- Captured: 2026-08-14T08:01:06Z
+
+## Failed job output
+
+```text
+end-to-end (node 24)	Set up job	﻿2026-08-14T08:00:16.2858918Z Current runner version: '2.336.0'
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2887645Z ##[group]Runner Image Provisioner
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2888580Z Hosted Compute Agent
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2889241Z Version: 20260707.563
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2889934Z Commit: 02667638d2b423fbc733a8e32a88b44996a3ba6e
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2890653Z Build Date: 2026-07-07T19:33:50Z
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2891397Z Worker ID: {c0e59adf-96cb-4946-b688-68f9937b5b1e}
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2892115Z Azure Region: westus
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2892679Z ##[endgroup]
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2894979Z ##[group]Operating System
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2895658Z Ubuntu
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2896251Z 24.04.4
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2896783Z LTS
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2897300Z ##[endgroup]
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2897941Z ##[group]Runner Image
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2898545Z Image: ubuntu-24.04
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2899094Z Version: 20260720.247.2
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2900225Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20260720.247/images/ubuntu/Ubuntu2404-Readme.md
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2902141Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20260720.247
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2903876Z ##[endgroup]
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2905129Z ##[group]GITHUB_TOKEN Permissions
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2907279Z Contents: write
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2907924Z Metadata: read
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2908588Z ##[endgroup]
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2910927Z Secret source: Actions
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.2912122Z Prepare workflow directory
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.3346247Z Prepare all required actions
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.3397251Z Getting action download info
+end-to-end (node 24)	Set up job	2026-08-14T08:00:16.6875882Z Download action repository 'actions/checkout@v4' (SHA:11d5960a326750d5838078e36cf38b85af677262)
+end-to-end (node 24)	Set up job	2026-08-14T08:00:27.6338660Z ##[error]An action could not be found at the URI 'https://codeload.github.com/actions/checkout/tar.gz/11d5960a326750d5838078e36cf38b85af677262' (9000:556F4:2B03D:B5A2B:6A7ECB10)
+end-to-end (node 24)	Set up job	2026-08-14T08:00:27.6391813Z ##[error]Failed to download archive 'https://codeload.github.com/actions/checkout/tar.gz/11d5960a326750d5838078e36cf38b85af677262' after 1 attempts.
+```
