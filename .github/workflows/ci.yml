@@ -117,9 +117,24 @@ jobs:
           path: performance/benchmark-report.json
           if-no-files-found: error
 
+  package:
+    name: package consumer (node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --input-type=module -e 'import("./scripts/package-consumer-check.mjs").then(({checkPackedConsumer}) => checkPackedConsumer()).then(({ok, errors}) => { if (!ok) { console.error(errors); process.exit(1); } })'
+
   format:
     name: prettier after behavioral green
-    needs: [quality, integration, boundaries, build, end-to-end]
+    needs: [quality, integration, boundaries, build, end-to-end, package]
     if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     env:
