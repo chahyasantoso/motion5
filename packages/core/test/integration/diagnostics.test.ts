@@ -13,7 +13,11 @@ import { ProjectRuntime } from "../../src/runtime/project-runtime";
  */
 function pendingProject(): {
   readonly schemaVersion: 5;
-  readonly motions: readonly { id: string; trigger: { type: "manual" }; tracks: readonly never[] }[];
+  readonly motions: readonly {
+    id: string;
+    trigger: { type: "manual" };
+    tracks: readonly never[];
+  }[];
   readonly freeTracks: readonly TrackDefinition[];
 } {
   return {
