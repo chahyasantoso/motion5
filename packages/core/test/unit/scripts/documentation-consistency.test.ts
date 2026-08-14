@@ -10,10 +10,7 @@ async function text(path: string): Promise<string> {
 
 describe("P6-03 public documentation", () => {
   it("does not claim the old reopened Phase 4 reality", async () => {
-    const [readme, docsReadme] = await Promise.all([
-      text("README.md"),
-      text("docs/README.md"),
-    ]);
+    const [readme, docsReadme] = await Promise.all([text("README.md"), text("docs/README.md")]);
     expect(readme).not.toContain("Phase 4 is reopened");
     expect(docsReadme).not.toContain("Phase 4 reopened");
   });
