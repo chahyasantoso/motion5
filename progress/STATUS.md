@@ -6,25 +6,25 @@ Last reviewed: 2026-08-14
 
 ## Board
 
-| ID | Slice | Status |
-| --- | --- | --- |
-| W0 | Rescue loop and audit baseline | Done |
-| A1-A3 | Runtime hardening | Done, gate open |
-| B1-B2 | Plugin and GSAP recovery | Done |
-| C1-C3 | React and DOM recovery | Done, gate open |
-| D1-D3 | Consumer and acceptance gates | Done, gate open |
-| E1-E3 | Build, end-to-end, mutation gates | Done, gate open |
-| P0-1 to P0-4 | Clock, timing, and rendering foundations | Done, audited |
-| P1-5 to P1-12 | Graph/runtime invariants | Done, merged |
-| S5-S7 | Recovery evidence | Done, audited |
-| P2/G-5/G-6 | Benchmark and mutation ratchet | Done, audited |
-| M1 | Motion/trigger lifecycle wiring | Done, audited |
-| P5-01 to P5-04 | Phase 5 membership | Done, merged |
-| P6-01 | API surface and declarations | Done, merged |
-| P6-02 | Packed package consumer | In progress, red-first |
-| P6-03 | Public documentation | Queued |
-| P6-04 | Enforce benchmark budgets | Queued |
-| P6-05 | Delete transitional code/docs | Queued |
+| ID             | Slice                                    | Status                 |
+| -------------- | ---------------------------------------- | ---------------------- |
+| W0             | Rescue loop and audit baseline           | Done                   |
+| A1-A3          | Runtime hardening                        | Done, gate open        |
+| B1-B2          | Plugin and GSAP recovery                 | Done                   |
+| C1-C3          | React and DOM recovery                   | Done, gate open        |
+| D1-D3          | Consumer and acceptance gates            | Done, gate open        |
+| E1-E3          | Build, end-to-end, mutation gates        | Done, gate open        |
+| P0-1 to P0-4   | Clock, timing, and rendering foundations | Done, audited          |
+| P1-5 to P1-12  | Graph/runtime invariants                 | Done, merged           |
+| S5-S7          | Recovery evidence                        | Done, audited          |
+| P2/G-5/G-6     | Benchmark and mutation ratchet           | Done, audited          |
+| M1             | Motion/trigger lifecycle wiring          | Done, audited          |
+| P5-01 to P5-04 | Phase 5 membership                       | Done, merged           |
+| P6-01          | API surface and declarations             | Done, merged           |
+| P6-02          | Packed package consumer                  | In progress, red-first |
+| P6-03          | Public documentation                     | Queued                 |
+| P6-04          | Enforce benchmark budgets                | Queued                 |
+| P6-05          | Delete transitional code/docs            | Queued                 |
 
 ## Evidence
 
