@@ -1,0 +1,470 @@
+quality (node 24)	Run npm test	﻿2026-08-14T08:24:27.9846778Z ##[group]Run npm test
+quality (node 24)	Run npm test	2026-08-14T08:24:27.9847235Z ^[[36;1mnpm test^[[0m
+quality (node 24)	Run npm test	2026-08-14T08:24:27.9911535Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm test	2026-08-14T08:24:27.9911971Z env:
+quality (node 24)	Run npm test	2026-08-14T08:24:27.9912318Z   NODE_VERSION: 24
+quality (node 24)	Run npm test	2026-08-14T08:24:27.9912664Z ##[endgroup]
+quality (node 24)	Run npm test	2026-08-14T08:24:28.1112612Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:28.1113181Z > motion5@0.0.0 test
+quality (node 24)	Run npm test	2026-08-14T08:24:28.1113688Z > vitest run
+quality (node 24)	Run npm test	2026-08-14T08:24:28.1113903Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:28.4378162Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:28.4384474Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:28.4411755Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:28.8480674Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugins.test.ts ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:28.8992625Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-reentrancy.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:29.1039316Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-state.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:29.1682699Z  ^[[32m✓^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 34^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:29.3234210Z  ^[[32m✓^[[39m packages/core/test/contract/v5-validator.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:29.3827208Z  ^[[32m✓^[[39m packages/core/test/contract/validation-owner.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:29.5960093Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/boundary-scan.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 51^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:29.6168054Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:29.8298184Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-flat-inputs.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:29.8799421Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/clock-tick-identity.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:30.0371489Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-structural-change.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:30.0895470Z  ^[[32m✓^[[39m packages/core/test/unit/graph/order.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:30.2589555Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ir-validation.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:30.3209163Z  ^[[32m✓^[[39m packages/core/test/integration/cross-motion.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:30.4939022Z  ^[[32m✓^[[39m packages/core/test/integration/diagnostics.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:30.5646913Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/composition-output-shape.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:30.8342989Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugin-contribution-contract.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:30.8708374Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-authored-duration.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.0685656Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/scheduler-reentrancy.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.0826146Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.2973803Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.3064377Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.3379675Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/public-declaration-surface.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[33m 2600^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.3381918Z      ^[[33m^[[2m✓^[[22m^[[39m scans the emitted entry declaration closure, not just source strings ^[[33m 2596^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.4916924Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.5151545Z  ^[[32m✓^[[39m packages/core/test/integration/adoption.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.5455352Z  ^[[32m✓^[[39m packages/core/test/unit/graph/references.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.6999008Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.7273953Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-absolute-stops.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.7372155Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.9067531Z  ^[[32m✓^[[39m packages/core/test/integration/remount.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.9498497Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:31.9663589Z  ^[[32m✓^[[39m packages/core/test/contract/adapters.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.0958204Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-types.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.1637389Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.1680969Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.3129207Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.3440941Z  ^[[32m✓^[[39m packages/core/test/migration/v4-to-v5.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.3679346Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.5018196Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.5430834Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.5497437Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.6964077Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/governance-gates.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.7208782Z  ^[[32m✓^[[39m packages/react/test/patch-store-lifecycle.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.7878001Z ^[[90mstderr^[[2m | packages/react/test/public-package-surface.test.ts^[[2m > ^[[22m^[[2mReact public package surface (C2)^[[2m > ^[[22m^[[2mrenders and updates through the package entry alone
+quality (node 24)	Run npm test	2026-08-14T08:24:32.7889994Z  ^[[32m✓^[[39m packages/react/test/public-package-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.7913140Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test	2026-08-14T08:24:32.7919455Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-14T08:24:32.7921012Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-14T08:24:32.7923466Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-14T08:24:32.7934755Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:32.8781613Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-sparse-percent-map.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.9331811Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:32.9728761Z  ^[[32m✓^[[39m packages/core/test/contract/ports.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:33.0733550Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugin-contribution-completeness.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:33.1196107Z  ^[[32m✓^[[39m packages/core/test/unit/domain/s7-plugin-evidence.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:33.2261408Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:33.2722099Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:33.3389156Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:33.4005402Z  ^[[32m✓^[[39m packages/core/test/unit/domain/lifecycle.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:33.4768683Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-paused-timeline.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:33.5342344Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:33.6120812Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/acceptance-scan.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:33.6639513Z  ^[[32m✓^[[39m packages/core/test/unit/domain/values.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:33.7049664Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-retention.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:33.8022966Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-projection-validation.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:33.8947473Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:33.9708669Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/mutation-config.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:34.0909969Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:34.1458275Z  ^[[32m✓^[[39m packages/core/test/contract/s4-validation-owner.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:34.2707777Z  ^[[32m✓^[[39m packages/core/test/unit/domain/triggers.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:34.3338253Z  ^[[32m✓^[[39m packages/react/test/patch-store.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:34.4678988Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/s7-recovery-audit.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:34.5709743Z ^[[90mstderr^[[2m | packages/react/test/public-hook-render.test.ts^[[2m > ^[[22m^[[2mReact public hook render/update (C2)^[[2m > ^[[22m^[[2mrenders the current patch and updates after publication
+quality (node 24)	Run npm test	2026-08-14T08:24:34.5712647Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test	2026-08-14T08:24:34.5714165Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-14T08:24:34.5716192Z  ^[[32m✓^[[39m packages/react/test/public-hook-render.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:34.5721156Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-14T08:24:34.5722309Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-14T08:24:34.5723001Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:34.6879062Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:34.8169150Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:34.8995557Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:35.0766999Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:35.1329749Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:35.2806793Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:35.3127694Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0356840Z  ^[[31m❯^[[39m packages/core/test/unit/scripts/api-surface-check.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m4 failed^[[39m^[[2m)^[[22m^[[33m 2183^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0358638Z ^[[31m     ^[[31m×^[[31m accepts the committed public declaration surface^[[39m^[[33m 2170^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0359875Z ^[[31m     ^[[31m×^[[31m rejects an extra public export in a generated declaration fixture^[[39m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0360968Z ^[[31m     ^[[31m×^[[31m rejects a missing public export^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0361865Z ^[[31m     ^[[31m×^[[31m rejects reachable implementation declarations^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0362584Z      ^[[32m✓^[[39m keeps the internal entrypoint outside the public report^[[32m 1^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0389242Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0390184Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 4 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0390664Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0393982Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/api-surface-check.test.ts^[[2m > ^[[22mP6-01 API surface checker^[[2m > ^[[22maccepts the committed public declaration surface
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0400032Z ^[[31m^[[1mAssertionError^[[22m: promise rejected "Error: ENOENT: no such file or directory,… { …(4) }" instead of resolving^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0401895Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/api-surface-check.test.ts:^[[2m6:36^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0424473Z     ^[[90m  4|^[[39m ^[[34mdescribe^[[39m(^[[32m"P6-01 API surface checker"^[[39m^[[33m,^[[39m () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0425478Z     ^[[90m  5|^[[39m   ^[[34mit^[[39m(^[[32m"accepts the committed public declaration surface"^[[39m^[[33m,^[[39m ^[[35masync^[[39m () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0426309Z     ^[[90m  6|^[[39m     await expect(checkApiSurface()).resolves.toEqual({ ok: true, error…
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0427419Z     ^[[90m   |^[[39m                                    ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0427811Z     ^[[90m  7|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0428094Z     ^[[90m  8|^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0428219Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0429426Z ^[[31m^[[1mCaused by: Error^[[22m: ENOENT: no such file or directory, open '/home/runner/work/motion5/motion5/.tmp-api-dts-DYnZET/packages/core/src/index.d.ts'^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0431271Z ^[[36m ^[[2m❯^[[22m checkApiSurface scripts/api-surface-check.mjs:^[[2m56:20^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0432201Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/api-surface-check.test.ts:^[[2m6:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0432564Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0433002Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0439449Z ^[[31m^[[1mSerialized Error:^[[22m^[[39m ^[[90m{ errno: -2, code: 'ENOENT', syscall: 'open', path: '/home/runner/work/motion5/motion5/.tmp-api-dts-DYnZET/packages/core/src/index.d.ts' }^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0441201Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0441692Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0443522Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/api-surface-check.test.ts^[[2m > ^[[22mP6-01 API surface checker^[[2m > ^[[22mrejects an extra public export in a generated declaration fixture
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0445690Z ^[[31m^[[1mAssertionError^[[22m: expected { ok: false, errors: [ …(36) ] } to deeply equal { ok: false, …(1) }^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0446437Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0446926Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0447386Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0447615Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0447800Z ^[[2m  {^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0448202Z ^[[2m    "errors": [^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0449134Z ^[[31m+     "Missing value export: AUTHORED_SCHEMA_VERSION",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0450011Z ^[[31m+     "Missing value export: DIAGNOSTIC_SEVERITIES",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0450772Z ^[[31m+     "Missing value export: Engine",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0451501Z ^[[31m+     "Missing value export: PluginRegistry",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0452355Z ^[[31m+     "Missing value export: SUPPORTED_TRIGGER_TYPES",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0453111Z ^[[31m+     "Missing value export: assertClock",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0453855Z ^[[31m+     "Missing value export: assertInterpolator",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0454649Z ^[[31m+     "Missing value export: assertScheduler",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0455456Z ^[[31m+     "Missing value export: createManualClock",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0456244Z ^[[31m+     "Missing value export: migrateV4ToV5",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0457260Z ^[[31m+     "Missing value export: parseGolden",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0458042Z ^[[31m+     "Missing value export: serializeGolden",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0458759Z ^[[31m+     "Missing value export: validateV5",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0459464Z ^[[31m+     "Missing type export: AuthoredProperty",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0460208Z ^[[31m+     "Missing type export: AuthoredStop",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0460928Z ^[[31m+     "Missing type export: Diagnostic",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0461717Z ^[[31m+     "Missing type export: DiagnosticSeverity",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0462486Z ^[[31m+     "Missing type export: GoldenFixture",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0463309Z ^[[31m+     "Missing type export: GoldenValidationFixture",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0464115Z ^[[31m+     "Missing type export: Interpolator",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0464879Z ^[[31m+     "Missing type export: MigrationDiagnostic",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0465677Z ^[[31m+     "Missing type export: MigrationResult",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0466473Z ^[[31m+     "Missing type export: MotionDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0467631Z ^[[31m+     "Missing type export: ObservationDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0468384Z ^[[31m+     "Missing type export: Patch",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0469131Z ^[[31m+     "Missing type export: PatchBatch",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0469892Z ^[[31m+     "Missing type export: PatchListener",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0470631Z ^[[31m+     "Missing type export: PatchStatus",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0471379Z ^[[31m+     "Missing type export: PluginDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0472173Z ^[[31m+     "Missing type export: ProjectDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0472926Z ^[[31m+     "Missing type export: ProjectHandle",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0473689Z ^[[31m+     "Missing type export: ResolvedPlugins",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0474437Z ^[[31m+     "Missing type export: TrackDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0475510Z ^[[31m+     "Missing type export: TriggerType",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0476243Z ^[[31m+     "Missing type export: ValidationResult",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0477158Z ^[[2m      "Unexpected value export: HACK",^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0477667Z ^[[2m    ],^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0478354Z ^[[2m    "ok": false,^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0478872Z ^[[2m  }^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0479123Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0479876Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/api-surface-check.test.ts:^[[2m14:6^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0481071Z     ^[[90m 12|^[[39m         declarationText: "export declare const CORE_VERSION: string;\n…
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0481885Z     ^[[90m 13|^[[39m       })^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0482607Z     ^[[90m 14|^[[39m     )^[[33m.^[[39mresolves^[[33m.^[[39m^[[34mtoEqual^[[39m({
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0483278Z     ^[[90m   |^[[39m      ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0483940Z     ^[[90m 15|^[[39m       ok^[[33m:^[[39m ^[[35mfalse^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0484907Z     ^[[90m 16|^[[39m       errors^[[33m:^[[39m [^[[32m"Unexpected value export: HACK"^[[39m]^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0485438Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0485856Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0486194Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0487805Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/api-surface-check.test.ts^[[2m > ^[[22mP6-01 API surface checker^[[2m > ^[[22mrejects a missing public export
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0489787Z ^[[31m^[[1mAssertionError^[[22m: expected { ok: false, errors: [ …(35) ] } to deeply equal { ok: false, …(1) }^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0490507Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0490770Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0491210Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0491429Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0491596Z ^[[2m  {^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0492025Z ^[[2m    "errors": [^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0492749Z ^[[2m      "Missing value export: AUTHORED_SCHEMA_VERSION",^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0493657Z ^[[31m+     "Missing value export: DIAGNOSTIC_SEVERITIES",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0494455Z ^[[31m+     "Missing value export: Engine",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0495201Z ^[[31m+     "Missing value export: PluginRegistry",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0496059Z ^[[31m+     "Missing value export: SUPPORTED_TRIGGER_TYPES",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0497107Z ^[[31m+     "Missing value export: assertClock",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0497925Z ^[[31m+     "Missing value export: assertInterpolator",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0498725Z ^[[31m+     "Missing value export: assertScheduler",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0499518Z ^[[31m+     "Missing value export: createManualClock",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0500311Z ^[[31m+     "Missing value export: migrateV4ToV5",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0501024Z ^[[31m+     "Missing value export: parseGolden",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0501758Z ^[[31m+     "Missing value export: serializeGolden",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0502462Z ^[[31m+     "Missing value export: validateV5",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0503183Z ^[[31m+     "Missing type export: AuthoredProperty",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0503892Z ^[[31m+     "Missing type export: AuthoredStop",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0504590Z ^[[31m+     "Missing type export: Diagnostic",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0505333Z ^[[31m+     "Missing type export: DiagnosticSeverity",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0506078Z ^[[31m+     "Missing type export: GoldenFixture",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0507105Z ^[[31m+     "Missing type export: GoldenValidationFixture",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0507925Z ^[[31m+     "Missing type export: Interpolator",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0508687Z ^[[31m+     "Missing type export: MigrationDiagnostic",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0509474Z ^[[31m+     "Missing type export: MigrationResult",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0510245Z ^[[31m+     "Missing type export: MotionDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0511064Z ^[[31m+     "Missing type export: ObservationDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0511781Z ^[[31m+     "Missing type export: Patch",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0512462Z ^[[31m+     "Missing type export: PatchBatch",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0513470Z ^[[31m+     "Missing type export: PatchListener",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0514215Z ^[[31m+     "Missing type export: PatchStatus",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0514960Z ^[[31m+     "Missing type export: PluginDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0515742Z ^[[31m+     "Missing type export: ProjectDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0517010Z ^[[31m+     "Missing type export: ProjectHandle",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0517803Z ^[[31m+     "Missing type export: ResolvedPlugins",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0518545Z ^[[31m+     "Missing type export: TrackDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0519285Z ^[[31m+     "Missing type export: TriggerType",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0520063Z ^[[31m+     "Missing type export: ValidationResult",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0520611Z ^[[2m    ],^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0521026Z ^[[2m    "ok": false,^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0521415Z ^[[2m  }^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0521593Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0522345Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/api-surface-check.test.ts:^[[2m23:6^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0523312Z     ^[[90m 21|^[[39m     ^[[35mawait^[[39m ^[[34mexpect^[[39m(
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0524197Z     ^[[90m 22|^[[39m       checkApiSurface({ declarationText: "export declare const CORE_VE…
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0525112Z     ^[[90m 23|^[[39m     )^[[33m.^[[39mresolves^[[33m.^[[39m^[[34mtoEqual^[[39m({
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0525809Z     ^[[90m   |^[[39m      ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0526446Z     ^[[90m 24|^[[39m       ok^[[33m:^[[39m ^[[35mfalse^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0527667Z     ^[[90m 25|^[[39m       errors^[[33m:^[[39m [^[[32m"Missing value export: AUTHORED_SCHEMA_VERSION"^[[39m]^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0528263Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0528692Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0529014Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0530440Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/api-surface-check.test.ts^[[2m > ^[[22mP6-01 API surface checker^[[2m > ^[[22mrejects reachable implementation declarations
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0532424Z ^[[31m^[[1mAssertionError^[[22m: expected { ok: false, errors: [ …(36) ] } to deeply equal { ok: false, …(1) }^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0533074Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0533333Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0533764Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0533997Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0534170Z ^[[2m  {^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0534614Z ^[[2m    "errors": [^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0535360Z ^[[31m+     "Missing value export: AUTHORED_SCHEMA_VERSION",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0535935Z ^[[31m+     "Missing value export: DIAGNOSTIC_SEVERITIES",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0536379Z ^[[31m+     "Missing value export: Engine",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0537245Z ^[[31m+     "Missing value export: PluginRegistry",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0538099Z ^[[31m+     "Missing value export: SUPPORTED_TRIGGER_TYPES",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0538919Z ^[[31m+     "Missing value export: assertClock",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0539646Z ^[[31m+     "Missing value export: assertInterpolator",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0540255Z ^[[31m+     "Missing value export: assertScheduler",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0541105Z ^[[31m+     "Missing value export: createManualClock",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0541908Z ^[[31m+     "Missing value export: migrateV4ToV5",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0542638Z ^[[31m+     "Missing value export: parseGolden",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0543402Z ^[[31m+     "Missing value export: serializeGolden",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0544156Z ^[[31m+     "Missing value export: validateV5",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0544902Z ^[[31m+     "Missing type export: AuthoredProperty",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0545633Z ^[[31m+     "Missing type export: AuthoredStop",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0546332Z ^[[31m+     "Missing type export: Diagnostic",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0547312Z ^[[31m+     "Missing type export: DiagnosticSeverity",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0548093Z ^[[31m+     "Missing type export: GoldenFixture",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0548919Z ^[[31m+     "Missing type export: GoldenValidationFixture",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0549714Z ^[[31m+     "Missing type export: Interpolator",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0550781Z ^[[31m+     "Missing type export: MigrationDiagnostic",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0551582Z ^[[31m+     "Missing type export: MigrationResult",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0552344Z ^[[31m+     "Missing type export: MotionDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0553371Z ^[[31m+     "Missing type export: ObservationDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0554134Z ^[[31m+     "Missing type export: Patch",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0554843Z ^[[31m+     "Missing type export: PatchBatch",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0555584Z ^[[31m+     "Missing type export: PatchListener",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0556276Z ^[[31m+     "Missing type export: PatchStatus",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0557175Z ^[[31m+     "Missing type export: PluginDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0557980Z ^[[31m+     "Missing type export: ProjectDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0558708Z ^[[31m+     "Missing type export: ProjectHandle",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0559380Z ^[[31m+     "Missing type export: ResolvedPlugins",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0560115Z ^[[31m+     "Missing type export: TrackDefinition",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0560780Z ^[[31m+     "Missing type export: TriggerType",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0561540Z ^[[31m+     "Missing type export: ValidationResult",^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0593693Z ^[[2m      "Forbidden declaration path: ./runtime/project-runtime",^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0594508Z ^[[2m    ],^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0594899Z ^[[2m    "ok": false,^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0595285Z ^[[2m  }^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0595465Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0596163Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/api-surface-check.test.ts:^[[2m35:6^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0597453Z     ^[[90m 33|^[[39m           'export declare const CORE_VERSION: string;\nexport type Lea…
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0598177Z     ^[[90m 34|^[[39m       })^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0598815Z     ^[[90m 35|^[[39m     )^[[33m.^[[39mresolves^[[33m.^[[39m^[[34mtoEqual^[[39m({
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0599462Z     ^[[90m   |^[[39m      ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0600112Z     ^[[90m 36|^[[39m       ok^[[33m:^[[39m ^[[35mfalse^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0601088Z     ^[[90m 37|^[[39m       errors: ["Forbidden declaration path: ./runtime/project-runtime"…
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0601606Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0601965Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0602322Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0602345Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0603049Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m74 passed^[[39m^[[22m^[[90m (75)^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0604285Z ^[[2m      Tests ^[[22m ^[[1m^[[31m4 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m277 passed^[[39m^[[22m^[[90m (281)^[[39m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0605158Z ^[[2m   Start at ^[[22m 08:24:28
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0606276Z ^[[2m   Duration ^[[22m 7.58s^[[2m (transform 1.18s, setup 0ms, import 3.29s, tests 5.62s, environment 10ms)^[[22m
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0607036Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0607046Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0638562Z ##[error]AssertionError: promise rejected "Error: ENOENT: no such file or directory,… { …(4) }" instead of resolving
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/api-surface-check.test.ts:6:36
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Caused by: Caused by: Error: ENOENT: no such file or directory, open '/home/runner/work/motion5/motion5/.tmp-api-dts-DYnZET/packages/core/src/index.d.ts'
+quality (node 24)	Run npm test	 ❯ checkApiSurface scripts/api-surface-check.mjs:56:20
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/api-surface-check.test.ts:6:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+quality (node 24)	Run npm test	Serialized Error: { errno: -2, code: 'ENOENT', syscall: 'open', path: '/home/runner/work/motion5/motion5/.tmp-api-dts-DYnZET/packages/core/src/index.d.ts' }
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0652207Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0673747Z ##[error]AssertionError: expected { ok: false, errors: [ …(36) ] } to deeply equal { ok: false, …(1) }
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	  {
+quality (node 24)	Run npm test	    "errors": [
+quality (node 24)	Run npm test	+     "Missing value export: AUTHORED_SCHEMA_VERSION",
+quality (node 24)	Run npm test	+     "Missing value export: DIAGNOSTIC_SEVERITIES",
+quality (node 24)	Run npm test	+     "Missing value export: Engine",
+quality (node 24)	Run npm test	+     "Missing value export: PluginRegistry",
+quality (node 24)	Run npm test	+     "Missing value export: SUPPORTED_TRIGGER_TYPES",
+quality (node 24)	Run npm test	+     "Missing value export: assertClock",
+quality (node 24)	Run npm test	+     "Missing value export: assertInterpolator",
+quality (node 24)	Run npm test	+     "Missing value export: assertScheduler",
+quality (node 24)	Run npm test	+     "Missing value export: createManualClock",
+quality (node 24)	Run npm test	+     "Missing value export: migrateV4ToV5",
+quality (node 24)	Run npm test	+     "Missing value export: parseGolden",
+quality (node 24)	Run npm test	+     "Missing value export: serializeGolden",
+quality (node 24)	Run npm test	+     "Missing value export: validateV5",
+quality (node 24)	Run npm test	+     "Missing type export: AuthoredProperty",
+quality (node 24)	Run npm test	+     "Missing type export: AuthoredStop",
+quality (node 24)	Run npm test	+     "Missing type export: Diagnostic",
+quality (node 24)	Run npm test	+     "Missing type export: DiagnosticSeverity",
+quality (node 24)	Run npm test	+     "Missing type export: GoldenFixture",
+quality (node 24)	Run npm test	+     "Missing type export: GoldenValidationFixture",
+quality (node 24)	Run npm test	+     "Missing type export: Interpolator",
+quality (node 24)	Run npm test	+     "Missing type export: MigrationDiagnostic",
+quality (node 24)	Run npm test	+     "Missing type export: MigrationResult",
+quality (node 24)	Run npm test	+     "Missing type export: MotionDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: ObservationDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: Patch",
+quality (node 24)	Run npm test	+     "Missing type export: PatchBatch",
+quality (node 24)	Run npm test	+     "Missing type export: PatchListener",
+quality (node 24)	Run npm test	+     "Missing type export: PatchStatus",
+quality (node 24)	Run npm test	+     "Missing type export: PluginDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: ProjectDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: ProjectHandle",
+quality (node 24)	Run npm test	+     "Missing type export: ResolvedPlugins",
+quality (node 24)	Run npm test	+     "Missing type export: TrackDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: TriggerType",
+quality (node 24)	Run npm test	+     "Missing type export: ValidationResult",
+quality (node 24)	Run npm test	      "Unexpected value export: HACK",
+quality (node 24)	Run npm test	    ],
+quality (node 24)	Run npm test	    "ok": false,
+quality (node 24)	Run npm test	  }
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/api-surface-check.test.ts:14:6
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0685798Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0707415Z ##[error]AssertionError: expected { ok: false, errors: [ …(35) ] } to deeply equal { ok: false, …(1) }
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	  {
+quality (node 24)	Run npm test	    "errors": [
+quality (node 24)	Run npm test	      "Missing value export: AUTHORED_SCHEMA_VERSION",
+quality (node 24)	Run npm test	+     "Missing value export: DIAGNOSTIC_SEVERITIES",
+quality (node 24)	Run npm test	+     "Missing value export: Engine",
+quality (node 24)	Run npm test	+     "Missing value export: PluginRegistry",
+quality (node 24)	Run npm test	+     "Missing value export: SUPPORTED_TRIGGER_TYPES",
+quality (node 24)	Run npm test	+     "Missing value export: assertClock",
+quality (node 24)	Run npm test	+     "Missing value export: assertInterpolator",
+quality (node 24)	Run npm test	+     "Missing value export: assertScheduler",
+quality (node 24)	Run npm test	+     "Missing value export: createManualClock",
+quality (node 24)	Run npm test	+     "Missing value export: migrateV4ToV5",
+quality (node 24)	Run npm test	+     "Missing value export: parseGolden",
+quality (node 24)	Run npm test	+     "Missing value export: serializeGolden",
+quality (node 24)	Run npm test	+     "Missing value export: validateV5",
+quality (node 24)	Run npm test	+     "Missing type export: AuthoredProperty",
+quality (node 24)	Run npm test	+     "Missing type export: AuthoredStop",
+quality (node 24)	Run npm test	+     "Missing type export: Diagnostic",
+quality (node 24)	Run npm test	+     "Missing type export: DiagnosticSeverity",
+quality (node 24)	Run npm test	+     "Missing type export: GoldenFixture",
+quality (node 24)	Run npm test	+     "Missing type export: GoldenValidationFixture",
+quality (node 24)	Run npm test	+     "Missing type export: Interpolator",
+quality (node 24)	Run npm test	+     "Missing type export: MigrationDiagnostic",
+quality (node 24)	Run npm test	+     "Missing type export: MigrationResult",
+quality (node 24)	Run npm test	+     "Missing type export: MotionDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: ObservationDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: Patch",
+quality (node 24)	Run npm test	+     "Missing type export: PatchBatch",
+quality (node 24)	Run npm test	+     "Missing type export: PatchListener",
+quality (node 24)	Run npm test	+     "Missing type export: PatchStatus",
+quality (node 24)	Run npm test	+     "Missing type export: PluginDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: ProjectDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: ProjectHandle",
+quality (node 24)	Run npm test	+     "Missing type export: ResolvedPlugins",
+quality (node 24)	Run npm test	+     "Missing type export: TrackDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: TriggerType",
+quality (node 24)	Run npm test	+     "Missing type export: ValidationResult",
+quality (node 24)	Run npm test	    ],
+quality (node 24)	Run npm test	    "ok": false,
+quality (node 24)	Run npm test	  }
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/api-surface-check.test.ts:23:6
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0718502Z 
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0740607Z ##[error]AssertionError: expected { ok: false, errors: [ …(36) ] } to deeply equal { ok: false, …(1) }
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	  {
+quality (node 24)	Run npm test	    "errors": [
+quality (node 24)	Run npm test	+     "Missing value export: AUTHORED_SCHEMA_VERSION",
+quality (node 24)	Run npm test	+     "Missing value export: DIAGNOSTIC_SEVERITIES",
+quality (node 24)	Run npm test	+     "Missing value export: Engine",
+quality (node 24)	Run npm test	+     "Missing value export: PluginRegistry",
+quality (node 24)	Run npm test	+     "Missing value export: SUPPORTED_TRIGGER_TYPES",
+quality (node 24)	Run npm test	+     "Missing value export: assertClock",
+quality (node 24)	Run npm test	+     "Missing value export: assertInterpolator",
+quality (node 24)	Run npm test	+     "Missing value export: assertScheduler",
+quality (node 24)	Run npm test	+     "Missing value export: createManualClock",
+quality (node 24)	Run npm test	+     "Missing value export: migrateV4ToV5",
+quality (node 24)	Run npm test	+     "Missing value export: parseGolden",
+quality (node 24)	Run npm test	+     "Missing value export: serializeGolden",
+quality (node 24)	Run npm test	+     "Missing value export: validateV5",
+quality (node 24)	Run npm test	+     "Missing type export: AuthoredProperty",
+quality (node 24)	Run npm test	+     "Missing type export: AuthoredStop",
+quality (node 24)	Run npm test	+     "Missing type export: Diagnostic",
+quality (node 24)	Run npm test	+     "Missing type export: DiagnosticSeverity",
+quality (node 24)	Run npm test	+     "Missing type export: GoldenFixture",
+quality (node 24)	Run npm test	+     "Missing type export: GoldenValidationFixture",
+quality (node 24)	Run npm test	+     "Missing type export: Interpolator",
+quality (node 24)	Run npm test	+     "Missing type export: MigrationDiagnostic",
+quality (node 24)	Run npm test	+     "Missing type export: MigrationResult",
+quality (node 24)	Run npm test	+     "Missing type export: MotionDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: ObservationDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: Patch",
+quality (node 24)	Run npm test	+     "Missing type export: PatchBatch",
+quality (node 24)	Run npm test	+     "Missing type export: PatchListener",
+quality (node 24)	Run npm test	+     "Missing type export: PatchStatus",
+quality (node 24)	Run npm test	+     "Missing type export: PluginDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: ProjectDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: ProjectHandle",
+quality (node 24)	Run npm test	+     "Missing type export: ResolvedPlugins",
+quality (node 24)	Run npm test	+     "Missing type export: TrackDefinition",
+quality (node 24)	Run npm test	+     "Missing type export: TriggerType",
+quality (node 24)	Run npm test	+     "Missing type export: ValidationResult",
+quality (node 24)	Run npm test	      "Forbidden declaration path: ./runtime/project-runtime",
+quality (node 24)	Run npm test	    ],
+quality (node 24)	Run npm test	    "ok": false,
+quality (node 24)	Run npm test	  }
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/api-surface-check.test.ts:35:6
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-08-14T08:24:36.0930367Z ##[error]Process completed with exit code 1.
