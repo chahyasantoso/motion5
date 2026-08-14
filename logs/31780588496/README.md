@@ -1,0 +1,149 @@
+# CI log archive: 31780588496
+
+- Workflow: CI
+- Conclusion: failure
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/31780588496
+- Captured: 2026-08-14T07:37:06Z
+
+## Failed job output
+
+```text
+integration (node 24)	Run npm run test:integration	﻿2026-08-14T07:36:45.3944517Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:45.3945071Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:45.4005956Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:45.4006630Z env:
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:45.4006945Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:45.4007276Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:45.5102550Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:45.5103348Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:45.5104165Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:45.5104607Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:45.8522665Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:45.8524555Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:45.8525736Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:46.3137470Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:46.3163150Z  ^[[32m✓^[[39m packages/core/test/integration/cross-motion.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:46.4099248Z  ^[[32m✓^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 34^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:46.5963472Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:46.6371511Z  ^[[31m❯^[[39m packages/core/test/integration/diagnostics.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m4 failed^[[39m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:46.6374697Z ^[[31m     ^[[31m×^[[31m bounds the retained diagnostic history at a fixed capacity and reports a drop count once exceeded^[[39m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:46.6377118Z ^[[31m     ^[[31m×^[[31m still surfaces the same diagnostic inline on the affected patch and the batch summary^[[39m^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:46.6379235Z ^[[31m     ^[[31m×^[[31m uses the one shared Diagnostic shape for every retained entry, load-time or runtime^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:46.6381641Z ^[[31m     ^[[31m×^[[31m exposes diagnostics as one bounded read-only snapshot, never a second subscribe/emit surface^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:46.6760528Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:46.8741579Z  ^[[32m✓^[[39m packages/core/test/integration/adoption.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:46.9093452Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:46.9243540Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:47.1352267Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-types.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:47.1693950Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:47.1926703Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:47.4093929Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:47.4177461Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:47.4353554Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:47.6568839Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:47.6754640Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:47.9045536Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:47.9383389Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:47.9639150Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.1223487Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.2170175Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.2247998Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.3287975Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4072169Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4106955Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4108039Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 4 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4109048Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4114091Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/diagnostics.test.ts^[[2m > ^[[22mP5-03 unified inline diagnostics^[[2m > ^[[22mbounds the retained diagnostic history at a fixed capacity and reports a drop count once exceeded
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4120118Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading 'entries')^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4122182Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/diagnostics.test.ts:^[[2m49:21^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4172310Z     ^[[90m 47|^[[39m     runtime^[[33m.^[[39m^[[34mseek^[[39m(^[[32m"~/consumer3"^[[39m^[[33m,^[[39m ^[[34m0^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4174468Z     ^[[90m 48|^[[39m     ^[[35mconst^[[39m snapshot ^[[33m=^[[39m runtime^[[33m.^[[39mdiagnostics^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4178279Z     ^[[90m 49|^[[39m     ^[[34mexpect^[[39m(snapshot^[[33m.^[[39mentries)^[[33m.^[[39m^[[34mtoHaveLength^[[39m(^[[34m2^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4179758Z     ^[[90m   |^[[39m                     ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4181607Z     ^[[90m 50|^[[39m     ^[[34mexpect^[[39m(snapshot^[[33m.^[[39mdroppedCount)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m1^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4183390Z     ^[[90m 51|^[[39m     expect(snapshot.entries.map((entry) => entry.path)).toEqual(["~/co…
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4184259Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4185072Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4185532Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4185773Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4187911Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/diagnostics.test.ts^[[2m > ^[[22mP5-03 unified inline diagnostics^[[2m > ^[[22mstill surfaces the same diagnostic inline on the affected patch and the batch summary
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4191728Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading 'entries')^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4193354Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m24 passed^[[39m^[[22m^[[90m (25)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4195159Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/diagnostics.test.ts:^[[2m62:32^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4196756Z     ^[[90m 60|^[[39m     expect(patch?.diagnostics[0]?.ruleId).toBe("observation-pending-re…
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4198583Z     ^[[90m 61|^[[39m     ^[[34mexpect^[[39m(batch^[[33m.^[[39mdiagnostics)^[[33m.^[[39m^[[34mtoHaveLength^[[39m(^[[34m1^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4200722Z     ^[[90m 62|^[[39m     ^[[34mexpect^[[39m(runtime^[[33m.^[[39mdiagnostics^[[33m.^[[39mentries)^[[33m.^[[39m^[[34mtoHaveLength^[[39m(^[[34m1^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4202648Z     ^[[90m   |^[[39m                                ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4203972Z     ^[[90m 63|^[[39m     expect(runtime.diagnostics.entries[0]).toEqual(patch?.diagnostics[…
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4205879Z     ^[[90m 64|^[[39m     runtime^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4206855Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4207556Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4208202Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4210299Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/diagnostics.test.ts^[[2m > ^[[22mP5-03 unified inline diagnostics^[[2m > ^[[22muses the one shared Diagnostic shape for every retained entry, load-time or runtime
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4213085Z ^[[2m      Tests ^[[22m ^[[1m^[[31m4 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m67 passed^[[39m^[[22m^[[90m (71)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4214824Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading 'entries')^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4216619Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/diagnostics.test.ts:^[[2m70:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4218298Z     ^[[90m 68|^[[39m     const runtime = new ProjectRuntime(pendingProject(), { clock: crea…
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4220057Z     ^[[90m 69|^[[39m     runtime^[[33m.^[[39m^[[34mseek^[[39m(^[[32m"~/consumer1"^[[39m^[[33m,^[[39m ^[[34m0^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4223186Z     ^[[90m 70|^[[39m     ^[[35mconst^[[39m [entry] ^[[33m=^[[39m runtime^[[33m.^[[39mdiagnostics^[[33m.^[[39mentries^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4224753Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4226098Z     ^[[90m 71|^[[39m     ^[[34mexpect^[[39m(entry)^[[33m.^[[39m^[[34mtoBeDefined^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4229606Z     ^[[90m 72|^[[39m     ^[[34mexpect^[[39m(^[[33mObject^[[39m^[[33m.^[[39m^[[34mkeys^[[39m(entry^[[33m!^[[39m)^[[33m.^[[39m^[[34msort^[[39m())^[[33m.^[[39m^[[34mtoEqual^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4230770Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4231784Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4232408Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4234594Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/diagnostics.test.ts^[[2m > ^[[22mP5-03 unified inline diagnostics^[[2m > ^[[22mexposes diagnostics as one bounded read-only snapshot, never a second subscribe/emit surface
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4237142Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading 'entries')^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4238853Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/diagnostics.test.ts:^[[2m86:37^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4240492Z     ^[[90m 84|^[[39m     ^[[35mconst^[[39m snapshot ^[[33m=^[[39m runtime^[[33m.^[[39mdiagnostics^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4241836Z ^[[2m   Start at ^[[22m 07:36:45
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4243480Z     ^[[90m 85|^[[39m     ^[[34mexpect^[[39m(^[[33mObject^[[39m^[[33m.^[[39m^[[34misFrozen^[[39m(snapshot))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4246086Z     ^[[90m 86|^[[39m     ^[[34mexpect^[[39m(^[[33mObject^[[39m^[[33m.^[[39m^[[34misFrozen^[[39m(snapshot^[[33m.^[[39mentries))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4247811Z     ^[[90m   |^[[39m                                     ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4249199Z     ^[[90m 87|^[[39m     const runtimeAsRecord = runtime as unknown as Record<string, unkno…
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4251242Z     ^[[90m 88|^[[39m     ^[[34mexpect^[[39m(runtimeAsRecord[^[[32m"onDiagnostic"^[[39m])^[[33m.^[[39m^[[34mtoBeUndefined^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4253238Z ^[[2m   Duration ^[[22m 2.53s^[[2m (transform 893ms, setup 0ms, import 1.93s, tests 351ms, environment 4ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4254103Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4254307Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4276035Z ##[error]TypeError: Cannot read properties of undefined (reading 'entries')
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/diagnostics.test.ts:49:21
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4283552Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4283946Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4284187Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4284198Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4286027Z ##[error]TypeError: Cannot read properties of undefined (reading 'entries')
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/diagnostics.test.ts:62:32
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4287332Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4289376Z ##[error]TypeError: Cannot read properties of undefined (reading 'entries')
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/diagnostics.test.ts:70:41
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4290806Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4293512Z ##[error]TypeError: Cannot read properties of undefined (reading 'entries')
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/diagnostics.test.ts:86:37
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-14T07:36:48.4613497Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run npm run typecheck	﻿2026-08-14T07:36:45.6558054Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:45.6558409Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:45.6604134Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:45.6604905Z env:
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:45.6605111Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:45.6605330Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:45.7671559Z 
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:45.7672190Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:45.7673038Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:45.7673605Z 
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:48.1072477Z ##[error]packages/core/test/integration/diagnostics.test.ts(43,7): error TS2353: Object literal may only specify known properties, and 'diagnosticsCapacity' does not exist in type 'ProjectRuntimeOptions'.
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:48.1084664Z ##[error]packages/core/test/integration/diagnostics.test.ts(48,30): error TS2339: Property 'diagnostics' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:48.1087875Z ##[error]packages/core/test/integration/diagnostics.test.ts(51,34): error TS7006: Parameter 'entry' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:48.1090812Z ##[error]packages/core/test/integration/diagnostics.test.ts(62,20): error TS2339: Property 'diagnostics' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:48.1093698Z ##[error]packages/core/test/integration/diagnostics.test.ts(63,20): error TS2339: Property 'diagnostics' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:48.1097001Z ##[error]packages/core/test/integration/diagnostics.test.ts(70,29): error TS2339: Property 'diagnostics' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:48.1100017Z ##[error]packages/core/test/integration/diagnostics.test.ts(84,30): error TS2339: Property 'diagnostics' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-14T07:36:48.1392775Z ##[error]Process completed with exit code 2.
+```
