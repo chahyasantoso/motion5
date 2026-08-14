@@ -21,7 +21,10 @@ export interface PublisherFailure {
 
 class InputObservationError extends Error {
   constructor(
-    readonly ruleId: "observation-input-shape" | "observation-input-collision",
+    readonly ruleId:
+      | "observation-input-shape"
+      | "observation-input-collision"
+      | "observation-missing-upstream",
     message: string,
   ) {
     super(message);
@@ -51,8 +54,8 @@ function diagnostic(nodeId: string, error: unknown): Diagnostic {
   });
 }
 function compareEdgeKeys(a: GraphEdge, b: GraphEdge): number {
-  const left = edgeKey(a);
-  const right = edgeKey(b);
+  const left = edgeKey(a),
+    right = edgeKey(b);
   return left < right ? -1 : left > right ? 1 : 0;
 }
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
@@ -135,8 +138,8 @@ export class GraphPublisher {
         const node = byId.get(id);
         if (node === undefined) continue;
         const sourceFailure = node.edges
-          .map((edge) => edge.sourceId)
-          .find((sourceId) => failed.has(sourceId) || blocked.has(sourceId));
+          .filter((edge) => failed.has(edge.sourceId) || blocked.has(edge.sourceId))
+          .sort(compareEdgeKeys)[0]?.sourceId;
         if (sourceFailure !== undefined) {
           blocked.add(id);
           this.#registry.publish({
@@ -158,17 +161,23 @@ export class GraphPublisher {
         try {
           const inputs: Record<string, unknown> = {};
           const inputKeys = new Map<string, string>();
+          const sourceRevisions: Record<string, number> = {};
           for (const edge of node.edges
             .filter(({ role }) => role === "input")
             .sort(compareEdgeKeys)) {
-            const sourceValues =
-              memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
-            if (sourceValues === undefined) continue;
+            const sourcePatch = this.#registry.get(edge.sourceId);
+            const sourceValues = memo.get(edge.sourceId)?.values ?? sourcePatch?.values;
+            if (sourceValues === undefined)
+              throw new InputObservationError(
+                "observation-missing-upstream",
+                `Input observation source "${edge.sourceId}" has no published value.`,
+              );
             if (!isRecord(sourceValues))
               throw new InputObservationError(
                 "observation-input-shape",
                 `Input observation source "${edge.sourceId}" must be a record.`,
               );
+            if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
             const projected = projectValues(sourceValues, edge.projection);
             for (const [key, value] of Object.entries(projected)) {
               const previous = inputKeys.get(key);
@@ -187,21 +196,31 @@ export class GraphPublisher {
           for (const edge of node.edges
             .filter(({ role }) => role === "output")
             .sort(compareEdgeKeys)) {
-            const sourceValues =
-              memo.get(edge.sourceId)?.values ?? this.#registry.get(edge.sourceId)?.values;
-            if (sourceValues === undefined) continue;
+            const sourcePatch = this.#registry.get(edge.sourceId);
+            const sourceValues = memo.get(edge.sourceId)?.values ?? sourcePatch?.values;
+            if (sourceValues === undefined)
+              throw new InputObservationError(
+                "observation-missing-upstream",
+                `Output observation source "${edge.sourceId}" has no published value.`,
+              );
             if (!isRecord(sourceValues) || !isRendererNeutral(sourceValues))
               throw new OutputObservationError(
                 `Output observation source "${edge.sourceId}" must publish a renderer-neutral record.`,
               );
+            if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
             values = mergeValues(values, sourceValues);
           }
-          memo.set(id, { ...composed, values });
+          const finalComposition = {
+            ...composed,
+            values,
+            sourceRevisions: { ...composed.sourceRevisions, ...sourceRevisions },
+          };
+          memo.set(id, finalComposition);
           this.#registry.publish({
             nodeId: id,
             values,
             sourceProgress: composed.sourceProgress,
-            sourceRevisions: composed.sourceRevisions,
+            sourceRevisions: finalComposition.sourceRevisions,
             status: "ready",
             diagnostics: [],
           });
@@ -221,7 +240,7 @@ export class GraphPublisher {
       try {
         this.#registry.closeBatch();
       } catch {
-        /* Preserve the original flush failure. */
+        /* preserve original flush failure */
       }
       throw error;
     }

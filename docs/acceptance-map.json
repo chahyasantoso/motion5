@@ -70,6 +70,10 @@
     {
       "id": "s7-audit-workflow",
       "test": "packages/core/test/unit/scripts/s7-recovery-audit.test.ts"
+    },
+    {
+      "id": "p2-runtime-smells",
+      "test": "packages/core/test/integration/p2-runtime-smells.test.ts"
     }
   ]
 }

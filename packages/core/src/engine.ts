@@ -10,6 +10,7 @@ import { compilePercentKeyframes } from "./domain/keyframe-compiler";
 import { PluginRegistry } from "./domain/plugins";
 import { Track } from "./domain/track";
 import type { ImmutableRecord } from "./domain/values";
+import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
@@ -79,14 +80,14 @@ export class Engine {
     >();
     for (const motion of acceptedProject.motions)
       for (const track of motion.tracks)
-        nodes.set(`${motion.id}/${track.id}`, { ...track, id: track.id });
+        nodes.set(qualifyMotionTrack(motion.id, track.id).value, { ...track, id: track.id });
     for (const track of acceptedProject.freeTracks ?? [])
-      nodes.set(`~/${track.id}`, { ...track, id: track.id });
+      nodes.set(qualifyFreeTrack(track.id).value, { ...track, id: track.id });
     const compile = (nodeId: string): Track => {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
       const definition = nodes.get(nodeId);
-      if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
+      if (!definition) throw new TypeError(`Unknown graph node \"${nodeId}\".`);
       const path = `${nodeId}.keyframes`;
       const resolved = this.#plugins?.resolveForKeyframes(definition.keyframes ?? {}, path, {
         id: nodeId,
