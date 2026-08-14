@@ -85,12 +85,14 @@ export class PatchRegistry {
   publish(input: PublishInput): Patch | undefined {
     const previous = this.#patches.get(input.nodeId);
     const readyValues = input.values ?? previous?.values ?? {};
-    const readyProgress = input.values === undefined && input.status !== "ready"
-      ? previous?.sourceProgress ?? input.sourceProgress
-      : input.sourceProgress;
-    const readyRevisions = input.values === undefined && input.status !== "ready"
-      ? previous?.sourceRevisions ?? input.sourceRevisions ?? {}
-      : input.sourceRevisions ?? {};
+    const readyProgress =
+      input.values === undefined && input.status !== "ready"
+        ? (previous?.sourceProgress ?? input.sourceProgress)
+        : input.sourceProgress;
+    const readyRevisions =
+      input.values === undefined && input.status !== "ready"
+        ? (previous?.sourceRevisions ?? input.sourceRevisions ?? {})
+        : (input.sourceRevisions ?? {});
     const candidate = {
       nodeId: input.nodeId,
       revision: (previous?.revision ?? 0) + 1,
@@ -145,13 +147,19 @@ export class PatchRegistry {
           try {
             listener(patch);
           } catch (error) {
-            if (!hasError) { hasError = true; firstError = error; }
+            if (!hasError) {
+              hasError = true;
+              firstError = error;
+            }
           }
       for (const listener of batchListeners)
         try {
           listener(batch);
         } catch (error) {
-          if (!hasError) { hasError = true; firstError = error; }
+          if (!hasError) {
+            hasError = true;
+            firstError = error;
+          }
         }
     } finally {
       this.#notifying = false;

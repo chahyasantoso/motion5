@@ -3,11 +3,7 @@ import type { GraphEdge, GraphIR } from "../../src/graph/ir";
 import { GraphPublisher, type PublisherNode } from "../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 
-const node = (
-  id: string,
-  edges: GraphEdge[],
-  compose: PublisherNode["compose"],
-): PublisherNode =>
+const node = (id: string, edges: GraphEdge[], compose: PublisherNode["compose"]): PublisherNode =>
   Object.freeze({
     id,
     owner: "motion",
@@ -17,7 +13,9 @@ const node = (
     compose,
   });
 
-const snapshot = (nodes: readonly PublisherNode[]): GraphIR & { nodes: readonly PublisherNode[] } => ({
+const snapshot = (
+  nodes: readonly PublisherNode[],
+): GraphIR & { nodes: readonly PublisherNode[] } => ({
   nodes,
   nodeById: Object.freeze(Object.fromEntries(nodes.map((entry) => [entry.id, entry]))),
   order: Object.freeze(nodes.map(({ id }) => id)),
@@ -46,7 +44,11 @@ describe("P2 runtime smell hardening", () => {
   it("derives source revisions from the upstream patches consumed in the flush", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
-    const source = node("source", [], () => ({ values: { x: 1 }, sourceProgress: 0, sourceRevisions: {} }));
+    const source = node("source", [], () => ({
+      values: { x: 1 },
+      sourceProgress: 0,
+      sourceRevisions: {},
+    }));
     const consumer = node(
       "consumer",
       [{ observerId: "consumer", sourceId: "source", role: "input" }],
