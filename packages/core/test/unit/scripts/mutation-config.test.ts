@@ -21,8 +21,15 @@ describe("mutation gate configuration (E3)", () => {
     expect(config.vitest?.configFile).toBe("vitest.stryker.config.ts");
     expect(config.vitest?.related).toBe(true);
     expect(config.mutate).toEqual([
-      "packages/core/src/runtime/**/*.ts",
+      "packages/core/src/runtime/graph-publisher.ts",
+      "packages/core/src/runtime/graph-runtime.ts",
+      "packages/core/src/runtime/patch-registry.ts",
+      "packages/core/src/runtime/project-runtime.ts",
       "packages/core/src/adapters/**/*.ts",
+      "packages/core/src/domain/track.ts",
+      "packages/core/src/domain/motion.ts",
+      "packages/core/src/engine.ts",
+      "packages/core/src/graph/ids.ts",
     ]);
     expect(config.reporters).toContain("json");
     expect(config.jsonReporter?.fileName).toBe("reports/mutation/mutation.json");
