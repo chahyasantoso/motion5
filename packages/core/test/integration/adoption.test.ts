@@ -42,10 +42,10 @@ describe("P5-02 adopted free tracks", () => {
     const adopted = runtime.adopt(freeTrack, owner);
     runtime.detach(adopted.id, borrower);
     expect(runtime.instanceCount).toBe(0);
-    expect(runtime.graph.state.nodeIds).toContain("~/cursor");
+    expect(runtime.graph.state.snapshot().nodes).toContain("~/cursor");
     expect(() => runtime.destroyAdopted(adopted.id, borrower)).toThrow(/owner/);
     runtime.destroyAdopted(adopted.id, owner);
-    expect(runtime.graph.state.nodeIds).not.toContain("~/cursor");
+    expect(runtime.graph.state.snapshot().nodes).not.toContain("~/cursor");
     runtime.dispose();
   });
 });

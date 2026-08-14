@@ -1,4 +1,4 @@
-import type { ProjectDefinition } from "../contract/v5";
+import type { ProjectDefinition, TrackDefinition } from "../contract/v5";
 import type { Clock } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
 import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
@@ -15,6 +15,7 @@ export class ProjectRuntime {
   readonly #project: ProjectDefinition;
   readonly #graph: GraphRuntime;
   readonly #instances = new Map<string, object>();
+  readonly #adopted = new Map<string, { track: TrackDefinition; owner: object }>();
   readonly #setProgress: (nodeId: string, progress: number) => void;
   readonly #disposeComposition: () => void;
   #disposed = false;
@@ -55,6 +56,32 @@ export class ProjectRuntime {
     this.#instances.delete(nodeId);
     this.#graph.detach(nodeId);
   }
+  /** Add a runtime-created track to the same graph as authored free tracks. */
+  adopt(track: TrackDefinition, owner: object): { readonly id: string; readonly track: TrackDefinition } {
+    this.#assertLive();
+    const id = `~/${track.id}`;
+    if (this.#graph.state.hasNode(id) || this.#adopted.has(id))
+      throw new TypeError(`Adopted track "${id}" already exists.`);
+    const nextFreeTracks = [...(this.#project.freeTracks ?? []), { ...track, id }];
+    this.#graph.binding.replace({ ...this.#project, freeTracks: nextFreeTracks });
+    this.#adopted.set(id, { track: { ...track, id }, owner });
+    this.mount(id);
+    return Object.freeze({ id, track: { ...track, id } });
+  }
+  /** Detach membership without transferring or destroying adopted ownership. */
+  detach(nodeId: string, _borrower: object): void {
+    this.unmount(nodeId);
+  }
+  destroyAdopted(nodeId: string, owner: object): void {
+    this.#assertLive();
+    const adopted = this.#adopted.get(nodeId);
+    if (adopted === undefined) throw new TypeError(`Node "${nodeId}" is not adopted.`);
+    if (adopted.owner !== owner) throw new TypeError(`Only the adopting owner can destroy "${nodeId}".`);
+    this.unmount(nodeId);
+    const remaining = (this.#project.freeTracks ?? []).filter(({ id }) => `~/${id}` !== nodeId);
+    this.#graph.binding.replace({ ...this.#project, freeTracks: remaining });
+    this.#adopted.delete(nodeId);
+  }
   seek(nodeId: string, progress: number) {
     this.#assertLive();
     this.#setProgress(nodeId, progress);
@@ -65,6 +92,7 @@ export class ProjectRuntime {
     this.#disposed = true;
     for (const nodeId of [...this.#instances.keys()]) this.#graph.detach(nodeId);
     this.#instances.clear();
+    this.#adopted.clear();
     this.#graph.dispose();
     this.#disposeComposition();
   }
