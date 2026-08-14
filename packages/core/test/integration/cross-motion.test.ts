@@ -45,6 +45,8 @@ describe("P5-01 cross-motion references", () => {
     const childPatch = recovered.patches.find(({ nodeId }) => nodeId === "arm/child");
     expect(childPatch?.status).toBe("ready");
     expect(childPatch?.values).toEqual({ node: "arm/child", parentWorld: { node: "base/root" } });
+    expect(Object.isFrozen(childPatch)).toBe(true);
+    expect(Object.isFrozen(childPatch?.values)).toBe(true);
 
     runtime.dispose();
   });
@@ -60,5 +62,28 @@ describe("P5-01 cross-motion references", () => {
     expect(childPatch?.status).toBe("ready");
     expect(childPatch?.values).toEqual({ node: "arm/child", parentWorld: { node: "base/root" } });
     runtime.dispose();
+  });
+
+  it("rejects an unknown cross-motion source at load instead of treating it as pending", () => {
+    const invalid: ProjectDefinition = {
+      ...project,
+      motions: project.motions.map((motion) =>
+        motion.id === "arm"
+          ? {
+              ...motion,
+              tracks: [
+                {
+                  ...motion.tracks[0],
+                  observes: [{ source: "missing/root", role: "input", target: "parentWorld" }],
+                },
+              ],
+            }
+          : motion,
+      ),
+    };
+
+    expect(() => new GraphRuntime(invalid, createManualClock(), compose)).toThrow(
+      "observation-unknown-source",
+    );
   });
 });
