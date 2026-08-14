@@ -58,7 +58,10 @@ export class ProjectRuntime {
     this.#graph.detach(nodeId);
   }
   /** Add a runtime-created track to the same graph as authored free tracks. */
-  adopt(track: TrackDefinition, owner: object): { readonly id: string; readonly track: TrackDefinition } {
+  adopt(
+    track: TrackDefinition,
+    owner: object,
+  ): { readonly id: string; readonly track: TrackDefinition } {
     this.#assertLive();
     // Reuse P2-01's qualification (never invent a parallel `~/` prefix by hand). This also
     // validates the authored track id, so a bad id fails before anything is mutated.
@@ -85,7 +88,8 @@ export class ProjectRuntime {
     this.#assertLive();
     const adopted = this.#adopted.get(nodeId);
     if (adopted === undefined) throw new TypeError(`Node "${nodeId}" is not adopted.`);
-    if (adopted.owner !== owner) throw new TypeError(`Only the adopting owner can destroy "${nodeId}".`);
+    if (adopted.owner !== owner)
+      throw new TypeError(`Only the adopting owner can destroy "${nodeId}".`);
     this.unmount(nodeId);
     this.#adopted.delete(nodeId);
     const remaining = [

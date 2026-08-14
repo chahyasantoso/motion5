@@ -56,13 +56,17 @@ describe("P5-02 adopted free tracks", () => {
     expect(runtime.graph.state.snapshot().nodes).toEqual(
       expect.arrayContaining(["~/cursor", "~/drag"]),
     );
-    expect(runtime.seek(cursor.id, 0).patches.find(({ nodeId }) => nodeId === cursor.id)?.values).toEqual({
+    expect(
+      runtime.seek(cursor.id, 0).patches.find(({ nodeId }) => nodeId === cursor.id)?.values,
+    ).toEqual({
       node: "~/cursor",
     });
     runtime.destroyAdopted(cursor.id, owner);
     expect(runtime.graph.state.snapshot().nodes).not.toContain("~/cursor");
     expect(runtime.graph.state.snapshot().nodes).toContain("~/drag");
-    expect(runtime.seek(drag.id, 0).patches.find(({ nodeId }) => nodeId === drag.id)?.values).toEqual({
+    expect(
+      runtime.seek(drag.id, 0).patches.find(({ nodeId }) => nodeId === drag.id)?.values,
+    ).toEqual({
       node: "~/drag",
     });
     runtime.dispose();
