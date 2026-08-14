@@ -48,4 +48,17 @@ describe("P5-01 cross-motion references", () => {
 
     runtime.dispose();
   });
+
+  it("publishes the same child output when the source is mounted first", () => {
+    const runtime = new GraphRuntime(project, createManualClock(), compose);
+
+    runtime.attach("base/root");
+    runtime.attach("arm/child");
+    const batch = runtime.flush();
+    const childPatch = batch.patches.find(({ nodeId }) => nodeId === "arm/child");
+
+    expect(childPatch?.status).toBe("ready");
+    expect(childPatch?.values).toEqual({ node: "arm/child", parentWorld: { node: "base/root" } });
+    runtime.dispose();
+  });
 });
