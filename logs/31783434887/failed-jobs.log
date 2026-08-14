@@ -1,0 +1,12 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-14T08:19:44.6350386Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-14T08:19:44.6350744Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-14T08:19:44.6389881Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-14T08:19:44.6390164Z env:
+quality (node 24)	Run npm run typecheck	2026-08-14T08:19:44.6390361Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-14T08:19:44.6390570Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-14T08:19:44.7437637Z 
+quality (node 24)	Run npm run typecheck	2026-08-14T08:19:44.7438452Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-14T08:19:44.7439177Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-14T08:19:44.7439535Z 
+quality (node 24)	Run npm run typecheck	2026-08-14T08:19:46.8249422Z ##[error]packages/core/test/unit/scripts/api-surface-check.test.ts(2,33): error TS2307: Cannot find module '../../../../scripts/api-surface-check.mjs' or its corresponding type declarations.
+quality (node 24)	Run npm run typecheck	2026-08-14T08:19:46.8540524Z ##[error]Process completed with exit code 2.
