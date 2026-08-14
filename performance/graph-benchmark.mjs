@@ -9,24 +9,32 @@ for (let index = 1; index < nodeCount; index += 1) edges.push([index - 1, index]
 const adjacency = Array.from({ length: nodeCount }, () => []);
 for (const [source, target] of edges) adjacency[source].push(target);
 
-let traversed = 0;
-let published = 0;
-const retained = new Set();
-for (let flush = 0; flush < flushCount; flush += 1) {
-  const seen = new Set([0]);
-  const queue = [0];
+function traverse(seed) {
+  const seen = new Set([seed]);
+  const queue = [seed];
   for (let head = 0; head < queue.length; head += 1) {
     const node = queue[head];
-    traversed += 1;
-    published += 1;
-    retained.add(node);
     for (const next of adjacency[node])
       if (!seen.has(next)) {
         seen.add(next);
         queue.push(next);
       }
   }
+  return seen.size;
 }
+
+let traversed = 0;
+let published = 0;
+const retained = new Set();
+for (let flush = 0; flush < flushCount; flush += 1) {
+  const count = traverse(0);
+  traversed += count;
+  published += count;
+  for (let node = 0; node < nodeCount; node += 1) retained.add(node);
+}
+const dirtySeed = Math.floor(nodeCount / 2);
+const dirtyClosure = traverse(dirtySeed);
+const dirtyRatio = dirtyClosure / nodeCount;
 
 const measurements = {
   nodes: nodeCount,
@@ -34,6 +42,9 @@ const measurements = {
   traversedNodes: traversed,
   publishedPatches: published,
   retainedNodes: retained.size,
+  dirtySeed,
+  dirtyClosure,
+  dirtyRatio: Number(dirtyRatio.toFixed(4)),
   complexity: traversed === nodeCount * flushCount ? "linear-dirty-closure" : "unexpected",
 };
 const passed =
@@ -41,6 +52,8 @@ const passed =
   measurements.flushes <= budget.budgets.flushes &&
   measurements.publishedPatches <= budget.budgets.maxPatches &&
   measurements.retainedNodes <= budget.budgets.maxRetainedInstances &&
+  measurements.dirtyClosure <= budget.budgets.maxDirtyClosure &&
+  measurements.dirtyRatio <= budget.budgets.maxDirtyRatio &&
   measurements.complexity === "linear-dirty-closure";
 const report = {
   budgetVersion: budget.version,

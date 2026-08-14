@@ -23,7 +23,11 @@ describe("S7 recovery audit workflow", () => {
 
     expect(workflow).toContain("vitest");
     expect(workflow).toContain("stryker");
-    expect(workflow).toContain("acceptance-map.json");
+    expect(workflow).toContain("mutation-baseline.json");
+    expect(workflow).toContain("npm run benchmark");
+    expect(workflow).toContain("performance/benchmark-report.json");
+    expect(workflow).toContain("scripts/acceptance-scan.mjs");
+    expect(workflow).toContain("audit-logs/acceptance/vitest.json");
     expect(workflow).toContain("actions/upload-artifact");
   });
 });
