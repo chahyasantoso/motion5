@@ -21,33 +21,24 @@ Last reviewed: 2026-08-14
 | M1            | Motion/trigger lifecycle wiring            | Done, audited   |
 | P5-01         | Cross-motion references through membership | Done, merged    |
 | P5-02         | Adopted free tracks                        | Done, merged    |
-| P5-03         | Unified inline diagnostics                 | Done, green     |
+| P5-03         | Unified inline diagnostics                 | Done, merged    |
+| P5-04         | Unmount/remount recovery                   | Done, green     |
 
 ## Evidence
 
-- PR [#99](https://github.com/chahyasantoso/motion5/pull/99) merged into `phase5/membership-base` as [`c543c3a`](https://github.com/chahyasantoso/motion5/commit/c543c3a15864de3040061d7d1a1d29176c09d312). Its exact-head CI run [31777751696](https://github.com/chahyasantoso/motion5/actions/runs/31777751696) passed quality, integration, boundaries, build, end-to-end, performance, and prettier.
-- P5-01 red commits: [`70514cd`](https://github.com/chahyasantoso/motion5/commit/70514cd753924c2a45afccd419576494706fbc95), [`6258121`](https://github.com/chahyasantoso/motion5/commit/62581216a6a9880e6a514ddc315c9b708c451a1b), and [`4b6939b`](https://github.com/chahyasantoso/motion5/commit/4b6939b4944a46476dafbbb746adb37dce6d20f2).
-- P5-01 green commits: [`f87565d`](https://github.com/chahyasantoso/motion5/commit/f87565d4fdebd10ab3333ff941c7a00edb860dc0) and [`9ae4985`](https://github.com/chahyasantoso/motion5/commit/9ae49852568748e1a5ff2b9a8ccc1dc542cc7da0).
-- PR [#98](https://github.com/chahyasantoso/motion5/pull/98) remains the superseded, closed attempt; its ownership and scope failures are documented in `docs/PHASE5-DETAILED-PLAN.md`.
-- P5-02 merged as PR [#100](https://github.com/chahyasantoso/motion5/pull/100) at [`ef40e02`](https://github.com/chahyasantoso/motion5/commit/ef40e026899e66ef7b2ef654c54ce05fe1af73df). Red: [`0596fdf`](https://github.com/chahyasantoso/motion5/commit/0596fdfb39bd406163a00c232220cdfc7041fb64). Green: [`7fedddc`](https://github.com/chahyasantoso/motion5/commit/7fedddc7d492848d68d47edcb32a22f947370fce). First exact-head CI run [31778818109](https://github.com/chahyasantoso/motion5/actions/runs/31778818109) failed on a double-qualified adopted-track id; fixed in [`c220a24`](https://github.com/chahyasantoso/motion5/commit/c220a24a8e34436ba1d4167f0b3907d64e6770f5) with regression coverage in [`5d561a8`](https://github.com/chahyasantoso/motion5/commit/5d561a8c39837f604efea31d74098ca93d51bdbe). Final exact-head CI run [31780297529](https://github.com/chahyasantoso/motion5/actions/runs/31780297529) passed all required jobs.
-- P5-03 PR [#101](https://github.com/chahyasantoso/motion5/pull/101) starts from the merged P5-02 base. Red test commit: [`8ec4dd5`](https://github.com/chahyasantoso/motion5/commit/8ec4dd56528296fc4332598b0f3d134bfe2cf630), confirmed failing on the merged P5-02 tip because `ProjectRuntime` had no `diagnostics` getter. Green commits: [`68e1f21`](https://github.com/chahyasantoso/motion5/commit/68e1f21e5ec242a36f8630c766ce35bb0e1a7ec6) (new bounded `Diagnostics` ring buffer) and [`f728e41`](https://github.com/chahyasantoso/motion5/commit/f728e412ccc56840701ac3c7f9b64ed3b3ed950e) (wired into `ProjectRuntime` via the existing `GraphRuntimeOptions.onFlushError` hook and `batch.diagnostics`, no changes to `graph-runtime.ts`, `graph-publisher.ts`, or `references.ts`). Exact-head CI run [31780731799](https://github.com/chahyasantoso/motion5/actions/runs/31780731799) passed quality, integration, boundaries, build, end-to-end, performance, and prettier.
+- P5-01 merged as PR [#99](https://github.com/chahyasantoso/motion5/pull/99) at [`c543c3a`](https://github.com/chahyasantoso/motion5/commit/c543c3a15864de3040061d7d1a1d29176c09d312); exact-head CI [31777751696](https://github.com/chahyasantoso/motion5/actions/runs/31777751696) passed.
+- P5-02 merged as PR [#100](https://github.com/chahyasantoso/motion5/pull/100) at [`ef40e02`](https://github.com/chahyasantoso/motion5/commit/ef40e026899e66ef7b2ef654c54ce05fe1af73df); final exact-head CI [31780297529](https://github.com/chahyasantoso/motion5/actions/runs/31780297529) passed.
+- P5-03 merged as PR [#101](https://github.com/chahyasantoso/motion5/pull/101); red [`8ec4dd5`](https://github.com/chahyasantoso/motion5/commit/8ec4dd56528296fc4332598b0f3d134bfe2cf630), green [`68e1f21`](https://github.com/chahyasantoso/motion5/commit/68e1f21e5ec242a36f8630c766ce35bb0e1a7ec6) and [`f728e41`](https://github.com/chahyasantoso/motion5/commit/f728e412ccc56840701ac3c7f9b64ed3b3ed950e); exact-head CI [31780874122](https://github.com/chahyasantoso/motion5/actions/runs/31780874122) passed.
+- P5-04 behavior PR [#102](https://github.com/chahyasantoso/motion5/pull/102) red test: [`a75da68`](https://github.com/chahyasantoso/motion5/commit/a75da68b358641bc45b3576a7212c0cdb550a641). Its companion WIP PR [#103](https://github.com/chahyasantoso/motion5/pull/103) added registry-owned eviction in [`50fb170`](https://github.com/chahyasantoso/motion5/commit/50fb1705ed31a1e44d142fdf7c1025448b6de0a0) and detach wiring in [`595c596`](https://github.com/chahyasantoso/motion5/commit/595c5968b064eb39380d9849a850af2581248d75). Exact-head CI [31781861401](https://github.com/chahyasantoso/motion5/actions/runs/31781861401) passed quality, integration, boundaries, build, end-to-end, performance, and prettier.
 
-## P5-01 contract
+## P5-04 contract
 
-Unknown observation sources fail at load. Known but unavailable sources publish `blocked` with `observation-pending-reference`, never fabricated values, then recover to `ready` when mounted. `core/graph/references.ts` owns classification and mount order does not change the final output.
-
-## P5-02 contract
-
-A free track adopted at runtime gets a `~/trackId` identity via the same `qualifyFreeTrack` helper authored free tracks use, joins the graph through the ordinary `GraphBinding.replace` path, and is indistinguishable from an authored free track except for who owns its teardown. Duplicate adoption is rejected, never silently replaced. A borrower can `unmount` without destroying the definition; only the adopting owner can `destroyAdopted`.
-
-## P5-03 contract
-
-`ProjectRuntime` owns one bounded `Diagnostics` ring buffer (`core/runtime/diagnostics.ts`). Every diagnostic already carried inline on a patch, a batch summary, or a flush-level error (clock regression, flush/scheduler failure) is additionally recorded there, all sharing the one `Diagnostic` shape from `contract/v5`. The buffer is inspection-only: `snapshot()` returns a frozen `{ entries, droppedCount }` view, there is no subscribe/emit surface, and once at capacity the oldest retained entry is evicted and `droppedCount` increments. Patches and batch summaries are unchanged; the buffer is additional retained history, not a new delivery path.
+Unmounting evicts only the detached node's retained patch, preserves subscriber identity, and reuses P5-01's existing `observation-pending-reference` blocked path. Remounting and reseeking republishes the downstream as ready with a strictly newer revision. The 50-cycle integration test proves flat retention and exactly 100 consumer notifications.
 
 ## Current next action
 
-P5-03 is merged pending final review. Start P5-04 (unmount/remount recovery) per `docs/PHASE5-DETAILED-PLAN.md`: write `test/integration/remount.test.ts` first against the merged P5-03 tip, confirm it fails for the right reason, then implement leak-free unmount/remount lifecycle reusing the P5-01 reference classifier.
+P5-04 implementation is green in WIP PR [#103]. Merge the companion into the behavior branch, update PR #102's corrected allow-list, then merge the completed P5-04 slice into `phase5/membership-base` and rerun the Phase 5 exit gate.
 
 ## Review disposition
 
-The historical rescue review is closed. Phase 5 is the active membership tier; its detailed slice plan and guardrails live in `docs/PHASE5-DETAILED-PLAN.md`.
+The historical rescue review is closed. Phase 5 is complete pending the final P5-04 merge; its detailed slice plan and guardrails live in `docs/PHASE5-DETAILED-PLAN.md`.
