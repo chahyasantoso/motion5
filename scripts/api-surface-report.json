@@ -22,6 +22,7 @@
     "DiagnosticSeverity",
     "GoldenFixture",
     "GoldenValidationFixture",
+    "InterpolationTimeline",
     "Interpolator",
     "MigrationDiagnostic",
     "MigrationResult",
