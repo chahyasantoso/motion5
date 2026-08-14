@@ -1,0 +1,12 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-14T03:38:21.5330259Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-14T03:38:21.5330788Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-14T03:38:21.5381992Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-14T03:38:21.5382398Z env:
+quality (node 24)	Run npm run typecheck	2026-08-14T03:38:21.5382695Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-14T03:38:21.5383026Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-14T03:38:21.6499787Z 
+quality (node 24)	Run npm run typecheck	2026-08-14T03:38:21.6500368Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-14T03:38:21.6501381Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-14T03:38:21.6501773Z 
+quality (node 24)	Run npm run typecheck	2026-08-14T03:38:23.8501129Z ##[error]packages/core/test/integration/motion-trigger-types.test.ts(3,30): error TS2459: Module '"../../src/domain/triggers"' declares 'TriggerType' locally, but it is not exported.
+quality (node 24)	Run npm run typecheck	2026-08-14T03:38:23.8811598Z ##[error]Process completed with exit code 2.
