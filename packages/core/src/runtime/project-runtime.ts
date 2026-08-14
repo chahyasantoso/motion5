@@ -2,6 +2,7 @@ import type { ProjectDefinition, TrackDefinition } from "../contract/v5";
 import type { Clock } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
 import { qualifyFreeTrack } from "../graph/ids";
+import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
 import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
 
 export interface ProjectRuntimeOptions {
@@ -10,6 +11,8 @@ export interface ProjectRuntimeOptions {
   readonly compose: ComposeResolver;
   readonly setProgress?: (nodeId: string, progress: number) => void;
   readonly disposeComposition?: () => void;
+  /** Capacity of the bounded diagnostics history. Diagnostics itself supplies the default. */
+  readonly diagnosticsCapacity?: number;
 }
 
 export class ProjectRuntime {
@@ -17,6 +20,7 @@ export class ProjectRuntime {
   readonly #graph: GraphRuntime;
   readonly #instances = new Map<string, object>();
   readonly #adopted = new Map<string, { track: TrackDefinition; owner: object }>();
+  readonly #diagnostics: Diagnostics;
   readonly #setProgress: (nodeId: string, progress: number) => void;
   readonly #disposeComposition: () => void;
   #disposed = false;
@@ -25,9 +29,13 @@ export class ProjectRuntime {
     this.#project = project;
     this.#setProgress = options.setProgress ?? (() => undefined);
     this.#disposeComposition = options.disposeComposition ?? (() => undefined);
+    this.#diagnostics = new Diagnostics(options.diagnosticsCapacity);
     try {
       this.#graph = new GraphRuntime(project, options.clock, options.compose, {
         scheduler: options.scheduler,
+        // Flush-level diagnostics (clock regression, flush/scheduler failure) feed the same
+        // single buffer as patch/batch diagnostics below; no second, parallel stream.
+        onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
       });
     } catch (error) {
       this.#disposeComposition();
@@ -42,6 +50,10 @@ export class ProjectRuntime {
   }
   get instanceCount(): number {
     return this.#instances.size;
+  }
+  /** A bounded, inspection-only snapshot of every diagnostic recorded for this project. */
+  get diagnostics(): DiagnosticsSnapshot {
+    return this.#diagnostics.snapshot();
   }
   mount(nodeId: string, instance: object = {}): object {
     this.#assertLive();
@@ -101,7 +113,12 @@ export class ProjectRuntime {
   seek(nodeId: string, progress: number) {
     this.#assertLive();
     this.#setProgress(nodeId, progress);
-    return this.#graph.invalidate([nodeId]);
+    const batch = this.#graph.invalidate([nodeId]);
+    // Everything already carried inline on the batch (pending-reference warnings, composition
+    // failures) also lands in the one bounded diagnostics buffer. Patches and the batch itself
+    // are untouched; this is additional retained history, not a new delivery path.
+    this.#diagnostics.recordAll(batch.diagnostics);
+    return batch;
   }
   dispose(): void {
     if (this.#disposed) return;
