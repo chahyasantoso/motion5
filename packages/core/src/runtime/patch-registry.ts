@@ -73,6 +73,10 @@ export class PatchRegistry {
   get notifying(): boolean {
     return this.#notifying;
   }
+  /** Remove retained state for a detached node without touching subscriber identity. */
+  remove(nodeId: string): void {
+    this.#patches.delete(nodeId);
+  }
   beginBatch(tick: number, seeds: readonly string[]): void {
     if (this.#notifying) throw new Error(REENTRANT_BATCH_MESSAGE);
     if (this.#batchOpen) throw new Error("A patch batch is already open.");
