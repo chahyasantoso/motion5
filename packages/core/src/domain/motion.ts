@@ -17,6 +17,7 @@ export interface MotionOptions {
   readonly invalidate?: (progress: number) => void;
   readonly stagger?: number;
   readonly disposeTracks?: boolean;
+  readonly listenToClock?: boolean;
 }
 
 export class Motion {
@@ -27,6 +28,7 @@ export class Motion {
   readonly #invalidate: (progress: number) => void;
   readonly #stagger: number;
   readonly #disposeTracks: boolean;
+  readonly #listenToClock: boolean;
   readonly #lifecycle: Lifecycle;
   readonly #scheduled = new Set<{ cancel(): void }>();
   #playing = false;
@@ -52,6 +54,7 @@ export class Motion {
     this.#invalidate = options.invalidate ?? (() => undefined);
     this.#stagger = options.stagger ?? 0;
     this.#disposeTracks = options.disposeTracks ?? true;
+    this.#listenToClock = options.listenToClock ?? true;
     this.#lifecycle = new Lifecycle({
       beforeDispose: () => {
         this.pause();
@@ -77,7 +80,7 @@ export class Motion {
   }
   mount(): void {
     this.#lifecycle.mount();
-    this.#subscribe();
+    if (this.#listenToClock) this.#subscribe();
     this.#attachTrigger();
   }
   play(): void {
