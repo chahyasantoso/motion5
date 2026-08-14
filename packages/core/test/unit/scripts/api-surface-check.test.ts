@@ -8,7 +8,8 @@ describe("P6-01 API surface checker", () => {
 
   it("rejects an extra public export in a generated declaration fixture", async () => {
     const result = await checkApiSurface({
-      declarationText: "export declare const CORE_VERSION: string;\nexport declare const HACK: string;\n",
+      declarationText:
+        "export declare const CORE_VERSION: string;\nexport declare const HACK: string;\n",
     });
     expect(result.ok).toBe(false);
     expect(result.errors).toContain("Unexpected value export: HACK");
@@ -32,9 +33,11 @@ describe("P6-01 API surface checker", () => {
   });
 
   it("keeps the internal entrypoint outside the public report", async () => {
-    await expect(checkApiSurface({ entrypoint: "packages/core/src/internal.ts" })).resolves.toEqual({
-      ok: true,
-      errors: [],
-    });
+    await expect(checkApiSurface({ entrypoint: "packages/core/src/internal.ts" })).resolves.toEqual(
+      {
+        ok: true,
+        errors: [],
+      },
+    );
   });
 });

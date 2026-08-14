@@ -21,21 +21,30 @@ function namesFromList(list) {
 function exportsFromDeclaration(source) {
   const values = [];
   const types = [];
-  for (const match of source.matchAll(/export\s+(?:declare\s+)?(const|function|class)\s+([A-Za-z_$][\w$]*)/g)) values.push(match[2]);
-  for (const match of source.matchAll(/export\s+type\s*\{([^}]+)\}/g)) types.push(...namesFromList(match[1]));
-  for (const match of source.matchAll(/export\s*\{([^}]+)\}/g)) values.push(...namesFromList(match[1]));
-  for (const match of source.matchAll(/export\s+interface\s+([A-Za-z_$][\w$]*)/g)) types.push(match[1]);
-  for (const match of source.matchAll(/export\s+declare\s+type\s+([A-Za-z_$][\w$]*)/g)) types.push(match[1]);
+  for (const match of source.matchAll(
+    /export\s+(?:declare\s+)?(const|function|class)\s+([A-Za-z_$][\w$]*)/g,
+  ))
+    values.push(match[2]);
+  for (const match of source.matchAll(/export\s+type\s*\{([^}]+)\}/g))
+    types.push(...namesFromList(match[1]));
+  for (const match of source.matchAll(/export\s*\{([^}]+)\}/g))
+    values.push(...namesFromList(match[1]));
+  for (const match of source.matchAll(/export\s+interface\s+([A-Za-z_$][\w$]*)/g))
+    types.push(match[1]);
+  for (const match of source.matchAll(/export\s+declare\s+type\s+([A-Za-z_$][\w$]*)/g))
+    types.push(match[1]);
   return { values: sorted(values), types: sorted(types) };
 }
 function compare(actual, expected) {
   const errors = [];
   for (const kind of ["values", "types"])
     for (const name of expected[kind])
-      if (!actual[kind].includes(name)) errors.push(`Missing ${kind === "values" ? "value" : "type"} export: ${name}`);
+      if (!actual[kind].includes(name))
+        errors.push(`Missing ${kind === "values" ? "value" : "type"} export: ${name}`);
   for (const kind of ["values", "types"])
     for (const name of actual[kind])
-      if (!expected[kind].includes(name)) errors.push(`Unexpected ${kind === "values" ? "value" : "type"} export: ${name}`);
+      if (!expected[kind].includes(name))
+        errors.push(`Unexpected ${kind === "values" ? "value" : "type"} export: ${name}`);
   return errors;
 }
 function forbiddenSpecifiers(source) {
@@ -65,7 +74,26 @@ export async function checkApiSurface(options = {}) {
   }
   const out = await mkdtemp(join(root, ".tmp-api-dts-"));
   try {
-    await execFileAsync("npx", ["tsc", "--declaration", "--emitDeclarationOnly", "--target", "ES2023", "--module", "ESNext", "--moduleResolution", "Bundler", "--strict", "--skipLibCheck", "--outDir", out, "packages/core/src/index.ts"], { cwd: root });
+    await execFileAsync(
+      "npx",
+      [
+        "tsc",
+        "--declaration",
+        "--emitDeclarationOnly",
+        "--target",
+        "ES2023",
+        "--module",
+        "ESNext",
+        "--moduleResolution",
+        "Bundler",
+        "--strict",
+        "--skipLibCheck",
+        "--outDir",
+        out,
+        "packages/core/src/index.ts",
+      ],
+      { cwd: root },
+    );
     const entry = await findFile(out, "index.d.ts");
     if (!entry) return { ok: false, errors: ["Generated declaration entrypoint was not emitted"] };
     const source = await readFile(entry, "utf8");
