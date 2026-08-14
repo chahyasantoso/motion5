@@ -4,20 +4,20 @@ Source: [`CODE-REVIEW-POST-E3.md`](./CODE-REVIEW-POST-E3.md), section **P2 · Co
 
 ## Closed by PR 94
 
-| Review smell | Evidence |
-| --- | --- |
-| Last-known-good values lost on error/blocked publication | `p2-runtime-smells.test.ts`, registry retention implementation |
-| Dead source revision metadata | consumed upstream revisions asserted in `p2-runtime-smells.test.ts` |
-| Stale publisher snapshot index | committed publisher-node cache rebuilds `nodeById` from the same nodes |
-| Full compose closure rebuilt every flush | publisher nodes are cached per committed `GraphNode` identity |
-| Missing upstream silently skipped | `observation-missing-upstream` regression |
-| Blocked diagnostic depends on authored edge order | canonical `edgeKey` regression |
-| Qualified IDs duplicated in engine | engine uses `qualifyMotionTrack` and `qualifyFreeTrack` |
-| Track disposal can repeat or resurrect resources | terminal Track guard and exactly-once kill regression |
-| Renderer host objects leak into composition | `Date` host-object regression at the Track boundary |
-| Motion treats clock delta as normalized progress | authored-duration normalization regression |
-| Motion pause/play leaks subscriptions | pause detaches and play resubscribes regression |
-| Freeze repeated inside plugin loop | composition freezes once after the final plugin |
+| Review smell                                             | Evidence                                                               |
+| -------------------------------------------------------- | ---------------------------------------------------------------------- |
+| Last-known-good values lost on error/blocked publication | `p2-runtime-smells.test.ts`, registry retention implementation         |
+| Dead source revision metadata                            | consumed upstream revisions asserted in `p2-runtime-smells.test.ts`    |
+| Stale publisher snapshot index                           | committed publisher-node cache rebuilds `nodeById` from the same nodes |
+| Full compose closure rebuilt every flush                 | publisher nodes are cached per committed `GraphNode` identity          |
+| Missing upstream silently skipped                        | `observation-missing-upstream` regression                              |
+| Blocked diagnostic depends on authored edge order        | canonical `edgeKey` regression                                         |
+| Qualified IDs duplicated in engine                       | engine uses `qualifyMotionTrack` and `qualifyFreeTrack`                |
+| Track disposal can repeat or resurrect resources         | terminal Track guard and exactly-once kill regression                  |
+| Renderer host objects leak into composition              | `Date` host-object regression at the Track boundary                    |
+| Motion treats clock delta as normalized progress         | authored-duration normalization regression                             |
+| Motion pause/play leaks subscriptions                    | pause detaches and play resubscribes regression                        |
+| Freeze repeated inside plugin loop                       | composition freezes once after the final plugin                        |
 
 ## Explicitly not claimed closed
 
