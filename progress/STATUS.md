@@ -22,7 +22,7 @@ Last reviewed: 2026-08-14
 | P5-01 to P5-04 | Phase 5 membership | Done, merged |
 | P6-01 | API surface and declarations | Done, merged |
 | P6-02 | Packed package consumer | Done, merged |
-| P6-03 | Public documentation | In progress, red-first |
+| P6-03 | Public documentation | In progress, implementation started |
 | P6-04 | Enforce benchmark budgets | Queued |
 | P6-05 | Delete transitional code/docs | Queued |
 
@@ -31,16 +31,17 @@ Last reviewed: 2026-08-14
 - Phase 5 completed on `phase5/membership-base`; P5-04 exact-head CI [31782076249](https://github.com/chahyasantoso/motion5/actions/runs/31782076249) passed all required checks.
 - Phase 6 base `phase6/hardening-base` was cut at [`5299e3a`](https://github.com/chahyasantoso/motion5/commit/5299e3aa18493dafac185607530627467c7a085d). CI filters were updated for `phase6/**` in [`734a80a`](https://github.com/chahyasantoso/motion5/commit/734a80ac75faa75d2c0973b8cb75fe64d91f16f4).
 - P6-01 PR [#104](https://github.com/chahyasantoso/motion5/pull/104) merged at [`65586ba`](https://github.com/chahyasantoso/motion5/commit/65586ba2aac542c9cd7caed69f018ec49becf194); final exact-head CI [31784090216](https://github.com/chahyasantoso/motion5/actions/runs/31784090216) passed.
-- P6-02 PR [#105](https://github.com/chahyasantoso/motion5/pull/105) merged at [`48dc861`](https://github.com/chahyasantoso/motion5/commit/48dc8611bab49dc24cd91b07c29d0e8b73e37fe); red [`214afa7`](https://github.com/chahyasantoso/motion5/commit/214afa75826b9c496b09d138cdc4dec33d0adb94); final exact-head CI [31785888346](https://github.com/chahyasantoso/motion5/actions/runs/31785888346) passed quality, integration, boundaries, build, end-to-end, performance, package consumer, and prettier.
+- P6-02 PR [#105](https://github.com/chahyasantoso/motion5/pull/105) merged at [`48dc861`](https://github.com/chahyasantoso/motion5/commit/48dc8611bab49dc24cd91b07c29d0e8b73e37fe); final exact-head CI [31785888346](https://github.com/chahyasantoso/motion5/actions/runs/31785888346) passed all eight checks.
+- P6-03 red test [`1db5d8f`](https://github.com/chahyasantoso/motion5/commit/1db5d8fc4681d6cf7655160b1107b5e4ef4a0bc9) correctly caught stale Phase 4 claims in `README.md` and `docs/README.md`; documentation reconciliation commits are [`f1b82df`](https://github.com/chahyasantoso/motion5/commit/f1b82df93a741958f3a1c83eaa7e4902f77656f0) and [`787df1d`](https://github.com/chahyasantoso/motion5/commit/787df1dabde00c813f080016f9a73e43b56e22fa).
 
 ## Phase 6 contract
 
-The public API is enforced by generated declarations and a committed value/type report. Packed ESM and TypeScript consumers now pass from the tarball, deep imports fail, and `dist` is shipped with the package. Phase 6 detailed intent and checklists live in [`docs/PHASE6-DETAILED-PLAN.md`](./PHASE6-DETAILED-PLAN.md).
+The public API is enforced by generated declarations and a committed value/type report. Packed ESM and TypeScript consumers pass from the tarball, deep imports fail, and `dist` is shipped with the package. P6-03 is reconciling the public docs to this shipped reality.
 
 ## Current next action
 
-P6-03 is starting from the merged P6-02 base: write the documentation consistency red test first, confirm stale claims are the intended failure, then reconcile docs only in the documentation slice.
+Run the focused documentation test and exact-head matrix. If green, update the checklist and merge P6-03; P6-04 follows from the merged documentation base.
 
 ## Review disposition
 
-Phase 5 is closed. Phase 6 is active on `phase6/hardening-base`; P6-01 and P6-02 are closed, P6-03 is current.
+Phase 5 is closed. Phase 6 is active; P6-01 and P6-02 are closed, P6-03 is current.
