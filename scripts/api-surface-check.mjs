@@ -1,5 +1,5 @@
 import { execFile } from "node:child_process";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, readdir, rm } from "node:fs/promises";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
@@ -15,8 +15,7 @@ function sorted(values) {
 function exportsFromDeclaration(source) {
   const values = [];
   const types = [];
-  for (const match of source.matchAll(/export\s+(?:declare\s+)?(const|function|class)\s+([A-Za-z_$][\w$]*)/g))
-    values.push(match[2]);
+  for (const match of source.matchAll(/export\s+(?:declare\s+)?(const|function|class)\s+([A-Za-z_$][\w$]*)/g)) values.push(match[2]);
   for (const match of source.matchAll(/export\s+type\s*\{([^}]+)\}/g))
     for (const name of match[1].split(",")) types.push(name.trim().split(/\s+as\s+/)[0]);
   for (const match of source.matchAll(/export\s*\{([^}]+)\}/g))
@@ -40,6 +39,16 @@ function forbiddenSpecifiers(source) {
     if (forbidden.test(match[1])) errors.push(`Forbidden declaration path: ${match[1]}`);
   return errors;
 }
+async function findFile(directory, filename) {
+  for (const entry of await readdir(directory, { withFileTypes: true })) {
+    const path = join(directory, entry.name);
+    if (entry.isDirectory()) {
+      const found = await findFile(path, filename);
+      if (found) return found;
+    } else if (entry.name === filename) return path;
+  }
+  return undefined;
+}
 
 export async function checkApiSurface(options = {}) {
   const report = JSON.parse(await readFile(reportPath, "utf8"));
@@ -52,7 +61,8 @@ export async function checkApiSurface(options = {}) {
   const out = await mkdtemp(join(root, ".tmp-api-dts-"));
   try {
     await execFileAsync("npx", ["tsc", "--declaration", "--emitDeclarationOnly", "--target", "ES2023", "--module", "ESNext", "--moduleResolution", "Bundler", "--strict", "--skipLibCheck", "--outDir", out, "packages/core/src/index.ts"], { cwd: root });
-    const entry = join(out, "packages", "core", "src", "index.d.ts");
+    const entry = await findFile(out, "index.d.ts");
+    if (!entry) return { ok: false, errors: ["Generated declaration entrypoint was not emitted"] };
     const source = await readFile(entry, "utf8");
     const actual = exportsFromDeclaration(source);
     const errors = [...compare(actual, report), ...forbiddenSpecifiers(source)];
