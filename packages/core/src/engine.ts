@@ -39,7 +39,10 @@ type RuntimeLike = {
   graph: { registry: { subscribeNode(nodeId: string, listener: PatchListener): () => void } };
   dispose(): void;
 };
-function createHandle(runtime: RuntimeLike, signal: (motionId: string, signal: TriggerSignal) => void): ProjectHandle {
+function createHandle(
+  runtime: RuntimeLike,
+  signal: (motionId: string, signal: TriggerSignal) => void,
+): ProjectHandle {
   return {
     mount: (nodeId, instance = {}) => runtime.mount(nodeId, instance),
     unmount: (nodeId) => runtime.unmount(nodeId),
@@ -78,7 +81,10 @@ export class Engine {
   load(project: ProjectDefinition): ProjectHandle {
     const acceptedProject = assertValidProject(project);
     const tracks = new Map<string, Track>();
-    const nodes = new Map<string, { id: string; duration?: number; keyframes?: Readonly<Record<string, unknown>> }>();
+    const nodes = new Map<
+      string,
+      { id: string; duration?: number; keyframes?: Readonly<Record<string, unknown>> }
+    >();
     const motionTrackIds = new Map<string, readonly string[]>();
     for (const motion of acceptedProject.motions) {
       const ids = motion.tracks.map((track) => qualifyMotionTrack(motion.id, track.id).value);
@@ -98,22 +104,36 @@ export class Engine {
         id: nodeId,
         duration: definition.duration,
       });
-      const preparedKeyframes = { ...(definition.keyframes ?? {}), ...(resolved?.preparation.keyframes ?? {}) };
+      const preparedKeyframes = {
+        ...(definition.keyframes ?? {}),
+        ...(resolved?.preparation.keyframes ?? {}),
+      };
       const keyframeCompilation = compilePercentKeyframes(preparedKeyframes, path);
       const diagnostics = [...(resolved?.diagnostics ?? []), ...keyframeCompilation.diagnostics];
       if (diagnostics.some(({ severity }) => severity === "error"))
         throw new TypeError(describeDiagnostics(diagnostics));
-      const track = new Track({ interpolator: this.#options.interpolator, interpolationConfig: definition, ...(resolved ? { plugins: resolved } : {}) });
+      const track = new Track({
+        interpolator: this.#options.interpolator,
+        interpolationConfig: definition,
+        ...(resolved ? { plugins: resolved } : {}),
+      });
       tracks.set(nodeId, track);
       return track;
     };
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
       const compose =
-        (node: { id: string; track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> } }) =>
+        (node: {
+          id: string;
+          track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> };
+        }) =>
         (inputs: Readonly<Record<string, unknown>>) => {
           const snapshot = tracks.get(node.id)!.compose(inputs as Readonly<ImmutableRecord>);
-          return { values: snapshot.values, sourceProgress: snapshot.progress, sourceRevisions: {} };
+          return {
+            values: snapshot.values,
+            sourceProgress: snapshot.progress,
+            sourceRevisions: {},
+          };
         };
       let runtime: ProjectRuntime;
       const motions = new Map<string, Motion>();
@@ -155,7 +175,7 @@ export class Engine {
       return createHandle(runtime, (motionId, signal) => {
         const motion = motions.get(motionId);
         if (!motion) throw new TypeError(`Unknown motion \"${motionId}\".`);
-        motion.getTriggerSignal(signal);
+        motion.signal(signal);
       });
     } catch (error) {
       for (const motion of motions.values()) motion.dispose();
