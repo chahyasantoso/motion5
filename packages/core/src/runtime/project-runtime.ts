@@ -1,6 +1,7 @@
-import type { ProjectDefinition } from "../contract/v5";
+import type { ProjectDefinition, TrackDefinition } from "../contract/v5";
 import type { Clock } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
+import { qualifyFreeTrack } from "../graph/ids";
 import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
 
 export interface ProjectRuntimeOptions {
@@ -15,6 +16,7 @@ export class ProjectRuntime {
   readonly #project: ProjectDefinition;
   readonly #graph: GraphRuntime;
   readonly #instances = new Map<string, object>();
+  readonly #adopted = new Map<string, { track: TrackDefinition; owner: object }>();
   readonly #setProgress: (nodeId: string, progress: number) => void;
   readonly #disposeComposition: () => void;
   #disposed = false;
@@ -55,6 +57,47 @@ export class ProjectRuntime {
     this.#instances.delete(nodeId);
     this.#graph.detach(nodeId);
   }
+  /** Add a runtime-created track to the same graph as authored free tracks. */
+  adopt(
+    track: TrackDefinition,
+    owner: object,
+  ): { readonly id: string; readonly track: TrackDefinition } {
+    this.#assertLive();
+    // Reuse P2-01's qualification (never invent a parallel `~/` prefix by hand). This also
+    // validates the authored track id, so a bad id fails before anything is mutated.
+    const id = qualifyFreeTrack(track.id).value;
+    if (this.#graph.state.hasNode(id) || this.#adopted.has(id))
+      throw new TypeError(`Adopted track "${id}" already exists.`);
+    // The stored track keeps its authored (unqualified) id: buildGraphIR qualifies free
+    // tracks itself via qualifyFreeTrack, and rejects any authored id that already contains
+    // '/'. Composing the freeTracks list from the authored baseline plus every currently
+    // adopted track (rather than a stale `#project.freeTracks` snapshot) keeps multiple
+    // adoptions and destructions consistent with each other.
+    const nextFreeTracks = [
+      ...(this.#project.freeTracks ?? []),
+      ...[...this.#adopted.values()].map((entry) => entry.track),
+      track,
+    ];
+    this.#graph.binding.replace({ ...this.#project, freeTracks: nextFreeTracks });
+    this.#adopted.set(id, { track, owner });
+    this.mount(id);
+    return Object.freeze({ id, track });
+  }
+  /** Destroy an adopted track. Only the owner can destroy; others detach via unmount. */
+  destroyAdopted(nodeId: string, owner: object): void {
+    this.#assertLive();
+    const adopted = this.#adopted.get(nodeId);
+    if (adopted === undefined) throw new TypeError(`Node "${nodeId}" is not adopted.`);
+    if (adopted.owner !== owner)
+      throw new TypeError(`Only the adopting owner can destroy "${nodeId}".`);
+    this.unmount(nodeId);
+    this.#adopted.delete(nodeId);
+    const remaining = [
+      ...(this.#project.freeTracks ?? []),
+      ...[...this.#adopted.values()].map((entry) => entry.track),
+    ];
+    this.#graph.binding.replace({ ...this.#project, freeTracks: remaining });
+  }
   seek(nodeId: string, progress: number) {
     this.#assertLive();
     this.#setProgress(nodeId, progress);
@@ -65,6 +108,7 @@ export class ProjectRuntime {
     this.#disposed = true;
     for (const nodeId of [...this.#instances.keys()]) this.#graph.detach(nodeId);
     this.#instances.clear();
+    this.#adopted.clear();
     this.#graph.dispose();
     this.#disposeComposition();
   }

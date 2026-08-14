@@ -6,64 +6,43 @@ Last reviewed: 2026-08-14
 
 ## Board
 
-| ID         | Slice                                           | Status                 |
-| ---------- | ----------------------------------------------- | ---------------------- |
-| W0         | Rescue loop and audit baseline                  | Done                   |
-| A1         | Final-value memo consistency                    | Done, gate open        |
-| A2         | Preserve subscriber errors                      | Done, gate open        |
-| A3         | Guard subscriber-triggered reentrancy           | Done, gate open        |
-| B1         | Prepare-stage plugin contribution               | Done                   |
-| B2         | Real GSAP multi-stop compilation                | Done                   |
-| C1         | React store resubscription                      | Done                   |
-| C2         | React hook and public exports                   | Done, gate open        |
-| C3         | DOM metadata, serialization, and clear coverage | Done, gate open        |
-| D1         | Discover consumer packages                      | Done                   |
-| D2         | Planted boundary self-test                      | Done                   |
-| D3         | Acceptance evidence gates                       | Done, gate open        |
-| E1         | Required declaration build                      | Done, gate open        |
-| E2         | Real end-to-end product path                    | Done                   |
-| E3         | Mutation baseline and ratchet                   | Done, gate open        |
-| P0-1       | Clock and batch identity                        | Done                   |
-| P0-2       | GSAP clock ownership                            | Done                   |
-| P0-3       | Absolute multi-property stop compilation        | Done, audited          |
-| P0-3b      | Authored-duration pinning                       | Done, audited          |
-| P0-4       | DOM transform rendering and removal             | Done, audited          |
-| X-1        | Flat projected input observations               | Done, merged           |
-| P1-5       | Structural registry change detection            | Done, merged           |
-| P1-6       | Listener snapshots before notification          | Done, merged           |
-| P1-7       | Scheduler-driven deferred drain                 | Done, merged           |
-| P1-8       | One reentrancy policy, one flush entry point    | Done, merged           |
-| P1-9       | Narrow public project handle                    | Done, merged           |
-| P1-10      | Product-load authored validation                | Done, merged           |
-| P1-11      | Runtime composition/output-shape diagnostics    | Done, merged           |
-| P1-12      | One observation-validation owner                | Done, merged           |
-| S5         | Contribution completeness                       | Done, gate open        |
-| S6         | Remove dead `use` contract                      | Done, gate open        |
-| S7         | Recovery audit and durable evidence             | Done, audited          |
-| P2/G-5/G-6 | Dirty-closure benchmark and mutation ratchet    | Done, audited          |
-| M1         | Motion/trigger lifecycle wiring                 | Done, audited          |
-| P5-01      | Cross-motion references through membership      | In progress, red-green |
+| ID            | Slice                                      | Status          |
+| ------------- | ------------------------------------------ | --------------- |
+| W0            | Rescue loop and audit baseline             | Done            |
+| A1-A3         | Runtime hardening                          | Done, gate open |
+| B1-B2         | Plugin and GSAP recovery                   | Done            |
+| C1-C3         | React and DOM recovery                     | Done, gate open |
+| D1-D3         | Consumer and acceptance gates              | Done, gate open |
+| E1-E3         | Build, end-to-end, mutation gates          | Done, gate open |
+| P0-1 to P0-4  | Clock, timing, and rendering foundations   | Done, audited   |
+| P1-5 to P1-12 | Graph/runtime invariants                   | Done, merged    |
+| S5-S7         | Recovery evidence                          | Done, audited   |
+| P2/G-5/G-6    | Benchmark and mutation ratchet             | Done, audited   |
+| M1            | Motion/trigger lifecycle wiring            | Done, audited   |
+| P5-01         | Cross-motion references through membership | Done, merged    |
+| P5-02         | Adopted free tracks                        | Done, green     |
 
 ## Evidence
 
-- PR [#95](https://github.com/chahyasantoso/motion5/pull/95) merged as [`e53265b`](https://github.com/chahyasantoso/motion5/commit/e53265b97be1c1f1bb766c78abf7bc4f1e1ce44b).
-- M1 PR [#96](https://github.com/chahyasantoso/motion5/pull/96) merged as [`1a26bfe`](https://github.com/chahyasantoso/motion5/commit/1a26bfe50899d8cb3bd7d0bde87d3def2033692d).
-- Assertion-level red: [`2681d1a`](https://github.com/chahyasantoso/motion5/commit/2681d1a5b9336dd8c4b08f8ab7b80d64a5817020).
-- Final audited M1 head: [`c26a807`](https://github.com/chahyasantoso/motion5/commit/c26a807c8fe74dc6fc79ee4ef92907c6364c408b).
-- Recovery audit [31767593680](https://github.com/chahyasantoso/motion5/actions/runs/31767593680) passed contract, mutation, acceptance, failing-first, and build/end-to-end jobs. Its only annotations were Node 20 action deprecation warnings.
-- PR [#98](https://github.com/chahyasantoso/motion5/pull/98) attempted P5-01 and was closed without merge: it decided pending-vs-error by catching a runtime exception in `GraphPublisher` instead of a load-time owner, never landed a single owner for pending state, and needed two undocumented cache reverts in `GraphRuntime` to chase a bug that was actually a test fixture ambiguity. See `docs/PHASE5-DETAILED-PLAN.md` for the full breakdown.
-- P5-01 retry base: `phase5/membership-base`, branch [`fix/p5-01-cross-motion-references-v2`](https://github.com/chahyasantoso/motion5/tree/fix/p5-01-cross-motion-references-v2).
-- P5-01 red commits: [`70514cd`](https://github.com/chahyasantoso/motion5/commit/70514cd753924c2a45afccd419576494706fbc95) (cross-motion.test.ts, asserts a literal rule id so it is red without depending on the not-yet-created module), [`6258121`](https://github.com/chahyasantoso/motion5/commit/62581216a6a9880e6a514ddc315c9b708c451a1b) (references.test.ts, red because the module does not exist yet), [`4b6939b`](https://github.com/chahyasantoso/motion5/commit/4b6939b4944a46476dafbbb746adb37dce6d20f2) (updates the now-obsolete P2 smell-test expectation in the same red commit).
-- P5-01 green commits: [`f87565d`](https://github.com/chahyasantoso/motion5/commit/f87565d4fdebd10ab3333ff941c7a00edb860dc0) (new `core/graph/references.ts`, the single owner of pending-versus-resolved classification), [`9ae4985`](https://github.com/chahyasantoso/motion5/commit/9ae49852568748e1a5ff2b9a8ccc1dc542cc7da0) (`GraphPublisher` consumes the classifier before attempting composition; no exception-based branching).
+- PR [#99](https://github.com/chahyasantoso/motion5/pull/99) merged into `phase5/membership-base` as [`c543c3a`](https://github.com/chahyasantoso/motion5/commit/c543c3a15864de3040061d7d1a1d29176c09d312). Its exact-head CI run [31777751696](https://github.com/chahyasantoso/motion5/actions/runs/31777751696) passed quality, integration, boundaries, build, end-to-end, performance, and prettier.
+- P5-01 red commits: [`70514cd`](https://github.com/chahyasantoso/motion5/commit/70514cd753924c2a45afccd419576494706fbc95), [`6258121`](https://github.com/chahyasantoso/motion5/commit/62581216a6a9880e6a514ddc315c9b708c451a1b), and [`4b6939b`](https://github.com/chahyasantoso/motion5/commit/4b6939b4944a46476dafbbb746adb37dce6d20f2).
+- P5-01 green commits: [`f87565d`](https://github.com/chahyasantoso/motion5/commit/f87565d4fdebd10ab3333ff941c7a00edb860dc0) and [`9ae4985`](https://github.com/chahyasantoso/motion5/commit/9ae49852568748e1a5ff2b9a8ccc1dc542cc7da0).
+- PR [#98](https://github.com/chahyasantoso/motion5/pull/98) remains the superseded, closed attempt; its ownership and scope failures are documented in `docs/PHASE5-DETAILED-PLAN.md`.
+- P5-02 PR [#100](https://github.com/chahyasantoso/motion5/pull/100) starts from the merged P5-01 base. Red test commit: [`0596fdf`](https://github.com/chahyasantoso/motion5/commit/0596fdfb39bd406163a00c232220cdfc7041fb64). Green implementation commit: [`7fedddc`](https://github.com/chahyasantoso/motion5/commit/7fedddc7d492848d68d47edcb32a22f947370fce).
+- P5-02's first exact-head CI run ([31778818109](https://github.com/chahyasantoso/motion5/actions/runs/31778818109)) failed `quality` and `integration`: `adopt()` double-qualified the free-track id (`~/${track.id}` written back into the track's own authored `id`), which `buildGraphIR`'s `assertAuthoredTrackId` rejects for containing `/`. Fix commit [`c220a24`](https://github.com/chahyasantoso/motion5/commit/c220a24a8e34436ba1d4167f0b3907d64e6770f5) reuses `qualifyFreeTrack` and keeps the stored track id authored/unqualified; it also fixed a second latent bug where sequential adoption of distinct tracks silently evicted earlier ones, covered by a new regression commit [`5d561a8`](https://github.com/chahyasantoso/motion5/commit/5d561a8c39837f604efea31d74098ca93d51bdbe). Re-run [31779966477](https://github.com/chahyasantoso/motion5/actions/runs/31779966477) passed quality, integration, boundaries, build, end-to-end, performance, and prettier.
 
 ## P5-01 contract
 
-An edge whose source is unknown anywhere in the project fails at load, in `graph/ir.ts`, as before. An edge whose source is known but has not published a value yet (typically because it is not currently a member) publishes `blocked` with a `observation-pending-reference` warning diagnostic, never a fabricated value, and republishes `ready` once the source is attached and flushed. Resolution does not depend on mount order because canonical topological order (computed once from the full node list) always processes a source before its observers regardless of attach call sequence. `core/graph/references.ts` owns the classification; `GraphPublisher` only consumes it.
+Unknown observation sources fail at load. Known but unavailable sources publish `blocked` with `observation-pending-reference`, never fabricated values, then recover to `ready` when mounted. `core/graph/references.ts` owns classification and mount order does not change the final output.
+
+## P5-02 contract
+
+A free track adopted at runtime gets a `~/trackId` identity via the same `qualifyFreeTrack` helper authored free tracks use, joins the graph through the ordinary `GraphBinding.replace` path, and is indistinguishable from an authored free track except for who owns its teardown. Duplicate adoption is rejected, never silently replaced. A borrower can `unmount` without destroying the definition; only the adopting owner can `destroyAdopted`.
 
 ## Current next action
 
-Run the exact-head required CI matrix for the PR opened from `fix/p5-01-cross-motion-references-v2` into `phase5/membership-base`, then mark P5-01 status green and merge. P5-02 (adopted free tracks) stays blocked until that merge, per `docs/PHASE5-DETAILED-PLAN.md`.
+P5-02 is merged. Start P5-03 (unified inline diagnostics) per `docs/PHASE5-DETAILED-PLAN.md`: write `test/integration/diagnostics.test.ts` first against the merged P5-02 tip, confirm it fails for the right reason, then implement the bounded ring buffer in `core/runtime/diagnostics.ts`.
 
 ## Review disposition
 
-The historical `CODE-REVIEW-POST-E3.md` is closed for the rescue work. Phase 5 is the current membership tier; its detailed slice-by-slice plan and guardrails live in `docs/PHASE5-DETAILED-PLAN.md`.
+The historical rescue review is closed. Phase 5 is the active membership tier; its detailed slice plan and guardrails live in `docs/PHASE5-DETAILED-PLAN.md`.
