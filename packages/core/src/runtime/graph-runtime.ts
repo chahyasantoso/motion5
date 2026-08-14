@@ -108,6 +108,7 @@ export class GraphRuntime {
   detach(nodeId: string): void {
     this.#assertLive();
     this.#members.delete(nodeId);
+    this.#registry.remove(nodeId);
   }
 
   flush(seeds: readonly string[] = [...this.#members], tick?: number): PatchBatch {
