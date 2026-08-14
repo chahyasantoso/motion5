@@ -35,15 +35,14 @@ describe("P5-02 adopted free tracks", () => {
     runtime.dispose();
   });
 
-  it("lets a borrower detach without destroying the adopted track, while only the owner can destroy it", () => {
+  it("lets a borrower unmount without destroying the adopted track, while only the owner can destroy it", () => {
     const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
     const owner = {};
-    const borrower = {};
     const adopted = runtime.adopt(freeTrack, owner);
-    runtime.detach(adopted.id, borrower);
+    runtime.unmount(adopted.id);
     expect(runtime.instanceCount).toBe(0);
     expect(runtime.graph.state.snapshot().nodes).toContain("~/cursor");
-    expect(() => runtime.destroyAdopted(adopted.id, borrower)).toThrow(/owner/);
+    expect(() => runtime.destroyAdopted(adopted.id, {})).toThrow(/owner/);
     runtime.destroyAdopted(adopted.id, owner);
     expect(runtime.graph.state.snapshot().nodes).not.toContain("~/cursor");
     runtime.dispose();

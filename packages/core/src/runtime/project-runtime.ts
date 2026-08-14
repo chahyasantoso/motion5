@@ -68,10 +68,7 @@ export class ProjectRuntime {
     this.mount(id);
     return Object.freeze({ id, track: { ...track, id } });
   }
-  /** Detach membership without transferring or destroying adopted ownership. */
-  detach(nodeId: string, _borrower: object): void {
-    this.unmount(nodeId);
-  }
+  /** Destroy an adopted track. Only the owner can destroy; others detach via unmount. */
   destroyAdopted(nodeId: string, owner: object): void {
     this.#assertLive();
     const adopted = this.#adopted.get(nodeId);
