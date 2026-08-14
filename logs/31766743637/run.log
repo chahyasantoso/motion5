@@ -1,0 +1,80 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-14T03:25:22.6833793Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-14T03:25:22.6834232Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-14T03:25:22.6899033Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-14T03:25:22.6899729Z env:
+quality (node 24)	Run npm run typecheck	2026-08-14T03:25:22.6900034Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-14T03:25:22.6900349Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-14T03:25:22.8368217Z 
+quality (node 24)	Run npm run typecheck	2026-08-14T03:25:22.8369001Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-14T03:25:22.8369499Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-14T03:25:22.8369734Z 
+quality (node 24)	Run npm run typecheck	2026-08-14T03:25:24.7601840Z ##[error]packages/core/test/integration/motion-trigger-lifecycle.test.ts(24,7): error TS2353: Object literal may only specify known properties, and 'trigger' does not exist in type 'MotionOptions'.
+quality (node 24)	Run npm run typecheck	2026-08-14T03:25:24.7926634Z ##[error]Process completed with exit code 2.
+integration (node 24)	Run npm run test:integration	﻿2026-08-14T03:25:21.8810015Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:21.8810351Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:21.8850011Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:21.8850251Z env:
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:21.8850416Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:21.8850598Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:21.9725708Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:21.9726548Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:21.9727009Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:21.9727193Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:22.2619580Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:22.2623210Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:22.2624146Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:22.5366593Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:22.5417698Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:22.6161066Z  ^[[32m✓^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:22.7151483Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:22.7236511Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:22.8268220Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:22.8745757Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:22.8950779Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.0152745Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.0401580Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.0671267Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.1825265Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.2393013Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.3679293Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.3825371Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.4498406Z  ^[[31m❯^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.4501021Z ^[[31m     ^[[31m×^[[31m routes trigger progress through Track and invalidates the owning runtime^[[39m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.5318832Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.5546872Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.6284738Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.6862584Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.6997492Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7021072Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7022206Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7022759Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7028203Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/motion-trigger-lifecycle.test.ts^[[2m > ^[[22mMotion and trigger lifecycle^[[2m > ^[[22mroutes trigger progress through Track and invalidates the owning runtime
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7030932Z ^[[31m^[[1mAssertionError^[[22m: expected "vi.fn()" to be called with arguments: [ 0.5 ]^[[90m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7031850Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7032334Z Number of calls: ^[[1m0^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7033353Z ^[[31m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7034441Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/motion-trigger-lifecycle.test.ts:^[[2m33:31^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7055975Z     ^[[90m 31|^[[39m     scheduler^[[33m.^[[39m^[[34mflush^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7056405Z     ^[[90m 32|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7057222Z     ^[[90m 33|^[[39m     ^[[34mexpect^[[39m(track^[[33m.^[[39msetProgress)^[[33m.^[[39m^[[34mtoHaveBeenCalledWith^[[39m(^[[34m0.5^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7057996Z     ^[[90m   |^[[39m                               ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7058802Z     ^[[90m 34|^[[39m     ^[[34mexpect^[[39m(invalidate)^[[33m.^[[39m^[[34mtoHaveBeenCalledWith^[[39m(^[[34m0.5^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7059532Z     ^[[90m 35|^[[39m     ^[[34mexpect^[[39m(motion^[[33m.^[[39mposition)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0.5^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7059828Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7060115Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7060331Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7060670Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7064378Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m20 passed^[[39m^[[22m^[[90m (21)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7065146Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m53 passed^[[39m^[[22m^[[90m (54)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7065569Z ^[[2m   Start at ^[[22m 03:25:22
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7066713Z ^[[2m   Duration ^[[22m 1.42s^[[2m (transform 546ms, setup 0ms, import 1.15s, tests 187ms, environment 2ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7068408Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7078565Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7594572Z ##[error]AssertionError: expected "vi.fn()" to be called with arguments: [ 0.5 ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	Number of calls: 0
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/motion-trigger-lifecycle.test.ts:33:31
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-14T03:25:23.7603748Z ##[error]Process completed with exit code 1.
