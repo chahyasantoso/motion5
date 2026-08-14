@@ -51,7 +51,6 @@ export class GraphRuntime {
   readonly #unsubscribe: () => void;
   readonly #members = new Set<string>();
   readonly #pendingSeeds = new Set<string>();
-  readonly #publisherNodes = new Map<string, PublisherNode>();
   #lastTick = 0;
   #sequence = 0;
   #lastFlushError: Diagnostic | undefined;
@@ -59,12 +58,7 @@ export class GraphRuntime {
   #scheduledDrain = false;
   #disposed = false;
 
-  constructor(
-    project: ProjectDefinition,
-    clock: Clock,
-    compose: ComposeResolver,
-    options: GraphRuntimeOptions = {},
-  ) {
+  constructor(project: ProjectDefinition, clock: Clock, compose: ComposeResolver, options: GraphRuntimeOptions = {}) {
     this.#binding = new GraphBinding(project);
     this.#registry = new PatchRegistry();
     this.#publisher = new GraphPublisher(this.#registry);
@@ -108,16 +102,12 @@ export class GraphRuntime {
     const effectiveSeeds = [...new Set([...seeds, ...carried])];
     const graph = this.#binding.graph;
     const nodes = graph.nodes.map((node) => {
-      const cached = this.#publisherNodes.get(node.id);
-      if (cached) return cached;
       const resolved = this.#compose(node);
-      const publisherNode = Object.freeze({
+      return Object.freeze({
         ...node,
         id: node.id,
         compose: (inputs: Readonly<Record<string, unknown>>) => resolved(inputs),
       });
-      this.#publisherNodes.set(node.id, publisherNode);
-      return publisherNode;
     });
     const nodeById = Object.freeze(Object.fromEntries(nodes.map((node) => [node.id, node])));
     this.#sequence += 1;
@@ -143,7 +133,6 @@ export class GraphRuntime {
     this.#unsubscribe();
     this.#members.clear();
     this.#pendingSeeds.clear();
-    this.#publisherNodes.clear();
     this.#scheduledDrain = false;
   }
   #scheduleDrain(): void {
