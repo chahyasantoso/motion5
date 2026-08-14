@@ -1,0 +1,324 @@
+# CI log archive: 31775446886
+
+- Workflow: CI
+- Conclusion: failure
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/31775446886
+- Captured: 2026-08-14T06:12:03Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm test	﻿2026-08-14T06:11:44.9833455Z ##[group]Run npm test
+quality (node 24)	Run npm test	2026-08-14T06:11:44.9833696Z ^[[36;1mnpm test^[[0m
+quality (node 24)	Run npm test	2026-08-14T06:11:44.9871869Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm test	2026-08-14T06:11:44.9872140Z env:
+quality (node 24)	Run npm test	2026-08-14T06:11:44.9872317Z   NODE_VERSION: 24
+quality (node 24)	Run npm test	2026-08-14T06:11:44.9872489Z ##[endgroup]
+quality (node 24)	Run npm test	2026-08-14T06:11:45.0978625Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:45.0979287Z > motion5@0.0.0 test
+quality (node 24)	Run npm test	2026-08-14T06:11:45.0979729Z > vitest run
+quality (node 24)	Run npm test	2026-08-14T06:11:45.0980060Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:45.3540683Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:45.3561577Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:45.3570646Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:45.6866624Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugins.test.ts ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:45.7276602Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-reentrancy.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:45.9000588Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-state.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:45.9626086Z  ^[[32m✓^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:46.0726007Z  ^[[32m✓^[[39m packages/core/test/contract/v5-validator.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:46.1305962Z  ^[[32m✓^[[39m packages/core/test/contract/validation-owner.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:46.3005508Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-flat-inputs.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:46.3070803Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/boundary-scan.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 57^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:46.4765415Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:46.5063821Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/clock-tick-identity.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:46.6411456Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-structural-change.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:46.6813811Z  ^[[32m✓^[[39m packages/core/test/unit/graph/order.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:46.7939438Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ir-validation.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:46.8852907Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/composition-output-shape.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.0728353Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugin-contribution-contract.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.1161988Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-authored-duration.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.2613421Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/scheduler-reentrancy.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.2859578Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.4167182Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.4832013Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.5976321Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.6920614Z  ^[[31m❯^[[39m packages/core/test/integration/cross-motion.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.6941699Z ^[[31m     ^[[31m×^[[31m keeps a child pending when its cross-motion source is not mounted, then recovers independent of mount order^[[39m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.6943490Z ^[[31m     ^[[31m×^[[31m publishes the same child output when the source is mounted first^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.6945038Z      ^[[32m✓^[[39m rejects an unknown cross-motion source at load instead of treating it as pending^[[32m 1^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.7335806Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/public-declaration-surface.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[33m 2131^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.7337331Z      ^[[33m^[[2m✓^[[22m^[[39m scans the emitted entry declaration closure, not just source strings ^[[33m 2128^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.7769543Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-absolute-stops.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.8418605Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.9028208Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.9712416Z  ^[[32m✓^[[39m packages/core/test/contract/adapters.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:47.9875791Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.0692267Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-types.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.1428842Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.1487429Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.2290698Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.2759162Z  ^[[32m✓^[[39m packages/core/test/migration/v4-to-v5.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.3125536Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.3845665Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.4226220Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.4580172Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.5249497Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/governance-gates.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.6011657Z ^[[90mstderr^[[2m | packages/react/test/public-package-surface.test.ts^[[2m > ^[[22m^[[2mReact public package surface (C2)^[[2m > ^[[22m^[[2mrenders and updates through the package entry alone
+quality (node 24)	Run npm test	2026-08-14T06:11:48.6041774Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test	2026-08-14T06:11:48.6042651Z  ^[[32m✓^[[39m packages/react/test/public-package-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.6043481Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-14T06:11:48.6043931Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-14T06:11:48.6044347Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-14T06:11:48.6044557Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:48.6309305Z  ^[[32m✓^[[39m packages/react/test/patch-store-lifecycle.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.6941972Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-sparse-percent-map.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.7662381Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.7967332Z  ^[[32m✓^[[39m packages/core/test/contract/ports.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.8382863Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugin-contribution-completeness.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:48.9136278Z  ^[[32m✓^[[39m packages/core/test/unit/domain/s7-plugin-evidence.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.0051928Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.0103200Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.0797491Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.1388297Z  ^[[32m✓^[[39m packages/core/test/unit/domain/lifecycle.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.2052522Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-paused-timeline.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.2302099Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.3167392Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/acceptance-scan.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.3489313Z  ^[[32m✓^[[39m packages/core/test/unit/domain/values.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.3812085Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-projection-validation.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.4764207Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.5115911Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/mutation-config.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.5482129Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.6261150Z  ^[[32m✓^[[39m packages/core/test/contract/s4-validation-owner.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.6687438Z  ^[[32m✓^[[39m packages/core/test/unit/domain/triggers.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.7072406Z  ^[[32m✓^[[39m packages/react/test/patch-store.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.7664500Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/s7-recovery-audit.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.8473220Z ^[[90mstderr^[[2m | packages/react/test/public-hook-render.test.ts^[[2m > ^[[22m^[[2mReact public hook render/update (C2)^[[2m > ^[[22m^[[2mrenders the current patch and updates after publication
+quality (node 24)	Run npm test	2026-08-14T06:11:49.8475195Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test	2026-08-14T06:11:49.8477778Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-14T06:11:49.8478730Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-14T06:11:49.8481020Z The current testing environment is not configured to support act(...)
+quality (node 24)	Run npm test	2026-08-14T06:11:49.8481647Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:49.8490056Z  ^[[32m✓^[[39m packages/react/test/public-hook-render.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.8715336Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:49.9291788Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.0260347Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.0323703Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1237978Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1695128Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1785034Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 2^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1810079Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1810878Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 2 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1812476Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1814052Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/cross-motion.test.ts^[[2m > ^[[22mP5-01 cross-motion references^[[2m > ^[[22mkeeps a child pending when its cross-motion source is not mounted, then recovers independent of mount order
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1818304Z ^[[31m^[[1mAssertionError^[[22m: expected { node: 'base/root' } to match object { parentWorld: { node: 'base/root' } }
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1819205Z (1 matching property omitted from actual)^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1819493Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1819670Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1820239Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1820405Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1820542Z ^[[2m  {^[[22m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1820934Z ^[[32m-   "parentWorld": {^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1821347Z ^[[2m    "node": "base/root",^[[22m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1821700Z ^[[32m-   },^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1821989Z ^[[2m  }^[[22m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1822133Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1822978Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/cross-motion.test.ts:^[[2m47:32^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1850774Z     ^[[90m 45|^[[39m     const childPatch = recovered.patches.find(({ nodeId }) => nodeId =…
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1851886Z     ^[[90m 46|^[[39m     ^[[34mexpect^[[39m(childPatch^[[33m?.^[[39mstatus)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"ready"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1852877Z     ^[[90m 47|^[[39m     expect(childPatch?.values).toMatchObject({ parentWorld: { node: "b…
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1853549Z     ^[[90m   |^[[39m                                ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1854514Z     ^[[90m 48|^[[39m     ^[[34mexpect^[[39m(^[[33mObject^[[39m^[[33m.^[[39m^[[34misFrozen^[[39m(childPatch))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1855930Z     ^[[90m 49|^[[39m     ^[[34mexpect^[[39m(^[[33mObject^[[39m^[[33m.^[[39m^[[34misFrozen^[[39m(childPatch^[[33m?.^[[39mvalues))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1856616Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1856941Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1857227Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1858440Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/cross-motion.test.ts^[[2m > ^[[22mP5-01 cross-motion references^[[2m > ^[[22mpublishes the same child output when the source is mounted first
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1859401Z ^[[31m^[[1mAssertionError^[[22m: expected { node: 'base/root' } to match object { parentWorld: { node: 'base/root' } }
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1860586Z (1 matching property omitted from actual)^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1860850Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1860995Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1861276Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1861423Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1861571Z ^[[2m  {^[[22m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1861899Z ^[[32m-   "parentWorld": {^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1862538Z ^[[2m    "node": "base/root",^[[22m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1862897Z ^[[32m-   },^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1863184Z ^[[2m  }^[[22m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1863329Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1863879Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/cross-motion.test.ts:^[[2m63:32^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1864473Z     ^[[90m 61|^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1865224Z     ^[[90m 62|^[[39m     ^[[34mexpect^[[39m(childPatch^[[33m?.^[[39mstatus)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"ready"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1866185Z     ^[[90m 63|^[[39m     expect(childPatch?.values).toMatchObject({ parentWorld: { node: "b…
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1866891Z     ^[[90m   |^[[39m                                ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1867504Z     ^[[90m 64|^[[39m     runtime^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1867998Z     ^[[90m 65|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1868208Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1868521Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1868812Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1868852Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1870991Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m68 passed^[[39m^[[22m^[[90m (69)^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1872030Z ^[[2m      Tests ^[[22m ^[[1m^[[31m2 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m255 passed^[[39m^[[22m^[[90m (257)^[[39m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1872693Z ^[[2m   Start at ^[[22m 06:11:45
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1873528Z ^[[2m   Duration ^[[22m 4.81s^[[2m (transform 1.01s, setup 0ms, import 2.52s, tests 2.75s, environment 7ms)^[[22m
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1873983Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1879685Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1899332Z ##[error]AssertionError: expected { node: 'base/root' } to match object { parentWorld: { node: 'base/root' } }
+quality (node 24)	Run npm test	(1 matching property omitted from actual)
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	  {
+quality (node 24)	Run npm test	-   "parentWorld": {
+quality (node 24)	Run npm test	    "node": "base/root",
+quality (node 24)	Run npm test	-   },
+quality (node 24)	Run npm test	  }
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ packages/core/test/integration/cross-motion.test.ts:47:32
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1907374Z 
+quality (node 24)	Run npm test	2026-08-14T06:11:50.1910652Z ##[error]AssertionError: expected { node: 'base/root' } to match object { parentWorld: { node: 'base/root' } }
+quality (node 24)	Run npm test	(1 matching property omitted from actual)
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	  {
+quality (node 24)	Run npm test	-   "parentWorld": {
+quality (node 24)	Run npm test	    "node": "base/root",
+quality (node 24)	Run npm test	-   },
+quality (node 24)	Run npm test	  }
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ packages/core/test/integration/cross-motion.test.ts:63:32
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-08-14T06:11:50.2374248Z ##[error]Process completed with exit code 1.
+integration (node 24)	Run npm run test:integration	﻿2026-08-14T06:11:45.8703806Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:45.8704182Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:45.8750230Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:45.8750506Z env:
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:45.8750700Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:45.8750915Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:45.9818926Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:45.9820553Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:45.9821408Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:45.9821729Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:46.2919703Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:46.2924473Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:46.2925112Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:46.6718655Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:46.7247958Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:46.7457526Z  ^[[32m✓^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 34^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:46.8821654Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:46.9593708Z  ^[[31m❯^[[39m packages/core/test/integration/cross-motion.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:46.9602683Z ^[[31m     ^[[31m×^[[31m keeps a child pending when its cross-motion source is not mounted, then recovers independent of mount order^[[39m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:46.9605258Z ^[[31m     ^[[31m×^[[31m publishes the same child output when the source is mounted first^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:46.9612577Z      ^[[32m✓^[[39m rejects an unknown cross-motion source at load instead of treating it as pending^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:46.9614760Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:47.0977410Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:47.1872522Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:47.1954164Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-types.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:47.3276904Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:47.4113030Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:47.4182051Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:47.5182024Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:47.7037826Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:47.7601221Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:47.7675840Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:47.9290960Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:47.9495319Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:47.9561280Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.1403076Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.1491706Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.1776035Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2857999Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2887764Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2888601Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 2 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2889352Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2906506Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/cross-motion.test.ts^[[2m > ^[[22mP5-01 cross-motion references^[[2m > ^[[22mkeeps a child pending when its cross-motion source is not mounted, then recovers independent of mount order
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2909415Z ^[[31m^[[1mAssertionError^[[22m: expected { node: 'base/root' } to match object { parentWorld: { node: 'base/root' } }
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2911078Z (1 matching property omitted from actual)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2911342Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2911510Z ^[[32m- Expected^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2911809Z ^[[31m+ Received^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2911959Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2912073Z ^[[2m  {^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2912392Z ^[[32m-   "parentWorld": {^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2912739Z ^[[2m    "node": "base/root",^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2913031Z ^[[32m-   },^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2913279Z ^[[2m  }^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2913412Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2914176Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/cross-motion.test.ts:^[[2m47:32^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2952476Z     ^[[90m 45|^[[39m     const childPatch = recovered.patches.find(({ nodeId }) => nodeId =…
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2953670Z     ^[[90m 46|^[[39m     ^[[34mexpect^[[39m(childPatch^[[33m?.^[[39mstatus)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"ready"^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2954488Z     ^[[90m 47|^[[39m     expect(childPatch?.values).toMatchObject({ parentWorld: { node: "b…
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2955415Z     ^[[90m   |^[[39m                                ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2956234Z     ^[[90m 48|^[[39m     ^[[34mexpect^[[39m(^[[33mObject^[[39m^[[33m.^[[39m^[[34misFrozen^[[39m(childPatch))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2957350Z     ^[[90m 49|^[[39m     ^[[34mexpect^[[39m(^[[33mObject^[[39m^[[33m.^[[39m^[[34misFrozen^[[39m(childPatch^[[33m?.^[[39mvalues))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2957887Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2958153Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2958396Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2959709Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/cross-motion.test.ts^[[2m > ^[[22mP5-01 cross-motion references^[[2m > ^[[22mpublishes the same child output when the source is mounted first
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2961056Z ^[[31m^[[1mAssertionError^[[22m: expected { node: 'base/root' } to match object { parentWorld: { node: 'base/root' } }
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2961723Z (1 matching property omitted from actual)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2961969Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2962115Z ^[[32m- Expected^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2962407Z ^[[31m+ Received^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2962548Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2962671Z ^[[2m  {^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2962975Z ^[[32m-   "parentWorld": {^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2963410Z ^[[2m    "node": "base/root",^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2963718Z ^[[32m-   },^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2963970Z ^[[2m  }^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2964098Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2964535Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/cross-motion.test.ts:^[[2m63:32^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2965022Z     ^[[90m 61|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2965631Z     ^[[90m 62|^[[39m     ^[[34mexpect^[[39m(childPatch^[[33m?.^[[39mstatus)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"ready"^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2966777Z     ^[[90m 63|^[[39m     expect(childPatch?.values).toMatchObject({ parentWorld: { node: "b…
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2967342Z     ^[[90m   |^[[39m                                ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2967835Z     ^[[90m 64|^[[39m     runtime^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2968254Z     ^[[90m 65|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2968437Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2968686Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2968896Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2969080Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2970355Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m22 passed^[[39m^[[22m^[[90m (23)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2971424Z ^[[2m      Tests ^[[22m ^[[1m^[[31m2 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m61 passed^[[39m^[[22m^[[90m (63)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2971965Z ^[[2m   Start at ^[[22m 06:11:46
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2972621Z ^[[2m   Duration ^[[22m 1.98s^[[2m (transform 675ms, setup 0ms, import 1.55s, tests 286ms, environment 3ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2973033Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.2983350Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.3004737Z ##[error]AssertionError: expected { node: 'base/root' } to match object { parentWorld: { node: 'base/root' } }
+integration (node 24)	Run npm run test:integration	(1 matching property omitted from actual)
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected
+integration (node 24)	Run npm run test:integration	+ Received
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	  {
+integration (node 24)	Run npm run test:integration	-   "parentWorld": {
+integration (node 24)	Run npm run test:integration	    "node": "base/root",
+integration (node 24)	Run npm run test:integration	-   },
+integration (node 24)	Run npm run test:integration	  }
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/cross-motion.test.ts:47:32
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.3014075Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.3017904Z ##[error]AssertionError: expected { node: 'base/root' } to match object { parentWorld: { node: 'base/root' } }
+integration (node 24)	Run npm run test:integration	(1 matching property omitted from actual)
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected
+integration (node 24)	Run npm run test:integration	+ Received
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	  {
+integration (node 24)	Run npm run test:integration	-   "parentWorld": {
+integration (node 24)	Run npm run test:integration	    "node": "base/root",
+integration (node 24)	Run npm run test:integration	-   },
+integration (node 24)	Run npm run test:integration	  }
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/cross-motion.test.ts:63:32
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-14T06:11:48.3372850Z ##[error]Process completed with exit code 1.
+```
