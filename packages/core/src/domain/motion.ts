@@ -16,6 +16,7 @@ export interface MotionOptions {
   readonly trigger?: TriggerDelegate;
   readonly invalidate?: (progress: number) => void;
   readonly stagger?: number;
+  readonly disposeTracks?: boolean;
 }
 
 export class Motion {
@@ -25,6 +26,7 @@ export class Motion {
   readonly #trigger: TriggerDelegate | undefined;
   readonly #invalidate: (progress: number) => void;
   readonly #stagger: number;
+  readonly #disposeTracks: boolean;
   readonly #lifecycle: Lifecycle;
   readonly #scheduled = new Set<{ cancel(): void }>();
   #playing = false;
@@ -49,11 +51,12 @@ export class Motion {
     this.#trigger = options.trigger;
     this.#invalidate = options.invalidate ?? (() => undefined);
     this.#stagger = options.stagger ?? 0;
+    this.#disposeTracks = options.disposeTracks ?? true;
     this.#lifecycle = new Lifecycle({
       beforeDispose: () => {
         this.pause();
         this.#trigger?.detach();
-        for (const track of this.#tracks) track.track.dispose();
+        if (this.#disposeTracks) for (const track of this.#tracks) track.track.dispose();
       },
     });
   }
@@ -97,9 +100,9 @@ export class Motion {
     if (!Number.isFinite(progress)) throw new TypeError("Motion progress must be finite.");
     this.#setProgress(Math.max(0, Math.min(1, progress)));
   }
-  reflow(): void {
+  reflow(): readonly number[] {
     this.assertActive();
-    this.schedule();
+    return this.schedule();
   }
   dispose(): void {
     this.#lifecycle.dispose();
@@ -120,14 +123,20 @@ export class Motion {
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;
     if (command.setProgress !== undefined) {
       const progress = command.setProgress;
-      const handle = this.#scheduler.schedule(() => this.#setProgress(progress));
+      const handle = this.#scheduler.schedule(() => {
+        this.#scheduled.delete(handle);
+        this.#setProgress(progress);
+      });
       this.#scheduled.add(handle);
     }
   }
   #onTick(event: ClockTick): void {
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;
     const next = Math.min(1, this.#position + this.#progressDelta(event.delta));
-    const handle = this.#scheduler.schedule(() => this.#setProgress(next));
+    const handle = this.#scheduler.schedule(() => {
+      this.#scheduled.delete(handle);
+      this.#setProgress(next);
+    });
     this.#scheduled.add(handle);
   }
   #setProgress(progress: number): void {
