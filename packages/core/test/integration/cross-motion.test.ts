@@ -67,19 +67,20 @@ describe("P5-01 cross-motion references", () => {
   it("rejects an unknown cross-motion source at load instead of treating it as pending", () => {
     const invalid: ProjectDefinition = {
       ...project,
-      motions: project.motions.map((motion): MotionDefinition =>
-        motion.id === "arm"
-          ? {
-              ...motion,
-              tracks: [
-                {
-                  ...motion.tracks[0],
-                  id: "child",
-                  observes: [{ source: "missing/root", role: "input", target: "parentWorld" }],
-                },
-              ],
-            }
-          : motion,
+      motions: project.motions.map(
+        (motion): MotionDefinition =>
+          motion.id === "arm"
+            ? {
+                ...motion,
+                tracks: [
+                  {
+                    ...motion.tracks[0],
+                    id: "child",
+                    observes: [{ source: "missing/root", role: "input", target: "parentWorld" }],
+                  },
+                ],
+              }
+            : motion,
       ),
     };
 
