@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, "rescue/**"]
+    branches: [main, "rescue/**", "phase5/**"]
   pull_request:
-    branches: [main, "rescue/**", "fix/**"]
+    branches: [main, "rescue/**", "fix/**", "phase5/**"]
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
