@@ -1,44 +1,60 @@
 # Motion5 recovery status
 
-This is the **single source of truth** for recovery progress. Update this file after every slice branch or PR changes state. `WAVE-PLAN.md` contains the detailed plan and acceptance guidance, but its prose is not authoritative for status.
+This is the single source of truth for recovery progress. `WAVE-PLAN.md` contains the detailed plan; this file records live status and executable evidence.
 
-Last reviewed: 2026-08-11
+Last reviewed: 2026-08-14
 
-| ID  | Slice                                           | Status                         | Branch                             | Related files                                                                                                                                      | Commit or evidence                                                                                   |
-| --- | ----------------------------------------------- | ------------------------------ | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| W0  | Rescue loop and audit baseline                  | Not started                    | `rescue/restore-motionpath-parity` | [WAVE-PLAN](../WAVE-PLAN.md), planned [audit workflow](../.github/workflows/recovery-audit.yml)                                                    | No workflow run yet                                                                                  |
-| A1  | Final-value memo consistency                    | Done on main, verify on rescue | `fix/A1-final-value-memo`          | [publisher](../packages/core/src/runtime/graph-publisher.ts), [test](../packages/core/test/integration/publisher-output-merge-consistency.test.ts) | [1d59c087](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a) |
-| A2  | Preserve subscriber errors                      | Done on main, verify on rescue | `fix/A2-subscriber-errors`         | [registry](../packages/core/src/runtime/patch-registry.ts), [test](../packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts)    | [1d59c087](https://github.com/chahyasantoso/motion5/commit/1d59c087231c3c3f9c3cde6822d34835ee94705a) |
-| A3  | Guard subscriber-triggered reentrancy           | Not started                    | `fix/A3-publisher-reentrancy`      | Publisher/runtime notification boundary                                                                                                            | No evidence yet                                                                                      |
-| B1  | Prepare-stage plugin contribution               | Not started                    | `fix/B1-track-contribution`        | [track](../packages/core/src/domain/track.ts), [plugins](../packages/core/src/domain/plugins.ts)                                                   | No evidence yet                                                                                      |
-| B2  | Real GSAP multi-stop compilation                | Not started                    | `fix/B2-gsap-stop-compilation`     | [GSAP adapter](../packages/core/src/adapters/interpolator/gsap.ts), [tests](../packages/core/test/contract/adapters.test.ts)                       | No evidence yet                                                                                      |
-| C1  | React store resubscription                      | Not started                    | `fix/C1-react-store-lifecycle`     | [store](../packages/react/src/patch-store.ts), [test](../packages/react/test/patch-store.test.ts)                                                  | No evidence yet                                                                                      |
-| C2  | React hook and public exports                   | Not started                    | `fix/C2-react-public-surface`      | Planned React index and hook                                                                                                                       | No evidence yet                                                                                      |
-| C3  | DOM metadata, serialization, and clear coverage | Not started                    | `fix/C3-dom-contract`              | [DOM adapter](../packages/core/src/adapters/dom.ts), [test](../packages/core/test/integration/dom-patch-apply.test.ts)                             | No evidence yet                                                                                      |
-| D1  | Discover consumer packages                      | Not started                    | `fix/D1-boundary-discovery`        | [scanner](../scripts/boundary-scan.mjs)                                                                                                            | No evidence yet                                                                                      |
-| D2  | Planted boundary self-test                      | Not started                    | `fix/D2-boundary-self-test`        | [test](../packages/core/test/unit/scripts/boundary-scan.test.ts), [fixtures](../scripts/boundary-scan-fixtures.mjs)                                | No evidence yet                                                                                      |
-| D3  | Acceptance and failing-first evidence gates     | Not started                    | `fix/D3-evidence-gates`            | Planned checker and audit workflow                                                                                                                 | No evidence yet                                                                                      |
-| E1  | Required declaration build                      | Not started                    | `fix/E1-required-build`            | [CI](../.github/workflows/ci.yml), package exports                                                                                                 | No evidence yet                                                                                      |
-| E2  | Real end-to-end product path                    | Not started                    | `fix/E2-end-to-end-proof`          | Planned integration fixture                                                                                                                        | No evidence yet                                                                                      |
-| E3  | Mutation baseline and ratchet                   | Not started                    | `fix/E3-mutation-gate`             | Planned Stryker config and audit artifact                                                                                                          | No baseline yet                                                                                      |
+## Board
 
-## Status vocabulary
+| ID         | Slice                                           | Status          |
+| ---------- | ----------------------------------------------- | --------------- |
+| W0         | Rescue loop and audit baseline                  | Done            |
+| A1         | Final-value memo consistency                    | Done, gate open |
+| A2         | Preserve subscriber errors                      | Done, gate open |
+| A3         | Guard subscriber-triggered reentrancy           | Done, gate open |
+| B1         | Prepare-stage plugin contribution               | Done            |
+| B2         | Real GSAP multi-stop compilation                | Done            |
+| C1         | React store resubscription                      | Done            |
+| C2         | React hook and public exports                   | Done, gate open |
+| C3         | DOM metadata, serialization, and clear coverage | Done, gate open |
+| D1         | Discover consumer packages                      | Done            |
+| D2         | Planted boundary self-test                      | Done            |
+| D3         | Acceptance evidence gates                       | Done, gate open |
+| E1         | Required declaration build                      | Done, gate open |
+| E2         | Real end-to-end product path                    | Done            |
+| E3         | Mutation baseline and ratchet                   | Done, gate open |
+| P0-1       | Clock and batch identity                        | Done            |
+| P0-2       | GSAP clock ownership                            | Done            |
+| P0-3       | Absolute multi-property stop compilation        | Done, audited   |
+| P0-3b      | Authored-duration pinning                       | Done, audited   |
+| P0-4       | DOM transform rendering and removal             | Done, audited   |
+| X-1        | Flat projected input observations               | Done, merged    |
+| P1-5       | Structural registry change detection            | Done, merged    |
+| P1-6       | Listener snapshots before notification          | Done, merged    |
+| P1-7       | Scheduler-driven deferred drain                 | Done, merged    |
+| P1-8       | One reentrancy policy, one flush entry point    | Done, merged    |
+| P1-9       | Narrow public project handle                    | Done, merged    |
+| P1-10      | Product-load authored validation                | Done, merged    |
+| P1-11      | Runtime composition/output-shape diagnostics    | Done, merged    |
+| P1-12      | One observation-validation owner                | Done, merged    |
+| S5         | Contribution completeness                       | Done, gate open |
+| S6         | Remove dead `use` contract                      | Done, gate open |
+| S7         | Recovery audit and durable evidence             | Done, audited   |
+| P2/G-5/G-6 | Dirty-closure benchmark and mutation ratchet    | Done, audited   |
+| M1         | Motion/trigger lifecycle wiring                 | Done, audited   |
 
-- **Not started**: no branch or implementation work.
-- **In progress**: branch exists and work has begun.
-- **Red test recorded**: failing-first evidence is saved.
-- **Green, pending wave gate**: real acceptance test and cheap CI pass, but the wave gate is not complete.
-- **Done**: slice dependencies and its wave exit gate are proven.
-- **Blocked**: work cannot proceed; explain why in the row or linked slice log.
+## Evidence
 
-## Update protocol
+- PR [#95](https://github.com/chahyasantoso/motion5/pull/95) merged as [`e53265b`](https://github.com/chahyasantoso/motion5/commit/e53265b97be1c1f1bb766c78abf7bc4f1e1ce44b).
+- M1 PR [#96](https://github.com/chahyasantoso/motion5/pull/96) merged as [`1a26bfe`](https://github.com/chahyasantoso/motion5/commit/1a26bfe50899d8cb3bd7d0bde87d3def2033692d).
+- Assertion-level red: [`2681d1a`](https://github.com/chahyasantoso/motion5/commit/2681d1a5b9336dd8c4b08f8ab7b80d64a5817020).
+- Final audited M1 head: [`c26a807`](https://github.com/chahyasantoso/motion5/commit/c26a807c8fe74dc6fc79ee4ef92907c6364c408b).
+- Recovery audit [31767593680](https://github.com/chahyasantoso/motion5/actions/runs/31767593680) passed contract, mutation, acceptance, failing-first, and build/end-to-end jobs. Its only annotations were Node 20 action deprecation warnings.
 
-1. Update this table first whenever work starts, a red run is recorded, a PR merges, or evidence changes.
-2. Put commit, PR, workflow, and artifact links in the final column.
-3. Use `progress/<slice>.md` only for detailed evidence: oracle files, commands, output, and known gaps. It is supporting evidence, never a competing status source.
-4. Update `RECOVERY.md` only when the current handoff, baseline, or open-defect summary changes.
-5. Update `WAVE-PLAN.md` only when the plan, dependencies, acceptance criteria, or exit gates change.
+## Review disposition
 
-## Current next action
+The historical `CODE-REVIEW-POST-E3.md` was written against `f048a58`. P0-1 through P0-4, P1-5 through P1-12, X-1 through X-3, G-5/G-6, and the Motion/trigger lifecycle decision are now covered by implementation evidence and executable tests. The remaining items are release hygiene, not open runtime defects.
 
-Create the rescue branch, implement the planned manual audit workflow, run it against frozen `main`, and record the baseline artifacts in the W0 row. Do not mark W0 complete until a real GitHub Actions run exists.
+## Next action
+
+Open rescue → main after branch-protection verification. Keep the Node 20 action warnings as a separate maintenance cleanup, not a reason to reopen M1.

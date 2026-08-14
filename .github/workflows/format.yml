@@ -1,49 +1,65 @@
-# Automatically formats pull requests opened from branches in this repository.
-# Fork pull requests are never given write access; quality CI reports formatting drift.
-name: Format
+# PR formatting now runs as the final job in CI, after behavioral checks pass.
+# This legacy entry point remains manual so it cannot rewrite a red-test commit.
+name: Format fallback (manual)
 
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: Branch to format
+        required: true
+        default: main
+        type: string
 
 concurrency:
-  group: format-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  group: format-fallback-${{ inputs.branch }}
+  cancel-in-progress: false
 
 permissions:
-  contents: write
-  pull-requests: read
+  contents: read
 
 jobs:
-  format-pr:
-    name: prettier --write (same-repository PR)
-    if: github.event.pull_request.head.repo.full_name == github.repository
+  format:
+    name: prettier --write (manual fallback)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      HAS_PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          fetch-depth: 0
+          ref: ${{ inputs.branch }}
+          fetch-depth: 1
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN || github.token }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Apply formatter
+      - name: Apply Prettier
         run: npm run format
-      - name: Commit formatting changes
+      - name: Push formatting commit
+        if: env.HAS_PAT == 'true'
         env:
-          TARGET_BRANCH: ${{ github.event.pull_request.head.ref }}
+          TARGET_BRANCH: ${{ inputs.branch }}
         run: |
           if git diff --quiet; then
-            echo "No formatting drift."
+            echo "Already formatted."
             exit 0
           fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
           git add -A
           git commit -m "chore: apply prettier"
           git push origin "HEAD:${TARGET_BRANCH}"
+      - name: Report drift when PAT is unavailable
+        if: env.HAS_PAT != 'true'
+        run: |
+          if git diff --quiet; then
+            echo "Already formatted."
+            exit 0
+          fi
+          git --no-pager diff
+          echo "Formatting drift found, but PERSONAL_ACCESS_TOKEN is unavailable."
+          exit 1

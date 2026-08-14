@@ -4,80 +4,195 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "Branch, tag, or commit to audit"
+        description: Branch, tag, or commit to audit
         required: true
-        default: "main"
+        default: main
+        type: string
+      base:
+        description: Base for failing-first comparison
+        required: false
+        default: ""
+        type: string
+      failing_first_exception:
+        description: Documented reason this ref adds no new behavioral test
+        required: false
+        default: ""
         type: string
 
 permissions:
   contents: read
 
+env:
+  NODE_VERSION: 24
+
 jobs:
-  baseline:
-    name: Recovery baseline audit
+  contract:
+    name: contract and consumer evidence
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
-      - name: Check out selected ref
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: mkdir -p audit-logs/contract
+      - run: npx vitest run packages/core/test/contract packages/core/test/integration packages/react/test --reporter=json --outputFile=audit-logs/contract/vitest.json | tee audit-logs/contract/vitest.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-audit-contract-${{ github.run_id }}
+          path: audit-logs/contract/
+          if-no-files-found: error
+
+  mutation:
+    name: mutation baseline and ratchet
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: mkdir -p audit-logs/mutation reports/mutation
+      - run: npx stryker run 2>&1 | tee audit-logs/mutation/stryker.log
+      - run: node scripts/mutation-summary.mjs reports/mutation/mutation.json performance/mutation-baseline.json | tee audit-logs/mutation/summary.json
+      - run: npm run benchmark 2>&1 | tee audit-logs/mutation/benchmark.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-audit-mutation-${{ github.run_id }}
+          path: |
+            audit-logs/mutation/
+            reports/mutation/
+            performance/benchmark-report.json
+          if-no-files-found: error
+
+  acceptance:
+    name: executed acceptance mapping
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: mkdir -p audit-logs/acceptance
+      - run: npx vitest run --reporter=json --outputFile=audit-logs/acceptance/vitest.json | tee audit-logs/acceptance/vitest.log
+      - run: node scripts/acceptance-scan.mjs audit-logs/acceptance/vitest.json | tee audit-logs/acceptance/result.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-audit-acceptance-${{ github.run_id }}
+          path: audit-logs/acceptance/
+          if-no-files-found: error
+
+  failing-first:
+    name: failing-first evidence
+    runs-on: ubuntu-latest
+    env:
+      AUDIT_BASE: ${{ inputs.base }}
+      FAILING_FIRST_EXCEPTION: ${{ inputs.failing_first_exception }}
+    steps:
+      - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
           fetch-depth: 0
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
-
-      - name: Install locked dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-
-      - name: Run current test baseline
-        id: tests
-        continue-on-error: true
-        run: npm test 2>&1 | tee recovery-test.log
-
-      - name: Run current boundary baseline
-        id: boundaries
-        continue-on-error: true
-        run: npm run test:boundaries 2>&1 | tee recovery-boundary.log
-
-      - name: Record missing recovery gates
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Replay assertion-level red against base and green against ref
         run: |
-          {
-            echo "# Recovery audit baseline"
-            echo
-            echo "- Ref: ${{ inputs.ref }}"
-            echo "- Commit: $(git rev-parse HEAD)"
-            echo "- Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo
-            echo "## Existing checks"
-            echo "- npm test result: ${{ steps.tests.outcome }}"
-            echo "- boundary result: ${{ steps.boundaries.outcome }}"
-            echo
-            echo "## Planned evidence gates"
-            for path in \
-              .github/workflows/recovery-audit.yml \
-              scripts/acceptance-scan.mjs \
-              docs/acceptance-map.json \
-              packages/core/test/integration/end-to-end.test.ts \
-              packages/react/src/index.ts \
-              stryker.config.json; do
-              if test -e "$path"; then echo "- PRESENT: $path"; else echo "- MISSING: $path"; fi
-            done
-            echo
-            echo "## Interpretation"
-            echo "This is a baseline measurement, not a recovery pass. Missing gates are expected on the frozen baseline."
-          } | tee recovery-audit-report.md
-
-      - name: Upload baseline artifacts
-        if: always()
+          set -euo pipefail
+          mkdir -p audit-logs/failing-first
+          ref_sha=$(git rev-parse HEAD)
+          base_sha=${AUDIT_BASE:+$(git rev-parse "$AUDIT_BASE")}
+          base_sha=${base_sha:-$(git rev-parse HEAD^)}
+          git diff --name-only --diff-filter=AM "$base_sha" "$ref_sha" -- '*.test.ts' '*.test.tsx' > audit-logs/failing-first/new-tests.txt
+          if [ ! -s audit-logs/failing-first/new-tests.txt ]; then
+            test -n "$FAILING_FIRST_EXCEPTION"
+            printf 'exception: %s\n' "$FAILING_FIRST_EXCEPTION" > audit-logs/failing-first/exception.txt
+            exit 0
+          fi
+          git checkout -f "$base_sha"
+          git checkout "$ref_sha" -- packages/core/test packages/react/test
+          npm ci --ignore-scripts --no-audit --no-fund > audit-logs/failing-first/base-install.log 2>&1
+          if xargs -a audit-logs/failing-first/new-tests.txt npx vitest run --reporter=json --outputFile=audit-logs/failing-first/base.json > audit-logs/failing-first/base-run.log 2>&1; then exit 1; fi
+          node --input-type=module <<'NODE'
+          import { readFile } from "node:fs/promises";
+          const report = JSON.parse(await readFile("audit-logs/failing-first/base.json", "utf8"));
+          const failures = (report.testResults ?? []).filter((entry) => entry.status === "failed");
+          const infrastructure = failures.filter((entry) => /Cannot find|failed to resolve|config|transform|import-resolution/i.test(String(entry.message ?? entry.assertionResults ?? "")));
+          if (infrastructure.length) throw new Error(`import-resolution/config red: ${infrastructure.length}`);
+          if (!failures.length) throw new Error("base red was not assertion-level");
+          console.log(`assertion-level red: ${failures.length}; import-resolution/config red: 0`);
+          NODE
+          git checkout -f "$ref_sha"
+          npm ci --ignore-scripts --no-audit --no-fund > audit-logs/failing-first/ref-install.log 2>&1
+          xargs -a audit-logs/failing-first/new-tests.txt npx vitest run --reporter=json --outputFile=audit-logs/failing-first/ref.json > audit-logs/failing-first/ref-run.log 2>&1
+      - if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: recovery-audit-${{ github.run_id }}
-          path: |
-            recovery-audit-report.md
-            recovery-test.log
-            recovery-boundary.log
+          name: recovery-audit-failing-first-${{ github.run_id }}
+          path: audit-logs/failing-first/
+          if-no-files-found: error
+
+  build:
+    name: declaration build and end-to-end
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: mkdir -p audit-logs/build
+      - run: npx tsc -p packages/core/tsconfig.build.json 2>&1 | tee audit-logs/build/tsc.log
+      - run: test -f packages/core/dist/index.js && test -f packages/core/dist/index.d.ts
+      - run: npx vitest run packages/core/test/integration/end-to-end.test.ts 2>&1 | tee audit-logs/build/end-to-end.log
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-audit-build-${{ github.run_id }}
+          path: audit-logs/build/
+          if-no-files-found: error
+
+  report:
+    name: audit report
+    runs-on: ubuntu-latest
+    needs: [contract, mutation, acceptance, failing-first, build]
+    if: always()
+    steps:
+      - name: Write durable ci-logs summary
+        run: |
+          set -euo pipefail
+          mkdir -p ci-logs
+          cat > ci-logs/recovery-audit-${{ github.run_id }}.md <<EOF
+          # Recovery audit ${{ github.run_id }}
+          ref: ${{ inputs.ref }}
+          contract: ${{ needs.contract.result }}
+          mutation: ${{ needs.mutation.result }}
+          acceptance: ${{ needs.acceptance.result }}
+          failing-first: ${{ needs.failing-first.result }}
+          build: ${{ needs.build.result }}
+          EOF
+          for result in "${{ needs.contract.result }}" "${{ needs.mutation.result }}" "${{ needs.acceptance.result }}" "${{ needs.failing-first.result }}" "${{ needs.build.result }}"; do test "$result" = success; done
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ci-logs-recovery-audit-${{ github.run_id }}
+          path: ci-logs/
           if-no-files-found: error

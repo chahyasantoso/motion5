@@ -28,7 +28,7 @@ const node = (
   });
 
 describe("GraphPublisher partial-seed inputs", () => {
-  it("uses the last published value for an unseeded input source", () => {
+  it("uses the last published flat value for an unseeded input source", () => {
     const registry = new PatchRegistry();
     let a = 2;
     const sourceA = node("source-a", 0, [], () => ({
@@ -49,7 +49,7 @@ describe("GraphPublisher partial-seed inputs", () => {
         { observerId: "sink", sourceId: "source-b", role: "input", target: "b" },
       ],
       (inputs) => ({
-        values: { total: (inputs.a as { a: number }).a + (inputs.b as { b: number }).b },
+        values: { total: (inputs.a as number) + (inputs.b as number) },
         sourceProgress: 0,
         sourceRevisions: {},
       }),

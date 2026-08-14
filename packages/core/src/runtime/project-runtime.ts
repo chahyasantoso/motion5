@@ -1,9 +1,11 @@
 import type { ProjectDefinition } from "../contract/v5";
 import type { Clock } from "../ports/clock";
+import type { Scheduler } from "../ports/scheduler";
 import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
 
 export interface ProjectRuntimeOptions {
   readonly clock: Clock;
+  readonly scheduler?: Scheduler;
   readonly compose: ComposeResolver;
   readonly setProgress?: (nodeId: string, progress: number) => void;
   readonly disposeComposition?: () => void;
@@ -22,7 +24,9 @@ export class ProjectRuntime {
     this.#setProgress = options.setProgress ?? (() => undefined);
     this.#disposeComposition = options.disposeComposition ?? (() => undefined);
     try {
-      this.#graph = new GraphRuntime(project, options.clock, options.compose);
+      this.#graph = new GraphRuntime(project, options.clock, options.compose, {
+        scheduler: options.scheduler,
+      });
     } catch (error) {
       this.#disposeComposition();
       throw error;

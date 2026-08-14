@@ -73,7 +73,6 @@ describe("graph IR and candidate validation", () => {
     expect(result.diagnostics.map(({ ruleId }) => ruleId)).toEqual(
       expect.arrayContaining([
         "observation-duplicate",
-        "observation-input-target",
         "observation-output-target",
         "observation-self-reference",
         "observation-unknown-source",

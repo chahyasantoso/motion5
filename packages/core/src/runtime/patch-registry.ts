@@ -1,25 +1,7 @@
-import type { Diagnostic } from "../contract/v5";
+import type { Diagnostic, Patch, PatchBatch, PatchListener, PatchStatus } from "../contract/v5";
+import { equalValues } from "../domain/values";
 
-export type PatchStatus = "ready" | "blocked" | "error";
-
-export interface Patch {
-  readonly nodeId: string;
-  readonly revision: number;
-  readonly values: Readonly<Record<string, unknown>>;
-  readonly sourceProgress: number;
-  readonly sourceRevisions: Readonly<Record<string, number>>;
-  readonly status: PatchStatus;
-  readonly diagnostics: readonly Diagnostic[];
-}
-
-export interface PatchBatch {
-  readonly tick: number;
-  readonly seeds: readonly string[];
-  readonly patches: readonly Patch[];
-  readonly diagnostics: readonly Diagnostic[];
-}
-
-export type PatchListener = (patch: Patch) => void;
+export type { Patch, PatchBatch, PatchListener, PatchStatus } from "../contract/v5";
 export type BatchListener = (batch: PatchBatch) => void;
 
 export interface PublishInput {
@@ -31,6 +13,10 @@ export interface PublishInput {
   readonly diagnostics?: readonly Diagnostic[];
 }
 
+export const REENTRANT_BATCH_MESSAGE =
+  "Cannot open a patch batch while subscribers are being notified. " +
+  "Queue one follow-up invalidation instead of recursing.";
+
 function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   if (value === null || typeof value !== "object") return value;
   if (seen.has(value)) return value;
@@ -38,27 +24,33 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   for (const child of Object.values(value)) deepFreeze(child, seen);
   return Object.freeze(value);
 }
-
-function sameRecord(
-  a: Readonly<Record<string, unknown>>,
-  b: Readonly<Record<string, unknown>>,
-): boolean {
-  const aKeys = Object.keys(a).sort();
-  const bKeys = Object.keys(b).sort();
-  if (aKeys.length !== bKeys.length) return false;
-  return aKeys.every((key, index) => key === bKeys[index] && Object.is(a[key], b[key]));
+function sameIds(a: readonly string[] | undefined, b: readonly string[] | undefined): boolean {
+  if (a === undefined || b === undefined) return a === b;
+  if (a.length !== b.length) return false;
+  return a.every((id, index) => id === b[index]);
 }
-
+function sameDiagnostic(a: Diagnostic, b: Diagnostic): boolean {
+  return (
+    a.ruleId === b.ruleId &&
+    a.path === b.path &&
+    a.message === b.message &&
+    a.severity === b.severity &&
+    sameIds(a.ids, b.ids)
+  );
+}
 function sameDiagnostics(a: readonly Diagnostic[], b: readonly Diagnostic[]): boolean {
-  return JSON.stringify(a) === JSON.stringify(b);
+  if (a.length !== b.length) return false;
+  return a.every((item, index) => {
+    const other = b[index];
+    return other !== undefined && sameDiagnostic(item, other);
+  });
 }
-
 function samePatch(a: Patch | undefined, b: Patch): boolean {
   return (
     a !== undefined &&
-    sameRecord(a.values, b.values) &&
+    equalValues(a.values, b.values) &&
     Object.is(a.sourceProgress, b.sourceProgress) &&
-    sameRecord(a.sourceRevisions, b.sourceRevisions) &&
+    equalValues(a.sourceRevisions, b.sourceRevisions) &&
     a.status === b.status &&
     sameDiagnostics(a.diagnostics, b.diagnostics)
   );
@@ -73,12 +65,16 @@ export class PatchRegistry {
   #batchTick = 0;
   #batchSeeds: string[] = [];
   #batchOpen = false;
+  #notifying = false;
 
   get(nodeId: string): Patch | undefined {
     return this.#patches.get(nodeId);
   }
-
+  get notifying(): boolean {
+    return this.#notifying;
+  }
   beginBatch(tick: number, seeds: readonly string[]): void {
+    if (this.#notifying) throw new Error(REENTRANT_BATCH_MESSAGE);
     if (this.#batchOpen) throw new Error("A patch batch is already open.");
     this.#batchOpen = true;
     this.#batchTick = tick;
@@ -86,15 +82,23 @@ export class PatchRegistry {
     this.#batch = [];
     this.#batchDiagnostics = [];
   }
-
   publish(input: PublishInput): Patch | undefined {
     const previous = this.#patches.get(input.nodeId);
+    const readyValues = input.values ?? previous?.values ?? {};
+    const readyProgress =
+      input.values === undefined && input.status !== "ready"
+        ? (previous?.sourceProgress ?? input.sourceProgress)
+        : input.sourceProgress;
+    const readyRevisions =
+      input.values === undefined && input.status !== "ready"
+        ? (previous?.sourceRevisions ?? input.sourceRevisions ?? {})
+        : (input.sourceRevisions ?? {});
     const candidate = {
       nodeId: input.nodeId,
       revision: (previous?.revision ?? 0) + 1,
-      values: input.values ?? {},
-      sourceProgress: input.sourceProgress,
-      sourceRevisions: input.sourceRevisions ?? {},
+      values: readyValues,
+      sourceProgress: readyProgress,
+      sourceRevisions: readyRevisions,
       status: input.status,
       diagnostics: input.diagnostics ?? [],
     } satisfies Patch;
@@ -105,19 +109,16 @@ export class PatchRegistry {
     this.#batchDiagnostics.push(...patch.diagnostics);
     return patch;
   }
-
   subscribeNode(nodeId: string, listener: PatchListener): () => void {
     const listeners = this.#nodeListeners.get(nodeId) ?? new Set<PatchListener>();
     listeners.add(listener);
     this.#nodeListeners.set(nodeId, listeners);
     return () => listeners.delete(listener);
   }
-
   subscribeBatch(listener: BatchListener): () => void {
     this.#batchListeners.add(listener);
     return () => this.#batchListeners.delete(listener);
   }
-
   closeBatch(): PatchBatch {
     if (!this.#batchOpen) throw new Error("No patch batch is open.");
     const batch = deepFreeze({
@@ -126,39 +127,42 @@ export class PatchRegistry {
       patches: [...this.#batch],
       diagnostics: [...this.#batchDiagnostics],
     }) as PatchBatch;
-    const nodeListeners = new Map(this.#nodeListeners);
-    const batchListeners = new Set(this.#batchListeners);
+    const nodeListeners = new Map<string, readonly PatchListener[]>(
+      [...this.#nodeListeners].map(([nodeId, listeners]): [string, readonly PatchListener[]] => [
+        nodeId,
+        [...listeners],
+      ]),
+    );
+    const batchListeners: readonly BatchListener[] = [...this.#batchListeners];
     this.#batchOpen = false;
     this.#batch = [];
     this.#batchDiagnostics = [];
     this.#batchSeeds = [];
-    // A listener's own bug must not prevent other listeners from being notified, and must
-    // not leave the registry's batch state inconsistent. Every listener runs regardless of
-    // whether an earlier one threw; the first thrown error (if any) is rethrown only after
-    // every listener has had its turn, once state is already fully settled.
     let firstError: unknown;
     let hasError = false;
-    for (const patch of batch.patches) {
-      for (const listener of nodeListeners.get(patch.nodeId) ?? []) {
+    this.#notifying = true;
+    try {
+      for (const patch of batch.patches)
+        for (const listener of nodeListeners.get(patch.nodeId) ?? [])
+          try {
+            listener(patch);
+          } catch (error) {
+            if (!hasError) {
+              hasError = true;
+              firstError = error;
+            }
+          }
+      for (const listener of batchListeners)
         try {
-          listener(patch);
+          listener(batch);
         } catch (error) {
           if (!hasError) {
             hasError = true;
             firstError = error;
           }
         }
-      }
-    }
-    for (const listener of batchListeners) {
-      try {
-        listener(batch);
-      } catch (error) {
-        if (!hasError) {
-          hasError = true;
-          firstError = error;
-        }
-      }
+    } finally {
+      this.#notifying = false;
     }
     if (hasError) throw firstError;
     return batch;

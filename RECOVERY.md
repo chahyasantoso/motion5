@@ -4,34 +4,22 @@ This file is the restart point for any human or AI session. Read it before chang
 
 ## Mission
 
-Restore motion5 by adapting the working behavior of the oracle repository, `chahyasantoso/motionpath`, while preserving motion5's graph ownership and TypeScript boundaries. Do not treat a green test suite as proof unless the test exercises the real behavior at the boundary.
-
-## Single source of truth
-
-The live checklist is [`progress/STATUS.md`](progress/STATUS.md). It owns every slice's status, branch, related files, commit links, evidence links, and next action. Read it first and update it first. `WAVE-PLAN.md` is the detailed plan, `progress/<slice>.md` files are optional evidence logs, and neither is a second status system.
+Restore motion5 by adapting the working behavior of `chahyasantoso/motionpath` while preserving motion5's graph ownership and TypeScript boundaries.
 
 ## Current baseline
 
 - Repository: `chahyasantoso/motion5`
-- Main baseline reviewed: commit `1d59c087231c3c3f9c3cde6822d34835ee94705a`
-- Oracle: `chahyasantoso/motionpath`
-- Oracle revision inspected for this handoff: `1bc8d044347fa3b1732e6dad3bc8437ad23e2687`
-- Rescue branch to create locally: `rescue/restore-motionpath-parity`
+- Current rescue branch: `rescue/restore-motionpath-parity`
+- Archive branch: `ci-logs`
+- PR 95 merge: [`e53265b`](https://github.com/chahyasantoso/motion5/commit/e53265b97be1c1f1bb766c78abf7bc4f1e1ce44b)
+- PR 96 merge: [`1a26bfe`](https://github.com/chahyasantoso/motion5/commit/1a26bfe50899d8cb3bd7d0bde87d3def2033692d)
 
-## Rules
+## M1 decision and evidence
 
-Freeze feature work on `main`. Create the rescue branch once, then one short-lived fix branch from the latest rescue tip for each slice. Merge each slice back into rescue only after failing-first evidence, implementation, and CI evidence exist. Merge rescue into `main` once, after all wave gates pass.
+Motion and trigger lifecycle are wired through one Motion owner, the injected Scheduler, `ProjectRuntime.seek`, and the existing project clock. `ProjectHandle.signal()` is the public trigger seam. Engine-created Motion does not subscribe to the Clock, so ProjectRuntime remains the sole clock owner.
 
-At session start: read this file and [`progress/STATUS.md`](progress/STATUS.md), inspect current branches and CI artifacts, then pick one slice. At session end: update the status table with the commit and evidence links. Never mark a slice done from code inspection or generic green tests.
+Recovery audit [31767593680](https://github.com/chahyasantoso/motion5/actions/runs/31767593680) passed against [`c26a807`](https://github.com/chahyasantoso/motion5/commit/c26a807c8fe74dc6fc79ee4ef92907c6364c408b), with base [`e53265b`](https://github.com/chahyasantoso/motion5/commit/e53265b97be1c1f1bb766c78abf7bc4f1e1ce44b) and blank exception. Only Node 20 action deprecation warnings remain.
 
-## Baseline verdict
+## Next action
 
-A1 and A2 are implemented on main but must be verified on rescue. Remaining gaps are GSAP final-stop compilation, unused plugin contribution, subscriber-triggered reentrancy, React resubscription/hooks/public exports, hardcoded and weak boundary scanning, missing required build, missing honest end-to-end proof, and missing mutation baseline.
-
-DOM `clear()` matches the oracle's cache-teardown behavior; the real DOM gaps are plugin metadata filtering, output serialization, and explicit clear coverage.
-
-## Manual audit reality
-
-There is currently **no** `.github/workflows/recovery-audit.yml`. It is a planned Wave 0 task, not an existing command. When implemented, it must accept a ref via `workflow_dispatch`, run real contract tests, mutation testing, acceptance mapping, failing-first replay, declaration build, public-import smoke tests, boundary checks, and the end-to-end fixture, then upload durable artifacts. Run it on frozen main first and record the result in the W0 row of [`progress/STATUS.md`](progress/STATUS.md).
-
-Manual audit measures expensive evidence; it does not replace required PR checks. After recovery, format, typecheck, real contract tests, boundaries, build, and end-to-end checks must block merges. Mutation testing may remain manual or nightly.
+No runtime/evidence blocker remains from `CODE-REVIEW-POST-E3.md`. Verify branch protection and open the final rescue → main PR. Track Node 20 action modernization separately.

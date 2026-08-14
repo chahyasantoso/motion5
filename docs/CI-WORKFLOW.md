@@ -1,14 +1,12 @@
 # CI workflow
 
-CI is an executable version of the project’s evidence model. It checks pull requests and pushes to `main`; it never rewrites contributor branches. Formatting is checked automatically and fixed only through the manually dispatched formatter.
-
-**Current status:** Phase 4 is reopened. The live jobs prove structural checks and graph behavior, but they do not prove the missing authored animation value pipeline. Do not treat a green current matrix as Phase 4 completion.
+CI is an executable version of the project’s evidence model. It checks pull requests and pushes to `main`; it never rewrites contributor branches. Formatting is checked automatically by a read-only job. Same-repository formatting drift can be repaired through a separate, manually merged formatting PR.
 
 ## Global rules
 
 - Node 24 and a pinned lockfile.
 - `npm ci`, not an unconstrained install.
-- Read-only repository permissions for CI.
+- Read-only repository permissions for normal CI.
 - Concurrency cancellation per branch or pull request.
 - Same required matrix on pull requests and protected branch pushes.
 - Benchmark output and failure diagnostics are uploaded as artifacts.
@@ -19,11 +17,19 @@ CI is an executable version of the project’s evidence model. It checks pull re
 
 **quality:** format check, TypeScript check, and unit tests. Required.
 
+**format:** checks the exact PR head with `npm run format:check`. Required for same-repository PRs; fork PRs remain protected by the quality format check and cannot use the write-enabled repair bot.
+
+**format repair:** on same-repository PR events, checks out the exact head SHA, runs `npm run format`, and if drift exists opens or updates `chore/format-pr-<number>` against the source implementation branch. It never pushes to that branch and is not auto-merged.
+
 **integration:** deterministic graph/runtime integration tests. Required, but currently limited by the implemented runtime surface.
 
 **boundaries:** rejects renderer imports in core, banned compatibility symbols, and forbidden public exports. Required. The planted consumer self-test still needs the recovery-plan repair.
 
 **performance:** runs the deterministic structural benchmark against versioned advisory budgets and uploads the report. Advisory until **2026-08-17**. The budget decision must be revisited after Phase 0R/1R restores real value composition; do not promote an empty-pipeline baseline blindly.
+
+## CI log archive
+
+`.github/workflows/archive-ci-logs.yml` archives failed `CI` and `Recovery audit` runs on the separate `ci-logs` branch under `logs/<run-id>/`. Each run has `README.md`, `run.json`, `run.log`, and `jobs.json`. Use the original Actions URL as the primary citation and the archive as durable failure evidence.
 
 ## Planned jobs
 

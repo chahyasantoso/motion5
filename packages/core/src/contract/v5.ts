@@ -13,6 +13,27 @@ export interface Diagnostic {
   readonly ids?: readonly string[];
 }
 
+export type PatchStatus = "ready" | "blocked" | "error";
+
+export interface Patch {
+  readonly nodeId: string;
+  readonly revision: number;
+  readonly values: Readonly<Record<string, unknown>>;
+  readonly sourceProgress: number;
+  readonly sourceRevisions: Readonly<Record<string, number>>;
+  readonly status: PatchStatus;
+  readonly diagnostics: readonly Diagnostic[];
+}
+
+export interface PatchBatch {
+  readonly tick: number;
+  readonly seeds: readonly string[];
+  readonly patches: readonly Patch[];
+  readonly diagnostics: readonly Diagnostic[];
+}
+
+export type PatchListener = (patch: Patch) => void;
+
 export interface AuthoredStop {
   readonly p: number;
   readonly v: unknown;
@@ -23,10 +44,14 @@ export interface AuthoredProperty {
   readonly stops: readonly AuthoredStop[];
 }
 
+export interface InputProjection {
+  readonly pick?: readonly string[];
+  readonly map?: Readonly<Record<string, string>>;
+}
+
 export interface TrackDefinition {
   readonly id: string;
   readonly duration?: number;
-  readonly use?: string;
   readonly keyframes?: Readonly<Record<string, AuthoredProperty>>;
   readonly observes?: readonly ObservationDefinition[];
 }
@@ -35,6 +60,7 @@ export interface ObservationDefinition {
   readonly source: string;
   readonly role?: "input" | "output";
   readonly target?: string;
+  readonly projection?: InputProjection;
 }
 
 export interface MotionDefinition {

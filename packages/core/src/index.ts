@@ -20,6 +20,10 @@ export type {
   ProjectDefinition,
   TrackDefinition,
   TriggerType,
+  PatchStatus,
+  Patch,
+  PatchBatch,
+  PatchListener,
 } from "./contract/v5";
 export { migrateV4ToV5 } from "./contract/migrate-v4-to-v5";
 export type { MigrationResult } from "./contract/migrate-v4-to-v5";
@@ -28,6 +32,7 @@ export type { ValidationResult } from "./contract/validate-v5";
 export { parseGolden, serializeGolden } from "./contract/golden";
 export type { GoldenFixture, GoldenValidationFixture } from "./contract/golden";
 export { Engine } from "./engine";
+export type { ProjectHandle } from "./engine";
 export { PluginRegistry } from "./domain/plugins";
 export type { PluginDefinition, ResolvedPlugins } from "./domain/plugins";
 export { assertClock, createManualClock } from "./ports/clock";

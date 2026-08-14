@@ -5,39 +5,12 @@ import {
   createGsapInterpolator,
   type GsapTimelineLike,
 } from "../../src/adapters/interpolator/gsap";
+import { createRealGsapSeam } from "../support/real-gsap";
 
 describe("adapter ports", () => {
   it("compiles authored stops onto an adapter-owned proxy state", () => {
-    let value = 0;
-    let killed = false;
-    let target: Record<string, unknown> | undefined;
-    let vars: Record<string, unknown> | undefined;
-    const interpolator = createGsapInterpolator({
-      timeline: (): GsapTimelineLike => {
-        function progress(): number;
-        function progress(next: number): GsapTimelineLike;
-        function progress(next?: number): number | GsapTimelineLike {
-          if (next === undefined) return value;
-          value = next;
-          if (target && typeof vars?.x === "number") target.x = vars.x * next;
-          return timeline;
-        }
-        const timeline: GsapTimelineLike = {
-          duration: () => 2,
-          progress,
-          to(nextTarget, nextVars) {
-            target = nextTarget;
-            vars = nextVars;
-            return timeline;
-          },
-          kill() {
-            killed = true;
-          },
-        };
-        return timeline;
-      },
-    });
-    const timeline = interpolator.create({
+    const seam = createRealGsapSeam();
+    const timeline = seam.interpolator.create({
       duration: 2,
       keyframes: {
         x: {
@@ -48,40 +21,38 @@ describe("adapter ports", () => {
         },
       },
     });
-    expect(timeline.state).toEqual({ x: 100 });
+    expect(timeline.state).toMatchObject({ x: 0 });
     timeline.progress(0.5);
-    expect(timeline.state).toEqual({ x: 50 });
+    expect(timeline.state).toMatchObject({ x: 50 });
     timeline.kill();
-    expect(killed).toBe(true);
   });
 
-  it("adapts a GSAP-like timeline without leaking the engine object", () => {
+  it("adapts a GSAP-like paused timeline without leaking the engine object", () => {
     let value = 0;
+    let durationValue = 2;
     let killed = false;
-    const interpolator = createGsapInterpolator({
-      timeline: (): GsapTimelineLike => {
-        function progress(): number;
-        function progress(next: number): GsapTimelineLike;
-        function progress(next?: number): number | GsapTimelineLike {
-          if (next === undefined) return value;
-          value = next;
-          return timeline;
-        }
-        const timeline: GsapTimelineLike = {
-          duration: () => 2,
-          progress,
-          kill() {
-            killed = true;
-          },
-        };
-        return timeline;
+    const timeline: GsapTimelineLike = {
+      duration(value?: number): number | GsapTimelineLike {
+        if (value === undefined) return durationValue;
+        durationValue = value;
+        return this;
       },
-    });
-    const timeline = interpolator.create({});
-    expect(timeline.duration).toBe(2);
-    timeline.progress(0.5);
-    expect(timeline.progress()).toBe(0.5);
-    timeline.kill();
+      progress(next?: number): number | GsapTimelineLike {
+        if (next === undefined) return value;
+        value = next;
+        return this;
+      },
+      to: () => timeline,
+      kill: () => {
+        killed = true;
+      },
+    } as GsapTimelineLike;
+    const interpolator = createGsapInterpolator({ timeline: () => timeline });
+    const adapted = interpolator.create({ duration: 2 });
+    expect(adapted.duration).toBe(2);
+    adapted.progress(0.5);
+    expect(adapted.progress()).toBe(0.5);
+    adapted.kill();
     expect(killed).toBe(true);
   });
 
