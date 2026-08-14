@@ -130,6 +130,7 @@ export class GraphPublisher {
     }
     const failed = new Map<string, Diagnostic>();
     const blocked = new Set<string>();
+    const pending = new Set<string>();
     const memo = new Map<string, PublisherComposition>();
     this.#registry.beginBatch(tick, seeds);
     try {
@@ -138,7 +139,10 @@ export class GraphPublisher {
         const node = byId.get(id);
         if (node === undefined) continue;
         const sourceFailure = node.edges
-          .filter((edge) => failed.has(edge.sourceId) || blocked.has(edge.sourceId))
+          .filter(
+            (edge) =>
+              failed.has(edge.sourceId) || blocked.has(edge.sourceId) || pending.has(edge.sourceId),
+          )
           .sort(compareEdgeKeys)[0]?.sourceId;
         if (sourceFailure !== undefined) {
           blocked.add(id);
@@ -226,13 +230,31 @@ export class GraphPublisher {
           });
         } catch (error) {
           const failure = diagnostic(id, error);
-          failed.set(id, failure);
-          this.#registry.publish({
-            nodeId: id,
-            sourceProgress: 0,
-            status: "error",
-            diagnostics: [failure],
-          });
+          if (failure.ruleId === "observation-missing-upstream") {
+            pending.add(id);
+            this.#registry.publish({
+              nodeId: id,
+              sourceProgress: 0,
+              status: "blocked",
+              diagnostics: [
+                Object.freeze({
+                  ruleId: "pending-reference",
+                  path: id,
+                  message: failure.message,
+                  severity: "warning",
+                  ids: Object.freeze([id]),
+                }),
+              ],
+            });
+          } else {
+            failed.set(id, failure);
+            this.#registry.publish({
+              nodeId: id,
+              sourceProgress: 0,
+              status: "error",
+              diagnostics: [failure],
+            });
+          }
         }
       }
       return this.#registry.closeBatch();
