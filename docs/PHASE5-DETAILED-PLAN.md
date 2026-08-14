@@ -9,7 +9,7 @@
 
 PR #98 tried to solve P5-01 but drifted from the plan in ways that compounded rather than one clean invariant:
 
-1. **Wrong owner.** The plan assigns P5-01 to a new module, `core/graph/references.ts`, with resolution happening *at load* ("a reference either resolves to a member or is recorded as a pending reference... there is no third state"). PR #98 never created that module. Instead it made `GraphPublisher` catch a thrown composition error at *runtime* and branch on `error.ruleId === "observation-missing-upstream"` to decide pending vs. real failure. That's reactive string-matching bolted onto the publisher, not load-time resolution owned by a dedicated object.
+1. **Wrong owner.** The plan assigns P5-01 to a new module, `core/graph/references.ts`, with resolution happening _at load_ ("a reference either resolves to a member or is recorded as a pending reference... there is no third state"). PR #98 never created that module. Instead it made `GraphPublisher` catch a thrown composition error at _runtime_ and branch on `error.ruleId === "observation-missing-upstream"` to decide pending vs. real failure. That's reactive string-matching bolted onto the publisher, not load-time resolution owned by a dedicated object.
 2. **No single owner for pending state.** The PR's own checklist demanded "define the single owner for pending reference state and membership transitions." Nothing in the diff created one; the `pending` set lives as a local variable inside one `flush()` call and disappears afterward.
 3. **Cascading, undiagnosed side effects.** Because the real fix belonged in a load-time resolver and wasn't there, the author had to chase symptoms in `GraphRuntime`'s per-flush publisher-node cache. That produced two separate revert-and-patch cycles on the same root cause (stale cache keyed by node object identity). The plan's own sizing rule says to recut after a second revert on a slice; this crossed that line while still failing to land a clean fix.
 4. **Scope creep unrelated to the invariant.** The PR also deleted `.github/workflows/format-repair.yml`, edited `ci.yml` branch triggers, and reformatted unrelated code in `graph-runtime.ts` (collapsing multi-line getters to single lines). None of that is P5-01's invariant. The plan is explicit: "one pull request establishes one meaningful invariant" and "formatting is separate."
@@ -26,7 +26,7 @@ Follow these on every PR in Phase 5, no exceptions:
 - If you find a pre-existing bug outside your slice's owner (e.g., a stale cache, a leak, a mis-typed fixture), do not patch it inline. Note it in the PR description as a follow-up and leave it alone, unless it makes your failing-first test impossible to write, in which case fix only the minimal blocking part and call it out explicitly as a named, separate commit.
 - If you find yourself reverting and re-patching the same root cause a second time, stop. Close the branch, re-read the owner assignment below, and recut instead of continuing to chase symptoms.
 - Every new piece of state needs a named, single owning object. State that must survive across flushes (anything about membership or pending status) must live on a long-lived object, never a local variable inside a method that runs once per flush.
-- Write the failing test first, from the exact scenario in "Evidence," before touching implementation files. Confirm it fails for the *right* reason (paste the assertion failure in the PR).
+- Write the failing test first, from the exact scenario in "Evidence," before touching implementation files. Confirm it fails for the _right_ reason (paste the assertion failure in the PR).
 
 ---
 
@@ -37,6 +37,7 @@ Follow these on every PR in Phase 5, no exceptions:
 **Owner:** `core/graph/references.ts` (new file). This is the single place that classifies a cross-motion observation edge as resolved, pending, or invalid. `GraphBinding` calls into it during the transaction (build candidate → normalize → validate). `GraphPublisher` and `GraphRuntime` must not independently infer pending-vs-error state from a caught runtime exception or a string-matched rule id. Membership changes (attach/detach) call into the same module to re-evaluate any reference that depended on the node being attached or detached.
 
 **Allowed changes:**
+
 - `packages/core/src/graph/references.ts` (new)
 - `packages/core/src/graph/validate.ts` (wire in reference classification, do not duplicate it)
 - `packages/core/src/graph/binding.ts` (call the resolver during commit; on attach/detach, re-resolve affected references)
@@ -45,6 +46,7 @@ Follow these on every PR in Phase 5, no exceptions:
 - `packages/core/test/unit/graph/references.test.ts` (new)
 
 **Checklist:**
+
 - [ ] Write `test/unit/graph/references.test.ts` first: a reference to a known member resolves; a reference to a valid-but-unmounted id is pending with a deterministic diagnostic; a reference to an id that never exists in the project is a load-time error; re-attaching the source flips pending to resolved without changing the observer's identity.
 - [ ] Write `test/integration/cross-motion.test.ts`: mount observer before source (pending, then recovers), mount source before observer (same final output and revision), unknown source rejected at construction, published values for a pending node are never fabricated, resolution does not depend on mount order.
 - [ ] Confirm both tests fail on the current `phase5/membership-base` tip for the right reason (paste the failing assertion in the PR).
@@ -71,10 +73,12 @@ Follow these on every PR in Phase 5, no exceptions:
 **Owner:** `core/runtime/project-runtime.ts` membership path (adoption call, ownership bookkeeping). Reuses the qualified-id scheme from P2-01 (`~/trackId`) and the classifier from P5-01 for any reference resolution, does not invent a parallel one.
 
 **Allowed changes:**
+
 - `packages/core/src/runtime/project-runtime.ts`
 - `packages/core/test/integration/adoption.test.ts` (new)
 
 **Checklist:**
+
 - [ ] Write `test/integration/adoption.test.ts` first: adopting a free track at runtime gives it a `~/trackId` identity; adopting a duplicate id is an error, not a silent replace; the adopted track publishes through the same path as any other free track; detaching an adopted track removes it from membership without destroying it; only the actual owner (the thing that adopted it) can destroy it, a borrower can only detach.
 - [ ] Confirm the test fails for the right reason on the merged P5-01 tip.
 - [ ] Implement adoption in `project-runtime.ts` only. Do not add a second qualification function, reuse P2-01's.
@@ -95,11 +99,13 @@ Follow these on every PR in Phase 5, no exceptions:
 **Owner:** `core/runtime/diagnostics.ts` (new file, the bounded ring buffer). Existing diagnostic emission points (validate.ts, references.ts, graph-publisher.ts) all feed this one buffer; none of them get their own parallel stream.
 
 **Allowed changes:**
+
 - `packages/core/src/runtime/diagnostics.ts` (new)
 - `packages/core/src/runtime/project-runtime.ts` (wire the buffer in)
 - `packages/core/test/integration/diagnostics.test.ts` (new)
 
 **Checklist:**
+
 - [ ] Write `test/integration/diagnostics.test.ts` first: buffer bounds at a fixed size and reports a drop count once exceeded; patch-level diagnostics still surface on the affected patch; batch summary carries the aggregate; load-time and runtime diagnostics share one `Diagnostic` shape (no new shape introduced); no second delivery channel (emitter, event, or separate subscription) exists anywhere in the public surface.
 - [ ] Confirm the test fails for the right reason on the merged P5-02 tip.
 - [ ] Implement the ring buffer as the single owner. It is inspection state only, never a second way to be notified of a diagnostic.
@@ -119,11 +125,13 @@ Follow these on every PR in Phase 5, no exceptions:
 **Owner:** `core/runtime/project-runtime.ts` and `core/graph/binding.ts`, reusing the P5-01 reference classifier for pending/resolved transitions. No new resolution logic here, this slice is about lifecycle correctness and leak-freedom on top of P5-01's classifier.
 
 **Allowed changes:**
+
 - `packages/core/src/runtime/project-runtime.ts`
 - `packages/core/src/graph/binding.ts`
 - `packages/core/test/integration/remount.test.ts` (new)
 
 **Checklist:**
+
 - [ ] Write `test/integration/remount.test.ts` first: unmounting an upstream node blocks its downstream closure (reusing the pending/blocked path from P5-01, not a new status); remounting resolves the reference and republishes with a strictly newer revision; run many unmount/remount cycles and assert flat subscription/patch retention (no growth).
 - [ ] Confirm the test fails for the right reason on the merged P5-03 tip.
 - [ ] Implement using the existing owner-first teardown primitive from P1-04. Do not add a second dispose-guard pattern.

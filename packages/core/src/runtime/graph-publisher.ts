@@ -1,5 +1,6 @@
 import type { Diagnostic, InputProjection } from "../contract/v5";
 import { edgeKey, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
+import { firstPendingEdge } from "../graph/references";
 import { CompositionOutputError } from "../domain/track";
 import { PatchRegistry, REENTRANT_BATCH_MESSAGE, type PatchBatch } from "./patch-registry";
 
@@ -130,7 +131,10 @@ export class GraphPublisher {
     }
     const failed = new Map<string, Diagnostic>();
     const blocked = new Set<string>();
+    const pending = new Set<string>();
     const memo = new Map<string, PublisherComposition>();
+    const hasValue = (sourceId: string) =>
+      memo.has(sourceId) || this.#registry.get(sourceId) !== undefined;
     this.#registry.beginBatch(tick, seeds);
     try {
       for (const id of snapshot.order) {
@@ -138,7 +142,10 @@ export class GraphPublisher {
         const node = byId.get(id);
         if (node === undefined) continue;
         const sourceFailure = node.edges
-          .filter((edge) => failed.has(edge.sourceId) || blocked.has(edge.sourceId))
+          .filter(
+            (edge) =>
+              failed.has(edge.sourceId) || blocked.has(edge.sourceId) || pending.has(edge.sourceId),
+          )
           .sort(compareEdgeKeys)[0]?.sourceId;
         if (sourceFailure !== undefined) {
           blocked.add(id);
@@ -150,11 +157,26 @@ export class GraphPublisher {
               Object.freeze({
                 ruleId: "blocked-upstream",
                 path: id,
-                message: `Blocked by upstream failure at ${sourceFailure}.`,
+                message: `Blocked by upstream state at ${sourceFailure}.`,
                 severity: "error",
                 ids: Object.freeze([sourceFailure, id]),
               }),
             ],
+          });
+          continue;
+        }
+        // A source that graph construction already accepted but that has not published a
+        // value yet (typically because it is not currently a member) is pending, not failed.
+        // Classified up front, before composition is attempted, so this is never decided by
+        // catching an exception. graph/references.ts is the single owner of this decision.
+        const pendingMatch = firstPendingEdge(node.edges, compareEdgeKeys, hasValue);
+        if (pendingMatch !== undefined) {
+          pending.add(id);
+          this.#registry.publish({
+            nodeId: id,
+            sourceProgress: 0,
+            status: "blocked",
+            diagnostics: [pendingMatch.diagnostic],
           });
           continue;
         }
@@ -167,6 +189,8 @@ export class GraphPublisher {
             .sort(compareEdgeKeys)) {
             const sourcePatch = this.#registry.get(edge.sourceId);
             const sourceValues = memo.get(edge.sourceId)?.values ?? sourcePatch?.values;
+            // Unreachable in normal flow: the pending pre-check above already classified every
+            // edge as resolved before this loop runs. Kept as a defensive invariant guard only.
             if (sourceValues === undefined)
               throw new InputObservationError(
                 "observation-missing-upstream",
@@ -198,6 +222,7 @@ export class GraphPublisher {
             .sort(compareEdgeKeys)) {
             const sourcePatch = this.#registry.get(edge.sourceId);
             const sourceValues = memo.get(edge.sourceId)?.values ?? sourcePatch?.values;
+            // Unreachable in normal flow, same reasoning as the input-side guard above.
             if (sourceValues === undefined)
               throw new InputObservationError(
                 "observation-missing-upstream",
