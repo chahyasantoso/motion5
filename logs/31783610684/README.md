@@ -1,0 +1,23 @@
+# CI log archive: 31783610684
+
+- Workflow: CI
+- Conclusion: failure
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/31783610684
+- Captured: 2026-08-14T08:22:47Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm run typecheck	﻿2026-08-14T08:22:17.3478822Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-14T08:22:17.3479097Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-14T08:22:17.3516298Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-14T08:22:17.3516525Z env:
+quality (node 24)	Run npm run typecheck	2026-08-14T08:22:17.3516853Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-14T08:22:17.3517022Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-14T08:22:17.4351248Z 
+quality (node 24)	Run npm run typecheck	2026-08-14T08:22:17.4351782Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-14T08:22:17.4352117Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-14T08:22:17.4352291Z 
+quality (node 24)	Run npm run typecheck	2026-08-14T08:22:18.9285225Z ##[error]packages/core/test/unit/scripts/api-surface-check.test.ts(2,33): error TS2307: Cannot find module '../../../../scripts/api-surface-check.mjs' or its corresponding type declarations.
+quality (node 24)	Run npm run typecheck	2026-08-14T08:22:18.9526062Z ##[error]Process completed with exit code 2.
+```
