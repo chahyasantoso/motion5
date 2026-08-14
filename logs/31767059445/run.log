@@ -1,0 +1,262 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-14T03:31:41.4089059Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-14T03:31:41.4089465Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-14T03:31:41.4133694Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-14T03:31:41.4133973Z env:
+quality (node 24)	Run npm run typecheck	2026-08-14T03:31:41.4134171Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-14T03:31:41.4134382Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-14T03:31:41.5154290Z 
+quality (node 24)	Run npm run typecheck	2026-08-14T03:31:41.5154805Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-14T03:31:41.5155348Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-14T03:31:41.5155571Z 
+quality (node 24)	Run npm run typecheck	2026-08-14T03:31:43.4776842Z ##[error]packages/core/src/engine.ts(181,28): error TS2552: Cannot find name 'motions'. Did you mean 'motion'?
+quality (node 24)	Run npm run typecheck	2026-08-14T03:31:43.5063269Z ##[error]Process completed with exit code 2.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-08-14T03:31:39.1177246Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-14T03:31:39.1177829Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-14T03:31:39.1208584Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-14T03:31:39.1209148Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-14T03:31:39.1209518Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-14T03:31:39.1209851Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-14T03:31:40.6591854Z ##[error]packages/core/src/engine.ts(181,28): error TS2552: Cannot find name 'motions'. Did you mean 'motion'?
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-14T03:31:40.6787897Z ##[error]Process completed with exit code 2.
+integration (node 24)	Run npm run test:integration	﻿2026-08-14T03:31:39.5277475Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:39.5278034Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:39.5340682Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:39.5341321Z env:
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:39.5341642Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:39.5341975Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:39.6430754Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:39.6431462Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:39.6432306Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:39.6432749Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:39.9243351Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:39.9248397Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:39.9249066Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.3064817Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.3860767Z  ^[[31m❯^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.3874609Z      ^[[32m✓^[[39m publishes a progress change through the public project handle^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.3877393Z ^[[31m     ^[[31m×^[[31m keeps one clock owner while clock progress publishes once^[[39m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.3879158Z      ^[[32m✓^[[39m still resolves authored-key plugins during progress updates^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.3880991Z      ^[[32m✓^[[39m routes a manual trigger through the public handle into a published patch^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.4215082Z  ^[[31m❯^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[32m 51^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.4217227Z      ^[[32m✓^[[39m passes contribution context and creates the prepared timeline at load^[[32m 32^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.4244893Z      ^[[32m✓^[[39m selects one predicate contributor through Engine.load^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.4254600Z ^[[31m     ^[[31m×^[[31m rejects malformed contributions during Engine.load^[[39m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.4274896Z ^[[31m     ^[[31m×^[[31m rejects authored ease collisions before any timeline is created^[[39m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.4285156Z ^[[31m     ^[[31m×^[[31m merges contributed keyframes into compiler diagnostics before timeline creation^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.4892213Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.6159034Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.6205028Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.7478962Z  ^[[31m❯^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.7481672Z      ^[[32m✓^[[39m rejects malformed authored stops before constructing a runtime^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.7510929Z      ^[[32m✓^[[39m rejects malformed authored stops before any timeline is created^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.7544845Z ^[[31m     ^[[31m×^[[31m resolves authored plugin ownership during load, not on the first seek^[[39m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.7548910Z      ^[[32m✓^[[39m accepts a valid project and creates its timelines during load^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.8498538Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.8595573Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:40.9945222Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.0337218Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.0831249Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.3035748Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.3755893Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.3865146Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.4888729Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.5667634Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.6490385Z  ^[[31m❯^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.6494035Z ^[[31m     ^[[31m×^[[31m does not expose graph internals through Engine.load^[[39m^[[32m 19^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.6891312Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.7704835Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8129460Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8157826Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8158647Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 6 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8159155Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8164991Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-headless.test.ts^[[2m > ^[[22mEngine^[[2m > ^[[22mkeeps one clock owner while clock progress publishes once
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8169740Z ^[[31m^[[1mAssertionError^[[22m: expected "subscribe" to be called 1 times, but got 2 times^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8171178Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-headless.test.ts:^[[2m63:23^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8211257Z     ^[[90m 61|^[[39m     runtime^[[33m.^[[39m^[[34mmount^[[39m(^[[32m"hero/arm"^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8213241Z     ^[[90m 62|^[[39m     runtime^[[33m.^[[39m^[[34mseek^[[39m(^[[32m"hero/arm"^[[39m^[[33m,^[[39m ^[[34m0.25^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8214922Z     ^[[90m 63|^[[39m     ^[[34mexpect^[[39m(subscribe)^[[33m.^[[39m^[[34mtoHaveBeenCalledTimes^[[39m(^[[34m1^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8216584Z     ^[[90m   |^[[39m                       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8217530Z     ^[[90m 64|^[[39m     runtime^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8218281Z     ^[[90m 65|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8218611Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8219077Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/6]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8219451Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8221513Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-load-validation.test.ts^[[2m > ^[[22mEngine product-load validation (X-1 follow-up)^[[2m > ^[[22mresolves authored plugin ownership during load, not on the first seek
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8224584Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-unknown-key/ but got 'motions is not defined'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8225526Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8225795Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8226261Z /plugin-unknown-key/
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8226517Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8226778Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8227221Z "motions is not defined"
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8227494Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8228637Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-load-validation.test.ts:^[[2m65:7^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8233953Z     ^[[90m 63|^[[39m     ^[[34mexpect^[[39m(() ^[[33m=>^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8235059Z     ^[[90m 64|^[[39m       engine.load(projectWith({ unknown: { stops: [{ p: 0, v: 0 }] } }…
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8235893Z     ^[[90m 65|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/plugin-unknown-key/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8236572Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8237612Z     ^[[90m 66|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8238671Z     ^[[90m 67|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8238994Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8239503Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/6]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8239873Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8241763Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mrejects malformed contributions during Engine.load
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8244774Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-contribution-stop-order/ but got 'motions is not defined'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8245839Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8246124Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8246662Z /plugin-contribution-stop-order/
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8246995Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8247258Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8247688Z "motions is not defined"
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8247955Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8248858Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m108:7^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8264065Z     ^[[90m106|^[[39m         ^[[34mprojectWith^[[39m({ x^[[33m:^[[39m ^[[34mproperty^[[39m(^[[34m1^[[39m) }) ^[[35mas^[[39m never^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8265277Z     ^[[90m107|^[[39m       )^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8266391Z     ^[[90m108|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/plugin-contribution-stop-order/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8267464Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8268631Z     ^[[90m109|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8269716Z     ^[[90m110|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8270049Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8270552Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/6]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8270954Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8273287Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mrejects authored ease collisions before any timeline is created
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8276214Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-contribution-ease-collision/ but got 'motions is not defined'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8277311Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8277610Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8278152Z /plugin-contribution-ease-collision/
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8278502Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8278746Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8279174Z "motions is not defined"
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8279441Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8280364Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m133:7^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8281525Z     ^[[90m131|^[[39m         }) ^[[35mas^[[39m never^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8282224Z     ^[[90m132|^[[39m       )^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8283604Z     ^[[90m133|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/plugin-contribution-ease-collision/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8284616Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8285762Z     ^[[90m134|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8286793Z     ^[[90m135|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8287108Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8287598Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/6]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8288021Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8290266Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mmerges contributed keyframes into compiler diagnostics before timeline creation
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8294620Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-contribution-ease-collision/ but got 'motions is not defined'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8295726Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8296045Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8296608Z /plugin-contribution-ease-collision/
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8296985Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8297282Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8297755Z "motions is not defined"
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8298047Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8299003Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m170:7^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8300205Z     ^[[90m168|^[[39m         }) ^[[35mas^[[39m never^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8300935Z     ^[[90m169|^[[39m       )^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8302091Z     ^[[90m170|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/plugin-contribution-ease-collision/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8303469Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8304742Z     ^[[90m171|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8305780Z     ^[[90m172|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8306118Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8306581Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/6]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8306959Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8308826Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/project-handle-surface.test.ts^[[2m > ^[[22mpublic project handle surface (P1-9)^[[2m > ^[[22mdoes not expose graph internals through Engine.load
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8311497Z ^[[31m^[[1mAssertionError^[[22m: expected [ 'dispose', 'mount', 'seek', …(3) ] to deeply equal [ 'dispose', 'mount', 'seek', …(2) ]^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8312548Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8313208Z ^[[32m- Expected^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8313763Z ^[[31m+ Received^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8314055Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8314294Z ^[[2m  [^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8314786Z ^[[2m    "dispose",^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8315326Z ^[[2m    "mount",^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8315863Z ^[[2m    "seek",^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8316350Z ^[[31m+   "signal",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8316908Z ^[[2m    "subscribe",^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8317478Z ^[[2m    "unmount",^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8317993Z ^[[2m  ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8318217Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8319174Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/project-handle-surface.test.ts:^[[2m23:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8320647Z     ^[[90m 21|^[[39m     expect((runtime as unknown as { registry?: unknown }).registry).to…
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8321995Z     ^[[90m 22|^[[39m     expect((runtime as unknown as { publisher?: unknown }).publisher).…
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8324534Z     ^[[90m 23|^[[39m     ^[[34mexpect^[[39m(^[[33mObject^[[39m^[[33m.^[[39m^[[34mkeys^[[39m(runtime)^[[33m.^[[39m^[[34msort^[[39m())^[[33m.^[[39m^[[34mtoEqual^[[39m([
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8325975Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8326863Z     ^[[90m 24|^[[39m       ^[[32m"dispose"^[[39m^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8327643Z     ^[[90m 25|^[[39m       ^[[32m"mount"^[[39m^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8328048Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8328518Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/6]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8328915Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8328976Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8329865Z ^[[2m Test Files ^[[22m ^[[1m^[[31m4 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m17 passed^[[39m^[[22m^[[90m (21)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8331332Z ^[[2m      Tests ^[[22m ^[[1m^[[31m6 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m49 passed^[[39m^[[22m^[[90m (55)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8332285Z ^[[2m   Start at ^[[22m 03:31:39
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8333812Z ^[[2m   Duration ^[[22m 1.87s^[[2m (transform 738ms, setup 0ms, import 1.46s, tests 297ms, environment 3ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8334547Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8334561Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8366355Z ##[error]AssertionError: expected "subscribe" to be called 1 times, but got 2 times
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-headless.test.ts:63:23
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8377540Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8382233Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-unknown-key/ but got 'motions is not defined'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-unknown-key/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"motions is not defined"
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-load-validation.test.ts:65:7
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8385512Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8389621Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-contribution-stop-order/ but got 'motions is not defined'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-contribution-stop-order/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"motions is not defined"
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:108:7
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8392545Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8396040Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-contribution-ease-collision/ but got 'motions is not defined'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-contribution-ease-collision/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"motions is not defined"
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:133:7
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8397671Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8400321Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-contribution-ease-collision/ but got 'motions is not defined'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-contribution-ease-collision/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"motions is not defined"
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:170:7
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8401880Z 
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8404701Z ##[error]AssertionError: expected [ 'dispose', 'mount', 'seek', …(3) ] to deeply equal [ 'dispose', 'mount', 'seek', …(2) ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected
+integration (node 24)	Run npm run test:integration	+ Received
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	  [
+integration (node 24)	Run npm run test:integration	    "dispose",
+integration (node 24)	Run npm run test:integration	    "mount",
+integration (node 24)	Run npm run test:integration	    "seek",
+integration (node 24)	Run npm run test:integration	+   "signal",
+integration (node 24)	Run npm run test:integration	    "subscribe",
+integration (node 24)	Run npm run test:integration	    "unmount",
+integration (node 24)	Run npm run test:integration	  ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/project-handle-surface.test.ts:23:41
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-14T03:31:41.8650214Z ##[error]Process completed with exit code 1.
