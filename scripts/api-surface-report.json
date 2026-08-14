@@ -1,0 +1,42 @@
+{
+  "values": [
+    "AUTHORED_SCHEMA_VERSION",
+    "CORE_VERSION",
+    "DIAGNOSTIC_SEVERITIES",
+    "Engine",
+    "PluginRegistry",
+    "SUPPORTED_TRIGGER_TYPES",
+    "assertClock",
+    "assertInterpolator",
+    "assertScheduler",
+    "createManualClock",
+    "migrateV4ToV5",
+    "parseGolden",
+    "serializeGolden",
+    "validateV5"
+  ],
+  "types": [
+    "AuthoredProperty",
+    "AuthoredStop",
+    "Diagnostic",
+    "DiagnosticSeverity",
+    "GoldenFixture",
+    "GoldenValidationFixture",
+    "Interpolator",
+    "MigrationDiagnostic",
+    "MigrationResult",
+    "MotionDefinition",
+    "ObservationDefinition",
+    "Patch",
+    "PatchBatch",
+    "PatchListener",
+    "PatchStatus",
+    "PluginDefinition",
+    "ProjectDefinition",
+    "ProjectHandle",
+    "ResolvedPlugins",
+    "TrackDefinition",
+    "TriggerType",
+    "ValidationResult"
+  ]
+}
