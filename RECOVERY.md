@@ -15,9 +15,10 @@ The live checklist is [`progress/STATUS.md`](progress/STATUS.md). It owns every 
 - Repository: `chahyasantoso/motion5`
 - Oracle: `chahyasantoso/motionpath`
 - Current rescue branch: `rescue/restore-motionpath-parity`
-- Active slice branch: `chore/p2-benchmark-mutation-baseline`
+- No active slice branch after PR 95 merged
 - Archive branch for failed CI and recovery-audit logs: `ci-logs`
 - Latest recovery audit: [31765798822](https://github.com/chahyasantoso/motion5/actions/runs/31765798822)
+- Latest rescue merge: [`e53265b`](https://github.com/chahyasantoso/motion5/commit/e53265b97be1c1f1bb766c78abf7bc4f1e1ce44b)
 
 ## Rules
 
@@ -39,7 +40,7 @@ The implementor works through GitHub MCP, so it cannot assume a persistent local
 
 ## Manual audit reality
 
-`.github/workflows/recovery-audit.yml` is now implemented and dispatched through `workflow_dispatch`. Audit [31765798822](https://github.com/chahyasantoso/motion5/actions/runs/31765798822) passed all five jobs against `a920613bfd4fa0cc8c38154b1ad84ba416bc791d`. The final head `44a46a85f379ee8bc3ce7599a78dd2bee01072de` differs only by the formatter child commit, and its required PR matrix passed.
+`.github/workflows/recovery-audit.yml` is implemented and dispatched through `workflow_dispatch`. Audit [31765798822](https://github.com/chahyasantoso/motion5/actions/runs/31765798822) passed all five jobs against `a920613bfd4fa0cc8c38154b1ad84ba416bc791d`. The final formatter child `d4428d10368554e8a53e7b38eaf2a1a1b246435d` passed the required PR matrix, and PR 95 merged into rescue as `e53265b97be1c1f1bb766c78abf7bc4f1e1ce44b`.
 
 Manual audit measures expensive evidence; it does not replace required PR checks. After recovery, format, typecheck, contract tests, boundaries, build, and end-to-end checks must block merges. Mutation testing may remain manual or nightly, but its report is never ignored.
 
