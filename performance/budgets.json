@@ -1,11 +1,13 @@
 {
-  "version": 1,
+  "version": 2,
   "status": "advisory",
   "expiresOn": "2026-08-17",
   "budgets": {
     "nodes": 10000,
     "flushes": 100,
     "maxPatches": 1000000,
-    "maxRetainedInstances": 10000
+    "maxRetainedInstances": 10000,
+    "maxDirtyClosure": 1000,
+    "maxDirtyRatio": 0.5
   }
 }
