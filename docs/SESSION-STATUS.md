@@ -1,9 +1,9 @@
 # Session status
 
 **Captured:** 2026-08-14, Asia/Jakarta  
-**Branch:** `wip/p5-04-patch-retention-lifecycle`  
-**Phase:** Phase 5 is complete pending the final P5-04 merge. The behavior contract is on [PR #102](https://github.com/chahyasantoso/motion5/pull/102); the owner-correct lifecycle implementation is on [WIP PR #103](https://github.com/chahyasantoso/motion5/pull/103).  
-**Next action:** merge #103 into the P5-04 behavior branch, update #102's allow-list, then merge the completed slice into `phase5/membership-base`.
+**Branch:** `phase5/membership-base`  
+**Phase:** Phase 5 is complete. P5-01 through P5-04 are merged, including the owner-correct retained-patch lifecycle fix from [PR #103](https://github.com/chahyasantoso/motion5/pull/103).  
+**Next action:** rerun the Phase 5 exit gate from this merged base before opening Phase 6.
 
 This document reports current implementation reality. The detailed contract remains in `docs/PHASE5-DETAILED-PLAN.md`.
 
@@ -13,14 +13,15 @@ This document reports current implementation reality. The detailed contract rema
 - Known but unavailable sources publish blocked pending patches and recover without fabricated values.
 - Runtime-adopted free tracks join the graph under `~/trackId` through the shared `qualifyFreeTrack` helper with owner-only destruction.
 - Diagnostics use one bounded inspection buffer while patches and batch summaries remain the live delivery path.
-- P5-04 evicts detached nodes' retained patches through the registry owner, preserves subscribers, reuses the existing pending/blocked path, and recovers on remount with newer revisions.
+- Unmounting evicts detached nodes' retained patches through the registry owner, preserves subscribers, reuses the existing pending/blocked path, and recovers on remount with newer revisions.
 
-## P5-04 evidence
+## Phase 5 evidence
 
-- Red behavior test: [`a75da68`](https://github.com/chahyasantoso/motion5/commit/a75da68b358641bc45b3576a7212c0cdb550a641).
-- Red focused registry test: [`942c2f8`](https://github.com/chahyasantoso/motion5/commit/942c2f80a67753f6259b12a664156a8ba039095c).
-- Implementation: [`50fb170`](https://github.com/chahyasantoso/motion5/commit/50fb1705ed31a1e44d142fdf7c1025448b6de0a0) and [`595c596`](https://github.com/chahyasantoso/motion5/commit/595c5968b064eb39380d9849a850af2581248d75).
-- Exact-head CI [31781861401](https://github.com/chahyasantoso/motion5/actions/runs/31781861401) passed quality, integration, boundaries, build, end-to-end, performance, and prettier.
+- P5-01 exact-head CI: [31777751696](https://github.com/chahyasantoso/motion5/actions/runs/31777751696).
+- P5-02 exact-head CI: [31780297529](https://github.com/chahyasantoso/motion5/actions/runs/31780297529).
+- P5-03 exact-head CI: [31780874122](https://github.com/chahyasantoso/motion5/actions/runs/31780874122).
+- P5-04 behavior PR [#102](https://github.com/chahyasantoso/motion5/pull/102) merged at [`c52293f`](https://github.com/chahyasantoso/motion5/commit/c52293f9554a771a366dd76ccc3890ffa0db580a); lifecycle companion PR [#103](https://github.com/chahyasantoso/motion5/pull/103) merged at [`3b376ad`](https://github.com/chahyasantoso/motion5/commit/3b376ad59365aec0851f768207792929383a2ed7). Exact-head CI [31782076249](https://github.com/chahyasantoso/motion5/actions/runs/31782076249) passed quality, integration, boundaries, build, end-to-end, performance, and prettier.
+- P5-04 red-first behavior test: [`a75da68`](https://github.com/chahyasantoso/motion5/commit/a75da68b358641bc45b3576a7212c0cdb550a641). Focused registry red test: [`942c2f8`](https://github.com/chahyasantoso/motion5/commit/942c2f80a67753f6259b12a664156a8ba039095c).
 
 ## Guardrails
 
