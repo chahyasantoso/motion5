@@ -59,7 +59,12 @@ export class GraphRuntime {
   #scheduledDrain = false;
   #disposed = false;
 
-  constructor(project: ProjectDefinition, clock: Clock, compose: ComposeResolver, options: GraphRuntimeOptions = {}) {
+  constructor(
+    project: ProjectDefinition,
+    clock: Clock,
+    compose: ComposeResolver,
+    options: GraphRuntimeOptions = {},
+  ) {
     this.#binding = new GraphBinding(project);
     this.#registry = new PatchRegistry();
     this.#publisher = new GraphPublisher(this.#registry);
@@ -69,21 +74,41 @@ export class GraphRuntime {
     this.#onFlushError = options.onFlushError;
     this.#unsubscribe = this.#clock.subscribe((event) => this.#onTick(event));
   }
-  get binding(): GraphBinding { return this.#binding; }
-  get state() { return this.#binding.state; }
-  get registry(): PatchRegistry { return this.#registry; }
-  get tick(): number { return this.#lastTick; }
-  get sequence(): number { return this.#sequence; }
-  get lastFlushError(): Diagnostic | undefined { return this.#lastFlushError; }
-  get memberCount(): number { return this.#members.size; }
-  get pendingSeeds(): readonly string[] { return [...this.#pendingSeeds]; }
+  get binding(): GraphBinding {
+    return this.#binding;
+  }
+  get state() {
+    return this.#binding.state;
+  }
+  get registry(): PatchRegistry {
+    return this.#registry;
+  }
+  get tick(): number {
+    return this.#lastTick;
+  }
+  get sequence(): number {
+    return this.#sequence;
+  }
+  get lastFlushError(): Diagnostic | undefined {
+    return this.#lastFlushError;
+  }
+  get memberCount(): number {
+    return this.#members.size;
+  }
+  get pendingSeeds(): readonly string[] {
+    return [...this.#pendingSeeds];
+  }
 
   attach(nodeId: string): void {
     this.#assertLive();
-    if (!this.#binding.graph.nodeById[nodeId]) throw new TypeError(`Unknown graph node \"${nodeId}\".`);
+    if (!this.#binding.graph.nodeById[nodeId])
+      throw new TypeError(`Unknown graph node \"${nodeId}\".`);
     this.#members.add(nodeId);
   }
-  detach(nodeId: string): void { this.#assertLive(); this.#members.delete(nodeId); }
+  detach(nodeId: string): void {
+    this.#assertLive();
+    this.#members.delete(nodeId);
+  }
 
   flush(seeds: readonly string[] = [...this.#members], tick?: number): PatchBatch {
     this.#assertLive();
@@ -126,7 +151,10 @@ export class GraphRuntime {
       if (this.#pendingSeeds.size > 0) this.#scheduleDrain();
     }
   }
-  invalidate(seeds: readonly string[]): PatchBatch { this.#assertLive(); return this.flush(seeds); }
+  invalidate(seeds: readonly string[]): PatchBatch {
+    this.#assertLive();
+    return this.flush(seeds);
+  }
   dispose(): void {
     if (this.#disposed) return;
     this.#disposed = true;
@@ -143,7 +171,11 @@ export class GraphRuntime {
       this.#scheduler.schedule(() => {
         this.#scheduledDrain = false;
         if (this.#disposed || this.#pendingSeeds.size === 0) return;
-        try { this.flush([]); } catch (error) { this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describe(error)}`); }
+        try {
+          this.flush([]);
+        } catch (error) {
+          this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describe(error)}`);
+        }
       });
     } catch (error) {
       this.#scheduledDrain = false;
@@ -153,16 +185,30 @@ export class GraphRuntime {
   #onTick(event: ClockTick): void {
     if (this.#disposed) return;
     if (event.tick <= this.#lastTick) {
-      this.#report(CLOCK_REGRESSION_RULE, `Clock tick ${event.tick} did not advance past ${this.#lastTick}.`);
+      this.#report(
+        CLOCK_REGRESSION_RULE,
+        `Clock tick ${event.tick} did not advance past ${this.#lastTick}.`,
+      );
       return;
     }
-    try { this.flush([...this.#members], event.tick); }
-    catch (error) { this.#report(FLUSH_FAILURE_RULE, `Flush at tick ${event.tick} failed: ${describe(error)}`); }
+    try {
+      this.flush([...this.#members], event.tick);
+    } catch (error) {
+      this.#report(FLUSH_FAILURE_RULE, `Flush at tick ${event.tick} failed: ${describe(error)}`);
+    }
   }
   #report(ruleId: string, message: string): void {
-    const diagnostic: Diagnostic = Object.freeze({ ruleId, path: String(this.#lastTick), message, severity: "error", ids: Object.freeze([...this.#members]) });
+    const diagnostic: Diagnostic = Object.freeze({
+      ruleId,
+      path: String(this.#lastTick),
+      message,
+      severity: "error",
+      ids: Object.freeze([...this.#members]),
+    });
     this.#lastFlushError = diagnostic;
     this.#onFlushError?.(diagnostic);
   }
-  #assertLive(): void { if (this.#disposed) throw new Error("GraphRuntime is disposed."); }
+  #assertLive(): void {
+    if (this.#disposed) throw new Error("GraphRuntime is disposed.");
+  }
 }
