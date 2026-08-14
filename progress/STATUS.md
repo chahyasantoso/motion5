@@ -6,41 +6,41 @@ Last reviewed: 2026-08-14
 
 ## Board
 
-| ID | Slice | Status |
-| --- | --- | --- |
-| W0 | Rescue loop and audit baseline | Done |
-| A1 | Final-value memo consistency | Done, gate open |
-| A2 | Preserve subscriber errors | Done, gate open |
-| A3 | Guard subscriber-triggered reentrancy | Done, gate open |
-| B1 | Prepare-stage plugin contribution | Done |
-| B2 | Real GSAP multi-stop compilation | Done |
-| C1 | React store resubscription | Done |
-| C2 | React hook and public exports | Done, gate open |
-| C3 | DOM metadata, serialization, and clear coverage | Done, gate open |
-| D1 | Discover consumer packages | Done |
-| D2 | Planted boundary self-test | Done |
-| D3 | Acceptance evidence gates | Done, gate open |
-| E1 | Required declaration build | Done, gate open |
-| E2 | Real end-to-end product path | Done |
-| E3 | Mutation baseline and ratchet | Done, gate open |
-| P0-1 | Clock and batch identity | Done |
-| P0-2 | GSAP clock ownership | Done |
-| P0-3 | Absolute multi-property stop compilation | Done, audited |
-| P0-3b | Authored-duration pinning | Done, audited |
-| P0-4 | DOM transform rendering and removal | Done, audited |
-| X-1 | Flat projected input observations | Done, merged |
-| P1-5 | Structural registry change detection | Done, merged |
-| P1-6 | Listener snapshots before notification | Done, merged |
-| P1-7 | Scheduler-driven deferred drain | Done, merged |
-| P1-8 | One reentrancy policy, one flush entry point | Done, merged |
-| P1-9 | Narrow public project handle | Done, merged |
-| P1-10 | Product-load authored validation | Done, merged |
-| P1-11 | Runtime composition/output-shape diagnostics | Done, merged |
-| P1-12 | One observation-validation owner | Done, merged |
-| S5 | Contribution completeness | Done, gate open |
-| S6 | Remove dead `use` contract | Done, gate open |
-| S7 | Recovery audit and durable evidence | Done, audited |
-| P2/G-5/G-6 | Dirty-closure benchmark and mutation ratchet | Done, audited |
+| ID         | Slice                                           | Status          |
+| ---------- | ----------------------------------------------- | --------------- |
+| W0         | Rescue loop and audit baseline                  | Done            |
+| A1         | Final-value memo consistency                    | Done, gate open |
+| A2         | Preserve subscriber errors                      | Done, gate open |
+| A3         | Guard subscriber-triggered reentrancy           | Done, gate open |
+| B1         | Prepare-stage plugin contribution               | Done            |
+| B2         | Real GSAP multi-stop compilation                | Done            |
+| C1         | React store resubscription                      | Done            |
+| C2         | React hook and public exports                   | Done, gate open |
+| C3         | DOM metadata, serialization, and clear coverage | Done, gate open |
+| D1         | Discover consumer packages                      | Done            |
+| D2         | Planted boundary self-test                      | Done            |
+| D3         | Acceptance evidence gates                       | Done, gate open |
+| E1         | Required declaration build                      | Done, gate open |
+| E2         | Real end-to-end product path                    | Done            |
+| E3         | Mutation baseline and ratchet                   | Done, gate open |
+| P0-1       | Clock and batch identity                        | Done            |
+| P0-2       | GSAP clock ownership                            | Done            |
+| P0-3       | Absolute multi-property stop compilation        | Done, audited   |
+| P0-3b      | Authored-duration pinning                       | Done, audited   |
+| P0-4       | DOM transform rendering and removal             | Done, audited   |
+| X-1        | Flat projected input observations               | Done, merged    |
+| P1-5       | Structural registry change detection            | Done, merged    |
+| P1-6       | Listener snapshots before notification          | Done, merged    |
+| P1-7       | Scheduler-driven deferred drain                 | Done, merged    |
+| P1-8       | One reentrancy policy, one flush entry point    | Done, merged    |
+| P1-9       | Narrow public project handle                    | Done, merged    |
+| P1-10      | Product-load authored validation                | Done, merged    |
+| P1-11      | Runtime composition/output-shape diagnostics    | Done, merged    |
+| P1-12      | One observation-validation owner                | Done, merged    |
+| S5         | Contribution completeness                       | Done, gate open |
+| S6         | Remove dead `use` contract                      | Done, gate open |
+| S7         | Recovery audit and durable evidence             | Done, audited   |
+| P2/G-5/G-6 | Dirty-closure benchmark and mutation ratchet    | Done, audited   |
 
 ## S7 exit evidence
 
