@@ -1,13 +1,9 @@
-import type {
-  Diagnostic,
-  Patch,
-  PatchBatch,
-  PatchListener,
-  ProjectDefinition,
-} from "./contract/v5";
+import type { Diagnostic, PatchBatch, PatchListener, ProjectDefinition } from "./contract/v5";
 import { validateV5 } from "./contract/validate-v5";
 import { compilePercentKeyframes } from "./domain/keyframe-compiler";
+import { Motion } from "./domain/motion";
 import { PluginRegistry } from "./domain/plugins";
+import { createTrigger, type TriggerSignal } from "./domain/triggers";
 import { Track } from "./domain/track";
 import type { ImmutableRecord } from "./domain/values";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
@@ -26,6 +22,7 @@ export interface ProjectHandle {
   mount(nodeId: string, instance?: object): object;
   unmount(nodeId: string): void;
   seek(nodeId: string, progress: number): PatchBatch;
+  signal(motionId: string, signal: TriggerSignal): void;
   subscribe(nodeId: string, listener: PatchListener): () => void;
   dispose(): void;
 }
@@ -36,11 +33,15 @@ type RuntimeLike = {
   graph: { registry: { subscribeNode(nodeId: string, listener: PatchListener): () => void } };
   dispose(): void;
 };
-function createHandle(runtime: RuntimeLike): ProjectHandle {
+function createHandle(
+  runtime: RuntimeLike,
+  signal: (motionId: string, signal: TriggerSignal) => void,
+): ProjectHandle {
   return {
     mount: (nodeId, instance = {}) => runtime.mount(nodeId, instance),
     unmount: (nodeId) => runtime.unmount(nodeId),
     seek: (nodeId, progress) => runtime.seek(nodeId, progress),
+    signal,
     subscribe: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
     dispose: () => runtime.dispose(),
   };
@@ -78,9 +79,13 @@ export class Engine {
       string,
       { id: string; duration?: number; keyframes?: Readonly<Record<string, unknown>> }
     >();
-    for (const motion of acceptedProject.motions)
+    const motionTrackIds = new Map<string, readonly string[]>();
+    for (const motion of acceptedProject.motions) {
+      const ids = motion.tracks.map((track) => qualifyMotionTrack(motion.id, track.id).value);
+      motionTrackIds.set(motion.id, ids);
       for (const track of motion.tracks)
         nodes.set(qualifyMotionTrack(motion.id, track.id).value, { ...track, id: track.id });
+    }
     for (const track of acceptedProject.freeTracks ?? [])
       nodes.set(qualifyFreeTrack(track.id).value, { ...track, id: track.id });
     const compile = (nodeId: string): Track => {
@@ -109,6 +114,7 @@ export class Engine {
       tracks.set(nodeId, track);
       return track;
     };
+    const motions = new Map<string, Motion>();
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
       const compose =
@@ -124,18 +130,50 @@ export class Engine {
             sourceRevisions: {},
           };
         };
-      const runtime = new ProjectRuntime(acceptedProject, {
+      let runtime: ProjectRuntime;
+      runtime = new ProjectRuntime(acceptedProject, {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
         compose,
         setProgress: (nodeId, progress) => tracks.get(nodeId)!.setProgress(progress),
         disposeComposition: () => {
+          for (const motion of motions.values()) motion.dispose();
+          motions.clear();
           for (const track of tracks.values()) track.dispose();
           tracks.clear();
         },
       });
-      return createHandle(runtime);
+      for (const motionDefinition of acceptedProject.motions) {
+        const ids = motionTrackIds.get(motionDefinition.id) ?? [];
+        const entries = ids.map((id) => {
+          const track = tracks.get(id);
+          if (!track) throw new TypeError(`Unknown graph node \"${id}\".`);
+          const definition = nodes.get(id);
+          return { id, track, duration: definition?.duration };
+        });
+        const motion = new Motion({
+          clock: this.#options.clock,
+          scheduler: this.#options.scheduler,
+          tracks: entries,
+          trigger: createTrigger(motionDefinition.trigger.type),
+          disposeTracks: false,
+          listenToClock: false,
+          invalidate: (progress) => {
+            const first = ids[0];
+            if (first) runtime.seek(first, progress);
+          },
+          stagger: motionDefinition.stagger,
+        });
+        motion.play();
+        motions.set(motionDefinition.id, motion);
+      }
+      return createHandle(runtime, (motionId, signal) => {
+        const motion = motions.get(motionId);
+        if (!motion) throw new TypeError(`Unknown motion \"${motionId}\".`);
+        motion.signal(signal);
+      });
     } catch (error) {
+      for (const motion of motions.values()) motion.dispose();
       for (const track of tracks.values()) track.dispose();
       throw error;
     }

@@ -1,5 +1,7 @@
 import type { TriggerType } from "../contract/v5";
 
+export type { TriggerType } from "../contract/v5";
+
 export interface TriggerSignal {
   readonly type: TriggerType;
   readonly progress?: number;

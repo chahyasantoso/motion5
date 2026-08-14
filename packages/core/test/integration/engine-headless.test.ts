@@ -84,4 +84,28 @@ describe("Engine", () => {
     runtime.seek("hero/arm", 1);
     runtime.dispose();
   });
+
+  it("routes a manual trigger through the public handle into a published patch", () => {
+    const scheduler = createFakeScheduler();
+    const runtime = new Engine({
+      clock: createManualClock(),
+      interpolator: createFakeInterpolator(),
+      scheduler,
+    }).load(project);
+    runtime.mount("hero/arm");
+    let opacity = 0;
+    runtime.subscribe("hero/arm", (patch) => {
+      opacity = Number(patch.values.opacity);
+    });
+
+    runtime.signal("hero", { type: "manual", progress: 0.75 });
+    expect(opacity).toBe(0);
+    scheduler.flush();
+    expect(opacity).toBeCloseTo(0.8, 12);
+
+    expect(() => runtime.signal("hero", { type: "manual", progress: 1.5 })).toThrow(
+      "between 0 and 1",
+    );
+    runtime.dispose();
+  });
 });

@@ -15,7 +15,6 @@ describe("public project handle surface (P1-9)", () => {
       interpolator: createFakeInterpolator(),
       scheduler: createFakeScheduler(),
     }).load(project);
-
     expect((runtime as unknown as { graph?: unknown }).graph).toBeUndefined();
     expect((runtime as unknown as { binding?: unknown }).binding).toBeUndefined();
     expect((runtime as unknown as { registry?: unknown }).registry).toBeUndefined();
@@ -24,6 +23,7 @@ describe("public project handle surface (P1-9)", () => {
       "dispose",
       "mount",
       "seek",
+      "signal",
       "subscribe",
       "unmount",
     ]);
