@@ -61,7 +61,8 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: mkdir -p audit-logs/mutation reports/mutation
       - run: npx stryker run 2>&1 | tee audit-logs/mutation/stryker.log
-      - run: node scripts/mutation-summary.mjs reports/mutation/mutation.json | tee audit-logs/mutation/summary.json
+      - run: node scripts/mutation-summary.mjs reports/mutation/mutation.json performance/mutation-baseline.json | tee audit-logs/mutation/summary.json
+      - run: npm run benchmark 2>&1 | tee audit-logs/mutation/benchmark.log
       - if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -69,6 +70,7 @@ jobs:
           path: |
             audit-logs/mutation/
             reports/mutation/
+            performance/benchmark-report.json
           if-no-files-found: error
 
   acceptance:
@@ -84,7 +86,6 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: mkdir -p audit-logs/acceptance
-      # acceptance-map.json is consumed against the executed Vitest report below.
       - run: npx vitest run --reporter=json --outputFile=audit-logs/acceptance/vitest.json | tee audit-logs/acceptance/vitest.log
       - run: node scripts/acceptance-scan.mjs audit-logs/acceptance/vitest.json | tee audit-logs/acceptance/result.log
       - if: always()
