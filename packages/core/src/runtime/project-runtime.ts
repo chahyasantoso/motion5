@@ -1,9 +1,12 @@
-import type { ProjectDefinition, TrackDefinition } from "../contract/v5";
+import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../contract/v5";
+import { validateKeyframes } from "../contract/validate-v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
 import { qualifyFreeTrack } from "../graph/ids";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
 import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
+
+import type { GraphBuilder } from "../ports/graph-builder";
 
 export interface ProjectRuntimeOptions {
   readonly clock: Clock;
@@ -16,6 +19,7 @@ export interface ProjectRuntimeOptions {
   readonly disposeComposition?: () => void;
   /** Capacity of the bounded diagnostics history. Diagnostics itself supplies the default. */
   readonly diagnosticsCapacity?: number;
+  readonly graphBuilder?: GraphBuilder;
 }
 
 export class ProjectRuntime {
@@ -41,6 +45,7 @@ export class ProjectRuntime {
       this.#graph = new GraphRuntime(project, options.clock, options.compose, {
         scheduler: options.scheduler,
         onClockTick: options.onClockTick,
+        graphBuilder: options.graphBuilder,
         // Flush-level diagnostics (clock regression, flush/scheduler failure) feed the same
         // single buffer as patch/batch diagnostics below; no second, parallel stream.
         onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
@@ -89,6 +94,19 @@ export class ProjectRuntime {
     if (this.#graph.state.hasNode(id) || this.#adopted.has(id))
       throw new TypeError(`Adopted track "${id}" already exists.`);
 
+    // Validate keyframes at the same trust level as authored tracks.
+    // compilePercentKeyframes only silently filters bad stops; validateKeyframes
+    // rejects them with diagnostics (non-finite p, non-monotonic, duplicates).
+    const keyframeDiagnostics: Diagnostic[] = [];
+    validateKeyframes(track.keyframes, `adopt(${track.id}).keyframes`, keyframeDiagnostics);
+    const keyframeErrors = keyframeDiagnostics.filter(({ severity }) => severity === "error");
+    if (keyframeErrors.length > 0)
+      throw new TypeError(
+        keyframeErrors
+          .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
+          .join(" "),
+      );
+
     // Compile keyframes before any graph mutation so malformed keyframes fail atomically.
     this.#compileTrack?.(track);
 
@@ -97,13 +115,13 @@ export class ProjectRuntime {
     // '/'. Composing the freeTracks list from the authored baseline plus every currently
     // adopted track (rather than a stale `#project.freeTracks` snapshot) keeps multiple
     // adoptions and destructions consistent with each other.
+    // ponytail: full rebuild per replace, O(N²) for N sequential adoptions — incremental IR when adoption frequency matters
     const nextFreeTracks = [
       ...(this.#project.freeTracks ?? []),
       ...[...this.#adopted.values()].map((entry) => entry.track),
       track,
     ];
-    this.#graph.binding.replace({ ...this.#project, freeTracks: nextFreeTracks });
-    this.#graph.clearPublisherCache();
+    this.#graph.replaceGraph({ ...this.#project, freeTracks: nextFreeTracks });
     this.#adopted.set(id, { track, owner });
     this.mount(id);
     return Object.freeze({ id, track });
@@ -115,15 +133,18 @@ export class ProjectRuntime {
     if (adopted === undefined) throw new TypeError(`Node "${nodeId}" is not adopted.`);
     if (adopted.owner !== owner)
       throw new TypeError(`Only the adopting owner can destroy "${nodeId}".`);
-    this.unmount(nodeId);
+    // Use evictNode (not unmount) so the listener set is freed, not just the patch.
+    // Adopted nodes are permanent destructions; unmount's remount-safe remove() would
+    // leave the #nodeListeners entry alive until dispose().
+    this.#instances.delete(nodeId);
+    this.#graph.evictNode(nodeId);
     this.#adopted.delete(nodeId);
     this.#disposeTrack?.(nodeId);
     const remaining = [
       ...(this.#project.freeTracks ?? []),
       ...[...this.#adopted.values()].map((entry) => entry.track),
     ];
-    this.#graph.binding.replace({ ...this.#project, freeTracks: remaining });
-    this.#graph.clearPublisherCache();
+    this.#graph.replaceGraph({ ...this.#project, freeTracks: remaining });
   }
   seek(nodeId: string, progress: number) {
     this.#assertLive();

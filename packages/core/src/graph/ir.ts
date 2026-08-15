@@ -44,10 +44,15 @@ export function edgeKey(edge: GraphEdge): string {
 function freeze<T>(value: T): T {
   return Object.freeze(value);
 }
-function diag(ruleId: string, path: string, message: string, ids?: readonly string[]): Diagnostic {
+export function diag(
+  ruleId: string,
+  path: string,
+  message: string,
+  ids?: readonly string[],
+): Diagnostic {
   return { ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) };
 }
-function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
+export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
   return compareCodeUnits(a.ruleId, b.ruleId) || compareCodeUnits(a.path, b.path);
 }
 function qualifySource(source: string, motionId: string): string {
@@ -143,7 +148,7 @@ function validateProjection(
   return Object.freeze({ map: Object.freeze(map) });
 }
 
-function collectTrack(
+export function collectTrack(
   track: TrackDefinition,
   owner: "motion" | "free",
   ownerId: string,

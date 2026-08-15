@@ -14,16 +14,19 @@ export const CLOCK_REGRESSION_RULE = "clock-tick-regression";
 export const FLUSH_FAILURE_RULE = "flush-failure";
 export const SCHEDULER_FAILURE_RULE = "scheduler-failure";
 
+import type { GraphBuilder } from "../ports/graph-builder";
+
 export interface GraphRuntimeOptions {
   readonly scheduler?: Scheduler;
   readonly onFlushError?: (diagnostic: Diagnostic) => void;
   readonly onClockTick?: (event: ClockTick) => void;
+  readonly graphBuilder?: GraphBuilder;
 }
 function deferredBatch(sequence: number, seeds: readonly string[]): PatchBatch {
   const ids = Object.freeze([...seeds]);
   const diagnostic: Diagnostic = Object.freeze({
     ruleId: DEFERRED_FLUSH_RULE,
-    path: ids[0] ?? "",
+    path: "deferred-flush",
     message:
       "A flush requested while subscribers were being notified was queued as one follow-up " +
       "invalidation for the scheduler.",
@@ -67,7 +70,7 @@ export class GraphRuntime {
     compose: ComposeResolver,
     options: GraphRuntimeOptions = {},
   ) {
-    this.#binding = new GraphBinding(project);
+    this.#binding = new GraphBinding(project, { builder: options.graphBuilder });
     this.#registry = new PatchRegistry();
     this.#publisher = new GraphPublisher(this.#registry);
     this.#clock = clock;
@@ -76,9 +79,6 @@ export class GraphRuntime {
     this.#onFlushError = options.onFlushError;
     this.#onClockTick = options.onClockTick;
     this.#unsubscribe = this.#clock.subscribe((event) => this.#onTick(event));
-  }
-  get binding(): GraphBinding {
-    return this.#binding;
   }
   get state() {
     return this.#binding.state;
@@ -113,8 +113,35 @@ export class GraphRuntime {
     this.#members.delete(nodeId);
     this.#registry.remove(nodeId);
   }
+  /** Permanently evict an adopted node that will never return. Frees its patch and listeners. */
+  evictNode(nodeId: string): void {
+    this.#assertLive();
+    this.#members.delete(nodeId);
+    this.#registry.evict(nodeId);
+  }
   /** Clear the publisher node cache after a successful graph replacement. */
   clearPublisherCache(): void {
+    this.#publisherNodes.clear();
+  }
+
+  /**
+   * Replace the graph and reconcile membership + publisher cache.
+   *
+   * All callers that mutate the graph MUST go through this method instead of
+   * calling `this.#binding.replace(...)` directly. This ensures:
+   * 1. Stale member IDs that no longer exist in the new graph are pruned.
+   * 2. The publisher node cache is cleared so compose closures are re-resolved.
+   */
+  replaceGraph(project: ProjectDefinition): void {
+    this.#assertLive();
+    this.#binding.replace(project);
+    // Prune members that no longer exist in the new graph.
+    for (const id of this.#members) {
+      if (!this.#binding.graph.nodeById[id]) {
+        this.#members.delete(id);
+        this.#registry.evict(id);
+      }
+    }
     this.#publisherNodes.clear();
   }
 

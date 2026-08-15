@@ -71,4 +71,54 @@ describe("P5-02 adopted free tracks", () => {
     });
     runtime.dispose();
   });
+
+  it("rejects adopted tracks with non-finite stop positions", () => {
+    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    expect(() =>
+      runtime.adopt({ id: "bad", keyframes: { x: { stops: [{ p: Number.NaN, v: 0 }] } } }, {}),
+    ).toThrow(/stop-position/);
+    runtime.dispose();
+  });
+
+  it("rejects adopted tracks with non-monotonic stop positions", () => {
+    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    expect(() =>
+      runtime.adopt(
+        {
+          id: "bad",
+          keyframes: {
+            x: {
+              stops: [
+                { p: 0.5, v: 0 },
+                { p: 0.2, v: 1 },
+              ],
+            },
+          },
+        },
+        {},
+      ),
+    ).toThrow(/stop-position/);
+    runtime.dispose();
+  });
+
+  it("rejects adopted tracks with duplicate stop positions", () => {
+    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    expect(() =>
+      runtime.adopt(
+        {
+          id: "bad",
+          keyframes: {
+            x: {
+              stops: [
+                { p: 0, v: 0 },
+                { p: 0, v: 1 },
+              ],
+            },
+          },
+        },
+        {},
+      ),
+    ).toThrow(/stop-position/);
+    runtime.dispose();
+  });
 });

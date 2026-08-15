@@ -173,7 +173,7 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
       },
     };
 
-    expect(() => runtime.adopt(badTrack, {})).toThrow(/monoton/);
+    expect(() => runtime.adopt(badTrack, {})).toThrow(/stop-position|monoton/);
 
     // Graph state byte-identical after failed adoption
     const snapshotAfter = runtime.graph.state.snapshot();

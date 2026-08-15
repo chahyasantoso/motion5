@@ -1,6 +1,8 @@
 import type { ProjectDefinition } from "../contract/v5";
-import { buildGraphIR, edgeKey, type GraphIR } from "./ir";
+import { edgeKey, type GraphBuildResult, type GraphIR } from "./ir";
 import { ObservationState } from "./observation-state";
+import type { GraphBuilder } from "../ports/graph-builder";
+import { defaultGraphBuilder } from "../adapters/graph-builder/default";
 
 export interface GraphBindingHooks {
   /** Failure injection for the transaction stages, used by the rollback harness. */
@@ -11,10 +13,10 @@ export interface GraphBindingHooks {
 export interface GraphBindingOptions {
   readonly state?: ObservationState;
   readonly hooks?: GraphBindingHooks;
+  readonly builder?: GraphBuilder;
 }
 
-function requireGraph(project: ProjectDefinition): GraphIR {
-  const result = buildGraphIR(project);
+function validateGraphResult(result: GraphBuildResult): GraphIR {
   if (result.graph === undefined) {
     const first = result.diagnostics[0];
     throw new TypeError(
@@ -44,12 +46,14 @@ function edgeMap(graph: GraphIR): Map<string, GraphIR["nodes"][number]["edges"][
 export class GraphBinding {
   readonly #state: ObservationState;
   readonly #hooks: GraphBindingHooks;
+  readonly #builder: GraphBuilder;
   #graph: GraphIR;
 
   constructor(project: ProjectDefinition, options: GraphBindingOptions = {}) {
     this.#state = options.state ?? new ObservationState();
     this.#hooks = options.hooks ?? {};
-    this.#graph = requireGraph(project);
+    this.#builder = options.builder ?? defaultGraphBuilder;
+    this.#graph = validateGraphResult(this.#builder.build(project));
     this.#populate(this.#graph);
     this.#state.commit();
   }
@@ -64,7 +68,7 @@ export class GraphBinding {
 
   /** Build, validate, apply, and atomically commit a candidate project. */
   replace(project: ProjectDefinition): void {
-    const candidate = requireGraph(project);
+    const candidate = validateGraphResult(this.#builder.build(project));
     try {
       this.#applyDelta(this.#graph, candidate);
       this.#hooks.afterStateApply?.();

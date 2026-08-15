@@ -131,18 +131,31 @@ export class ObservationState {
   /** Replay the journal in reverse, then release it. Live identity is untouched. */
   rollback(): void {
     this.#replaying = true;
+    const errors: { index: number; undo: string; error: unknown }[] = [];
     try {
       for (let index = this.#journal.length - 1; index >= 0; index -= 1) {
         const entry = this.#journal[index];
         if (entry === undefined) continue;
-        if (entry.undo === "add-node") this.addNode(entry.id);
-        else if (entry.undo === "remove-node") this.removeNode(entry.id);
-        else if (entry.undo === "add-edge") this.addEdge(entry.edge);
-        else this.removeEdge(entry.edge);
+        try {
+          if (entry.undo === "add-node") this.addNode(entry.id);
+          else if (entry.undo === "remove-node") this.removeNode(entry.id);
+          else if (entry.undo === "add-edge") this.addEdge(entry.edge);
+          else this.removeEdge(entry.edge);
+        } catch (error) {
+          errors.push({ index, undo: entry.undo, error });
+        }
       }
     } finally {
       this.#journal = [];
       this.#replaying = false;
+    }
+    if (errors.length > 0) {
+      const first = errors[0]!;
+      throw new Error(
+        `Rollback incomplete: ${errors.length} entries failed. ` +
+          `First: journal[${first.index}] (${first.undo}): ` +
+          (first.error instanceof Error ? first.error.message : String(first.error)),
+      );
     }
   }
 

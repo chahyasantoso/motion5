@@ -3,17 +3,12 @@ import { Engine, PluginRegistry, type ProjectHandle, type PluginDefinition } fro
 import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
 import { createScrollTriggerPort } from "@motion5/core/adapters/scroll-trigger";
 import { fkPlugin } from "@motion5/core/plugins/fk";
+import { transformPlugin } from "@motion5/core/plugins/transform";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/ports/fakes";
 import { fullBodyWalkerProject } from "./full-body-project";
 import { createGsapScrollSource } from "./scroll-source-gsap";
 import { SkeletonRig } from "./components/SkeletonRig";
 import { InspectorPanel } from "./components/InspectorPanel";
-
-const transformPlugin: PluginDefinition = {
-  name: "transform",
-  keys: ["x", "y", "rotation"],
-  compose: (values) => values,
-};
 
 const ALL_NODES = [
   "walk/pelvis",

@@ -4,9 +4,11 @@ import type {
   PatchBatch,
   PatchListener,
   ProjectDefinition,
+  TrackDefinition,
   TriggerSignal,
 } from "./contract/v5";
 import { validateV5 } from "./contract/validate-v5";
+import { IncrementalGraphBuilder } from "./adapters/graph-builder/incremental";
 import { compilePercentKeyframes } from "./domain/keyframe-compiler";
 import { Motion } from "./domain/motion";
 import { PluginRegistry } from "./domain/plugins";
@@ -33,6 +35,11 @@ export interface ProjectHandle {
   subscribe(nodeId: string, listener: PatchListener): () => void;
   get(nodeId: string): Patch | undefined;
   subscribeNode(nodeId: string, listener: PatchListener): () => void;
+  adopt(
+    track: TrackDefinition,
+    owner: object,
+  ): { readonly id: string; readonly track: TrackDefinition };
+  destroyAdopted(nodeId: string, owner: object): void;
   dispose(): void;
 }
 type RuntimeLike = ProjectRuntime;
@@ -48,6 +55,8 @@ function createHandle(
     subscribe: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
     get: (nodeId) => runtime.graph.registry.get(nodeId),
     subscribeNode: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
+    adopt: (track, owner) => runtime.adopt(track, owner),
+    destroyAdopted: (nodeId, owner) => runtime.destroyAdopted(nodeId, owner),
     dispose: () => runtime.dispose(),
   };
   Object.defineProperty(handle, "_runtime", {
@@ -181,6 +190,7 @@ export class Engine {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
         compose,
+        graphBuilder: new IncrementalGraphBuilder(),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
         compileTrack: compileTrackDefinition,
         disposeTrack,

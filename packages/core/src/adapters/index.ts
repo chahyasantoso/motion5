@@ -10,5 +10,6 @@ export type {
   StageLike,
 } from "./dom";
 
-export { createGsapInterpolator } from "./interpolator/gsap";
-export type { GsapLike, GsapTimelineLike } from "./interpolator/gsap";
+export { createGsapInterpolator, createGsapOneTweenInterpolator } from "./interpolator/gsap";
+export * from "./graph-builder/default";
+export type { GsapLike, GsapTimelineLike, GsapTweenLike } from "./interpolator/gsap";

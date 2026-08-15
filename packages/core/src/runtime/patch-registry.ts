@@ -77,9 +77,20 @@ export class PatchRegistry {
   get disposed(): boolean {
     return this.#disposed;
   }
-  /** Remove retained state for a detached node without touching subscriber identity. */
+  /** Remove retained patch for a detached node without touching subscriber identity (remount-safe). */
   remove(nodeId: string): void {
     this.#patches.delete(nodeId);
+  }
+  /**
+   * Permanently evict a node: remove its patch AND its listener set.
+   *
+   * Use for adopted nodes that are destroyed and will never return. A subscriber that
+   * holds the returned unsubscribe closure is already gone from its `listeners` Set;
+   * deleting the map entry only frees the Set itself.
+   */
+  evict(nodeId: string): void {
+    this.#patches.delete(nodeId);
+    this.#nodeListeners.delete(nodeId);
   }
   dispose(): void {
     if (this.#disposed) return;

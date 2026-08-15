@@ -1,19 +1,19 @@
 import { performance } from "node:perf_hooks";
 import v8 from "node:v8";
-import { createRealGsapSeam } from "../packages/core/test/support/real-gsap.ts";
+import {
+  createRealGsapSeam,
+  createRealGsapOneTweenSeam,
+} from "../packages/core/test/support/real-gsap.ts";
 
 function getHeapMb() {
   if (global.gc) global.gc();
   return v8.getHeapStatistics().used_heap_size / (1024 * 1024);
 }
 
-function runBenchmark() {
-  const seam = createRealGsapSeam();
+function benchmarkInterpolator(name, seam) {
   const iterations = 500;
 
-  console.log("=== 5A. GSAP Interpolator Benchmark ===");
-  console.log(`Node version: ${process.version}`);
-  console.log(`Platform: ${process.platform} ${process.arch}`);
+  console.log(`\n--- Running Benchmark: ${name} ---`);
 
   // Test Case 1: Small config (1 property, 2 stops)
   const heapBefore1 = getHeapMb();
@@ -35,9 +35,8 @@ function runBenchmark() {
   }
   const end1 = performance.now();
   const heapAfter1 = getHeapMb();
-  console.log(
-    `[Small Config] Created ${iterations} timelines in ${(end1 - start1).toFixed(2)}ms (${((end1 - start1) / iterations).toFixed(4)}ms/timeline). Heap delta: ${(heapAfter1 - heapBefore1).toFixed(2)}MB`,
-  );
+  const creationSmallMs = end1 - start1;
+  const heapSmallMb = Math.max(0, heapAfter1 - heapBefore1);
 
   // Progress update benchmark
   const updateStart1 = performance.now();
@@ -47,9 +46,7 @@ function runBenchmark() {
     }
   }
   const updateEnd1 = performance.now();
-  console.log(
-    `[Small Config] 100 progress updates across ${iterations} timelines: ${(updateEnd1 - updateStart1).toFixed(2)}ms`,
-  );
+  const updateSmallMs = updateEnd1 - updateStart1;
 
   // Kill cost
   const killStart1 = performance.now();
@@ -57,9 +54,7 @@ function runBenchmark() {
     tl.kill();
   }
   const killEnd1 = performance.now();
-  console.log(
-    `[Small Config] Killed ${iterations} timelines in ${(killEnd1 - killStart1).toFixed(2)}ms`,
-  );
+  const killSmallMs = killEnd1 - killStart1;
 
   // Test Case 2: Multi-stop / Multi-property config (10 props, 5 stops each)
   const keyframes2 = {};
@@ -87,9 +82,8 @@ function runBenchmark() {
   }
   const end2 = performance.now();
   const heapAfter2 = getHeapMb();
-  console.log(
-    `[Complex Config] Created ${iterations} 10-prop 5-stop timelines in ${(end2 - start2).toFixed(2)}ms (${((end2 - start2) / iterations).toFixed(4)}ms/timeline). Heap delta: ${(heapAfter2 - heapBefore2).toFixed(2)}MB`,
-  );
+  const creationComplexMs = end2 - start2;
+  const heapComplexMb = Math.max(0, heapAfter2 - heapBefore2);
 
   const updateStart2 = performance.now();
   for (let p = 0; p <= 1; p += 0.01) {
@@ -98,18 +92,111 @@ function runBenchmark() {
     }
   }
   const updateEnd2 = performance.now();
+  const updateComplexMs = updateEnd2 - updateStart2;
+
+  const killStart2 = performance.now();
+  for (const tl of timelines2) {
+    tl.kill();
+  }
+  const killEnd2 = performance.now();
+  const killComplexMs = killEnd2 - killStart2;
+
   console.log(
-    `[Complex Config] 100 progress updates across ${iterations} timelines: ${(updateEnd2 - updateStart2).toFixed(2)}ms`,
+    `[Small Config (1p 2s)] Creation: ${creationSmallMs.toFixed(2)}ms (${(creationSmallMs / iterations).toFixed(4)}ms/tl), 100 Updates: ${updateSmallMs.toFixed(2)}ms, Kill: ${killSmallMs.toFixed(2)}ms, Heap: ${heapSmallMb.toFixed(2)}MB`,
+  );
+  console.log(
+    `[Complex Config (10p 5s)] Creation: ${creationComplexMs.toFixed(2)}ms (${(creationComplexMs / iterations).toFixed(4)}ms/tl), 100 Updates: ${updateComplexMs.toFixed(2)}ms, Kill: ${killComplexMs.toFixed(2)}ms, Heap: ${heapComplexMb.toFixed(2)}MB`,
   );
 
-  for (const tl of timelines2) tl.kill();
-
   return {
-    smallCreationMs: (end1 - start1) / iterations,
-    complexCreationMs: (end2 - start2) / iterations,
-    smallUpdateMs: updateEnd1 - updateStart1,
-    complexUpdateMs: updateEnd2 - updateStart2,
+    small: {
+      totalCreationMs: creationSmallMs,
+      perTlCreationMs: creationSmallMs / iterations,
+      updates100Ms: updateSmallMs,
+      killMs: killSmallMs,
+      heapMb: heapSmallMb,
+    },
+    complex: {
+      totalCreationMs: creationComplexMs,
+      perTlCreationMs: creationComplexMs / iterations,
+      updates100Ms: updateComplexMs,
+      killMs: killComplexMs,
+      heapMb: heapComplexMb,
+    },
   };
+}
+
+function runBenchmark() {
+  console.log("=== 5A. GSAP Interpolator Comparative Benchmark ===");
+  console.log(`Node version: ${process.version}`);
+  console.log(`Platform: ${process.platform} ${process.arch}`);
+
+  const baseline = benchmarkInterpolator(
+    "Baseline: Timeline (segment-per-stop)",
+    createRealGsapSeam(),
+  );
+  const oneTween = benchmarkInterpolator(
+    "Optimized: One-Tween (percent keyframes)",
+    createRealGsapOneTweenSeam(),
+  );
+
+  console.log("\n========================================================");
+  console.log("              COMPARISON SUMMARY (500 Timelines)");
+  console.log("========================================================");
+  console.log(
+    "Metric                              | Baseline (Timeline) | One-Tween (Optimized) | Speedup / Reduction",
+  );
+  console.log(
+    "------------------------------------+---------------------+-----------------------+--------------------",
+  );
+
+  const fmtRow = (label, bVal, oVal, unit, isSpeedup = true) => {
+    const diff = isSpeedup
+      ? (bVal / oVal).toFixed(2) + "x"
+      : ((1 - oVal / bVal) * 100).toFixed(1) + "% less";
+    console.log(
+      `${label.padEnd(35)} | ${(bVal.toFixed(2) + unit).padEnd(19)} | ${(oVal.toFixed(2) + unit).padEnd(21)} | ${diff}`,
+    );
+  };
+
+  fmtRow(
+    "Small Config Creation Time",
+    baseline.small.totalCreationMs,
+    oneTween.small.totalCreationMs,
+    "ms",
+    true,
+  );
+  fmtRow(
+    "Small Config Updates (100 ticks)",
+    baseline.small.updates100Ms,
+    oneTween.small.updates100Ms,
+    "ms",
+    true,
+  );
+  fmtRow("Small Config Heap Delta", baseline.small.heapMb, oneTween.small.heapMb, "MB", false);
+
+  fmtRow(
+    "Complex Config Creation Time",
+    baseline.complex.totalCreationMs,
+    oneTween.complex.totalCreationMs,
+    "ms",
+    true,
+  );
+  fmtRow(
+    "Complex Config Updates (100 ticks)",
+    baseline.complex.updates100Ms,
+    oneTween.complex.updates100Ms,
+    "ms",
+    true,
+  );
+  fmtRow(
+    "Complex Config Heap Delta",
+    baseline.complex.heapMb,
+    oneTween.complex.heapMb,
+    "MB",
+    false,
+  );
+  console.log("========================================================");
 }
 
 runBenchmark();
