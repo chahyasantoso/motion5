@@ -2,7 +2,7 @@ import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../contract
 import { validateKeyframes } from "../contract/validate-v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
-import { qualifyFreeTrack } from "../graph/ids";
+import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
 import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
 
@@ -13,8 +13,10 @@ export interface ProjectRuntimeOptions {
   readonly scheduler?: Scheduler;
   readonly compose: ComposeResolver;
   readonly setProgress?: (nodeId: string, progress: number) => void;
-  readonly compileTrack?: (track: TrackDefinition) => void;
+  readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
   readonly disposeTrack?: (nodeId: string) => void;
+  readonly addMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
+  readonly removeMotionTrack?: (motionId: string, trackId: string) => void;
   readonly onClockTick?: (event: ClockTick) => void;
   readonly disposeComposition?: () => void;
   /** Capacity of the bounded diagnostics history. Diagnostics itself supplies the default. */
@@ -26,11 +28,18 @@ export class ProjectRuntime {
   readonly #project: ProjectDefinition;
   readonly #graph: GraphRuntime;
   readonly #instances = new Map<string, object>();
-  readonly #adopted = new Map<string, { track: TrackDefinition; owner: object }>();
+  readonly #adopted = new Map<
+    string,
+    { track: TrackDefinition; owner: object; motionId?: string }
+  >();
   readonly #diagnostics: Diagnostics;
   readonly #setProgress: (nodeId: string, progress: number) => void;
-  readonly #compileTrack: ((track: TrackDefinition) => void) | undefined;
+  readonly #compileTrack: ((track: TrackDefinition, nodeId?: string) => void) | undefined;
   readonly #disposeTrack: ((nodeId: string) => void) | undefined;
+  readonly #addMotionTrack:
+    | ((motionId: string, trackId: string, duration?: number) => void)
+    | undefined;
+  readonly #removeMotionTrack: ((motionId: string, trackId: string) => void) | undefined;
   readonly #disposeComposition: () => void;
   #disposed = false;
 
@@ -39,6 +48,8 @@ export class ProjectRuntime {
     this.#setProgress = options.setProgress ?? (() => undefined);
     this.#compileTrack = options.compileTrack;
     this.#disposeTrack = options.disposeTrack;
+    this.#addMotionTrack = options.addMotionTrack;
+    this.#removeMotionTrack = options.removeMotionTrack;
     this.#disposeComposition = options.disposeComposition ?? (() => undefined);
     this.#diagnostics = new Diagnostics(options.diagnosticsCapacity);
     try {
@@ -82,15 +93,24 @@ export class ProjectRuntime {
     this.#instances.delete(nodeId);
     this.#graph.detach(nodeId);
   }
-  /** Add a runtime-created track to the same graph as authored free tracks. */
+  /** Add a runtime-created track to the graph (as a free track or into a specific motion). */
   adopt(
     track: TrackDefinition,
     owner: object,
+    options?: { motionId?: string },
   ): { readonly id: string; readonly track: TrackDefinition } {
     this.#assertLive();
-    // Reuse P2-01's qualification (never invent a parallel `~/` prefix by hand). This also
-    // validates the authored track id, so a bad id fails before anything is mutated.
-    const id = qualifyFreeTrack(track.id).value;
+    const motionId = options?.motionId;
+    if (motionId !== undefined) {
+      const motionExists = this.#project.motions.some((m) => m.id === motionId);
+      if (!motionExists) throw new TypeError(`Unknown motion "${motionId}".`);
+    }
+
+    const id =
+      motionId !== undefined
+        ? qualifyMotionTrack(motionId, track.id).value
+        : qualifyFreeTrack(track.id).value;
+
     if (this.#graph.state.hasNode(id) || this.#adopted.has(id))
       throw new TypeError(`Adopted track "${id}" already exists.`);
 
@@ -108,22 +128,16 @@ export class ProjectRuntime {
       );
 
     // Compile keyframes before any graph mutation so malformed keyframes fail atomically.
-    this.#compileTrack?.(track);
+    this.#compileTrack?.(track, id);
 
-    // The stored track keeps its authored (unqualified) id: buildGraphIR qualifies free
-    // tracks itself via qualifyFreeTrack, and rejects any authored id that already contains
-    // '/'. Composing the freeTracks list from the authored baseline plus every currently
-    // adopted track (rather than a stale `#project.freeTracks` snapshot) keeps multiple
-    // adoptions and destructions consistent with each other.
-    // ponytail: full rebuild per replace, O(N²) for N sequential adoptions — incremental IR when adoption frequency matters
-    const nextFreeTracks = [
-      ...(this.#project.freeTracks ?? []),
-      ...[...this.#adopted.values()].map((entry) => entry.track),
-      track,
-    ];
-    this.#graph.replaceGraph({ ...this.#project, freeTracks: nextFreeTracks });
-    this.#adopted.set(id, { track, owner });
+    this.#adopted.set(id, { track, owner, motionId });
+    this.#graph.replaceGraph(this.#buildProjectSnapshot());
     this.mount(id);
+
+    if (motionId !== undefined) {
+      this.#addMotionTrack?.(motionId, id, track.duration);
+    }
+
     return Object.freeze({ id, track });
   }
   /** Destroy an adopted track. Only the owner can destroy; others detach via unmount. */
@@ -140,11 +154,32 @@ export class ProjectRuntime {
     this.#graph.evictNode(nodeId);
     this.#adopted.delete(nodeId);
     this.#disposeTrack?.(nodeId);
-    const remaining = [
-      ...(this.#project.freeTracks ?? []),
-      ...[...this.#adopted.values()].map((entry) => entry.track),
-    ];
-    this.#graph.replaceGraph({ ...this.#project, freeTracks: remaining });
+    if (adopted.motionId !== undefined) {
+      this.#removeMotionTrack?.(adopted.motionId, nodeId);
+    }
+    this.#graph.replaceGraph(this.#buildProjectSnapshot());
+  }
+  #buildProjectSnapshot(): ProjectDefinition {
+    const adoptedList = [...this.#adopted.values()];
+    const freeAdopted = adoptedList
+      .filter((entry) => entry.motionId === undefined)
+      .map((e) => e.track);
+    const nextFreeTracks = [...(this.#project.freeTracks ?? []), ...freeAdopted];
+
+    const nextMotions = this.#project.motions.map((motion) => {
+      const motionAdopted = adoptedList
+        .filter((entry) => entry.motionId === motion.id)
+        .map((e) => e.track);
+      return motionAdopted.length === 0
+        ? motion
+        : { ...motion, tracks: [...motion.tracks, ...motionAdopted] };
+    });
+
+    return {
+      ...this.#project,
+      motions: nextMotions,
+      freeTracks: nextFreeTracks,
+    };
   }
   seek(nodeId: string, progress: number) {
     this.#assertLive();

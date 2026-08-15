@@ -38,6 +38,7 @@ export interface ProjectHandle {
   adopt(
     track: TrackDefinition,
     owner: object,
+    options?: { motionId?: string },
   ): { readonly id: string; readonly track: TrackDefinition };
   destroyAdopted(nodeId: string, owner: object): void;
   dispose(): void;
@@ -55,7 +56,7 @@ function createHandle(
     subscribe: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
     get: (nodeId) => runtime.graph.registry.get(nodeId),
     subscribeNode: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
-    adopt: (track, owner) => runtime.adopt(track, owner),
+    adopt: (track, owner, options) => runtime.adopt(track, owner, options),
     destroyAdopted: (nodeId, owner) => runtime.destroyAdopted(nodeId, owner),
     dispose: () => runtime.dispose(),
   };
@@ -135,12 +136,17 @@ export class Engine {
       tracks.set(nodeId, track);
       return track;
     };
-    const compileTrackDefinition = (trackDef: {
-      id: string;
-      duration?: number;
-      keyframes?: Readonly<Record<string, unknown>>;
-    }): void => {
-      const nodeId = qualifyFreeTrack(trackDef.id).value;
+    const compileTrackDefinition = (
+      trackDef: {
+        id: string;
+        duration?: number;
+        keyframes?: Readonly<Record<string, unknown>>;
+      },
+      targetNodeId?: string,
+    ): void => {
+      const nodeId =
+        targetNodeId ??
+        (trackDef.id.includes("/") ? trackDef.id : qualifyFreeTrack(trackDef.id).value);
       if (tracks.has(nodeId)) return;
       const path = `${nodeId}.keyframes`;
       const resolved = this.#plugins?.resolveForKeyframes(trackDef.keyframes ?? {}, path, {
@@ -194,6 +200,19 @@ export class Engine {
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
         compileTrack: compileTrackDefinition,
         disposeTrack,
+        addMotionTrack: (motionId, trackId, duration) => {
+          const motion = motions.get(motionId);
+          if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
+          const track = tracks.get(trackId);
+          if (!track) throw new TypeError(`Unknown graph node "${trackId}".`);
+          motion.addTrack({ id: trackId, track, duration });
+        },
+        removeMotionTrack: (motionId, trackId) => {
+          const motion = motions.get(motionId);
+          if (motion) {
+            motion.removeTrack(trackId);
+          }
+        },
         onClockTick: (event) => {
           for (const motion of motions.values()) {
             motion.onTick(event);
@@ -215,7 +234,8 @@ export class Engine {
           return { id, track, duration: definition?.duration };
         });
         const triggerPort = createManualTriggerPort();
-        const motion = new Motion({
+        let motion: Motion;
+        motion = new Motion({
           clock: this.#options.clock,
           scheduler: this.#options.scheduler,
           tracks: entries,
@@ -223,7 +243,8 @@ export class Engine {
           disposeTracks: false,
           listenToClock: false,
           invalidate: () => {
-            if (ids.length > 0) runtime.invalidate(ids);
+            const currentIds = motion.tracks.map((t) => t.id);
+            if (currentIds.length > 0) runtime.invalidate(currentIds);
           },
           stagger: motionDefinition.stagger,
         });

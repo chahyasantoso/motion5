@@ -121,4 +121,59 @@ describe("P5-02 adopted free tracks", () => {
     ).toThrow(/stop-position/);
     runtime.dispose();
   });
+
+  it("adopts a track into an existing motion under motionId/trackId", () => {
+    let addedMotion: string | undefined;
+    let addedTrack: string | undefined;
+    const runtime = new ProjectRuntime(project, {
+      clock: createManualClock(),
+      compose,
+      addMotionTrack: (mId, tId) => {
+        addedMotion = mId;
+        addedTrack = tId;
+      },
+    });
+    const owner = {};
+    const adopted = runtime.adopt({ id: "opacity" }, owner, { motionId: "hero" });
+    expect(adopted.id).toBe("hero/opacity");
+    expect(runtime.graph.state.snapshot().nodes).toContain("hero/opacity");
+    expect(addedMotion).toBe("hero");
+    expect(addedTrack).toBe("hero/opacity");
+
+    const batch = runtime.seek("hero/opacity", 0);
+    expect(batch.patches.find(({ nodeId }) => nodeId === "hero/opacity")?.values).toEqual({
+      node: "hero/opacity",
+    });
+    runtime.dispose();
+  });
+
+  it("rejects adopting into a non-existent motion", () => {
+    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
+    expect(() => runtime.adopt({ id: "opacity" }, {}, { motionId: "nonexistent" })).toThrow(
+      /nonexistent/,
+    );
+    runtime.dispose();
+  });
+
+  it("destroys a motion-adopted track and invokes removeMotionTrack", () => {
+    let removedMotion: string | undefined;
+    let removedTrack: string | undefined;
+    const runtime = new ProjectRuntime(project, {
+      clock: createManualClock(),
+      compose,
+      removeMotionTrack: (mId, tId) => {
+        removedMotion = mId;
+        removedTrack = tId;
+      },
+    });
+    const owner = {};
+    const adopted = runtime.adopt({ id: "opacity" }, owner, { motionId: "hero" });
+    expect(runtime.graph.state.snapshot().nodes).toContain("hero/opacity");
+
+    runtime.destroyAdopted(adopted.id, owner);
+    expect(runtime.graph.state.snapshot().nodes).not.toContain("hero/opacity");
+    expect(removedMotion).toBe("hero");
+    expect(removedTrack).toBe("hero/opacity");
+    runtime.dispose();
+  });
 });

@@ -72,4 +72,42 @@ describe("Motion composite", () => {
       }),
     ).toBe(true);
   });
+  it("addTrack adds a track, updates snapshot, and snaps to current progress", () => {
+    const { motion } = createMotion();
+    motion.seek(0.6);
+    const interpolator = createFakeInterpolator();
+    const newTrack = new Track({ interpolator });
+    (motion as any).addTrack({ id: "track-added", track: newTrack });
+    expect(motion.tracks.map(({ id }) => id)).toEqual([
+      "track-0",
+      "track-1",
+      "track-2",
+      "track-added",
+    ]);
+    expect(newTrack.progress).toBe(0.6);
+  });
+  it("addTrack throws on duplicate track id", () => {
+    const { motion } = createMotion();
+    const interpolator = createFakeInterpolator();
+    const duplicateTrack = new Track({ interpolator });
+    expect(() => (motion as any).addTrack({ id: "track-0", track: duplicateTrack })).toThrow(
+      /Duplicate Motion track id/,
+    );
+  });
+  it("removeTrack removes a track and updates snapshot", () => {
+    const { motion } = createMotion();
+    (motion as any).removeTrack("track-1");
+    expect(motion.tracks.map(({ id }) => id)).toEqual(["track-0", "track-2"]);
+  });
+  it("adding a track does not automatically reflow schedule until reflow is called", () => {
+    const { motion } = createMotion(0.1);
+    const initialSchedule = motion.schedule();
+    expect(initialSchedule).toEqual([0, 0.1, 0.2]);
+    const interpolator = createFakeInterpolator();
+    const newTrack = new Track({ interpolator });
+    (motion as any).addTrack({ id: "track-added", track: newTrack });
+    // schedule() evaluates based on current tracks, but schedule offset formula is tracks.map
+    // When reflow() is called, it returns the updated schedule
+    expect(motion.reflow()).toEqual([0, 0.1, 0.2, 0.30000000000000004]);
+  });
 });

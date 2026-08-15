@@ -24,7 +24,8 @@ export interface MotionOptions {
 export class Motion {
   readonly #clock: Clock;
   readonly #scheduler: Scheduler;
-  readonly #tracks: readonly MotionTrackEntry[];
+  readonly #tracks: MotionTrackEntry[];
+  readonly #trackMap = new Map<string, MotionTrackEntry>();
   readonly #trigger: TriggerPort | undefined;
   readonly #invalidate: (progress: number) => void;
   readonly #stagger: number;
@@ -41,17 +42,16 @@ export class Motion {
   constructor(options: MotionOptions) {
     if (!Number.isFinite(options.stagger ?? 0) || (options.stagger ?? 0) < 0)
       throw new TypeError("Motion stagger must be a finite non-negative number.");
-    const ids = new Set<string>();
     for (const entry of options.tracks) {
-      if (!entry.id || ids.has(entry.id))
+      if (!entry.id || this.#trackMap.has(entry.id))
         throw new Error(`Duplicate Motion track id: ${entry.id}.`);
       if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
         throw new TypeError(`Motion track duration must be a finite positive number: ${entry.id}.`);
-      ids.add(entry.id);
+      this.#trackMap.set(entry.id, entry);
     }
     this.#clock = options.clock;
     this.#scheduler = options.scheduler;
-    this.#tracks = Object.freeze([...options.tracks]);
+    this.#tracks = [...options.tracks];
     this.#trigger = options.trigger;
     this.#invalidate = options.invalidate ?? (() => undefined);
     this.#stagger = options.stagger ?? 0;
@@ -73,8 +73,35 @@ export class Motion {
   get position() {
     return this.#position;
   }
-  get tracks() {
-    return this.#tracks;
+  get tracks(): readonly MotionTrackEntry[] {
+    return Object.freeze([...this.#tracks]);
+  }
+  addTrack(entry: MotionTrackEntry): void {
+    this.assertActive();
+    if (!entry.id || this.#trackMap.has(entry.id))
+      throw new Error(`Duplicate Motion track id: ${entry.id}.`);
+    if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
+      throw new TypeError(`Motion track duration must be a finite positive number: ${entry.id}.`);
+    this.#tracks.push(entry);
+    this.#trackMap.set(entry.id, entry);
+    const duration = this.#totalDuration();
+    const index = this.#tracks.length - 1;
+    const staggerDelay = index * this.#stagger;
+    const effectiveProgress =
+      staggerDelay > 0 && duration > 0
+        ? Math.max(
+            0,
+            Math.min(1, (this.#position * duration - staggerDelay) / (entry.duration ?? duration)),
+          )
+        : this.#position;
+    entry.track.setProgress(effectiveProgress);
+  }
+  removeTrack(trackId: string): void {
+    this.assertActive();
+    const index = this.#tracks.findIndex((entry) => entry.id === trackId);
+    if (index === -1) return;
+    this.#tracks.splice(index, 1);
+    this.#trackMap.delete(trackId);
   }
   schedule(): readonly number[] {
     return this.#tracks.map((_, index) => index * this.#stagger);

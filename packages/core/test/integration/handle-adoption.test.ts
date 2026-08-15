@@ -57,4 +57,47 @@ describe("adoption through ProjectHandle (G2)", () => {
     expect(() => handle.adopt(bad, owner)).toThrow(/stop-position/);
     handle.dispose();
   });
+
+  it("adopts a track into an existing motion and receives motion signals", () => {
+    const scheduler = createFakeScheduler();
+    const handle = new Engine({
+      clock: createManualClock(),
+      interpolator: createFakeInterpolator(),
+      scheduler,
+    }).load(project);
+    const owner = {};
+    const adopted = handle.adopt(
+      {
+        id: "leg",
+        keyframes: {
+          x: {
+            stops: [
+              { p: 0, v: 0 },
+              { p: 1, v: 100 },
+            ],
+          },
+        },
+      },
+      owner,
+      { motionId: "hero" },
+    );
+    expect(adopted.id).toBe("hero/leg");
+
+    let latestPatch: any;
+    handle.subscribe("hero/leg", (patch) => {
+      latestPatch = patch;
+    });
+
+    handle.signal("hero", { type: "manual", progress: 0.5 });
+    scheduler.flush();
+
+    expect(latestPatch).toBeDefined();
+    expect(latestPatch.nodeId).toBe("hero/leg");
+    expect(latestPatch.values).toEqual({ x: 50 });
+
+    handle.destroyAdopted(adopted.id, owner);
+    const batch = handle.seek("hero/arm", 0);
+    expect(batch.patches.find(({ nodeId }) => nodeId === "hero/leg")).toBeUndefined();
+    handle.dispose();
+  });
 });
