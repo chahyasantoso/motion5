@@ -1,3 +1,6 @@
+NOT FEASABLE, THIS IS WRONG. IGNORE THIS DOC
+
+
 # Trigger Refactoring Feasibility Study
 
 ## Executive summary
