@@ -137,7 +137,7 @@ Order of operations:
 ```ts
 this.#graph.binding.replace({ ...this.#project, freeTracks: nextFreeTracks }); // committed
 this.#adopted.set(id, { track, owner });
-this.mount(id);                                                              // can throw
+this.mount(id); // can throw
 ```
 
 The graph transaction is already committed when `mount` runs. If `mount` throws, `#adopted` retains the entry and the graph retains the node, but no instance exists. The whole point of `GraphBinding`'s transaction is that a failed mutation leaves nothing behind; `adopt` reintroduces a non-atomic window immediately outside it.

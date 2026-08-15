@@ -38,9 +38,7 @@ export interface GraphBuildResult {
   readonly diagnostics: readonly Diagnostic[];
 }
 export function edgeKey(edge: GraphEdge): string {
-  const proj = edge.projection
-    ? JSON.stringify(edge.projection)
-    : "";
+  const proj = edge.projection ? JSON.stringify(edge.projection) : "";
   return `${edge.observerId}|${edge.sourceId}|${edge.role}|${edge.target ?? ""}|${proj}`;
 }
 function freeze<T>(value: T): T {

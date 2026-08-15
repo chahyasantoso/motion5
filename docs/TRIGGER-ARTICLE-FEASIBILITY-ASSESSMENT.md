@@ -19,7 +19,7 @@ Three things need saying plainly:
 2. **The article is right that the trigger is a port wearing domain clothing.** Verified: `TriggerDelegate` has no domain state, no invariants beyond a 0..1 range check, and no reference to any other domain object.
 3. **The article understates the problem.** It treats the trigger layer as redundant-but-correct. In the tree, the trigger layer is redundant **and** the surrounding progress pathway is broken in ways that make the `"time"` trigger type completely inert and multi-track motions only partially published. See section 4.
 
-There is also a **documentation conflict that must be resolved before any of this is implemented**: `docs/TRIGGER-REFACTORING-FEASIBILITY.md` already exists and reaches a *different* conclusion (collapse triggers into polymorphic `Clock` implementations, including a `ScrollClock`). The article concludes the opposite (keep `Clock` and `Trigger` as separate named interfaces, precisely so the roles stay legible). Documentation rule 4 forbids leaving contradictory records in place. Section 5 picks a winner.
+There is also a **documentation conflict that must be resolved before any of this is implemented**: `docs/TRIGGER-REFACTORING-FEASIBILITY.md` already exists and reaches a _different_ conclusion (collapse triggers into polymorphic `Clock` implementations, including a `ScrollClock`). The article concludes the opposite (keep `Clock` and `Trigger` as separate named interfaces, precisely so the roles stay legible). Documentation rule 4 forbids leaving contradictory records in place. Section 5 picks a winner.
 
 ---
 
@@ -27,19 +27,19 @@ There is also a **documentation conflict that must be resolved before any of thi
 
 Effort is engineer-days for one implementor including tests. Risk is blast radius against the brief's non-negotiables.
 
-| # | Article claim | Verified? | Feasible? | Effort | Risk |
-|---|---|---|---|---|---|
-| T1 | Three subclasses are identical, violating DRY | Yes | Yes | 0.5 | Low |
-| T2 | `TriggerCommand.play` / `pause` are dead API surface | Yes | Yes | 0.25 | Low |
-| T3 | `signal()` throwing on type mismatch is fragile | Yes, partially | Yes, as documentation | 0.25 | Low |
-| T4 | `attach` throws / `detach` no-ops is an undocumented asymmetry | Yes | Yes | 0.25 | Low |
-| T5 | Oracle has no trigger domain concept | Yes | N/A (observation) | 0 | None |
-| T6 | The three types are schema labels, not behaviors | Yes | N/A (observation) | 0 | None |
-| T7 | Trigger ownership belongs in the adapter layer | Yes | Yes | 2 | Medium |
-| T8 | `TriggerDelegate` should move to `ports/trigger.ts` | Yes | Yes | 1 | Low |
-| T9 | Collapse to `subscribe(cb): () => void`, drop `TriggerCommand` | Yes | Yes, with a caveat | 1.5 | Medium |
-| T10 | A trigger is structurally a clock but must not be merged | Yes | Yes, agree | 0 | None |
-| T11 | Reduce the whole system to an optional `TriggerPort` | Yes | **Not yet** | 3+ | **High** |
+| #   | Article claim                                                  | Verified?      | Feasible?             | Effort | Risk     |
+| --- | -------------------------------------------------------------- | -------------- | --------------------- | ------ | -------- |
+| T1  | Three subclasses are identical, violating DRY                  | Yes            | Yes                   | 0.5    | Low      |
+| T2  | `TriggerCommand.play` / `pause` are dead API surface           | Yes            | Yes                   | 0.25   | Low      |
+| T3  | `signal()` throwing on type mismatch is fragile                | Yes, partially | Yes, as documentation | 0.25   | Low      |
+| T4  | `attach` throws / `detach` no-ops is an undocumented asymmetry | Yes            | Yes                   | 0.25   | Low      |
+| T5  | Oracle has no trigger domain concept                           | Yes            | N/A (observation)     | 0      | None     |
+| T6  | The three types are schema labels, not behaviors               | Yes            | N/A (observation)     | 0      | None     |
+| T7  | Trigger ownership belongs in the adapter layer                 | Yes            | Yes                   | 2      | Medium   |
+| T8  | `TriggerDelegate` should move to `ports/trigger.ts`            | Yes            | Yes                   | 1      | Low      |
+| T9  | Collapse to `subscribe(cb): () => void`, drop `TriggerCommand` | Yes            | Yes, with a caveat    | 1.5    | Medium   |
+| T10 | A trigger is structurally a clock but must not be merged       | Yes            | Yes, agree            | 0      | None     |
+| T11 | Reduce the whole system to an optional `TriggerPort`           | Yes            | **Not yet**           | 3+     | **High** |
 
 ### T1 — Three identical subclasses
 
@@ -71,17 +71,17 @@ Minor defect found while verifying: in `BaseTrigger.attach`, the already-attache
 
 ### T5 / T6 — Oracle comparison and schema-label semantics
 
-**Both verified, both correct, and both consistent with the brief.** `oracle/motionpath-v5/README.md` lists seven snapshot files; none is a trigger module. Trigger behavior in the oracle lives in `domain/plugins.js` and `adapters/domRenderer.js`. The brief explicitly says motionpath "supplies trigger *semantics and lifecycle inspiration*", not structure, so the absence of an oracle trigger file is permission to design freely here, not evidence of a gap.
+**Both verified, both correct, and both consistent with the brief.** `oracle/motionpath-v5/README.md` lists seven snapshot files; none is a trigger module. Trigger behavior in the oracle lives in `domain/plugins.js` and `adapters/domRenderer.js`. The brief explicitly says motionpath "supplies trigger _semantics and lifecycle inspiration_", not structure, so the absence of an oracle trigger file is permission to design freely here, not evidence of a gap.
 
 The article's conclusion that motion5's trigger layer is "architecturally superior to the oracle" is true but not load-bearing. The oracle is a behavioral reference, not an architecture template (ADR-001). Superiority to a prototype is not an argument for keeping an abstraction.
 
 ### T7 — Trigger ownership moves to adapters
 
-**Verified as the correct direction, and already the stated policy.** The brief says it outright: *"Trigger adapters provide signals only. They never publish patches directly, create a clock, or bypass ProjectRuntime."* So the article is not proposing a new boundary; it is proposing that the code finally match the documented one.
+**Verified as the correct direction, and already the stated policy.** The brief says it outright: _"Trigger adapters provide signals only. They never publish patches directly, create a clock, or bypass ProjectRuntime."_ So the article is not proposing a new boundary; it is proposing that the code finally match the documented one.
 
 **Feasibility: medium.** No adapter exists yet. `packages/core/src/adapters/` contains only `browser-clock.ts`, `dom.ts`, and `interpolator/`. `adapters/dom.ts` has zero trigger awareness, confirming the article's observation.
 
-**Risk: medium, and specific.** The article's `ScrollTriggerAdapter` sketch calls `emit(progress)` directly from a scroll event handler. If `Motion` does not wrap that callback in `this.#scheduler.schedule(...)`, the adapter drives progress synchronously from a DOM event, which violates brief requirement *"Manual, scroll, and time signals pass through Scheduler and ProjectRuntime"* and re-opens the reentrancy hole `Motion.#onTrigger` currently closes. Any implementation must keep the scheduler hop inside `Motion`, never inside the adapter.
+**Risk: medium, and specific.** The article's `ScrollTriggerAdapter` sketch calls `emit(progress)` directly from a scroll event handler. If `Motion` does not wrap that callback in `this.#scheduler.schedule(...)`, the adapter drives progress synchronously from a DOM event, which violates brief requirement _"Manual, scroll, and time signals pass through Scheduler and ProjectRuntime"_ and re-opens the reentrancy hole `Motion.#onTrigger` currently closes. Any implementation must keep the scheduler hop inside `Motion`, never inside the adapter.
 
 ### T8 — Move the interface to `ports/trigger.ts`
 
@@ -95,11 +95,11 @@ The article's conclusion that motion5's trigger layer is "architecturally superi
 
 **Caveat the article misses.** Reducing `TriggerCommand` to a bare `number` removes the freeze boundary. `BaseTrigger.emit` currently calls `Object.freeze(command)` before dispatch, which is the mechanism satisfying the brief's immutability posture at that seam. A primitive `number` is trivially immutable, so this is fine, but the reasoning should be recorded in `DECISIONS.md` rather than lost, otherwise the next audit reads the removed `Object.freeze` as a regression.
 
-Also: `assertProgress` must not simply "move into each adapter" as the article suggests. If validation lives only in adapters, a third-party adapter can push `NaN` or `1.5` into `Track.setProgress`. `Motion.seek` already clamps with `Math.max(0, Math.min(1, progress))` while the trigger path *throws* on out-of-range. That inconsistency is a defect today (B7) and would become unfixable if validation were pushed outward. Keep a single validation point at the `Motion` boundary and let adapters fail fast on top of it if they want.
+Also: `assertProgress` must not simply "move into each adapter" as the article suggests. If validation lives only in adapters, a third-party adapter can push `NaN` or `1.5` into `Track.setProgress`. `Motion.seek` already clamps with `Math.max(0, Math.min(1, progress))` while the trigger path _throws_ on out-of-range. That inconsistency is a defect today (B7) and would become unfixable if validation were pushed outward. Keep a single validation point at the `Motion` boundary and let adapters fail fast on top of it if they want.
 
 ### T10 — "Is a trigger a clock?"
 
-**Agreed, and this is the article's strongest paragraph.** Structural identity is not semantic identity. `Clock` means *time advances*; `Trigger` means *position is dictated*. `Motion.#onTick` accumulates (`#position + delta/duration`) whereas `#onTrigger` assigns (`setProgress`). Merging the interfaces would erase the accumulate-versus-assign distinction, which is the only thing that actually differs in `Motion`.
+**Agreed, and this is the article's strongest paragraph.** Structural identity is not semantic identity. `Clock` means _time advances_; `Trigger` means _position is dictated_. `Motion.#onTick` accumulates (`#position + delta/duration`) whereas `#onTrigger` assigns (`setProgress`). Merging the interfaces would erase the accumulate-versus-assign distinction, which is the only thing that actually differs in `Motion`.
 
 This is also precisely where `docs/TRIGGER-REFACTORING-FEASIBILITY.md` goes wrong. See section 5.
 
@@ -211,7 +211,7 @@ This is also why `Engine.load` calls `motion.play()` on every motion immediately
 
 `docs/TRIGGER-REFACTORING-FEASIBILITY.md` already exists on this branch and recommends a **different** end state: delete triggers, and express scroll as a polymorphic `Clock` (`createScrollClock`, `createGsapScrollClock`) so that `Motion.#onTick` handles every source uniformly.
 
-The article rejects exactly that, in its "is a trigger a clock?" section. **The article is right and the existing document is wrong**, for one concrete reason: `Motion.#onTick` *accumulates* (`#position + delta/duration`) while scroll is *absolute*. A `ScrollClock` would have to emit synthetic deltas reverse-engineered from an absolute scroll position, which breaks the moment scroll direction reverses or the user jumps the scrollbar. Worse, it needs a second clock instance per scroll-driven motion, which collides head-on with brief rule 4, "keep one clock owner per project, no second RAF/ticker." The existing document even lists that rule under "Upside," claiming alignment. It does not align.
+The article rejects exactly that, in its "is a trigger a clock?" section. **The article is right and the existing document is wrong**, for one concrete reason: `Motion.#onTick` _accumulates_ (`#position + delta/duration`) while scroll is _absolute_. A `ScrollClock` would have to emit synthetic deltas reverse-engineered from an absolute scroll position, which breaks the moment scroll direction reverses or the user jumps the scrollbar. Worse, it needs a second clock instance per scroll-driven motion, which collides head-on with brief rule 4, "keep one clock owner per project, no second RAF/ticker." The existing document even lists that rule under "Upside," claiming alignment. It does not align.
 
 Secondary problems with the existing document: it asserts "nothing is exported yet (triggers are internal), safe window to change" while `ProjectHandle.signal` publicly takes a `TriggerSignal` (B14); and it proposes `createGsapScrollClock` in core, which cuts against ADR-015 keeping GSAP contained to the interpolator.
 

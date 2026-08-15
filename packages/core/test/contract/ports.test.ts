@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler, createFakeTriggerPort } from "../../src/ports/fakes";
+import {
+  createFakeInterpolator,
+  createFakeScheduler,
+  createFakeTriggerPort,
+} from "../../src/ports/fakes";
 import { assertTriggerPort, createManualTriggerPort } from "../../src/ports/trigger";
 
 describe("Clock port contract", () => {

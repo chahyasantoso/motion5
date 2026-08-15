@@ -18,9 +18,7 @@ export interface ScrollSource {
  * No GSAP import here. Wire GSAP in the call site (e.g. demo/scroll-source-gsap.ts).
  * Follows the same pattern as createBrowserClock(frameSource): Clock & { dispose() }.
  */
-export function createScrollTriggerPort(
-  source: ScrollSource,
-): TriggerPort & { dispose(): void } {
+export function createScrollTriggerPort(source: ScrollSource): TriggerPort & { dispose(): void } {
   const listeners = new Set<(progress: number) => void>();
   let disposed = false;
 

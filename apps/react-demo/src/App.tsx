@@ -101,7 +101,8 @@ export const App: React.FC = () => {
         <header className="demo-header">
           <h1>motion5 — React 12-Node Full-Body Skeleton Demo</h1>
           <p>
-            Authored Schema v5 · 12-Node FK Hierarchy · React 19 <code>usePatch</code> · GSAP ScrollTrigger
+            Authored Schema v5 · 12-Node FK Hierarchy · React 19 <code>usePatch</code> · GSAP
+            ScrollTrigger
           </p>
         </header>
         <SkeletonRig handle={handle} />
@@ -123,12 +124,14 @@ export const App: React.FC = () => {
         </div>
 
         <footer className="sidebar-footer">
-          <strong>Architecture</strong><br />
-          Authored Schema v5 → <code>Engine.load()</code><br />
-          GSAP Scroll → <code>ScrollSource</code><br />
-          → <code>createScrollTriggerPort()</code><br />
-          → <code>handle.signal("walk")</code><br />
-          → <code>@motion5/react usePatch()</code>
+          <strong>Architecture</strong>
+          <br />
+          Authored Schema v5 → <code>Engine.load()</code>
+          <br />
+          GSAP Scroll → <code>ScrollSource</code>
+          <br />→ <code>createScrollTriggerPort()</code>
+          <br />→ <code>handle.signal("walk")</code>
+          <br />→ <code>@motion5/react usePatch()</code>
         </footer>
       </aside>
     </div>

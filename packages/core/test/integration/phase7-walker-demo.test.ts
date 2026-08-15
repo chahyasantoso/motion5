@@ -22,16 +22,41 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
           {
             id: "pelvis",
             keyframes: {
-              x: { stops: [{ p: 0, v: 0 }, { p: 1, v: 200 }] },
-              y: { stops: [{ p: 0, v: 100 }, { p: 1, v: 100 }] },
-              rotation: { stops: [{ p: 0, v: 0 }, { p: 1, v: 0 }] },
+              x: {
+                stops: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 200 },
+                ],
+              },
+              y: {
+                stops: [
+                  { p: 0, v: 100 },
+                  { p: 1, v: 100 },
+                ],
+              },
+              rotation: {
+                stops: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 0 },
+                ],
+              },
             },
           },
           {
             id: "thigh",
             keyframes: {
-              boneLength: { stops: [{ p: 0, v: 50 }, { p: 1, v: 50 }] },
-              boneRotation: { stops: [{ p: 0, v: 45 }, { p: 1, v: 45 }] },
+              boneLength: {
+                stops: [
+                  { p: 0, v: 50 },
+                  { p: 1, v: 50 },
+                ],
+              },
+              boneRotation: {
+                stops: [
+                  { p: 0, v: 45 },
+                  { p: 1, v: 45 },
+                ],
+              },
             },
             observes: [
               {
@@ -50,8 +75,18 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
           {
             id: "shin",
             keyframes: {
-              boneLength: { stops: [{ p: 0, v: 40 }, { p: 1, v: 40 }] },
-              boneRotation: { stops: [{ p: 0, v: -30 }, { p: 1, v: -30 }] },
+              boneLength: {
+                stops: [
+                  { p: 0, v: 40 },
+                  { p: 1, v: 40 },
+                ],
+              },
+              boneRotation: {
+                stops: [
+                  { p: 0, v: -30 },
+                  { p: 1, v: -30 },
+                ],
+              },
             },
             observes: [
               {

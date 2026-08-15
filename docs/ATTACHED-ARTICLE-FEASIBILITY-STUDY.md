@@ -11,16 +11,16 @@
 
 The attached article is a useful architecture direction, but it combines observations that are true today, proposed refactors, and claims that the repository is already complete. The feasibility result is:
 
-| Area | Verdict | Recommendation |
-|---|---|---|
-| Trigger simplification | Feasible and mostly correct | Keep separate `Clock` and `TriggerPort` semantics; move platform drivers outward; retain Motion's Scheduler gate and core validation |
-| GraphIR / ObservationState split | Correct and strong | Preserve the split and identity-preserving transaction model |
-| Dynamic adoption | Correct diagnosis, incomplete solution | Fix composition ownership, public reachability, atomicity, validation, cache invalidation, and teardown before optimizing |
-| Incremental `GraphIndex` | Plausible, not yet justified | Benchmark first; do not introduce a second graph truth or mutable owner |
-| GSAP one-tween optimization | Feasible, unproven | Add equivalence tests and benchmark before replacing the current segment construction |
-| Remove Scheduler from Motion | **Not feasible without a replacement** | Reject; unsubscribe cannot cancel already queued writes |
-| Multi-track seed fix | Correct minimum direction | Seed all IDs in one batch, remove duplicate first-track writes, test independently from stagger |
-| Phase 5 completion claim | Valid only for the named slice | Do not treat it as proof that every article capability is production-ready |
+| Area                             | Verdict                                | Recommendation                                                                                                                       |
+| -------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Trigger simplification           | Feasible and mostly correct            | Keep separate `Clock` and `TriggerPort` semantics; move platform drivers outward; retain Motion's Scheduler gate and core validation |
+| GraphIR / ObservationState split | Correct and strong                     | Preserve the split and identity-preserving transaction model                                                                         |
+| Dynamic adoption                 | Correct diagnosis, incomplete solution | Fix composition ownership, public reachability, atomicity, validation, cache invalidation, and teardown before optimizing            |
+| Incremental `GraphIndex`         | Plausible, not yet justified           | Benchmark first; do not introduce a second graph truth or mutable owner                                                              |
+| GSAP one-tween optimization      | Feasible, unproven                     | Add equivalence tests and benchmark before replacing the current segment construction                                                |
+| Remove Scheduler from Motion     | **Not feasible without a replacement** | Reject; unsubscribe cannot cancel already queued writes                                                                              |
+| Multi-track seed fix             | Correct minimum direction              | Seed all IDs in one batch, remove duplicate first-track writes, test independently from stagger                                      |
+| Phase 5 completion claim         | Valid only for the named slice         | Do not treat it as proof that every article capability is production-ready                                                           |
 
 The highest-risk mistake in the article is the proposed Scheduler removal. The highest-risk implementation gap is dynamic adoption through `Engine.load`: the graph mutation succeeds, but the adopted node has no compiled `Track` in the Engine-owned closure and publishes composition errors forever.
 
@@ -226,23 +226,23 @@ There is also a stale-doc conflict: `docs/README.md` describes Phase 4 reopened 
 
 ## 6. Consolidated feasibility matrix
 
-| Topic | Current evidence | Feasibility | Priority | Required proof |
-|---|---|---:|---:|---|
-| Collapse duplicate triggers | Three identical handlers | High | P2 | Existing trigger tests stay green |
-| Replace with TriggerPort | Clock precedent exists | High | P1 | Port lifecycle + adapter tests |
-| Time mode through Engine | Disabled by `listenToClock: false` | High after ownership fix | P0 | Engine integration tick test |
-| Adapter-owned drivers | Brief requires it | High | P1 | Boundary scan + driver tests |
-| Keep Clock/Trigger separate | Accumulate vs assign | High | P1 | Semantic tests |
-| GraphIR/ObservationState split | Implemented and coherent | Preserve | Preserve | Transaction and identity tests |
-| Dynamic adoption compose seam | Closure cannot see adopted Track | Medium | P0 | Adopt via Engine, ready patch |
-| Public adoption API | Currently absent | Decision | P0 | Explicit v1/internal decision |
-| GraphIndex | Could reduce rebuild cost | Medium | P3 | Benchmark + rollback proof |
-| GSAP one-tween path | Per-segment loop verified | Medium | P3 | Equivalence + performance budget |
-| Remove Motion Scheduler | Breaks stale-write cancellation | Reject | N/A | Do not implement as deletion |
-| Multi-track invalidation | First seed only | High | P0 | Same-batch sibling test |
-| Stagger | Offset calculation unused | Medium | P1 | Semantics test or contract removal |
-| Phase 5 status | Named slice has CI evidence | High for slice, not blanket | Docs | Narrow wording and reconcile README |
-| Diagnostic boundedness | Buffer is capped | High for diagnostics only | Done | Separate registry retention tests |
+| Topic                          | Current evidence                   |                 Feasibility | Priority | Required proof                      |
+| ------------------------------ | ---------------------------------- | --------------------------: | -------: | ----------------------------------- |
+| Collapse duplicate triggers    | Three identical handlers           |                        High |       P2 | Existing trigger tests stay green   |
+| Replace with TriggerPort       | Clock precedent exists             |                        High |       P1 | Port lifecycle + adapter tests      |
+| Time mode through Engine       | Disabled by `listenToClock: false` |    High after ownership fix |       P0 | Engine integration tick test        |
+| Adapter-owned drivers          | Brief requires it                  |                        High |       P1 | Boundary scan + driver tests        |
+| Keep Clock/Trigger separate    | Accumulate vs assign               |                        High |       P1 | Semantic tests                      |
+| GraphIR/ObservationState split | Implemented and coherent           |                    Preserve | Preserve | Transaction and identity tests      |
+| Dynamic adoption compose seam  | Closure cannot see adopted Track   |                      Medium |       P0 | Adopt via Engine, ready patch       |
+| Public adoption API            | Currently absent                   |                    Decision |       P0 | Explicit v1/internal decision       |
+| GraphIndex                     | Could reduce rebuild cost          |                      Medium |       P3 | Benchmark + rollback proof          |
+| GSAP one-tween path            | Per-segment loop verified          |                      Medium |       P3 | Equivalence + performance budget    |
+| Remove Motion Scheduler        | Breaks stale-write cancellation    |                      Reject |      N/A | Do not implement as deletion        |
+| Multi-track invalidation       | First seed only                    |                        High |       P0 | Same-batch sibling test             |
+| Stagger                        | Offset calculation unused          |                      Medium |       P1 | Semantics test or contract removal  |
+| Phase 5 status                 | Named slice has CI evidence        | High for slice, not blanket |     Docs | Narrow wording and reconcile README |
+| Diagnostic boundedness         | Buffer is capped                   |   High for diagnostics only |     Done | Separate registry retention tests   |
 
 ---
 

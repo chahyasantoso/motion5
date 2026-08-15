@@ -172,17 +172,17 @@ export class Motion {
       const staggerDelay = index * this.#stagger;
       const effectiveProgress =
         staggerDelay > 0 && duration > 0
-          ? Math.max(0, Math.min(1, (progress * duration - staggerDelay) / (entry.duration ?? duration)))
+          ? Math.max(
+              0,
+              Math.min(1, (progress * duration - staggerDelay) / (entry.duration ?? duration)),
+            )
           : progress;
       entry.track.setProgress(effectiveProgress);
     }
     this.#invalidate(progress);
   }
   #totalDuration(): number {
-    return this.#tracks.reduce(
-      (maximum, entry) => Math.max(maximum, entry.duration ?? 1),
-      1,
-    );
+    return this.#tracks.reduce((maximum, entry) => Math.max(maximum, entry.duration ?? 1), 1);
   }
   #progressDelta(delta: number): number {
     return delta / this.#totalDuration();

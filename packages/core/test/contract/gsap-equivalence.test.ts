@@ -90,7 +90,14 @@ describe("GSAP interpolator semantic equivalence (P5 baseline)", () => {
     const seam = createRealGsapSeam();
     const timeline = seam.interpolator.create({
       duration: 1,
-      keyframes: { x: { stops: [{ p: 0, v: 0 }, { p: 1, v: 10 }] } },
+      keyframes: {
+        x: {
+          stops: [
+            { p: 0, v: 0 },
+            { p: 1, v: 10 },
+          ],
+        },
+      },
     });
     expect(() => {
       timeline.kill();

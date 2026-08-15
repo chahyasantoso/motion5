@@ -4,7 +4,11 @@ import { Engine } from "../../src/engine";
 import { Motion } from "../../src/domain/motion";
 import { Track } from "../../src/domain/track";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler, createFakeTriggerPort } from "../../src/ports/fakes";
+import {
+  createFakeInterpolator,
+  createFakeScheduler,
+  createFakeTriggerPort,
+} from "../../src/ports/fakes";
 import { createManualTriggerPort, assertTriggerPort } from "../../src/ports/trigger";
 
 describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {

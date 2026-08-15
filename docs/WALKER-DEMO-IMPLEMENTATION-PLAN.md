@@ -17,19 +17,19 @@ That's exactly the Phase 0R/1R value pipeline the audit says is not yet shipped.
 
 ## What already exists in motion5
 
-| Piece | Location | Status for the demo |
-|-------|----------|---------------------|
-| Authored schema v5 + validation | `contract/v5.ts`, `validate-v5.ts` | ✅ Usable — walker authored in v5 |
-| Engine.load → ProjectHandle | `engine.ts` | ✅ Usable — mount/seek/signal/subscribe/dispose |
-| Plugin registry + resolution | `domain/plugins.ts` | ✅ Usable — register the FK + transform plugins |
-| Track compose | `domain/track.ts` | ✅ Usable |
-| Observation graph | `runtime/graph-publisher.ts` | ✅ Usable |
-| Motion + clock subscription | `domain/motion.ts`, `ports/clock.ts` | ✅ Usable — auto-advance on clock deltas |
-| GSAP interpolator adapter | `adapters/interpolator/gsap.ts` | ⚠️ Not exported |
-| DOM patch adapter | `adapters/dom.ts` | ⚠️ Not exported |
-| Browser RAF clock | `adapters/browser-clock.ts` | ⚠️ Not exported |
-| React binding | `packages/react` | ⚠️ Only `usePatch` |
-| Triggers | `domain/triggers.ts` | ❌ Vestigial — use Clock polymorphism instead (see feasibility study) |
+| Piece                           | Location                             | Status for the demo                                                   |
+| ------------------------------- | ------------------------------------ | --------------------------------------------------------------------- |
+| Authored schema v5 + validation | `contract/v5.ts`, `validate-v5.ts`   | ✅ Usable — walker authored in v5                                     |
+| Engine.load → ProjectHandle     | `engine.ts`                          | ✅ Usable — mount/seek/signal/subscribe/dispose                       |
+| Plugin registry + resolution    | `domain/plugins.ts`                  | ✅ Usable — register the FK + transform plugins                       |
+| Track compose                   | `domain/track.ts`                    | ✅ Usable                                                             |
+| Observation graph               | `runtime/graph-publisher.ts`         | ✅ Usable                                                             |
+| Motion + clock subscription     | `domain/motion.ts`, `ports/clock.ts` | ✅ Usable — auto-advance on clock deltas                              |
+| GSAP interpolator adapter       | `adapters/interpolator/gsap.ts`      | ⚠️ Not exported                                                       |
+| DOM patch adapter               | `adapters/dom.ts`                    | ⚠️ Not exported                                                       |
+| Browser RAF clock               | `adapters/browser-clock.ts`          | ⚠️ Not exported                                                       |
+| React binding                   | `packages/react`                     | ⚠️ Only `usePatch`                                                    |
+| Triggers                        | `domain/triggers.ts`                 | ❌ Vestigial — use Clock polymorphism instead (see feasibility study) |
 
 ## The five core gaps (this demo forces us to close them)
 
@@ -54,6 +54,7 @@ Motionpath fed the parent as one `parentWorld` object. Motion5's publisher merge
 ### 4. No polished React hooks above `usePatch`
 
 Motionpath had `useMotionProject`, `useMotionSubscriber`, `useScrollMotion`. Motion5 has only `usePatch`. The walker needs ways to:
+
 - Load a project and get a `ProjectHandle`
 - Subscribe a DOM element to a node's patches
 - Wire a scroll clock and drive motion through scroll
@@ -77,7 +78,8 @@ export function composeWorld(
   local: { x: number; y: number; rotation: number },
 ) {
   const rad = (parent.rotation * Math.PI) / 180;
-  const cos = Math.cos(rad), sin = Math.sin(rad);
+  const cos = Math.cos(rad),
+    sin = Math.sin(rad);
   return {
     x: parent.x + (local.x * cos - local.y * sin),
     y: parent.y + (local.x * sin + local.y * cos),
@@ -115,11 +117,13 @@ export const fkPlugin: PluginDefinition = {
 Observation wiring in the authored project:
 
 ```ts
-observes: [{
-  source: parentId,
-  role: "input",
-  projection: { map: { x: "parentX", y: "parentY", rotation: "parentRotation" } },
-}]
+observes: [
+  {
+    source: parentId,
+    role: "input",
+    projection: { map: { x: "parentX", y: "parentY", rotation: "parentRotation" } },
+  },
+];
 ```
 
 The publisher's `projectValues` supports `map`, and the flat keys are merged into the child's inputs before compose. This replaces motionpath's nested `parentWorld` object cleanly.
@@ -129,8 +133,8 @@ The publisher's `projectValues` supports `map`, and the flat keys are merged int
 Three reasons:
 
 1. **Plugins stay topology-agnostic.** `simpleProperty` reads `values[key]`, FK reads `values.parentX`. Same flat lookup whether it's local state or observed. Plugins never unwrap a nested source object.
-2. **The graph owns shape, not the plugin.** Renaming lives on the *edge* via `projection.map`, not in compose code. The publisher does the projection; plugins stay dumb.
-3. **Collisions are validated, not hidden.** Two edges contributing the same key throws `observation-input-collision` at flush time. Nesting would auto-namespace that away, which sounds nice until you *want* two upstreams to feed one value space and can't tell them apart. Motion5 pushes that ambiguity to authoring time where it's explicit and checkable.
+2. **The graph owns shape, not the plugin.** Renaming lives on the _edge_ via `projection.map`, not in compose code. The publisher does the projection; plugins stay dumb.
+3. **Collisions are validated, not hidden.** Two edges contributing the same key throws `observation-input-collision` at flush time. Nesting would auto-namespace that away, which sounds nice until you _want_ two upstreams to feed one value space and can't tell them apart. Motion5 pushes that ambiguity to authoring time where it's explicit and checkable.
 
 ## Target project structure
 
@@ -266,7 +270,10 @@ if (triggerType === "scroll") {
   const pinRef = document.querySelector("[data-scroll-pin]");
   clock = createGsapScrollClock(gsap, triggerRef, pinRef, { scrub, start, end });
 } else if (triggerType === "time") {
-  clock = createBrowserClock({ requestFrame: requestAnimationFrame, cancelFrame: cancelAnimationFrame });
+  clock = createBrowserClock({
+    requestFrame: requestAnimationFrame,
+    cancelFrame: cancelAnimationFrame,
+  });
 } else {
   clock = createManualClock(); // test/headless
 }
@@ -340,7 +347,7 @@ export function useNodeTransform(
   source: PatchSource | undefined,
   nodeId: string,
   ref: React.RefObject<HTMLElement>,
-  transform: (raw: Patch['values'], compose: (input: any) => any) => Record<string, any>,
+  transform: (raw: Patch["values"], compose: (input: any) => any) => Record<string, any>,
 ) {
   useEffect(() => {
     if (!source || !ref.current) return;
@@ -372,7 +379,12 @@ export default function WalkerPage() {
 
   useEffect(() => {
     if (!handle || !triggerRef.current || !pinRef.current) return;
-    const clock = createGsapScrollClock(gsap, triggerRef.current, pinRef.current, walkerMotion.trigger);
+    const clock = createGsapScrollClock(
+      gsap,
+      triggerRef.current,
+      pinRef.current,
+      walkerMotion.trigger,
+    );
     const motion = new Motion({ clock, scheduler, tracks, invalidate });
     motion.play();
   }, [handle]);
@@ -391,14 +403,14 @@ export default function WalkerPage() {
 
 ## Phased plan
 
-| Phase | Deliverable | Exit evidence |
-|-------|-------------|---------------|
-| P0 — Core enablers | C1 adapters entrypoint, C2 PatchSource, C3 trigger refactoring | New import/`get` tests fail on base, pass after; `npm run check` green |
-| P1 — Plugins | fkMath, fkPlugin, transform plugins | Unit tests for `composeWorld`; fkPlugin compose test (flat inputs → world) |
-| P2 — Authored project | walkerProject.ts in schema v5 | `validateV5(walkerProject).valid === true`; contract test |
-| P3 — Clock + Motion | BrowserClock, ScrollClock, create engine | Load + seek headless, assert patches; each bone's x/y/rotation matches `composeWorld` chain |
-| P4 — React app | Vite app, hooks, WalkerPage, GSAP scroll clock | App builds; scrubbing walks the rig; RTL smoke test |
-| P5 — Polish | CSS, shadow/rail/head details, reverse-on-scroll-up | Visual pass; boundary scan green; no leakage |
+| Phase                 | Deliverable                                                    | Exit evidence                                                                               |
+| --------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| P0 — Core enablers    | C1 adapters entrypoint, C2 PatchSource, C3 trigger refactoring | New import/`get` tests fail on base, pass after; `npm run check` green                      |
+| P1 — Plugins          | fkMath, fkPlugin, transform plugins                            | Unit tests for `composeWorld`; fkPlugin compose test (flat inputs → world)                  |
+| P2 — Authored project | walkerProject.ts in schema v5                                  | `validateV5(walkerProject).valid === true`; contract test                                   |
+| P3 — Clock + Motion   | BrowserClock, ScrollClock, create engine                       | Load + seek headless, assert patches; each bone's x/y/rotation matches `composeWorld` chain |
+| P4 — React app        | Vite app, hooks, WalkerPage, GSAP scroll clock                 | App builds; scrubbing walks the rig; RTL smoke test                                         |
+| P5 — Polish           | CSS, shadow/rail/head details, reverse-on-scroll-up            | Visual pass; boundary scan green; no leakage                                                |
 
 ## Acceptance criteria
 

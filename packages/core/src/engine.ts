@@ -1,4 +1,11 @@
-import type { Diagnostic, Patch, PatchBatch, PatchListener, ProjectDefinition, TriggerSignal } from "./contract/v5";
+import type {
+  Diagnostic,
+  Patch,
+  PatchBatch,
+  PatchListener,
+  ProjectDefinition,
+  TriggerSignal,
+} from "./contract/v5";
 import { validateV5 } from "./contract/validate-v5";
 import { compilePercentKeyframes } from "./domain/keyframe-compiler";
 import { Motion } from "./domain/motion";

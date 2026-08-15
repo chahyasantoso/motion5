@@ -58,7 +58,12 @@ export const fullBodyWalkerProject: ProjectDefinition = {
         {
           id: "chest",
           keyframes: {
-            boneLength: { stops: [{ p: 0, v: 80 }, { p: 1, v: 80 }] },
+            boneLength: {
+              stops: [
+                { p: 0, v: 80 },
+                { p: 1, v: 80 },
+              ],
+            },
             boneRotation: {
               stops: [
                 { p: 0, v: -87 },
@@ -88,7 +93,12 @@ export const fullBodyWalkerProject: ProjectDefinition = {
         {
           id: "head",
           keyframes: {
-            boneLength: { stops: [{ p: 0, v: 45 }, { p: 1, v: 45 }] },
+            boneLength: {
+              stops: [
+                { p: 0, v: 45 },
+                { p: 1, v: 45 },
+              ],
+            },
             boneRotation: {
               stops: [
                 { p: 0, v: -3 },
@@ -118,13 +128,18 @@ export const fullBodyWalkerProject: ProjectDefinition = {
         {
           id: "legL_thigh",
           keyframes: {
-            boneLength: { stops: [{ p: 0, v: 85 }, { p: 1, v: 85 }] },
+            boneLength: {
+              stops: [
+                { p: 0, v: 85 },
+                { p: 1, v: 85 },
+              ],
+            },
             boneRotation: {
               stops: [
-                { p: 0, v: 65 },    // Forward contact
-                { p: 0.125, v: 85 },   // Mid-stance
-                { p: 0.25, v: 115 },  // Push-off back
-                { p: 0.375, v: 95 },   // Swing forward
+                { p: 0, v: 65 }, // Forward contact
+                { p: 0.125, v: 85 }, // Mid-stance
+                { p: 0.25, v: 115 }, // Push-off back
+                { p: 0.375, v: 95 }, // Swing forward
                 { p: 0.5, v: 65 },
                 { p: 0.625, v: 85 },
                 { p: 0.75, v: 115 },
@@ -152,7 +167,12 @@ export const fullBodyWalkerProject: ProjectDefinition = {
         {
           id: "legL_shin",
           keyframes: {
-            boneLength: { stops: [{ p: 0, v: 80 }, { p: 1, v: 80 }] },
+            boneLength: {
+              stops: [
+                { p: 0, v: 80 },
+                { p: 1, v: 80 },
+              ],
+            },
             boneRotation: {
               stops: [
                 { p: 0, v: 5 },
@@ -186,7 +206,12 @@ export const fullBodyWalkerProject: ProjectDefinition = {
         {
           id: "legL_foot",
           keyframes: {
-            boneLength: { stops: [{ p: 0, v: 38 }, { p: 1, v: 38 }] },
+            boneLength: {
+              stops: [
+                { p: 0, v: 38 },
+                { p: 1, v: 38 },
+              ],
+            },
             boneRotation: {
               stops: [
                 { p: 0, v: -75 },
@@ -220,7 +245,12 @@ export const fullBodyWalkerProject: ProjectDefinition = {
         {
           id: "legR_thigh",
           keyframes: {
-            boneLength: { stops: [{ p: 0, v: 85 }, { p: 1, v: 85 }] },
+            boneLength: {
+              stops: [
+                { p: 0, v: 85 },
+                { p: 1, v: 85 },
+              ],
+            },
             boneRotation: {
               stops: [
                 { p: 0, v: 115 },
@@ -254,7 +284,12 @@ export const fullBodyWalkerProject: ProjectDefinition = {
         {
           id: "legR_shin",
           keyframes: {
-            boneLength: { stops: [{ p: 0, v: 80 }, { p: 1, v: 80 }] },
+            boneLength: {
+              stops: [
+                { p: 0, v: 80 },
+                { p: 1, v: 80 },
+              ],
+            },
             boneRotation: {
               stops: [
                 { p: 0, v: 25 },
@@ -288,7 +323,12 @@ export const fullBodyWalkerProject: ProjectDefinition = {
         {
           id: "legR_foot",
           keyframes: {
-            boneLength: { stops: [{ p: 0, v: 38 }, { p: 1, v: 38 }] },
+            boneLength: {
+              stops: [
+                { p: 0, v: 38 },
+                { p: 1, v: 38 },
+              ],
+            },
             boneRotation: {
               stops: [
                 { p: 0, v: -105 },
@@ -322,12 +362,17 @@ export const fullBodyWalkerProject: ProjectDefinition = {
         {
           id: "armL_upper",
           keyframes: {
-            boneLength: { stops: [{ p: 0, v: 62 }, { p: 1, v: 62 }] },
+            boneLength: {
+              stops: [
+                { p: 0, v: 62 },
+                { p: 1, v: 62 },
+              ],
+            },
             boneRotation: {
               stops: [
-                { p: 0, v: 210 },    // Back swing
+                { p: 0, v: 210 }, // Back swing
                 { p: 0.125, v: 190 },
-                { p: 0.25, v: 150 },   // Forward swing
+                { p: 0.25, v: 150 }, // Forward swing
                 { p: 0.375, v: 170 },
                 { p: 0.5, v: 210 },
                 { p: 0.625, v: 190 },
@@ -356,7 +401,12 @@ export const fullBodyWalkerProject: ProjectDefinition = {
         {
           id: "armL_lower",
           keyframes: {
-            boneLength: { stops: [{ p: 0, v: 58 }, { p: 1, v: 58 }] },
+            boneLength: {
+              stops: [
+                { p: 0, v: 58 },
+                { p: 1, v: 58 },
+              ],
+            },
             boneRotation: {
               stops: [
                 { p: 0, v: 20 },
@@ -390,12 +440,17 @@ export const fullBodyWalkerProject: ProjectDefinition = {
         {
           id: "armR_upper",
           keyframes: {
-            boneLength: { stops: [{ p: 0, v: 62 }, { p: 1, v: 62 }] },
+            boneLength: {
+              stops: [
+                { p: 0, v: 62 },
+                { p: 1, v: 62 },
+              ],
+            },
             boneRotation: {
               stops: [
-                { p: 0, v: 150 },    // Forward swing
+                { p: 0, v: 150 }, // Forward swing
                 { p: 0.125, v: 170 },
-                { p: 0.25, v: 210 },   // Back swing
+                { p: 0.25, v: 210 }, // Back swing
                 { p: 0.375, v: 190 },
                 { p: 0.5, v: 150 },
                 { p: 0.625, v: 170 },
@@ -424,7 +479,12 @@ export const fullBodyWalkerProject: ProjectDefinition = {
         {
           id: "armR_lower",
           keyframes: {
-            boneLength: { stops: [{ p: 0, v: 58 }, { p: 1, v: 58 }] },
+            boneLength: {
+              stops: [
+                { p: 0, v: 58 },
+                { p: 1, v: 58 },
+              ],
+            },
             boneRotation: {
               stops: [
                 { p: 0, v: 45 },

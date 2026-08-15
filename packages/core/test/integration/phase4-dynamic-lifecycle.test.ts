@@ -8,13 +8,11 @@ const project = {
   schemaVersion: 5 as const,
   motions: [{ id: "hero", trigger: { type: "manual" as const }, tracks: [] }],
 };
-const compose =
-  (node: { id: string }) =>
-  () => ({
-    values: { node: node.id },
-    sourceProgress: 0,
-    sourceRevisions: {},
-  });
+const compose = (node: { id: string }) => () => ({
+  values: { node: node.id },
+  sourceProgress: 0,
+  sourceRevisions: {},
+});
 
 describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
   it("1. Adoption produces ready patches and publishes through the ordinary graph path", () => {
