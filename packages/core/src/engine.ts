@@ -1,15 +1,15 @@
-import type { Diagnostic, PatchBatch, PatchListener, ProjectDefinition } from "./contract/v5";
+import type { Diagnostic, Patch, PatchBatch, PatchListener, ProjectDefinition, TriggerSignal } from "./contract/v5";
 import { validateV5 } from "./contract/validate-v5";
 import { compilePercentKeyframes } from "./domain/keyframe-compiler";
 import { Motion } from "./domain/motion";
 import { PluginRegistry } from "./domain/plugins";
-import { createTrigger, type TriggerSignal } from "./domain/triggers";
 import { Track } from "./domain/track";
 import type { ImmutableRecord } from "./domain/values";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
+import { createManualTriggerPort, type TriggerPort } from "./ports/trigger";
 import { ProjectRuntime } from "./runtime/project-runtime";
 
 export interface EngineOptions {
@@ -24,27 +24,32 @@ export interface ProjectHandle {
   seek(nodeId: string, progress: number): PatchBatch;
   signal(motionId: string, signal: TriggerSignal): void;
   subscribe(nodeId: string, listener: PatchListener): () => void;
+  get(nodeId: string): Patch | undefined;
+  subscribeNode(nodeId: string, listener: PatchListener): () => void;
   dispose(): void;
 }
-type RuntimeLike = {
-  mount(nodeId: string, instance?: object): object;
-  unmount(nodeId: string): void;
-  seek(nodeId: string, progress: number): PatchBatch;
-  graph: { registry: { subscribeNode(nodeId: string, listener: PatchListener): () => void } };
-  dispose(): void;
-};
+type RuntimeLike = ProjectRuntime;
 function createHandle(
   runtime: RuntimeLike,
   signal: (motionId: string, signal: TriggerSignal) => void,
 ): ProjectHandle {
-  return {
+  const handle: ProjectHandle = {
     mount: (nodeId, instance = {}) => runtime.mount(nodeId, instance),
     unmount: (nodeId) => runtime.unmount(nodeId),
     seek: (nodeId, progress) => runtime.seek(nodeId, progress),
     signal,
     subscribe: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
+    get: (nodeId) => runtime.graph.registry.get(nodeId),
+    subscribeNode: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
     dispose: () => runtime.dispose(),
   };
+  Object.defineProperty(handle, "_runtime", {
+    value: runtime,
+    enumerable: false,
+    writable: false,
+    configurable: false,
+  });
+  return handle;
 }
 function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
   return diagnostics
@@ -114,6 +119,40 @@ export class Engine {
       tracks.set(nodeId, track);
       return track;
     };
+    const compileTrackDefinition = (trackDef: {
+      id: string;
+      duration?: number;
+      keyframes?: Readonly<Record<string, unknown>>;
+    }): void => {
+      const nodeId = qualifyFreeTrack(trackDef.id).value;
+      if (tracks.has(nodeId)) return;
+      const path = `${nodeId}.keyframes`;
+      const resolved = this.#plugins?.resolveForKeyframes(trackDef.keyframes ?? {}, path, {
+        id: nodeId,
+        duration: trackDef.duration,
+      });
+      const preparedKeyframes = {
+        ...(trackDef.keyframes ?? {}),
+        ...(resolved?.preparation.keyframes ?? {}),
+      };
+      const keyframeCompilation = compilePercentKeyframes(preparedKeyframes, path);
+      const diagnostics = [...(resolved?.diagnostics ?? []), ...keyframeCompilation.diagnostics];
+      if (diagnostics.some(({ severity }) => severity === "error"))
+        throw new TypeError(describeDiagnostics(diagnostics));
+      const track = new Track({
+        interpolator: this.#options.interpolator,
+        interpolationConfig: trackDef,
+        ...(resolved ? { plugins: resolved } : {}),
+      });
+      tracks.set(nodeId, track);
+    };
+    const disposeTrack = (nodeId: string): void => {
+      const track = tracks.get(nodeId);
+      if (track) {
+        track.dispose();
+        tracks.delete(nodeId);
+      }
+    };
     const motions = new Map<string, Motion>();
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
@@ -135,7 +174,14 @@ export class Engine {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
         compose,
-        setProgress: (nodeId, progress) => tracks.get(nodeId)!.setProgress(progress),
+        setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
+        compileTrack: compileTrackDefinition,
+        disposeTrack,
+        onClockTick: (event) => {
+          for (const motion of motions.values()) {
+            motion.onTick(event);
+          }
+        },
         disposeComposition: () => {
           for (const motion of motions.values()) motion.dispose();
           motions.clear();
@@ -151,16 +197,16 @@ export class Engine {
           const definition = nodes.get(id);
           return { id, track, duration: definition?.duration };
         });
+        const triggerPort = createManualTriggerPort();
         const motion = new Motion({
           clock: this.#options.clock,
           scheduler: this.#options.scheduler,
           tracks: entries,
-          trigger: createTrigger(motionDefinition.trigger.type),
+          trigger: triggerPort,
           disposeTracks: false,
           listenToClock: false,
-          invalidate: (progress) => {
-            const first = ids[0];
-            if (first) runtime.seek(first, progress);
+          invalidate: () => {
+            if (ids.length > 0) runtime.invalidate(ids);
           },
           stagger: motionDefinition.stagger,
         });

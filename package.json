@@ -9,7 +9,8 @@
     "node": ">=24"
   },
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
     "check": "npm run format:check && npm run typecheck && npm test",
@@ -23,17 +24,20 @@
     "test:integration": "vitest run packages/core/test/integration",
     "test:boundaries": "node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts",
     "benchmark": "node performance/graph-benchmark.mjs",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "dev": "npm run dev --workspace=@motion5/react-demo"
   },
   "devDependencies": {
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/vitest-runner": "^9.6.1",
     "@types/node": "24.3.0",
     "@types/react": "19.2.2",
+    "@types/react-dom": "^19.0.4",
     "@types/react-test-renderer": "19.1.0",
     "gsap": "3.15.0",
     "prettier": "3.6.2",
     "react": "19.2.8",
+    "react-dom": "^19.2.8",
     "react-test-renderer": "19.2.8",
     "typescript": "5.8.3",
     "vitest": "^4.1.10"

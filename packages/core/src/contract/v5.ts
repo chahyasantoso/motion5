@@ -5,6 +5,11 @@ export const DIAGNOSTIC_SEVERITIES = ["error", "warning"] as const;
 export type TriggerType = (typeof SUPPORTED_TRIGGER_TYPES)[number];
 export type DiagnosticSeverity = (typeof DIAGNOSTIC_SEVERITIES)[number];
 
+export interface TriggerSignal {
+  readonly type: TriggerType;
+  readonly progress?: number;
+}
+
 export interface Diagnostic {
   readonly ruleId: string;
   readonly path: string;

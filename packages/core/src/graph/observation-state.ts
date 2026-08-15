@@ -24,18 +24,18 @@ function compareEdges(a: GraphEdge, b: GraphEdge): number {
   );
 }
 
-/** Drop an explicit `undefined` target so edge identity has exactly one representation. */
+/** Drop an explicit `undefined` target/projection so edge identity has exactly one representation. */
 function normalizeEdge(edge: GraphEdge): GraphEdge {
-  return Object.freeze(
-    edge.target === undefined
-      ? { observerId: edge.observerId, sourceId: edge.sourceId, role: edge.role }
-      : {
-          observerId: edge.observerId,
-          sourceId: edge.sourceId,
-          role: edge.role,
-          target: edge.target,
-        },
-  );
+  const base: {
+    observerId: string;
+    sourceId: string;
+    role: "input" | "output";
+    target?: string;
+    projection?: import("../contract/v5").InputProjection;
+  } = { observerId: edge.observerId, sourceId: edge.sourceId, role: edge.role };
+  if (edge.target !== undefined) base.target = edge.target;
+  if (edge.projection !== undefined) base.projection = edge.projection;
+  return Object.freeze(base) as GraphEdge;
 }
 
 /**

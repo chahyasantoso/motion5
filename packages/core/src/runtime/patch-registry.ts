@@ -66,6 +66,7 @@ export class PatchRegistry {
   #batchSeeds: string[] = [];
   #batchOpen = false;
   #notifying = false;
+  #disposed = false;
 
   get(nodeId: string): Patch | undefined {
     return this.#patches.get(nodeId);
@@ -73,11 +74,26 @@ export class PatchRegistry {
   get notifying(): boolean {
     return this.#notifying;
   }
+  get disposed(): boolean {
+    return this.#disposed;
+  }
   /** Remove retained state for a detached node without touching subscriber identity. */
   remove(nodeId: string): void {
     this.#patches.delete(nodeId);
   }
+  dispose(): void {
+    if (this.#disposed) return;
+    this.#disposed = true;
+    this.#patches.clear();
+    this.#nodeListeners.clear();
+    this.#batchListeners.clear();
+    this.#batch = [];
+    this.#batchDiagnostics = [];
+    this.#batchSeeds = [];
+    this.#batchOpen = false;
+  }
   beginBatch(tick: number, seeds: readonly string[]): void {
+    if (this.#disposed) return;
     if (this.#notifying) throw new Error(REENTRANT_BATCH_MESSAGE);
     if (this.#batchOpen) throw new Error("A patch batch is already open.");
     this.#batchOpen = true;
@@ -87,6 +103,7 @@ export class PatchRegistry {
     this.#batchDiagnostics = [];
   }
   publish(input: PublishInput): Patch | undefined {
+    if (this.#disposed) return undefined;
     const previous = this.#patches.get(input.nodeId);
     const readyValues = input.values ?? previous?.values ?? {};
     const readyProgress =

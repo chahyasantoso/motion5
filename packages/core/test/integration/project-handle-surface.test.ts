@@ -21,10 +21,12 @@ describe("public project handle surface (P1-9)", () => {
     expect((runtime as unknown as { publisher?: unknown }).publisher).toBeUndefined();
     expect(Object.keys(runtime).sort()).toEqual([
       "dispose",
+      "get",
       "mount",
       "seek",
       "signal",
       "subscribe",
+      "subscribeNode",
       "unmount",
     ]);
     runtime.dispose();

@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
+import type { TriggerType } from "../../src/contract/v5";
 import { Motion } from "../../src/domain/motion";
-import { createTrigger, type TriggerType } from "../../src/domain/triggers";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeScheduler } from "../../src/ports/fakes";
+import { createManualTriggerPort } from "../../src/ports/trigger";
 
 function track() {
   return { setProgress: vi.fn(), dispose: vi.fn() };
@@ -18,7 +19,7 @@ describe("Motion trigger types and clock ownership", () => {
       const motion = new Motion({
         clock: createManualClock(),
         scheduler,
-        trigger: createTrigger(type),
+        trigger: createManualTriggerPort(),
         tracks: [{ id: "track", track: current as never }],
         invalidate,
         listenToClock: false,
@@ -60,7 +61,7 @@ describe("Motion trigger types and clock ownership", () => {
   it("cancels queued trigger work when paused and does not duplicate on remount", () => {
     const scheduler = createFakeScheduler();
     const current = track();
-    const trigger = createTrigger("manual");
+    const trigger = createManualTriggerPort();
     const motion = new Motion({
       clock: createManualClock(),
       scheduler,

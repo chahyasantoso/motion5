@@ -20,6 +20,7 @@ export type {
   ProjectDefinition,
   TrackDefinition,
   TriggerType,
+  TriggerSignal,
   PatchStatus,
   Patch,
   PatchBatch,
@@ -36,6 +37,8 @@ export type { ProjectHandle } from "./engine";
 export { PluginRegistry } from "./domain/plugins";
 export type { PluginDefinition, ResolvedPlugins } from "./domain/plugins";
 export { assertClock, createManualClock } from "./ports/clock";
+export { assertTriggerPort, createManualTriggerPort } from "./ports/trigger";
+export type { TriggerPort } from "./ports/trigger";
 export { assertInterpolator } from "./ports/interpolator";
 export type { InterpolationTimeline, Interpolator } from "./ports/interpolator";
 export { assertScheduler } from "./ports/scheduler";

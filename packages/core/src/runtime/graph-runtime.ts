@@ -17,6 +17,7 @@ export const SCHEDULER_FAILURE_RULE = "scheduler-failure";
 export interface GraphRuntimeOptions {
   readonly scheduler?: Scheduler;
   readonly onFlushError?: (diagnostic: Diagnostic) => void;
+  readonly onClockTick?: (event: ClockTick) => void;
 }
 function deferredBatch(sequence: number, seeds: readonly string[]): PatchBatch {
   const ids = Object.freeze([...seeds]);
@@ -48,6 +49,7 @@ export class GraphRuntime {
   readonly #compose: ComposeResolver;
   readonly #scheduler: Scheduler | undefined;
   readonly #onFlushError: ((diagnostic: Diagnostic) => void) | undefined;
+  readonly #onClockTick: ((event: ClockTick) => void) | undefined;
   readonly #unsubscribe: () => void;
   readonly #members = new Set<string>();
   readonly #pendingSeeds = new Set<string>();
@@ -72,6 +74,7 @@ export class GraphRuntime {
     this.#compose = compose;
     this.#scheduler = options.scheduler;
     this.#onFlushError = options.onFlushError;
+    this.#onClockTick = options.onClockTick;
     this.#unsubscribe = this.#clock.subscribe((event) => this.#onTick(event));
   }
   get binding(): GraphBinding {
@@ -109,6 +112,10 @@ export class GraphRuntime {
     this.#assertLive();
     this.#members.delete(nodeId);
     this.#registry.remove(nodeId);
+  }
+  /** Clear the publisher node cache after a successful graph replacement. */
+  clearPublisherCache(): void {
+    this.#publisherNodes.clear();
   }
 
   flush(seeds: readonly string[] = [...this.#members], tick?: number): PatchBatch {
@@ -164,6 +171,7 @@ export class GraphRuntime {
     this.#pendingSeeds.clear();
     this.#publisherNodes.clear();
     this.#scheduledDrain = false;
+    this.#registry.dispose();
   }
   #scheduleDrain(): void {
     if (this.#scheduler === undefined || this.#scheduledDrain || this.#disposed) return;
@@ -193,6 +201,7 @@ export class GraphRuntime {
       return;
     }
     try {
+      this.#onClockTick?.(event);
       this.flush([...this.#members], event.tick);
     } catch (error) {
       this.#report(FLUSH_FAILURE_RULE, `Flush at tick ${event.tick} failed: ${describe(error)}`);

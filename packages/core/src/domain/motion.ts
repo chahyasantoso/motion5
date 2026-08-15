@@ -1,6 +1,7 @@
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
-import type { TriggerCommand, TriggerDelegate, TriggerSignal } from "./triggers";
+import type { TriggerPort } from "../ports/trigger";
+import type { TriggerSignal } from "../contract/v5";
 import { Lifecycle } from "./lifecycle";
 import { Track } from "./track";
 
@@ -13,7 +14,7 @@ export interface MotionOptions {
   readonly clock: Clock;
   readonly scheduler: Scheduler;
   readonly tracks: readonly MotionTrackEntry[];
-  readonly trigger?: TriggerDelegate;
+  readonly trigger?: TriggerPort;
   readonly invalidate?: (progress: number) => void;
   readonly stagger?: number;
   readonly disposeTracks?: boolean;
@@ -24,17 +25,18 @@ export class Motion {
   readonly #clock: Clock;
   readonly #scheduler: Scheduler;
   readonly #tracks: readonly MotionTrackEntry[];
-  readonly #trigger: TriggerDelegate | undefined;
+  readonly #trigger: TriggerPort | undefined;
   readonly #invalidate: (progress: number) => void;
   readonly #stagger: number;
   readonly #disposeTracks: boolean;
   readonly #listenToClock: boolean;
   readonly #lifecycle: Lifecycle;
-  readonly #scheduled = new Set<{ cancel(): void }>();
+  #pendingProgress: number | undefined;
+  #progressJob: { cancel(): void } | undefined;
   #playing = false;
   #position = 0;
   #unsubscribe: (() => void) | undefined;
-  #triggerAttached = false;
+  #triggerUnsubscribe: (() => void) | undefined;
 
   constructor(options: MotionOptions) {
     if (!Number.isFinite(options.stagger ?? 0) || (options.stagger ?? 0) < 0)
@@ -58,7 +60,6 @@ export class Motion {
     this.#lifecycle = new Lifecycle({
       beforeDispose: () => {
         this.pause();
-        this.#trigger?.detach();
         if (this.#disposeTracks) for (const track of this.#tracks) track.track.dispose();
       },
     });
@@ -90,22 +91,39 @@ export class Motion {
   }
   pause(): void {
     this.#playing = false;
-    for (const handle of this.#scheduled) handle.cancel();
-    this.#scheduled.clear();
+    if (this.#progressJob !== undefined) {
+      this.#progressJob.cancel();
+      this.#progressJob = undefined;
+    }
+    this.#pendingProgress = undefined;
     this.#unsubscribe?.();
     this.#unsubscribe = undefined;
-    this.#trigger?.detach();
-    this.#triggerAttached = false;
+    this.#triggerUnsubscribe?.();
+    this.#triggerUnsubscribe = undefined;
     this.#lifecycle.detach();
   }
   seek(progress: number): void {
     this.assertActive();
     if (!Number.isFinite(progress)) throw new TypeError("Motion progress must be finite.");
+    if (this.#progressJob !== undefined) {
+      this.#progressJob.cancel();
+      this.#progressJob = undefined;
+    }
+    this.#pendingProgress = undefined;
     this.#setProgress(Math.max(0, Math.min(1, progress)));
   }
   signal(signal: TriggerSignal): void {
     this.assertActive();
-    this.#trigger?.signal(signal);
+    if (typeof signal === "object" && signal !== null && typeof signal.progress === "number") {
+      if (!Number.isFinite(signal.progress)) throw new TypeError("Motion progress must be finite.");
+      if (signal.progress < 0 || signal.progress > 1)
+        throw new RangeError("Progress must be between 0 and 1.");
+      this.#scheduleProgress(signal.progress);
+    }
+  }
+  onTick(event: ClockTick): void {
+    this.assertActive();
+    this.#onTick(event);
   }
   reflow(): readonly number[] {
     this.assertActive();
@@ -122,41 +140,52 @@ export class Motion {
       this.#unsubscribe = this.#clock.subscribe((event) => this.#onTick(event));
   }
   #attachTrigger(): void {
-    if (this.#trigger === undefined || this.#triggerAttached) return;
-    this.#trigger.attach((command) => this.#onTrigger(command));
-    this.#triggerAttached = true;
-  }
-  #onTrigger(command: TriggerCommand): void {
-    if (!this.#playing || this.#lifecycle.state !== "mounted") return;
-    if (command.setProgress !== undefined) {
-      const progress = command.setProgress;
-      const handle = this.#scheduler.schedule(() => {
-        this.#scheduled.delete(handle);
-        this.#setProgress(progress);
-      });
-      this.#scheduled.add(handle);
-    }
+    if (this.#trigger === undefined || this.#triggerUnsubscribe !== undefined) return;
+    this.#triggerUnsubscribe = this.#trigger.subscribe((progress) =>
+      this.#scheduleProgress(progress),
+    );
   }
   #onTick(event: ClockTick): void {
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;
     const next = Math.min(1, this.#position + this.#progressDelta(event.delta));
-    const handle = this.#scheduler.schedule(() => {
-      this.#scheduled.delete(handle);
-      this.#setProgress(next);
+    this.#scheduleProgress(next);
+  }
+  #scheduleProgress(progress: number): void {
+    if (!this.#playing || this.#lifecycle.state !== "mounted") return;
+    const validated = Math.max(0, Math.min(1, progress));
+    this.#pendingProgress = validated;
+    if (this.#progressJob !== undefined) return;
+    this.#progressJob = this.#scheduler.schedule(() => {
+      const latest = this.#pendingProgress;
+      this.#pendingProgress = undefined;
+      this.#progressJob = undefined;
+      if (latest !== undefined && this.#playing && this.#lifecycle.state === "mounted") {
+        this.#setProgress(latest);
+      }
     });
-    this.#scheduled.add(handle);
   }
   #setProgress(progress: number): void {
     this.#position = progress;
-    for (const entry of this.#tracks) entry.track.setProgress(progress);
+    const duration = this.#totalDuration();
+    for (let index = 0; index < this.#tracks.length; index += 1) {
+      const entry = this.#tracks[index]!;
+      const staggerDelay = index * this.#stagger;
+      const effectiveProgress =
+        staggerDelay > 0 && duration > 0
+          ? Math.max(0, Math.min(1, (progress * duration - staggerDelay) / (entry.duration ?? duration)))
+          : progress;
+      entry.track.setProgress(effectiveProgress);
+    }
     this.#invalidate(progress);
   }
-  #progressDelta(delta: number): number {
-    const duration = this.#tracks.reduce(
+  #totalDuration(): number {
+    return this.#tracks.reduce(
       (maximum, entry) => Math.max(maximum, entry.duration ?? 1),
       1,
     );
-    return delta / duration;
+  }
+  #progressDelta(delta: number): number {
+    return delta / this.#totalDuration();
   }
   private assertActive(): void {
     if (this.#lifecycle.state === "destroyed") throw new Error("Motion is destroyed.");

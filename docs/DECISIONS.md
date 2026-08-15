@@ -217,3 +217,63 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 **Alternatives rejected.** Keeping all formatting manual preserves maximum branch safety but wastes time on repository-owned work. Using `pull_request_target` would expose a write-capable token to untrusted fork code and is rejected. Formatting in a separate branch or PR for every internal change adds noise and delays the real review.
 
 **Consequences.** Internal PR branches may receive an automatic formatting commit during review. Contributors should expect that behavior and avoid rebasing while the formatter is running. Fork contributors get an actionable `format:check` failure and can format locally.
+
+## ADR-020: Runtime adoption is an internal recovery capability
+
+**Status:** Accepted, 2026-08-15
+
+**Context.** `ProjectRuntime.adopt()` allows runtime-created free tracks (`~/trackId`) to enter the graph for unmount/remount recovery. Exposing `adopt()` directly on the public `ProjectHandle` without compiler lifecycle integration allows uncompiled keyframe definitions to enter the graph and fail during composition.
+
+**Decision.** Runtime adoption remains an internal capability owned by `ProjectRuntime`. `ProjectHandle` remains frozen and does not export dynamic adoption. `Engine.load()` supplies `ProjectRuntime` with a renderer-neutral compiler capability to ensure adopted keyframes compile percent stops and resolve plugins before graph commit.
+
+**Alternatives rejected.** Adding `adopt()` directly to `ProjectHandle` makes public handles mutable and exposes uncompiled keyframe nodes. Moving keyframe compilation into `GraphRuntime` breaks layer separation by introducing domain compilation into the graph kernel.
+
+**Consequences.** Dynamic track adoption is bounded and safe. External callers consume frozen handles while internal recovery paths use `ProjectRuntime.adopt()`.
+
+## ADR-021: Separate composite Motion signals from leaf node seeking
+
+**Status:** Accepted, 2026-08-15
+
+**Context.** `ProjectHandle` provides both `seek(nodeId, progress)` and `signal(motionId, signal)`. There was ambiguity over whether `signal()` should be removed in favor of direct `seek()`.
+
+**Decision.** Retain both methods with explicit scoping: `seek(nodeId, progress)` directly positions a specific qualified graph node's playhead, while `signal(motionId, signal)` sends trigger events to a composite `Motion`.
+
+**Alternatives rejected.** Removing `signal()` forces external trigger drivers (scroll, manual) to inspect Motion track children and manually compute offsets. Removing `seek()` forces low-level tests and inspection tools to send dummy trigger signals.
+
+**Consequences.** Composite Motion control and direct leaf node playhead positioning remain cleanly decoupled.
+
+## ADR-022: Export TriggerSignal from core package entry
+
+**Status:** Accepted, 2026-08-15
+
+**Context.** `ProjectHandle.signal` accepts `TriggerSignal`, but `TriggerSignal` was defined internally in `domain/triggers.ts` and not re-exported in `@motion5/core`. TypeScript consumers could not import the type without importing unadvertised internal modules.
+
+**Decision.** Export `TriggerSignal` from `packages/core/src/index.ts`.
+
+**Alternatives rejected.** Expecting callers to use raw object literals without type definitions breaks TypeScript ergonomics and invariant P1-9.
+
+**Consequences.** Callers can import `TriggerSignal` directly from `@motion5/core`.
+
+## ADR-023: Motion owns stagger playhead delay calculations
+
+**Status:** Accepted, 2026-08-15
+
+**Context.** `Motion.schedule()` computed stagger offsets, but `Motion.#setProgress()` applied raw progress to all tracks identically, rendering authored `stagger` ineffective.
+
+**Decision.** `Motion` computes per-track staggered progress `[0, 1]` based on track index and authored `stagger` value when driving progress.
+
+**Alternatives rejected.** Moving stagger computation into `Track` breaks `Track`'s role as a passive leaf node. Moving stagger into `ProjectRuntime` leaks composite Motion layout into the graph runtime.
+
+**Consequences.** Authored `stagger` behaves as specified without modifying `Track` leaf responsibilities.
+
+## ADR-024: GraphRuntime reentrancy uses queued deferred drains
+
+**Status:** Accepted, 2026-08-15
+
+**Context.** `GraphRuntime.ts` queues reentrant flush requests as deferred drains with a `DEFERRED_FLUSH_RULE` warning. `docs/ARCHITECTURE.md` Section 7 contained conflicting prose stating reentrancy is refused rather than queued.
+
+**Decision.** Retain the tested queued deferred drain model in `GraphRuntime` and update `docs/ARCHITECTURE.md` Section 7 prose to match.
+
+**Alternatives rejected.** Refusing reentrant flushes drops graph invalidations requested by subscriber callbacks during batch notification.
+
+**Consequences.** Reentrant graph mutations triggered during subscriber notification schedule a follow-up flush on the next tick without lost updates or infinite stack recursion.

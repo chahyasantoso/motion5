@@ -55,7 +55,7 @@ describe("public declaration surface (P1-9)", () => {
     const out = await mkdtemp(join(root, ".tmp-public-dts-"));
     try {
       await execFileAsync(
-        "npx",
+        process.platform === "win32" ? "npx.cmd" : "npx",
         [
           "tsc",
           "--declaration",
@@ -72,7 +72,7 @@ describe("public declaration surface (P1-9)", () => {
           out,
           "packages/core/src/index.ts",
         ],
-        { cwd: root },
+        { cwd: root, shell: process.platform === "win32" },
       );
       const emitted = await declarationFiles(out);
       const emittedByPath = new Set(emitted);
