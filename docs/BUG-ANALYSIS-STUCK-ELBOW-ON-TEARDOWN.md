@@ -1,6 +1,7 @@
 # Bug Analysis: Arm "sticks" at ~45% on reverse scroll (stuck elbow)
 
 **Branch:** `feat/adopt-motion-track`
+**Status:** root-caused and fixed in `fix/D1-terminal-patch-on-eviction` (see §11).
 **Scope of investigation:** traced from live code, not from docs. Every doc under `docs/` that
 describes the dynamic-graph teardown path is stale and was deliberately ignored while writing this.
 
@@ -187,3 +188,50 @@ This masks the library bug — do not ship it as the fix.
   `armTracks` objects; `replaceGraph` clears the publisher cache, so compose closures are re-resolved).
 - FK plugin math and keyframe compilation (frozen values are a valid 0.45 pose).
 - `Track` disposal / re-compilation on re-adopt.
+
+---
+
+## 11. Resolution (shipped in `fix/D1-terminal-patch-on-eviction`)
+
+Fixes A, B, and C from §7 were taken. Fix D was rejected: it hides a library bug in one consumer.
+
+**A — destruction is now an event.** `PatchStatus` gains a terminal `"destroyed"` member and
+`PatchRegistry.evict()` delivers exactly one such patch (`values: {}`, `revision: previous + 1`) to
+that node's subscribers before dropping the retained patch. `PatchListener` keeps its
+`(patch: Patch) => void` shape, so no consumer signature changes.
+
+The terminal patch is delivered **out of band**, not inside a batch, and deliberately does not reach
+`subscribeBatch` listeners:
+
+- Eviction happens during a graph mutation, not inside a flush. Opening a batch there could collide
+  with an in-flight one.
+- A `PatchBatch` means "one flush produced exactly these patches". Destruction is not a flush result.
+- Subscriber failures are swallowed. Destruction mutates five subsystems and cannot be allowed to
+  fail halfway and leave the graph and the wire disagreeing about whether a node exists.
+
+**B — live listener Sets are no longer destroyed.** `evict()` drops the `#nodeListeners` entry only
+when it is already empty, and the unsubscribe closure returned by `subscribeNode` now resolves the
+Set from the map at call time instead of capturing it. This is what makes re-adoption of the same
+node id deliverable to a subscriber that predates the eviction (§5).
+
+**C — the renderer gates on liveness, not presence.** `SkeletonRig` routes every node through a
+local `useLivePatch` helper that returns `undefined` unless `status === "ready"`, so a `blocked`,
+`error`, or terminal patch can never draw a bone at a stale pose again.
+
+**Deliberately unchanged:** `remove()` (the unmount path) publishes no terminal patch. Unmount is
+reversible — the node still exists in the graph and may become a member again — and `detach()` runs
+for every instance during `dispose()`, where firing listener callbacks into tearing-down consumers
+would be actively harmful. Absence there is correctly observed through `get()` on the next read,
+which is what a remount does.
+
+**Tests added** (mapping to §8):
+
+| Test | Covers |
+| --- | --- |
+| `packages/core/test/unit/runtime/patch-registry.test.ts` (5 new cases) | §8.1, §8.2, plus no-op eviction, throwing subscriber, and unmount staying silent |
+| `packages/react/test/patch-store-destroy.test.ts` | §8.3, attached and detached, plus recovery on re-adoption |
+| `packages/core/test/integration/adopt-destroy-readopt.test.ts` | §8.4 as a full `adopt → destroy → re-adopt` cycle through `ProjectHandle` |
+
+**Expected demo behaviour after the fix:** scrolling back below 45% makes both arms disappear
+cleanly instead of freezing, and scrolling forward past 50% again re-adopts and re-animates them on
+every subsequent cycle, not just the first.
