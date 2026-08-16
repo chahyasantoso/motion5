@@ -1,0 +1,23 @@
+# CI log archive: 31920457974
+
+- Workflow: CI
+- Conclusion: failure
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/31920457974
+- Captured: 2026-08-16T01:50:36Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm run typecheck	﻿2026-08-16T01:50:08.3440972Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-16T01:50:08.3441297Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-16T01:50:08.3463678Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-16T01:50:08.3464089Z env:
+quality (node 24)	Run npm run typecheck	2026-08-16T01:50:08.3464320Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-16T01:50:08.3464749Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-16T01:50:08.4177096Z 
+quality (node 24)	Run npm run typecheck	2026-08-16T01:50:08.4178030Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-16T01:50:08.4178783Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-16T01:50:08.4179109Z 
+quality (node 24)	Run npm run typecheck	2026-08-16T01:50:10.3712103Z ##[error]packages/core/test/contract/graph-builder-incremental.test.ts(10,7): error TS2741: Property 'trigger' is missing in type '{ id: string; tracks: { id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }[]; }' but required in type 'MotionDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-16T01:50:10.3906122Z ##[error]Process completed with exit code 2.
+```
