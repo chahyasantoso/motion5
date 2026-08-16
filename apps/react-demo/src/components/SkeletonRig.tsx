@@ -1,6 +1,19 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
-import { usePatch } from "@motion5/react";
+import { usePatch, type Patch } from "@motion5/react";
+
+/**
+ * Presence is not liveness.
+ *
+ * A patch that is blocked, errored, or terminal still carries the last values the node
+ * published, so gating a bone on `usePatch(...) !== undefined` happily draws a node that the
+ * graph has already destroyed or that is stalled behind a broken upstream. Only `"ready"`
+ * means "this pose is current", so that is the only status this rig will render.
+ */
+function useLivePatch(handle: ProjectHandle, nodeId: string): Patch | undefined {
+  const patch = usePatch(handle, nodeId);
+  return patch?.status === "ready" ? patch : undefined;
+}
 
 interface SkeletonRigProps {
   readonly handle: ProjectHandle;
@@ -23,8 +36,8 @@ const BoneSegment: React.FC<BoneSegmentProps> = ({
   width,
   innerColor,
 }) => {
-  const parentPatch = usePatch(handle, parentId);
-  const childPatch = usePatch(handle, childId);
+  const parentPatch = useLivePatch(handle, parentId);
+  const childPatch = useLivePatch(handle, childId);
 
   if (!parentPatch || !childPatch) return null;
 
@@ -77,7 +90,7 @@ const JointMarker: React.FC<JointMarkerProps> = ({
   label,
   glow = false,
 }) => {
-  const patch = usePatch(handle, nodeId);
+  const patch = useLivePatch(handle, nodeId);
   if (!patch) return null;
 
   const x = Number(patch.values.x ?? 0);
@@ -111,8 +124,8 @@ interface FootWedgeProps {
 }
 
 const FootWedge: React.FC<FootWedgeProps> = ({ handle, shinId, footId, color }) => {
-  const shinPatch = usePatch(handle, shinId);
-  const footPatch = usePatch(handle, footId);
+  const shinPatch = useLivePatch(handle, shinId);
+  const footPatch = useLivePatch(handle, footId);
 
   if (!shinPatch || !footPatch) return null;
 
@@ -144,8 +157,8 @@ interface HeadSkullProps {
 }
 
 const HeadSkull: React.FC<HeadSkullProps> = ({ handle, chestId, headId }) => {
-  const chestPatch = usePatch(handle, chestId);
-  const headPatch = usePatch(handle, headId);
+  const chestPatch = useLivePatch(handle, chestId);
+  const headPatch = useLivePatch(handle, headId);
 
   if (!chestPatch || !headPatch) return null;
 
@@ -189,8 +202,8 @@ interface TorsoContourProps {
 }
 
 const TorsoContour: React.FC<TorsoContourProps> = ({ handle, pelvisId, chestId }) => {
-  const pelvisPatch = usePatch(handle, pelvisId);
-  const chestPatch = usePatch(handle, chestId);
+  const pelvisPatch = useLivePatch(handle, pelvisId);
+  const chestPatch = useLivePatch(handle, chestId);
 
   if (!pelvisPatch || !chestPatch) return null;
 
@@ -240,7 +253,7 @@ const TorsoContour: React.FC<TorsoContourProps> = ({ handle, pelvisId, chestId }
 };
 
 export const SkeletonRig: React.FC<SkeletonRigProps> = ({ handle }) => {
-  const pelvisPatch = usePatch(handle, "walk/pelvis");
+  const pelvisPatch = useLivePatch(handle, "walk/pelvis");
   const pelvisX = Number(pelvisPatch?.values.x ?? 150);
 
   return (

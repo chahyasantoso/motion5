@@ -22,7 +22,11 @@ export function createPatchStore(source: PatchSource, nodeId: string): PatchStor
   function attach(): void {
     snapshot = source.get(nodeId);
     detachSource = source.subscribeNode(nodeId, (patch) => {
-      snapshot = patch;
+      // A terminal patch says the node is gone, not that it has new values. Collapsing it to
+      // `undefined` is what lets a consumer render "absent" instead of freezing on the last
+      // live pose: the memoized snapshot is authoritative while attached, so without this the
+      // destroyed node's final patch would be served forever.
+      snapshot = patch.status === "destroyed" ? undefined : patch;
       for (const listener of [...listeners]) listener(patch);
     });
   }
