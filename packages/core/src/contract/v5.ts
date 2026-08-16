@@ -18,7 +18,17 @@ export interface Diagnostic {
   readonly ids?: readonly string[];
 }
 
-export type PatchStatus = "ready" | "blocked" | "error";
+/**
+ * `"ready"`, `"blocked"`, and `"error"` all describe a node that still exists and may publish
+ * again. `"destroyed"` is terminal: the node has been evicted from the graph and will never
+ * publish again.
+ *
+ * The terminal status exists because destruction previously had no representation on the
+ * observation wire at all. Eviction dropped the retained patch silently, so the last
+ * `"ready"` patch a subscriber had received stayed authoritative forever and consumers kept
+ * rendering a node the graph had already destroyed.
+ */
+export type PatchStatus = "ready" | "blocked" | "error" | "destroyed";
 
 export interface Patch {
   readonly nodeId: string;
