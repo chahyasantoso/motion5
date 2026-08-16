@@ -9,6 +9,9 @@ describe("IncrementalGraphBuilder Equivalence", () => {
     motions: [
       {
         id: "m1",
+        // Required by MotionDefinition. The builder never reads it, but the fixture claims to
+        // be a ProjectDefinition, so it has to actually be one.
+        trigger: { type: "manual" },
         tracks: [
           {
             id: "t1",
