@@ -86,7 +86,7 @@ returns the **memoized last-delivered patch**, never re-reading the registry. Ev
 nobody, so `snapshot` is never cleared.
 
 Critically: this is **not** a missed re-render. `setProgress(p)` in the same callback re-renders the
-entire `SkeletonRig` subtree on every scroll event. The arm components *do* re-render, ~60 times a
+entire `SkeletonRig` subtree on every scroll event. The arm components _do_ re-render, ~60 times a
 second, and each time they read the same stale frozen patch. `usePatch` returns a truthy patch, so
 `if (!patch) return null` never fires and the bone keeps drawing.
 
@@ -97,13 +97,13 @@ second, and each time they read the same stale frozen patch. `usePatch` returns 
 > permanently authoritative for every attached subscriber. The React store serves that stale patch
 > forever and the renderer, which gates only on patch presence, keeps drawing a destroyed bone.
 
-The frozen geometry is a *legitimate* FK pose — not corrupted math — which is why it looks like a
+The frozen geometry is a _legitimate_ FK pose — not corrupted math — which is why it looks like a
 suspended animation rather than a glitch.
 
 ## 4. Why exactly 45%, and why the elbow
 
 - **45%:** the last patch the arm nodes ever published came from the previous scroll event, i.e. the
-  last frame where `p >= 0.45`. Destruction happens *before* `handle.signal(...)` in step (c), so the
+  last frame where `p >= 0.45`. Destruction happens _before_ `handle.signal(...)` in step (c), so the
   arms never compose at `p < 0.45`. The frozen coordinates are the FK solution at `p ≈ 0.45`. The
   0.50/0.45 hysteresis band is also why the arm animates normally between 50% and 45% on the way
   down and only bricks below 45%.
@@ -125,7 +125,7 @@ and a later `subscribeNode` after re-adoption creates a **new** Set in the map. 
 
 **Prediction to verify:** after one full down→up→down cycle the arms stay frozen at the 0.45 pose
 even though the graph reports 13 live nodes. The "adoption works" observation only holds for the
-*first* adopt, before any eviction has run.
+_first_ adopt, before any eviction has run.
 
 ## 6. Contributing design gaps (not the trigger, but they hide this class of bug)
 
@@ -159,7 +159,7 @@ This masks the library bug — do not ship it as the fix.
 ## 8. Regression tests worth adding
 
 1. `patch-registry`: `evict()` notifies existing node subscribers exactly once with a terminal value.
-2. `patch-registry`: subscribe → evict → re-`subscribeNode` for the same id → the *original*
+2. `patch-registry`: subscribe → evict → re-`subscribeNode` for the same id → the _original_
    subscriber still receives patches (or is provably released).
 3. `patch-store`: attached store returns `undefined` after its source node is evicted.
 4. Integration: `adopt → destroy → adopt` cycle on `walk/armL_upper`, asserting both
@@ -167,18 +167,18 @@ This masks the library bug — do not ship it as the fix.
 
 ## 9. Files touched by the trace
 
-| File | Role in the bug |
-| --- | --- |
-| `packages/core/src/runtime/patch-registry.ts` | **Root cause** — silent `evict()` |
-| `packages/core/src/internal.ts` | Contract has no destruction event |
-| `packages/react/src/patch-store.ts` | Serves the memoized stale patch forever |
-| `packages/react/src/index.ts` | `usePatch` store memoized per `(source, nodeId)`, never resubscribes |
-| `packages/core/src/runtime/project-runtime.ts` | `destroyAdopted()` teardown sequence |
-| `packages/core/src/runtime/graph-runtime.ts` | `evictNode()` / `replaceGraph()` — correct, exonerated |
-| `packages/core/src/runtime/graph-publisher.ts` | Confirms evicted nodes are never reseeded |
-| `packages/core/src/graph/binding.ts` | Graph replacement is transactional — exonerated |
-| `apps/react-demo/src/components/SkeletonRig.tsx` | Presence-only render gate |
-| `apps/react-demo/src/App.tsx` | 0.50/0.45 hysteresis explains the "45%" pose |
+| File                                             | Role in the bug                                                      |
+| ------------------------------------------------ | -------------------------------------------------------------------- |
+| `packages/core/src/runtime/patch-registry.ts`    | **Root cause** — silent `evict()`                                    |
+| `packages/core/src/internal.ts`                  | Contract has no destruction event                                    |
+| `packages/react/src/patch-store.ts`              | Serves the memoized stale patch forever                              |
+| `packages/react/src/index.ts`                    | `usePatch` store memoized per `(source, nodeId)`, never resubscribes |
+| `packages/core/src/runtime/project-runtime.ts`   | `destroyAdopted()` teardown sequence                                 |
+| `packages/core/src/runtime/graph-runtime.ts`     | `evictNode()` / `replaceGraph()` — correct, exonerated               |
+| `packages/core/src/runtime/graph-publisher.ts`   | Confirms evicted nodes are never reseeded                            |
+| `packages/core/src/graph/binding.ts`             | Graph replacement is transactional — exonerated                      |
+| `apps/react-demo/src/components/SkeletonRig.tsx` | Presence-only render gate                                            |
+| `apps/react-demo/src/App.tsx`                    | 0.50/0.45 hysteresis explains the "45%" pose                         |
 
 ## 10. Explicitly ruled out
 
@@ -226,11 +226,11 @@ which is what a remount does.
 
 **Tests added** (mapping to §8):
 
-| Test | Covers |
-| --- | --- |
+| Test                                                                   | Covers                                                                           |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | `packages/core/test/unit/runtime/patch-registry.test.ts` (5 new cases) | §8.1, §8.2, plus no-op eviction, throwing subscriber, and unmount staying silent |
-| `packages/react/test/patch-store-destroy.test.ts` | §8.3, attached and detached, plus recovery on re-adoption |
-| `packages/core/test/integration/adopt-destroy-readopt.test.ts` | §8.4 as a full `adopt → destroy → re-adopt` cycle through `ProjectHandle` |
+| `packages/react/test/patch-store-destroy.test.ts`                      | §8.3, attached and detached, plus recovery on re-adoption                        |
+| `packages/core/test/integration/adopt-destroy-readopt.test.ts`         | §8.4 as a full `adopt → destroy → re-adopt` cycle through `ProjectHandle`        |
 
 **Expected demo behaviour after the fix:** scrolling back below 45% makes both arms disappear
 cleanly instead of freezing, and scrolling forward past 50% again re-adopts and re-animates them on
