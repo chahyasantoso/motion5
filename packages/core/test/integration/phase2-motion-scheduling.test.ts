@@ -2,7 +2,11 @@ import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
+import {
+  createFakeInterpolator,
+  createFakeScheduler,
+  createFakeTrackRegistry,
+} from "../../src/ports/fakes";
 import { Motion } from "../../src/domain/motion";
 import { Track } from "../../src/domain/track";
 
@@ -95,12 +99,15 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
       interpolator: createFakeInterpolator(),
       interpolationConfig: { id: "t1" },
     });
+    const registry = createFakeTrackRegistry<Track>();
+    registry.register("t1", track);
 
     let invalidateCount = 0;
     const motion = new Motion({
       clock,
       scheduler,
-      tracks: [{ id: "t1", track }],
+      tracks: [{ id: "t1" }],
+      resolveTrack: registry.resolveTrack,
       invalidate: () => {
         invalidateCount++;
       },
@@ -125,12 +132,15 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
       interpolator: createFakeInterpolator(),
       interpolationConfig: { id: "t1", duration: 1000 },
     });
+    const registry = createFakeTrackRegistry<Track>();
+    registry.register("t1", track);
 
     let invalids = 0;
     const motion = new Motion({
       clock,
       scheduler,
-      tracks: [{ id: "t1", track, duration: 1000 }],
+      tracks: [{ id: "t1", duration: 1000 }],
+      resolveTrack: registry.resolveTrack,
       invalidate: () => {
         invalids++;
       },
