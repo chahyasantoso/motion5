@@ -8,6 +8,8 @@ import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
 
 import type { GraphBuilder } from "../ports/graph-builder";
 
+type AdoptedEntry = { track: TrackDefinition; owner: object; motionId?: string };
+
 export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly scheduler?: Scheduler;
@@ -28,10 +30,7 @@ export class ProjectRuntime {
   readonly #project: ProjectDefinition;
   readonly #graph: GraphRuntime;
   readonly #instances = new Map<string, object>();
-  readonly #adopted = new Map<
-    string,
-    { track: TrackDefinition; owner: object; motionId?: string }
-  >();
+  readonly #adopted = new Map<string, AdoptedEntry>();
   readonly #diagnostics: Diagnostics;
   readonly #setProgress: (nodeId: string, progress: number) => void;
   readonly #compileTrack: ((track: TrackDefinition, nodeId?: string) => void) | undefined;
@@ -113,6 +112,7 @@ export class ProjectRuntime {
 
     if (this.#graph.state.hasNode(id) || this.#adopted.has(id))
       throw new TypeError(`Adopted track "${id}" already exists.`);
+    if (this.#instances.has(id)) throw new TypeError(`Node "${id}" is already mounted.`);
 
     // Validate keyframes at the same trust level as authored tracks.
     // compilePercentKeyframes only silently filters bad stops; validateKeyframes
@@ -127,11 +127,23 @@ export class ProjectRuntime {
           .join(" "),
       );
 
-    // Compile keyframes before any graph mutation so malformed keyframes fail atomically.
-    this.#compileTrack?.(track, id);
+    const candidateAdopted = new Map(this.#adopted);
+    candidateAdopted.set(id, { track, owner, motionId });
 
+    // Phase 1: compile and validate the candidate before publishing any lifecycle side effect.
+    // If either operation throws, the adoption map and graph remain unchanged. Compilation is
+    // the one preparatory side effect, so undo it when graph validation rejects the candidate.
+    try {
+      this.#compileTrack?.(track, id);
+      this.#graph.replaceGraph(this.#buildProjectSnapshot(candidateAdopted));
+    } catch (error) {
+      this.#disposeTrack?.(id);
+      throw error;
+    }
+
+    // Phase 2: commit. The pre-checks above and the successful graph replacement make these
+    // operations non-throwing for the Engine-owned hooks.
     this.#adopted.set(id, { track, owner, motionId });
-    this.#graph.replaceGraph(this.#buildProjectSnapshot());
     this.mount(id);
 
     if (motionId !== undefined) {
@@ -147,20 +159,28 @@ export class ProjectRuntime {
     if (adopted === undefined) throw new TypeError(`Node "${nodeId}" is not adopted.`);
     if (adopted.owner !== owner)
       throw new TypeError(`Only the adopting owner can destroy "${nodeId}".`);
-    // Use evictNode (not unmount) so the listener set is freed, not just the patch.
-    // Adopted nodes are permanent destructions; unmount's remount-safe remove() would
-    // leave the #nodeListeners entry alive until dispose().
+
+    // Phase 1: validate and commit the candidate graph first. A surviving dependant that still
+    // observes nodeId makes this throw with observation-unknown-source while every live side
+    // effect below remains untouched.
+    const candidateAdopted = new Map(this.#adopted);
+    candidateAdopted.delete(nodeId);
+    this.#graph.replaceGraph(this.#buildProjectSnapshot(candidateAdopted));
+
+    // Phase 2: the graph is now committed, so these lifecycle changes cannot invalidate it.
+    // Use evictNode (not unmount) so the listener set is freed, not just the patch. replaceGraph
+    // already evicts mounted members removed from the graph; this explicit idempotent eviction
+    // also handles a node that was unmounted before destruction.
+    this.#adopted.delete(nodeId);
     this.#instances.delete(nodeId);
     this.#graph.evictNode(nodeId);
-    this.#adopted.delete(nodeId);
     this.#disposeTrack?.(nodeId);
     if (adopted.motionId !== undefined) {
       this.#removeMotionTrack?.(adopted.motionId, nodeId);
     }
-    this.#graph.replaceGraph(this.#buildProjectSnapshot());
   }
-  #buildProjectSnapshot(): ProjectDefinition {
-    const adoptedList = [...this.#adopted.values()];
+  #buildProjectSnapshot(adopted: ReadonlyMap<string, AdoptedEntry>): ProjectDefinition {
+    const adoptedList = [...adopted.values()];
     const freeAdopted = adoptedList
       .filter((entry) => entry.motionId === undefined)
       .map((e) => e.track);
