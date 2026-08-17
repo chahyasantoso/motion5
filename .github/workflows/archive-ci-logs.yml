@@ -4,19 +4,18 @@ on:
   workflow_run:
     workflows: ["CI", "Recovery audit"]
     types: [completed]
-    # This filters the HEAD branch of the triggering run, not a base branch, so every prefix that
-    # can open a pull request has to be listed. It previously stopped at fix/**, which is why
-    # feat/** failures produced no archive and had to be dispatched by hand.
-    branches:
-      - main
-      - "rescue/**"
-      - "phase*/**"
-      - "feat/**"
-      - "fix/**"
-      - "test/**"
-      - "docs/**"
-      - "perf/**"
-      - "chore/**"
+    # Deliberately NOT filtered by branch.
+    #
+    # For workflow_run, `branches:` filters the HEAD branch of the triggering run.
+    # For a PR-triggered CI run that head branch is the PR head ref, so the previous
+    # list ([main, rescue/**, fix/**]) skipped archival for every feat/**, phase*/**,
+    # chore/** and docs/** PR. Run 32011100488 (PR #119, head feat/trigger-drivers-t2)
+    # failed `quality` and archived nothing, which reads as "the log is missing"
+    # rather than "archival refused to run".
+    #
+    # This is the same trap as the pull_request base filter that was removed from
+    # ci.yml. An archive that only covers some branches is not an archive. Keep this
+    # unfiltered; the `if:` below already limits work to non-success runs.
   workflow_dispatch:
     inputs:
       run_id:
@@ -27,8 +26,8 @@ on:
 permissions:
   contents: write
 
-# One archiver at a time. Two runs finishing together both commit to ci-logs, and the loser's push
-# was simply rejected, so its archive was lost.
+# Every run commits to the same ci-logs branch. Serialize instead of racing, and
+# never cancel: a cancelled archive loses the only copy of a failed run's log.
 concurrency:
   group: archive-ci-logs
   cancel-in-progress: false
@@ -58,7 +57,7 @@ jobs:
           EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
           EVENT_WORKFLOW: ${{ github.event.workflow_run.name }}
           EVENT_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-          EVENT_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          EVENT_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
           INPUT_RUN_ID: ${{ inputs.run_id }}
         run: |
           set -euo pipefail
@@ -67,7 +66,7 @@ jobs:
           echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
           echo "workflow=${EVENT_WORKFLOW:-manual}" >> "$GITHUB_OUTPUT"
           echo "conclusion=${EVENT_CONCLUSION:-manual}" >> "$GITHUB_OUTPUT"
-          echo "branch=${EVENT_BRANCH:-unknown}" >> "$GITHUB_OUTPUT"
+          echo "head_branch=${EVENT_HEAD_BRANCH:-manual}" >> "$GITHUB_OUTPUT"
 
       - name: Download failed job logs
         env:
@@ -86,10 +85,10 @@ jobs:
           {
             echo "# CI log archive: $RUN_ID"
             echo
-            echo "- Workflow: $WORKFLOW"
-            echo "- Head branch: $BRANCH"
-            echo "- Conclusion: $CONCLUSION"
-            echo "- Source run: https://github.com/$REPOSITORY/actions/runs/$RUN_ID"
+            echo "- Workflow: ${{ steps.run.outputs.workflow }}"
+            echo "- Conclusion: ${{ steps.run.outputs.conclusion }}"
+            echo "- Head branch: ${{ steps.run.outputs.head_branch }}"
+            echo "- Source run: https://github.com/${{ github.repository }}/actions/runs/$RUN_ID"
             echo "- Captured: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
             echo
             echo "## Failed job output"
@@ -107,18 +106,19 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add "logs/$RUN_ID"
-          if git diff --cached --quiet; then
-            echo "Nothing staged for run $RUN_ID; archive already up to date."
+          git commit -m "ci: archive logs for run $RUN_ID" || {
+            echo "No new log files to commit"
             exit 0
-          fi
-          git commit -m "ci: archive logs for run $RUN_ID"
+          }
+          # The concurrency group serializes archive runs, but a manual dispatch can
+          # still land beside an automatic one. Rebase and retry rather than lose a log.
           for attempt in 1 2 3; do
-            if git push origin ci-logs; then
-              echo "Pushed archive for run $RUN_ID on attempt $attempt."
+            if git push origin HEAD:ci-logs; then
               exit 0
             fi
-            echo "Push rejected on attempt $attempt; rebasing onto the latest ci-logs."
-            git pull --rebase origin ci-logs
+            echo "Push attempt $attempt failed; rebasing onto origin/ci-logs."
+            git fetch origin ci-logs
+            git rebase origin/ci-logs
           done
-          echo "Could not push the archive for run $RUN_ID after three attempts."
+          echo "Could not push the archive after 3 attempts."
           exit 1
