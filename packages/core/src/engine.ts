@@ -236,7 +236,6 @@ export class Engine {
           throw new TypeError(`Motion "${definition.id}" already has a clock consumer.`);
         const consumer: ClockConsumer = {
           onTick: created.onTick ?? ((event) => motion.onTick(event)),
-          dispose: () => undefined,
         };
         consumers.set(definition.id, consumer);
         return motion;
