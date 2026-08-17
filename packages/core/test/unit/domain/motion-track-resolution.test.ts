@@ -146,4 +146,48 @@ describe("Motion resolves Tracks by id", () => {
       /Motion track duration must be a finite positive number/,
     );
   });
+
+  it("C-9 failed addTrack is atomic when the compiled Track is unavailable", () => {
+    // A rejected mutation must not leave a ghost id that poisons the next progress sweep.
+    const { motion } = setup([]);
+    expect(() => motion.addTrack({ id: "missing" })).toThrow(
+      'Motion track "missing" has no compiled Track.',
+    );
+    expect(motion.tracks).toEqual([]);
+    expect(() => motion.seek(0.5)).not.toThrow();
+  });
+
+  it("C-10 failed replaceTrack preserves the prior entry and can be retried", () => {
+    // Failed replacement must not overwrite live metadata before its new compiled Track exists.
+    const { motion, registry, interpolator } = setup(["arm"]);
+    const before = motion.tracks[0];
+    registry.drop("arm");
+    expect(() => motion.replaceTrack({ id: "arm", duration: 200 })).toThrow(
+      'Motion track "arm" has no compiled Track.',
+    );
+    expect(motion.tracks[0]).toBe(before);
+    registry.register("arm", new Track({ interpolator }));
+    expect(() => motion.replaceTrack({ id: "arm", duration: 200 })).not.toThrow();
+    expect(motion.tracks[0]?.duration).toBe(200);
+  });
+
+  it("C-11 failed addTrack is idempotently rejected without poisoning duplicate tracking", () => {
+    // A second identical failure proves the first attempt never inserted the id into #trackMap.
+    const { motion } = setup([]);
+    const expected = 'Motion track "missing" has no compiled Track.';
+    expect(() => motion.addTrack({ id: "missing" })).toThrow(expected);
+    expect(() => motion.addTrack({ id: "missing" })).toThrow(expected);
+  });
+
+  it("C-12 failed replaceTrack is idempotently rejected and preserves the entry identity", () => {
+    // Repeated failure must not mutate either the entry array or its duplicate-id bookkeeping.
+    const { motion, registry } = setup(["arm"]);
+    const before = motion.tracks[0];
+    registry.drop("arm");
+    const expected = 'Motion track "arm" has no compiled Track.';
+    expect(() => motion.replaceTrack({ id: "arm", duration: 200 })).toThrow(expected);
+    expect(() => motion.replaceTrack({ id: "arm", duration: 300 })).toThrow(expected);
+    expect(motion.tracks[0]).toBe(before);
+    expect(motion.tracks[0]?.duration).toBeUndefined();
+  });
 });
