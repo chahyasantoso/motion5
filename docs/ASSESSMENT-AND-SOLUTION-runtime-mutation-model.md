@@ -16,19 +16,19 @@
 
 ## 0. Verdict at a glance
 
-| # | Claim / area | Verdict |
-|---|---|---|
-| P1 | `destroyAdopted()` is not transactional | **Confirmed.** Live bug, exactly as described. |
-| P1-fix | "This is a reordering of existing logic, not new code" | **Corrected.** A plain reorder is impossible; `#buildProjectSnapshot()` derives the candidate *from* `#adopted`. Needs to become a pure function of a passed map. Small, but not free. |
-| P1-audit | "`adopt()`'s only pre-`replaceGraph` side effect is `this.mount(id)`" | **Wrong on both counts.** `mount()` runs *after* `replaceGraph`. The real pre-commit side effects are `compileTrack()` and `#adopted.set()`, and `adopt()` has the same class of bug with a *worse* practical blast radius for an editor. See **A1**. |
-| P2 | No runtime-callable way to create/destroy a `Motion` | **Confirmed**, and the fix is bigger than the brief implies: it structurally requires part of 3a. |
-| P2-rationale | "A `Motion` is the only thing that carries a trigger — the thing that actually drives playback" | **Corrected.** `Engine.load()` ignores `MotionDefinition.trigger` entirely. Every motion gets `createManualTriggerPort()`. Scroll/time drivers do not exist in core today. See **A4**. |
-| P3a | Collapse the two-tier store | **Endorsed**, with a sequencing correction: a slice of it is a *prerequisite* for P2, not lower priority than it. |
-| P3a-mount | "Ingestion should be pure storage; don't auto-mount" | **Endorsed**, with supporting evidence. |
-| P3b | Replace `owner` with a returned handle | **Endorsed**, with one missing spec requirement (stale-handle ABA). |
-| P3-cascade | Cascade-delete rejected; "reject when a dependant exists" | **Endorsed and confirmed** to fall out of `observation-unknown-source`. But the resulting error is unusable as editor UX. See **D3**. |
-| P3-edit | Destroy-and-recreate as the edit primitive | **Pushed back on.** A non-destructive `replaceTrack` is cheaper, simpler, and already supported by the existing delta machinery. See **D1**. |
-| — | 4 defects not in the brief | **New.** See **A1–A4**. A3 is silent data loss. |
+| #            | Claim / area                                                                                    | Verdict                                                                                                                                                                                                                                               |
+| ------------ | ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| P1           | `destroyAdopted()` is not transactional                                                         | **Confirmed.** Live bug, exactly as described.                                                                                                                                                                                                        |
+| P1-fix       | "This is a reordering of existing logic, not new code"                                          | **Corrected.** A plain reorder is impossible; `#buildProjectSnapshot()` derives the candidate _from_ `#adopted`. Needs to become a pure function of a passed map. Small, but not free.                                                                |
+| P1-audit     | "`adopt()`'s only pre-`replaceGraph` side effect is `this.mount(id)`"                           | **Wrong on both counts.** `mount()` runs _after_ `replaceGraph`. The real pre-commit side effects are `compileTrack()` and `#adopted.set()`, and `adopt()` has the same class of bug with a _worse_ practical blast radius for an editor. See **A1**. |
+| P2           | No runtime-callable way to create/destroy a `Motion`                                            | **Confirmed**, and the fix is bigger than the brief implies: it structurally requires part of 3a.                                                                                                                                                     |
+| P2-rationale | "A `Motion` is the only thing that carries a trigger — the thing that actually drives playback" | **Corrected.** `Engine.load()` ignores `MotionDefinition.trigger` entirely. Every motion gets `createManualTriggerPort()`. Scroll/time drivers do not exist in core today. See **A4**.                                                                |
+| P3a          | Collapse the two-tier store                                                                     | **Endorsed**, with a sequencing correction: a slice of it is a _prerequisite_ for P2, not lower priority than it.                                                                                                                                     |
+| P3a-mount    | "Ingestion should be pure storage; don't auto-mount"                                            | **Endorsed**, with supporting evidence.                                                                                                                                                                                                               |
+| P3b          | Replace `owner` with a returned handle                                                          | **Endorsed**, with one missing spec requirement (stale-handle ABA).                                                                                                                                                                                   |
+| P3-cascade   | Cascade-delete rejected; "reject when a dependant exists"                                       | **Endorsed and confirmed** to fall out of `observation-unknown-source`. But the resulting error is unusable as editor UX. See **D3**.                                                                                                                 |
+| P3-edit      | Destroy-and-recreate as the edit primitive                                                      | **Pushed back on.** A non-destructive `replaceTrack` is cheaper, simpler, and already supported by the existing delta machinery. See **D1**.                                                                                                          |
+| —            | 4 defects not in the brief                                                                      | **New.** See **A1–A4**. A3 is silent data loss.                                                                                                                                                                                                       |
 
 **Recommended order of work:** **S1** (transactionality, both ops) → **S2** (identity/freeze hardening) → **S3** (motion lifecycle) → **S4** (unification + capability handles). S1 and S2 are bug fixes and should ship independently of the editor work; S3 depends on a small slice of S4.
 
@@ -54,7 +54,7 @@
 One addition the brief omits: `ProjectRuntime` already owns **four** delegation hooks, not two —
 `compileTrack`, `disposeTrack`, `addMotionTrack`, `removeMotionTrack`. The last two already reach
 into `Engine`'s `motions` map (`motions.get(motionId)` → `motion.addTrack(...)`). So the seam for
-P2 is not a new idea in this codebase; it is a *fifth and sixth* hook on an established pattern.
+P2 is not a new idea in this codebase; it is a _fifth and sixth_ hook on an established pattern.
 That makes P2 cheaper than the brief estimates on the `Engine` side, and more expensive on the
 `ProjectRuntime` side (see **S3**).
 
@@ -95,11 +95,11 @@ The failure mode chain is confirmed end to end against the real code paths:
    (`#notifyTerminal`, revision + 1, `status: "destroyed"`) and **deliberately swallows listener
    errors** because "destruction cannot be allowed to fail halfway through and leave the graph and
    the wire disagreeing about whether the node still exists." That docstring describes precisely
-   the state this bug produces. The mechanism is correct; the *caller* violates its precondition.
+   the state this bug produces. The mechanism is correct; the _caller_ violates its precondition.
 
 **Correction to the proposed direction.** "Call `replaceGraph` first" cannot be done by moving one
 line, because `#buildProjectSnapshot()` takes no arguments and reads `this.#adopted` directly. The
-candidate for a destroy is by definition "the project *without* this node", which today can only
+candidate for a destroy is by definition "the project _without_ this node", which today can only
 be produced by mutating `#adopted` first. The fix is therefore: **make snapshot construction a
 pure function of an explicitly passed map.** That is a real (if small) refactor, and it is what
 makes both `adopt` and `destroyAdopted` genuinely two-phase. See **S1**.
@@ -160,7 +160,7 @@ freezes, and stores the **caller's own object reference**:
 same reference into every subsequent candidate.
 
 Consequence: an editor holding its own track object can mutate `track.keyframes.x.stops[1].v` in
-place, and the builder's `WeakMap` will keep returning the `GraphNode` it cached for the *old*
+place, and the builder's `WeakMap` will keep returning the `GraphNode` it cached for the _old_
 content — the exact correctness bug deep-freeze exists to prevent, on exactly the objects a
 long-lived editor is most likely to mutate. Nothing warns; nothing throws.
 
@@ -168,7 +168,7 @@ This also silently undermines P3's "destroy-and-recreate is the edit primitive" 
 the API prevents the cheaper, wrong path.
 
 Secondary gap in the same area: adopted tracks bypass `validateV5` entirely, so runtime-created
-content is validated at a *lower* trust level than authored content, not the same level the
+content is validated at a _lower_ trust level than authored content, not the same level the
 `adopt()` comment claims ("Validate keyframes at the same trust level as authored tracks").
 Keyframes are checked; `observes` shape, ids, and duration are only checked later and indirectly,
 by the graph builder.
@@ -177,7 +177,7 @@ by the graph builder.
 
 ### A.4 New defect **A3** — WeakMap cache poisoning turns a hard error into silent omission
 
-This is the most serious finding in this document, because it fails *silently*.
+This is the most serious finding in this document, because it fails _silently_.
 
 ```ts
 // incremental.ts
@@ -194,7 +194,7 @@ if (this.#trackCache.has(track)) {
 1. **Invalid track id** → pushes `track-id` and returns `undefined`. `undefined` is cached. On the
    next build with the same object, `has(track)` is `true`, `node` is `undefined`, **no diagnostic
    is pushed**, and the track is simply skipped. Build #1 correctly rejects the project; build #2
-   *succeeds* with the node silently missing.
+   _succeeds_ with the node silently missing.
 2. **Invalid edge** (`observation-role`, `observation-source`, `observation-input-projection`) →
    pushes a diagnostic and `continue`s, returning a node with the bad edge **omitted**. That
    partial node is cached. On the next build, no diagnostic is re-emitted, so the project builds
@@ -276,7 +276,7 @@ today's hard ceiling.
 Four changes, sequenced. S1 and S2 are standalone bug fixes with no API change and should land
 first, on their own PRs, with their own regression tests. S3 and S4 are the editor enablement.
 
-### S1 — Two-phase discipline for every mutating op *(fixes P1 and A1)*
+### S1 — Two-phase discipline for every mutating op _(fixes P1 and A1)_
 
 **S1.1 Make snapshot construction pure.**
 
@@ -317,7 +317,7 @@ Two details that only show up once you read `GraphRuntime.replaceGraph`:
 
 - **`replaceGraph` already evicts removed nodes.** Its membership-reconciliation loop does
   `this.#members.delete(id); this.#registry.evict(id);` for every member id absent from the new
-  graph. So the terminal `"destroyed"` patch now fires *inside* the successful commit, which is
+  graph. So the terminal `"destroyed"` patch now fires _inside_ the successful commit, which is
   exactly where it belongs. Keep the explicit `evictNode(nodeId)` anyway: it is the only thing
   that frees the `#nodeListeners` entry for a node that was **unmounted** (hence not a member)
   before being destroyed. `PatchRegistry.evict` is safe to call twice — the second call finds no
@@ -335,7 +335,7 @@ try {
   this.#compileTrack?.(track, id);
   this.#graph.replaceGraph(this.#projectSnapshot(candidate));
 } catch (error) {
-  this.#disposeTrack?.(id);  // undo compileTrack; #adopted was never touched
+  this.#disposeTrack?.(id); // undo compileTrack; #adopted was never touched
   throw error;
 }
 this.#adopted.set(id, { track, owner, motionId });
@@ -347,17 +347,17 @@ behaviour an editor needs when the user fixes their typo and hits enter again.
 
 **S1.4 Make the post-commit phase non-throwing by construction.**
 In `adopt`, pre-check what the post-commit calls would throw on (`#instances.has(id)`, motion
-existence, `Motion` duplicate track id) *before* `replaceGraph`. A throw after commit leaves the
+existence, `Motion` duplicate track id) _before_ `replaceGraph`. A throw after commit leaves the
 runtime in a state no caller can reason about, which is the whole class of bug being fixed here.
 
 **S1.5 Add the invariant as an executable rule.** A regression test per mutating op:
-*"after a rejected mutation, the runtime is byte-for-byte re-usable"* — retry succeeds, `seek`
+_"after a rejected mutation, the runtime is byte-for-byte re-usable"_ — retry succeeds, `seek`
 returns `"ready"` not `"error"`, no `"destroyed"` patch was delivered, and `graph.order` is
 unchanged.
 
 ---
 
-### S2 — Identity and freeze hardening *(fixes A2 and A3)*
+### S2 — Identity and freeze hardening _(fixes A2 and A3)_
 
 **S2.1 Freeze on ingest.** `adopt()` must deep-freeze the incoming `TrackDefinition` (reuse
 `validate-v5`'s `deepFreeze`) before storing it, and should route it through the same `validateV5`
@@ -378,13 +378,13 @@ hole and makes the identity contract enforceable rather than aspirational.
   being the same state.
 
 Without S2.2, S1 is not sufficient: A1 leaves poisoned objects in `#adopted` today, and once S1
-lands, a *rejected* `adopt()` still leaves a poisoned WeakMap entry for the caller's object — so
+lands, a _rejected_ `adopt()` still leaves a poisoned WeakMap entry for the caller's object — so
 if the caller re-submits the **same object** after fixing nothing, the second attempt can now
 succeed with the bad edge silently dropped. **S1 and S2.2 must ship together.**
 
 ---
 
-### S3 — Motion lifecycle at runtime *(fixes P2)*
+### S3 — Motion lifecycle at runtime _(fixes P2)_
 
 **S3.1 `ProjectRuntime` owns a motion store.**
 
@@ -439,22 +439,22 @@ schema fidelity, wire `createManualTriggerPort()` as `load()` does, and document
 
 ---
 
-### S4 — Unify the store and replace `owner` with capability handles *(P3)*
+### S4 — Unify the store and replace `owner` with capability handles _(P3)_
 
 **S4.1 Ingest at construction (3a): endorsed.** In the `ProjectRuntime` constructor, ingest every
 `project.motions[].tracks[]` and `project.freeTracks[]` entry into the same store `adopt()` writes
 to, then never read `#project` for graph content again. Two hard requirements:
 
 - **Preserve object identity on ingest.** Schema track objects are already frozen by `validateV5`;
-  store the *same references*, do not clone them, or you throw away every `WeakMap` cache hit and
+  store the _same references_, do not clone them, or you throw away every `WeakMap` cache hit and
   turn `load()` into a full rebuild.
 - **Name the tradeoff in the design doc, as the brief asks.** Today schema content is
-  *structurally* undeletable. After the collapse it is deletable subject only to op gating. That
+  _structurally_ undeletable. After the collapse it is deletable subject only to op gating. That
   is the right call for an editor and the wrong call for a fixed-schema consumer; it should be a
   recorded decision in `docs/DECISIONS.md`, not an emergent side effect.
 
 **Ingestion must not auto-mount — endorsed, with evidence.** `Engine.load()` today eagerly
-*compiles* every node (`for (const nodeId of nodes.keys()) compile(nodeId)`) and mounts none;
+_compiles_ every node (`for (const nodeId of nodes.keys()) compile(nodeId)`) and mounts none;
 consumers call `handle.mount(nodeId)` themselves. Auto-mounting on ingest would silently make
 every existing node a flush member, changing what every `load()` caller's first tick publishes.
 Keep compile-eager / mount-explicit exactly as it is. Ingestion is storage only.
@@ -483,7 +483,7 @@ returns an unsubscribe closure rather than requiring a caller-held token. Keep `
 **One requirement the brief omits: stale handles must be inert, not dangerous.** Ids are freed and
 immediately re-adoptable, so this is a live ABA hazard: hold a handle, `remove()`, re-create the
 same id, then call the stale handle's `remove()` again. A capability scoped by id alone would
-destroy the *new* node. Spec it explicitly: mint a private monotonic token per node instance,
+destroy the _new_ node. Spec it explicitly: mint a private monotonic token per node instance,
 store it alongside the entry, and make `remove()`/`replace()` **no-ops** (not throws) when the
 token no longer matches the live entry. Idempotent removal is also just better editor ergonomics
 than today's `not adopted` throw on double-destroy.
@@ -502,15 +502,15 @@ The brief's lean is: edit a track by destroying it and re-adopting under the sam
 transient `"destroyed"` → `"ready"` patch pair. **Don't.** Two reasons, both grounded in verified
 code:
 
-1. **`"destroyed"` is contractually terminal.** `v5.ts`: *"`"destroyed"` is terminal: the node has
-   been evicted from the graph and will never publish again."* React consumers are built to tear
+1. **`"destroyed"` is contractually terminal.** `v5.ts`: _"`"destroyed"` is terminal: the node has
+   been evicted from the graph and will never publish again."_ React consumers are built to tear
    down on it. Using a terminal signal as an edit notification means every keyframe nudge unmounts
    and remounts the consumer's DOM element — losing element state, restarting CSS transitions, and
    flashing. On a drag interaction that is unusable.
 2. **A non-destructive swap is strictly cheaper and already supported.** `GraphBinding.#applyDelta`
    diffs by node id and `edgeKey`. If the node id is unchanged, `previousIds` and `nextIds` both
    contain it: no `removeNode`, no eviction, no terminal patch, and only the genuinely changed
-   edges are removed/added. Meanwhile the *new object identity* forces a fresh `collectTrack`, so
+   edges are removed/added. Meanwhile the _new object identity_ forces a fresh `collectTrack`, so
    the WeakMap stays correct by construction, and `replaceGraph` clears
    `#publisherNodes`, so the compose closure is re-resolved.
 
@@ -529,14 +529,14 @@ replaceTrack(handle: TrackHandle, next: TrackDefinition): void {
 ```
 
 Constraint: `next.id` must qualify to the same node id; reject otherwise. Renaming is a
-destroy-plus-create, and *that* legitimately produces a terminal patch.
+destroy-plus-create, and _that_ legitimately produces a terminal patch.
 
 ### D2 — `addObserve`/`removeObserve` do not need their own API or their own capability
 
 The brief leaves edge ownership open. It resolves itself: in the data model, an edge is **not a
 first-class entity** — it lives in `TrackDefinition.observes` on the observer, and `collectTrack`
 derives `GraphEdge`s from it with `observerId` fixed to that node. Therefore the capability to add
-or remove an edge *is* the capability to replace the observer's track. Implement
+or remove an edge _is_ the capability to replace the observer's track. Implement
 `addObserve`/`removeObserve` as sugar over **D1**'s `replaceTrack` on the observer, and the
 "can an edge be owned?" question disappears along with any need to collapse edge storage
 separately in 3a.
@@ -545,7 +545,7 @@ separately in 3a.
 
 The constraint is right and, as the brief says, free. But the diagnostic an editor gets back is
 `observation-unknown-source at ~/elbow: Unknown observation source "~/root"` — phrased from the
-builder's perspective, naming the node you *didn't* touch, describing a source as "unknown" when
+builder's perspective, naming the node you _didn't_ touch, describing a source as "unknown" when
 the user's actual mistake was deleting something still in use. Shipping that string into a
 confirmation dialog is not acceptable.
 
@@ -577,7 +577,7 @@ consistent with this repo's existing evidence-gate convention:
 
 1. **P1** — adopt `root`, adopt `elbow` observing `root`, `destroyAdopted(root)` throws; then
    assert: `seek(root)` still `"ready"`, no `"destroyed"` patch delivered, a second
-   `destroyAdopted(root)` throws the *same* error (not `not adopted`), and destroying `elbow`
+   `destroyAdopted(root)` throws the _same_ error (not `not adopted`), and destroying `elbow`
    first then `root` both succeed.
 2. **A1** — `adopt` a track whose `observes.source` does not exist → throws; then assert the same
    id is immediately re-adoptable with a valid definition, and `Engine`'s track map did not grow.
@@ -601,12 +601,12 @@ cache-poisoning cases are exactly the kind that regress silently.
 ## Part E — Open questions for the author
 
 1. **Motion destroy semantics:** reject a non-empty `destroyMotion`, or remove it together with
-   its own tracks? The latter is a cascade *within* an ownership boundary, which may be acceptable
+   its own tracks? The latter is a cascade _within_ an ownership boundary, which may be acceptable
    where a cross-node cascade is not. Recommendation: reject; make the editor delete tracks first.
 2. **Does `validateV5` apply to runtime-created content?** Recommended yes (**S2.1**), which means
    accepting its cost on every `addTrack`. If that is measurable in an editor's drag loop, split
    validation into a cheap structural pass plus an opt-in deep pass.
-3. **Should `"destroyed"` remain the only terminal status?** If node *renames* become common in the
+3. **Should `"destroyed"` remain the only terminal status?** If node _renames_ become common in the
    editor, a distinguishable `"replaced"` status would let consumers migrate state rather than
    tear down. Out of scope here; flagging it before `"destroyed"` accretes more meanings.
 4. **Scroll/time triggers:** are they in scope for the editor at all? If yes, that is a separate
