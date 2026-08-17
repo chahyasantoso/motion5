@@ -73,7 +73,8 @@ describe("runtime Motion lifecycle (W4)", () => {
     handle.signal("right", { type: "manual", progress: 0.25 });
     scheduler.flush();
 
-    expect(handle.get(left.id)?.values).toEqual({ x: 0 });
+    // Track index 0 has no stagger delay; later tracks are offset by the stagger amount.
+    expect(handle.get(left.id)?.values).toEqual({ x: 50 });
     expect(handle.get(right.id)?.values).toEqual({ x: 50 });
 
     handle.destroyAdopted(left.id, owner);
