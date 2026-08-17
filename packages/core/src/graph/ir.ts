@@ -48,8 +48,8 @@ export function canonicalizeProjection(projection: InputProjection): string {
     .join(",")}`;
 }
 export function edgeKey(edge: GraphEdge): string {
-  const proj = edge.projection ? canonicalizeProjection(edge.projection) : "";
-  return `${edge.observerId}|${edge.sourceId}|${edge.role}|${edge.target ?? ""}|${proj}`;
+  const projection = edge.projection ? canonicalizeProjection(edge.projection) : "";
+  return `${edge.observerId}|${edge.sourceId}|${edge.role}|${edge.target ?? ""}|${projection}`;
 }
 function freeze<T>(value: T): T {
   return Object.freeze(value);
@@ -74,34 +74,9 @@ export function qualifySource(source: string, motionId: string): string {
     ).value;
   return qualifyMotionTrack(motionId, source).value;
 }
-export function observationEdgeKey(
-  observation: ObservationDefinition,
-  observerId: string,
-  ownerId: string,
-): string {
-  const role = observation.role ?? "output";
-  if (role !== "input" && role !== "output")
-    throw new TypeError("observation-role: Observation role must be input or output.");
-  if (typeof observation.source !== "string" || observation.source.length === 0)
-    throw new TypeError("observation-source: Observation source must be non-empty.");
-  if (role === "output" && observation.target !== undefined)
-    throw new TypeError("observation-output-target: Output observations cannot define a target.");
-  return edgeKey({
-    observerId,
-    sourceId: qualifySource(observation.source, ownerId),
-    role,
-    ...(observation.target === undefined ? {} : { target: observation.target }),
-    ...(role === "input" && observation.projection === undefined
-      ? {}
-      : role === "input"
-        ? { projection: observation.projection }
-        : {}),
-  });
-}
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
-
 function validateProjection(
   projection: unknown,
   path: string,
@@ -168,8 +143,7 @@ function validateProjection(
   }
   const map: Record<string, string> = {};
   for (const [source, target] of Object.entries(projection.map)) map[source] = target as string;
-  const targets = Object.values(map);
-  if (new Set(targets).size !== targets.length) {
+  if (new Set(Object.values(map)).size !== Object.values(map).length) {
     diagnostics.push(
       diag(
         "observation-input-projection",
@@ -181,7 +155,69 @@ function validateProjection(
   }
   return Object.freeze({ map: Object.freeze(map) });
 }
-
+export interface ResolvedObservation {
+  readonly edge?: GraphEdge;
+  readonly diagnostics: readonly Diagnostic[];
+}
+export function resolveObservationEdge(
+  observation: ObservationDefinition,
+  observerNodeId: string,
+  ownerId: string,
+  path: string,
+): ResolvedObservation {
+  const diagnostics: Diagnostic[] = [];
+  const role = observation.role ?? "output";
+  if (role !== "input" && role !== "output") {
+    diagnostics.push(diag("observation-role", path, "Observation role must be input or output."));
+    return { diagnostics: Object.freeze(diagnostics) };
+  }
+  if (typeof observation.source !== "string" || observation.source.length === 0) {
+    diagnostics.push(diag("observation-source", path, "Observation source must be non-empty."));
+    return { diagnostics: Object.freeze(diagnostics) };
+  }
+  if (role === "output" && observation.target !== undefined) {
+    diagnostics.push(
+      diag("observation-output-target", path, "Output observations cannot define a target."),
+    );
+    return { diagnostics: Object.freeze(diagnostics) };
+  }
+  const projection =
+    role === "input" ? validateProjection(observation.projection, path, diagnostics) : undefined;
+  if (diagnostics.length > 0) return { diagnostics: Object.freeze(diagnostics) };
+  let sourceId: string;
+  try {
+    sourceId = qualifySource(observation.source, ownerId);
+  } catch (error) {
+    diagnostics.push(
+      diag("observation-source", path, String(error instanceof Error ? error.message : error), [
+        observation.source,
+      ]),
+    );
+    return { diagnostics: Object.freeze(diagnostics) };
+  }
+  const edge: GraphEdge = Object.freeze({
+    observerId: observerNodeId,
+    sourceId,
+    role,
+    ...(observation.target === undefined ? {} : { target: observation.target }),
+    ...(projection === undefined ? {} : { projection }),
+  });
+  return { edge, diagnostics: Object.freeze([]) };
+}
+export function observationEdgeKey(
+  observation: ObservationDefinition,
+  observerId: string,
+  ownerId: string,
+): string {
+  const resolved = resolveObservationEdge(observation, observerId, ownerId, "observation");
+  if (resolved.edge === undefined)
+    throw new TypeError(
+      resolved.diagnostics
+        .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
+        .join(" "),
+    );
+  return edgeKey(resolved.edge);
+}
 export function collectTrack(
   track: TrackDefinition,
   owner: "motion" | "free",
@@ -208,49 +244,12 @@ export function collectTrack(
   const edges: GraphEdge[] = [];
   for (const [index, observation] of (track.observes ?? []).entries()) {
     const path = `${owner === "free" ? `freeTracks[${authoredIndex}]` : `motions[${authoredIndex}].tracks[${index}].observes`}`;
-    const role = observation.role ?? "output";
-    if (role !== "input" && role !== "output") {
-      diagnostics.push(diag("observation-role", path, "Observation role must be input or output."));
-      continue;
-    }
-    if (typeof observation.source !== "string" || observation.source.length === 0) {
-      diagnostics.push(diag("observation-source", path, "Observation source must be non-empty."));
-      continue;
-    }
-    if (role === "output" && observation.target !== undefined) {
-      diagnostics.push(
-        diag("observation-output-target", path, "Output observations cannot define a target."),
-      );
-      continue;
-    }
-    const projection =
-      role === "input" ? validateProjection(observation.projection, path, diagnostics) : undefined;
-    if (role === "input" && observation.projection !== undefined && projection === undefined)
-      continue;
-    let sourceId: string;
-    try {
-      sourceId = qualifySource(observation.source, ownerId);
-    } catch (error) {
-      diagnostics.push(
-        diag("observation-source", path, String(error instanceof Error ? error.message : error), [
-          observation.source,
-        ]),
-      );
-      continue;
-    }
-    edges.push(
-      Object.freeze({
-        observerId: id,
-        sourceId,
-        role,
-        ...(observation.target === undefined ? {} : { target: observation.target }),
-        ...(projection === undefined ? {} : { projection }),
-      }),
-    );
+    const resolved = resolveObservationEdge(observation, id, ownerId, path);
+    diagnostics.push(...resolved.diagnostics);
+    if (resolved.edge !== undefined) edges.push(resolved.edge);
   }
   return Object.freeze({ id, owner, authoredIndex, track, edges: Object.freeze(edges) });
 }
-
 export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
   const diagnostics: Diagnostic[] = [];
   const nodes: GraphNode[] = [];

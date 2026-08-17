@@ -4,7 +4,7 @@ import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
 import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
 
-function track(id: string): TrackDefinition {
+function track(id: string, observes?: TrackDefinition["observes"]): TrackDefinition {
   return {
     id,
     keyframes: {
@@ -15,6 +15,7 @@ function track(id: string): TrackDefinition {
         ],
       },
     },
+    ...(observes ? { observes } : {}),
   };
 }
 function makeHandle(project: ProjectDefinition) {
@@ -24,34 +25,59 @@ function makeHandle(project: ProjectDefinition) {
     scheduler: createFakeScheduler(),
   }).load(project);
 }
+function project(
+  freeTracks: readonly TrackDefinition[] = [],
+  tracks: readonly TrackDefinition[] = [track("root"), track("child")],
+): ProjectDefinition {
+  return {
+    schemaVersion: 5,
+    motions: [{ id: "hero", trigger: { type: "manual" }, tracks }],
+    ...(freeTracks.length ? { freeTracks } : {}),
+  };
+}
 
 describe("observation identity", () => {
-  it("removes a logically identical observation when property order changes", () => {
-    const handle = makeHandle({
-      schemaVersion: 5,
-      motions: [
-        { id: "hero", trigger: { type: "manual" }, tracks: [track("root"), track("child")] },
-      ],
-    });
+  it("covers property order, default role, source spelling, and projection map order", () => {
+    const handle = makeHandle(project());
     const child = handle.track("hero/child");
-    child.addObserve({ source: "hero/root", role: "input" });
-    expect(handle.dependantsOf("hero/root")).toEqual(["hero/child"]);
-    child.removeObserve({ role: "input", source: "hero/root" });
+    child.addObserve({ source: "root", role: "input", target: "x" });
+    child.removeObserve({ source: "hero/root", role: "input", target: "x" });
+    expect(handle.dependantsOf("hero/root")).toEqual([]);
+    child.addObserve({
+      source: "hero/root",
+      role: "input",
+      projection: { map: { a: "x", b: "y" } },
+    });
+    child.removeObserve({
+      role: "input",
+      source: "hero/root",
+      projection: { map: { b: "y", a: "x" } },
+    });
     expect(handle.dependantsOf("hero/root")).toEqual([]);
     handle.dispose();
   });
-
-  it("deduplicates equivalent observations instead of throwing", () => {
-    const handle = makeHandle({
-      schemaVersion: 5,
-      motions: [
-        { id: "hero", trigger: { type: "manual" }, tracks: [track("root"), track("child")] },
-      ],
-    });
+  it("deduplicates equivalent observations and preserves no-op sequence", () => {
+    const handle = makeHandle(project());
     const child = handle.track("hero/child");
     child.addObserve({ source: "root" });
+    const sequence = (handle as unknown as { _runtime: { graph: { sequence: number } } })._runtime
+      .graph.sequence;
     expect(() => child.addObserve({ role: "output", source: "root" })).not.toThrow();
-    expect(handle.dependantsOf("hero/root")).toEqual(["hero/child"]);
+    expect(
+      (handle as unknown as { _runtime: { graph: { sequence: number } } })._runtime.graph.sequence,
+    ).toBe(sequence);
+    expect(() => child.removeObserve({ source: "root", role: "output" })).not.toThrow();
+    expect(handle.dependantsOf("hero/root")).toEqual([]);
+    handle.dispose();
+  });
+  it("rejects invalid free-track and output-target observations with stable diagnostics", () => {
+    const handle = makeHandle(project([track("free")]));
+    const free = handle.track("~/free");
+    expect(() => free.addObserve({ source: "arm" })).toThrow(/observation-source/);
+    const child = handle.track("hero/child");
+    expect(() => child.addObserve({ source: "hero/root", role: "output", target: "x" })).toThrow(
+      /observation-output-target/,
+    );
     handle.dispose();
   });
 });
