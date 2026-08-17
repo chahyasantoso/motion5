@@ -170,4 +170,24 @@ describe("Motion resolves Tracks by id", () => {
     expect(() => motion.replaceTrack({ id: "arm", duration: 200 })).not.toThrow();
     expect(motion.tracks[0]?.duration).toBe(200);
   });
+
+  it("C-11 failed addTrack is idempotently rejected without poisoning duplicate tracking", () => {
+    // A second identical failure proves the first attempt never inserted the id into #trackMap.
+    const { motion } = setup([]);
+    const expected = 'Motion track "missing" has no compiled Track.';
+    expect(() => motion.addTrack({ id: "missing" })).toThrow(expected);
+    expect(() => motion.addTrack({ id: "missing" })).toThrow(expected);
+  });
+
+  it("C-12 failed replaceTrack is idempotently rejected and preserves the entry identity", () => {
+    // Repeated failure must not mutate either the entry array or its duplicate-id bookkeeping.
+    const { motion, registry } = setup(["arm"]);
+    const before = motion.tracks[0];
+    registry.drop("arm");
+    const expected = 'Motion track "arm" has no compiled Track.';
+    expect(() => motion.replaceTrack({ id: "arm", duration: 200 })).toThrow(expected);
+    expect(() => motion.replaceTrack({ id: "arm", duration: 300 })).toThrow(expected);
+    expect(motion.tracks[0]).toBe(before);
+    expect(motion.tracks[0]?.duration).toBeUndefined();
+  });
 });
