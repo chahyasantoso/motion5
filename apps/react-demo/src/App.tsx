@@ -1,5 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Engine, PluginRegistry, type ProjectHandle, type PluginDefinition } from "@motion5/core";
+import {
+  Engine,
+  PluginRegistry,
+  type ProjectHandle,
+  type PluginDefinition,
+  type TrackHandle,
+} from "@motion5/core";
 import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
 import { createScrollTriggerPort } from "@motion5/core/adapters/scroll-trigger";
 import { fkPlugin } from "@motion5/core/plugins/fk";
@@ -22,13 +28,10 @@ const CORE_NODES = [
   "walk/legR_foot",
 ];
 
-const ARM_NODES = ["walk/armL_upper", "walk/armL_lower", "walk/armR_upper", "walk/armR_lower"];
-
 export const App: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [armsAdopted, setArmsAdopted] = useState(false);
-  const ownerRef = useRef({});
-  const armsAdoptedRef = useRef(false);
+  const armHandlesRef = useRef<TrackHandle[]>([]);
 
   const { handle, clock, scheduler } = useMemo(() => {
     const plugins = new PluginRegistry();
@@ -72,21 +75,18 @@ export const App: React.FC = () => {
     const unsubscribe = port.subscribe((p: number) => {
       setProgress(p);
 
-      // Dynamic Graph Adoption: Adopt arm tracks when scrolling past 50%
-      if (p >= 0.5 && !armsAdoptedRef.current) {
-        for (const track of armTracks) {
-          handle.adopt(track, ownerRef.current, { motionId: "walk" });
-        }
-        armsAdoptedRef.current = true;
+      // Add arm tracks when scrolling past 50%.
+      if (p >= 0.5 && armHandlesRef.current.length === 0) {
+        armHandlesRef.current = armTracks.map((track) =>
+          handle.addTrack(track, { motionId: "walk" }),
+        );
         setArmsAdopted(true);
-      } else if (p < 0.45 && armsAdoptedRef.current) {
-        // Destroy adopted tracks when scrolling back up
-        // MUST destroy in reverse topological order (children before parents)
-        // to prevent graph validation errors in intermediate states.
-        for (const nodeId of [...ARM_NODES].reverse()) {
-          handle.destroyAdopted(nodeId, ownerRef.current);
+      } else if (p < 0.45 && armHandlesRef.current.length > 0) {
+        // Remove children before parents so every intermediate graph stays valid.
+        for (const trackHandle of [...armHandlesRef.current].reverse()) {
+          trackHandle.remove();
         }
-        armsAdoptedRef.current = false;
+        armHandlesRef.current = [];
         setArmsAdopted(false);
       }
 
@@ -100,6 +100,10 @@ export const App: React.FC = () => {
     return () => {
       unsubscribe();
       port.dispose();
+      for (const trackHandle of [...armHandlesRef.current].reverse()) {
+        trackHandle.remove();
+      }
+      armHandlesRef.current = [];
     };
   }, [handle, scheduler]);
 
@@ -118,8 +122,8 @@ export const App: React.FC = () => {
             <div>
               <h1>motion5 — Dynamic Graph Rig Demo</h1>
               <p>
-                Authored Schema v5 · Dynamic Motion Track Adoption · React 19 <code>usePatch</code>{" "}
-                · GSAP ScrollTrigger
+                Authored Schema v5 · Runtime Track Handles · React 19 <code>usePatch</code> · GSAP
+                ScrollTrigger
               </p>
             </div>
             <div
@@ -129,15 +133,15 @@ export const App: React.FC = () => {
                 fontSize: "0.75rem",
                 fontWeight: "700",
                 fontFamily: "monospace",
-                background: armsAdopted ? "rgba(56, 189, 248, 0.2)" : "rgba(100, 116, 139, 0.2)",
+                background: armsAdopted
+                  ? "rgba(56, 189, 248, 0.2)"
+                  : "rgba(100, 116, 139, 0.2)",
                 border: `1px solid ${armsAdopted ? "#38bdf8" : "#475569"}`,
                 color: armsAdopted ? "#38bdf8" : "#94a3b8",
                 transition: "all 0.3s ease",
               }}
             >
-              {armsAdopted
-                ? "✨ ARMS ADOPTED INTO MOTION (13 NODES)"
-                : "⏳ CORE RIG ONLY (9 NODES)"}
+              {armsAdopted ? "✨ ARM TRACKS ACTIVE (13 NODES)" : "⏳ CORE RIG ONLY (9 NODES)"}
             </div>
           </div>
         </header>
@@ -150,7 +154,7 @@ export const App: React.FC = () => {
             <h2>Scroll Progress &amp; Graph Lifecycle</h2>
             <div className="progress-track" style={{ position: "relative" }}>
               <div className="progress-fill" style={{ width: `${(progress * 100).toFixed(2)}%` }} />
-              {/* Adoption Threshold Indicator at 50% */}
+              {/* Arm insertion threshold at 50% */}
               <div
                 style={{
                   position: "absolute",
@@ -161,7 +165,7 @@ export const App: React.FC = () => {
                   background: "#f43f5e",
                   zIndex: 2,
                 }}
-                title="Dynamic Adoption Point (50%)"
+                title="Dynamic Track Insertion Point (50%)"
               />
             </div>
             <div className="progress-label">
@@ -177,21 +181,21 @@ export const App: React.FC = () => {
               }}
             >
               {progress >= 0.5
-                ? "▶ [0.50+] Arm tracks adopted & snapped to motion"
-                : "▷ [0.00-0.49] Scroll past 50% to adopt arms"}
+                ? "▶ [0.50+] Arm tracks active"
+                : "▷ [0.00-0.49] Scroll past 50% to add arms"}
             </div>
           </div>
           <InspectorPanel handle={handle} />
         </div>
 
         <footer className="sidebar-footer">
-          <strong>Architecture: Dynamic Graph</strong>
+          <strong>Architecture: Unified Track Store</strong>
           <br />
-          Start: 9 Nodes (Core) → <code>handle.adopt(..., &apos;walk&apos;)</code>
+          Start: 9 Nodes (Core)
           <br />
-          Scroll &ge; 50% → 13 Nodes (Arms Snapped &amp; FK Computed)
+          Scroll &ge; 50% → 13 Nodes (Arm TrackHandles added)
           <br />
-          Scroll &lt; 45% → <code>handle.destroyAdopted()</code> (Pruned)
+          Scroll &lt; 45% → Arm handles removed
         </footer>
       </aside>
     </div>
