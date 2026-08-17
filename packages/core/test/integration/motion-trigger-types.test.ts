@@ -46,6 +46,7 @@ describe("Motion trigger types and clock ownership", () => {
       tracks: [{ id: "track", duration: 1000 }],
       resolveTrack: () => current as never,
       invalidate: vi.fn(),
+      disposeTracks: true,
     });
 
     motion.play();
