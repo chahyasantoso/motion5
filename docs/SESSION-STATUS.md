@@ -1,9 +1,9 @@
 # Session status
 
 **Captured:** 2026-08-17, Asia/Jakarta  
-**Branch:** `fix/w3-adopted-track-immutability`  
-**Phase:** runtime mutation model remediation, W3 of five work packages. W1 and W2 are merged. Phase 5 and Phase 6 remain as recorded below.  
-**Next action:** review W3, then start W4 (runtime Motion lifecycle).
+**Branch:** `feat/w4-runtime-motion-lifecycle`  
+**Phase:** runtime mutation model remediation, W4 of five work packages. W1, W2, and W3 are merged. Phase 5 and Phase 6 remain as recorded below.  
+**Next action:** review W4, then start W5 (unified store, capability handles, non-destructive replaceTrack).
 
 This document reports current implementation reality. The detailed contract remains in `docs/PHASE5-DETAILED-PLAN.md`. The current effort is specified in `docs/IMPLEMENTATION-PLAN-runtime-mutation-model.md`, assessed in `docs/ASSESSMENT-AND-SOLUTION-runtime-mutation-model.md`.
 
@@ -15,33 +15,27 @@ An editor use case (start from an empty project, add and remove motions, tracks,
 | ------- | ------------------------------------------------------------------ | -------------------------------------------------------------------- |
 | W1      | Builder cache correctness (A3 cached failures, A5 owner-blind key) | merged, [#109](https://github.com/chahyasantoso/motion5/pull/109)    |
 | W2      | Transactional `adopt`/`destroyAdopted` (P1, A1)                    | merged, [#110](https://github.com/chahyasantoso/motion5/pull/110)    |
-| W3      | Freeze and validate adopted tracks (A2)                            | in review, [#111](https://github.com/chahyasantoso/motion5/pull/111) |
-| W4      | Runtime `addMotion`/`destroyMotion` (P2)                           | not started                                                          |
+| W3      | Freeze and validate adopted tracks (A2)                            | merged, [#111](https://github.com/chahyasantoso/motion5/pull/111)    |
+| W4      | Runtime `addMotion`/`destroyMotion` (P2)                           | in review, [#112](https://github.com/chahyasantoso/motion5/pull/112) |
 | W5      | Unified store, capability handles, `replaceTrack` (P3)             | not started                                                          |
 
-W1 precedes W2 deliberately: W2 makes a rejected mutation retryable, and against the unfixed cache a retry could succeed with a silently dropped observation edge. W1 is merged, so W2 safely installed retryability. W3 now closes the identity-cache hole for runtime-created tracks.
+## W4 invariant
 
-### Known defects, not yet fixed
+A runtime-created Motion is a first-class lifecycle object: it can be created empty, receive tracks through `adopt(track, owner, { motionId })`, signal progress, and be destroyed only after its tracks are removed. No cascade deletion is introduced.
 
-- **P2** No runtime-callable way to create or destroy a `Motion`; `#buildProjectSnapshot` reads the frozen `#project.motions`, so the `Unknown motion` guard is load-bearing rather than merely defensive. W4.
+`ProjectRuntime` owns a mutable MotionDefinition store seeded from the validated project. Graph candidates are validated before the motion construction/destruction hooks run. `Engine` owns the actual Motion instances and uses one `buildMotion` path for authored and runtime-created motions.
 
-## W3 invariant
+Core currently constructs every Motion with a manual trigger port and does not interpret `trigger.type`; scroll/time drivers remain separate work.
 
-Every runtime-created `TrackDefinition` is validated by the single contract validation owner and stored as a deep-frozen runtime-owned clone. Caller mutation cannot invalidate the incremental graph builder's identity cache or alter the compiled graph definition.
+## W4 evidence
 
-`validateTrackDefinition` reuses `validateTrackShape`, `clone`, and `deepFreeze` from `validate-v5.ts`. Project-level duplicate and graph rules remain owned by the candidate graph build. W3 adds no second validation owner.
+- Red: [run 31988363699](https://github.com/chahyasantoso/motion5/actions/runs/31988363699), check runs show quality and integration failed while build, boundaries, end-to-end, and performance passed. The archive branch has not materialized this run folder yet; the check-run IDs are the durable source until the archive workflow catches up.
+- Red test commit: [`6693bf8`](https://github.com/chahyasantoso/motion5/commit/6693bf8e92deac4989d9e11bf0417bebacca114e). The expected failure is the missing `ProjectHandle.addMotion` / `destroyMotion` surface on the merged W3 parent.
+- Implementation: [`0dade4a`](https://github.com/chahyasantoso/motion5/commit/0dade4a5f959e3856a612714bd48abd5bf8210a1), adding the mutable motion store, atomic lifecycle operations, handle surface, and shared Engine Motion factory.
 
-## W3 evidence
+## Known defects, not yet fixed
 
-- Red: [run 31987793436](https://github.com/chahyasantoso/motion5/actions/runs/31987793436), archived at `logs/31987793436/failed-jobs.log` on `ci-logs`. Integration: 4 failed, 119 passed. Quality: 4 failed, 356 passed. Three failures were expected W3 gaps; the fourth exposed an incorrect test assumption about whether the caller source itself should be frozen.
-- Corrected test and implementation: [run 31988108996](https://github.com/chahyasantoso/motion5/actions/runs/31988108996), all seven checks passed. The caller source stays mutable by design; the runtime-owned clone stays frozen and composes the original value after source mutation.
-- Implementation files: `packages/core/src/contract/validate-v5.ts`, `packages/core/src/runtime/project-runtime.ts`, and `packages/core/test/integration/adopted-track-immutability.test.ts`.
-
-## Corrections to earlier claims
-
-- `Engine.load()` never reads `MotionDefinition.trigger`. Every motion is constructed with `createManualTriggerPort()`, so `trigger.type` (`scroll`/`time`/`manual`) is inert in core and no scroll or time driver exists. A runtime `Motion` is worth creating for independent signaling, `stagger`, and its own `#position`, not for a trigger.
-- `adopt()`'s pre-commit side effects were `compileTrack` and `#adopted.set`, not `mount()`, which runs after `replaceGraph`.
-- W3 freezes a defensive clone, not the caller's object. This makes the public input safe to reuse or mutate while keeping the runtime's cache key immutable.
+- **P3** The schema baseline and runtime overlay remain separate, owner tokens are still caller-invented references, and no non-destructive track replacement or dependants read exists. W5.
 
 ## Verified recovered behavior
 
@@ -51,13 +45,6 @@ Every runtime-created `TrackDefinition` is validated by the single contract vali
 - Diagnostics use one bounded inspection buffer while patches and batch summaries remain the live delivery path.
 - Unmounting evicts detached nodes' retained patches through the registry owner, preserves subscribers, reuses the existing pending/blocked path, and recovers on remount with newer revisions.
 - Node destruction is represented on the observation wire as a terminal `"destroyed"` patch ([#108](https://github.com/chahyasantoso/motion5/pull/108)). W2 prevents that terminal patch from firing when the destroy is rejected.
-
-## Phase 5 evidence
-
-- P5-01 exact-head CI: [31777751696](https://github.com/chahyasantoso/motion5/actions/runs/31777751696).
-- P5-02 exact-head CI: [31780297529](https://github.com/chahyasantoso/motion5/actions/runs/31780297529).
-- P5-03 exact-head CI: [31780874122](https://github.com/chahyasantoso/motion5/actions/runs/31780874122).
-- P5-04 behavior PR [#102](https://github.com/chahyasantoso/motion5/pull/102) merged; lifecycle companion PR [#103](https://github.com/chahyasantoso/motion5/pull/103) merged. Exact-head CI [31782076249](https://github.com/chahyasantoso/motion5/actions/runs/31782076249) passed quality, integration, boundaries, build, end-to-end, performance, and prettier.
 
 ## Guardrails
 
