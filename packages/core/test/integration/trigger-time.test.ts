@@ -134,10 +134,13 @@ describe("time trigger integration T2", () => {
         return {
           port,
           acceptsExternalSignal: false,
-          onTick: () => {
-            throw new Error("driver boom");
+          clockBinding: {
+            kind: "driver",
+            onTick: () => {
+              throw new Error("driver boom");
+            },
           },
-          dispose: port.dispose,
+          dispose: () => port.dispose(),
         };
       },
     };

@@ -1,5 +1,4 @@
 import type {
-  Diagnostic,
   MotionDefinition,
   ObservationDefinition,
   Patch,
@@ -9,7 +8,8 @@ import type {
   TrackDefinition,
   TriggerSignal,
 } from "./contract/v5";
-import { validateV5 } from "./contract/validate-v5";
+import { describeDiagnostics } from "./contract/diagnostics";
+import { resolveTriggerDefinition, validateV5 } from "./contract/validate-v5";
 import { IncrementalGraphBuilder } from "./adapters/graph-builder/incremental";
 import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
 import { compilePercentKeyframes } from "./domain/keyframe-compiler";
@@ -89,11 +89,6 @@ function createHandle(
     configurable: false,
   });
   return handle;
-}
-function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
-  return diagnostics
-    .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
-    .join(" ");
 }
 function assertValidProject(project: unknown): ProjectDefinition {
   const result = validateV5(project);
@@ -208,9 +203,16 @@ export class Engine {
       definition: MotionDefinition,
       entries: readonly MotionTrackEntry[],
     ): Motion => {
+      // Narrow once, at the boundary that already proved the trigger valid, and hand the canonical
+      // form to the factory. Factories never re-derive the discriminated union themselves.
+      const trigger = resolveTriggerDefinition(
+        definition.trigger,
+        `motions.${definition.id}.trigger`,
+      );
       const created = triggerFactory.create({
         motionId: definition.id,
         definition,
+        trigger,
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
       });
@@ -234,10 +236,19 @@ export class Engine {
         motion.play();
         if (consumers.has(definition.id))
           throw new TypeError(`Motion "${definition.id}" already has a clock consumer.`);
-        const consumer: ClockConsumer = {
-          onTick: created.onTick ?? ((event) => motion.onTick(event)),
-        };
-        consumers.set(definition.id, consumer);
+        // Total and exhaustive. No `??` fallback, so a push-driven trigger cannot silently inherit
+        // motion.onTick, and no Motion can ever hold both a driver and its own clock advance.
+        const binding = created.clockBinding;
+        switch (binding.kind) {
+          case "driver":
+            consumers.set(definition.id, { onTick: (event) => binding.onTick(event) });
+            break;
+          case "motion":
+            consumers.set(definition.id, { onTick: (event) => motion.onTick(event) });
+            break;
+          case "none":
+            break;
+        }
         return motion;
       } catch (error) {
         releaseMotion(definition.id);

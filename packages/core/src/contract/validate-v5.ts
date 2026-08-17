@@ -3,8 +3,10 @@ import {
   type Diagnostic,
   type ProjectDefinition,
   type TrackDefinition,
+  type TriggerDefinition,
 } from "./v5";
 import { SUPPORTED_TRIGGER_TYPES } from "./v5";
+import { describeDiagnostics, diagnostic as issue } from "./diagnostics";
 import { buildGraphIR } from "../graph/ir";
 
 export interface ValidationResult {
@@ -17,21 +19,6 @@ export interface KeyframeValidationOptions {
   readonly ruleIdAliases?: Readonly<Record<string, string>>;
 }
 type RawObject = Record<string, unknown>;
-function issue(
-  ruleId: string,
-  path: string,
-  message: string,
-  severity: Diagnostic["severity"] = "error",
-  ids: readonly string[] = [],
-): Diagnostic {
-  return Object.freeze({
-    ruleId,
-    path,
-    message,
-    severity,
-    ...(ids.length ? { ids: Object.freeze([...ids]) } : {}),
-  });
-}
 function isObject(value: unknown): value is RawObject {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -173,6 +160,23 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
       ),
     );
   return diagnostics;
+}
+/**
+ * The one narrowing boundary for authored triggers.
+ *
+ * `MotionDefinition.trigger` is deliberately structurally open (plan section 5.1) so authored
+ * extension keys survive validation. The cost is that `trigger.source` and `trigger.duration` are
+ * `unknown` to every consumer, which previously pushed each `TriggerFactory` into re-deriving the
+ * discriminated union with its own `typeof` guards and sentinels.
+ *
+ * By the time any factory runs the trigger is already proven valid, so the narrowing belongs here.
+ * This function holds the only cast from authored input to `TriggerDefinition`, and that cast is
+ * justified by the `validateMotionTrigger` call immediately above it.
+ */
+export function resolveTriggerDefinition(trigger: unknown, path: string): TriggerDefinition {
+  const diagnostics = validateMotionTrigger(trigger, path);
+  if (diagnostics.length > 0) throw new TypeError(describeDiagnostics(diagnostics));
+  return trigger as TriggerDefinition;
 }
 function usesThreeD(track: RawObject): boolean {
   const keyframes = isObject(track.keyframes) ? track.keyframes : null;
