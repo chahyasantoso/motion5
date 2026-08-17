@@ -11,6 +11,7 @@ import type {
 } from "./contract/v5";
 import { validateV5 } from "./contract/validate-v5";
 import { IncrementalGraphBuilder } from "./adapters/graph-builder/incremental";
+import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
 import { compilePercentKeyframes } from "./domain/keyframe-compiler";
 import { Motion, type MotionTrackEntry } from "./domain/motion";
 import { PluginRegistry } from "./domain/plugins";
@@ -20,7 +21,7 @@ import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
-import { createManualTriggerPort } from "./ports/trigger";
+import type { CreatedTrigger, TriggerFactory } from "./ports/trigger-factory";
 import { ProjectRuntime } from "./runtime/project-runtime";
 
 export interface EngineOptions {
@@ -28,6 +29,7 @@ export interface EngineOptions {
   readonly interpolator: Interpolator;
   readonly scheduler: Scheduler;
   readonly plugins?: PluginRegistry;
+  readonly triggerFactory?: TriggerFactory;
 }
 export interface TrackHandle {
   readonly id: string;
@@ -193,28 +195,42 @@ export class Engine {
       }
     };
     const motions = new Map<string, Motion>();
+    const createdTriggers = new Map<string, CreatedTrigger>();
+    const triggerFactory = this.#options.triggerFactory ?? createDefaultTriggerFactory();
     let runtime: ProjectRuntime;
     const buildMotion = (
       definition: MotionDefinition,
       entries: readonly MotionTrackEntry[],
     ): Motion => {
-      const triggerPort = createManualTriggerPort();
-      let motion: Motion;
-      motion = new Motion({
+      const created = triggerFactory.create({
+        motionId: definition.id,
+        definition,
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
-        tracks: entries,
-        trigger: triggerPort,
-        disposeTracks: false,
-        listenToClock: false,
-        invalidate: () => {
-          const currentIds = motion.tracks.map((t) => t.id);
-          if (currentIds.length > 0) runtime.invalidate(currentIds);
-        },
-        stagger: definition.stagger,
       });
-      motion.play();
-      return motion;
+      createdTriggers.set(definition.id, created);
+      let motion: Motion;
+      try {
+        motion = new Motion({
+          clock: this.#options.clock,
+          scheduler: this.#options.scheduler,
+          tracks: entries,
+          trigger: created.port,
+          disposeTracks: false,
+          listenToClock: false,
+          invalidate: () => {
+            const currentIds = motion.tracks.map((t) => t.id);
+            if (currentIds.length > 0) runtime.invalidate(currentIds);
+          },
+          stagger: definition.stagger,
+        });
+        motion.play();
+        return motion;
+      } catch (error) {
+        createdTriggers.delete(definition.id);
+        created.dispose();
+        throw error;
+      }
     };
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
@@ -260,6 +276,8 @@ export class Engine {
           if (motion) {
             motion.dispose();
             motions.delete(motionId);
+            createdTriggers.get(motionId)?.dispose();
+            createdTriggers.delete(motionId);
           }
         },
         onClockTick: (event) => {
@@ -268,6 +286,8 @@ export class Engine {
         disposeComposition: () => {
           for (const motion of motions.values()) motion.dispose();
           motions.clear();
+          for (const trigger of createdTriggers.values()) trigger.dispose();
+          createdTriggers.clear();
           for (const track of tracks.values()) track.dispose();
           tracks.clear();
         },
@@ -289,6 +309,7 @@ export class Engine {
       });
     } catch (error) {
       for (const motion of motions.values()) motion.dispose();
+      for (const trigger of createdTriggers.values()) trigger.dispose();
       for (const track of tracks.values()) track.dispose();
       throw error;
     }

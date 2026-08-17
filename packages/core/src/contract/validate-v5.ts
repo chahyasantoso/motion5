@@ -111,6 +111,69 @@ function validateId(
     );
   return diagnostics;
 }
+export function validateMotionTrigger(trigger: unknown, path: string): Diagnostic[] {
+  if (!isObject(trigger))
+    return [
+      issue("trigger-shape", path, "Trigger must be an object with type scroll, time, or manual."),
+    ];
+  const type = trigger.type;
+  if (!SUPPORTED_TRIGGER_TYPES.includes(type as (typeof SUPPORTED_TRIGGER_TYPES)[number]))
+    return [
+      issue("trigger-shape", path, "Trigger must be an object with type scroll, time, or manual."),
+    ];
+  const diagnostics: Diagnostic[] = [];
+  if (type === "time") {
+    if (
+      typeof trigger.duration !== "number" ||
+      !Number.isFinite(trigger.duration) ||
+      trigger.duration <= 0
+    )
+      diagnostics.push(
+        issue(
+          "trigger-time-duration",
+          `${path}.duration`,
+          "Time trigger duration must be a finite number greater than zero.",
+        ),
+      );
+    if (trigger.autoplay !== undefined && trigger.autoplay !== true)
+      diagnostics.push(
+        issue(
+          "trigger-time-autoplay-unsupported",
+          `${path}.autoplay`,
+          "Time trigger autoplay must be true when present; paused behavior is not supported.",
+        ),
+      );
+    if (Object.prototype.hasOwnProperty.call(trigger, "repeat"))
+      diagnostics.push(
+        issue(
+          "trigger-time-repeat-unsupported",
+          `${path}.repeat`,
+          "Time trigger repeat is not supported yet.",
+        ),
+      );
+    if (Object.prototype.hasOwnProperty.call(trigger, "yoyo"))
+      diagnostics.push(
+        issue(
+          "trigger-time-repeat-unsupported",
+          `${path}.yoyo`,
+          "Time trigger yoyo is not supported yet.",
+        ),
+      );
+  }
+  if (
+    type === "scroll" &&
+    trigger.source !== undefined &&
+    (typeof trigger.source !== "string" || trigger.source.length === 0)
+  )
+    diagnostics.push(
+      issue(
+        "trigger-scroll-source",
+        `${path}.source`,
+        "Scroll trigger source must be a non-empty string when present.",
+      ),
+    );
+  return diagnostics;
+}
 function usesThreeD(track: RawObject): boolean {
   const keyframes = isObject(track.keyframes) ? track.keyframes : null;
   if (!keyframes) return false;
@@ -189,17 +252,11 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   for (const child of Object.values(value)) deepFreeze(child, seen);
   return Object.freeze(value);
 }
-
 export interface TrackValidationResult {
   readonly valid: boolean;
   readonly diagnostics: readonly Diagnostic[];
   readonly value: TrackDefinition | null;
 }
-
-/**
- * Validate and freeze one runtime-supplied track at the same trust level as an authored track.
- * Project-level duplicate and graph rules remain the responsibility of the candidate builder.
- */
 export function validateTrackDefinition(track: unknown, path: string): TrackValidationResult {
   const diagnostics: Diagnostic[] = [];
   const validShape = validateTrackShape(track, path, new Set<string>(), diagnostics);
@@ -210,7 +267,6 @@ export function validateTrackDefinition(track: unknown, path: string): TrackVali
     value: valid ? deepFreeze(clone(track) as TrackDefinition) : null,
   };
 }
-
 export function validateV5(input: unknown): ValidationResult {
   const diagnostics: Diagnostic[] = [];
   if (!isObject(input))
@@ -260,19 +316,7 @@ export function validateV5(input: unknown): ValidationResult {
         );
       motionIds.add(id);
     }
-    if (
-      !isObject(rawMotion.trigger) ||
-      !SUPPORTED_TRIGGER_TYPES.includes(
-        rawMotion.trigger.type as (typeof SUPPORTED_TRIGGER_TYPES)[number],
-      )
-    )
-      diagnostics.push(
-        issue(
-          "trigger-shape",
-          `${path}.trigger`,
-          "Trigger must be an object with type scroll, time, or manual.",
-        ),
-      );
+    diagnostics.push(...validateMotionTrigger(rawMotion.trigger, `${path}.trigger`));
     if (!Array.isArray(rawMotion.tracks)) {
       diagnostics.push(
         issue("motion-tracks-shape", `${path}.tracks`, "Motion tracks must be an array."),
