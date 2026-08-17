@@ -223,6 +223,9 @@ export class Engine {
           clock: this.#options.clock,
           scheduler: this.#options.scheduler,
           tracks: entries,
+          // The compiled map is the single owner. Motion holds ids and resolves per use, so a
+          // recompiled node can never leave it driving a disposed Track. See ADR-031.
+          resolveTrack: (id) => tracks.get(id),
           trigger: created.port,
           disposeTracks: false,
           listenToClock: false,
@@ -281,16 +284,12 @@ export class Engine {
         addMotionTrack: (motionId, trackId, duration) => {
           const motion = motions.get(motionId);
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
-          const track = tracks.get(trackId);
-          if (!track) throw new TypeError(`Unknown graph node "${trackId}".`);
-          motion.addTrack({ id: trackId, track, duration });
+          motion.addTrack({ id: trackId, duration });
         },
         replaceMotionTrack: (motionId, trackId, duration) => {
           const motion = motions.get(motionId);
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
-          const track = tracks.get(trackId);
-          if (!track) throw new TypeError(`Unknown graph node "${trackId}".`);
-          motion.replaceTrack({ id: trackId, track, duration });
+          motion.replaceTrack({ id: trackId, duration });
         },
         removeMotionTrack: (motionId, trackId) => motions.get(motionId)?.removeTrack(trackId),
         createMotion: (definition) => motions.set(definition.id, buildMotion(definition, [])),
@@ -329,12 +328,7 @@ export class Engine {
       });
       for (const motionDefinition of acceptedProject.motions) {
         const ids = motionTrackIds.get(motionDefinition.id) ?? [];
-        const entries = ids.map((id) => {
-          const track = tracks.get(id);
-          if (!track) throw new TypeError(`Unknown graph node "${id}".`);
-          const definition = nodes.get(id);
-          return { id, track, duration: definition?.duration };
-        });
+        const entries = ids.map((id) => ({ id, duration: nodes.get(id)?.duration }));
         motions.set(motionDefinition.id, buildMotion(motionDefinition, entries));
       }
       return createHandle(runtime, (motionId, signal) => {
