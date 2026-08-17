@@ -145,10 +145,8 @@ export class Engine {
         ...(definition.keyframes ?? {}),
         ...(resolved?.preparation.keyframes ?? {}),
       };
-      const diagnostics = [
-        ...(resolved?.diagnostics ?? []),
-        ...compilePercentKeyframes(preparedKeyframes, path).diagnostics,
-      ];
+      const keyframeCompilation = compilePercentKeyframes(preparedKeyframes, path);
+      const diagnostics = [...(resolved?.diagnostics ?? []), ...keyframeCompilation.diagnostics];
       if (diagnostics.some(({ severity }) => severity === "error"))
         throw new TypeError(describeDiagnostics(diagnostics));
       const track = new Track({
@@ -176,10 +174,8 @@ export class Engine {
         ...(trackDef.keyframes ?? {}),
         ...(resolved?.preparation.keyframes ?? {}),
       };
-      const diagnostics = [
-        ...(resolved?.diagnostics ?? []),
-        ...compilePercentKeyframes(preparedKeyframes, path).diagnostics,
-      ];
+      const keyframeCompilation = compilePercentKeyframes(preparedKeyframes, path);
+      const diagnostics = [...(resolved?.diagnostics ?? []), ...keyframeCompilation.diagnostics];
       if (diagnostics.some(({ severity }) => severity === "error"))
         throw new TypeError(describeDiagnostics(diagnostics));
       tracks.set(
@@ -264,66 +260,63 @@ export class Engine {
             sourceRevisions: {},
           };
         };
-      runtime = new ProjectRuntime(
-        { ...acceptedProject },
-        {
-          clock: this.#options.clock,
-          scheduler: this.#options.scheduler,
-          compose,
-          graphBuilder: new IncrementalGraphBuilder(),
-          setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
-          compileTrack: compileTrackDefinition,
-          disposeTrack,
-          addMotionTrack: (motionId, trackId, duration) => {
-            const motion = motions.get(motionId);
-            if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
-            const track = tracks.get(trackId);
-            if (!track) throw new TypeError(`Unknown graph node "${trackId}".`);
-            motion.addTrack({ id: trackId, track, duration });
-          },
-          replaceMotionTrack: (motionId, trackId, duration) => {
-            const motion = motions.get(motionId);
-            if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
-            const track = tracks.get(trackId);
-            if (!track) throw new TypeError(`Unknown graph node "${trackId}".`);
-            motion.replaceTrack({ id: trackId, track, duration });
-          },
-          removeMotionTrack: (motionId, trackId) => motions.get(motionId)?.removeTrack(trackId),
-          createMotion: (definition) => motions.set(definition.id, buildMotion(definition, [])),
-          destroyMotion: (motionId) => {
-            const motion = motions.get(motionId);
-            if (motion) {
-              releaseMotion(motionId);
-              motion.dispose();
-              motions.delete(motionId);
-            }
-          },
-          onClockTick: (event) => {
-            const failures: unknown[] = [];
-            for (const consumer of consumers.values()) {
-              try {
-                consumer.onTick(event);
-              } catch (error) {
-                failures.push(error);
-              }
-            }
-            if (failures.length > 0)
-              throw failures.length === 1
-                ? failures[0]
-                : new AggregateError(failures, "Clock consumer fanout failed.");
-          },
-          disposeComposition: () => {
-            for (const motionId of [...motions.keys()]) releaseMotion(motionId);
-            for (const motion of motions.values()) motion.dispose();
-            motions.clear();
-            for (const trigger of createdTriggers.values()) trigger.dispose();
-            createdTriggers.clear();
-            consumers.clear();
-            for (const track of tracks.values()) track.dispose();
-            tracks.clear();
-          },
+      runtime = new ProjectRuntime(acceptedProject, {
+        clock: this.#options.clock,
+        scheduler: this.#options.scheduler,
+        compose,
+        graphBuilder: new IncrementalGraphBuilder(),
+        setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
+        compileTrack: compileTrackDefinition,
+        disposeTrack,
+        addMotionTrack: (motionId, trackId, duration) => {
+          const motion = motions.get(motionId);
+          if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
+          const track = tracks.get(trackId);
+          if (!track) throw new TypeError(`Unknown graph node "${trackId}".`);
+          motion.addTrack({ id: trackId, track, duration });
         },
-      );
+        replaceMotionTrack: (motionId, trackId, duration) => {
+          const motion = motions.get(motionId);
+          if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
+          const track = tracks.get(trackId);
+          if (!track) throw new TypeError(`Unknown graph node "${trackId}".`);
+          motion.replaceTrack({ id: trackId, track, duration });
+        },
+        removeMotionTrack: (motionId, trackId) => motions.get(motionId)?.removeTrack(trackId),
+        createMotion: (definition) => motions.set(definition.id, buildMotion(definition, [])),
+        destroyMotion: (motionId) => {
+          const motion = motions.get(motionId);
+          if (motion) {
+            releaseMotion(motionId);
+            motion.dispose();
+            motions.delete(motionId);
+          }
+        },
+        onClockTick: (event) => {
+          const failures: unknown[] = [];
+          for (const consumer of consumers.values()) {
+            try {
+              consumer.onTick(event);
+            } catch (error) {
+              failures.push(error);
+            }
+          }
+          if (failures.length > 0)
+            throw failures.length === 1
+              ? failures[0]
+              : new AggregateError(failures, "Clock consumer fanout failed.");
+        },
+        disposeComposition: () => {
+          for (const motionId of [...motions.keys()]) releaseMotion(motionId);
+          for (const motion of motions.values()) motion.dispose();
+          motions.clear();
+          for (const trigger of createdTriggers.values()) trigger.dispose();
+          createdTriggers.clear();
+          consumers.clear();
+          for (const track of tracks.values()) track.dispose();
+          tracks.clear();
+        },
+      });
       for (const motionDefinition of acceptedProject.motions) {
         const ids = motionTrackIds.get(motionDefinition.id) ?? [];
         const entries = ids.map((id) => {
