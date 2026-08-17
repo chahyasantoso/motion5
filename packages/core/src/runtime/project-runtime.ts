@@ -83,6 +83,5 @@ export class ProjectRuntime {
   seek(nodeId: string, progress: number) { this.#assertLive(); this.#setProgress(nodeId, progress); const batch = this.#graph.invalidate([nodeId]); this.#diagnostics.recordAll(batch.diagnostics); return batch; }
   invalidate(nodeIds: readonly string[]) { this.#assertLive(); const batch = this.#graph.invalidate(nodeIds); this.#diagnostics.recordAll(batch.diagnostics); return batch; }
   dispose(): void { if (this.#disposed) return; this.#disposed = true; for (const nodeId of this.#instances.keys()) this.#graph.detach(nodeId); this.#instances.clear(); this.#tracks.clear(); this.#motions.clear(); this.#graph.dispose(); this.#disposeComposition(); }
-  #setProgress = (_nodeId: string, _progress: number) => undefined;
   #assertLive(): void { if (this.#disposed) throw new Error("ProjectRuntime is disposed."); }
 }
