@@ -21,6 +21,7 @@ export interface MotionOptions {
   readonly trigger?: TriggerPort;
   readonly invalidate?: (progress: number) => void;
   readonly stagger?: number;
+  /** Set true only when the resolver's caller delegates Track lifetime to this Motion. */
   readonly disposeTracks?: boolean;
   readonly listenToClock?: boolean;
   readonly acceptsExternalSignal?: boolean;
@@ -63,7 +64,7 @@ export class Motion {
     this.#trigger = options.trigger;
     this.#invalidate = options.invalidate ?? (() => undefined);
     this.#stagger = options.stagger ?? 0;
-    this.#disposeTracks = options.disposeTracks ?? true;
+    this.#disposeTracks = options.disposeTracks ?? false;
     this.#listenToClock = options.listenToClock ?? true;
     this.#acceptsExternalSignal = options.acceptsExternalSignal ?? true;
     this.#lifecycle = new Lifecycle({
