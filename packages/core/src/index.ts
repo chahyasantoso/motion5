@@ -44,7 +44,12 @@ export { assertClock, createManualClock } from "./ports/clock";
 export { assertTriggerPort, createManualTriggerPort } from "./ports/trigger";
 export type { TriggerPort } from "./ports/trigger";
 export { assertTriggerFactory } from "./ports/trigger-factory";
-export type { ClockConsumer, CreatedTrigger, TriggerFactory, TriggerFactoryContext } from "./ports/trigger-factory";
+export type {
+  ClockConsumer,
+  CreatedTrigger,
+  TriggerFactory,
+  TriggerFactoryContext,
+} from "./ports/trigger-factory";
 export { assertInterpolator } from "./ports/interpolator";
 export type { InterpolationTimeline, Interpolator } from "./ports/interpolator";
 export { assertScheduler } from "./ports/scheduler";

@@ -17,7 +17,10 @@ export interface ScrollTriggerDefinition {
   readonly type: "scroll";
   readonly source?: string;
 }
-export type TriggerDefinition = ManualTriggerDefinition | ScrollTriggerDefinition | TimeTriggerDefinition;
+export type TriggerDefinition =
+  | ManualTriggerDefinition
+  | ScrollTriggerDefinition
+  | TimeTriggerDefinition;
 
 export interface TriggerSignal {
   readonly type: TriggerType;
@@ -86,7 +89,9 @@ export interface ObservationDefinition {
 }
 export interface MotionDefinition {
   readonly id: string;
-  readonly trigger: TriggerDefinition | { readonly type: TriggerType; readonly [key: string]: unknown };
+  readonly trigger:
+    | TriggerDefinition
+    | { readonly type: TriggerType; readonly [key: string]: unknown };
   readonly tracks: readonly TrackDefinition[];
   readonly stagger?: number;
 }
