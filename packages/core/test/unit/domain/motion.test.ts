@@ -9,7 +9,7 @@ import { createManualClock } from "../../../src/ports/clock";
 import { Motion } from "../../../src/domain/motion";
 import { Track } from "../../../src/domain/track";
 
-function createMotion(stagger = 0, duration?: number) {
+function createMotion(stagger = 0, duration?: number, disposeTracks = false) {
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
   const interpolator = createFakeInterpolator();
@@ -26,6 +26,7 @@ function createMotion(stagger = 0, duration?: number) {
     tracks: ids.map((id) => ({ id, ...(duration === undefined ? {} : { duration }) })),
     resolveTrack: registry.resolveTrack,
     stagger,
+    disposeTracks,
   });
   return { clock, scheduler, interpolator, registry, motion, tracks };
 }
@@ -91,7 +92,7 @@ describe("Motion composite", () => {
     expect(() => motion.seek(Number.POSITIVE_INFINITY)).toThrow(/finite/);
   });
   it("pauses and disposes owner-first without leaking clock work", () => {
-    const { clock, motion, tracks } = createMotion();
+    const { clock, motion, tracks } = createMotion(0, undefined, true);
     motion.play();
     motion.pause();
     clock.tick(0.5);
