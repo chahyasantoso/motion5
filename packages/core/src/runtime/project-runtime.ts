@@ -1,11 +1,11 @@
 import type {
   Diagnostic,
-  MotionDefinition,
   ObservationDefinition,
   ProjectDefinition,
   TrackDefinition,
+  MotionDefinition,
 } from "../contract/v5";
-import { validateTrackDefinition } from "../contract/validate-v5";
+import { validateMotionTrigger, validateTrackDefinition } from "../contract/validate-v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
 import { observationEdgeKey } from "../graph/ir";
@@ -39,6 +39,11 @@ export interface ProjectRuntimeOptions {
   readonly disposeComposition?: () => void;
   readonly diagnosticsCapacity?: number;
   readonly graphBuilder?: GraphBuilder;
+}
+function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
+  return diagnostics
+    .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
+    .join(" ");
 }
 export class ProjectRuntime {
   readonly #project: ProjectDefinition;
@@ -130,6 +135,12 @@ export class ProjectRuntime {
   }
   addMotion(definition: MotionDefinition): { readonly id: string } {
     this.#assertLive();
+    const triggerDiagnostics = validateMotionTrigger(
+      definition.trigger,
+      `addMotion(${definition.id}).trigger`,
+    );
+    if (triggerDiagnostics.some(({ severity }) => severity === "error"))
+      throw new TypeError(describeDiagnostics(triggerDiagnostics));
     if (definition.tracks.length > 0)
       throw new TypeError(`Runtime Motion "${definition.id}" must start with empty tracks.`);
     if (this.#motions.has(definition.id))
@@ -204,11 +215,7 @@ export class ProjectRuntime {
     if (this.#tracks.has(id)) throw new TypeError(`Track "${id}" already exists.`);
     const validation = validateTrackDefinition(track, `addTrack(${track.id})`);
     if (!validation.valid || !validation.value)
-      throw new TypeError(
-        validation.diagnostics
-          .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
-          .join(" "),
-      );
+      throw new TypeError(describeDiagnostics(validation.diagnostics));
     const accepted = validation.value;
     const token = this.#nextToken++;
     const next = new Map(this.#tracks);
@@ -273,11 +280,7 @@ export class ProjectRuntime {
     if (expected !== id) throw new TypeError(`Replacement must preserve node id "${id}".`);
     const validation = validateTrackDefinition(next, `replaceTrack(${id})`);
     if (!validation.valid || !validation.value)
-      throw new TypeError(
-        validation.diagnostics
-          .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
-          .join(" "),
-      );
+      throw new TypeError(describeDiagnostics(validation.diagnostics));
     const accepted = validation.value;
     const replaced = new Map(this.#tracks);
     replaced.set(id, { ...entry, track: accepted });
