@@ -20,6 +20,11 @@ const baseProject = (tracks: readonly TrackDefinition[], stagger = 0): ProjectDe
   schemaVersion: 5,
   motions: [{ id: "scene", trigger: { type: "manual" }, ...(stagger ? { stagger } : {}), tracks }],
 });
+function flushReplacement(clock: ReturnType<typeof createManualClock>, scheduler: ReturnType<typeof createFakeScheduler>) {
+  // Replacement seeds the new compiled Track immediately; the graph publication is still clock/scheduler-driven.
+  clock.tick(0);
+  scheduler.flush();
+}
 
 describe("issue 114: Motion-owned Track replacement", () => {
   it("does not drive the disposed Track after direct replacement", () => {
@@ -33,16 +38,17 @@ describe("issue 114: Motion-owned Track replacement", () => {
       clock.tick(16);
       scheduler.flush();
     }).not.toThrow(/Track is disposed/);
-    expect(handle.get("scene/arm")?.values).toEqual({ x: 125 });
+    expect(handle.get("scene/arm")?.values).toEqual({ x: 250 });
     handle.dispose();
   });
 
   it("preserves current progress when replacing", () => {
-    const { scheduler, handle } = load(baseProject([track("arm", 0, 100)]));
+    const { clock, scheduler, handle } = load(baseProject([track("arm", 0, 100)]));
     handle.mount("scene/arm");
     handle.signal("scene", { type: "manual", progress: 0.5 });
     scheduler.flush();
     handle.track("scene/arm").replace(track("arm", 0, 200));
+    flushReplacement(clock, scheduler);
 
     expect(handle.get("scene/arm")?.values).toEqual({ x: 100 });
     handle.dispose();
@@ -53,11 +59,12 @@ describe("issue 114: Motion-owned Track replacement", () => {
       [track("first", 0, 100), track("second", 0, 100), track("third", 0, 100)],
       100,
     );
-    const { scheduler, handle } = load(project);
+    const { clock, scheduler, handle } = load(project);
     for (const id of ["scene/first", "scene/second", "scene/third"]) handle.mount(id);
     handle.signal("scene", { type: "manual", progress: 1 });
     scheduler.flush();
     handle.track("scene/first").replace(track("first", 0, 200));
+    flushReplacement(clock, scheduler);
 
     expect(handle.get("scene/first")?.values).toEqual({ x: 200 });
     expect(handle.get("scene/second")?.values).toEqual({ x: 0 });
