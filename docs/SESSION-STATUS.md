@@ -2,8 +2,8 @@
 
 **Captured:** 2026-08-17, Asia/Jakarta  
 **Branch:** `feat/adopt-motion-track`  
-**Phase:** runtime mutation model (W1-W5) complete; trigger drivers (T3) complete. Phase 5 and Phase 6 remain as recorded below.  
-**Next action:** continue normal integration work from the updated base; scroll/time trigger availability is now implemented.
+**Phase:** runtime mutation model (W1-W5) complete; trigger drivers (T3) complete; compiled Track ownership (option C) in review. Phase 5 and Phase 6 remain as recorded below.  
+**Next action:** land option C, then resume the remaining T4 runtime Motion parity work on top of it.
 
 This document reports current implementation reality. The detailed contract remains in `docs/PHASE5-DETAILED-PLAN.md`.
 
@@ -33,9 +33,21 @@ This document reports current implementation reality. The detailed contract rema
 
 **T3 CI status:** 7/7 green on run [32026250864](https://github.com/chahyasantoso/motion5/actions/runs/32026250864). All required jobs pass. Format job added formatting child commit (prettier auto-fixed 3 cosmetic drift items). PR ready for review.
 
+## Compiled Track ownership (option C)
+
+| Slice    | Scope                                                              | State                                                                 |
+| -------- | ------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| Option C | Motion resolves compiled Tracks by id through an injected resolver | in this PR, [#126](https://github.com/chahyasantoso/motion5/pull/126) |
+
+`MotionTrackEntry` carries `{ id, duration? }`. `MotionOptions` requires `resolveTrack: (id) => Track | undefined`, and `Motion` calls it at every point of use rather than storing a compiled `Track`. `Engine`'s `tracks` map is the single owner, so the `addMotionTrack` and `replaceMotionTrack` hooks no longer resolve Tracks on `Motion`'s behalf.
+
+This is the long-term fix deferred by section 8.1 of `docs/IMPLEMENTATION-PLAN-trigger-drivers.md` and by ADR-029. The near-term option A fix stays in place with a narrowed job: `Motion.replaceTrack` still preserves the array index, stagger timing, and current progress, so ADR-029's guarantee is unchanged and separately evidenced.
+
+The executable contract is `docs/IMPLEMENTATION-PLAN-motion-track-resolution.md`, amended by `docs/IMPLEMENTATION-PLAN-motion-track-resolution-corrections.md`. The decision record is ADR-031.
+
 ## Current architecture
 
-The runtime has one graph, one live observation state, one topology coordinator, one publisher, one patch registry, and one project-wide clock subscription. Authored and runtime Tracks share one removable store. Track mutation uses frozen definitions and capability handles with monotonic ABA protection; replacement preserves node identity and does not emit terminal destruction patches.
+The runtime has one graph, one live observation state, one topology coordinator, one publisher, one patch registry, one project-wide clock subscription, and one owner of compiled Tracks. Authored and runtime Tracks share one removable store. Track mutation uses frozen definitions and capability handles with monotonic ABA protection; replacement preserves node identity and does not emit terminal destruction patches. No object outside `Engine` holds a compiled `Track` reference, so a recompiled node cannot leave a consumer driving a disposed instance.
 
 Trigger definitions are resolved through a seam layer that unifies scroll and time triggers with the manual trigger path. Drivers are injected at Composition time and cached per host, allowing clock-advanced and scroll-position-based motion pipelines to coexist.
 
@@ -51,11 +63,13 @@ The migration landed on this branch in commit [`01cd580`](https://github.com/cha
 - React consumer migration: [`01cd580`](https://github.com/chahyasantoso/motion5/commit/01cd58078f594c11c0cc0bf741e), on this branch.
 - W5 PR: [#113](https://github.com/chahyasantoso/motion5/pull/113).
 - T3 trigger drivers: PR [#124](https://github.com/chahyasantoso/motion5/pull/124), CI run [32026250864](https://github.com/chahyasantoso/motion5/actions/runs/32026250864).
+- Option C: PR [#126](https://github.com/chahyasantoso/motion5/pull/126). Unit evidence is `packages/core/test/unit/domain/motion-track-resolution.test.ts` cases C-5 and C-6; integration evidence is `packages/core/test/integration/option-c-track-resolution.test.ts`.
 
 ## Known remaining scope
 
 - Scroll/time trigger drivers are now implemented; Compositions with `trigger.type` of `scroll` or `time` will use the injected drivers.
 - The deprecated owner-based adoption wrappers remain available for compatibility, but the current consumer no longer uses them.
+- Still open from section 8 of the trigger-driver plan: the `edgeKey` separator collision (8.2), `seek` bypassing the Motion (8.3), and the `signal()` versus manual-port range disagreement (8.4). None are touched by option C.
 
 ## Guardrails
 
