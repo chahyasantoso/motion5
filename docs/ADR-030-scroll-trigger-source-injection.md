@@ -27,7 +27,7 @@ The resolver takes no second `sourceKey` argument, because `sourceKey === contex
 
 A scroll Motion registers no clock consumer. That is expressed as `CreatedTrigger.clockBinding`, a tagged union over the three states that exist: `driver` (time), `motion` (manual, which is an implicit time trigger today), and `none` (scroll).
 
-An optional `onTick` plus a `pushDriven` flag was rejected. Two fields encoding one decision can express `{ pushDriven: true, onTick: fn }`, so it needs a runtime invariant to police a state the type system should have forbidden. With one total field, the Engine's registration site is an exhaustive switch with no fallback, and "never a driver *and* `motion.onTick`" is unrepresentable rather than merely tested.
+An optional `onTick` plus a `pushDriven` flag was rejected. Two fields encoding one decision can express `{ pushDriven: true, onTick: fn }`, so it needs a runtime invariant to police a state the type system should have forbidden. With one total field, the Engine's registration site is an exhaustive switch with no fallback, and "never a driver _and_ `motion.onTick`" is unrepresentable rather than merely tested.
 
 This also names manual's implicit-time behavior instead of leaving it emergent, which makes the unification tracked in the implementation plan a later one-line change.
 
