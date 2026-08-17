@@ -1,6 +1,7 @@
 import type {
   Diagnostic,
   MotionDefinition,
+  ObservationDefinition,
   Patch,
   PatchBatch,
   PatchListener,
@@ -28,6 +29,14 @@ export interface EngineOptions {
   readonly scheduler: Scheduler;
   readonly plugins?: PluginRegistry;
 }
+export interface TrackHandle {
+  readonly id: string;
+  readonly track: TrackDefinition;
+  remove(): void;
+  replace(next: TrackDefinition): void;
+  addObserve(observation: ObservationDefinition): void;
+  removeObserve(observation: ObservationDefinition): void;
+}
 export interface ProjectHandle {
   mount(nodeId: string, instance?: object): object;
   unmount(nodeId: string): void;
@@ -35,6 +44,9 @@ export interface ProjectHandle {
   signal(motionId: string, signal: TriggerSignal): void;
   addMotion(definition: MotionDefinition): { readonly id: string };
   destroyMotion(motionId: string): void;
+  addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle;
+  track(nodeId: string): TrackHandle;
+  dependantsOf(nodeId: string): readonly string[];
   subscribe(nodeId: string, listener: PatchListener): () => void;
   get(nodeId: string): Patch | undefined;
   subscribeNode(nodeId: string, listener: PatchListener): () => void;
@@ -58,6 +70,9 @@ function createHandle(
     signal,
     addMotion: (definition) => runtime.addMotion(definition),
     destroyMotion: (motionId) => runtime.destroyMotion(motionId),
+    addTrack: (track, options) => runtime.addTrack(track, options),
+    track: (nodeId) => runtime.track(nodeId),
+    dependantsOf: (nodeId) => runtime.dependantsOf(nodeId),
     subscribe: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
     get: (nodeId) => runtime.graph.registry.get(nodeId),
     subscribeNode: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
@@ -88,7 +103,6 @@ function assertValidProject(project: unknown): ProjectDefinition {
     );
   return result.value;
 }
-
 export class Engine {
   readonly #options: EngineOptions;
   readonly #plugins: PluginRegistry | undefined;
@@ -142,11 +156,7 @@ export class Engine {
       return track;
     };
     const compileTrackDefinition = (
-      trackDef: {
-        id: string;
-        duration?: number;
-        keyframes?: Readonly<Record<string, unknown>>;
-      },
+      trackDef: { id: string; duration?: number; keyframes?: Readonly<Record<string, unknown>> },
       targetNodeId?: string,
     ): void => {
       const nodeId =
@@ -166,12 +176,14 @@ export class Engine {
       const diagnostics = [...(resolved?.diagnostics ?? []), ...keyframeCompilation.diagnostics];
       if (diagnostics.some(({ severity }) => severity === "error"))
         throw new TypeError(describeDiagnostics(diagnostics));
-      const track = new Track({
-        interpolator: this.#options.interpolator,
-        interpolationConfig: trackDef,
-        ...(resolved ? { plugins: resolved } : {}),
-      });
-      tracks.set(nodeId, track);
+      tracks.set(
+        nodeId,
+        new Track({
+          interpolator: this.#options.interpolator,
+          interpolationConfig: trackDef,
+          ...(resolved ? { plugins: resolved } : {}),
+        }),
+      );
     };
     const disposeTrack = (nodeId: string): void => {
       const track = tracks.get(nodeId);
@@ -235,9 +247,7 @@ export class Engine {
           motion.addTrack({ id: trackId, track, duration });
         },
         removeMotionTrack: (motionId, trackId) => motions.get(motionId)?.removeTrack(trackId),
-        createMotion: (definition) => {
-          motions.set(definition.id, buildMotion(definition, []));
-        },
+        createMotion: (definition) => motions.set(definition.id, buildMotion(definition, [])),
         destroyMotion: (motionId) => {
           const motion = motions.get(motionId);
           if (motion) {

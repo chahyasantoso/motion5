@@ -1,21 +1,17 @@
 import type { Diagnostic, ProjectDefinition } from "../contract/v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import { GraphBinding } from "../graph/binding";
-import type { GraphNode } from "../graph/ir";
+import type { GraphNode, GraphIR } from "../graph/ir";
 import { GraphPublisher, type PublisherNode } from "./graph-publisher";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
 import type { Scheduler } from "../ports/scheduler";
-
 export type ComposeNode = PublisherNode["compose"];
 export type ComposeResolver = (node: GraphNode) => ComposeNode;
-
 export const DEFERRED_FLUSH_RULE = "reentrant-flush-deferred";
 export const CLOCK_REGRESSION_RULE = "clock-tick-regression";
 export const FLUSH_FAILURE_RULE = "flush-failure";
 export const SCHEDULER_FAILURE_RULE = "scheduler-failure";
-
 import type { GraphBuilder } from "../ports/graph-builder";
-
 export interface GraphRuntimeOptions {
   readonly scheduler?: Scheduler;
   readonly onFlushError?: (diagnostic: Diagnostic) => void;
@@ -28,8 +24,7 @@ function deferredBatch(sequence: number, seeds: readonly string[]): PatchBatch {
     ruleId: DEFERRED_FLUSH_RULE,
     path: "deferred-flush",
     message:
-      "A flush requested while subscribers were being notified was queued as one follow-up " +
-      "invalidation for the scheduler.",
+      "A flush requested while subscribers were being notified was queued as one follow-up invalidation for the scheduler.",
     severity: "warning",
     ids,
   });
@@ -43,7 +38,6 @@ function deferredBatch(sequence: number, seeds: readonly string[]): PatchBatch {
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
-
 export class GraphRuntime {
   readonly #binding: GraphBinding;
   readonly #registry: PatchRegistry;
@@ -63,7 +57,6 @@ export class GraphRuntime {
   #flushing = false;
   #scheduledDrain = false;
   #disposed = false;
-
   constructor(
     project: ProjectDefinition,
     clock: Clock,
@@ -83,6 +76,9 @@ export class GraphRuntime {
   get state() {
     return this.#binding.state;
   }
+  get graph(): GraphIR {
+    return this.#binding.graph;
+  }
   get registry(): PatchRegistry {
     return this.#registry;
   }
@@ -101,7 +97,6 @@ export class GraphRuntime {
   get pendingSeeds(): readonly string[] {
     return [...this.#pendingSeeds];
   }
-
   attach(nodeId: string): void {
     this.#assertLive();
     if (!this.#binding.graph.nodeById[nodeId])
@@ -113,38 +108,24 @@ export class GraphRuntime {
     this.#members.delete(nodeId);
     this.#registry.remove(nodeId);
   }
-  /** Permanently evict an adopted node that will never return. Frees its patch and listeners. */
   evictNode(nodeId: string): void {
     this.#assertLive();
     this.#members.delete(nodeId);
     this.#registry.evict(nodeId);
   }
-  /** Clear the publisher node cache after a successful graph replacement. */
   clearPublisherCache(): void {
     this.#publisherNodes.clear();
   }
-
-  /**
-   * Replace the graph and reconcile membership + publisher cache.
-   *
-   * All callers that mutate the graph MUST go through this method instead of
-   * calling `this.#binding.replace(...)` directly. This ensures:
-   * 1. Stale member IDs that no longer exist in the new graph are pruned.
-   * 2. The publisher node cache is cleared so compose closures are re-resolved.
-   */
   replaceGraph(project: ProjectDefinition): void {
     this.#assertLive();
     this.#binding.replace(project);
-    // Prune members that no longer exist in the new graph.
-    for (const id of this.#members) {
+    for (const id of this.#members)
       if (!this.#binding.graph.nodeById[id]) {
         this.#members.delete(id);
         this.#registry.evict(id);
       }
-    }
     this.#publisherNodes.clear();
   }
-
   flush(seeds: readonly string[] = [...this.#members], tick?: number): PatchBatch {
     this.#assertLive();
     if (this.#flushing) {
