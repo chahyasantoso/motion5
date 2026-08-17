@@ -1,6 +1,7 @@
 import type {
   Diagnostic,
   InputProjection,
+  ObservationDefinition,
   ProjectDefinition,
   TrackDefinition,
 } from "../contract/v5";
@@ -37,8 +38,17 @@ export interface GraphBuildResult {
   readonly graph?: GraphIR;
   readonly diagnostics: readonly Diagnostic[];
 }
+export function canonicalizeProjection(projection: InputProjection): string {
+  if (projection.pick !== undefined)
+    return `pick:${[...projection.pick].sort(compareCodeUnits).join(",")}`;
+  const map = projection.map ?? {};
+  return `map:${Object.keys(map)
+    .sort(compareCodeUnits)
+    .map((key) => `${key}=${map[key]}`)
+    .join(",")}`;
+}
 export function edgeKey(edge: GraphEdge): string {
-  const proj = edge.projection ? JSON.stringify(edge.projection) : "";
+  const proj = edge.projection ? canonicalizeProjection(edge.projection) : "";
   return `${edge.observerId}|${edge.sourceId}|${edge.role}|${edge.target ?? ""}|${proj}`;
 }
 function freeze<T>(value: T): T {
@@ -55,7 +65,7 @@ export function diag(
 export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
   return compareCodeUnits(a.ruleId, b.ruleId) || compareCodeUnits(a.path, b.path);
 }
-function qualifySource(source: string, motionId: string): string {
+export function qualifySource(source: string, motionId: string): string {
   if (source.startsWith("~/")) return qualifyFreeTrack(source.slice(2)).value;
   if (source.includes("/"))
     return qualifyMotionTrack(
@@ -63,6 +73,30 @@ function qualifySource(source: string, motionId: string): string {
       source.slice(source.indexOf("/") + 1),
     ).value;
   return qualifyMotionTrack(motionId, source).value;
+}
+export function observationEdgeKey(
+  observation: ObservationDefinition,
+  observerId: string,
+  ownerId: string,
+): string {
+  const role = observation.role ?? "output";
+  if (role !== "input" && role !== "output")
+    throw new TypeError("observation-role: Observation role must be input or output.");
+  if (typeof observation.source !== "string" || observation.source.length === 0)
+    throw new TypeError("observation-source: Observation source must be non-empty.");
+  if (role === "output" && observation.target !== undefined)
+    throw new TypeError("observation-output-target: Output observations cannot define a target.");
+  return edgeKey({
+    observerId,
+    sourceId: qualifySource(observation.source, ownerId),
+    role,
+    ...(observation.target === undefined ? {} : { target: observation.target }),
+    ...(role === "input" && observation.projection === undefined
+      ? {}
+      : role === "input"
+        ? { projection: observation.projection }
+        : {}),
+  });
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
