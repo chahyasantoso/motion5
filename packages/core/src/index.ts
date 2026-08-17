@@ -28,12 +28,13 @@ export type {
 } from "./contract/v5";
 export { migrateV4ToV5 } from "./contract/migrate-v4-to-v5";
 export type { MigrationResult } from "./contract/migrate-v4-to-v5";
-export { validateV5 } from "./contract/validate-v5";
-export type { ValidationResult } from "./contract/validate-v5";
+export { validateV5, validateTrackDefinition } from "./contract/validate-v5";
+export type { ValidationResult, TrackValidationResult } from "./contract/validate-v5";
 export { parseGolden, serializeGolden } from "./contract/golden";
 export type { GoldenFixture, GoldenValidationFixture } from "./contract/golden";
 export { Engine } from "./engine";
 export type { ProjectHandle } from "./engine";
+export type { TrackHandle } from "./runtime/project-runtime";
 export { PluginRegistry } from "./domain/plugins";
 export type { PluginDefinition, ResolvedPlugins } from "./domain/plugins";
 export { assertClock, createManualClock } from "./ports/clock";

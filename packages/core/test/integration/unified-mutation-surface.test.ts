@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
-import type { MotionDefinition, TrackDefinition } from "../../src/contract/v5";
+import type { MotionDefinition, ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
 
 function ramp(from: number, to: number) {
   return { stops: [{ p: 0, v: from }, { p: 1, v: to }] };
@@ -10,7 +10,7 @@ function ramp(from: number, to: number) {
 function track(id: string, from: number, to: number, observes?: TrackDefinition["observes"]): TrackDefinition {
   return { id, keyframes: { x: ramp(from, to) }, ...(observes ? { observes } : {}) };
 }
-function makeHandle(project = { schemaVersion: 5 as const, motions: [] as MotionDefinition[] }) {
+function makeHandle(project: ProjectDefinition = { schemaVersion: 5, motions: [] }) {
   return new Engine({
     clock: createManualClock(),
     interpolator: createFakeInterpolator(),
@@ -22,20 +22,13 @@ describe("unified runtime mutation surface (W5)", () => {
   it("ingests authored tracks into the removable store without auto-mounting", () => {
     const handle = makeHandle({
       schemaVersion: 5,
-      motions: [
-        {
-          id: "scene",
-          trigger: { type: "manual" },
-          tracks: [track("arm", 0, 100)],
-        },
-      ],
+      motions: [{ id: "scene", trigger: { type: "manual" }, tracks: [track("arm", 0, 100)] }],
       freeTracks: [track("free", 0, 50)],
     });
 
-    expect(handle.instanceCount).toBeUndefined();
+    expect(handle.get("scene/arm")).toBeUndefined();
     expect(() => handle.destroyMotion("scene")).toThrow(/still has/);
 
-    // W5's unified store exposes authored tracks through the same track capability lookup.
     const authored = handle.track("scene/arm");
     const free = handle.track("~/free");
     expect(authored.track.id).toBe("arm");
@@ -55,7 +48,6 @@ describe("unified runtime mutation surface (W5)", () => {
     first.remove();
     const second = handle.addTrack(track("arm", 0, 200));
 
-    // The old capability must not be able to destroy the new node with the reused id.
     first.remove();
     handle.seek(second.id, 1);
     expect(handle.get(second.id)?.values).toEqual({ x: 200 });
@@ -85,17 +77,8 @@ describe("unified runtime mutation surface (W5)", () => {
 
   it("reads dependants from the committed graph and rejects source removal", () => {
     const handle = makeHandle();
-    const owner = {};
     const root = handle.addTrack(track("root", 0, 100));
-    const child = handle.addTrack(
-      track("child", 0, 50, [
-        {
-          source: "~/root",
-          role: "input",
-          projection: { map: { x: "parentX" } },
-        },
-      ]),
-    );
+    const child = handle.addTrack(track("child", 0, 50, [{ source: "~/root", role: "input", projection: { map: { x: "parentX" } } }]));
 
     expect(handle.dependantsOf(root.id)).toEqual([child.id]);
     expect(() => root.remove()).toThrow(/depend|unknown-source/);
@@ -110,15 +93,11 @@ describe("unified runtime mutation surface (W5)", () => {
     const handle = makeHandle();
     const root = handle.addTrack(track("root", 0, 100));
     const child = handle.addTrack(track("child", 0, 50));
+    const observation = { source: root.id, role: "input" as const, projection: { map: { x: "parentX" } } };
 
-    child.addObserve({
-      source: root.id,
-      role: "input",
-      projection: { map: { x: "parentX" } },
-    });
+    child.addObserve(observation);
     expect(handle.dependantsOf(root.id)).toEqual([child.id]);
-
-    child.removeObserve({ source: root.id, role: "input", projection: { map: { x: "parentX" } } });
+    child.removeObserve(observation);
     expect(handle.dependantsOf(root.id)).toEqual([]);
 
     child.remove();
