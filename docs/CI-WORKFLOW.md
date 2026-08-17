@@ -31,7 +31,11 @@ CI is an executable version of the project's evidence model. It checks pull requ
 
 ## CI log archive
 
-`.github/workflows/archive-ci-logs.yml` archives failed `CI` and `Recovery audit` runs on the separate `ci-logs` branch under `logs/<run-id>/`. Each run has `README.md`, `run.json`, `run.log`, and `jobs.json`. Use the original Actions URL as the primary citation and the archive as durable failure evidence.
+`.github/workflows/archive-ci-logs.yml` archives failed `CI` and `Recovery audit` runs on the separate `ci-logs` branch under `logs/<run-id>/`. Each run has `README.md`, `run.json`, and `failed-jobs.log`. Those three are the only files the workflow writes; earlier revisions of this document named `run.log` and `jobs.json`, which never existed.
+
+The `workflow_run` trigger filters on the **head** branch, so every branch prefix that can open a pull request has to be listed there or its failures are silently never archived. A `workflow_dispatch` with a run id is the manual escape hatch. Because `workflow_run` workflows are read from the default branch, changes to that filter only take effect once they land on `main`.
+
+Use the original Actions URL as the primary citation and the archive as durable failure evidence.
 
 The archiver filters by result (only failed runs), respects repository branch rules, and handles race conditions where the ci-logs branch receives concurrent pushes. If archiving fails, the error is captured in the run log for manual investigation.
 

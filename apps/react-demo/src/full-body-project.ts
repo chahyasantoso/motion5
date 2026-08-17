@@ -1,5 +1,11 @@
 import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
 
+/**
+ * Serializable scroll source key. Core never resolves it; the host maps it to a real ScrollSource
+ * at the composition root. See ADR-030.
+ */
+export const WALK_SCROLL_SOURCE = "walk";
+
 export const armTracks: readonly TrackDefinition[] = [
   // 10. Left Arm Upper (Foreground - Observes Chest which is -90deg UP, so 180deg hangs DOWN)
   {
@@ -506,7 +512,7 @@ export const initialWalkerProject: ProjectDefinition = {
   motions: [
     {
       id: "walk",
-      trigger: { type: "scroll" },
+      trigger: { type: "scroll", source: WALK_SCROLL_SOURCE },
       tracks: coreWalkerTracks,
     },
   ],
@@ -518,7 +524,7 @@ export const fullBodyWalkerProject: ProjectDefinition = {
   motions: [
     {
       id: "walk",
-      trigger: { type: "scroll" },
+      trigger: { type: "scroll", source: WALK_SCROLL_SOURCE },
       tracks: [...coreWalkerTracks, ...armTracks],
     },
   ],

@@ -1,14 +1,23 @@
 import { describe, expect, it } from "vitest";
+import type { TriggerDefinition } from "../../src/contract/v5";
+import { resolveTriggerDefinition, validateMotionTrigger } from "../../src/contract/validate-v5";
 import { Engine } from "../../src/engine";
-import { validateMotionTrigger } from "../../src/contract/validate-v5";
-import { createDefaultTriggerFactory } from "../../src/adapters/trigger-factory/default";
+import type { ScrollSource } from "../../src/adapters/scroll-trigger";
+import {
+  createDefaultTriggerFactory,
+  createTriggerFactory,
+} from "../../src/adapters/trigger-factory/default";
 import { createManualClock } from "../../src/ports/clock";
 import {
   createFakeInterpolator,
   createFakeScheduler,
   createFakeTriggerPort,
 } from "../../src/ports/fakes";
-import { assertTriggerFactory, type TriggerFactory } from "../../src/ports/trigger-factory";
+import {
+  assertTriggerFactory,
+  type TriggerFactory,
+  type TriggerFactoryContext,
+} from "../../src/ports/trigger-factory";
 
 function engine(options: { triggerFactory?: TriggerFactory } = {}) {
   return new Engine({
@@ -19,7 +28,21 @@ function engine(options: { triggerFactory?: TriggerFactory } = {}) {
   });
 }
 
-describe("trigger contract T1/T2", () => {
+function context(trigger: TriggerDefinition, motionId = "scene"): TriggerFactoryContext {
+  return {
+    motionId,
+    definition: { id: motionId, trigger, tracks: [] },
+    trigger,
+    clock: createManualClock(),
+    scheduler: createFakeScheduler(),
+  };
+}
+
+function ruleIds(trigger: unknown) {
+  return validateMotionTrigger(trigger, "trigger").map(({ ruleId }) => ruleId);
+}
+
+describe("trigger contract T1/T2/T3", () => {
   it("rejects a time trigger without a positive duration", () => {
     expect(() =>
       engine().load({
@@ -29,42 +52,44 @@ describe("trigger contract T1/T2", () => {
     ).toThrow(/trigger-time-duration/);
   });
 
-  it("rejects each unsupported time playback field with its exact rule", () => {
-    expect(
-      validateMotionTrigger({ type: "time", duration: 1000, autoplay: false }, "trigger").map(
-        (d) => d.ruleId,
-      ),
-    ).toEqual(["trigger-time-autoplay-unsupported"]);
-    expect(
-      validateMotionTrigger({ type: "time", duration: 1000, repeat: 0 }, "trigger").map(
-        (d) => d.ruleId,
-      ),
-    ).toEqual(["trigger-time-repeat-unsupported"]);
-    expect(
-      validateMotionTrigger({ type: "time", duration: 1000, yoyo: true }, "trigger").map(
-        (d) => d.ruleId,
-      ),
-    ).toEqual(["trigger-time-repeat-unsupported"]);
+  it("rejects unsupported time playback fields", () => {
+    expect(ruleIds({ type: "time", duration: 1000, autoplay: false })).toEqual([
+      "trigger-time-autoplay-unsupported",
+    ]);
+    expect(ruleIds({ type: "time", duration: 1000, repeat: 0 })).toEqual([
+      "trigger-time-repeat-unsupported",
+    ]);
+    expect(ruleIds({ type: "time", duration: 1000, yoyo: true })).toEqual([
+      "trigger-time-repeat-unsupported",
+    ]);
   });
 
-  it("validates every trigger row from the contract", () => {
-    const invalid = [
+  it("validates trigger rows", () => {
+    const rejected = [
       [{}, "trigger-shape"],
       [{ type: "unknown" }, "trigger-shape"],
       [{ type: "time", duration: 0 }, "trigger-time-duration"],
       [{ type: "scroll", source: "" }, "trigger-scroll-source"],
       [{ type: "scroll", source: 42 }, "trigger-scroll-source"],
     ] as const;
-    for (const [trigger, ruleId] of invalid)
-      expect(validateMotionTrigger(trigger, "trigger").map((d) => d.ruleId)).toContain(ruleId);
-    for (const trigger of [
+    for (const [trigger, ruleId] of rejected) expect(ruleIds(trigger)).toContain(ruleId);
+    const accepted = [
       { type: "time", duration: 1000 },
       { type: "time", duration: 1000, autoplay: true },
       { type: "manual" },
       { type: "scroll" },
       { type: "scroll", source: "hero" },
-    ])
-      expect(validateMotionTrigger(trigger, "trigger")).toEqual([]);
+    ];
+    for (const trigger of accepted) expect(validateMotionTrigger(trigger, "trigger")).toEqual([]);
+  });
+
+  it("narrows an authored trigger exactly once, immediately behind validation", () => {
+    expect(
+      resolveTriggerDefinition({ type: "time", duration: 1000 }, "motions.scene.trigger"),
+    ).toEqual({ type: "time", duration: 1000 });
+    expect(() => resolveTriggerDefinition({ type: "time" }, "motions.scene.trigger")).toThrow(
+      "trigger-time-duration at motions.scene.trigger.duration:",
+    );
   });
 
   it("rejects malformed TriggerFactory values", () => {
@@ -73,29 +98,40 @@ describe("trigger contract T1/T2", () => {
     expect(() => assertTriggerFactory({ create: 1 })).toThrow(/TriggerFactory/);
   });
 
-  it("selects the intended T2 driver for each trigger type", () => {
-    const factory = createDefaultTriggerFactory();
-    const expected = {
-      manual: { acceptsExternalSignal: true, fed: false },
-      time: { acceptsExternalSignal: false, fed: true },
-      scroll: { acceptsExternalSignal: true, fed: false },
-    } as const;
-    for (const type of ["manual", "time", "scroll"] as const) {
-      const want = expected[type];
-      const created = factory.create({
-        motionId: "scene",
-        definition: {
-          id: "scene",
-          trigger: type === "time" ? { type, duration: 1000 } : { type },
-          tracks: [],
-        },
-        clock: createManualClock(),
-        scheduler: createFakeScheduler(),
-      });
-      expect(created.acceptsExternalSignal).toBe(want.acceptsExternalSignal);
-      expect(created.onTick !== undefined).toBe(want.fed);
+  it("selects manual, time, and injected scroll drivers", () => {
+    const scroll: ScrollSource = { subscribe: () => () => undefined };
+    const factory = createTriggerFactory({ scroll: () => scroll });
+    const cases = [
+      [{ type: "manual" }, true, "motion"],
+      [{ type: "time", duration: 1000 }, false, "driver"],
+      [{ type: "scroll", source: "hero" }, false, "none"],
+    ] as const;
+    for (const [trigger, acceptsExternalSignal, kind] of cases) {
+      const created = factory.create(context(trigger));
+      expect(created.acceptsExternalSignal).toBe(acceptsExternalSignal);
+      // One total field. "A driver *and* motion.onTick" is unrepresentable, not merely untested.
+      expect(created.clockBinding.kind).toBe(kind);
       created.dispose();
     }
+  });
+
+  it("fails loudly when a declared scroll trigger has no registered source", () => {
+    expect(() =>
+      createDefaultTriggerFactory().create(context({ type: "scroll", source: "hero" })),
+    ).toThrow(/trigger-driver-unavailable/);
+  });
+
+  it("hands the scroll resolver the narrowed trigger and nothing else", () => {
+    const seen: string[] = [];
+    const factory = createTriggerFactory({
+      scroll: ({ motionId, trigger }) => {
+        seen.push(`${motionId}:${trigger.source ?? ""}`);
+        return { subscribe: () => () => undefined };
+      },
+    });
+    factory.create(context({ type: "scroll", source: "hero" })).dispose();
+    factory.create(context({ type: "scroll" }, "bare")).dispose();
+    expect(seen).toEqual(["scene:hero", "bare:"]);
   });
 });
 
@@ -103,10 +139,15 @@ describe("injected trigger factory", () => {
   it("is called for manual, time, and scroll Motions", () => {
     const calls: string[] = [];
     const factory: TriggerFactory = {
-      create({ motionId, definition }) {
-        calls.push(`${motionId}:${definition.trigger.type}`);
+      create({ motionId, trigger }) {
+        calls.push(`${motionId}:${trigger.type}`);
         const port = createFakeTriggerPort();
-        return { port, acceptsExternalSignal: true, dispose: port.dispose };
+        return {
+          port,
+          acceptsExternalSignal: true,
+          clockBinding: { kind: "motion" },
+          dispose: () => port.dispose(),
+        };
       },
     };
     const handle = engine({ triggerFactory: factory }).load({

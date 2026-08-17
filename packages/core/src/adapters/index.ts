@@ -10,6 +10,16 @@ export type {
   StageLike,
 } from "./dom";
 
+export { createScrollTriggerPort } from "./scroll-trigger";
+export type { ScrollSource } from "./scroll-trigger";
+
+export { createDefaultTriggerFactory, createTriggerFactory } from "./trigger-factory/default";
+export type {
+  ScrollSourceResolver,
+  ScrollSourceResolverContext,
+  TriggerFactoryOptions,
+} from "./trigger-factory/default";
+
 export { createGsapInterpolator, createGsapOneTweenInterpolator } from "./interpolator/gsap";
 export * from "./graph-builder/default";
 export type { GsapLike, GsapTimelineLike, GsapTweenLike } from "./interpolator/gsap";

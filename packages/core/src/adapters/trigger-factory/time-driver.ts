@@ -12,12 +12,15 @@ export function createTimeDriver(duration: number): CreatedTrigger {
   return {
     port,
     acceptsExternalSignal: false,
-    onTick(event: ClockTick) {
-      if (disposed || completed) return;
-      elapsed += event.delta;
-      const progress = Math.min(1, elapsed / duration);
-      port.emit(progress);
-      if (progress >= 1) completed = true;
+    clockBinding: {
+      kind: "driver",
+      onTick(event: ClockTick) {
+        if (disposed || completed) return;
+        elapsed += event.delta;
+        const progress = Math.min(1, elapsed / duration);
+        port.emit(progress);
+        if (progress >= 1) completed = true;
+      },
     },
     dispose() {
       if (disposed) return;
