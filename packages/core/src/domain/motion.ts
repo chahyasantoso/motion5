@@ -93,10 +93,11 @@ export class Motion {
       throw new Error(`Duplicate Motion track id: ${entry.id}.`);
     if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
       throw new TypeError(`Motion track duration must be a finite positive number: ${entry.id}.`);
+    const track = this.#track(entry.id);
     this.#tracks.push(entry);
     this.#trackMap.set(entry.id, entry);
     const index = this.#tracks.length - 1;
-    this.#track(entry.id).setProgress(this.#effectiveProgress(index, entry));
+    track.setProgress(this.#effectiveProgress(index, entry));
   }
   replaceTrack(entry: MotionTrackEntry): void {
     this.assertActive();
@@ -104,9 +105,10 @@ export class Motion {
     if (index === -1) throw new Error(`Unknown Motion track id: ${entry.id}.`);
     if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
       throw new TypeError(`Motion track duration must be a finite positive number: ${entry.id}.`);
+    const track = this.#track(entry.id);
     this.#tracks[index] = entry;
     this.#trackMap.set(entry.id, entry);
-    this.#track(entry.id).setProgress(this.#effectiveProgress(index, entry));
+    track.setProgress(this.#effectiveProgress(index, entry));
   }
   removeTrack(trackId: string): void {
     this.assertActive();
