@@ -1,53 +1,58 @@
 # motion5 documentation
 
-This directory is the project’s working contract. It is intentionally more detailed than a README because it answers questions that should not be rediscovered in every implementation session.
+This directory is the project's canonical working contract. It separates **what the code does now** from plans and historical recovery notes.
+
+## Start here
+
+1. [SESSION-STATUS.md](./SESSION-STATUS.md): the current implementation state and CI evidence.
+2. [PUBLIC-API.md](./PUBLIC-API.md): the simple consumer guide for `@motion5/core`.
+3. [ARCHITECTURE.md](./ARCHITECTURE.md): the current ownership model, graph lifecycle, mutation transactions, and boundaries.
+4. [DECISIONS.md](./DECISIONS.md): accepted tradeoffs and decisions that should not be accidentally reversed.
 
 ## Current reality
 
-Start with [SESSION-STATUS.md](./SESSION-STATUS.md). It is the only document allowed to claim what has landed. Plans, architecture, and ADRs describe intended behavior unless they explicitly say otherwise.
+W1 through W5 of the runtime mutation remediation are implemented. W5 is ready for review in [PR #113](https://github.com/chahyasantoso/motion5/pull/113), with all seven CI checks green in [run 31989827456](https://github.com/chahyasantoso/motion5/actions/runs/31989827456).
 
-The current status is **Phase 4 reopened**. The graph infrastructure is substantially repaired, but the authored animation value/compiler pipeline still needs restoration before P4-05 can be accepted.
+The current runtime supports one unified Track store for authored and runtime content, runtime Motion lifecycle, capability-based Track mutation, non-destructive Track replacement, observation editing, and dependant queries. Scroll/time trigger drivers remain separate work; core currently uses the manual trigger path.
 
-## Recovery references
+## Product and authored contracts
 
-- [PHASE-3-4-CONSOLIDATED-AUDIT.md](./PHASE-3-4-CONSOLIDATED-AUDIT.md): consolidated motionpath v4/v5 lineage, findings, and architecture judgment.
-- [PHASE-3-4-RECOVERY-PLAN.md](./PHASE-3-4-RECOVERY-PLAN.md): actionable restoration sequence and stop conditions.
-- [IMPLEMENTOR-BRIEF-MOTIONPATH-TO-MOTION5.md](./IMPLEMENTOR-BRIEF-MOTIONPATH-TO-MOTION5.md): focused instructions and source references for implementors.
-
-## Lineage
-
-motion5 is a clean-room successor to [motionpath](https://github.com/chahyasantoso/motionpath). The predecessor is a read-only behavioral oracle and a source of fixture intent. It is not an architecture template, and nothing is copied from it. ADR-001 and [ARCHITECTURE.md](./ARCHITECTURE.md) section 15 explain why.
-
-## Product and contracts
-
-- [PRD.md](./PRD.md): problem statement, users, goals, functional requirements, quality attributes, release criteria, and resolved product decisions.
-- [TRD.md](./TRD.md): normative technical requirements, verification methods, and traceability to product requirements and architecture invariants.
-- [ARCHITECTURE.md](./ARCHITECTURE.md): owners, invariants, graph lifecycle, publication semantics, failure handling, boundaries, and deletion list.
-- [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md): schema v5 syntax, field semantics, id qualification, observation edges, diagnostics, and validation.
-- [MIGRATION-V4-TO-V5.md](./MIGRATION-V4-TO-V5.md): explicit migration procedure, pure migration behavior, and compatibility policy.
-- [DECISIONS.md](./DECISIONS.md): accepted decisions, alternatives rejected, consequences, and supersession history.
+- [PRD.md](./PRD.md): why and what motion5 should do.
+- [TRD.md](./TRD.md): normative technical requirements and verification.
+- [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md): schema v5 syntax, field semantics, ids, observations, diagnostics, and validation.
+- [MIGRATION-V4-TO-V5.md](./MIGRATION-V4-TO-V5.md): explicit v4-to-v5 migration.
 
 ## Delivery and evidence
 
-- [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md): phases, slice-level pull requests, dependencies, test obligations, exit gates, risk register, and the v1 checklist. Treat its completed-slice claims as intent until reconciled with SESSION-STATUS and the recovery plan.
-- [TESTING-STRATEGY.md](./TESTING-STRATEGY.md): test tiers, determinism rules, migration evidence, invariant evidence, and prohibited evidence.
-- [CI-WORKFLOW.md](./CI-WORKFLOW.md): workflow rules, job contracts, artifacts, required versus advisory gates, and rollout schedule.
-- [PR-WORKFLOW.md](./PR-WORKFLOW.md): branch naming, commit style, pull request contents, review order, merge policy, and reverts.
-- [FORMATTING.md](./FORMATTING.md): Prettier configuration, local commands, manual workflow, and permission rationale.
+- [IMPLEMENTATION-PLAN-runtime-mutation-model.md](./IMPLEMENTATION-PLAN-runtime-mutation-model.md): executable W1-W5 implementation plan.
+- [TESTING-STRATEGY.md](./TESTING-STRATEGY.md): test tiers and evidence rules.
+- [CI-WORKFLOW.md](./CI-WORKFLOW.md): workflow jobs, artifacts, and gates.
+- [PR-WORKFLOW.md](./PR-WORKFLOW.md): branch, commit, PR, review, and merge rules.
+- [FORMATTING.md](./FORMATTING.md): formatting commands and workflow.
+
+## Historical recovery references
+
+The Phase 3-4 recovery documents explain repository lineage and earlier restoration work. They are historical context, not the current status:
+
+- [PHASE-3-4-CONSOLIDATED-AUDIT.md](./PHASE-3-4-CONSOLIDATED-AUDIT.md)
+- [PHASE-3-4-RECOVERY-PLAN.md](./PHASE-3-4-RECOVERY-PLAN.md)
+- [IMPLEMENTOR-BRIEF-MOTIONPATH-TO-MOTION5.md](./IMPLEMENTOR-BRIEF-MOTIONPATH-TO-MOTION5.md)
 
 ## How the documents fit together
 
-PRD says why and what. TRD says what “correct” means, in testable terms. ARCHITECTURE says who owns what. IMPLEMENTATION-PLAN says in what order, and names the evidence for each slice. SESSION-STATUS says what is actually true today. The recovery plan explains the work required to restore the missing value pipeline. DECISIONS says what not to re-litigate.
-
-## Locked scope decisions
-
-Four scope questions are closed and should not be reopened in review: qualified ids stay internal (ADR-014), GSAP remains the v1 interpolator (ADR-015), runtime diagnostics stay inline (ADR-016), and React ships in v1 (ADR-017). The interpolator state contract and value/compiler restoration are recovery decisions and must be recorded with their implementation slices.
+- **PRD:** why and what.
+- **TRD:** what correct means in testable terms.
+- **ARCHITECTURE:** who owns what and how the system works.
+- **PUBLIC-API:** what consumers may call.
+- **IMPLEMENTATION-PLAN:** the execution sequence.
+- **SESSION-STATUS:** what is true today.
+- **DECISIONS:** what not to re-litigate.
 
 ## Documentation rules
 
-1. Reality belongs in one status file. Do not create parallel handoffs, review logs, or completion matrices.
+1. Reality belongs in `SESSION-STATUS.md`, and canonical current architecture/API docs must agree with it.
 2. Intent documents must label themselves as intent when code does not exist yet.
-3. Every new public behavior needs schema/type/API documentation and a test plan in the same pull request.
-4. A decision reversal updates the original record or clearly supersedes it; contradictory records are not left behind.
+3. Every new public behavior needs schema/type/API documentation and tests in the same change.
+4. A decision reversal updates or supersedes the original record; contradictory active records are not left behind.
 5. Delete documents that describe deleted code in the same change that deletes the code.
-6. Do not copy documentation, tests, fixtures, or examples from the predecessor repository. Recreate the contract from first principles.
+6. Do not copy documentation, tests, fixtures, or examples from the predecessor repository.
