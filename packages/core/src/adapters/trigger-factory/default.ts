@@ -1,13 +1,18 @@
 import type { TriggerFactory } from "../../ports/trigger-factory";
 import { createManualTriggerPort } from "../../ports/trigger";
+import { createTimeDriver } from "./time-driver";
 
 /**
- * T1 compatibility factory. It provides the existing manual port for every trigger kind;
- * real time and scroll driver selection is deliberately deferred to T2/T3.
+ * T2 factory. Manual and scroll remain compatibility ports; time uses the project clock.
+ * Scroll source injection is deliberately deferred to T3.
  */
 export function createDefaultTriggerFactory(): TriggerFactory {
   return {
-    create() {
+    create({ definition }) {
+      if (definition.trigger.type === "time") {
+        const duration = definition.trigger.duration;
+        return createTimeDriver(typeof duration === "number" ? duration : Number.NaN);
+      }
       const port = createManualTriggerPort();
       return {
         port,

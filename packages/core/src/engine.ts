@@ -21,7 +21,7 @@ import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
-import type { CreatedTrigger, TriggerFactory } from "./ports/trigger-factory";
+import type { ClockConsumer, CreatedTrigger, TriggerFactory } from "./ports/trigger-factory";
 import { ProjectRuntime } from "./runtime/project-runtime";
 
 export interface EngineOptions {
@@ -196,8 +196,14 @@ export class Engine {
     };
     const motions = new Map<string, Motion>();
     const createdTriggers = new Map<string, CreatedTrigger>();
+    const consumers = new Map<string, ClockConsumer>();
     const triggerFactory = this.#options.triggerFactory ?? createDefaultTriggerFactory();
     let runtime: ProjectRuntime;
+    const releaseMotion = (motionId: string): void => {
+      consumers.delete(motionId);
+      createdTriggers.get(motionId)?.dispose();
+      createdTriggers.delete(motionId);
+    };
     const buildMotion = (
       definition: MotionDefinition,
       entries: readonly MotionTrackEntry[],
@@ -218,17 +224,24 @@ export class Engine {
           trigger: created.port,
           disposeTracks: false,
           listenToClock: false,
+          acceptsExternalSignal: created.acceptsExternalSignal,
           invalidate: () => {
-            const currentIds = motion.tracks.map((t) => t.id);
-            if (currentIds.length > 0) runtime.invalidate(currentIds);
+            const ids = motion.tracks.map((t) => t.id);
+            if (ids.length > 0) runtime.invalidate(ids);
           },
           stagger: definition.stagger,
         });
         motion.play();
+        if (consumers.has(definition.id))
+          throw new TypeError(`Motion "${definition.id}" already has a clock consumer.`);
+        const consumer: ClockConsumer = {
+          onTick: created.onTick ?? ((event) => motion.onTick(event)),
+          dispose: () => undefined,
+        };
+        consumers.set(definition.id, consumer);
         return motion;
       } catch (error) {
-        createdTriggers.delete(definition.id);
-        created.dispose();
+        releaseMotion(definition.id);
         throw error;
       }
     };
@@ -274,20 +287,32 @@ export class Engine {
         destroyMotion: (motionId) => {
           const motion = motions.get(motionId);
           if (motion) {
+            releaseMotion(motionId);
             motion.dispose();
             motions.delete(motionId);
-            createdTriggers.get(motionId)?.dispose();
-            createdTriggers.delete(motionId);
           }
         },
         onClockTick: (event) => {
-          for (const motion of motions.values()) motion.onTick(event);
+          const failures: unknown[] = [];
+          for (const consumer of consumers.values()) {
+            try {
+              consumer.onTick(event);
+            } catch (error) {
+              failures.push(error);
+            }
+          }
+          if (failures.length > 0)
+            throw failures.length === 1
+              ? failures[0]
+              : new AggregateError(failures, "Clock consumer fanout failed.");
         },
         disposeComposition: () => {
+          for (const motionId of [...motions.keys()]) releaseMotion(motionId);
           for (const motion of motions.values()) motion.dispose();
           motions.clear();
           for (const trigger of createdTriggers.values()) trigger.dispose();
           createdTriggers.clear();
+          consumers.clear();
           for (const track of tracks.values()) track.dispose();
           tracks.clear();
         },
@@ -308,8 +333,11 @@ export class Engine {
         motion.signal(signal);
       });
     } catch (error) {
+      for (const motionId of [...motions.keys()]) releaseMotion(motionId);
       for (const motion of motions.values()) motion.dispose();
+      motions.clear();
       for (const trigger of createdTriggers.values()) trigger.dispose();
+      createdTriggers.clear();
       for (const track of tracks.values()) track.dispose();
       throw error;
     }

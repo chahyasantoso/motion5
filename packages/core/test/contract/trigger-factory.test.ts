@@ -19,7 +19,7 @@ function engine(options: { triggerFactory?: TriggerFactory } = {}) {
   });
 }
 
-describe("trigger contract T1", () => {
+describe("trigger contract T1/T2", () => {
   it("rejects a time trigger without a positive duration", () => {
     expect(() =>
       engine().load({
@@ -73,9 +73,15 @@ describe("trigger contract T1", () => {
     expect(() => assertTriggerFactory({ create: 1 })).toThrow(/TriggerFactory/);
   });
 
-  it("provides the compatibility factory without changing T1 behavior", () => {
+  it("selects the intended T2 driver for each trigger type", () => {
     const factory = createDefaultTriggerFactory();
+    const expected = {
+      manual: { acceptsExternalSignal: true, fed: false },
+      time: { acceptsExternalSignal: false, fed: true },
+      scroll: { acceptsExternalSignal: true, fed: false },
+    } as const;
     for (const type of ["manual", "time", "scroll"] as const) {
+      const want = expected[type];
       const created = factory.create({
         motionId: "scene",
         definition: {
@@ -86,8 +92,8 @@ describe("trigger contract T1", () => {
         clock: createManualClock(),
         scheduler: createFakeScheduler(),
       });
-      expect(created.acceptsExternalSignal).toBe(true);
-      expect(created.onTick).toBeUndefined();
+      expect(created.acceptsExternalSignal).toBe(want.acceptsExternalSignal);
+      expect(created.onTick !== undefined).toBe(want.fed);
       created.dispose();
     }
   });

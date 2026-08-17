@@ -19,8 +19,8 @@ export interface MotionOptions {
   readonly stagger?: number;
   readonly disposeTracks?: boolean;
   readonly listenToClock?: boolean;
+  readonly acceptsExternalSignal?: boolean;
 }
-
 export class Motion {
   readonly #clock: Clock;
   readonly #scheduler: Scheduler;
@@ -31,6 +31,7 @@ export class Motion {
   readonly #stagger: number;
   readonly #disposeTracks: boolean;
   readonly #listenToClock: boolean;
+  readonly #acceptsExternalSignal: boolean;
   readonly #lifecycle: Lifecycle;
   #pendingProgress: number | undefined;
   #progressJob: { cancel(): void } | undefined;
@@ -38,7 +39,6 @@ export class Motion {
   #position = 0;
   #unsubscribe: (() => void) | undefined;
   #triggerUnsubscribe: (() => void) | undefined;
-
   constructor(options: MotionOptions) {
     if (!Number.isFinite(options.stagger ?? 0) || (options.stagger ?? 0) < 0)
       throw new TypeError("Motion stagger must be a finite non-negative number.");
@@ -57,6 +57,7 @@ export class Motion {
     this.#stagger = options.stagger ?? 0;
     this.#disposeTracks = options.disposeTracks ?? true;
     this.#listenToClock = options.listenToClock ?? true;
+    this.#acceptsExternalSignal = options.acceptsExternalSignal ?? true;
     this.#lifecycle = new Lifecycle({
       beforeDispose: () => {
         this.pause();
@@ -142,6 +143,10 @@ export class Motion {
   }
   signal(signal: TriggerSignal): void {
     this.assertActive();
+    if (!this.#acceptsExternalSignal)
+      throw new TypeError(
+        "Motion has a configured trigger driver and does not accept external signals.",
+      );
     if (typeof signal === "object" && signal !== null && typeof signal.progress === "number") {
       if (!Number.isFinite(signal.progress)) throw new TypeError("Motion progress must be finite.");
       if (signal.progress < 0 || signal.progress > 1)
@@ -180,16 +185,14 @@ export class Motion {
   }
   #scheduleProgress(progress: number): void {
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;
-    const validated = Math.max(0, Math.min(1, progress));
-    this.#pendingProgress = validated;
+    this.#pendingProgress = Math.max(0, Math.min(1, progress));
     if (this.#progressJob !== undefined) return;
     this.#progressJob = this.#scheduler.schedule(() => {
       const latest = this.#pendingProgress;
       this.#pendingProgress = undefined;
       this.#progressJob = undefined;
-      if (latest !== undefined && this.#playing && this.#lifecycle.state === "mounted") {
+      if (latest !== undefined && this.#playing && this.#lifecycle.state === "mounted")
         this.#setProgress(latest);
-      }
     });
   }
   #setProgress(progress: number): void {

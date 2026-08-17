@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createFakeInterpolator, createFakeScheduler } from "../../../src/ports/fakes";
+import {
+  createFakeInterpolator,
+  createFakeScheduler,
+  createFakeTriggerPort,
+} from "../../../src/ports/fakes";
 import { createManualClock } from "../../../src/ports/clock";
 import { Motion } from "../../../src/domain/motion";
 import { Track } from "../../../src/domain/track";
@@ -13,7 +17,12 @@ function createMotion(stagger = 0, duration?: number) {
     track: new Track({ interpolator }),
     ...(duration === undefined ? {} : { duration }),
   }));
-  return { clock, scheduler, motion: new Motion({ clock, scheduler, tracks, stagger }), tracks };
+  return {
+    clock,
+    scheduler,
+    motion: new Motion({ clock, scheduler, tracks, stagger }),
+    tracks,
+  };
 }
 
 describe("Motion composite", () => {
@@ -47,6 +56,26 @@ describe("Motion composite", () => {
     expect(scheduler.pending).toHaveLength(1);
     scheduler.flush();
     expect(tracks[0]?.track.progress).toBe(0.25);
+  });
+  it("reattaches one trigger listener after pause and play", () => {
+    const clock = createManualClock();
+    const scheduler = createFakeScheduler();
+    const trigger = createFakeTriggerPort();
+    const motion = new Motion({
+      clock,
+      scheduler,
+      trigger,
+      tracks: [],
+      disposeTracks: false,
+    });
+    motion.play();
+    expect(trigger.subscriberCount).toBe(1);
+    motion.pause();
+    expect(trigger.subscriberCount).toBe(0);
+    motion.play();
+    expect(trigger.subscriberCount).toBe(1);
+    motion.dispose();
+    expect(trigger.subscriberCount).toBe(0);
   });
   it("clamps seek and rejects non-finite values", () => {
     const { motion, tracks } = createMotion();
