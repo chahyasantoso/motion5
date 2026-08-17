@@ -48,7 +48,8 @@ export function validateKeyframes(
     rulePath: string,
     message: string,
     severity: Diagnostic["severity"] = "error",
-  ) => diagnostics.push(issue(`${prefix}${aliases[ruleId] ?? ruleId}`, rulePath, message, severity));
+  ) =>
+    diagnostics.push(issue(`${prefix}${aliases[ruleId] ?? ruleId}`, rulePath, message, severity));
   if (keyframes === undefined) return;
   if (!isObject(keyframes)) {
     add("keyframes-shape", path, "Track keyframes must be an object.");
@@ -113,57 +114,120 @@ function validateId(
 export function validateMotionTrigger(trigger: unknown, path: string): Diagnostic[] {
   if (!isObject(trigger))
     return [
-      issue(
-        "trigger-shape",
-        path,
-        "Trigger must be an object with type scroll, time, or manual.",
-      ),
+      issue("trigger-shape", path, "Trigger must be an object with type scroll, time, or manual."),
     ];
   const type = trigger.type;
   if (!SUPPORTED_TRIGGER_TYPES.includes(type as (typeof SUPPORTED_TRIGGER_TYPES)[number]))
     return [
-      issue(
-        "trigger-shape",
-        path,
-        "Trigger must be an object with type scroll, time, or manual.",
-      ),
+      issue("trigger-shape", path, "Trigger must be an object with type scroll, time, or manual."),
     ];
   const diagnostics: Diagnostic[] = [];
   if (type === "time") {
-    if (typeof trigger.duration !== "number" || !Number.isFinite(trigger.duration) || trigger.duration <= 0)
-      diagnostics.push(issue("trigger-time-duration", `${path}.duration`, "Time trigger duration must be a finite number greater than zero."));
+    if (
+      typeof trigger.duration !== "number" ||
+      !Number.isFinite(trigger.duration) ||
+      trigger.duration <= 0
+    )
+      diagnostics.push(
+        issue(
+          "trigger-time-duration",
+          `${path}.duration`,
+          "Time trigger duration must be a finite number greater than zero.",
+        ),
+      );
     if (trigger.autoplay !== undefined && trigger.autoplay !== true)
-      diagnostics.push(issue("trigger-time-autoplay-unsupported", `${path}.autoplay`, "Time trigger autoplay must be true when present; paused behavior is not supported."));
+      diagnostics.push(
+        issue(
+          "trigger-time-autoplay-unsupported",
+          `${path}.autoplay`,
+          "Time trigger autoplay must be true when present; paused behavior is not supported.",
+        ),
+      );
     if (Object.prototype.hasOwnProperty.call(trigger, "repeat"))
-      diagnostics.push(issue("trigger-time-repeat-unsupported", `${path}.repeat`, "Time trigger repeat is not supported yet."));
+      diagnostics.push(
+        issue(
+          "trigger-time-repeat-unsupported",
+          `${path}.repeat`,
+          "Time trigger repeat is not supported yet.",
+        ),
+      );
     if (Object.prototype.hasOwnProperty.call(trigger, "yoyo"))
-      diagnostics.push(issue("trigger-time-repeat-unsupported", `${path}.yoyo`, "Time trigger yoyo is not supported yet."));
+      diagnostics.push(
+        issue(
+          "trigger-time-repeat-unsupported",
+          `${path}.yoyo`,
+          "Time trigger yoyo is not supported yet.",
+        ),
+      );
   }
-  if (type === "scroll" && trigger.source !== undefined && (typeof trigger.source !== "string" || trigger.source.length === 0))
-    diagnostics.push(issue("trigger-scroll-source", `${path}.source`, "Scroll trigger source must be a non-empty string when present."));
+  if (
+    type === "scroll" &&
+    trigger.source !== undefined &&
+    (typeof trigger.source !== "string" || trigger.source.length === 0)
+  )
+    diagnostics.push(
+      issue(
+        "trigger-scroll-source",
+        `${path}.source`,
+        "Scroll trigger source must be a non-empty string when present.",
+      ),
+    );
   return diagnostics;
 }
 function usesThreeD(track: RawObject): boolean {
   const keyframes = isObject(track.keyframes) ? track.keyframes : null;
   if (!keyframes) return false;
-  if (["z", "rotationX", "rotationY"].some((key) => keyframes[key] !== undefined && keyframes[key] !== null)) return true;
+  if (
+    ["z", "rotationX", "rotationY"].some(
+      (key) => keyframes[key] !== undefined && keyframes[key] !== null,
+    )
+  )
+    return true;
   const path = isObject(keyframes.path) ? keyframes.path : null;
-  return Array.isArray(path?.points) && path.points.some((point) => isObject(point) && typeof point.z === "number" && point.z !== 0);
+  return (
+    Array.isArray(path?.points) &&
+    path.points.some((point) => isObject(point) && typeof point.z === "number" && point.z !== 0)
+  );
 }
-function validateTrackShape(track: unknown, path: string, seenIds: Set<string>, diagnostics: Diagnostic[]): track is TrackDefinition {
+function validateTrackShape(
+  track: unknown,
+  path: string,
+  seenIds: Set<string>,
+  diagnostics: Diagnostic[],
+): track is TrackDefinition {
   if (!isObject(track)) {
     diagnostics.push(issue("track-shape", path, "Track must be an object."));
     return false;
   }
   diagnostics.push(...validateId(track.id, `${path}.id`, "Track"));
   if ("use" in track)
-    diagnostics.push(issue("plugin-contribution-unsupported-entry", `${path}.use`, "Track use is not supported; resolve plugins from authored keyframes.", "error", [String(track.use)]));
+    diagnostics.push(
+      issue(
+        "plugin-contribution-unsupported-entry",
+        `${path}.use`,
+        "Track use is not supported; resolve plugins from authored keyframes.",
+        "error",
+        [String(track.use)],
+      ),
+    );
   validateKeyframes(track.keyframes, `${path}.keyframes`, diagnostics);
   if (typeof track.id === "string" && track.id.length) {
-    if (seenIds.has(track.id)) diagnostics.push(issue("track-duplicate-id", `${path}.id`, `Track id '${track.id}' is duplicated.`, "error", [track.id]));
+    if (seenIds.has(track.id))
+      diagnostics.push(
+        issue(
+          "track-duplicate-id",
+          `${path}.id`,
+          `Track id '${track.id}' is duplicated.`,
+          "error",
+          [track.id],
+        ),
+      );
     seenIds.add(track.id);
   }
-  if (track.observes !== undefined && !Array.isArray(track.observes)) diagnostics.push(issue("observes-shape", `${path}.observes`, "Track observes must be an array."));
+  if (track.observes !== undefined && !Array.isArray(track.observes))
+    diagnostics.push(
+      issue("observes-shape", `${path}.observes`, "Track observes must be an array."),
+    );
   return true;
 }
 function clone(value: unknown, seen = new WeakMap<object, unknown>()): unknown {
@@ -197,15 +261,39 @@ export function validateTrackDefinition(track: unknown, path: string): TrackVali
   const diagnostics: Diagnostic[] = [];
   const validShape = validateTrackShape(track, path, new Set<string>(), diagnostics);
   const valid = validShape && !diagnostics.some(({ severity }) => severity === "error");
-  return { valid, diagnostics: Object.freeze(diagnostics), value: valid ? deepFreeze(clone(track) as TrackDefinition) : null };
+  return {
+    valid,
+    diagnostics: Object.freeze(diagnostics),
+    value: valid ? deepFreeze(clone(track) as TrackDefinition) : null,
+  };
 }
 export function validateV5(input: unknown): ValidationResult {
   const diagnostics: Diagnostic[] = [];
-  if (!isObject(input)) return { valid: false, diagnostics: [issue("project-shape", "$", "Project must be an object.")], value: null };
-  if (input.schemaVersion !== AUTHORED_SCHEMA_VERSION) diagnostics.push(issue("schema-version", "schemaVersion", `Expected schemaVersion ${AUTHORED_SCHEMA_VERSION}.`));
-  if (input.projectId !== undefined && (typeof input.projectId !== "string" || !input.projectId.length)) diagnostics.push(issue("project-id", "projectId", "projectId must be a non-empty string when present."));
-  if (!Array.isArray(input.motions)) diagnostics.push(issue("motions-shape", "motions", "motions must be an array."));
-  if (input.freeTracks !== undefined && !Array.isArray(input.freeTracks)) diagnostics.push(issue("free-tracks-shape", "freeTracks", "freeTracks must be an array."));
+  if (!isObject(input))
+    return {
+      valid: false,
+      diagnostics: [issue("project-shape", "$", "Project must be an object.")],
+      value: null,
+    };
+  if (input.schemaVersion !== AUTHORED_SCHEMA_VERSION)
+    diagnostics.push(
+      issue(
+        "schema-version",
+        "schemaVersion",
+        `Expected schemaVersion ${AUTHORED_SCHEMA_VERSION}.`,
+      ),
+    );
+  if (
+    input.projectId !== undefined &&
+    (typeof input.projectId !== "string" || !input.projectId.length)
+  )
+    diagnostics.push(
+      issue("project-id", "projectId", "projectId must be a non-empty string when present."),
+    );
+  if (!Array.isArray(input.motions))
+    diagnostics.push(issue("motions-shape", "motions", "motions must be an array."));
+  if (input.freeTracks !== undefined && !Array.isArray(input.freeTracks))
+    diagnostics.push(issue("free-tracks-shape", "freeTracks", "freeTracks must be an array."));
   const motions = Array.isArray(input.motions) ? input.motions : [];
   const freeTracks = Array.isArray(input.freeTracks) ? input.freeTracks : [];
   const motionIds = new Set<string>();
@@ -220,28 +308,63 @@ export function validateV5(input: unknown): ValidationResult {
     diagnostics.push(...validateId(rawMotion.id, `${path}.id`, "Motion", true));
     const id = typeof rawMotion.id === "string" ? rawMotion.id : "";
     if (id) {
-      if (motionIds.has(id)) diagnostics.push(issue("motion-duplicate-id", `${path}.id`, `Motion id '${id}' is duplicated.`, "error", [id]));
+      if (motionIds.has(id))
+        diagnostics.push(
+          issue("motion-duplicate-id", `${path}.id`, `Motion id '${id}' is duplicated.`, "error", [
+            id,
+          ]),
+        );
       motionIds.add(id);
     }
     diagnostics.push(...validateMotionTrigger(rawMotion.trigger, `${path}.trigger`));
     if (!Array.isArray(rawMotion.tracks)) {
-      diagnostics.push(issue("motion-tracks-shape", `${path}.tracks`, "Motion tracks must be an array."));
+      diagnostics.push(
+        issue("motion-tracks-shape", `${path}.tracks`, "Motion tracks must be an array."),
+      );
       continue;
     }
     const localIds = new Set<string>();
     for (const [trackIndex, rawTrack] of rawMotion.tracks.entries()) {
       const trackPath = `${path}.tracks[${trackIndex}]`;
-      if (validateTrackShape(rawTrack, trackPath, localIds, diagnostics)) allTracks.push(rawTrack as unknown as RawObject);
+      if (validateTrackShape(rawTrack, trackPath, localIds, diagnostics))
+        allTracks.push(rawTrack as unknown as RawObject);
     }
   }
   for (const [index, rawTrack] of freeTracks.entries()) {
     const path = `freeTracks[${index}]`;
-    if (validateTrackShape(rawTrack, path, freeIds, diagnostics)) allTracks.push(rawTrack as unknown as RawObject);
+    if (validateTrackShape(rawTrack, path, freeIds, diagnostics))
+      allTracks.push(rawTrack as unknown as RawObject);
   }
   const perspective = input.perspective;
-  if (perspective !== undefined && (typeof perspective !== "number" || !Number.isFinite(perspective) || perspective <= 0)) diagnostics.push(issue("perspective-shape", "perspective", "Perspective must be a finite number greater than zero."));
-  if (perspective === undefined) for (const track of allTracks) if (usesThreeD(track)) diagnostics.push(issue("perspective-usage", "perspective", "3D keyframes require a project perspective.", "warning", [String(track.id ?? "")]));
-  if (!diagnostics.some(({ severity }) => severity === "error")) diagnostics.push(...buildGraphIR(input as unknown as ProjectDefinition).diagnostics);
+  if (
+    perspective !== undefined &&
+    (typeof perspective !== "number" || !Number.isFinite(perspective) || perspective <= 0)
+  )
+    diagnostics.push(
+      issue(
+        "perspective-shape",
+        "perspective",
+        "Perspective must be a finite number greater than zero.",
+      ),
+    );
+  if (perspective === undefined)
+    for (const track of allTracks)
+      if (usesThreeD(track))
+        diagnostics.push(
+          issue(
+            "perspective-usage",
+            "perspective",
+            "3D keyframes require a project perspective.",
+            "warning",
+            [String(track.id ?? "")],
+          ),
+        );
+  if (!diagnostics.some(({ severity }) => severity === "error"))
+    diagnostics.push(...buildGraphIR(input as unknown as ProjectDefinition).diagnostics);
   const valid = !diagnostics.some(({ severity }) => severity === "error");
-  return { valid, diagnostics: Object.freeze(diagnostics), value: valid ? deepFreeze(clone(input) as ProjectDefinition) : null };
+  return {
+    valid,
+    diagnostics: Object.freeze(diagnostics),
+    value: valid ? deepFreeze(clone(input) as ProjectDefinition) : null,
+  };
 }
