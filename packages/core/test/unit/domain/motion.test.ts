@@ -17,7 +17,12 @@ function createMotion(stagger = 0, duration?: number) {
     track: new Track({ interpolator }),
     ...(duration === undefined ? {} : { duration }),
   }));
-  return { clock, scheduler, motion: new Motion({ clock, scheduler, tracks }), tracks };
+  return {
+    clock,
+    scheduler,
+    motion: new Motion({ clock, scheduler, tracks, stagger }),
+    tracks,
+  };
 }
 
 describe("Motion composite", () => {
@@ -130,8 +135,6 @@ describe("Motion composite", () => {
     const interpolator = createFakeInterpolator();
     const newTrack = new Track({ interpolator });
     (motion as any).addTrack({ id: "track-added", track: newTrack });
-    // schedule() evaluates based on current tracks, but schedule offset formula is tracks.map
-    // When reflow() is called, it returns the updated schedule
     expect(motion.reflow()).toEqual([0, 0.1, 0.2, 0.30000000000000004]);
   });
 });
