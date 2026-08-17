@@ -1,6 +1,7 @@
 import type {
   Diagnostic,
   MotionDefinition,
+  ObservationDefinition,
   Patch,
   PatchBatch,
   PatchListener,
@@ -20,7 +21,7 @@ import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
 import { createManualTriggerPort } from "./ports/trigger";
-import { ProjectRuntime } from "./runtime/project-runtime";
+import { ProjectRuntime, type TrackHandle } from "./runtime/project-runtime";
 
 export interface EngineOptions {
   readonly clock: Clock;
@@ -35,6 +36,9 @@ export interface ProjectHandle {
   signal(motionId: string, signal: TriggerSignal): void;
   addMotion(definition: MotionDefinition): { readonly id: string };
   destroyMotion(motionId: string): void;
+  addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle;
+  track(nodeId: string): TrackHandle;
+  dependantsOf(nodeId: string): readonly string[];
   subscribe(nodeId: string, listener: PatchListener): () => void;
   get(nodeId: string): Patch | undefined;
   subscribeNode(nodeId: string, listener: PatchListener): () => void;
@@ -58,6 +62,9 @@ function createHandle(
     signal,
     addMotion: (definition) => runtime.addMotion(definition),
     destroyMotion: (motionId) => runtime.destroyMotion(motionId),
+    addTrack: (track, options) => runtime.addTrack(track, options),
+    track: (nodeId) => runtime.track(nodeId),
+    dependantsOf: (nodeId) => runtime.dependantsOf(nodeId),
     subscribe: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
     get: (nodeId) => runtime.graph.registry.get(nodeId),
     subscribeNode: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
@@ -102,10 +109,7 @@ export class Engine {
   load(project: ProjectDefinition): ProjectHandle {
     const acceptedProject = assertValidProject(project);
     const tracks = new Map<string, Track>();
-    const nodes = new Map<
-      string,
-      { id: string; duration?: number; keyframes?: Readonly<Record<string, unknown>> }
-    >();
+    const nodes = new Map<string, { id: string; duration?: number; keyframes?: Readonly<Record<string, unknown>> }>();
     const motionTrackIds = new Map<string, readonly string[]>();
     for (const motion of acceptedProject.motions) {
       const ids = motion.tracks.map((track) => qualifyMotionTrack(motion.id, track.id).value);
@@ -125,100 +129,44 @@ export class Engine {
         id: nodeId,
         duration: definition.duration,
       });
-      const preparedKeyframes = {
-        ...(definition.keyframes ?? {}),
-        ...(resolved?.preparation.keyframes ?? {}),
-      };
+      const preparedKeyframes = { ...(definition.keyframes ?? {}), ...(resolved?.preparation.keyframes ?? {}) };
       const keyframeCompilation = compilePercentKeyframes(preparedKeyframes, path);
       const diagnostics = [...(resolved?.diagnostics ?? []), ...keyframeCompilation.diagnostics];
-      if (diagnostics.some(({ severity }) => severity === "error"))
-        throw new TypeError(describeDiagnostics(diagnostics));
-      const track = new Track({
-        interpolator: this.#options.interpolator,
-        interpolationConfig: definition,
-        ...(resolved ? { plugins: resolved } : {}),
-      });
+      if (diagnostics.some(({ severity }) => severity === "error")) throw new TypeError(describeDiagnostics(diagnostics));
+      const track = new Track({ interpolator: this.#options.interpolator, interpolationConfig: definition, ...(resolved ? { plugins: resolved } : {}) });
       tracks.set(nodeId, track);
       return track;
     };
-    const compileTrackDefinition = (
-      trackDef: {
-        id: string;
-        duration?: number;
-        keyframes?: Readonly<Record<string, unknown>>;
-      },
-      targetNodeId?: string,
-    ): void => {
-      const nodeId =
-        targetNodeId ??
-        (trackDef.id.includes("/") ? trackDef.id : qualifyFreeTrack(trackDef.id).value);
+    const compileTrackDefinition = (trackDef: { id: string; duration?: number; keyframes?: Readonly<Record<string, unknown>> }, targetNodeId?: string): void => {
+      const nodeId = targetNodeId ?? (trackDef.id.includes("/") ? trackDef.id : qualifyFreeTrack(trackDef.id).value);
       if (tracks.has(nodeId)) return;
       const path = `${nodeId}.keyframes`;
-      const resolved = this.#plugins?.resolveForKeyframes(trackDef.keyframes ?? {}, path, {
-        id: nodeId,
-        duration: trackDef.duration,
-      });
-      const preparedKeyframes = {
-        ...(trackDef.keyframes ?? {}),
-        ...(resolved?.preparation.keyframes ?? {}),
-      };
+      const resolved = this.#plugins?.resolveForKeyframes(trackDef.keyframes ?? {}, path, { id: nodeId, duration: trackDef.duration });
+      const preparedKeyframes = { ...(trackDef.keyframes ?? {}), ...(resolved?.preparation.keyframes ?? {}) };
       const keyframeCompilation = compilePercentKeyframes(preparedKeyframes, path);
       const diagnostics = [...(resolved?.diagnostics ?? []), ...keyframeCompilation.diagnostics];
-      if (diagnostics.some(({ severity }) => severity === "error"))
-        throw new TypeError(describeDiagnostics(diagnostics));
-      const track = new Track({
-        interpolator: this.#options.interpolator,
-        interpolationConfig: trackDef,
-        ...(resolved ? { plugins: resolved } : {}),
-      });
-      tracks.set(nodeId, track);
+      if (diagnostics.some(({ severity }) => severity === "error")) throw new TypeError(describeDiagnostics(diagnostics));
+      tracks.set(nodeId, new Track({ interpolator: this.#options.interpolator, interpolationConfig: trackDef, ...(resolved ? { plugins: resolved } : {}) }));
     };
     const disposeTrack = (nodeId: string): void => {
       const track = tracks.get(nodeId);
-      if (track) {
-        track.dispose();
-        tracks.delete(nodeId);
-      }
+      if (track) { track.dispose(); tracks.delete(nodeId); }
     };
     const motions = new Map<string, Motion>();
     let runtime: ProjectRuntime;
-    const buildMotion = (
-      definition: MotionDefinition,
-      entries: readonly MotionTrackEntry[],
-    ): Motion => {
+    const buildMotion = (definition: MotionDefinition, entries: readonly MotionTrackEntry[]): Motion => {
       const triggerPort = createManualTriggerPort();
       let motion: Motion;
-      motion = new Motion({
-        clock: this.#options.clock,
-        scheduler: this.#options.scheduler,
-        tracks: entries,
-        trigger: triggerPort,
-        disposeTracks: false,
-        listenToClock: false,
-        invalidate: () => {
-          const currentIds = motion.tracks.map((t) => t.id);
-          if (currentIds.length > 0) runtime.invalidate(currentIds);
-        },
-        stagger: definition.stagger,
-      });
+      motion = new Motion({ clock: this.#options.clock, scheduler: this.#options.scheduler, tracks: entries, trigger: triggerPort, disposeTracks: false, listenToClock: false, invalidate: () => { const currentIds = motion.tracks.map((t) => t.id); if (currentIds.length > 0) runtime.invalidate(currentIds); }, stagger: definition.stagger });
       motion.play();
       return motion;
     };
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
-      const compose =
-        (node: {
-          id: string;
-          track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> };
-        }) =>
-        (inputs: Readonly<Record<string, unknown>>) => {
-          const snapshot = tracks.get(node.id)!.compose(inputs as Readonly<ImmutableRecord>);
-          return {
-            values: snapshot.values,
-            sourceProgress: snapshot.progress,
-            sourceRevisions: {},
-          };
-        };
+      const compose = (node: { id: string; track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> } }) => (inputs: Readonly<Record<string, unknown>>) => {
+        const snapshot = tracks.get(node.id)!.compose(inputs as Readonly<ImmutableRecord>);
+        return { values: snapshot.values, sourceProgress: snapshot.progress, sourceRevisions: {} };
+      };
       runtime = new ProjectRuntime(acceptedProject, {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
@@ -235,41 +183,17 @@ export class Engine {
           motion.addTrack({ id: trackId, track, duration });
         },
         removeMotionTrack: (motionId, trackId) => motions.get(motionId)?.removeTrack(trackId),
-        createMotion: (definition) => {
-          motions.set(definition.id, buildMotion(definition, []));
-        },
-        destroyMotion: (motionId) => {
-          const motion = motions.get(motionId);
-          if (motion) {
-            motion.dispose();
-            motions.delete(motionId);
-          }
-        },
-        onClockTick: (event) => {
-          for (const motion of motions.values()) motion.onTick(event);
-        },
-        disposeComposition: () => {
-          for (const motion of motions.values()) motion.dispose();
-          motions.clear();
-          for (const track of tracks.values()) track.dispose();
-          tracks.clear();
-        },
+        createMotion: (definition) => motions.set(definition.id, buildMotion(definition, [])),
+        destroyMotion: (motionId) => { const motion = motions.get(motionId); if (motion) { motion.dispose(); motions.delete(motionId); } },
+        onClockTick: (event) => { for (const motion of motions.values()) motion.onTick(event); },
+        disposeComposition: () => { for (const motion of motions.values()) motion.dispose(); motions.clear(); for (const track of tracks.values()) track.dispose(); tracks.clear(); },
       });
       for (const motionDefinition of acceptedProject.motions) {
         const ids = motionTrackIds.get(motionDefinition.id) ?? [];
-        const entries = ids.map((id) => {
-          const track = tracks.get(id);
-          if (!track) throw new TypeError(`Unknown graph node "${id}".`);
-          const definition = nodes.get(id);
-          return { id, track, duration: definition?.duration };
-        });
+        const entries = ids.map((id) => { const track = tracks.get(id); if (!track) throw new TypeError(`Unknown graph node "${id}".`); const definition = nodes.get(id); return { id, track, duration: definition?.duration }; });
         motions.set(motionDefinition.id, buildMotion(motionDefinition, entries));
       }
-      return createHandle(runtime, (motionId, signal) => {
-        const motion = motions.get(motionId);
-        if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
-        motion.signal(signal);
-      });
+      return createHandle(runtime, (motionId, signal) => { const motion = motions.get(motionId); if (!motion) throw new TypeError(`Unknown motion "${motionId}".`); motion.signal(signal); });
     } catch (error) {
       for (const motion of motions.values()) motion.dispose();
       for (const track of tracks.values()) track.dispose();
