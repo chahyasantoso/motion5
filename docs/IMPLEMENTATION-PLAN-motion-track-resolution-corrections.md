@@ -1,23 +1,32 @@
 # Corrections to `IMPLEMENTATION-PLAN-motion-track-resolution.md`
 
-This amendment is part of the implementation plan and must be read together with `docs/IMPLEMENTATION-PLAN-motion-track-resolution.md`. Both were written before the slice was executed; these two items are the only places reality disagreed with the plan.
+This amendment is part of the implementation plan and must be read together with `docs/IMPLEMENTATION-PLAN-motion-track-resolution.md`. Both were written before the slice was executed; the items below are the only places reality disagreed with the plan.
 
 Section 1 is untouched. Every locked decision, C1 through C10, was implemented as written.
 
-## Three test files construct Motion directly, not one
+## Five test files construct Motion directly, not one
 
-Section 2 fact 9 and section 3.5 treated `packages/core/test/unit/domain/motion.test.ts` as the only test that builds a `Motion` directly. It is not. These also do, at four call sites:
+Section 2 fact 9 and section 3.5 treated `packages/core/test/unit/domain/motion.test.ts` as the only test that builds a `Motion` directly. It is not. These do as well, at eight call sites between them:
 
 - `packages/core/test/integration/phase2-motion-scheduling.test.ts`, tests 3 and 4.
 - `packages/core/test/integration/phase3-trigger-port.test.ts`, tests 2 and 5.
+- `packages/core/test/integration/motion-trigger-types.test.ts`, all three cases.
+- `packages/core/test/integration/motion-trigger-lifecycle.test.ts`, its single case.
 
-Section 4.4 therefore listed both files as "must stay byte-identical" and told the implementer to stop and escalate if either needed an edit. That instruction was based on a wrong inventory: neither file can compile once `resolveTrack` becomes required, so the frozen list was wrong rather than the change.
+Section 4.4 listed `phase2-motion-scheduling.test.ts`, `phase3-trigger-port.test.ts`, and `motion-trigger-lifecycle.test.ts` as "must stay byte-identical", and told the implementer to stop and escalate if any of them needed an edit. That instruction rested on a wrong inventory: none of these files can compile once `resolveTrack` is required, so the frozen list was wrong rather than the change.
 
-**Correction.** Remove those two files from the 4.4 frozen list. They receive the same mechanical treatment section 3.5 already sanctions for `motion.test.ts`: register the compiled `Track` in a `createFakeTrackRegistry`, pass `{ id }` and `{ id, duration }` entries, inject `resolveTrack`. Test names, assertions, and expected values are unchanged in all three files.
+**Correction.** Remove those three files, plus `motion-trigger-types.test.ts`, from the 4.4 frozen list. Each receives the same mechanical treatment section 3.5 already sanctions for `motion.test.ts`. Test names, assertions, and expected values are unchanged in all five files.
 
-The rest of 4.4 stands, and it earns its keep: `issue-114-motion-track-regressions.test.ts` and `replace-motion-track.test.ts` are genuinely untouched, which is what keeps ADR-029 evidenced independently of this slice. The escalation rule in 4.4 was aimed at assertion edits, and no assertion was edited.
+Two construction styles are in play, and both are legitimate:
 
-Semantic file count is 11, not the 9 predicted in sections 3 and 6.5. Still far under the twenty-file ceiling in `docs/PR-WORKFLOW.md`.
+- Suites holding real `Track` instances register them in a `createFakeTrackRegistry` and pass `resolveTrack: registry.resolveTrack`.
+- Suites holding `vi.fn()` track doubles pass `resolveTrack: () => current as never` directly. Standing up a registry for a single double would be ceremony, and the `as never` cast was already there before this slice.
+
+**Do not hand-inventory the call sites.** `npm run typecheck` enumerates every one of them exactly, because dropping `track` from `MotionTrackEntry` makes each site a `TS2353`. Run it first and work the list.
+
+The rest of 4.4 stands, and it earns its keep: `issue-114-motion-track-regressions.test.ts` and `replace-motion-track.test.ts` are genuinely untouched and green, which is what keeps ADR-029 evidenced independently of this slice.
+
+Semantic file count is 13, not the 9 predicted in sections 3 and 6.5. Still under the twenty-file ceiling in `docs/PR-WORKFLOW.md`.
 
 ## The `tracks.get(` grep gate expects the wrong number
 
