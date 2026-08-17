@@ -4,10 +4,25 @@ export {
   SUPPORTED_TRIGGER_TYPES,
 } from "./contract/v5";
 export type {
-  AuthoredProperty, AuthoredStop, Diagnostic, DiagnosticSeverity, MigrationDiagnostic,
-  MotionDefinition, ObservationDefinition, ProjectDefinition, TrackDefinition, TriggerType,
-  TriggerSignal, TriggerDefinition, ManualTriggerDefinition, TimeTriggerDefinition,
-  ScrollTriggerDefinition, PatchStatus, Patch, PatchBatch, PatchListener,
+  AuthoredProperty,
+  AuthoredStop,
+  Diagnostic,
+  DiagnosticSeverity,
+  MigrationDiagnostic,
+  MotionDefinition,
+  ObservationDefinition,
+  ProjectDefinition,
+  TrackDefinition,
+  TriggerType,
+  TriggerSignal,
+  TriggerDefinition,
+  ManualTriggerDefinition,
+  TimeTriggerDefinition,
+  ScrollTriggerDefinition,
+  PatchStatus,
+  Patch,
+  PatchBatch,
+  PatchListener,
 } from "./contract/v5";
 export { migrateV4ToV5 } from "./contract/migrate-v4-to-v5";
 export type { MigrationResult } from "./contract/migrate-v4-to-v5";
@@ -23,7 +38,12 @@ export { assertClock, createManualClock } from "./ports/clock";
 export { assertTriggerPort, createManualTriggerPort } from "./ports/trigger";
 export type { TriggerPort } from "./ports/trigger";
 export { assertTriggerFactory } from "./ports/trigger-factory";
-export type { ClockConsumer, CreatedTrigger, TriggerFactory, TriggerFactoryContext } from "./ports/trigger-factory";
+export type {
+  ClockConsumer,
+  CreatedTrigger,
+  TriggerFactory,
+  TriggerFactoryContext,
+} from "./ports/trigger-factory";
 export { assertInterpolator } from "./ports/interpolator";
 export type { InterpolationTimeline, Interpolator } from "./ports/interpolator";
 export { assertScheduler } from "./ports/scheduler";

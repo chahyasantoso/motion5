@@ -21,9 +21,21 @@ describe("trigger contract T1", () => {
   });
 
   it("rejects each unsupported time playback field with its exact rule", () => {
-    expect(validateMotionTrigger({ type: "time", duration: 1000, autoplay: false }, "trigger").map((d) => d.ruleId)).toEqual(["trigger-time-autoplay-unsupported"]);
-    expect(validateMotionTrigger({ type: "time", duration: 1000, repeat: 0 }, "trigger").map((d) => d.ruleId)).toEqual(["trigger-time-repeat-unsupported"]);
-    expect(validateMotionTrigger({ type: "time", duration: 1000, yoyo: true }, "trigger").map((d) => d.ruleId)).toEqual(["trigger-time-repeat-unsupported"]);
+    expect(
+      validateMotionTrigger({ type: "time", duration: 1000, autoplay: false }, "trigger").map(
+        (d) => d.ruleId,
+      ),
+    ).toEqual(["trigger-time-autoplay-unsupported"]);
+    expect(
+      validateMotionTrigger({ type: "time", duration: 1000, repeat: 0 }, "trigger").map(
+        (d) => d.ruleId,
+      ),
+    ).toEqual(["trigger-time-repeat-unsupported"]);
+    expect(
+      validateMotionTrigger({ type: "time", duration: 1000, yoyo: true }, "trigger").map(
+        (d) => d.ruleId,
+      ),
+    ).toEqual(["trigger-time-repeat-unsupported"]);
   });
 
   it("validates every trigger row from the contract", () => {
@@ -42,7 +54,8 @@ describe("trigger contract T1", () => {
       { type: "manual" },
       { type: "scroll" },
       { type: "scroll", source: "hero" },
-    ]) expect(validateMotionTrigger(trigger, "trigger")).toEqual([]);
+    ])
+      expect(validateMotionTrigger(trigger, "trigger")).toEqual([]);
   });
 
   it("rejects malformed TriggerFactory values", () => {
@@ -56,7 +69,11 @@ describe("trigger contract T1", () => {
     for (const type of ["manual", "time", "scroll"] as const) {
       const created = factory.create({
         motionId: "scene",
-        definition: { id: "scene", trigger: type === "time" ? { type, duration: 1000 } : { type }, tracks: [] },
+        definition: {
+          id: "scene",
+          trigger: type === "time" ? { type, duration: 1000 } : { type },
+          tracks: [],
+        },
         clock: createManualClock(),
         scheduler: createFakeScheduler(),
       });
