@@ -200,10 +200,7 @@ export interface TrackValidationResult {
  * Validate and freeze one runtime-supplied track at the same trust level as an authored track.
  * Project-level duplicate and graph rules remain the responsibility of the candidate builder.
  */
-export function validateTrackDefinition(
-  track: unknown,
-  path: string,
-): TrackValidationResult {
+export function validateTrackDefinition(track: unknown, path: string): TrackValidationResult {
   const diagnostics: Diagnostic[] = [];
   const validShape = validateTrackShape(track, path, new Set<string>(), diagnostics);
   const valid = validShape && !diagnostics.some(({ severity }) => severity === "error");
