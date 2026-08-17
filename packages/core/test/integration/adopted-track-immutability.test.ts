@@ -38,7 +38,7 @@ describe("adopted track validation and immutability (W3)", () => {
     handle.dispose();
   });
 
-  it("rejects caller mutation instead of allowing the graph identity to drift", () => {
+  it("isolates caller mutation from the frozen graph definition", () => {
     const handle = makeHandle();
     const owner = {};
     const source: TrackDefinition = {
@@ -47,9 +47,8 @@ describe("adopted track validation and immutability (W3)", () => {
     };
     const adopted = handle.adopt(source, owner);
 
-    expect(() => {
-      (source.keyframes!.x!.stops[1] as { p: number; v: unknown }).v = 999;
-    }).toThrow(TypeError);
+    // The caller-owned source remains mutable. The runtime-owned clone must not change with it.
+    (source.keyframes!.x!.stops[1] as { p: number; v: unknown }).v = 999;
 
     handle.seek(adopted.id, 1);
     expect(handle.get(adopted.id)?.values).toEqual({ x: 100 });
