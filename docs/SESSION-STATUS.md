@@ -9,13 +9,13 @@ This document reports current implementation reality. The detailed contract rema
 
 ## Runtime mutation model
 
-| Package | Scope                                                              | State                                                                       |
-| ------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------- |
-| W1      | Builder cache correctness (A3 cached failures, A5 owner-blind key) | merged, [#109](https://github.com/chahyasantoso/motion5/pull/109)           |
-| W2      | Transactional `adopt`/`destroyAdopted` (P1, A1)                    | merged, [#110](https://github.com/chahyasantoso/motion5/pull/110)           |
-| W3      | Freeze and validate adopted tracks (A2)                            | merged, [#111](https://github.com/chahyasantoso/motion5/pull/111)           |
-| W4      | Runtime `addMotion`/`destroyMotion` (P2)                           | merged, [#112](https://github.com/chahyasantoso/motion5/pull/112)           |
-| W5      | Unified store, capability handles, `replaceTrack` (P3)             | ready for review, [#113](https://github.com/chahyasantoso/motion5/pull/113) |
+| Package | Scope | State |
+| --- | --- | --- |
+| W1 | Builder cache correctness (A3 cached failures, A5 owner-blind key) | merged, [#109](https://github.com/chahyasantoso/motion5/pull/109) |
+| W2 | Transactional `adopt`/`destroyAdopted` (P1, A1) | merged, [#110](https://github.com/chahyasantoso/motion5/pull/110) |
+| W3 | Freeze and validate adopted tracks (A2) | merged, [#111](https://github.com/chahyasantoso/motion5/pull/111) |
+| W4 | Runtime `addMotion`/`destroyMotion` (P2) | merged, [#112](https://github.com/chahyasantoso/motion5/pull/112) |
+| W5 | Unified store, capability handles, `replaceTrack` (P3) | ready for review, [#113](https://github.com/chahyasantoso/motion5/pull/113) |
 
 ## W5 invariant
 
@@ -25,18 +25,20 @@ Schema ingestion preserves validated authored track identity and does not auto-m
 
 ## W5 implementation
 
-- `ProjectRuntime` now owns the unified track store, motion store, schema owner sentinel, and monotonic capability tokens.
-- `Engine` exposes `addTrack`, `track`, and `dependantsOf` through `ProjectHandle`; `TrackHandle` stays at the public engine boundary so runtime/graph declarations do not leak through package typings.
-- `GraphRuntime` exposes the committed GraphIR read-only for `dependantsOf`; topology mutation remains owned by `GraphBinding`.
+- `ProjectRuntime` owns the unified Track store, Motion store, schema-owner sentinel, and monotonic capability tokens.
+- `Engine` exposes `addTrack`, `track`, and `dependantsOf` through `ProjectHandle`; `TrackHandle` stays at the public Engine boundary so runtime/graph declarations do not leak through package typings.
+- `GraphRuntime` exposes committed GraphIR read-only for `dependantsOf`; topology mutation remains owned by `GraphBinding`.
 - `replace` is non-destructive, and `addObserve` / `removeObserve` are observer-track replacement helpers.
-- `docs/DECISIONS.md` records the deliberate store collapse, handle/ABA semantics, replacement behavior, and graph-validation deletion enforcement.
+- `apps/react-demo/src/App.tsx` now uses `addTrack(track, { motionId: "walk" })` and stores returned `TrackHandle`s for reverse-order removal. The deprecated owner-based `adopt` / `destroyAdopted` calls and caller-invented owner ref are retired from the current consumer.
+- `docs/ARCHITECTURE.md`, `docs/PUBLIC-API.md`, and `docs/DECISIONS.md` describe the shipped model.
 
 ## W5 evidence
 
 - Initial red: [run 31989169706](https://github.com/chahyasantoso/motion5/actions/runs/31989169706), expected missing public mutation APIs and capability methods.
-- First implementation red: [run 31989480150](https://github.com/chahyasantoso/motion5/actions/runs/31989480150), caught the handle getter's incorrect `this`, the missing GraphIR accessor, and declaration/boundary leaks.
+- First implementation red: [run 31989480150](https://github.com/chahyasantoso/motion5/actions/runs/31989480150), caught the handle getter's incorrect `this`, missing GraphIR accessor, and declaration/boundary leaks.
 - Second implementation red: [run 31989631561](https://github.com/chahyasantoso/motion5/actions/runs/31989631561), caught the source-removal assertion and public boundary allowlists.
-- Final green: [run 31989827456](https://github.com/chahyasantoso/motion5/actions/runs/31989827456), all seven checks pass: quality, integration, boundaries, build, end-to-end, performance, prettier.
+- Final green before consumer migration: [run 31989827456](https://github.com/chahyasantoso/motion5/actions/runs/31989827456), all seven checks passed.
+- Consumer migration commit: [`b66c8e4`](https://github.com/chahyasantoso/motion5/commit/b66c8e40fede9d4f3ec3d86430495778c387a45b).
 
 ## Known remaining scope
 
@@ -47,7 +49,7 @@ The planned runtime mutation model is complete after W5. Scroll/time trigger dri
 - One owner per state transition.
 - No graph rebuild or motionpath wholesale copy.
 - No compatibility aliases, flags, facades, or placeholder tests.
-- No renderer imports in core layers.
+- No renderer imports in core.
 - Every recovery slice starts with a failing-first test on its parent commit.
 - Docs, types, tests, and status move together.
 - A required check that only runs for some base branches is not a gate. Do not filter `pull_request` by base.
