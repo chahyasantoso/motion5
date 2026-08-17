@@ -77,7 +77,8 @@ describe("runtime mutation transactionality (W2)", () => {
     // be live, and the adoption map must still make the same failure reachable on retry.
     expect(patches.filter(({ status }) => status === "destroyed")).toHaveLength(0);
     expect(handle.get(root.id)?.status).toBe(before[0]?.patch?.status);
-    expect(() => handle.seek(root.id, 0.7).patches.some(({ status }) => status === "error"));
+    const retryBatch = handle.seek(root.id, 0.7);
+    expect(retryBatch.patches.some(({ status }) => status === "error")).toBe(false);
     expect(handle.get(root.id)?.status).toBe("ready");
     expect(() => handle.destroyAdopted(root.id, owner)).toThrow(/observation-unknown-source/);
     expect(handle.get(root.id)).toBeDefined();
