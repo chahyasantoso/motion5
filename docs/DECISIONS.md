@@ -46,7 +46,7 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 
 **Status:** Accepted, 2026-08-10
 
-**Context.** The predecessor allowed Track to own children, group hosts, playback delegation, and graph recursion while Motion also owned scheduling. That produced two composite owners and unclear teardown.
+**Context.** The predecessor allowed Track to own children, group hosts, playback delegation, graph recursion while Motion also owned scheduling. That produced two composite owners and unclear teardown.
 
 **Decision.** Track owns only playhead/progress, interpolation inputs, local plugin composition, renderer-neutral snapshots, and local lifecycle. Motion owns child membership, hierarchy, stagger, layout, scheduling, triggers, playback, and child teardown. Graph traversal belongs to the graph layer.
 
@@ -102,178 +102,122 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 
 **Status:** Accepted, 2026-08-10
 
-**Context.** A Vite demo application caused renderer dependencies, routes, fixtures, and visual evidence to shape the package architecture.
-
 **Decision.** motion5 contains libraries, tests, docs, scripts, and deterministic benchmarks. Example applications live elsewhere and consume the package like users do.
-
-**Consequences.** Package-consumer tests and integration fixtures carry the evidence that demos previously carried. Visual examples need a separate repository.
 
 ## ADR-010: Perspective, free tracks, and diagnostic severity
 
 **Status:** Superseded by ADR-011, 2026-08-10
 
-**Context.** The initial motion5 draft added optional `perspective`, project-level `freeTracks`, and warning diagnostics while retaining schema v4.
-
 **Decision.** The semantics remain valid, but the version decision is superseded. `perspective` remains optional renderer metadata. Free tracks remain ordinary graph nodes qualified as `~/trackId`. Diagnostics retain `error` and `warning` severity.
-
-**Why superseded.** Renaming a v4 field while claiming v4 compatibility made the contract dishonest.
 
 ## ADR-011: Schema v5 and explicit v4 migration
 
 **Status:** Accepted, 2026-08-10
 
-**Context.** Project-level free tracks were previously represented by an ambiguous top-level `tracks` key. Motion-owned tracks use the same key inside each motion. The new contract names project-level tracks `freeTracks`, reserves `/` for qualified ids, and reserves `~` as the free-track namespace.
-
 **Decision.** Require `schemaVersion: 5`, `freeTracks`, and qualified free-track references. Reject v4 at the loader boundary with a migration diagnostic. Migration occurs outside the runtime and is tested as a pure transformation.
-
-**Alternatives rejected.** Accepting both `tracks` and `freeTracks` creates two authored spellings. Guessing whether a bare reference is free or motion-owned recreates ambiguity. Auto-migration inside `loadProject` hides data changes and complicates rollback.
-
-**Consequences.** Existing projects need an explicit migration step. The loader has one dialect and can produce deterministic diagnostics. Migration tooling must validate migration assumptions before moving top-level `tracks`.
 
 ## ADR-012: Perspective is metadata, not runtime state
 
 **Status:** Accepted, 2026-08-10
 
-**Decision.** `perspective` is validated and preserved as project metadata for renderer integration. It is not a keyframe, graph node, patch value, or clock-driven state. A missing value alongside 3D content emits a warning; an invalid present value emits an error.
-
-**Consequences.** Renderer adapters apply it once to a stage container. Core remains renderer-neutral and does not import CSS or DOM APIs.
+**Decision.** `perspective` is validated and preserved as project metadata for renderer integration. It is not a keyframe, graph node, patch value, or clock-driven state.
 
 ## ADR-013: Free tracks are first-class graph nodes
 
 **Status:** Accepted, 2026-08-10
 
-**Decision.** A free track differs from a motion track only in scheduling ownership. It participates in the same normalization, validation, graph state, publication, diagnostics, and lifecycle paths. It is not a second node type and is never capability-gated.
-
-**Consequences.** Shared upstream values can outlive unrelated motions. A free track authored in the project is project-owned; an adopted runtime track remains owned by its adopter and is detached rather than destroyed when detached.
+**Decision.** Free tracks differ only in scheduling ownership. They participate in the same normalization, validation, graph state, publication, diagnostics, and lifecycle paths.
 
 ## ADR-014: Qualified ids stay internal; there is no schema v6 for authorable ids
 
 **Status:** Accepted, 2026-08-10
 
-**Context.** TRD section 18 tracked whether a future schema v6 should make qualified runtime ids directly authorable. Doing so would make normalization output part of the authored contract and would give one track two valid spellings inside its own motion.
-
-**Decision.** Authored identity stays local. A motion track is authored with a local id, cross-motion and free-track references use explicit `motionId/trackId` and `~/trackId` reference syntax, and canonical node identity is produced exactly once by normalization. No schema v6 is planned for the purpose of making qualified node ids authorable.
-
-**Alternatives rejected.** Fully qualified authored ids remove one lookup but leak storage identity into authoring, make motion reuse and project composition harder, and turn any future namespace change into a schema migration. Treating authored ids as already normalized would delete the load-time boundary where reserved characters are rejected.
-
-**Consequences.** Validators must keep rejecting `/` in track ids, `/` in motion ids, and `~` as a motion id. No public API may bypass normalization by accepting a runtime node id as authored identity. Reversing this requires a superseding record plus a new authored schema version, not a loader option.
+**Decision.** Authored identity stays local. A motion track is authored with a local id, free-track references use explicit `~/trackId`, and canonical node identity is produced exactly once by normalization.
 
 ## ADR-015: GSAP remains the v1 interpolator
 
 **Status:** Accepted, 2026-08-10
 
-**Context.** TRD section 18 tracked whether the first interpolator should remain engine-backed or gain a built-in sampler that would remove the last external runtime dependency from the default setup.
-
-**Decision.** GSAP remains the supported v1 implementation of the `Interpolator` port. It lives behind an adapter, passes the shared port contract suite unchanged, and never appears in `core/contract`, `core/domain`, `core/graph`, or `core/runtime`. No built-in sampler ships in v1.
-
-**Alternatives rejected.** A built-in sampler removes a dependency but starts a second animation-engine project, complete with easing compatibility, keyframe semantics, and numerical parity work, before the graph runtime has proven itself. Importing GSAP directly into Track or the runtime would be faster and would destroy renderer neutrality.
-
-**Consequences.** Core stays testable with fakes and imports no engine. The GSAP adapter and its contract evidence are release requirements. A future sampler may be added as another port implementation, never as a branch inside core.
+**Decision.** GSAP remains the supported v1 implementation behind the Interpolator port. Core stays renderer-neutral.
 
 ## ADR-016: Runtime diagnostics stay inline on patches
 
 **Status:** Accepted, 2026-08-10
 
-**Context.** TRD section 18 tracked whether runtime diagnostics should remain inline on patches or gain a separate stream. Consumers need failure context atomically with the values they are about to render.
-
-**Decision.** Runtime diagnostics surface inline on the affected patch and in the batch diagnostics summary, and accumulate in a bounded ring buffer on the project for inspection. No separate diagnostics stream ships in v1.
-
-**Alternatives rejected.** An independent stream centralizes logging but races with publication, forces consumers to correlate two timelines, and duplicates subscription lifecycle. Project-level-only diagnostics lose the node context that makes a diagnostic actionable.
-
-**Consequences.** Patch equality and revision rules must account for meaningful diagnostic changes. One batch is enough to render or log a complete state. The ring buffer is observational and must never become a second publication owner.
+**Decision.** Runtime diagnostics surface inline on patches and batch diagnostics, with bounded project inspection. No separate diagnostics stream ships in v1.
 
 ## ADR-017: React ships in the v1 package set
 
 **Status:** Accepted, 2026-08-10
 
-**Context.** TRD section 18 tracked whether `@motion5/react` belongs in v1 or becomes a follow-on package. React is a primary consumer boundary, and deferring it would leave patch identity, subscription semantics, strict-mode lifecycle, and packaging assumptions unproven until after the core API froze.
-
-**Decision.** `@motion5/react` is part of v1 and its build, hook lifecycle, and packed-consumer gates are release-blocking. It consumes only the documented public core surface, subscribes with external-store semantics, and never traverses the graph or composes recursively.
-
-**Alternatives rejected.** Shipping React later reduces v1 scope but risks discovering an incompatible publication contract after the public API is frozen. Embedding React in core would remove the packaging question and destroy renderer neutrality.
-
-**Consequences.** Core keeps zero React dependency while React tests become part of the release matrix. Concurrency safety is proven by a two-consumer tearing test rather than assumed.
+**Decision.** `@motion5/react` consumes only the documented public core surface and remains outside core.
 
 ## ADR-018: Deep freezing is unconditional in v1
 
 **Status:** Accepted, 2026-08-10
 
-**Context.** Published patches cross the core-to-renderer boundary and are consumed by DOM adapters, React external-store hooks, and arbitrary renderers. Making freezing development-only would make the documented immutability contract disappear in production and would allow production-only mutation bugs. Freezing cost is a legitimate performance risk, but it is measurable and can be optimized without weakening the contract.
-
-**Decision.** Published patches, batches, and nested values are deeply frozen in every environment in v1. Freezing happens once at publication, not repeatedly during graph traversal or adapter reads. Structural sharing and already-frozen subtree reuse are preferred optimizations. There is no production opt-out flag.
-
-**Alternatives rejected.** Development-only freezing is faster in production but changes runtime semantics by environment, hides bugs until deployment, and makes React/DOM consumer behavior less trustworthy. A caller-controlled opt-out flag creates a second contract and a larger test matrix. Shallow freezing is insufficient because nested values can still mutate later readers.
-
-**Consequences.** P1-01 and P3-01 own the behavior; P3-07 benchmarks freezing cost on representative graphs and patch shapes. If measured cost is too high, optimize allocation and reuse or change the publication representation in a superseding ADR. Do not weaken the guarantee by silently disabling freezing.
+**Decision.** Published patches, batches, and nested values are deeply frozen in every environment. There is no production opt-out.
 
 ## ADR-019: Automatic Prettier write-back for same-repository pull requests
 
 **Status:** Accepted, 2026-08-10
 
-**Context.** Manual formatting made sense while the repository was establishing its safety policy, but it added repetitive work for repository-owned branches. Same-repository pull requests are trusted contributors, while fork pull requests are untrusted code and must not receive a write-capable workflow token.
-
-**Decision.** On pull request open, synchronize, and reopen events, the formatter runs automatically and commits `chore: apply prettier` back to the exact source branch for same-repository pull requests. Fork pull requests remain check-only through the quality job. Workflow concurrency cancels superseded runs, and formatting remains a mechanical-only commit.
-
-**Alternatives rejected.** Keeping all formatting manual preserves maximum branch safety but wastes time on repository-owned work. Using `pull_request_target` would expose a write-capable token to untrusted fork code and is rejected. Formatting in a separate branch or PR for every internal change adds noise and delays the real review.
-
-**Consequences.** Internal PR branches may receive an automatic formatting commit during review. Contributors should expect that behavior and avoid rebasing while the formatter is running. Fork contributors get an actionable `format:check` failure and can format locally.
+**Decision.** Same-repository pull requests receive automatic mechanical formatting commits; fork pull requests remain check-only.
 
 ## ADR-020: Runtime adoption is an internal recovery capability
 
 **Status:** Accepted, 2026-08-15
 
-**Context.** `ProjectRuntime.adopt()` allows runtime-created free tracks (`~/trackId`) to enter the graph for unmount/remount recovery. Exposing `adopt()` directly on the public `ProjectHandle` without compiler lifecycle integration allows uncompiled keyframe definitions to enter the graph and fail during composition.
-
-**Decision.** Runtime adoption remains an internal capability owned by `ProjectRuntime`. `ProjectHandle` remains frozen and does not export dynamic adoption. `Engine.load()` supplies `ProjectRuntime` with a renderer-neutral compiler capability to ensure adopted keyframes compile percent stops and resolve plugins before graph commit.
-
-**Alternatives rejected.** Adding `adopt()` directly to `ProjectHandle` makes public handles mutable and exposes uncompiled keyframe nodes. Moving keyframe compilation into `GraphRuntime` breaks layer separation by introducing domain compilation into the graph kernel.
-
-**Consequences.** Dynamic track adoption is bounded and safe. External callers consume frozen handles while internal recovery paths use `ProjectRuntime.adopt()`.
+**Decision.** Runtime adoption is internal to ProjectRuntime and safely compiled by Engine.
 
 ## ADR-021: Separate composite Motion signals from leaf node seeking
 
 **Status:** Accepted, 2026-08-15
 
-**Context.** `ProjectHandle` provides both `seek(nodeId, progress)` and `signal(motionId, signal)`. There was ambiguity over whether `signal()` should be removed in favor of direct `seek()`.
-
-**Decision.** Retain both methods with explicit scoping: `seek(nodeId, progress)` directly positions a specific qualified graph node's playhead, while `signal(motionId, signal)` sends trigger events to a composite `Motion`.
-
-**Alternatives rejected.** Removing `signal()` forces external trigger drivers (scroll, manual) to inspect Motion track children and manually compute offsets. Removing `seek()` forces low-level tests and inspection tools to send dummy trigger signals.
-
-**Consequences.** Composite Motion control and direct leaf node playhead positioning remain cleanly decoupled.
+**Decision.** `seek(nodeId)` positions a leaf; `signal(motionId, signal)` controls a composite Motion.
 
 ## ADR-022: Export TriggerSignal from core package entry
 
 **Status:** Accepted, 2026-08-15
 
-**Context.** `ProjectHandle.signal` accepts `TriggerSignal`, but `TriggerSignal` was defined internally in `domain/triggers.ts` and not re-exported in `@motion5/core`. TypeScript consumers could not import the type without importing unadvertised internal modules.
-
-**Decision.** Export `TriggerSignal` from `packages/core/src/index.ts`.
-
-**Alternatives rejected.** Expecting callers to use raw object literals without type definitions breaks TypeScript ergonomics and invariant P1-9.
-
-**Consequences.** Callers can import `TriggerSignal` directly from `@motion5/core`.
+**Decision.** Export TriggerSignal from the core entrypoint.
 
 ## ADR-023: Motion owns stagger playhead delay calculations
 
 **Status:** Accepted, 2026-08-15
 
-**Context.** `Motion.schedule()` computed stagger offsets, but `Motion.#setProgress()` applied raw progress to all tracks identically, rendering authored `stagger` ineffective.
-
-**Decision.** `Motion` computes per-track staggered progress `[0, 1]` based on track index and authored `stagger` value when driving progress.
-
-**Alternatives rejected.** Moving stagger computation into `Track` breaks `Track`'s role as a passive leaf node. Moving stagger into `ProjectRuntime` leaks composite Motion layout into the graph runtime.
-
-**Consequences.** Authored `stagger` behaves as specified without modifying `Track` leaf responsibilities.
+**Decision.** Motion computes per-track staggered progress; Track remains a passive leaf.
 
 ## ADR-024: GraphRuntime reentrancy uses queued deferred drains
 
 **Status:** Accepted, 2026-08-15
 
-**Context.** `GraphRuntime.ts` queues reentrant flush requests as deferred drains with a `DEFERRED_FLUSH_RULE` warning. `docs/ARCHITECTURE.md` Section 7 contained conflicting prose stating reentrancy is refused rather than queued.
+**Decision.** Retain queued deferred drains for reentrant flushes.
 
-**Decision.** Retain the tested queued deferred drain model in `GraphRuntime` and update `docs/ARCHITECTURE.md` Section 7 prose to match.
+## ADR-025: Editor mutation uses one removable track store
 
-**Alternatives rejected.** Refusing reentrant flushes drops graph invalidations requested by subscriber callbacks during batch notification.
+**Status:** Accepted, 2026-08-17
 
-**Consequences.** Reentrant graph mutations triggered during subscriber notification schedule a follow-up flush on the next tick without lost updates or infinite stack recursion.
+**Context.** The editor must add, edit, and remove both initially authored tracks and runtime-created tracks. Keeping a permanent schema baseline beside a removable runtime overlay makes deletion semantics conditional and forces every edit to understand two owners.
+
+**Decision.** After `Engine.load` validation, authored motion and free tracks are ingested into the same ProjectRuntime track store used by runtime additions. Ingestion preserves validated object identity and does not auto-mount nodes. This intentionally removes the old guarantee that schema-declared tracks are structurally permanent; editor deletion is now the uniform behavior.
+
+**Alternatives rejected.** Keeping the two-tier store preserves permanence but makes the primary editor use case impossible without special-case APIs. Auto-mounting changes existing load semantics and is rejected.
+
+**Consequences.** `snapshot`/export must be based on the live store in a follow-up or public runtime snapshot API. Fixed-schema consumers must treat loaded tracks as removable through the new capability surface.
+
+## ADR-026: Track mutation uses capability handles and non-destructive replacement
+
+**Status:** Accepted, 2026-08-17
+
+**Context.** Caller-invented owner objects can be reused with the wrong id, and destroy/recreate emits terminal `destroyed` patches that React consumers interpret as permanent removal.
+
+**Decision.** `TrackHandle` owns a private monotonic token. `remove` and `replace` are idempotent for stale handles and cannot affect a later node that reuses the same id. `replace` preserves node identity and uses a normal ready patch path; renaming remains remove plus add.
+
+**Consequences.** Handles are the only capability for track mutation. Observation edges remain fields on the observer track and are edited through replacement helpers.
+
+## ADR-027: Graph validation remains deletion enforcement
+
+**Status:** Accepted, 2026-08-17
+
+**Decision.** `dependantsOf` is a read-only query over committed GraphIR for editor preflight. It never replaces candidate graph validation, which remains the sole enforcement for rejecting source deletion with live dependants. No cascade deletion.
