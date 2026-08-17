@@ -5,7 +5,7 @@
 **Phase:** runtime mutation model (W1-W5) complete; trigger drivers (T3) complete. Phase 5 and Phase 6 remain as recorded below.  
 **Next action:** continue normal integration work from the updated base; scroll/time trigger availability is now implemented.
 
-This document reports current implementation reality. The detailed contract remains in `docs/PHASE5-DETAILED-PLAN.md`. 
+This document reports current implementation reality. The detailed contract remains in `docs/PHASE5-DETAILED-PLAN.md`.
 
 ## Runtime mutation model
 
@@ -19,11 +19,12 @@ This document reports current implementation reality. The detailed contract rema
 
 ## Trigger drivers (T3)
 
-| Slice | Scope                                                                              | State                                                                  |
-| ----- | ---------------------------------------------------------------------------------- | ---------------------------------------------------------------------- |
-| T3    | Scroll and time trigger definitions, drivers, and seam fixes for root T3 defects    | in this PR, [#124](https://github.com/chahyasantoso/motion5/pull/124)  |
+| Slice | Scope                                                                            | State                                                                 |
+| ----- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| T3    | Scroll and time trigger definitions, drivers, and seam fixes for root T3 defects | in this PR, [#124](https://github.com/chahyasantoso/motion5/pull/124) |
 
 **T3 breakdown:**
+
 - Commit `e9fa902` (test): red suite covering T3 trigger drivers and seam requirements
 - Commit `c1ee4ba` (seam): `resolveTriggerDefinition`, `ClockBinding` union, contract/diagnostics, expanded public exports, boundary validation
 - Commit `da36dee` (demo): React consumer updated to inject source key for Scroll/Time triggers
