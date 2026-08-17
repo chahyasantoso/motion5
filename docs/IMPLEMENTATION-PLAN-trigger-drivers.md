@@ -39,7 +39,7 @@ Read these files in full. They are the ones you will change or must not break:
 - `packages/core/src/contract/v5.ts` and `packages/core/src/contract/validate-v5.ts`
 - `packages/core/test/support/` — reuse the existing fake clock/scheduler helpers. Do not write new ones.
 
-Test runner is **vitest**. Test style convention: see `packages/core/test/unit/runtime/clock-tick-identity.test.ts`. Follow it, including the habit of commenting *why* an assertion exists.
+Test runner is **vitest**. Test style convention: see `packages/core/test/unit/runtime/clock-tick-identity.test.ts`. Follow it, including the habit of commenting _why_ an assertion exists.
 
 ### 0.3 Execution order
 
@@ -53,18 +53,18 @@ Test runner is **vitest**. Test style convention: see `packages/core/test/unit/r
 
 These replace section 14 of the exploration doc.
 
-| # | Question | **Decision** | Enforcement |
-| --- | --- | --- | --- |
-| 1 | Does a time Motion stop at `1`, loop, or ping-pong? | **Stop at `1`** in the first slice. The driver latches at `1`, emits `1` exactly once, then goes idle. | T2, test 2.3 |
-| 2 | Should `autoplay` default to `true`? | **`true` for `time`.** `false` is only legal once explicit paused-behavior exists, which is not in this plan. Until then, `autoplay: false` is **rejected at validation**, not accepted-and-ignored. | `trigger-time-autoplay-unsupported` |
-| 3 | What does a scroll source key resolve against? | **An injected, application-owned registry.** Never a DOM selector, element, or GSAP field inside core. Core receives a normalized progress source and nothing else. | T3 + `npm run test:boundaries` |
-| 4 | Do explicit `signal()` calls override a configured driver? | **Hard reject.** Not a documented override. Implemented via an `acceptsExternalSignal` capability flag on the Motion, **not** by branching on `trigger.type`. | T2, test 2.6 |
-| 5 | Should a missing scroll driver reject `load()` or leave the Motion dormant? | **Reject.** A dormant Motion is too easy to mistake for a working one. | `trigger-driver-unavailable` |
-| 6 | Are `repeat`/`yoyo` needed before the first time-driver release? | **No, deferred.** And because deferred fields must not look supported: the presence of `repeat` or `yoyo` on a time trigger is **rejected at validation**. | `trigger-time-repeat-unsupported` |
+| #   | Question                                                                    | **Decision**                                                                                                                                                                                         | Enforcement                         |
+| --- | --------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| 1   | Does a time Motion stop at `1`, loop, or ping-pong?                         | **Stop at `1`** in the first slice. The driver latches at `1`, emits `1` exactly once, then goes idle.                                                                                               | T2, test 2.3                        |
+| 2   | Should `autoplay` default to `true`?                                        | **`true` for `time`.** `false` is only legal once explicit paused-behavior exists, which is not in this plan. Until then, `autoplay: false` is **rejected at validation**, not accepted-and-ignored. | `trigger-time-autoplay-unsupported` |
+| 3   | What does a scroll source key resolve against?                              | **An injected, application-owned registry.** Never a DOM selector, element, or GSAP field inside core. Core receives a normalized progress source and nothing else.                                  | T3 + `npm run test:boundaries`      |
+| 4   | Do explicit `signal()` calls override a configured driver?                  | **Hard reject.** Not a documented override. Implemented via an `acceptsExternalSignal` capability flag on the Motion, **not** by branching on `trigger.type`.                                        | T2, test 2.6                        |
+| 5   | Should a missing scroll driver reject `load()` or leave the Motion dormant? | **Reject.** A dormant Motion is too easy to mistake for a working one.                                                                                                                               | `trigger-driver-unavailable`        |
+| 6   | Are `repeat`/`yoyo` needed before the first time-driver release?            | **No, deferred.** And because deferred fields must not look supported: the presence of `repeat` or `yoyo` on a time trigger is **rejected at validation**.                                           | `trigger-time-repeat-unsupported`   |
 
 ### 1.1 Consequences you must honor
 
-Decision 2 and 6 both resolve to the same principle already stated in the exploration doc: *never accept a field you do not honor*. The exploration doc's example shape included `repeat: 0` and `autoplay: true`. In this plan:
+Decision 2 and 6 both resolve to the same principle already stated in the exploration doc: _never accept a field you do not honor_. The exploration doc's example shape included `repeat: 0` and `autoplay: true`. In this plan:
 
 - `autoplay` may be **absent** or **`true`**. `false` is an error.
 - `repeat` and `yoyo` may **only be absent**. Any value, including `0`, is an error.
@@ -124,14 +124,14 @@ All four are the same root cause. Only the first was originally reported; the ot
 **B1-a — property order.** The reported case.
 
 ```ts
-handle.addObserve({ source: "hero/arm", role: "input" });    // '{"source":"hero/arm","role":"input"}'
+handle.addObserve({ source: "hero/arm", role: "input" }); // '{"source":"hero/arm","role":"input"}'
 handle.removeObserve({ role: "input", source: "hero/arm" }); // '{"role":"input","source":"hero/arm"}'
 // no match -> nothing removed, no error
 ```
 
 **B1-b — defaulted `role`.** `collectTrack` defaults a missing `role` to `"output"`. So `{ source: "a" }` and `{ source: "a", role: "output" }` are **the same graph edge** but different JSON strings. Add via one panel, remove via the other, silent failure.
 
-**B1-c — equivalent source spellings.** `qualifySource` in `ir.ts` resolves a bare source against the owning motion. For a track in motion `hero`, `{ source: "arm" }` and `{ source: "hero/arm" }` resolve to the identical `sourceId` `"hero/arm"`, i.e. the same edge, with different JSON strings. This is *more* likely across panels than B1-a, because a tree panel naturally emits fully-qualified ids while an inline property panel naturally emits bare ones.
+**B1-c — equivalent source spellings.** `qualifySource` in `ir.ts` resolves a bare source against the owning motion. For a track in motion `hero`, `{ source: "arm" }` and `{ source: "hero/arm" }` resolve to the identical `sourceId` `"hero/arm"`, i.e. the same edge, with different JSON strings. This is _more_ likely across panels than B1-a, because a tree panel naturally emits fully-qualified ids while an inline property panel naturally emits bare ones.
 
 **B1-d — `projection.map` key order.** `{ map: { a: "x", b: "y" } }` and `{ map: { b: "y", a: "x" } }` are the same projection.
 
@@ -277,13 +277,13 @@ Also confirm the duplicate-edge behavior under **both** graph builders: `Engine`
 
 Each test drives the **public** `TrackHandle` API and asserts on `runtime.graph.state.snapshot().edges`, so it proves user-visible behavior rather than the helper's return value.
 
-- **0.1** add `{ source, role }`, remove `{ role, source }` → edge count returns to its pre-add value. *(B1-a, the reported bug. This test must fail before the fix.)*
-- **0.2** add `{ source: "hero/arm" }`, remove `{ source: "hero/arm", role: "output" }` → removed. *(B1-b)*
-- **0.3** for a track in motion `hero`: add `{ source: "arm", role: "input", target: "x" }`, remove `{ source: "hero/arm", role: "input", target: "x" }` → removed. *(B1-c)*
-- **0.4** add `{ source, role: "input", projection: { map: { a: "x", b: "y" } } }`, remove with `{ map: { b: "y", a: "x" } }` → removed. *(B1-d)*
-- **0.5** `addObserve` twice with swapped property order → **does not throw**, and edge count increases by exactly `1`. *(This is the crash from 3.3; it must become an idempotent no-op.)*
-- **0.6** `removeObserve` for an observation that was never added → no throw, and `runtime.graph.sequence` is unchanged, proving no graph replacement happened. *(no-op must not churn)*
-- **0.7** a **free** track calling `addObserve({ source: "arm" })` (bare source, no owning motion) throws a `TypeError` mentioning `observation-source`. *(intended, per 3.5)*
+- **0.1** add `{ source, role }`, remove `{ role, source }` → edge count returns to its pre-add value. _(B1-a, the reported bug. This test must fail before the fix.)_
+- **0.2** add `{ source: "hero/arm" }`, remove `{ source: "hero/arm", role: "output" }` → removed. _(B1-b)_
+- **0.3** for a track in motion `hero`: add `{ source: "arm", role: "input", target: "x" }`, remove `{ source: "hero/arm", role: "input", target: "x" }` → removed. _(B1-c)_
+- **0.4** add `{ source, role: "input", projection: { map: { a: "x", b: "y" } } }`, remove with `{ map: { b: "y", a: "x" } }` → removed. _(B1-d)_
+- **0.5** `addObserve` twice with swapped property order → **does not throw**, and edge count increases by exactly `1`. _(This is the crash from 3.3; it must become an idempotent no-op.)_
+- **0.6** `removeObserve` for an observation that was never added → no throw, and `runtime.graph.sequence` is unchanged, proving no graph replacement happened. _(no-op must not churn)_
+- **0.7** a **free** track calling `addObserve({ source: "arm" })` (bare source, no owning motion) throws a `TypeError` mentioning `observation-source`. _(intended, per 3.5)_
 - **0.8** `addObserve` with `role: "output"` and a `target` throws mentioning `observation-output-target`, and the live edge set is unchanged.
 
 ### Tests — `packages/core/test/unit/graph/edge-key-canonical.test.ts`
@@ -291,7 +291,7 @@ Each test drives the **public** `TrackHandle` API and asserts on `runtime.graph.
 - **0.9** `edgeKey` is equal for `{ map: { a: "x", b: "y" } }` and `{ map: { b: "y", a: "x" } }`.
 - **0.10** `edgeKey` is equal for `pick: ["a", "b"]` and `pick: ["b", "a"]`.
 - **0.11** `edgeKey` still differs for genuinely different projections (`pick: ["a"]` vs `pick: ["a", "b"]`, and `map: { a: "x" }` vs `map: { a: "y" }`).
-- **0.12** `resolveObservationEdge` and `collectTrack` produce byte-identical `edgeKey`s for the same authored observation. *(Guards against the two-implementations regression from step 3.)*
+- **0.12** `resolveObservationEdge` and `collectTrack` produce byte-identical `edgeKey`s for the same authored observation. _(Guards against the two-implementations regression from step 3.)_
 
 ### Acceptance gate
 
@@ -332,13 +332,13 @@ export type TriggerDefinition =
 
 Extend the existing `trigger-shape` block with per-type rules. Exact rule IDs:
 
-| Rule ID | Condition | Path |
-| --- | --- | --- |
-| `trigger-shape` | not an object, or `type` not in `SUPPORTED_TRIGGER_TYPES` *(existing)* | `motions[i].trigger` |
-| `trigger-time-duration` | `type === "time"` and `duration` is not a finite number `> 0` (including absent) | `motions[i].trigger.duration` |
-| `trigger-time-autoplay-unsupported` | `type === "time"` and `autoplay` is present and not `true` | `motions[i].trigger.autoplay` |
-| `trigger-time-repeat-unsupported` | `type === "time"` and `repeat` or `yoyo` is present at all | `motions[i].trigger.repeat` / `.yoyo` |
-| `trigger-scroll-source` | `type === "scroll"` and `source` is present but not a non-empty string | `motions[i].trigger.source` |
+| Rule ID                             | Condition                                                                        | Path                                  |
+| ----------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------- |
+| `trigger-shape`                     | not an object, or `type` not in `SUPPORTED_TRIGGER_TYPES` _(existing)_           | `motions[i].trigger`                  |
+| `trigger-time-duration`             | `type === "time"` and `duration` is not a finite number `> 0` (including absent) | `motions[i].trigger.duration`         |
+| `trigger-time-autoplay-unsupported` | `type === "time"` and `autoplay` is present and not `true`                       | `motions[i].trigger.autoplay`         |
+| `trigger-time-repeat-unsupported`   | `type === "time"` and `repeat` or `yoyo` is present at all                       | `motions[i].trigger.repeat` / `.yoyo` |
+| `trigger-scroll-source`             | `type === "scroll"` and `source` is present but not a non-empty string           | `motions[i].trigger.source`           |
 
 All severity `error`. A missing `scroll.source` is **not** a validation error: whether a key is required is the injected factory's business, and that failure is `trigger-driver-unavailable` at load time (decision 5).
 
@@ -397,7 +397,7 @@ export function assertTriggerFactory(
 - **1.1** `Engine` with no `triggerFactory` behaves identically to before: existing suite green, unchanged.
 - **1.2** `assertTriggerFactory` rejects `null`, `{}`, and `{ create: 1 }`.
 - **1.3** `validateMotionTrigger` produces exactly the expected rule ID for each row of the 5.2 table, and an empty array for `{ type: "time", duration: 1000 }`, `{ type: "time", duration: 1000, autoplay: true }`, `{ type: "manual" }`, `{ type: "scroll" }`, `{ type: "scroll", source: "hero" }`.
-- **1.4** `{ type: "time", duration: 1000, repeat: 0 }` is rejected. *(Explicitly: `0` is not a free pass.)*
+- **1.4** `{ type: "time", duration: 1000, repeat: 0 }` is rejected. _(Explicitly: `0` is not a free pass.)_
 
 ### Forbidden in T1
 
@@ -450,7 +450,7 @@ Today, `Engine.load()` does:
 ```ts
 onClockTick: (event) => {
   for (const motion of motions.values()) motion.onTick(event);
-}
+};
 ```
 
 Because `Motion.#onTick` advances progress by `delta / totalDuration`, **leaving this line in place while adding a time driver double-advances every time Motion.** Replace it with a single consumer fanout:
@@ -465,17 +465,17 @@ onClockTick: (event) => {
 
 Registration rules, per Motion, at `buildMotion` time:
 
-| Trigger type | Clock consumer registered | Rationale |
-| --- | --- | --- |
-| `manual` | forwards to `motion.onTick(event)` | **Preserves today's behavior byte for byte.** Manual Motions are clock-advanced today and must remain so. |
-| `time` | forwards to `createdTrigger.onTick(event)` | The driver owns time semantics. |
-| `scroll` (T3) | none | Push-driven. A scroll Motion must not advance on the clock. |
+| Trigger type  | Clock consumer registered                  | Rationale                                                                                                 |
+| ------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `manual`      | forwards to `motion.onTick(event)`         | **Preserves today's behavior byte for byte.** Manual Motions are clock-advanced today and must remain so. |
+| `time`        | forwards to `createdTrigger.onTick(event)` | The driver owns time semantics.                                                                           |
+| `scroll` (T3) | none                                       | Push-driven. A scroll Motion must not advance on the clock.                                               |
 
 Exactly one consumer per Motion. Never both `motion.onTick` and a driver `onTick`. Assert this in code, not just in tests: the registration site should be a single `switch`-free expression derived from `createdTrigger.onTick === undefined`.
 
 Deregistration: `destroyMotion` and `disposeComposition` must remove the consumer and call `createdTrigger.dispose()` exactly once, before/alongside `motion.dispose()`.
 
-> **Known debt, do not fix here:** `manual` today *is* an implicit time trigger with `duration = totalDuration`. Unifying manual onto the time driver is a follow-up, tracked separately. Attempting it in T2 will break a large number of existing tests and is out of scope.
+> **Known debt, do not fix here:** `manual` today _is_ an implicit time trigger with `duration = totalDuration`. Unifying manual onto the time driver is a follow-up, tracked separately. Attempting it in T2 will break a large number of existing tests and is out of scope.
 
 ### 6.4 `Motion` changes — the only ones permitted
 
@@ -508,12 +508,12 @@ Use the existing fake clock and scheduler from `test/support`. Flush the schedul
 
 - **2.1 factory selection** — `manual`, `time`, `scroll` definitions each select the intended driver; assert on `acceptsExternalSignal` and on `onTick === undefined`.
 - **2.2 time math** — `duration = 1000`, deltas `250`, `250`, `500` produce progress exactly `0.25`, `0.5`, `1`. Exact equality, not `toBeCloseTo`.
-- **2.3 stop at `1`** — after reaching `1`, three further ticks of `250` emit **nothing**. Assert emission count, not just final progress. *(Decision 1.)*
+- **2.3 stop at `1`** — after reaching `1`, three further ticks of `250` emit **nothing**. Assert emission count, not just final progress. _(Decision 1.)_
 - **2.4 no emission before first tick** — progress is `0` and the port has emitted `0` times immediately after `load()`.
-- **2.5 one clock subscription** — a project with 5 time Motions and 5 manual Motions produces `Clock.subscribe` call count `1`. *(Non-negotiable 5.)*
-- **2.6 hard reject** — `handle.signal("timeMotion", { type: "time", progress: 0.5 })` throws `TypeError` with the 6.4 message, and progress is unchanged afterward. Same for a scroll-driven Motion in T3. *(Decision 4.)*
+- **2.5 one clock subscription** — a project with 5 time Motions and 5 manual Motions produces `Clock.subscribe` call count `1`. _(Non-negotiable 5.)_
+- **2.6 hard reject** — `handle.signal("timeMotion", { type: "time", progress: 0.5 })` throws `TypeError` with the 6.4 message, and progress is unchanged afterward. Same for a scroll-driven Motion in T3. _(Decision 4.)_
 - **2.7 manual still accepts signals** — unchanged behavior, including the existing `RangeError` for `progress` outside `[0, 1]`.
-- **2.8 no double advance** — a time Motion with `duration = 1000` and one `1000`ms tick lands at exactly `1`, not clamped-from-`2`. Assert the emitted sequence has length `1`. *(This is the test that catches the fact-4 trap.)*
+- **2.8 no double advance** — a time Motion with `duration = 1000` and one `1000`ms tick lands at exactly `1`, not clamped-from-`2`. Assert the emitted sequence has length `1`. _(This is the test that catches the fact-4 trap.)_
 - **2.9 lifecycle** — `pause()` stops progress; `play()` resumes without duplicate callbacks (assert subscription count `1`); `dispose()` detaches and a post-dispose `onTick` emits nothing.
 - **2.10 validation** — `{ type: "time" }` with no duration fails `Engine.load()` with `trigger-time-duration` in the thrown message.
 - **2.11 backpressure** — 100 rapid driver emissions before a scheduler flush result in exactly one `setProgress` call, with the latest value.
@@ -621,6 +621,6 @@ B1 is a second edge-identity function competing with the canonical one. The trig
 The decisive rules, restated so they cannot drift:
 
 - **One edge identity: `edgeKey()`.** Nothing compares observations any other way.
-- **One clock fanout owner, one consumer per Motion.** Never a driver *and* `motion.onTick`.
+- **One clock fanout owner, one consumer per Motion.** Never a driver _and_ `motion.onTick`.
 - **One Motion input: normalized progress in `[0, 1]`.** `Motion` never learns what a trigger type is.
 - **A declared trigger type either selects a real driver or fails loudly.** Never a silent fallback, never an accepted-but-ignored field.

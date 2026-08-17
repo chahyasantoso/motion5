@@ -133,9 +133,7 @@ export const App: React.FC = () => {
                 fontSize: "0.75rem",
                 fontWeight: "700",
                 fontFamily: "monospace",
-                background: armsAdopted
-                  ? "rgba(56, 189, 248, 0.2)"
-                  : "rgba(100, 116, 139, 0.2)",
+                background: armsAdopted ? "rgba(56, 189, 248, 0.2)" : "rgba(100, 116, 139, 0.2)",
                 border: `1px solid ${armsAdopted ? "#38bdf8" : "#475569"}`,
                 color: armsAdopted ? "#38bdf8" : "#94a3b8",
                 transition: "all 0.3s ease",

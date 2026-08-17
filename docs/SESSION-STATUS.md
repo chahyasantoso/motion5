@@ -9,13 +9,13 @@ This document reports current implementation reality. The detailed contract rema
 
 ## Runtime mutation model
 
-| Package | Scope | State |
-| --- | --- | --- |
-| W1 | Builder cache correctness (A3 cached failures, A5 owner-blind key) | merged, [#109](https://github.com/chahyasantoso/motion5/pull/109) |
-| W2 | Transactional `adopt`/`destroyAdopted` (P1, A1) | merged, [#110](https://github.com/chahyasantoso/motion5/pull/110) |
-| W3 | Freeze and validate adopted tracks (A2) | merged, [#111](https://github.com/chahyasantoso/motion5/pull/111) |
-| W4 | Runtime `addMotion`/`destroyMotion` (P2) | merged, [#112](https://github.com/chahyasantoso/motion5/pull/112) |
-| W5 | Unified store, capability handles, `replaceTrack` (P3) | merged into this base, [#113](https://github.com/chahyasantoso/motion5/pull/113) |
+| Package | Scope                                                              | State                                                                            |
+| ------- | ------------------------------------------------------------------ | -------------------------------------------------------------------------------- |
+| W1      | Builder cache correctness (A3 cached failures, A5 owner-blind key) | merged, [#109](https://github.com/chahyasantoso/motion5/pull/109)                |
+| W2      | Transactional `adopt`/`destroyAdopted` (P1, A1)                    | merged, [#110](https://github.com/chahyasantoso/motion5/pull/110)                |
+| W3      | Freeze and validate adopted tracks (A2)                            | merged, [#111](https://github.com/chahyasantoso/motion5/pull/111)                |
+| W4      | Runtime `addMotion`/`destroyMotion` (P2)                           | merged, [#112](https://github.com/chahyasantoso/motion5/pull/112)                |
+| W5      | Unified store, capability handles, `replaceTrack` (P3)             | merged into this base, [#113](https://github.com/chahyasantoso/motion5/pull/113) |
 
 ## Current architecture
 

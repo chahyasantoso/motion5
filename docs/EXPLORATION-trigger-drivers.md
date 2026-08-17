@@ -307,9 +307,9 @@ The current `TriggerSignal` includes `type` and optional `progress`. It is usefu
 Keep these concepts separate:
 
 ```ts
-MotionDefinition.trigger   // declarative source configuration
-TriggerSignal              // imperative event sent to a Motion
-TriggerPort                // normalized progress stream from a source
+MotionDefinition.trigger; // declarative source configuration
+TriggerSignal; // imperative event sent to a Motion
+TriggerPort; // normalized progress stream from a source
 ```
 
 For a scroll Motion, `signal({ type: "scroll", progress })` could remain a manual override, but it should not be required when the configured scroll driver is active. Decide whether manual signals override, merge with, or are rejected for non-manual Motions. Recommendation: allow explicit signals as a test/debug override, but document precedence.

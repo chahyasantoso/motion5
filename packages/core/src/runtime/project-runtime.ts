@@ -284,7 +284,8 @@ export class ProjectRuntime {
     this.#disposeTrack?.(id);
     this.#compileTrack?.(accepted, id);
     this.#tracks.set(id, { ...entry, track: accepted });
-    if (entry.motionId !== undefined) this.#replaceMotionTrack?.(entry.motionId, id, accepted.duration);
+    if (entry.motionId !== undefined)
+      this.#replaceMotionTrack?.(entry.motionId, id, accepted.duration);
   }
   #replaceWithObservation(
     id: string,
