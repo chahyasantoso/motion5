@@ -5,7 +5,6 @@ import type { TriggerPort } from "./trigger";
 
 export interface ClockConsumer {
   onTick(event: ClockTick): void;
-  dispose(): void;
 }
 
 export interface TriggerFactoryContext {
