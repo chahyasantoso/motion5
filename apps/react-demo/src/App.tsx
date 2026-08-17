@@ -60,8 +60,7 @@ export const App: React.FC = () => {
       scheduler,
       plugins,
       triggerFactory: createTriggerFactory({
-        scroll: ({ trigger }) =>
-          trigger.source === WALK_SCROLL_SOURCE ? scrollSource : undefined,
+        scroll: ({ trigger }) => (trigger.source === WALK_SCROLL_SOURCE ? scrollSource : undefined),
       }),
     }).load(initialWalkerProject);
 
