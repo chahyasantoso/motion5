@@ -1,244 +1,220 @@
 # motion5 architecture
 
-**Status:** Target design. Phase 0 has no implementation. Where this document uses the present tense, it describes what the code must satisfy once it exists, not what exists today. Reality lives in [SESSION-STATUS.md](./SESSION-STATUS.md).
+**Status:** Current implementation, verified against `feat/w5-unified-mutation-surface` after W1-W5. The canonical execution record is [SESSION-STATUS.md](./SESSION-STATUS.md). The public consumer reference is [PUBLIC-API.md](./PUBLIC-API.md).
 
-## 1. The one invariant
+## 1. The simple version
 
-A loaded project has exactly one:
+motion5 is a graph engine for animated values.
 
-- authoritative observation graph;
-- live observation state;
-- mutation coordinator;
-- publisher;
-- patch registry;
-- clock subscription.
+A project contains **Motions** and **Tracks**:
 
-Every other rule in this document is a consequence of that one. When a change makes any of those six ambiguous, the change is wrong regardless of how well it is written.
+- A **Track** is one animated leaf, such as `x`, `rotation`, or a plugin-defined value.
+- A **Motion** is a group that drives several Tracks together, including staggered timing.
+- A Track may **observe** another Track. That creates a directed dataflow edge.
+- The graph evaluates sources before the Tracks that depend on them, then publishes immutable patches.
 
-## 2. Layers
+The important rule: **there is one graph, one live graph state, one publisher, and one public project handle.** There are no separate graph implementations for authored content and runtime content.
+
+## 2. Current status
+
+W1 through W5 are implemented and W5 is ready for review in [PR #113](https://github.com/chahyasantoso/motion5/pull/113). The final W5 CI run [31989827456](https://github.com/chahyasantoso/motion5/actions/runs/31989827456) passed quality, integration, boundaries, build, end-to-end, performance, and formatting.
+
+The runtime mutation model now supports:
+
+- adding and removing Motions at runtime;
+- adding and removing authored or runtime Tracks through one store;
+- editing a Track without emitting a terminal destruction patch;
+- adding and removing observation edges through Track replacement;
+- safely rejecting invalid graph changes without partial state;
+- reading dependants before attempting a destructive change.
+
+Scroll/time trigger drivers are **not** implemented in core yet. Core currently preserves `trigger.type` in the schema but constructs Motions with the manual trigger path.
+
+## 3. Layers
 
 ```text
-         GSAP        DOM        React       Browser clock
-            \         |           |            /
-             +--------+-----------+-----------+
-                            |
-                          Ports
-                 Clock  Interpolator  Scheduler
-                            |
-                         Engine
-                            |
-                      ProjectRuntime
-                            |
-                       GraphRuntime
-                     /      |       \
-           GraphBinding  Publisher  PatchRegistry
-                  |
+External adapters: GSAP, DOM, React, browser clock
+                         |
+                        Ports
+          Clock / Interpolator / Scheduler / TriggerPort
+                         |
+                       Engine
+                         |
+                   ProjectRuntime
+                         |
+                    GraphRuntime
+                 /       |        \
+          GraphBinding Publisher PatchRegistry
+                 |
            ObservationState
 
-  Motion  owns topology, scheduling, triggers, playback, children
-  Track   owns playhead, interpolation, local plugin composition
+Motion: composite scheduling and playback
+Track:  leaf interpolation and playhead state
 ```
 
-Dependencies point inward only. Contract has no dependencies. Domain depends on contract. Graph depends on contract and domain. Runtime depends on graph. Ports are depended upon, never depending. Adapters depend on ports and on their own external engine, and nothing depends on adapters except the composition root.
+Dependencies point inward:
 
-## 3. Ownership
+- **Contract** defines schema, types, diagnostics, and validation.
+- **Domain** defines Track, Motion, plugins, and immutable value behavior.
+- **Graph** defines qualified ids, graph IR, ordering, edges, and live observation state.
+- **Runtime** coordinates project lifecycle, graph replacement, publication, and patches.
+- **Ports** describe external capabilities without importing their implementations.
+- **Adapters** connect real engines or environments to the ports.
 
-One owner per responsibility. If two things can perform an operation, one of them is wrong.
+Core layers do not import GSAP, React, or the DOM. The composition root, `Engine`, wires those capabilities in.
 
-- **Engine** owns the composition root: constructing a `ProjectRuntime`, wiring adapters to ports, and the user-facing entrypoint. It performs no graph work itself.
-- **ProjectRuntime** owns project lifetime, the normalized project, membership, the instance registry, diagnostics, and exactly one `GraphRuntime`. It is the only mount path.
-- **GraphRuntime** owns one binding, one observation state, one publisher, one patch registry, and one clock subscription. It is project-wide, never Motion-wide.
-- **GraphBinding** is the only topology mutation coordinator. Every add, remove, and replace of a node or edge goes through it, transactionally.
-- **ObservationState** owns live edges and observers. It is long-lived and mutated in place with an undo journal. It is never rebuilt after a commit.
-- **GraphPublisher** owns traversal and publication of a validated snapshot. It cannot add or remove graph entities. It has no mutation methods at all.
-- **PatchRegistry** owns patch identity, revisions, immutability, batching, and subscriber notification.
-- **Motion** owns child membership and hierarchy, stagger, layout, reflow, timeline construction, playback, trigger delegates, and child teardown. Motion is the only composite.
-- **Track** owns playhead and progress state, interpolation inputs, resolved local plugin composition, local lifecycle, and renderer-neutral snapshots. Track is a leaf. It has no children, no parent, no group host, and no graph traversal.
+## 4. Ownership: who is allowed to do what
 
-Some authored data has no runtime owner at all, and that is deliberate. `perspective` is validated at load and handed to the renderer untouched. Nothing in the core reads it. See [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md).
+There is one owner per responsibility.
 
-## 4. Invariants
+### Engine
 
-Each one is a test, not a hope. The test id is the invariant id.
+`Engine` is the composition root. It validates the project, creates compiler and Motion hooks, constructs `ProjectRuntime`, and returns the public `ProjectHandle`. It does not implement graph algorithms.
 
-- **I-1** Exactly one observation state instance exists per loaded project, and its identity is stable across every successful and failed mutation.
-- **I-2** A failed mutation leaves graph IR, live edges, publisher indexes, lifecycle subscriptions, ownership, and published patches byte-identical to their pre-mutation snapshot.
-- **I-3** The publisher exposes no method that changes topology.
-- **I-4** No Track method reads or walks graph dependencies.
-- **I-5** A flush composes each dirty node at most once.
-- **I-6** Subscribers are notified only at batch close. No subscriber observes a partial flush.
-- **I-7** Published patches are deeply frozen. Mutating a received patch throws in strict mode and never affects a later reader.
-- **I-8** Revisions are monotonic per node and only advance when a published value actually changes.
-- **I-9** A composition failure blocks its entire downstream closure and publishes a blocked status for those nodes.
-- **I-10** `dispose` and `destroy` are idempotent, owner-first, and safe to call during teardown of an owner.
-- **I-11** No module under `core/contract`, `core/domain`, `core/graph`, or `core/runtime` imports an animation engine, the DOM, or React.
-- **I-12** Canonical ordering is a pure function of qualified ids and authored order. It never depends on `Map` insertion order derived from runtime events.
-- **I-13** Exactly one upstream clock subscription exists per project, regardless of how many motions are mounted.
-- **I-14** No shipped code branches on a capability or rollout flag. Free tracks and cross-motion references travel the same path as any authored node.
-- **I-15** A warning-severity diagnostic never blocks a load, and an error-severity diagnostic never permits one.
+### ProjectRuntime
 
-## 5. Identity
+`ProjectRuntime` owns one project lifetime and one mutable model of its current content:
 
-Authored ids stay local to their motion. Runtime ids are always qualified, and qualification happens exactly once, at load.
+- the unified Track store;
+- the Motion definition store;
+- mounted instance membership;
+- diagnostics history;
+- the one `GraphRuntime`;
+- mutation capability tokens.
 
-- `motionId/trackId` for a track authored inside a motion.
-- `~/trackId` for a free track, authored in the project's `freeTracks` array or adopted at runtime.
+It is the only path for mounting, unmounting, and project mutations.
 
-Qualified ids are the sort key for canonical ordering, the key of every registry, and the node id on every published patch. Nothing downstream of load ever sees an unqualified id. `/` is reserved as the separator and `~` is reserved as the free-track namespace; both are rejected in authored ids.
+### GraphRuntime
 
-A free track is not a distinct node type. Once qualified, it differs from a motion track in exactly one way: nothing schedules it, so its playhead is advanced by whoever owns it. Ordering, validation, composition, publication, and teardown are identical.
+`GraphRuntime` owns one `GraphBinding`, one `ObservationState`, one `GraphPublisher`, one `PatchRegistry`, and one clock subscription. It exposes the committed GraphIR read-only for queries such as `dependantsOf`, but it does not own topology mutation policy.
 
-Reference resolution is total: a reference is either resolved to a member, or recorded as a pending reference with a diagnostic. There is no third state, and a pending reference never publishes.
+### GraphBinding
+
+`GraphBinding` is the only topology coordinator. Every candidate graph is built and validated before live observation state changes. Apply-phase failures roll the live state back.
+
+### GraphPublisher
+
+`GraphPublisher` traverses a committed graph and publishes patches. It cannot add, remove, or replace graph entities.
+
+### PatchRegistry
+
+`PatchRegistry` owns patch identity, revisions, deep freezing, batching, terminal destruction patches, and subscriber notification.
+
+### Motion
+
+`Motion` is the only composite. It owns Track membership, stagger, scheduling, playhead progression, trigger wiring, playback, and Motion-local teardown.
+
+### Track
+
+`Track` is a leaf. It owns interpolation, playhead state, plugin composition, local lifecycle, and renderer-neutral values. It has no children and does not traverse graph dependencies.
+
+## 5. Identity and storage
+
+Authored ids are local. Published and runtime ids are qualified exactly once:
+
+- `motionId/trackId` for a Track inside a Motion;
+- `~/trackId` for a free Track.
+
+The unified W5 store contains both schema-declared Tracks and runtime-created Tracks. Schema Tracks retain the frozen object identity produced by `validateV5`; runtime Tracks enter through `validateTrackDefinition` and are stored as frozen clones.
+
+This is an intentional editor tradeoff: loaded schema Tracks are now removable through the same capability surface as runtime Tracks. They are not automatically mounted. Existing load behavior remains explicit: callers must call `mount()`.
+
+A private schema-owner sentinel distinguishes ingested schema content from caller-owned runtime content. Public callers do not receive a schema removal capability by accident; they use the runtime Track lookup/capability surface.
 
 ## 6. Mutation transaction
 
-All topology changes take the same path.
+Every topology mutation follows the same shape:
 
 ```text
-command
-  -> build candidate graph
-  -> normalize and validate candidate
-  -> apply observation state changes, recording an undo journal
-  -> apply publisher schedule changes
-  -> commit immutable graph snapshot
-  -> invalidate affected nodes
-  -> release journal
+public command
+  -> validate input
+  -> build an in-memory candidate store
+  -> build and validate candidate GraphIR
+  -> commit graph
+  -> commit runtime maps and compiled lifecycle
+  -> publish/invalidate as needed
 ```
 
-Any failure before commit replays the undo journal in reverse and rethrows the original error with the candidate diagnostics attached. Nothing observable changes. There is no partial application and no repair step.
+If candidate validation fails, the operation throws before the live maps, mounted membership, compiled Track lifecycle, or patch wire are changed.
 
-Commit swaps an immutable IR snapshot. It does not recreate live state, and it does not recreate subscriptions. Live state is mutated in place precisely so that identity survives commit, which is what makes an undo journal meaningful.
+This is why deleting a source with a live dependant is safe: the candidate graph contains an unknown source and `GraphBinding` rejects it. The dependant remains live, and no false `destroyed` patch is sent.
 
-## 7. Flush
+Track replacement follows the same candidate-first rule but keeps the node id. Because the id remains present, the graph does not evict the node and subscribers do not receive a terminal destruction patch.
 
-One tick produces one batch.
+## 7. Capability handles and ABA safety
 
-1. A clock tick or an explicit flush opens a batch.
-2. Dirty seeds are collected from playhead invalidation and from mutations since the last flush.
-3. The publisher walks the canonical topological order, restricted to the downstream closure of the seeds.
-4. Each dirty node composes at most once. Memoization is per batch, so a diamond composes its shared ancestor once.
-5. Input-role edges contribute to the source object before local composition. Output-role edges merge over the resulting patch after it.
-6. If a node's composition throws, the node publishes an error status, its downstream closure publishes a blocked status, and traversal continues for unrelated branches.
-7. Publication is deduplicated: unchanged values, progress, source revisions, and status mean no new revision.
-8. Retry metadata is retained only for nodes whose publication failed.
-9. The batch closes and subscribers are notified, node subscribers first, then batch subscribers.
+`addTrack()` and `track()` return a `TrackHandle`. The handle contains:
 
-Reentrancy is refused, not queued: a flush triggered during a flush returns immediately. A subscriber that mutates the graph schedules work for the next tick.
+- the qualified `id`;
+- the frozen Track definition;
+- `remove()`;
+- `replace(next)`;
+- `addObserve(observation)`;
+- `removeObserve(observation)`.
 
-## 8. Ports
+Each live Track instance has a private monotonic token. If a Track is removed and the same id is later reused, the old handle's methods become no-ops. An old handle can never delete or edit the new Track.
 
-The core accepts capabilities, never implementations.
+This replaces the weaker caller-invented owner-plus-string-id pattern for the new API. `adopt()` and `destroyAdopted()` remain as compatibility wrappers for existing consumers.
 
-```ts
-interface Clock {
-  subscribe(listener: (event: { tick: number; time: number }) => void): () => void;
-}
+## 8. Flush and publication
 
-interface Interpolator {
-  create(config: unknown): InterpolationTimeline;
-}
+One clock tick or explicit invalidation produces one patch batch.
 
-interface Scheduler {
-  schedule(job: () => void, options?: unknown): Cancel;
-}
-```
+1. A Motion or direct `seek()` changes Track progress.
+2. The runtime invalidates affected node ids.
+3. The publisher walks canonical topological order.
+4. Each dirty node composes at most once per batch.
+5. Input and output observation edges contribute values in graph order.
+6. A composition failure publishes an error and blocks downstream dependants without aborting unrelated branches.
+7. Unchanged patches are deduplicated.
+8. Subscribers receive immutable node patches and batch summaries.
 
-Every port ships with a fake, and the fake is the implementation the core test suite uses. Every port also ships a contract test suite that both the fake and each real adapter must pass. A port without a passing real adapter is an unproven interface.
+Published patches and batches are deeply frozen. Revisions are monotonic per node. Destruction publishes one terminal `status: "destroyed"` patch; unmounting is reversible and does not publish destruction.
 
-One clock subscription exists per project. Tick numbers are monotonic across detach and reattach cycles, because retry scheduling depends on them never moving backwards.
+Reentrant invalidation requests are queued for a deferred scheduler drain, not recursively flushed.
 
-## 9. Publication contract
+## 9. Lifecycle
 
-A patch is frozen and carries:
+`mount()` attaches a node to the runtime's active membership set. `unmount()` detaches it while leaving its graph definition alive for remounting.
 
-- `nodeId`, the qualified id;
-- `revision`, monotonic per node;
-- `values`, deeply frozen;
-- `sourceProgress`, the playhead of the producing node;
-- `sourceRevisions`, the revision of every node that contributed;
-- `status`, one of `ready`, `blocked`, `error`;
-- `diagnostics`, empty for `ready`.
+Removing a Track is permanent for that Track instance:
 
-A batch carries its patches, the tick number, the seed set, and a diagnostics summary. Subscribers consume batches or node patches. Nothing in the subscriber contract exposes a Track, a Motion, or a graph object.
+- graph membership is removed;
+- the patch registry emits a terminal destruction patch when appropriate;
+- compiled Track resources are disposed;
+- Motion membership is removed;
+- the capability token becomes stale.
 
-## 10. Lifecycle
+`dispose()` is idempotent and tears down the clock subscription, Motion instances, Tracks, graph, patch registry, and diagnostics ownership.
 
-Teardown is owner-first. The owner removes graph membership, subscriptions, and edges before the contained object releases local resources, so no callback ever fires against a half-detached node.
+## 10. Validation and diagnostics
 
-`dispose` and `destroy` are idempotent and reentrancy-safe: the guard flag is set before any notification, never after. A borrowed runtime is detached by its borrower and destroyed only by its owner. Ownership is decided at construction and never changes during teardown.
+There is one validation owner: `packages/core/src/contract/validate-v5.ts`.
 
-A free track authored in `freeTracks` is owned by the project and released with it. A free track adopted at runtime is owned by whoever adopted it, and the project detaches rather than destroys it.
+- `validateV5()` validates and freezes a whole project.
+- `validateTrackDefinition()` validates and freezes one runtime Track definition.
+- graph validation checks duplicate nodes, invalid references, invalid projections, self-references, and cycles.
 
-## 11. Diagnostics
+Errors reject a load or mutation. Warnings do not block a load. Runtime diagnostics remain inline on patches/batches and are also retained in the bounded project diagnostics buffer.
 
-One diagnostic shape everywhere:
+## 11. Public boundary
 
-```ts
-interface Diagnostic {
-  ruleId: string;
-  path: string;
-  message: string;
-  severity: "error" | "warning";
-  ids?: string[];
-}
-```
+The public package entry is `packages/core/src/index.ts`. It exports the stable consumer types and `Engine`, but not `ProjectRuntime`, `GraphRuntime`, `GraphBinding`, `GraphPublisher`, `PatchRegistry`, `ObservationState`, or normalization helpers.
 
-At load, any `error` rejects the project and no `warning` does. Warnings are collected on the project and readable after load. They are never thrown and never promoted by a flag. See invariant I-15 and ADR-010.
+The public declaration closure is tested so runtime and graph implementation declarations do not leak through `ProjectHandle` types. `TrackHandle` is defined at the Engine boundary for this reason.
 
-At runtime, diagnostics accumulate on the project in a bounded ring buffer and surface on the affected patch. Aggregated failures within a single flush are reported as one aggregate error after the pass completes, never by aborting the pass.
+## 12. Deliberately out of scope
 
-## 12. Module layout
+- Scroll/time trigger implementations. `trigger.type` is currently schema data plus manual trigger behavior.
+- Cascade deletion. Source removal is rejected while live dependants exist.
+- A second graph or publisher for editor mode.
+- Renderer imports in core.
+- Track child topology or Motion graph traversal.
+- Compatibility facades, rollout flags, and duplicate validation owners.
 
-```text
-packages/
-  core/
-    src/
-      contract/    authored schema constants, public types, diagnostics shape
-      domain/      Track, Motion, plugins, immutable value snapshots
-      graph/       qualified ids, IR, normalization, validation, ObservationState, GraphBinding
-      runtime/     ProjectRuntime, GraphRuntime, GraphPublisher, PatchRegistry
-      ports/       Clock, Interpolator, Scheduler and their fakes
-      adapters/    GSAP, DOM, browser clock
-      errors/
-      index.ts     allow-listed public surface
-      internal.ts  unadvertised entrypoint, repository use only
-    test/
-      unit/
-      integration/
-      contract/    port contract suites run against fake and real
-      fixtures/
-  react/
-    src/           patch and lifecycle hooks only
-performance/
-  budgets.json
-  graph-benchmark.mjs
-scripts/
-  boundary-scan.mjs
-  api-surface-check.mjs
-```
+## 13. Canonical evidence
 
-TypeScript is required for public contracts and runtime boundaries. Language is consistent within a package. There is no declaration-file seam over untyped JavaScript.
-
-## 13. Public surface
-
-Exported from `@motion5/core`: `Engine`, project loading, `Motion`, `Track`, plugin registration, triggers, patch subscription, the manual clock, port assertion helpers, and the authored contract constants.
-
-Never exported: `GraphRuntime`, `ProjectRuntime`, `GraphBinding`, `GraphPublisher`, `PatchRegistry`, `ObservationState`, normalization helpers. These are reachable only through `@motion5/core/internal`, which is not advertised and carries no stability promise. The export map is an allow list; deep wildcard imports are blocked.
-
-## 14. Deliberately excluded
-
-These are not omissions. They are decisions, and reintroducing any of them requires an entry in [DECISIONS.md](./DECISIONS.md).
-
-- Legacy observation facades and Track observation aliases.
-- Observation ownership modes, resolvers, adapter aliases, and parity modes.
-- Publisher-off rendering branches and any rendering rollout flag.
-- Cross-motion and free-track capability flags. The features ship on, or they do not ship.
-- Any bridge object that recreates live state after a commit.
-- Graph composition methods on Motion, and graph order application from outside the graph layer.
-- Motion host compatibility constructors.
-- Track child topology, parent and children ownership, group-host bridging, and composite playback.
-- Source-text symbol scans as behavioral evidence, prose ratio gates, and non-shrinking file allowlists.
-
-## 15. Why not just clean up motionpath
-
-Because the problems are structural, not cosmetic. Two implementations of one responsibility cannot be formatted away, and a repository with migration branches, rollout flags, and status documents for six overlapping passes carries the cost of every decision it has ever reversed. Starting from the leaf domain and the graph kernel, with ownership fixed before the surface grows, is cheaper than unwinding it. The old repository stays valuable as a behavioral oracle and a source of fixture intent. It is not an architecture template.
+- [SESSION-STATUS.md](./SESSION-STATUS.md): current implementation status and CI evidence.
+- [PUBLIC-API.md](./PUBLIC-API.md): consumer-facing API reference.
+- [DECISIONS.md](./DECISIONS.md): accepted architecture decisions, including W5 tradeoffs.
+- [IMPLEMENTATION-PLAN-runtime-mutation-model.md](./IMPLEMENTATION-PLAN-runtime-mutation-model.md): execution plan and work-package history.
