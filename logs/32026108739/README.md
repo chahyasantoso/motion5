@@ -1,0 +1,40 @@
+# CI log archive: 32026108739
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: feat/trigger-drivers-t3
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/32026108739
+- Captured: 2026-08-17T11:42:12Z
+
+## Failed job output
+
+```text
+prettier after behavioral green	Push formatting child commit	﻿2026-08-17T11:41:57.2384355Z ##[group]Run if git diff --quiet; then
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2384744Z ^[[36;1mif git diff --quiet; then^[[0m
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2385035Z ^[[36;1m  echo "Already formatted."^[[0m
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2385292Z ^[[36;1m  exit 0^[[0m
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2385497Z ^[[36;1mfi^[[0m
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2385724Z ^[[36;1mgit config user.name "chahyasantoso"^[[0m
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2386135Z ^[[36;1mgit config user.email "chahyasantoso@users.noreply.github.com"^[[0m
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2386513Z ^[[36;1mgit add -A^[[0m
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2386770Z ^[[36;1mgit commit -m "chore: apply prettier"^[[0m
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2387181Z ^[[36;1mgit push origin "HEAD:${TARGET_BRANCH}"^[[0m
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2387606Z ^[[36;1mecho "Pushed a formatting child commit; CI will verify the new head."^[[0m
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2425671Z shell: /usr/bin/bash -e {0}
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2425937Z env:
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2426144Z   NODE_VERSION: 24
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2426363Z   HAS_PAT: true
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2426592Z   TARGET_BRANCH: feat/trigger-drivers-t3
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2426911Z ##[endgroup]
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2759597Z [detached HEAD 75fcd3e] chore: apply prettier
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.2760388Z  1 file changed, 1 insertion(+), 1 deletion(-)
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.7799599Z To https://github.com/chahyasantoso/motion5
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.7800446Z  ! [rejected]        HEAD -> feat/trigger-drivers-t3 (fetch first)
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.7801133Z error: failed to push some refs to 'https://github.com/chahyasantoso/motion5'
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.7809205Z hint: Updates were rejected because the remote contains work that you do not
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.7810476Z hint: have locally. This is usually caused by another repository pushing to
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.7811465Z hint: the same ref. If you want to integrate the remote changes, use
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.7812194Z hint: 'git pull' before pushing again.
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.7813010Z hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+prettier after behavioral green	Push formatting child commit	2026-08-17T11:41:57.7827134Z ##[error]Process completed with exit code 1.
+```
