@@ -15,9 +15,9 @@ describe("runtime Motion trigger validation", () => {
   it("uses the load-time diagnostic and leaves the id available for retry", () => {
     const handle = makeRuntime();
 
-    expect(() =>
-      handle.addMotion({ id: "scene", trigger: { type: "time" }, tracks: [] }),
-    ).toThrow(/trigger-time-duration/);
+    expect(() => handle.addMotion({ id: "scene", trigger: { type: "time" }, tracks: [] })).toThrow(
+      /trigger-time-duration/,
+    );
 
     expect(() =>
       handle.addMotion({ id: "scene", trigger: { type: "time", duration: 1000 }, tracks: [] }),
