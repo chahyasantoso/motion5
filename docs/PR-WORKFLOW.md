@@ -46,7 +46,9 @@ For fork PRs, format repair is manual because the bot intentionally has no write
 
 ## CI logs
 
-Failed `CI` and `Recovery audit` runs are archived by `.github/workflows/archive-ci-logs.yml` on the separate `ci-logs` branch at `logs/<run-id>/`. The archive contains `README.md`, `run.json`, `run.log`, and `jobs.json`. Link the original Actions run in the PR/status note; consult the archive for durable diagnostics. Never treat `ci-logs` as a development branch.
+Failed `CI` and `Recovery audit` runs are archived by `.github/workflows/archive-ci-logs.yml` on the separate `ci-logs` branch at `logs/<run-id>/`. The archive contains `README.md`, `run.json`, and `failed-jobs.log`. Link the original Actions run in the PR/status note; consult the archive for durable diagnostics. Never treat `ci-logs` as a development branch.
+
+Archiving is driven by `workflow_run`, which filters on the head branch, so a branch prefix that is not listed in that filter produces no archive at all. If a run you need is missing, dispatch `Archive CI logs` manually with the run id.
 
 ## Status discipline
 
