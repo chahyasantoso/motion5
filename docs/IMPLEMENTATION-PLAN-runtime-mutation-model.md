@@ -4,6 +4,7 @@
 > is prescriptive. Where it gives code, that code is the target state, not a sketch.
 >
 > **Read first, in this order:**
+>
 > 1. `docs/PROBLEM-STATEMENT-runtime-mutation-model.md` — why this work exists.
 > 2. `docs/ASSESSMENT-AND-SOLUTION-runtime-mutation-model.md` — what was verified and decided.
 > 3. This document — how to do it.
@@ -63,7 +64,7 @@ W4  motion lifecycle at runtime    (depends on W2's two-phase pattern + W3's sto
 W5  unified store, handles, replaceTrack, dependantsOf
 ```
 
-**W1 → W2 is a hard order.** W2 makes rejected mutations retryable; without W1 a retry can *succeed*
+**W1 → W2 is a hard order.** W2 makes rejected mutations retryable; without W1 a retry can _succeed_
 with a silently dropped observation edge, which would turn W2 into a bug amplifier. Do not reorder.
 
 ### Mapping to the assessment document
@@ -71,35 +72,35 @@ with a silently dropped observation edge, which would turn W2 into a bug amplifi
 The assessment numbered its proposals S1–S4. This plan resequences them so every PR is
 independently safe to merge:
 
-| This plan | Assessment | Findings addressed |
-|---|---|---|
-| **W1** | S2.2 | A3, **A5 (new, see §1.0)** |
-| **W2** | S1 | P1, A1 |
-| **W3** | S2.1 | A2 |
-| **W4** | S3 | P2 |
-| **W5** | S4 + D1 + D3 | P3a, P3b, edit primitive, dependants read |
+| This plan | Assessment   | Findings addressed                        |
+| --------- | ------------ | ----------------------------------------- |
+| **W1**    | S2.2         | A3, **A5 (new, see §1.0)**                |
+| **W2**    | S1           | P1, A1                                    |
+| **W3**    | S2.1         | A2                                        |
+| **W4**    | S3           | P2                                        |
+| **W5**    | S4 + D1 + D3 | P3a, P3b, edit primitive, dependants read |
 
 ---
 
 ## Facts you will need (verified; do not re-derive)
 
-| Thing | Where | Note |
-|---|---|---|
-| `createManualClock` | `src/ports/clock.ts` | Use in tests, not a hand-rolled clock object. |
-| `createFakeInterpolator`, `createFakeScheduler` | `src/ports/fakes.ts` | `scheduler.flush()` drains scheduled work. |
-| `createManualTriggerPort` | `src/ports/trigger.ts` | The **only** trigger `Engine.load()` ever constructs. |
-| `deepFreeze`, `clone` | `src/contract/validate-v5.ts` | **Module-private today.** W3 must export them. |
-| `validateKeyframes` | `src/contract/validate-v5.ts` | Already exported; already used by `adopt()`. |
-| `validateTrackShape` | `src/contract/validate-v5.ts` | Module-private. W3 wraps it, does not duplicate it. |
-| `validateV5` | `src/contract/validate-v5.ts` | Returns a deep-frozen **clone**; input identity is not preserved. |
-| `buildGraphIR` | `src/graph/ir.ts` | Uncached reference builder. Used by `validateV5`. **Has none of the cache bugs.** |
-| `IncrementalGraphBuilder` | `src/adapters/graph-builder/incremental.ts` | Cached. **Always** the one `Engine.load()` uses. |
-| `collectTrack` | `src/graph/ir.ts` | Returns `undefined` on bad id; returns a node with bad edges **omitted** otherwise. |
-| `GraphRuntime.replaceGraph` | `src/runtime/graph-runtime.ts` | Already prunes stale members and `registry.evict`s them, and clears `#publisherNodes`. |
-| `PatchRegistry.evict` | `src/runtime/patch-registry.ts` | Publishes the terminal `"destroyed"` patch. Safe to call twice (second call finds no patch). |
-| `PatchRegistry.remove` | same | Remount-safe, publishes **nothing**. Used by `detach`/`unmount`. |
-| Test roots | `packages/core/test/{unit,integration,contract,migration}` | Integration tests use the real `Engine`. |
-| Gates | `npm run check`, `npm run test:integration`, `npm run test:boundaries` | |
+| Thing                                           | Where                                                                  | Note                                                                                         |
+| ----------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `createManualClock`                             | `src/ports/clock.ts`                                                   | Use in tests, not a hand-rolled clock object.                                                |
+| `createFakeInterpolator`, `createFakeScheduler` | `src/ports/fakes.ts`                                                   | `scheduler.flush()` drains scheduled work.                                                   |
+| `createManualTriggerPort`                       | `src/ports/trigger.ts`                                                 | The **only** trigger `Engine.load()` ever constructs.                                        |
+| `deepFreeze`, `clone`                           | `src/contract/validate-v5.ts`                                          | **Module-private today.** W3 must export them.                                               |
+| `validateKeyframes`                             | `src/contract/validate-v5.ts`                                          | Already exported; already used by `adopt()`.                                                 |
+| `validateTrackShape`                            | `src/contract/validate-v5.ts`                                          | Module-private. W3 wraps it, does not duplicate it.                                          |
+| `validateV5`                                    | `src/contract/validate-v5.ts`                                          | Returns a deep-frozen **clone**; input identity is not preserved.                            |
+| `buildGraphIR`                                  | `src/graph/ir.ts`                                                      | Uncached reference builder. Used by `validateV5`. **Has none of the cache bugs.**            |
+| `IncrementalGraphBuilder`                       | `src/adapters/graph-builder/incremental.ts`                            | Cached. **Always** the one `Engine.load()` uses.                                             |
+| `collectTrack`                                  | `src/graph/ir.ts`                                                      | Returns `undefined` on bad id; returns a node with bad edges **omitted** otherwise.          |
+| `GraphRuntime.replaceGraph`                     | `src/runtime/graph-runtime.ts`                                         | Already prunes stale members and `registry.evict`s them, and clears `#publisherNodes`.       |
+| `PatchRegistry.evict`                           | `src/runtime/patch-registry.ts`                                        | Publishes the terminal `"destroyed"` patch. Safe to call twice (second call finds no patch). |
+| `PatchRegistry.remove`                          | same                                                                   | Remount-safe, publishes **nothing**. Used by `detach`/`unmount`.                             |
+| Test roots                                      | `packages/core/test/{unit,integration,contract,migration}`             | Integration tests use the real `Engine`.                                                     |
+| Gates                                           | `npm run check`, `npm run test:integration`, `npm run test:boundaries` |                                                                                              |
 
 ---
 
@@ -198,8 +199,8 @@ a single `this.#collect(...)` call each. Delete the old `#trackCache` field and 
 
 **Design notes, in this order of importance:**
 
-- `cached.track === track` is the identity guard that preserves the original invariant: a *different
-  object* at the same logical id is a cache miss, so a replaced track always rebuilds. This is what
+- `cached.track === track` is the identity guard that preserves the original invariant: a _different
+  object_ at the same logical id is a cache miss, so a replaced track always rebuilds. This is what
   makes W5's `replaceTrack` (D1) correct.
 - A `Map` keyed by string, not a `WeakMap`, is deliberate: the key is no longer an object. Entries
   are bounded by the number of live nodes, and stale keys are overwritten on the next build. If a
@@ -211,7 +212,7 @@ a single `this.#collect(...)` call each. Delete the old `#trackCache` field and 
 
 ### W1-T3 — Regression guard
 
-Prove the cache still *works*, or this task silently becomes "delete the cache":
+Prove the cache still _works_, or this task silently becomes "delete the cache":
 
 - Build twice with a valid project and assert the returned `GraphNode` objects are
   **reference-identical** across builds (`toBe`, not `toEqual`).
@@ -279,11 +280,11 @@ Then assert, all of which fail today:
    (Today it is `true` — this is the assertion a React consumer's correctness rests on.)
 2. `seek(root.id, 0.7).patches` yields `status: "ready"`, not `"error"`, and no
    `"Cannot read properties of undefined (reading 'compose')"`.
-3. A **second** `destroyAdopted(root.id, owner)` throws the *same* `observation-unknown-source`
+3. A **second** `destroyAdopted(root.id, owner)` throws the _same_ `observation-unknown-source`
    error — not `Node "~/root" is not adopted.`
 4. `handle.get(root.id)` is still defined; the node is still in the graph.
 5. **The recovery path works:** `destroyAdopted(elbow.id, owner)` succeeds, then
-   `destroyAdopted(root.id, owner)` succeeds, and *that* delivers exactly one `"destroyed"` patch
+   `destroyAdopted(root.id, owner)` succeeds, and _that_ delivers exactly one `"destroyed"` patch
    for `root`.
 
 ### W2-T2 — Red test: burned id on rejected adopt (A1)
@@ -371,26 +372,26 @@ Replace the mutation section (keep every existing check above it — `#assertLiv
 id collision, `validateKeyframes` — unchanged and still first):
 
 ```ts
-  const candidate = new Map(this.#adopted);
-  candidate.set(id, { track, owner, motionId });
+const candidate = new Map(this.#adopted);
+candidate.set(id, { track, owner, motionId });
 
-  // ---- phase 1 ----
-  try {
-    this.#compileTrack?.(track, id);
-    this.#graph.replaceGraph(this.#projectSnapshot(candidate));
-  } catch (error) {
-    // compileTrack is the one pre-commit side effect that cannot be deferred (the compose
-    // closure needs it before the first flush). Undo it so the id is left completely free.
-    this.#disposeTrack?.(id);
-    throw error;
-  }
+// ---- phase 1 ----
+try {
+  this.#compileTrack?.(track, id);
+  this.#graph.replaceGraph(this.#projectSnapshot(candidate));
+} catch (error) {
+  // compileTrack is the one pre-commit side effect that cannot be deferred (the compose
+  // closure needs it before the first flush). Undo it so the id is left completely free.
+  this.#disposeTrack?.(id);
+  throw error;
+}
 
-  // ---- phase 2 ----
-  this.#adopted.set(id, { track, owner, motionId });
-  this.mount(id);
-  if (motionId !== undefined) this.#addMotionTrack?.(motionId, id, track.duration);
+// ---- phase 2 ----
+this.#adopted.set(id, { track, owner, motionId });
+this.mount(id);
+if (motionId !== undefined) this.#addMotionTrack?.(motionId, id, track.duration);
 
-  return Object.freeze({ id, track });
+return Object.freeze({ id, track });
 ```
 
 ### W2-T6 — Make the post-commit phase non-throwing by construction
@@ -415,7 +416,9 @@ motion store that makes the check possible. Do not add a hook for it here.
 Add to the same test file, as a shared helper so it cannot rot:
 
 ```ts
-function snapshotState(handle) { /* graph order, adopted-id set, get() per id, patch log length */ }
+function snapshotState(handle) {
+  /* graph order, adopted-id set, get() per id, patch log length */
+}
 ```
 
 For each rejecting mutation: capture, attempt, expect throw, capture again, `expect(after).toEqual(before)`.
@@ -426,7 +429,7 @@ For each rejecting mutation: capture, attempt, expect throw, capture again, `exp
   adopt → destroy → re-adopt on the **happy path** with no dependants. W2 must not change it. If it
   fails, your phase-2 ordering is wrong — most likely you dropped `evictNode` and lost the terminal
   patch. **Do not edit that test.**
-- It re-adopts the *same* `armTrack` object after destroying it. That works and must keep working.
+- It re-adopts the _same_ `armTrack` object after destroying it. That works and must keep working.
   It also means W1's `cached.track === track` guard is load-bearing here.
 - `phase4-dynamic-lifecycle.test.ts` and `handle-adoption.test.ts` also cover this surface. Run
   `npm run test:integration` early and often.
@@ -447,7 +450,7 @@ For each rejecting mutation: capture, attempt, expect throw, capture again, `exp
 - **Ownership:** `ProjectRuntime` now owns the commit decision explicitly and delegates validity to
   `GraphBinding`, which already owned it. `#projectSnapshot` becomes a pure function, so no method
   both derives the candidate and mutates the state it derives from.
-- **Public surface:** unchanged. Failure *modes* change: previously-poisoned ids now stay usable.
+- **Public surface:** unchanged. Failure _modes_ change: previously-poisoned ids now stay usable.
 - **Deletions:** `#buildProjectSnapshot()`.
 
 ---
@@ -511,8 +514,8 @@ current inline `validateKeyframes` call. Do not run both.
 ### W3-T3 — Use it in `adopt()`
 
 Replace the inline `validateKeyframes` block with `validateTrackDefinition(track, \`adopt(${track.id})\`)`,
-throw on `!valid` using the existing `ruleId at path: message` join format, and **use the returned
-frozen clone everywhere downstream** — `#compileTrack`, `#adopted`, the snapshot, and the returned
+throw on `!valid`using the existing`ruleId at path: message`join format, and **use the returned
+frozen clone everywhere downstream** —`#compileTrack`, `#adopted`, the snapshot, and the returned
 `{ id, track }`. The original argument object must not be referenced after validation.
 
 ### W3-T4 — Document the identity consequence
@@ -634,7 +637,7 @@ destroyMotion(motionId: string): void {
 **Also handle schema-declared tracks.** Until W5 collapses the stores, a motion seeded from
 `load()` still carries its authored `tracks` inside its `MotionDefinition`, so removing it removes
 those nodes from the candidate too. `observation-unknown-source` will reject the destroy if
-anything still observes them — correct and free — but a *successful* destroy would drop nodes
+anything still observes them — correct and free — but a _successful_ destroy would drop nodes
 without evicting them or disposing their tracks. **For W4, reject `destroyMotion` outright when
 `this.#motions.get(motionId)!.tracks.length > 0`,** i.e. only runtime-created (empty) motions are
 destroyable. Document the limitation; W5 lifts it. Add a test asserting the rejection.
@@ -652,8 +655,8 @@ const buildMotion = (definition: MotionDefinition, entries: MotionTrackEntry[]):
     scheduler: this.#options.scheduler,
     tracks: entries,
     trigger: triggerPort,
-    disposeTracks: false,   // ProjectRuntime owns track disposal
-    listenToClock: false,   // GraphRuntime's onClockTick fans out to every motion
+    disposeTracks: false, // ProjectRuntime owns track disposal
+    listenToClock: false, // GraphRuntime's onClockTick fans out to every motion
     invalidate: () => {
       const currentIds = motion.tracks.map((t) => t.id);
       if (currentIds.length > 0) runtime.invalidate(currentIds);
@@ -717,7 +720,7 @@ destroyed motion — add a test asserting that, so destroy is observable through
 - [ ] `addMotion`'s docstring states that `trigger.type` is inert in core today.
 - [ ] `npm run check` and `npm run test:boundaries` green (new public surface crosses the package
       boundary the scan guards).
-- [ ] `docs/DECISIONS.md` gains one entry: *motions are created empty; no cascade on destroy.*
+- [ ] `docs/DECISIONS.md` gains one entry: _motions are created empty; no cascade on destroy._
 
 ---
 
@@ -739,9 +742,9 @@ In the `ProjectRuntime` constructor, ingest every `project.motions[].tracks[]` a
 Three hard requirements:
 
 1. **Preserve object identity.** Store the references from the already-frozen `acceptedProject`.
-   Do **not** clone them (W3's clone applies to *caller-supplied* tracks only). Cloning here throws
+   Do **not** clone them (W3's clone applies to _caller-supplied_ tracks only). Cloning here throws
    away every builder cache hit and turns `load()` into a full rebuild.
-2. **Ingestion must not auto-mount.** `Engine.load()` today eagerly *compiles* every node
+2. **Ingestion must not auto-mount.** `Engine.load()` today eagerly _compiles_ every node
    (`for (const nodeId of nodes.keys()) compile(nodeId)`) and mounts none; consumers call
    `handle.mount(nodeId)` themselves, and `apps/react-demo` relies on that. Auto-mounting would
    silently make every node a flush member and change what every existing caller's first tick
@@ -752,7 +755,7 @@ Three hard requirements:
    minted for ingested content, so it is reachable only through an explicit
    `handleFor(nodeId)`-style lookup — **do not add that lookup in this PR.**
 
-**Name the tradeoff, as the problem statement asks.** Today schema content is *structurally*
+**Name the tradeoff, as the problem statement asks.** Today schema content is _structurally_
 undeletable: no code path can remove it. After the collapse it is deletable subject only to op
 gating. That is right for an editor and wrong for a fixed-schema consumer. It goes in
 `docs/DECISIONS.md` as a deliberate decision with that sentence, not as an emergent side effect.
@@ -790,7 +793,7 @@ closure rather than requiring a caller-held token. Keep `id` on the handle — `
 
 **Required: stale handles must be inert, not dangerous.** Ids are freed and immediately reusable, so
 this is a live ABA hazard — hold a handle, `remove()`, re-create the same id, then call the stale
-handle's `remove()` again. An id-scoped capability would destroy the *new* node. Mint a private
+handle's `remove()` again. An id-scoped capability would destroy the _new_ node. Mint a private
 monotonic token per node instance, store it on the entry, and make `remove()` / `replace()`
 **no-ops** (not throws) when the token no longer matches. Idempotent removal is also better editor
 ergonomics than today's `not adopted` throw on double-destroy.
@@ -800,8 +803,8 @@ ergonomics than today's `not adopted` throw on double-destroy.
 ### W5-T4 — `replaceTrack`: the edit primitive (D1)
 
 **This overrides the problem statement's destroy-and-recreate lean.** Two reasons, both verified:
-`"destroyed"` is contractually terminal (`v5.ts`: *"the node has been evicted from the graph and
-will never publish again"*) and React consumers tear down on it, so using it as an edit
+`"destroyed"` is contractually terminal (`v5.ts`: _"the node has been evicted from the graph and
+will never publish again"_) and React consumers tear down on it, so using it as an edit
 notification unmounts and remounts the DOM element on every keyframe nudge; and
 `GraphBinding.#applyDelta` diffs by node id and `edgeKey`, so an unchanged id means no
 `removeNode`, no eviction, no terminal patch, and only genuinely changed edges applied.
@@ -834,7 +837,7 @@ rejected with the old definition still live and composing.
 
 An edge is **not** a first-class entity: it lives in `TrackDefinition.observes` on the observer, and
 `collectTrack` derives `GraphEdge`s from it with `observerId` fixed to that node. So the capability
-to add or remove an edge *is* the capability to replace the observer's track. Implement both as thin
+to add or remove an edge _is_ the capability to replace the observer's track. Implement both as thin
 wrappers over `replaceTrack` on the observer. This dissolves the "can an edge be owned?" question
 and removes any need to collapse edge storage separately.
 
@@ -856,7 +859,7 @@ dependantsOf(nodeId: string): readonly string[] {
 ```
 
 Expose it read-only on `ProjectHandle` so the editor can pre-flight, while the transactional destroy
-remains the actual enforcement. **Never** use it *as* the enforcement — a second dependants owner
+remains the actual enforcement. **Never** use it _as_ the enforcement — a second dependants owner
 would drift from the graph.
 
 ### W5-T7 — Deprecate, do not break
@@ -896,7 +899,7 @@ Expected today: `threw: observation-unknown-source ...`, then `second destroyAdo
 definition → today throws `Adopted track "~/child" already exists.`
 
 **A3 — cache poisoning.** Adopt a track with `projection: { pick: [], map: { x: "px" } }` → throws
-`observation-input-projection`. Then adopt any *valid* second track → today **succeeds**, and the
+`observation-input-projection`. Then adopt any _valid_ second track → today **succeeds**, and the
 first track is now in the graph as an isolated node with its declared edge silently dropped. This
 is the silent-data-loss case; capture its output verbatim in the W1 PR body.
 

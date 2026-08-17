@@ -15,7 +15,58 @@ function freeze<T>(value: T): T {
 }
 
 export class IncrementalGraphBuilder {
-  readonly #trackCache = new WeakMap<TrackDefinition, GraphNode | undefined>();
+  /**
+   * Built nodes, keyed by the inputs their id is derived from.
+   *
+   * Not keyed by the `TrackDefinition` object alone: `collectTrack` derives the node id from
+   * the owner (`~/trackId` for a free track, `motionId/trackId` for a motion track), so one
+   * definition object legitimately backs two different nodes when it is shared across motions.
+   * Object identity is still checked on every hit, so replacing a track with a new object at
+   * the same node id remains a miss and rebuilds.
+   */
+  readonly #trackCache = new Map<string, GraphNode>();
+
+  /**
+   * `owner` and `ownerId` can never contain `/` -- owner is a literal, and `ownerId` is either
+   * `"~"` or a motion id already through `assertAuthoredMotionId`. The prefix up to the second
+   * separator is therefore unambiguous even though `track.id` has not been validated yet.
+   */
+  #cacheKey(owner: "motion" | "free", ownerId: string, trackId: unknown): string {
+    return `${owner}/${ownerId}/${String(trackId)}`;
+  }
+
+  /**
+   * Collect one track, caching only results that were produced without complaint.
+   *
+   * `collectTrack` reports problems exclusively on the path that computes the node, so a cached
+   * result carries the node but not the reasons it is incomplete. Caching a failure therefore
+   * makes it permanently silent: the next build gets a hit, emits no diagnostic, and succeeds
+   * with content the author declared either missing (bad track id, node omitted) or partial
+   * (bad observation edge, that edge dropped). Recomputing a rejected track is cheap and rare.
+   */
+  #collect(
+    track: TrackDefinition,
+    owner: "motion" | "free",
+    ownerId: string,
+    authoredIndex: number,
+    diagnostics: Diagnostic[],
+  ): GraphNode | undefined {
+    const key = this.#cacheKey(owner, ownerId, track.id);
+    const cached = this.#trackCache.get(key);
+    if (cached !== undefined && cached.track === track) return cached;
+
+    const collected: Diagnostic[] = [];
+    const node = collectTrack(track, owner, ownerId, authoredIndex, collected);
+    diagnostics.push(...collected);
+
+    if (node === undefined || collected.length > 0) {
+      this.#trackCache.delete(key);
+      return node;
+    }
+
+    this.#trackCache.set(key, node);
+    return node;
+  }
 
   build(project: ProjectDefinition): GraphBuildResult {
     const diagnostics: Diagnostic[] = [];
@@ -49,13 +100,7 @@ export class IncrementalGraphBuilder {
       }
       motionIds.add(motion.id);
       for (const [trackIndex, track] of motion.tracks.entries()) {
-        let node: GraphNode | undefined;
-        if (this.#trackCache.has(track)) {
-          node = this.#trackCache.get(track);
-        } else {
-          node = collectTrack(track, "motion", motion.id, trackIndex, diagnostics);
-          this.#trackCache.set(track, node);
-        }
+        const node = this.#collect(track, "motion", motion.id, trackIndex, diagnostics);
 
         if (node) {
           if (seen.has(node.id))
@@ -76,13 +121,7 @@ export class IncrementalGraphBuilder {
     }
 
     for (const [trackIndex, track] of (project.freeTracks ?? []).entries()) {
-      let node: GraphNode | undefined;
-      if (this.#trackCache.has(track)) {
-        node = this.#trackCache.get(track);
-      } else {
-        node = collectTrack(track, "free", "~", trackIndex, diagnostics);
-        this.#trackCache.set(track, node);
-      }
+      const node = this.#collect(track, "free", "~", trackIndex, diagnostics);
 
       if (node) {
         if (seen.has(node.id))
