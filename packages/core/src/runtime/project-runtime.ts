@@ -1,4 +1,9 @@
-import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../contract/v5";
+import type {
+  Diagnostic,
+  MotionDefinition,
+  ProjectDefinition,
+  TrackDefinition,
+} from "../contract/v5";
 import { validateTrackDefinition } from "../contract/validate-v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
@@ -19,6 +24,8 @@ export interface ProjectRuntimeOptions {
   readonly disposeTrack?: (nodeId: string) => void;
   readonly addMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly removeMotionTrack?: (motionId: string, trackId: string) => void;
+  readonly createMotion?: (definition: MotionDefinition) => void;
+  readonly destroyMotion?: (motionId: string) => void;
   readonly onClockTick?: (event: ClockTick) => void;
   readonly disposeComposition?: () => void;
   /** Capacity of the bounded diagnostics history. Diagnostics itself supplies the default. */
@@ -31,6 +38,7 @@ export class ProjectRuntime {
   readonly #graph: GraphRuntime;
   readonly #instances = new Map<string, object>();
   readonly #adopted = new Map<string, AdoptedEntry>();
+  readonly #motions = new Map<string, MotionDefinition>();
   readonly #diagnostics: Diagnostics;
   readonly #setProgress: (nodeId: string, progress: number) => void;
   readonly #compileTrack: ((track: TrackDefinition, nodeId?: string) => void) | undefined;
@@ -39,16 +47,21 @@ export class ProjectRuntime {
     | ((motionId: string, trackId: string, duration?: number) => void)
     | undefined;
   readonly #removeMotionTrack: ((motionId: string, trackId: string) => void) | undefined;
+  readonly #createMotion: ((definition: MotionDefinition) => void) | undefined;
+  readonly #destroyMotion: ((motionId: string) => void) | undefined;
   readonly #disposeComposition: () => void;
   #disposed = false;
 
   constructor(project: ProjectDefinition, options: ProjectRuntimeOptions) {
     this.#project = project;
+    for (const motion of project.motions) this.#motions.set(motion.id, motion);
     this.#setProgress = options.setProgress ?? (() => undefined);
     this.#compileTrack = options.compileTrack;
     this.#disposeTrack = options.disposeTrack;
     this.#addMotionTrack = options.addMotionTrack;
     this.#removeMotionTrack = options.removeMotionTrack;
+    this.#createMotion = options.createMotion;
+    this.#destroyMotion = options.destroyMotion;
     this.#disposeComposition = options.disposeComposition ?? (() => undefined);
     this.#diagnostics = new Diagnostics(options.diagnosticsCapacity);
     try {
@@ -56,8 +69,6 @@ export class ProjectRuntime {
         scheduler: options.scheduler,
         onClockTick: options.onClockTick,
         graphBuilder: options.graphBuilder,
-        // Flush-level diagnostics (clock regression, flush/scheduler failure) feed the same
-        // single buffer as patch/batch diagnostics below; no second, parallel stream.
         onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
       });
     } catch (error) {
@@ -92,6 +103,42 @@ export class ProjectRuntime {
     this.#instances.delete(nodeId);
     this.#graph.detach(nodeId);
   }
+  /**
+   * Create an empty runtime Motion. Core currently uses a manual trigger for every Motion;
+   * trigger.type is retained for schema fidelity but scroll/time drivers are not wired here.
+   */
+  addMotion(definition: MotionDefinition): { readonly id: string } {
+    this.#assertLive();
+    if (definition.tracks.length > 0)
+      throw new TypeError(`Runtime Motion "${definition.id}" must start with empty tracks.`);
+    if (this.#motions.has(definition.id))
+      throw new TypeError(`Motion "${definition.id}" already exists.`);
+    const candidateMotions = new Map(this.#motions);
+    candidateMotions.set(definition.id, { ...definition, tracks: [] });
+    this.#graph.replaceGraph(this.#buildProjectSnapshot(this.#adopted, candidateMotions));
+    const accepted = candidateMotions.get(definition.id)!;
+    this.#motions.set(definition.id, accepted);
+    this.#createMotion?.(accepted);
+    return Object.freeze({ id: definition.id });
+  }
+  /** Destroy a Motion only after its runtime-owned tracks have been removed. */
+  destroyMotion(motionId: string): void {
+    this.#assertLive();
+    const definition = this.#motions.get(motionId);
+    if (definition === undefined) throw new TypeError(`Unknown motion "${motionId}".`);
+    if (definition.tracks.length > 0)
+      throw new TypeError(`Motion "${motionId}" still has authored tracks.`);
+    const owned = [...this.#adopted.values()].filter((entry) => entry.motionId === motionId);
+    if (owned.length > 0)
+      throw new TypeError(
+        `Motion "${motionId}" still has ${owned.length} track(s). Remove them before destroying it.`,
+      );
+    const candidateMotions = new Map(this.#motions);
+    candidateMotions.delete(motionId);
+    this.#graph.replaceGraph(this.#buildProjectSnapshot(this.#adopted, candidateMotions));
+    this.#motions.delete(motionId);
+    this.#destroyMotion?.(motionId);
+  }
   /** Add a runtime-created track to the graph (as a free track or into a specific motion). */
   adopt(
     track: TrackDefinition,
@@ -100,20 +147,15 @@ export class ProjectRuntime {
   ): { readonly id: string; readonly track: TrackDefinition } {
     this.#assertLive();
     const motionId = options?.motionId;
-    if (motionId !== undefined) {
-      const motionExists = this.#project.motions.some((m) => m.id === motionId);
-      if (!motionExists) throw new TypeError(`Unknown motion "${motionId}".`);
-    }
-
+    if (motionId !== undefined && !this.#motions.has(motionId))
+      throw new TypeError(`Unknown motion "${motionId}".`);
     const id =
       motionId !== undefined
         ? qualifyMotionTrack(motionId, track.id).value
         : qualifyFreeTrack(track.id).value;
-
     if (this.#graph.state.hasNode(id) || this.#adopted.has(id))
       throw new TypeError(`Adopted track "${id}" already exists.`);
     if (this.#instances.has(id)) throw new TypeError(`Node "${id}" is already mounted.`);
-
     const validation = validateTrackDefinition(track, `adopt(${track.id})`);
     const keyframeErrors = validation.diagnostics.filter(({ severity }) => severity === "error");
     if (!validation.valid || validation.value === null)
@@ -123,30 +165,18 @@ export class ProjectRuntime {
           .join(" ") || `Track "${track.id}" failed validation.`,
       );
     const acceptedTrack = validation.value;
-
     const candidateAdopted = new Map(this.#adopted);
     candidateAdopted.set(id, { track: acceptedTrack, owner, motionId });
-
-    // Phase 1: compile and validate the candidate before publishing any lifecycle side effect.
-    // If either operation throws, the adoption map and graph remain unchanged. Compilation is
-    // the one preparatory side effect, so undo it when graph validation rejects the candidate.
     try {
       this.#compileTrack?.(acceptedTrack, id);
-      this.#graph.replaceGraph(this.#buildProjectSnapshot(candidateAdopted));
+      this.#graph.replaceGraph(this.#buildProjectSnapshot(candidateAdopted, this.#motions));
     } catch (error) {
       this.#disposeTrack?.(id);
       throw error;
     }
-
-    // Phase 2: commit. The pre-checks above and the successful graph replacement make these
-    // operations non-throwing for the Engine-owned hooks.
     this.#adopted.set(id, { track: acceptedTrack, owner, motionId });
     this.mount(id);
-
-    if (motionId !== undefined) {
-      this.#addMotionTrack?.(motionId, id, acceptedTrack.duration);
-    }
-
+    if (motionId !== undefined) this.#addMotionTrack?.(motionId, id, acceptedTrack.duration);
     return Object.freeze({ id, track: acceptedTrack });
   }
   /** Destroy an adopted track. Only the owner can destroy; others detach via unmount. */
@@ -156,34 +186,24 @@ export class ProjectRuntime {
     if (adopted === undefined) throw new TypeError(`Node "${nodeId}" is not adopted.`);
     if (adopted.owner !== owner)
       throw new TypeError(`Only the adopting owner can destroy "${nodeId}".`);
-
-    // Phase 1: validate and commit the candidate graph first. A surviving dependant that still
-    // observes nodeId makes this throw with observation-unknown-source while every live side
-    // effect below remains untouched.
     const candidateAdopted = new Map(this.#adopted);
     candidateAdopted.delete(nodeId);
-    this.#graph.replaceGraph(this.#buildProjectSnapshot(candidateAdopted));
-
-    // Phase 2: the graph is now committed, so these lifecycle changes cannot invalidate it.
-    // Use evictNode (not unmount) so the listener set is freed, not just the patch. replaceGraph
-    // already evicts mounted members removed from the graph; this explicit idempotent eviction
-    // also handles a node that was unmounted before destruction.
+    this.#graph.replaceGraph(this.#buildProjectSnapshot(candidateAdopted, this.#motions));
     this.#adopted.delete(nodeId);
     this.#instances.delete(nodeId);
     this.#graph.evictNode(nodeId);
     this.#disposeTrack?.(nodeId);
-    if (adopted.motionId !== undefined) {
-      this.#removeMotionTrack?.(adopted.motionId, nodeId);
-    }
+    if (adopted.motionId !== undefined) this.#removeMotionTrack?.(adopted.motionId, nodeId);
   }
-  #buildProjectSnapshot(adopted: ReadonlyMap<string, AdoptedEntry>): ProjectDefinition {
+  #buildProjectSnapshot(
+    adopted: ReadonlyMap<string, AdoptedEntry>,
+    motions: ReadonlyMap<string, MotionDefinition>,
+  ): ProjectDefinition {
     const adoptedList = [...adopted.values()];
     const freeAdopted = adoptedList
       .filter((entry) => entry.motionId === undefined)
       .map((e) => e.track);
-    const nextFreeTracks = [...(this.#project.freeTracks ?? []), ...freeAdopted];
-
-    const nextMotions = this.#project.motions.map((motion) => {
+    const nextMotions = [...motions.values()].map((motion) => {
       const motionAdopted = adoptedList
         .filter((entry) => entry.motionId === motion.id)
         .map((e) => e.track);
@@ -191,20 +211,16 @@ export class ProjectRuntime {
         ? motion
         : { ...motion, tracks: [...motion.tracks, ...motionAdopted] };
     });
-
     return {
       ...this.#project,
       motions: nextMotions,
-      freeTracks: nextFreeTracks,
+      freeTracks: [...(this.#project.freeTracks ?? []), ...freeAdopted],
     };
   }
   seek(nodeId: string, progress: number) {
     this.#assertLive();
     this.#setProgress(nodeId, progress);
     const batch = this.#graph.invalidate([nodeId]);
-    // Everything already carried inline on the batch (pending-reference warnings, composition
-    // failures) also lands in the one bounded diagnostics buffer. Patches and the batch itself
-    // are untouched; this is additional retained history, not a new delivery path.
     this.#diagnostics.recordAll(batch.diagnostics);
     return batch;
   }
@@ -220,6 +236,7 @@ export class ProjectRuntime {
     for (const nodeId of [...this.#instances.keys()]) this.#graph.detach(nodeId);
     this.#instances.clear();
     this.#adopted.clear();
+    this.#motions.clear();
     this.#graph.dispose();
     this.#disposeComposition();
   }

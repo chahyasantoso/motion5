@@ -1,5 +1,6 @@
 import type {
   Diagnostic,
+  MotionDefinition,
   Patch,
   PatchBatch,
   PatchListener,
@@ -10,7 +11,7 @@ import type {
 import { validateV5 } from "./contract/validate-v5";
 import { IncrementalGraphBuilder } from "./adapters/graph-builder/incremental";
 import { compilePercentKeyframes } from "./domain/keyframe-compiler";
-import { Motion } from "./domain/motion";
+import { Motion, type MotionTrackEntry } from "./domain/motion";
 import { PluginRegistry } from "./domain/plugins";
 import { Track } from "./domain/track";
 import type { ImmutableRecord } from "./domain/values";
@@ -18,7 +19,7 @@ import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
-import { createManualTriggerPort, type TriggerPort } from "./ports/trigger";
+import { createManualTriggerPort } from "./ports/trigger";
 import { ProjectRuntime } from "./runtime/project-runtime";
 
 export interface EngineOptions {
@@ -32,6 +33,8 @@ export interface ProjectHandle {
   unmount(nodeId: string): void;
   seek(nodeId: string, progress: number): PatchBatch;
   signal(motionId: string, signal: TriggerSignal): void;
+  addMotion(definition: MotionDefinition): { readonly id: string };
+  destroyMotion(motionId: string): void;
   subscribe(nodeId: string, listener: PatchListener): () => void;
   get(nodeId: string): Patch | undefined;
   subscribeNode(nodeId: string, listener: PatchListener): () => void;
@@ -53,6 +56,8 @@ function createHandle(
     unmount: (nodeId) => runtime.unmount(nodeId),
     seek: (nodeId, progress) => runtime.seek(nodeId, progress),
     signal,
+    addMotion: (definition) => runtime.addMotion(definition),
+    destroyMotion: (motionId) => runtime.destroyMotion(motionId),
     subscribe: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
     get: (nodeId) => runtime.graph.registry.get(nodeId),
     subscribeNode: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
@@ -114,7 +119,7 @@ export class Engine {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
       const definition = nodes.get(nodeId);
-      if (!definition) throw new TypeError(`Unknown graph node \"${nodeId}\".`);
+      if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
       const path = `${nodeId}.keyframes`;
       const resolved = this.#plugins?.resolveForKeyframes(definition.keyframes ?? {}, path, {
         id: nodeId,
@@ -176,6 +181,26 @@ export class Engine {
       }
     };
     const motions = new Map<string, Motion>();
+    let runtime: ProjectRuntime;
+    const buildMotion = (definition: MotionDefinition, entries: readonly MotionTrackEntry[]): Motion => {
+      const triggerPort = createManualTriggerPort();
+      let motion: Motion;
+      motion = new Motion({
+        clock: this.#options.clock,
+        scheduler: this.#options.scheduler,
+        tracks: entries,
+        trigger: triggerPort,
+        disposeTracks: false,
+        listenToClock: false,
+        invalidate: () => {
+          const currentIds = motion.tracks.map((t) => t.id);
+          if (currentIds.length > 0) runtime.invalidate(currentIds);
+        },
+        stagger: definition.stagger,
+      });
+      motion.play();
+      return motion;
+    };
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
       const compose =
@@ -191,7 +216,6 @@ export class Engine {
             sourceRevisions: {},
           };
         };
-      let runtime: ProjectRuntime;
       runtime = new ProjectRuntime(acceptedProject, {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
@@ -207,16 +231,19 @@ export class Engine {
           if (!track) throw new TypeError(`Unknown graph node "${trackId}".`);
           motion.addTrack({ id: trackId, track, duration });
         },
-        removeMotionTrack: (motionId, trackId) => {
+        removeMotionTrack: (motionId, trackId) => motions.get(motionId)?.removeTrack(trackId),
+        createMotion: (definition) => {
+          motions.set(definition.id, buildMotion(definition, []));
+        },
+        destroyMotion: (motionId) => {
           const motion = motions.get(motionId);
           if (motion) {
-            motion.removeTrack(trackId);
+            motion.dispose();
+            motions.delete(motionId);
           }
         },
         onClockTick: (event) => {
-          for (const motion of motions.values()) {
-            motion.onTick(event);
-          }
+          for (const motion of motions.values()) motion.onTick(event);
         },
         disposeComposition: () => {
           for (const motion of motions.values()) motion.dispose();
@@ -229,31 +256,15 @@ export class Engine {
         const ids = motionTrackIds.get(motionDefinition.id) ?? [];
         const entries = ids.map((id) => {
           const track = tracks.get(id);
-          if (!track) throw new TypeError(`Unknown graph node \"${id}\".`);
+          if (!track) throw new TypeError(`Unknown graph node "${id}".`);
           const definition = nodes.get(id);
           return { id, track, duration: definition?.duration };
         });
-        const triggerPort = createManualTriggerPort();
-        let motion: Motion;
-        motion = new Motion({
-          clock: this.#options.clock,
-          scheduler: this.#options.scheduler,
-          tracks: entries,
-          trigger: triggerPort,
-          disposeTracks: false,
-          listenToClock: false,
-          invalidate: () => {
-            const currentIds = motion.tracks.map((t) => t.id);
-            if (currentIds.length > 0) runtime.invalidate(currentIds);
-          },
-          stagger: motionDefinition.stagger,
-        });
-        motion.play();
-        motions.set(motionDefinition.id, motion);
+        motions.set(motionDefinition.id, buildMotion(motionDefinition, entries));
       }
       return createHandle(runtime, (motionId, signal) => {
         const motion = motions.get(motionId);
-        if (!motion) throw new TypeError(`Unknown motion \"${motionId}\".`);
+        if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
         motion.signal(signal);
       });
     } catch (error) {
