@@ -103,10 +103,18 @@ export class ProjectRuntime {
       throw error;
     }
   }
-  get project(): ProjectDefinition { return this.#project; }
-  get graph(): GraphRuntime { return this.#graph; }
-  get instanceCount(): number { return this.#instances.size; }
-  get diagnostics(): DiagnosticsSnapshot { return this.#diagnostics.snapshot(); }
+  get project(): ProjectDefinition {
+    return this.#project;
+  }
+  get graph(): GraphRuntime {
+    return this.#graph;
+  }
+  get instanceCount(): number {
+    return this.#instances.size;
+  }
+  get diagnostics(): DiagnosticsSnapshot {
+    return this.#diagnostics.snapshot();
+  }
   mount(nodeId: string, instance: object = {}): object {
     this.#assertLive();
     if (this.#instances.has(nodeId)) throw new TypeError(`Node "${nodeId}" is already mounted.`);
@@ -122,101 +130,227 @@ export class ProjectRuntime {
   }
   addMotion(definition: MotionDefinition): { readonly id: string } {
     this.#assertLive();
-    if (definition.tracks.length > 0) throw new TypeError(`Runtime Motion "${definition.id}" must start with empty tracks.`);
-    if (this.#motions.has(definition.id)) throw new TypeError(`Motion "${definition.id}" already exists.`);
+    if (definition.tracks.length > 0)
+      throw new TypeError(`Runtime Motion "${definition.id}" must start with empty tracks.`);
+    if (this.#motions.has(definition.id))
+      throw new TypeError(`Motion "${definition.id}" already exists.`);
     const accepted = { ...definition, tracks: [] };
-    const next = new Map(this.#motions); next.set(accepted.id, accepted);
+    const next = new Map(this.#motions);
+    next.set(accepted.id, accepted);
     this.#graph.replaceGraph(this.#snapshot(this.#tracks, next));
-    this.#motions.set(accepted.id, accepted); this.#createMotion?.(accepted);
+    this.#motions.set(accepted.id, accepted);
+    this.#createMotion?.(accepted);
     return Object.freeze({ id: accepted.id });
   }
   destroyMotion(motionId: string): void {
     this.#assertLive();
     if (!this.#motions.has(motionId)) throw new TypeError(`Unknown motion "${motionId}".`);
     const owned = [...this.#tracks.entries()].filter(([, entry]) => entry.motionId === motionId);
-    if (owned.length) throw new TypeError(`Motion "${motionId}" still has ${owned.length} track(s). Remove them before destroying it.`);
-    const next = new Map(this.#motions); next.delete(motionId);
+    if (owned.length)
+      throw new TypeError(
+        `Motion "${motionId}" still has ${owned.length} track(s). Remove them before destroying it.`,
+      );
+    const next = new Map(this.#motions);
+    next.delete(motionId);
     this.#graph.replaceGraph(this.#snapshot(this.#tracks, next));
-    this.#motions.delete(motionId); this.#destroyMotion?.(motionId);
+    this.#motions.delete(motionId);
+    this.#destroyMotion?.(motionId);
   }
-  addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle { return this.#addTrack(track, this.#schemaOwner, options); }
+  addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle {
+    return this.#addTrack(track, this.#schemaOwner, options);
+  }
   track(nodeId: string): TrackHandle {
-    this.#assertLive(); const entry = this.#tracks.get(nodeId);
+    this.#assertLive();
+    const entry = this.#tracks.get(nodeId);
     if (!entry) throw new TypeError(`Unknown graph node "${nodeId}".`);
     return this.#handle(nodeId, entry.token);
   }
-  adopt(track: TrackDefinition, owner: object, options?: { motionId?: string }): { readonly id: string; readonly track: TrackDefinition } {
-    const handle = this.#addTrack(track, owner, options); return Object.freeze({ id: handle.id, track: handle.track });
+  adopt(
+    track: TrackDefinition,
+    owner: object,
+    options?: { motionId?: string },
+  ): { readonly id: string; readonly track: TrackDefinition } {
+    const handle = this.#addTrack(track, owner, options);
+    return Object.freeze({ id: handle.id, track: handle.track });
   }
   destroyAdopted(nodeId: string, owner: object): void {
-    this.#assertLive(); const entry = this.#tracks.get(nodeId);
-    if (!entry || entry.owner !== owner) throw new TypeError(!entry ? `Node "${nodeId}" is not adopted.` : `Only the adopting owner can destroy "${nodeId}".`);
+    this.#assertLive();
+    const entry = this.#tracks.get(nodeId);
+    if (!entry || entry.owner !== owner)
+      throw new TypeError(
+        !entry
+          ? `Node "${nodeId}" is not adopted.`
+          : `Only the adopting owner can destroy "${nodeId}".`,
+      );
     this.#removeTrack(nodeId, entry.token);
   }
   dependantsOf(nodeId: string): readonly string[] {
     this.#assertLive();
-    return Object.freeze(this.#graph.graph.nodes.filter((node) => node.edges.some((edge) => edge.sourceId === nodeId)).map((node) => node.id));
+    return Object.freeze(
+      this.#graph.graph.nodes
+        .filter((node) => node.edges.some((edge) => edge.sourceId === nodeId))
+        .map((node) => node.id),
+    );
   }
   #addTrack(track: TrackDefinition, owner: object, options?: { motionId?: string }): TrackHandle {
-    this.#assertLive(); const motionId = options?.motionId;
-    if (motionId !== undefined && !this.#motions.has(motionId)) throw new TypeError(`Unknown motion "${motionId}".`);
-    const id = motionId !== undefined ? qualifyMotionTrack(motionId, track.id).value : qualifyFreeTrack(track.id).value;
+    this.#assertLive();
+    const motionId = options?.motionId;
+    if (motionId !== undefined && !this.#motions.has(motionId))
+      throw new TypeError(`Unknown motion "${motionId}".`);
+    const id =
+      motionId !== undefined
+        ? qualifyMotionTrack(motionId, track.id).value
+        : qualifyFreeTrack(track.id).value;
     if (this.#tracks.has(id)) throw new TypeError(`Track "${id}" already exists.`);
     const validation = validateTrackDefinition(track, `addTrack(${track.id})`);
-    if (!validation.valid || !validation.value) throw new TypeError(validation.diagnostics.map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`).join(" "));
-    const accepted = validation.value; const token = this.#nextToken++; const next = new Map(this.#tracks);
-    next.set(id, { track: accepted, owner, motionId, token }); this.#compileTrack?.(accepted, id);
-    try { this.#graph.replaceGraph(this.#snapshot(next, this.#motions)); } catch (error) { this.#disposeTrack?.(id); throw error; }
+    if (!validation.valid || !validation.value)
+      throw new TypeError(
+        validation.diagnostics
+          .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
+          .join(" "),
+      );
+    const accepted = validation.value;
+    const token = this.#nextToken++;
+    const next = new Map(this.#tracks);
+    next.set(id, { track: accepted, owner, motionId, token });
+    this.#compileTrack?.(accepted, id);
+    try {
+      this.#graph.replaceGraph(this.#snapshot(next, this.#motions));
+    } catch (error) {
+      this.#disposeTrack?.(id);
+      throw error;
+    }
     this.#tracks.set(id, { track: accepted, owner, motionId, token });
     if (motionId !== undefined) this.#addMotionTrack?.(motionId, id, accepted.duration);
-    this.mount(id); return this.#handle(id, token);
+    this.mount(id);
+    return this.#handle(id, token);
   }
   #handle(id: string, token: number): TrackHandle {
     const runtime = this;
     const active = () => runtime.#tracks.get(id)?.token === token;
     return Object.freeze({
       id,
-      get track(): TrackDefinition { const entry = runtime.#tracks.get(id); if (!entry || entry.token !== token) throw new TypeError(`Track "${id}" is no longer live.`); return entry.track; },
-      remove: () => { if (active()) runtime.#removeTrack(id, token); },
-      replace: (next: TrackDefinition) => { if (active()) runtime.#replaceTrack(id, token, next); },
-      addObserve: (observation: ObservationDefinition) => { if (active()) runtime.#replaceWithObservation(id, token, observation, true); },
-      removeObserve: (observation: ObservationDefinition) => { if (active()) runtime.#replaceWithObservation(id, token, observation, false); },
+      get track(): TrackDefinition {
+        const entry = runtime.#tracks.get(id);
+        if (!entry || entry.token !== token)
+          throw new TypeError(`Track "${id}" is no longer live.`);
+        return entry.track;
+      },
+      remove: () => {
+        if (active()) runtime.#removeTrack(id, token);
+      },
+      replace: (next: TrackDefinition) => {
+        if (active()) runtime.#replaceTrack(id, token, next);
+      },
+      addObserve: (observation: ObservationDefinition) => {
+        if (active()) runtime.#replaceWithObservation(id, token, observation, true);
+      },
+      removeObserve: (observation: ObservationDefinition) => {
+        if (active()) runtime.#replaceWithObservation(id, token, observation, false);
+      },
     });
   }
   #removeTrack(id: string, token: number): void {
-    this.#assertLive(); const entry = this.#tracks.get(id); if (!entry || entry.token !== token) return;
-    const next = new Map(this.#tracks); next.delete(id); this.#graph.replaceGraph(this.#snapshot(next, this.#motions));
-    this.#tracks.delete(id); this.#instances.delete(id); this.#graph.evictNode(id); this.#disposeTrack?.(id);
+    this.#assertLive();
+    const entry = this.#tracks.get(id);
+    if (!entry || entry.token !== token) return;
+    const next = new Map(this.#tracks);
+    next.delete(id);
+    this.#graph.replaceGraph(this.#snapshot(next, this.#motions));
+    this.#tracks.delete(id);
+    this.#instances.delete(id);
+    this.#graph.evictNode(id);
+    this.#disposeTrack?.(id);
     if (entry.motionId !== undefined) this.#removeMotionTrack?.(entry.motionId, id);
   }
   #replaceTrack(id: string, token: number, next: TrackDefinition): void {
-    const entry = this.#tracks.get(id); if (!entry || entry.token !== token) return;
-    const expected = entry.motionId !== undefined ? qualifyMotionTrack(entry.motionId, next.id).value : qualifyFreeTrack(next.id).value;
+    const entry = this.#tracks.get(id);
+    if (!entry || entry.token !== token) return;
+    const expected =
+      entry.motionId !== undefined
+        ? qualifyMotionTrack(entry.motionId, next.id).value
+        : qualifyFreeTrack(next.id).value;
     if (expected !== id) throw new TypeError(`Replacement must preserve node id "${id}".`);
     const validation = validateTrackDefinition(next, `replaceTrack(${id})`);
-    if (!validation.valid || !validation.value) throw new TypeError(validation.diagnostics.map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`).join(" "));
-    const accepted = validation.value; const replaced = new Map(this.#tracks); replaced.set(id, { ...entry, track: accepted });
-    this.#graph.replaceGraph(this.#snapshot(replaced, this.#motions)); this.#disposeTrack?.(id); this.#compileTrack?.(accepted, id);
-    this.#tracks.set(id, { ...entry, track: accepted }); if (entry.motionId !== undefined) this.#replaceMotionTrack?.(entry.motionId, id, accepted.duration);
+    if (!validation.valid || !validation.value)
+      throw new TypeError(
+        validation.diagnostics
+          .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
+          .join(" "),
+      );
+    const accepted = validation.value;
+    const replaced = new Map(this.#tracks);
+    replaced.set(id, { ...entry, track: accepted });
+    this.#graph.replaceGraph(this.#snapshot(replaced, this.#motions));
+    this.#disposeTrack?.(id);
+    this.#compileTrack?.(accepted, id);
+    this.#tracks.set(id, { ...entry, track: accepted });
+    if (entry.motionId !== undefined)
+      this.#replaceMotionTrack?.(entry.motionId, id, accepted.duration);
   }
-  #replaceWithObservation(id: string, token: number, observation: ObservationDefinition, add: boolean): void {
-    const entry = this.#tracks.get(id); if (!entry || entry.token !== token) return;
+  #replaceWithObservation(
+    id: string,
+    token: number,
+    observation: ObservationDefinition,
+    add: boolean,
+  ): void {
+    const entry = this.#tracks.get(id);
+    if (!entry || entry.token !== token) return;
     const observations = [...(entry.track.observes ?? [])];
     const key = observationEdgeKey(observation, id, entry.motionId ?? "~");
-    const index = observations.findIndex((candidate) => observationEdgeKey(candidate, id, entry.motionId ?? "~") === key);
-    if (add) { if (index >= 0) return; observations.push(observation); }
-    else { if (index < 0) return; observations.splice(index, 1); }
+    const index = observations.findIndex(
+      (candidate) => observationEdgeKey(candidate, id, entry.motionId ?? "~") === key,
+    );
+    if (add) {
+      if (index >= 0) return;
+      observations.push(observation);
+    } else {
+      if (index < 0) return;
+      observations.splice(index, 1);
+    }
     this.#replaceTrack(id, token, { ...entry.track, observes: observations });
   }
-  #snapshot(tracks: ReadonlyMap<string, TrackEntry>, motions: ReadonlyMap<string, MotionDefinition>): ProjectDefinition {
+  #snapshot(
+    tracks: ReadonlyMap<string, TrackEntry>,
+    motions: ReadonlyMap<string, MotionDefinition>,
+  ): ProjectDefinition {
     return {
       ...this.#project,
-      motions: [...motions.values()].map((motion) => ({ ...motion, tracks: [...tracks.values()].filter((entry) => entry.motionId === motion.id).map((entry) => entry.track) })),
-      freeTracks: [...tracks.values()].filter((entry) => entry.motionId === undefined).map((entry) => entry.track),
+      motions: [...motions.values()].map((motion) => ({
+        ...motion,
+        tracks: [...tracks.values()]
+          .filter((entry) => entry.motionId === motion.id)
+          .map((entry) => entry.track),
+      })),
+      freeTracks: [...tracks.values()]
+        .filter((entry) => entry.motionId === undefined)
+        .map((entry) => entry.track),
     };
   }
-  seek(nodeId: string, progress: number) { this.#assertLive(); this.#setProgress(nodeId, progress); const batch = this.#graph.invalidate([nodeId]); this.#diagnostics.recordAll(batch.diagnostics); return batch; }
-  invalidate(nodeIds: readonly string[]) { this.#assertLive(); const batch = this.#graph.invalidate(nodeIds); this.#diagnostics.recordAll(batch.diagnostics); return batch; }
-  dispose(): void { if (this.#disposed) return; this.#disposed = true; for (const nodeId of [...this.#instances.keys()]) this.#graph.detach(nodeId); this.#instances.clear(); this.#tracks.clear(); this.#motions.clear(); this.#graph.dispose(); this.#disposeComposition(); }
-  #assertLive(): void { if (this.#disposed) throw new Error("ProjectRuntime is disposed."); }
+  seek(nodeId: string, progress: number) {
+    this.#assertLive();
+    this.#setProgress(nodeId, progress);
+    const batch = this.#graph.invalidate([nodeId]);
+    this.#diagnostics.recordAll(batch.diagnostics);
+    return batch;
+  }
+  invalidate(nodeIds: readonly string[]) {
+    this.#assertLive();
+    const batch = this.#graph.invalidate(nodeIds);
+    this.#diagnostics.recordAll(batch.diagnostics);
+    return batch;
+  }
+  dispose(): void {
+    if (this.#disposed) return;
+    this.#disposed = true;
+    for (const nodeId of [...this.#instances.keys()]) this.#graph.detach(nodeId);
+    this.#instances.clear();
+    this.#tracks.clear();
+    this.#motions.clear();
+    this.#graph.dispose();
+    this.#disposeComposition();
+  }
+  #assertLive(): void {
+    if (this.#disposed) throw new Error("ProjectRuntime is disposed.");
+  }
 }
