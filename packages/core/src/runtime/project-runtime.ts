@@ -8,6 +8,7 @@ import type {
 import { validateTrackDefinition } from "../contract/validate-v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
+import { observationEdgeKey } from "../graph/ir";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
 import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
@@ -296,10 +297,17 @@ export class ProjectRuntime {
     const entry = this.#tracks.get(id);
     if (!entry || entry.token !== token) return;
     const observations = [...(entry.track.observes ?? [])];
-    const key = JSON.stringify(observation);
-    const index = observations.findIndex((candidate) => JSON.stringify(candidate) === key);
-    if (add && index < 0) observations.push(observation);
-    if (!add && index >= 0) observations.splice(index, 1);
+    const key = observationEdgeKey(observation, id, entry.motionId ?? "~");
+    const index = observations.findIndex(
+      (candidate) => observationEdgeKey(candidate, id, entry.motionId ?? "~") === key,
+    );
+    if (add) {
+      if (index >= 0) return;
+      observations.push(observation);
+    } else {
+      if (index < 0) return;
+      observations.splice(index, 1);
+    }
     this.#replaceTrack(id, token, { ...entry.track, observes: observations });
   }
   #snapshot(
