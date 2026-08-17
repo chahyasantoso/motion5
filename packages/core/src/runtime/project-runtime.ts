@@ -1,5 +1,5 @@
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../contract/v5";
-import { validateKeyframes } from "../contract/validate-v5";
+import { validateTrackDefinition } from "../contract/validate-v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
@@ -114,27 +114,24 @@ export class ProjectRuntime {
       throw new TypeError(`Adopted track "${id}" already exists.`);
     if (this.#instances.has(id)) throw new TypeError(`Node "${id}" is already mounted.`);
 
-    // Validate keyframes at the same trust level as authored tracks.
-    // compilePercentKeyframes only silently filters bad stops; validateKeyframes
-    // rejects them with diagnostics (non-finite p, non-monotonic, duplicates).
-    const keyframeDiagnostics: Diagnostic[] = [];
-    validateKeyframes(track.keyframes, `adopt(${track.id}).keyframes`, keyframeDiagnostics);
-    const keyframeErrors = keyframeDiagnostics.filter(({ severity }) => severity === "error");
-    if (keyframeErrors.length > 0)
+    const validation = validateTrackDefinition(track, `adopt(${track.id})`);
+    const keyframeErrors = validation.diagnostics.filter(({ severity }) => severity === "error");
+    if (!validation.valid || validation.value === null)
       throw new TypeError(
         keyframeErrors
           .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
-          .join(" "),
+          .join(" ") || `Track "${track.id}" failed validation.`,
       );
+    const acceptedTrack = validation.value;
 
     const candidateAdopted = new Map(this.#adopted);
-    candidateAdopted.set(id, { track, owner, motionId });
+    candidateAdopted.set(id, { track: acceptedTrack, owner, motionId });
 
     // Phase 1: compile and validate the candidate before publishing any lifecycle side effect.
     // If either operation throws, the adoption map and graph remain unchanged. Compilation is
     // the one preparatory side effect, so undo it when graph validation rejects the candidate.
     try {
-      this.#compileTrack?.(track, id);
+      this.#compileTrack?.(acceptedTrack, id);
       this.#graph.replaceGraph(this.#buildProjectSnapshot(candidateAdopted));
     } catch (error) {
       this.#disposeTrack?.(id);
@@ -143,14 +140,14 @@ export class ProjectRuntime {
 
     // Phase 2: commit. The pre-checks above and the successful graph replacement make these
     // operations non-throwing for the Engine-owned hooks.
-    this.#adopted.set(id, { track, owner, motionId });
+    this.#adopted.set(id, { track: acceptedTrack, owner, motionId });
     this.mount(id);
 
     if (motionId !== undefined) {
-      this.#addMotionTrack?.(motionId, id, track.duration);
+      this.#addMotionTrack?.(motionId, id, acceptedTrack.duration);
     }
 
-    return Object.freeze({ id, track });
+    return Object.freeze({ id, track: acceptedTrack });
   }
   /** Destroy an adopted track. Only the owner can destroy; others detach via unmount. */
   destroyAdopted(nodeId: string, owner: object): void {
