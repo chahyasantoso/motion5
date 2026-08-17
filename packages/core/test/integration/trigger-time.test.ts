@@ -4,7 +4,17 @@ import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
 
 function track(id: string) {
-  return { id, keyframes: { x: { stops: [{ p: 0, v: 0 }, { p: 1, v: 100 }] } } };
+  return {
+    id,
+    keyframes: {
+      x: {
+        stops: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
+      },
+    },
+  };
 }
 
 describe("time trigger integration T2", () => {
@@ -13,7 +23,9 @@ describe("time trigger integration T2", () => {
     const scheduler = createFakeScheduler();
     const handle = new Engine({ clock, interpolator: createFakeInterpolator(), scheduler }).load({
       schemaVersion: 5,
-      motions: [{ id: "timeMotion", trigger: { type: "time", duration: 1000 }, tracks: [track("arm")] }],
+      motions: [
+        { id: "timeMotion", trigger: { type: "time", duration: 1000 }, tracks: [track("arm")] },
+      ],
     });
     handle.mount("timeMotion/arm");
     clock.tick(1000);
@@ -28,8 +40,17 @@ describe("time trigger integration T2", () => {
   it("keeps exactly one project clock subscription for multiple Motions", () => {
     let subscriptions = 0;
     const base = createManualClock();
-    const clock = { subscribe(listener: Parameters<typeof base.subscribe>[0]) { subscriptions += 1; return base.subscribe(listener); } };
-    const handle = new Engine({ clock, interpolator: createFakeInterpolator(), scheduler: createFakeScheduler() }).load({
+    const clock = {
+      subscribe(listener: Parameters<typeof base.subscribe>[0]) {
+        subscriptions += 1;
+        return base.subscribe(listener);
+      },
+    };
+    const handle = new Engine({
+      clock,
+      interpolator: createFakeInterpolator(),
+      scheduler: createFakeScheduler(),
+    }).load({
       schemaVersion: 5,
       motions: [
         { id: "timeA", trigger: { type: "time", duration: 1000 }, tracks: [] },
