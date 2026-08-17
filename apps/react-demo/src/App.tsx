@@ -1,17 +1,16 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Engine,
   PluginRegistry,
+  createTriggerFactory,
   type ProjectHandle,
-  type PluginDefinition,
   type TrackHandle,
 } from "@motion5/core";
 import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
-import { createScrollTriggerPort } from "@motion5/core/adapters/scroll-trigger";
 import { fkPlugin } from "@motion5/core/plugins/fk";
 import { transformPlugin } from "@motion5/core/plugins/transform";
 import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/ports/fakes";
-import { initialWalkerProject, armTracks } from "./full-body-project";
+import { armTracks, initialWalkerProject, WALK_SCROLL_SOURCE } from "./full-body-project";
 import { createGsapScrollSource } from "./scroll-source-gsap";
 import { SkeletonRig } from "./components/SkeletonRig";
 import { InspectorPanel } from "./components/InspectorPanel";
@@ -31,9 +30,12 @@ const CORE_NODES = [
 export const App: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [armsAdopted, setArmsAdopted] = useState(false);
+  const [handle, setHandle] = useState<ProjectHandle | undefined>(undefined);
   const armHandlesRef = useRef<TrackHandle[]>([]);
 
-  const { handle, clock, scheduler } = useMemo(() => {
+  useEffect(() => {
+    // engine.load() runs here, not in a render-phase useMemo, because this app owns the scroll
+    // source and GSAP needs #scroll-scene committed to the DOM before ScrollTrigger.create().
     const plugins = new PluginRegistry();
     plugins.register(transformPlugin);
     plugins.register(fkPlugin);
@@ -42,27 +44,7 @@ export const App: React.FC = () => {
       requestFrame: (cb: FrameRequestCallback) => requestAnimationFrame(cb),
       cancelFrame: (h: number) => cancelAnimationFrame(h),
     });
-
     const scheduler = createFakeScheduler();
-
-    const engine = new Engine({
-      clock,
-      interpolator: createFakeInterpolator(),
-      scheduler,
-      plugins,
-    });
-
-    // Start with 9-node core skeleton (no arms)
-    const handle = engine.load(initialWalkerProject);
-
-    for (const nodeId of CORE_NODES) {
-      handle.mount(nodeId);
-    }
-
-    return { handle, clock, scheduler };
-  }, []);
-
-  useEffect(() => {
     const scrollSource = createGsapScrollSource({
       trigger: "#scroll-scene",
       start: "top top",
@@ -70,15 +52,31 @@ export const App: React.FC = () => {
       pin: true,
     });
 
-    const port = createScrollTriggerPort(scrollSource);
+    // Core never sees the element, the selector, or GSAP. It receives a normalized progress
+    // source resolved from the serializable authored key, and nothing else.
+    const project = new Engine({
+      clock,
+      interpolator: createFakeInterpolator(),
+      scheduler,
+      plugins,
+      triggerFactory: createTriggerFactory({
+        scroll: ({ trigger }) =>
+          trigger.source === WALK_SCROLL_SOURCE ? scrollSource : undefined,
+      }),
+    }).load(initialWalkerProject);
 
-    const unsubscribe = port.subscribe((p: number) => {
+    for (const nodeId of CORE_NODES) project.mount(nodeId);
+
+    // The app owns the source, so tapping it for UI and threshold logic keeps core clean. There is
+    // deliberately no handle.signal() call here: the injected driver is the only thing that moves
+    // this Motion, and signalling it would now throw.
+    const unsubscribe = scrollSource.subscribe((p: number) => {
       setProgress(p);
 
       // Add arm tracks when scrolling past 50%.
       if (p >= 0.5 && armHandlesRef.current.length === 0) {
         armHandlesRef.current = armTracks.map((track) =>
-          handle.addTrack(track, { motionId: "walk" }),
+          project.addTrack(track, { motionId: "walk" }),
         );
         setArmsAdopted(true);
       } else if (p < 0.45 && armHandlesRef.current.length > 0) {
@@ -90,29 +88,22 @@ export const App: React.FC = () => {
         setArmsAdopted(false);
       }
 
-      handle.signal("walk", { type: "scroll", progress: p });
       scheduler.flush();
     });
 
-    handle.signal("walk", { type: "scroll", progress: 0 });
-    scheduler.flush();
+    setHandle(project);
 
     return () => {
       unsubscribe();
-      port.dispose();
       for (const trackHandle of [...armHandlesRef.current].reverse()) {
         trackHandle.remove();
       }
       armHandlesRef.current = [];
-    };
-  }, [handle, scheduler]);
-
-  useEffect(() => {
-    return () => {
-      handle.dispose();
+      setHandle(undefined);
+      project.dispose();
       clock.dispose();
     };
-  }, [handle, clock]);
+  }, []);
 
   return (
     <div id="scroll-scene">
@@ -143,7 +134,7 @@ export const App: React.FC = () => {
             </div>
           </div>
         </header>
-        <SkeletonRig handle={handle} />
+        {handle ? <SkeletonRig handle={handle} /> : null}
       </div>
 
       <aside className="sidebar">
@@ -183,7 +174,7 @@ export const App: React.FC = () => {
                 : "▷ [0.00-0.49] Scroll past 50% to add arms"}
             </div>
           </div>
-          <InspectorPanel handle={handle} />
+          {handle ? <InspectorPanel handle={handle} /> : null}
         </div>
 
         <footer className="sidebar-footer">
