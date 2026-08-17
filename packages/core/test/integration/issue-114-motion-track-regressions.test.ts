@@ -5,7 +5,12 @@ import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fak
 import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
 
 function ramp(from: number, to: number) {
-  return { stops: [{ p: 0, v: from }, { p: 1, v: to }] };
+  return {
+    stops: [
+      { p: 0, v: from },
+      { p: 1, v: to },
+    ],
+  };
 }
 function track(id: string, from: number, to: number, duration?: number): TrackDefinition {
   return { id, ...(duration === undefined ? {} : { duration }), keyframes: { x: ramp(from, to) } };
@@ -13,14 +18,19 @@ function track(id: string, from: number, to: number, duration?: number): TrackDe
 function load(project: ProjectDefinition) {
   const clock = createManualClock();
   const scheduler = createFakeScheduler();
-  const handle = new Engine({ clock, interpolator: createFakeInterpolator(), scheduler }).load(project);
+  const handle = new Engine({ clock, interpolator: createFakeInterpolator(), scheduler }).load(
+    project,
+  );
   return { clock, scheduler, handle };
 }
 const baseProject = (tracks: readonly TrackDefinition[], stagger = 0): ProjectDefinition => ({
   schemaVersion: 5,
   motions: [{ id: "scene", trigger: { type: "manual" }, ...(stagger ? { stagger } : {}), tracks }],
 });
-function flushReplacement(clock: ReturnType<typeof createManualClock>, scheduler: ReturnType<typeof createFakeScheduler>) {
+function flushReplacement(
+  clock: ReturnType<typeof createManualClock>,
+  scheduler: ReturnType<typeof createFakeScheduler>,
+) {
   // Replacement seeds the new compiled Track immediately; the graph publication is still clock/scheduler-driven.
   clock.tick(0);
   scheduler.flush();
@@ -73,7 +83,9 @@ describe("issue 114: Motion-owned Track replacement", () => {
   });
 
   it("keeps sibling progress healthy after replacement", () => {
-    const { scheduler, handle } = load(baseProject([track("first", 0, 100), track("second", 0, 200)]));
+    const { scheduler, handle } = load(
+      baseProject([track("first", 0, 100), track("second", 0, 200)]),
+    );
     handle.mount("scene/first");
     handle.mount("scene/second");
     handle.signal("scene", { type: "manual", progress: 0.25 });
