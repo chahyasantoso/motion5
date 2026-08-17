@@ -25,6 +25,7 @@ describe("Motion and trigger lifecycle", () => {
       invalidate,
       tracks: [{ id: "arm" }],
       resolveTrack: () => track as never,
+      disposeTracks: true,
     });
 
     motion.play();
