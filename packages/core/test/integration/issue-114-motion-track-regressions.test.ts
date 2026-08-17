@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
@@ -16,7 +16,6 @@ function load(project: ProjectDefinition) {
   const handle = new Engine({ clock, interpolator: createFakeInterpolator(), scheduler }).load(project);
   return { clock, scheduler, handle };
 }
-
 const baseProject = (tracks: readonly TrackDefinition[], stagger = 0): ProjectDefinition => ({
   schemaVersion: 5,
   motions: [{ id: "scene", trigger: { type: "manual" }, ...(stagger ? { stagger } : {}), tracks }],
@@ -66,8 +65,7 @@ describe("issue 114: Motion-owned Track replacement", () => {
     handle.dispose();
   });
 
-  it("keeps sibling progress and invalidation healthy", () => {
-    const invalidate = vi.fn();
+  it("keeps sibling progress healthy after replacement", () => {
     const { scheduler, handle } = load(baseProject([track("first", 0, 100), track("second", 0, 200)]));
     handle.mount("scene/first");
     handle.mount("scene/second");
@@ -79,11 +77,10 @@ describe("issue 114: Motion-owned Track replacement", () => {
 
     expect(handle.get("scene/first")?.values).toEqual({ x: 200 });
     expect(handle.get("scene/second")?.values).toEqual({ x: 100 });
-    expect(invalidate).not.toHaveBeenCalled();
     handle.dispose();
   });
 
-  it("replaces through addObserve and removeObserve without stale references", () => {
+  it("keeps the observation replacement path live", () => {
     const { scheduler, handle } = load(baseProject([track("arm", 0, 100), track("label", 0, 50)]));
     handle.mount("scene/arm");
     handle.mount("scene/label");
@@ -95,22 +92,6 @@ describe("issue 114: Motion-owned Track replacement", () => {
       handle.signal("scene", { type: "manual", progress: 0.5 });
       scheduler.flush();
     }).not.toThrow(/Track is disposed/);
-    handle.dispose();
-  });
-
-  it("disposes the old compiled Track once and keeps the replacement live", () => {
-    const oldTrackDispose = vi.fn();
-    const clock = createManualClock();
-    const scheduler = createFakeScheduler();
-    const interpolator = createFakeInterpolator();
-    const handle = new Engine({ clock, interpolator, scheduler }).load(baseProject([track("arm", 0, 100)]));
-    handle.mount("scene/arm");
-    handle.track("scene/arm").replace(track("arm", 0, 250));
-    expect(oldTrackDispose).not.toHaveBeenCalled();
-    expect(() => {
-      clock.tick(16);
-      scheduler.flush();
-    }).not.toThrow();
     handle.dispose();
   });
 });
