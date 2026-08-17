@@ -19,6 +19,10 @@ const allowedPublicExports = new Set([
   "TrackDefinition",
   "TriggerType",
   "TriggerSignal",
+  "TriggerDefinition",
+  "ManualTriggerDefinition",
+  "TimeTriggerDefinition",
+  "ScrollTriggerDefinition",
   "PatchStatus",
   "Patch",
   "PatchBatch",
@@ -29,6 +33,7 @@ const allowedPublicExports = new Set([
   "ValidationResult",
   "validateTrackDefinition",
   "TrackValidationResult",
+  "validateMotionTrigger",
   "parseGolden",
   "serializeGolden",
   "GoldenFixture",
@@ -44,6 +49,11 @@ const allowedPublicExports = new Set([
   "assertTriggerPort",
   "createManualTriggerPort",
   "TriggerPort",
+  "assertTriggerFactory",
+  "ClockConsumer",
+  "CreatedTrigger",
+  "TriggerFactory",
+  "TriggerFactoryContext",
   "assertInterpolator",
   "InterpolationTimeline",
   "Interpolator",
@@ -70,24 +80,16 @@ function relative(path, scanRoot) {
   return path.slice(scanRoot.length + 1).replaceAll("\\", "/");
 }
 export function importsBoundary(source) {
-  return /(?:from|import)\s*["'](?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:["'/]|$)/.test(
-    source,
-  );
+  return /(?:from|import)\s*["'](?:gsap|react|react-dom|@?motionpath|@?motion5|three|jsdom|happy-dom)(?:["'/]|$)/.test(source);
 }
 export function importsRenderer(source) {
-  return /(?:from|import)\s*["'](?:gsap|react|react-dom|node:dom|domino|(?:\.\/|\.\.\/)[^"']*(?:^|\/)\b(?:dom|renderer|react|gsap)\b)["'/]/i.test(
-    source,
-  );
+  return /(?:from|import)\s*["'](?:gsap|react|react-dom|node:dom|domino|(?:\.\/|\.\.\/)[^"']*(?:^|\/)\b(?:dom|renderer|react|gsap)\b)["'/]/i.test(source);
 }
 export function importsCoreInternals(source) {
-  return /(?:from|import)\s*["'][^"']*(?:packages\/core\/src|\.\.\/\.\.\/core\/src)(?:["'/]|$)/.test(
-    source,
-  );
+  return /(?:from|import)\s*["'][^"']*(?:packages\/core\/src|\.\.\/\.\.\/core\/src)(?:["'/]|$)/.test(source);
 }
 export function bannedSymbol(source) {
-  return /(?:compatibility|facade|parityMode|rollout|capabilityFlag|observationAlias|groupHost)/i.test(
-    source,
-  );
+  return /(?:compatibility|facade|parityMode|rollout|capabilityFlag|observationAlias|groupHost)/i.test(source);
 }
 export function extractExportNames(source) {
   const names = [];
