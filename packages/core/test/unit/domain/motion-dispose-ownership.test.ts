@@ -39,4 +39,24 @@ describe("Motion compiled Track disposal ownership", () => {
     expect(first.dispose).not.toHaveBeenCalled();
     expect(second.dispose).not.toHaveBeenCalled();
   });
+
+  it("keeps a shared Track usable after one Motion is disposed", () => {
+    // Disposal by one consumer must not kill a Track still resolved by another consumer.
+    const track = { setProgress: vi.fn(), dispose: vi.fn() };
+    const createMotion = () =>
+      new Motion({
+        clock: createManualClock(),
+        scheduler: createFakeScheduler(),
+        tracks: [{ id: "arm" }],
+        resolveTrack: () => track as never,
+      });
+    const first = createMotion();
+    const second = createMotion();
+
+    first.dispose();
+    second.seek(0.75);
+
+    expect(track.dispose).not.toHaveBeenCalled();
+    expect(track.setProgress).toHaveBeenCalledWith(0.75);
+  });
 });
