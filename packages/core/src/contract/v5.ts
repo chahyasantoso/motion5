@@ -17,15 +17,13 @@ export interface ScrollTriggerDefinition {
   readonly type: "scroll";
   readonly source?: string;
 }
-export type TriggerDefinition =
-  | ManualTriggerDefinition
-  | ScrollTriggerDefinition
-  | TimeTriggerDefinition;
+export type TriggerDefinition = ManualTriggerDefinition | ScrollTriggerDefinition | TimeTriggerDefinition;
 
 export interface TriggerSignal {
   readonly type: TriggerType;
   readonly progress?: number;
 }
+
 export interface Diagnostic {
   readonly ruleId: string;
   readonly path: string;
@@ -33,7 +31,19 @@ export interface Diagnostic {
   readonly severity: DiagnosticSeverity;
   readonly ids?: readonly string[];
 }
+
+/**
+ * `"ready"`, `"blocked"`, and `"error"` all describe a node that still exists and may publish
+ * again. `"destroyed"` is terminal: the node has been evicted from the graph and will never
+ * publish again.
+ *
+ * The terminal status exists because destruction previously had no representation on the
+ * observation wire at all. Eviction dropped the retained patch silently, so the last `"ready"`
+ * patch a subscriber had received stayed authoritative forever and consumers kept rendering a
+ * node the graph had already destroyed.
+ */
 export type PatchStatus = "ready" | "blocked" | "error" | "destroyed";
+
 export interface Patch {
   readonly nodeId: string;
   readonly revision: number;
@@ -76,9 +86,7 @@ export interface ObservationDefinition {
 }
 export interface MotionDefinition {
   readonly id: string;
-  readonly trigger:
-    | TriggerDefinition
-    | { readonly type: TriggerType; readonly [key: string]: unknown };
+  readonly trigger: TriggerDefinition | { readonly type: TriggerType; readonly [key: string]: unknown };
   readonly tracks: readonly TrackDefinition[];
   readonly stagger?: number;
 }

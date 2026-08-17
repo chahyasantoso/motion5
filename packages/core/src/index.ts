@@ -1,3 +1,9 @@
+/**
+ * `@motion5/core` public entrypoint.
+ *
+ * Graph internals remain private to the package.
+ */
+
 export {
   AUTHORED_SCHEMA_VERSION,
   DIAGNOSTIC_SEVERITIES,
@@ -38,13 +44,10 @@ export { assertClock, createManualClock } from "./ports/clock";
 export { assertTriggerPort, createManualTriggerPort } from "./ports/trigger";
 export type { TriggerPort } from "./ports/trigger";
 export { assertTriggerFactory } from "./ports/trigger-factory";
-export type {
-  ClockConsumer,
-  CreatedTrigger,
-  TriggerFactory,
-  TriggerFactoryContext,
-} from "./ports/trigger-factory";
+export type { ClockConsumer, CreatedTrigger, TriggerFactory, TriggerFactoryContext } from "./ports/trigger-factory";
 export { assertInterpolator } from "./ports/interpolator";
 export type { InterpolationTimeline, Interpolator } from "./ports/interpolator";
 export { assertScheduler } from "./ports/scheduler";
+
+/** Version of this package. Independent of the authored schema version. */
 export const CORE_VERSION = "0.0.0";
