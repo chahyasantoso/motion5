@@ -33,8 +33,7 @@ export type { ValidationResult, TrackValidationResult } from "./contract/validat
 export { parseGolden, serializeGolden } from "./contract/golden";
 export type { GoldenFixture, GoldenValidationFixture } from "./contract/golden";
 export { Engine } from "./engine";
-export type { ProjectHandle } from "./engine";
-export type { TrackHandle } from "./runtime/project-runtime";
+export type { ProjectHandle, TrackHandle } from "./engine";
 export { PluginRegistry } from "./domain/plugins";
 export type { PluginDefinition, ResolvedPlugins } from "./domain/plugins";
 export { assertClock, createManualClock } from "./ports/clock";
