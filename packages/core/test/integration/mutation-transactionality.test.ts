@@ -29,7 +29,12 @@ function makeHandle() {
 }
 
 function ramp(from: number, to: number) {
-  return { stops: [{ p: 0, v: from }, { p: 1, v: to }] };
+  return {
+    stops: [
+      { p: 0, v: from },
+      { p: 1, v: to },
+    ],
+  };
 }
 
 const rootTrack: TrackDefinition = {
@@ -110,10 +115,7 @@ describe("runtime mutation transactionality (W2)", () => {
 
     expect(() => handle.adopt(invalid, owner)).toThrow(/observation-unknown-source/);
 
-    const replacement = handle.adopt(
-      { id: "child", keyframes: { x: ramp(0, 10) } },
-      owner,
-    );
+    const replacement = handle.adopt({ id: "child", keyframes: { x: ramp(0, 10) } }, owner);
     expect(replacement.id).toBe("~/child");
     expect(handle.seek(replacement.id, 0.5).patches.some(({ status }) => status === "error")).toBe(
       false,

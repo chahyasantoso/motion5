@@ -11,13 +11,13 @@ This document reports current implementation reality. The detailed contract rema
 
 An editor use case (start from an empty project, add and remove motions, tracks, and observation edges at runtime) was pressure-tested against the existing mutation API. `docs/PROBLEM-STATEMENT-runtime-mutation-model.md` records the three problems found; the assessment verified them against the live code and found four more.
 
-| Package | Scope | State |
-| --- | --- | --- |
-| W1 | Builder cache correctness (A3 cached failures, A5 owner-blind key) | merged, [#109](https://github.com/chahyasantoso/motion5/pull/109) |
-| W2 | Transactional `adopt`/`destroyAdopted` (P1, A1) | in review, [#110](https://github.com/chahyasantoso/motion5/pull/110) |
-| W3 | Freeze and validate adopted tracks (A2) | not started |
-| W4 | Runtime `addMotion`/`destroyMotion` (P2) | not started |
-| W5 | Unified store, capability handles, `replaceTrack` (P3) | not started |
+| Package | Scope                                                              | State                                                                |
+| ------- | ------------------------------------------------------------------ | -------------------------------------------------------------------- |
+| W1      | Builder cache correctness (A3 cached failures, A5 owner-blind key) | merged, [#109](https://github.com/chahyasantoso/motion5/pull/109)    |
+| W2      | Transactional `adopt`/`destroyAdopted` (P1, A1)                    | in review, [#110](https://github.com/chahyasantoso/motion5/pull/110) |
+| W3      | Freeze and validate adopted tracks (A2)                            | not started                                                          |
+| W4      | Runtime `addMotion`/`destroyMotion` (P2)                           | not started                                                          |
+| W5      | Unified store, capability handles, `replaceTrack` (P3)             | not started                                                          |
 
 W1 precedes W2 deliberately: W2 makes a rejected mutation retryable, and against the unfixed cache a retry could succeed with a silently dropped observation edge. W1 is now merged, so W2 can safely install retryability.
 
