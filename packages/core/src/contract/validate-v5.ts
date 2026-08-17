@@ -189,6 +189,31 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   for (const child of Object.values(value)) deepFreeze(child, seen);
   return Object.freeze(value);
 }
+
+export interface TrackValidationResult {
+  readonly valid: boolean;
+  readonly diagnostics: readonly Diagnostic[];
+  readonly value: TrackDefinition | null;
+}
+
+/**
+ * Validate and freeze one runtime-supplied track at the same trust level as an authored track.
+ * Project-level duplicate and graph rules remain the responsibility of the candidate builder.
+ */
+export function validateTrackDefinition(
+  track: unknown,
+  path: string,
+): TrackValidationResult {
+  const diagnostics: Diagnostic[] = [];
+  const validShape = validateTrackShape(track, path, new Set<string>(), diagnostics);
+  const valid = validShape && !diagnostics.some(({ severity }) => severity === "error");
+  return {
+    valid,
+    diagnostics: Object.freeze(diagnostics),
+    value: valid ? deepFreeze(clone(track) as TrackDefinition) : null,
+  };
+}
+
 export function validateV5(input: unknown): ValidationResult {
   const diagnostics: Diagnostic[] = [];
   if (!isObject(input))
