@@ -193,8 +193,7 @@ The four call sites:
 
 ```ts
 // beforeDispose: best-effort, never throws
-if (this.#disposeTracks)
-  for (const entry of this.#tracks) this.#resolveTrack(entry.id)?.dispose();
+if (this.#disposeTracks) for (const entry of this.#tracks) this.#resolveTrack(entry.id)?.dispose();
 
 // addTrack tail, index is this.#tracks.length - 1
 this.#track(entry.id).setProgress(this.#effectiveProgress(index, entry));
