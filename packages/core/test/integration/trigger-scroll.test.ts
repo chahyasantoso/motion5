@@ -109,9 +109,10 @@ describe("T3 scroll driver", () => {
 
   it("3.3 rejects a missing source with a trigger-driver-unavailable diagnostic", () => {
     const attempt = () =>
-      load(() => undefined, [
-        { id: "scene", trigger: { type: "scroll", source: "missing" }, tracks: [] },
-      ]);
+      load(
+        () => undefined,
+        [{ id: "scene", trigger: { type: "scroll", source: "missing" }, tracks: [] }],
+      );
 
     // Rule id, path, motion id, and source key are all contractual per plan section 0.8.
     expect(attempt).toThrow(/^trigger-driver-unavailable at motions\.scene\.trigger\.source:/);
