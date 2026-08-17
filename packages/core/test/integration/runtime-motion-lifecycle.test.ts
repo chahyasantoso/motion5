@@ -20,7 +20,12 @@ function motion(id: string, stagger = 0): MotionDefinition {
   return { id, trigger: { type: "manual" }, tracks: [], ...(stagger ? { stagger } : {}) };
 }
 function ramp(from: number, to: number) {
-  return { stops: [{ p: 0, v: from }, { p: 1, v: to }] };
+  return {
+    stops: [
+      { p: 0, v: from },
+      { p: 1, v: to },
+    ],
+  };
 }
 function track(id: string, from: number, to: number, duration?: number): TrackDefinition {
   return { id, ...(duration === undefined ? {} : { duration }), keyframes: { x: ramp(from, to) } };

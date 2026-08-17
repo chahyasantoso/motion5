@@ -182,7 +182,10 @@ export class Engine {
     };
     const motions = new Map<string, Motion>();
     let runtime: ProjectRuntime;
-    const buildMotion = (definition: MotionDefinition, entries: readonly MotionTrackEntry[]): Motion => {
+    const buildMotion = (
+      definition: MotionDefinition,
+      entries: readonly MotionTrackEntry[],
+    ): Motion => {
       const triggerPort = createManualTriggerPort();
       let motion: Motion;
       motion = new Motion({
