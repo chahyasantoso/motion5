@@ -246,6 +246,13 @@ export class Engine {
           if (!track) throw new TypeError(`Unknown graph node "${trackId}".`);
           motion.addTrack({ id: trackId, track, duration });
         },
+        replaceMotionTrack: (motionId, trackId, duration) => {
+          const motion = motions.get(motionId);
+          if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
+          const track = tracks.get(trackId);
+          if (!track) throw new TypeError(`Unknown graph node "${trackId}".`);
+          motion.replaceTrack({ id: trackId, track, duration });
+        },
         removeMotionTrack: (motionId, trackId) => motions.get(motionId)?.removeTrack(trackId),
         createMotion: (definition) => motions.set(definition.id, buildMotion(definition, [])),
         destroyMotion: (motionId) => {

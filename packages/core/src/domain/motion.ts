@@ -84,17 +84,18 @@ export class Motion {
       throw new TypeError(`Motion track duration must be a finite positive number: ${entry.id}.`);
     this.#tracks.push(entry);
     this.#trackMap.set(entry.id, entry);
-    const duration = this.#totalDuration();
     const index = this.#tracks.length - 1;
-    const staggerDelay = index * this.#stagger;
-    const effectiveProgress =
-      staggerDelay > 0 && duration > 0
-        ? Math.max(
-            0,
-            Math.min(1, (this.#position * duration - staggerDelay) / (entry.duration ?? duration)),
-          )
-        : this.#position;
-    entry.track.setProgress(effectiveProgress);
+    entry.track.setProgress(this.#effectiveProgress(index, entry));
+  }
+  replaceTrack(entry: MotionTrackEntry): void {
+    this.assertActive();
+    const index = this.#tracks.findIndex((candidate) => candidate.id === entry.id);
+    if (index === -1) throw new Error(`Unknown Motion track id: ${entry.id}.`);
+    if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
+      throw new TypeError(`Motion track duration must be a finite positive number: ${entry.id}.`);
+    this.#tracks[index] = entry;
+    this.#trackMap.set(entry.id, entry);
+    entry.track.setProgress(this.#effectiveProgress(index, entry));
   }
   removeTrack(trackId: string): void {
     this.assertActive();
@@ -193,20 +194,21 @@ export class Motion {
   }
   #setProgress(progress: number): void {
     this.#position = progress;
-    const duration = this.#totalDuration();
     for (let index = 0; index < this.#tracks.length; index += 1) {
       const entry = this.#tracks[index]!;
-      const staggerDelay = index * this.#stagger;
-      const effectiveProgress =
-        staggerDelay > 0 && duration > 0
-          ? Math.max(
-              0,
-              Math.min(1, (progress * duration - staggerDelay) / (entry.duration ?? duration)),
-            )
-          : progress;
-      entry.track.setProgress(effectiveProgress);
+      entry.track.setProgress(this.#effectiveProgress(index, entry));
     }
     this.#invalidate(progress);
+  }
+  #effectiveProgress(index: number, entry: MotionTrackEntry): number {
+    const duration = this.#totalDuration();
+    const staggerDelay = index * this.#stagger;
+    return staggerDelay > 0 && duration > 0
+      ? Math.max(
+          0,
+          Math.min(1, (this.#position * duration - staggerDelay) / (entry.duration ?? duration)),
+        )
+      : this.#position;
   }
   #totalDuration(): number {
     return this.#tracks.reduce((maximum, entry) => Math.max(maximum, entry.duration ?? 1), 1);

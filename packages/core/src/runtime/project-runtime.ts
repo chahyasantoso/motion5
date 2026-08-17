@@ -30,6 +30,7 @@ export interface ProjectRuntimeOptions {
   readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
   readonly disposeTrack?: (nodeId: string) => void;
   readonly addMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
+  readonly replaceMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly removeMotionTrack?: (motionId: string, trackId: string) => void;
   readonly createMotion?: (definition: MotionDefinition) => void;
   readonly destroyMotion?: (motionId: string) => void;
@@ -51,6 +52,9 @@ export class ProjectRuntime {
   readonly #compileTrack: ((track: TrackDefinition, nodeId?: string) => void) | undefined;
   readonly #disposeTrack: ((nodeId: string) => void) | undefined;
   readonly #addMotionTrack:
+    | ((motionId: string, trackId: string, duration?: number) => void)
+    | undefined;
+  readonly #replaceMotionTrack:
     | ((motionId: string, trackId: string, duration?: number) => void)
     | undefined;
   readonly #removeMotionTrack: ((motionId: string, trackId: string) => void) | undefined;
@@ -80,6 +84,7 @@ export class ProjectRuntime {
     this.#compileTrack = options.compileTrack;
     this.#disposeTrack = options.disposeTrack;
     this.#addMotionTrack = options.addMotionTrack;
+    this.#replaceMotionTrack = options.replaceMotionTrack;
     this.#removeMotionTrack = options.removeMotionTrack;
     this.#createMotion = options.createMotion;
     this.#destroyMotion = options.destroyMotion;
@@ -279,6 +284,7 @@ export class ProjectRuntime {
     this.#disposeTrack?.(id);
     this.#compileTrack?.(accepted, id);
     this.#tracks.set(id, { ...entry, track: accepted });
+    if (entry.motionId !== undefined) this.#replaceMotionTrack?.(entry.motionId, id, accepted.duration);
   }
   #replaceWithObservation(
     id: string,
