@@ -58,7 +58,7 @@ describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
     port.dispose();
   });
 
-  it("2. Core validation boundary: NaN, infinite, and out-of-bounds progress handled cleanly", () => {
+  it("2. Core validation boundary: NaN, infinite, and out-of-bounds progress are rejected loudly", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
     const trigger = createManualTriggerPort();
@@ -79,15 +79,20 @@ describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
 
     motion.play();
 
-    // Out-of-bounds negative clamped to 0
-    trigger.emit(-0.5);
+    // This case asserted silent clamping until issue #138. The clamp was partial, so one rule had
+    // three owners and NaN passed all of them. ADR-034 gives the rule a single owner in
+    // Motion.#scheduleProgress, which rejects at the emit site rather than deferring to a flush.
+    expect(() => trigger.emit(-0.5)).toThrow(RangeError);
+    expect(() => trigger.emit(1.5)).toThrow(RangeError);
+    expect(() => trigger.emit(Number.NaN)).toThrow(TypeError);
+    expect(() => trigger.emit(Number.POSITIVE_INFINITY)).toThrow(TypeError);
     scheduler.flush();
     expect(motion.position).toBe(0);
 
-    // Out-of-bounds >1 clamped to 1
-    trigger.emit(1.5);
+    // Still a boundary case rather than only a throw: an in-range emission keeps working.
+    trigger.emit(0.5);
     scheduler.flush();
-    expect(motion.position).toBe(1);
+    expect(motion.position).toBe(0.5);
 
     motion.dispose();
   });

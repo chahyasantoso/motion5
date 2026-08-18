@@ -10,10 +10,13 @@ import { fileURLToPath } from "node:url";
 //
 // `C-` belongs to the option C plan (ADR-031). `T-` belongs to the T4/T5 trigger parity plan,
 // which needed its own prefix because that plan already uses `T4-n` and `T5-n` for its locked
-// decisions; reusing those for test cases would have made every citation two-valued.
+// decisions; reusing those for test cases would have made every citation two-valued. `R-` belongs
+// to the trigger progress range fix, issue #138 and ADR-034. `E-` is reserved here for the
+// edgeKey separator fix, issue #137, so that whichever of those two lands second rebases instead
+// of widening this pattern a second time.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:C|T)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:C|E|R|T)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
