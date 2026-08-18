@@ -148,9 +148,22 @@ export class ProjectRuntime {
     const accepted = { ...definition, tracks: [] };
     const next = new Map(this.#motions);
     next.set(accepted.id, accepted);
-    this.#graph.replaceGraph(this.#snapshot(this.#tracks, next));
-    this.#motions.set(accepted.id, accepted);
+    // Build the Motion before committing anything. A driver that cannot be created, such as a
+    // scroll trigger with no registered source, must not leave a definition or a graph node
+    // behind: addTrack would accept the id, compile a Track, replace the graph, and only then
+    // fail from a hook, one layer too late to name the real cause. Mirrors #addTrack, which
+    // compiles first and disposes on graph rejection. See ADR-032.
     this.#createMotion?.(accepted);
+    try {
+      this.#graph.replaceGraph(this.#snapshot(this.#tracks, next));
+    } catch (error) {
+      // The destroyMotion hook is already the exact rollback set -- it releases the clock
+      // consumer, disposes the created trigger, disposes the Motion, and drops the map entry --
+      // and it is a no-op for an absent id, so no second rollback owner is introduced.
+      this.#destroyMotion?.(accepted.id);
+      throw error;
+    }
+    this.#motions.set(accepted.id, accepted);
     return Object.freeze({ id: accepted.id });
   }
   destroyMotion(motionId: string): void {
