@@ -43,6 +43,16 @@ Add a finite positive number when the project contains 3D keyframes or path dept
 
 Missing perspective is a warning. Zero, negative, non-finite, or non-numeric present values are errors.
 
+### Triggers
+
+A declared trigger type used to be decorative: every type resolved to a manual port, so a v4 document with a `scroll` or `time` trigger loaded and then moved only when something called `signal()`. It is now enforced, and five previously tolerated shapes are rejected. See ADR-033 and the Trigger section of [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md).
+
+- A `time` trigger requires a finite `duration` greater than zero. Without it the load throws `trigger-time-duration at motions[i].trigger.duration: Time trigger duration must be a finite number greater than zero.`
+- `repeat` and `yoyo` are rejected at any value, including `0`, with `trigger-time-repeat-unsupported`. Drop them. Loop semantics are undesigned, and a field that validates has to be honored.
+- `autoplay` may be absent or `true`. `false` is rejected with `trigger-time-autoplay-unsupported`, because explicit paused behavior does not exist yet.
+- A declared `scroll` source with no registered resolver rejects both `load()` and `addMotion` with `trigger-driver-unavailable`, naming the motion id and the source key. Register an application-owned progress source for every scroll Motion you author, or author the Motion as `manual`.
+- `signal()` on a driver-backed Motion now throws `Motion has a configured trigger driver and does not accept external signals.` A v4 consumer that drove a `scroll` or `time` Motion by hand must either move that Motion to `manual` or feed it through its driver. `seek(nodeId, progress)` still works on any node, but the next driver emission overwrites it.
+
 ## Explicit migration function
 
 The migration must be a pure transformation and must not mutate its input:
@@ -57,6 +67,8 @@ export function migrateV4ToV5(project) {
 
 This helper is safe only when the v4 producer’s top-level `tracks` is known to mean free tracks. Before applying it, validate that the source is an object, `tracks` is an array or absent, ids are unique, no id contains `/`, no motion is named `~`, and any free references are qualified. If both `tracks` and `freeTracks` exist, fail rather than choose one.
 
+The helper does not touch triggers, and it cannot: dropping `repeat` or inventing a `duration` would be a semantic decision made behind the author's back. Trigger migration is a review step, not a transformation.
+
 ## Semantic review checklist
 
 - Does every top-level track really have no Motion owner?
@@ -65,6 +77,8 @@ This helper is safe only when the v4 producer’s top-level `tracks` is known to
 - Does 3D content need `perspective`?
 - Are any ids using `/` or the reserved motion id `~`?
 - Are any cycles introduced by qualifying references?
+- Does every `time` trigger carry a `duration`, and has every `repeat`, `yoyo`, and `autoplay: false` been removed?
+- Does every `scroll` trigger have a registered source, and does any consumer still call `signal()` on it?
 - Does the migrated document serialize deterministically?
 
 ## Compatibility policy

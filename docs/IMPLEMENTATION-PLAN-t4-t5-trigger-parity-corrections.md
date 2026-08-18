@@ -81,3 +81,49 @@ Non-negotiable 9 says to run `npm run format` before every push because `docs/SE
 The cause is hand-padded markdown tables. Prettier pads every cell and every separator to the column's widest content, so a table is the one markdown construct an implementer cannot get right by eye, and `format:check` inside `quality` is a hard gate that runs before the write-enabled `format` job can repair anything.
 
 Correction: new or edited status, ADR, and plan content uses prose and bullet lists. Do not add a markdown table, and convert one you are already editing. Prettier here is `printWidth: 100`, `singleQuote: false`, `trailingComma: "all"`, `proseWrap: "preserve"`; with prose wrapping preserved, unpadded prose and `-` lists are stable under the formatter.
+
+## T5 amendments, added while implementing T5
+
+Everything above was written against the `T4` base. The seven items below were found while building `T5` and are recorded the same way rather than worked around silently. As before, the locked decisions stand; only the text describing how to prove them changes.
+
+### T5-2 and T5-3 are already proved, so the new unit file must not restate them
+
+Section 5.1 asks the new `trigger-factory-no-fallback.test.ts` to carry the per-type capability matrix (`T5-2`) and the scroll throw (`T5-3`). Both already exist. `packages/core/test/contract/trigger-factory.test.ts` case "selects manual, time, and injected scroll drivers" asserts `acceptsExternalSignal` and `clockBinding.kind` for all three types, and case "fails loudly when a declared scroll trigger has no registered source" asserts the `trigger-driver-unavailable` throw. `packages/core/test/unit/domain/time-driver.test.ts` asserts the driver's flags a third time.
+
+Correction: the new file carries only what nothing else can see, which is the structure. `T-8` is the positional source guard on `default.ts`, `T-9` ties the driver's capability pair to the third `createManualTriggerPort` call site so the corrected `T5-1` gate is a transport claim rather than a count, and `T-10` proves `engine.ts` and every sibling under `src/adapters/trigger-factory/` build no port. Re-asserting a green matrix in a second file would be duplicated ownership of evidence, which is the same defect as duplicated ownership of behavior.
+
+### Section 5.2's three replacement cases would duplicate the per-type suites
+
+Section 5.2 replaces the three retired "same scheduled progress path" cases with three per-type cases through `Engine`. Written literally, all three are already covered: `trigger-time.test.ts` asserts that `time` rejects `signal()` with the exact message, that `manual` accepts one and still throws `RangeError` out of range, and that the driver latches; `trigger-scroll.test.ts` asserts that `scroll` rejects `signal()`, registers no clock consumer, and moves only when its source emits.
+
+Correction: one case, `T-11`, asserts the contrast across all three types side by side through the real factory: whether `signal()` is accepted, and whether a project clock tick moves the Motion. The retired cases were wrong because they claimed the three types share one path, and the per-type suites each prove one type in isolation. Isolation is how a fallback hides, so the replacement is the comparison, not three more isolated cases.
+
+### A cited case id has to be a plain `it` declaration
+
+The gate regex is `/it\(\s*"((?:C|T)-\d+)/g`, so `it.each([...])("T-11 ...")` declares an id the gate cannot see. A citation the gate cannot verify is the exact problem `evidence-case-ids.test.ts` exists to prevent.
+
+Correction: any case a plan, ADR, or pull request body cites by id is declared with a plain `it("T-n ...")`. Table-driven coverage goes inside such a case, not around it. `T-11` does exactly that.
+
+### The retained cases need a spy, not a replacement double
+
+The resolver swap above is not quite mechanical. `createFakeTrackRegistry<T>()` is generic but `MotionOptions.resolveTrack` is `(id: string) => Track | undefined`, so registering a `vi.fn()` track double into it only trades `as never` for `as unknown as Track`. The gate would pass and nothing would improve.
+
+Correction: register real `Track` instances built on `createFakeInterpolator()` and wrap `setProgress` and `dispose` with `vi.spyOn`. `vi.spyOn` calls through, so the assertions keep their exact shape, names, and expected values while the cast disappears for real. This is the pattern `motion-track-resolution.test.ts` already uses for the same reason.
+
+### AUTHORED-SCHEMA.md's own example does not load
+
+Section 5.4 asks for the per-type trigger shapes to be documented. It does not mention that the document's flagship example is invalid input: it authors `trigger: { type: "time", autoplay: false }` with no `duration`, which the runtime rejects with both `trigger-time-duration` and `trigger-time-autoplay-unsupported`.
+
+Correction: the example is fixed to `{ type: "time", duration: 1000 }` in the same slice, and the fix is called out in the document rather than made quietly. This is documentation drift of exactly the kind `T5` exists to close, in the one file the schema calls normative, so it is in scope rather than adjacent.
+
+### Section 5.6 needs no new ADR number
+
+Section 5.6 says to record `T5-5` in `docs/DECISIONS.md`. That file already owns the decision: ADR-021 separates composite `signal()` from leaf `seek()`. Adding a second record about the same boundary would leave two active records on one question, which the file's own usage note forbids, and the plan already reserves ADR-033 for the no-fallback record.
+
+Correction: `T5-5` lands as a dated clarification under ADR-021, cross-referenced from ADR-033. No new number is claimed. The highest ADR after `T5` is therefore `ADR-033`.
+
+### T5 is ten semantic files, not seven
+
+Section 5 lists seven files and section 8.4 calls `T5` a seven-file slice. The honest count is ten: the new unit test, the `motion-trigger-types.test.ts` rewrite, the `motion-trigger-lifecycle.test.ts` swap this document added, `ARCHITECTURE.md`, `AUTHORED-SCHEMA.md`, `MIGRATION-V4-TO-V5.md`, `DECISIONS.md`, `ADR-033`, `SESSION-STATUS.md`, and this amendment. Section 5 omitted the lifecycle suite, the status file it mentions only in passing at the end of 5.7, and itself.
+
+Correction: `T5` is ten semantic files. That is at the plan's own ten-file drift line and well under the twenty-file ceiling in `docs/PR-WORKFLOW.md`, and per that document the count is stated once, in the pull request body. A plan or amendment that maintains its own count will eventually disagree with the diff.
