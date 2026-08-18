@@ -34,9 +34,13 @@ import { fileURLToPath } from "node:url";
 // the domain and both were opened against `Motion`, because `C-` owns how a Track is reached and
 // `M-` owns what a refusal costs. A letter is chosen that no plan already uses unhyphenated, so
 // `A3` and `A5` from the runtime mutation model cannot be misread as cases in this series.
+//
+// `S-` belongs to progress state commits inside `Track` (issue #149). It answers what internal
+// bookkeeping a rejected interpolation timeline write may expose, not which Track a Motion owns
+// or what a refused Motion mutation commits, so it does not extend either `C-` or `M-`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:C|D|E|M|P|R|T)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:C|D|E|M|P|R|S|T)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
