@@ -100,8 +100,14 @@ function countingFactory(scroll?: ScrollSourceResolver): CountingFactory {
       // graph before it ever asks the factory for a Motion, so this list stays empty.
       const inner = base.create(context);
       created.push(context.motionId);
+      // Every field named rather than spread. `CreatedTrigger` is an interface, not a promise of a
+      // plain object literal, so a factory that ever returns a class instance or a getter would
+      // have its port and binding silently dropped by `...inner` and this wrapper would report a
+      // driver that cannot drive. Naming them means the type checker catches the next added field.
       return {
-        ...inner,
+        port: inner.port,
+        acceptsExternalSignal: inner.acceptsExternalSignal,
+        clockBinding: inner.clockBinding,
         dispose() {
           disposals.set(context.motionId, (disposals.get(context.motionId) ?? 0) + 1);
           inner.dispose();
@@ -209,6 +215,8 @@ describe("T4 runtime Motion parity and creation ordering", () => {
 
     // runtime-motion-trigger-validation.test.ts already proves the rule fires and the id stays
     // free. This adds the half that suite does not cover: nothing was committed on the way out.
+    // The node count is trivially unchanged for a trackless Motion, so the reuse of the id on the
+    // last line is the assertion that actually discriminates a committed definition here.
     expect(nodeIds(handle)).toEqual(before);
     expect(internals(handle).instanceCount).toBe(0);
     expect(() => handle.addMotion(timeMotion("scene"))).not.toThrow();
@@ -244,11 +252,12 @@ describe("T4 runtime Motion parity and creation ordering", () => {
     // The ghost, enumerated. Both trees throw the same message from addTrack, one layer apart:
     // on the parent from the addMotionTrack hook after #tracks and the graph were committed,
     // here from #addTrack's #motions check before anything happens. The message is therefore
-    // not the evidence. The two assertions after it are.
+    // not the evidence. The two assertions after it are, and both use the exact string, because
+    // a loose pattern is how a message that moved layers passes for one that never fired.
     expect(() => handle.addTrack(ramp("arm"), { motionId: "late" })).toThrow(
       'Unknown motion "late".',
     );
-    expect(() => handle.track("late/arm")).toThrow(/Unknown graph node/);
+    expect(() => handle.track("late/arm")).toThrow('Unknown graph node "late/arm".');
     expect(() => handle.destroyMotion("late")).toThrow('Unknown motion "late".');
 
     expect(nodeIds(handle)).toEqual(before);
