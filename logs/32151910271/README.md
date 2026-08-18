@@ -1,0 +1,39 @@
+# CI log archive: 32151910271
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: fix/issue-149-track-progress-atomicity
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/32151910271
+- Captured: 2026-08-18T15:01:55Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm run typecheck	﻿2026-08-18T15:01:29.7744030Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:29.7744387Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:29.7784343Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:29.7784622Z env:
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:29.7784816Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:29.7785325Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:29.8881947Z 
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:29.8882548Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:29.8882992Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:29.8883188Z 
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1222625Z ##[error]packages/core/test/unit/domain/track.test.ts(114,31): error TS2322: Type '{ create: Mock<() => { duration: number; state: Readonly<Record<string, unknown>>; progress: Mock<(value?: number) => number | undefined>; kill: Mock<Procedure>; }>; }' is not assignable to type 'Interpolator<unknown>'.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1233407Z   The types returned by 'create(...).progress(...)' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1234464Z     Type 'number | undefined' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1235541Z       Type 'undefined' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1239627Z ##[error]packages/core/test/unit/domain/track.test.ts(126,31): error TS2322: Type '{ create: Mock<() => { duration: number; state: Readonly<Record<string, unknown>>; progress: Mock<(value?: number) => number | undefined>; kill: Mock<Procedure>; }>; }' is not assignable to type 'Interpolator<unknown>'.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1242910Z   The types returned by 'create(...).progress(...)' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1243919Z     Type 'number | undefined' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1244717Z       Type 'undefined' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1249222Z ##[error]packages/core/test/unit/domain/track.test.ts(138,31): error TS2322: Type '{ create: Mock<() => { duration: number; state: Readonly<Record<string, unknown>>; progress: Mock<(value?: number) => number | undefined>; kill: Mock<Procedure>; }>; }' is not assignable to type 'Interpolator<unknown>'.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1256235Z   The types returned by 'create(...).progress(...)' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1257498Z     Type 'number | undefined' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1258466Z       Type 'undefined' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1262790Z ##[error]packages/core/test/unit/domain/track.test.ts(148,31): error TS2322: Type '{ create: Mock<() => { duration: number; state: Readonly<Record<string, unknown>>; progress: Mock<(value?: number) => number | undefined>; kill: Mock<Procedure>; }>; }' is not assignable to type 'Interpolator<unknown>'.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1266141Z   The types returned by 'create(...).progress(...)' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1267202Z     Type 'number | undefined' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1267972Z       Type 'undefined' is not assignable to type 'number'.
+quality (node 24)	Run npm run typecheck	2026-08-18T15:01:33.1640771Z ##[error]Process completed with exit code 2.
+```
