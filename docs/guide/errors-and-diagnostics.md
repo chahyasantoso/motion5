@@ -1,0 +1,66 @@
+# Errors and diagnostics
+
+motion5 distinguishes three things that other runtimes tend to blend: input that is invalid, a node that cannot currently produce a value, and a caller that broke a contract. Each has its own channel.
+
+## Invalid input throws at the boundary
+
+`Engine.load()` and `addMotion` validate before they build. Errors reject the candidate project before it can replace anything, and the throw is a `TypeError` whose message is the collected diagnostics:
+
+```ts
+try {
+  handle = engine.load(project);
+} catch (error) {
+  // "trigger-time-duration at motions.hero.trigger: ..."
+  console.error(error instanceof Error ? error.message : error);
+}
+```
+
+A diagnostic is structured, and the shape is stable:
+
+```ts
+interface Diagnostic {
+  readonly ruleId: string;
+  readonly path: string;
+  readonly message: string;
+  readonly severity: "error" | "warning";
+  readonly ids?: readonly string[];
+}
+```
+
+Call `validateV5(project)` yourself if you want the diagnostics without the throw. It returns `{ valid, value, diagnostics }`, and it is the same validator the engine uses, so there is no second opinion to keep in sync.
+
+Warnings load and stay readable. Missing `perspective` alongside 3D content, and an unused free track, are warnings. No flag promotes a warning to an error.
+
+## Rule ids worth knowing
+
+- `trigger-shape`, for a non-object trigger or a type outside `scroll`, `time`, and `manual`.
+- `trigger-time-duration`, for a `time` duration that is absent, non-numeric, non-finite, or not greater than zero.
+- `trigger-time-autoplay-unsupported` and `trigger-time-repeat-unsupported`, for playback fields that would otherwise validate and then be ignored.
+- `trigger-scroll-source`, for a `source` that is present but not a non-empty string.
+- `trigger-driver-unavailable`, at `load()` or `addMotion`, when a declared `scroll` trigger resolves no source. This one is a construction failure, not a validation failure.
+- `plugin-unknown-key`, when no registered plugin claims an authored keyframe key. This is the error you hit first if you forget to register a plugin.
+- `plugin-contribution-unsupported-entry`, for the legacy `use` field, which is not part of schema v5.
+
+Malformed or duplicate ids, reserved namespace characters, malformed edges, unknown sources, duplicate edges, self-reference, and cycles are all errors too. Track ids may not contain `/`, and motion ids may not contain `/` or equal `~`, because those characters carry the qualified namespace.
+
+## Runtime trouble arrives on the patch
+
+A node that exists but cannot produce a value publishes with status `blocked` or `error` and keeps its last known values, with the reason inline in `patch.diagnostics`. There is no separate diagnostics stream to subscribe to, by design. Batch-level diagnostics are on the `PatchBatch` that a flush produces.
+
+That means a rendering consumer should branch on `patch.status` rather than assume every patch is renderable, and an inspector can read `patch.diagnostics` without any extra wiring.
+
+## Contract violations throw at the call site
+
+These are your bugs, and they are loud on purpose rather than clamped or deferred:
+
+- progress outside `[0, 1]` through a trigger port throws `RangeError: Progress must be between 0 and 1.`
+- non-finite progress throws `TypeError: Motion progress must be finite.`
+- `signal()` on a driver-backed motion throws, because that motion already has a source of progress.
+- an unknown motion id on `signal` or `destroyMotion` throws `TypeError`.
+- a disposed clock or trigger port throws when subscribed to.
+
+## When several things fail at once
+
+Teardown never stops halfway. Disposal runs every step, collects what failed, and reports once: a single failure is rethrown verbatim, and two or more arrive as one `AggregateError`. The same collect-then-report-once shape applies to clock consumer fanout and to patch listeners, so one badly behaved subscriber cannot silently stop the ones behind it.
+
+The rule to remember when you see an `AggregateError`: the first entry in `errors` is the failure that actually caused the operation to be refused. The rest is cleanup noise attached to it.
