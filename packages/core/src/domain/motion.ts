@@ -95,10 +95,15 @@ export class Motion {
     if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
       throw new TypeError(`Motion track duration must be a finite positive number: ${entry.id}.`);
     const track = this.#track(entry.id);
+    // Resolved, then seeded, then committed. Resolution alone was already atomic; the seeding call
+    // was not, and it can fail on its own: a resolvable Track can be disposed, and
+    // #timeline.progress is injected code. Seeding against the prospective list rather than the
+    // committed one is what keeps the value identical to the commit-first order, because
+    // #totalDuration reduces over the entries. Issue #147.
+    const entries = [...this.#tracks, entry];
+    track.setProgress(this.#effectiveProgress(entries.length - 1, entry, entries));
     this.#tracks.push(entry);
     this.#trackMap.set(entry.id, entry);
-    const index = this.#tracks.length - 1;
-    track.setProgress(this.#effectiveProgress(index, entry));
   }
   replaceTrack(entry: MotionTrackEntry): void {
     this.assertActive();
@@ -107,9 +112,13 @@ export class Motion {
     if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
       throw new TypeError(`Motion track duration must be a finite positive number: ${entry.id}.`);
     const track = this.#track(entry.id);
+    // Same order as addTrack, and the same reason for the prospective list. The replacement keeps
+    // its original array index, so ADR-029's index and stagger guarantee is untouched. Issue #147.
+    const entries = [...this.#tracks];
+    entries[index] = entry;
+    track.setProgress(this.#effectiveProgress(index, entry, entries));
     this.#tracks[index] = entry;
     this.#trackMap.set(entry.id, entry);
-    track.setProgress(this.#effectiveProgress(index, entry));
   }
   removeTrack(trackId: string): void {
     this.assertActive();
@@ -234,14 +243,23 @@ export class Motion {
         unresolved.push(entry.id);
         continue;
       }
-      track.setProgress(this.#effectiveProgress(index, entry));
+      track.setProgress(this.#effectiveProgress(index, entry, this.#tracks));
     }
     this.#invalidate(progress);
     if (unresolved.length > 0)
       throw new TypeError(`Motion tracks have no compiled Track: ${unresolved.join(", ")}.`);
   }
-  #effectiveProgress(index: number, entry: MotionTrackEntry): number {
-    const duration = this.#totalDuration();
+  /**
+   * Takes the entry list explicitly because the answer depends on which list is used: a mutation
+   * seeds against the entries it is about to commit, while a sweep uses the live ones. Reading
+   * #tracks here instead would make that difference invisible at the call site. Issue #147.
+   */
+  #effectiveProgress(
+    index: number,
+    entry: MotionTrackEntry,
+    entries: readonly MotionTrackEntry[],
+  ): number {
+    const duration = this.#totalDuration(entries);
     const staggerDelay = index * this.#stagger;
     return staggerDelay > 0 && duration > 0
       ? Math.max(
@@ -250,11 +268,11 @@ export class Motion {
         )
       : this.#position;
   }
-  #totalDuration(): number {
-    return this.#tracks.reduce((maximum, entry) => Math.max(maximum, entry.duration ?? 1), 1);
+  #totalDuration(entries: readonly MotionTrackEntry[]): number {
+    return entries.reduce((maximum, entry) => Math.max(maximum, entry.duration ?? 1), 1);
   }
   #progressDelta(delta: number): number {
-    return delta / this.#totalDuration();
+    return delta / this.#totalDuration(this.#tracks);
   }
   private assertActive(): void {
     if (this.#lifecycle.state === "destroyed") throw new Error("Motion is destroyed.");
