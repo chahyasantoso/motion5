@@ -2,7 +2,7 @@
 
 This amendment is part of the implementation plan and must be read together with `docs/IMPLEMENTATION-PLAN-motion-track-resolution.md`. Both were written before the slice was executed; the items below are the only places reality disagreed with the plan.
 
-Section 1 is untouched. Every locked decision, C1 through C10, was implemented as written.
+Section 1 stands with one amendment: C8's `disposeTracks` default is now `false`, recorded below. Every other locked decision, C1 through C7 and C9 through C10, was implemented as written.
 
 ## Five test files construct Motion directly, not one
 
@@ -27,6 +27,23 @@ Two construction styles are in play, and both are legitimate:
 The rest of 4.4 stands, and it earns its keep: `issue-114-motion-track-regressions.test.ts` and `replace-motion-track.test.ts` are genuinely untouched and green, which is what keeps ADR-029 evidenced independently of this slice.
 
 Semantic file count is 13, not the 9 predicted in sections 3 and 6.5. Still under the twenty-file ceiling in `docs/PR-WORKFLOW.md`.
+
+## C8 amended: `disposeTracks` defaults to `false`
+
+C8 said the flag stays with a `true` default, and section 5 listed flipping it under forbidden. The implementation shipped `options.disposeTracks ?? false`. This section is the maintainer decision to **keep** `false` and amend C8, rather than revert. C8 was not implemented as written, and no other sentence in this document should be read as claiming otherwise.
+
+Option C invalidates the premise C8 rested on. `disposeTracks: true` means a `Motion` disposes compiled Tracks it reached through the resolver, and under option C the resolver's caller owns those Tracks. A borrower that kills a lender's instance is precisely the two-owner arrangement this slice exists to delete, so disposing nothing is the default that agrees with the invariant, and the flag becomes an explicit opt-in for the callers that genuinely delegate lifetime.
+
+The amended text of C8 reads:
+
+> **C8. `disposeTracks` stays as an option, default `false`.** A `Motion` never disposes a Track it merely resolved. Set it `true` only when the resolver's caller delegates Track lifetime to that `Motion`, which is what directly constructed Motions in the unit suite do. `Engine` continues to pass `false` explicitly. Do not remove the flag.
+
+Consequences, recorded rather than absorbed:
+
+- **Production blast radius is zero.** `Engine` passes `disposeTracks: false` explicitly, and `Motion` and `MotionOptions` are package-private with `packages/core/src/index.ts` untouched, so nothing outside this package can observe the default.
+- **Suites that own their Tracks now opt in explicitly.** `motion.test.ts`'s helper takes a third `disposeTracks` parameter and its owner-first disposal test passes `true`; `motion-trigger-lifecycle.test.ts` and `motion-trigger-types.test.ts` pass `disposeTracks: true` alongside their resolver injection. Those three additions are behavior opt-ins, **not** the mechanical constructor updates licensed above, and they are listed here for exactly that reason. No test name, assertion, or expected value changed in any of them.
+- **A fourth new test file exists.** `packages/core/test/unit/domain/motion-dispose-ownership.test.ts` is beyond section 3.6's two-file list. Its three cases are numbered C-14 through C-16 in the shared evidence series.
+- **ADR-031 carries the rationale** under `Disposal ownership`, and names the same three cases as its evidence.
 
 ## The `tracks.get(` grep gate expects the wrong number
 

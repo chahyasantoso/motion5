@@ -43,6 +43,8 @@ This document reports current implementation reality. The detailed contract rema
 
 This is the long-term fix deferred by section 8.1 of `docs/IMPLEMENTATION-PLAN-trigger-drivers.md` and by ADR-029. The near-term option A fix stays in place with a narrowed job: `Motion.replaceTrack` still preserves the array index, stagger timing, and current progress, so ADR-029's guarantee is unchanged and separately evidenced.
 
+Review of #126 amended one locked decision. `disposeTracks` now defaults to `false`, because option C hands Track lifetime to the resolver's caller and a `Motion` must not dispose a Track it merely resolved. `Engine` passes `false` explicitly, so production behavior is unchanged either way. The rationale is in ADR-031 under `Disposal ownership`, and the amendment is recorded in the corrections doc so no reader trusts the earlier claim that C1 through C10 all landed verbatim.
+
 The executable contract is `docs/IMPLEMENTATION-PLAN-motion-track-resolution.md`, amended by `docs/IMPLEMENTATION-PLAN-motion-track-resolution-corrections.md`. The decision record is ADR-031.
 
 ## Current architecture
@@ -64,6 +66,7 @@ The migration landed on this branch in commit [`01cd580`](https://github.com/cha
 - W5 PR: [#113](https://github.com/chahyasantoso/motion5/pull/113).
 - T3 trigger drivers: PR [#124](https://github.com/chahyasantoso/motion5/pull/124), CI run [32026250864](https://github.com/chahyasantoso/motion5/actions/runs/32026250864).
 - Option C: PR [#126](https://github.com/chahyasantoso/motion5/pull/126). Unit evidence is `packages/core/test/unit/domain/motion-track-resolution.test.ts` cases C-5 and C-6; integration evidence is `packages/core/test/integration/option-c-track-resolution.test.ts`.
+- Option C disposal ownership: `packages/core/test/unit/domain/motion-dispose-ownership.test.ts`, cases C-14 through C-16.
 
 ## Known remaining scope
 

@@ -28,6 +28,12 @@ An unresolved id is always loud, and never silently partial.
 
 `ProjectRuntime.#replaceTrack` keeps its existing order: validate the candidate graph, replace it, dispose the old compiled Track, compile the new one, then call `replaceMotionTrack`. The hook must stay after `compileTrack`, because the resolver reads the live compiled map and would otherwise resolve the disposed instance.
 
+## Disposal ownership
+
+`disposeTracks` defaults to **`false`**. A `Motion` never disposes a Track it merely resolved, because this decision hands Track lifetime to the resolver's caller, and a borrower that kills a lender's instance would reinstate the second owner the ADR removes. The flag survives as an explicit opt-in for callers that really do delegate lifetime, which is what directly constructed Motions in the unit suite do. `Engine` passes `false` explicitly and is therefore unaffected by the default in either direction.
+
+This **amends decision C8** of `docs/IMPLEMENTATION-PLAN-motion-track-resolution.md`, which specified a `true` default and listed the flip under forbidden. The amendment and its consequences are recorded in `docs/IMPLEMENTATION-PLAN-motion-track-resolution-corrections.md`; the reasoning is that C8 was written before the single-owner invariant existed, so it answered a question that option C re-asks.
+
 ## Consequences
 
 The stale-compiled-reference class of bug is gone rather than patched: no code path can leave a `Motion` pointing at a retired `Track`, because no path can make a `Motion` point at a `Track` at all. New recompilation paths need no notification hook.
@@ -37,5 +43,6 @@ The cost is that every direct `Motion` construction has to supply a resolver. Th
 ## Evidence
 
 - `packages/core/test/unit/domain/motion-track-resolution.test.ts` covers the resolver contract, late registration, hot swap behind the Motion's back, partial sweep failure, dispose tolerance, and the narrowed `replaceTrack`. It also asserts on the domain source, because a cached reference that happens to be correct is invisible to behavioral tests.
+- `packages/core/test/unit/domain/motion-dispose-ownership.test.ts`, cases C-14 through C-16, evidences the disposal ownership decision above: a resolver-owned Track survives Motion disposal, a rotated instance is never disposed, and a Track shared by two Motions stays usable after one of them is disposed.
 - `packages/core/test/integration/option-c-track-resolution.test.ts` proves the public surface is unchanged: replacement, stagger index preservation, the observation path, disposal counts, and runtime add and remove.
 - `packages/core/test/integration/issue-114-motion-track-regressions.test.ts` and `replace-motion-track.test.ts` stay green and unedited, which is what keeps ADR-029 evidenced independently of this change.
