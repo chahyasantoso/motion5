@@ -22,9 +22,15 @@ import { fileURLToPath } from "node:url";
 // letter has now failed twice to prevent a widening, because both reservations above were claimed
 // by the issues they were reserved against. The pattern is therefore widened when a series is
 // actually opened, and nothing here is reserved for a series that does not exist yet.
+//
+// `D-` belongs to teardown ownership inside `Engine` (issues #143 and #145): disposing the
+// ProjectRuntime a failed `load()` created, and running every remaining cleanup step when one of
+// them throws. It is a separate series from `P-` on purpose. `P-` owns which error a caller sees
+// when a rollback fails, in `ProjectRuntime`; `D-` owns whether the cleanup ran at all, in
+// `Engine`. One citation, one owner, per the paragraph above.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:C|E|P|R|T)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:C|D|E|P|R|T)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
