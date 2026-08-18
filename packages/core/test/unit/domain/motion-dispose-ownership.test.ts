@@ -4,7 +4,7 @@ import { createManualClock } from "../../../src/ports/clock";
 import { createFakeScheduler } from "../../../src/ports/fakes";
 
 describe("Motion compiled Track disposal ownership", () => {
-  it("does not dispose resolver-owned Tracks when Motion is disposed", () => {
+  it("C-14 does not dispose resolver-owned Tracks when Motion is disposed", () => {
     // The resolver owner, not Motion, must dispose compiled Tracks. Otherwise the resolver's
     // single-owner contract is false and a shared Track can be killed by an unrelated Motion.
     const track = { setProgress: vi.fn(), dispose: vi.fn() };
@@ -20,7 +20,7 @@ describe("Motion compiled Track disposal ownership", () => {
     expect(track.dispose).not.toHaveBeenCalled();
   });
 
-  it("does not dispose the replacement returned by a resolver after a Motion swap", () => {
+  it("C-15 does not dispose the replacement returned by a resolver after a swap", () => {
     // A resolver can rotate compiled instances independently. Motion teardown must not dispose
     // either instance because it does not own their lifetime.
     const first = { setProgress: vi.fn(), dispose: vi.fn() };
@@ -40,7 +40,7 @@ describe("Motion compiled Track disposal ownership", () => {
     expect(second.dispose).not.toHaveBeenCalled();
   });
 
-  it("keeps a shared Track usable after one Motion is disposed", () => {
+  it("C-16 keeps a shared Track usable after one Motion is disposed", () => {
     // Disposal by one consumer must not kill a Track still resolved by another consumer.
     const track = { setProgress: vi.fn(), dispose: vi.fn() };
     const createMotion = () =>
