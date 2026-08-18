@@ -25,10 +25,8 @@ Status is the part worth reading carefully. `ready` carries usable values. `bloc
 ```ts
 import { createDomPatchAdapter } from "@motion5/core/adapters";
 
-const adapter = createDomPatchAdapter(
-  document.querySelector("#stage")!,
-  1200,
-  (nodeId) => targets.get(nodeId),
+const adapter = createDomPatchAdapter(document.querySelector("#stage")!, 1200, (nodeId) =>
+  targets.get(nodeId),
 );
 
 const unsubscribe = handle.subscribeNode("hero/title", (patch) => adapter.apply(patch));
