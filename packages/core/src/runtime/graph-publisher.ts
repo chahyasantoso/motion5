@@ -1,5 +1,11 @@
 import type { Diagnostic, InputProjection } from "../contract/v5";
-import { edgeKey, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
+import {
+  compareEdges,
+  describeEdge,
+  type GraphEdge,
+  type GraphIR,
+  type GraphNode,
+} from "../graph/ir";
 import { firstPendingEdge } from "../graph/references";
 import { CompositionOutputError } from "../domain/track";
 import { PatchRegistry, REENTRANT_BATCH_MESSAGE, type PatchBatch } from "./patch-registry";
@@ -54,10 +60,13 @@ function diagnostic(nodeId: string, error: unknown): Diagnostic {
     ids: Object.freeze([nodeId]),
   });
 }
-function compareEdgeKeys(a: GraphEdge, b: GraphEdge): number {
-  const left = edgeKey(a),
-    right = edgeKey(b);
-  return left < right ? -1 : left > right ? 1 : 0;
+/**
+ * A node's edges of one role in canonical order. `compareEdges` in `graph/ir.ts` is the only
+ * ordering owner, so which source wins an output merge is never authored-order dependent and
+ * never a property of how an id encodes.
+ */
+function edgesByRole(node: PublisherNode, role: GraphEdge["role"]): readonly GraphEdge[] {
+  return node.edges.filter((edge) => edge.role === role).sort(compareEdges);
 }
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
@@ -146,7 +155,7 @@ export class GraphPublisher {
             (edge) =>
               failed.has(edge.sourceId) || blocked.has(edge.sourceId) || pending.has(edge.sourceId),
           )
-          .sort(compareEdgeKeys)[0]?.sourceId;
+          .sort(compareEdges)[0]?.sourceId;
         if (sourceFailure !== undefined) {
           blocked.add(id);
           this.#registry.publish({
@@ -169,7 +178,7 @@ export class GraphPublisher {
         // value yet (typically because it is not currently a member) is pending, not failed.
         // Classified up front, before composition is attempted, so this is never decided by
         // catching an exception. graph/references.ts is the single owner of this decision.
-        const pendingMatch = firstPendingEdge(node.edges, compareEdgeKeys, hasValue);
+        const pendingMatch = firstPendingEdge(node.edges, compareEdges, hasValue);
         if (pendingMatch !== undefined) {
           pending.add(id);
           this.#registry.publish({
@@ -184,9 +193,7 @@ export class GraphPublisher {
           const inputs: Record<string, unknown> = {};
           const inputKeys = new Map<string, string>();
           const sourceRevisions: Record<string, number> = {};
-          for (const edge of node.edges
-            .filter(({ role }) => role === "input")
-            .sort(compareEdgeKeys)) {
+          for (const edge of edgesByRole(node, "input")) {
             const sourcePatch = this.#registry.get(edge.sourceId);
             const sourceValues = memo.get(edge.sourceId)?.values ?? sourcePatch?.values;
             // Unreachable in normal flow: the pending pre-check above already classified every
@@ -208,18 +215,16 @@ export class GraphPublisher {
               if (previous !== undefined)
                 throw new InputObservationError(
                   "observation-input-collision",
-                  `Input key "${key}" from ${edgeKey(edge)} collides with ${previous}.`,
+                  `Input key "${key}" from ${describeEdge(edge)} collides with ${previous}.`,
                 );
-              inputKeys.set(key, edgeKey(edge));
+              inputKeys.set(key, describeEdge(edge));
               inputs[key] = value;
             }
           }
           const composed = node.compose(inputs);
           validateComposition(composed.values);
           let values = composed.values;
-          for (const edge of node.edges
-            .filter(({ role }) => role === "output")
-            .sort(compareEdgeKeys)) {
+          for (const edge of edgesByRole(node, "output")) {
             const sourcePatch = this.#registry.get(edge.sourceId);
             const sourceValues = memo.get(edge.sourceId)?.values ?? sourcePatch?.values;
             // Unreachable in normal flow, same reasoning as the input-side guard above.

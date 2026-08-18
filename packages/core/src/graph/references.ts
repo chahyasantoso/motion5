@@ -48,16 +48,17 @@ export function classifyReference(
 }
 
 /**
- * The first edge (in canonical edge-key order) among `edges` whose source is pending, or
- * `undefined` if every source is currently resolved. Callers supply canonical order so that
- * which pending source is named in a node's diagnostic never depends on authored edge order.
+ * The first edge (in canonical edge order) among `edges` whose source is pending, or
+ * `undefined` if every source is currently resolved. The comparator is injected, and
+ * `compareEdges` in `graph/ir.ts` owns it, so which pending source is named in a node's
+ * diagnostic never depends on authored edge order or on an identity encoding.
  */
 export function firstPendingEdge(
   edges: readonly GraphEdge[],
-  compareEdgeKeys: (a: GraphEdge, b: GraphEdge) => number,
+  compareEdges: (a: GraphEdge, b: GraphEdge) => number,
   hasValue: (sourceId: string) => boolean,
 ): { readonly edge: GraphEdge; readonly diagnostic: Diagnostic } | undefined {
-  for (const edge of [...edges].sort(compareEdgeKeys)) {
+  for (const edge of [...edges].sort(compareEdges)) {
     const resolution = classifyReference(edge, hasValue);
     if (resolution.status === "pending" && resolution.diagnostic !== undefined)
       return { edge, diagnostic: resolution.diagnostic };

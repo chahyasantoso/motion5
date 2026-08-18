@@ -17,6 +17,10 @@ export interface ScrollSource {
  *
  * No GSAP import here. Wire GSAP in the call site (e.g. demo/scroll-source-gsap.ts).
  * Follows the same pattern as createBrowserClock(frameSource): Clock & { dispose() }.
+ *
+ * This adapter owns normalization, and only because a scroll position is a measured quantity:
+ * clamping 1.0000001 to 1 here is noise removal, not a fallback that hides a declared trigger
+ * failure. It does not own the range rule; Motion.#scheduleProgress does. See ADR-034.
  */
 export function createScrollTriggerPort(source: ScrollSource): TriggerPort & { dispose(): void } {
   const listeners = new Set<(progress: number) => void>();
@@ -24,6 +28,11 @@ export function createScrollTriggerPort(source: ScrollSource): TriggerPort & { d
 
   const unsubscribeSource = source.subscribe((progress) => {
     if (disposed) return;
+    // Math.max(0, Math.min(1, NaN)) is NaN, so the clamp alone is not a normalization. Forwarding
+    // a non-finite push would poison Motion.position and defer the throw to the scheduler flush,
+    // where it blames the Track for a value this port handed in.
+    if (!Number.isFinite(progress))
+      throw new TypeError("ScrollSource progress must be a finite number.");
     const clamped = Math.max(0, Math.min(1, progress));
     for (const fn of [...listeners]) fn(clamped);
   });

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { GraphEdge, GraphIR } from "../../src/graph/ir";
-import { edgeKey } from "../../src/graph/ir";
+import { compareEdges } from "../../src/graph/ir";
 import { GraphPublisher, type PublisherNode } from "../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 
@@ -75,7 +75,9 @@ describe("GraphPublisher output edges", () => {
       ["a", "b"],
       1,
     );
-    const expectedWinner = edgeKey(edges[0]!) < edgeKey(edges[1]!) ? "a" : "b";
+    // Derived from the ordering owner rather than hardcoded: merge precedence is whatever
+    // compareEdges says it is, and the later write wins.
+    const expectedWinner = compareEdges(edges[0]!, edges[1]!) < 0 ? "a" : "b";
     expect(batch.patches.find(({ nodeId }) => nodeId === "observer")?.values).toEqual({
       color: expectedWinner,
     });

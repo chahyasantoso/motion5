@@ -53,6 +53,14 @@ A declared trigger type used to be decorative: every type resolved to a manual p
 - A declared `scroll` source with no registered resolver rejects both `load()` and `addMotion` with `trigger-driver-unavailable`, naming the motion id and the source key. Register an application-owned progress source for every scroll Motion you author, or author the Motion as `manual`.
 - `signal()` on a driver-backed Motion now throws `Motion has a configured trigger driver and does not accept external signals.` A v4 consumer that drove a `scroll` or `time` Motion by hand must either move that Motion to `manual` or feed it through its driver. `seek(nodeId, progress)` still works on any node, but the next driver emission overwrites it.
 
+### Progress range on the trigger input path
+
+See ADR-034. Progress that reaches a `Motion` through a `TriggerPort` is validated once, in `Motion`, and is no longer clamped there.
+
+- An out-of-range emission throws `RangeError: Progress must be between 0 and 1.` and a non-finite one throws `TypeError: Motion progress must be finite.`, both at the emit site. A v4-era custom driver that leaned on the old silent clamp to push `1.2` or `-0.1` must clamp in its own adapter, which is where the measurement is understood.
+- A `ScrollSource` still has its overshoot clamped for it, because a scroll position is a measured quantity, but pushing `NaN` or `Infinity` now throws `TypeError: ScrollSource progress must be a finite number.` instead of being forwarded.
+- `handle.signal()` is unchanged: same two error types, same two messages. `seek` is also unchanged and still clamps.
+
 ## Explicit migration function
 
 The migration must be a pure transformation and must not mutate its input:
@@ -79,6 +87,7 @@ The helper does not touch triggers, and it cannot: dropping `repeat` or inventin
 - Are any cycles introduced by qualifying references?
 - Does every `time` trigger carry a `duration`, and has every `repeat`, `yoyo`, and `autoplay: false` been removed?
 - Does every `scroll` trigger have a registered source, and does any consumer still call `signal()` on it?
+- Does any custom driver or `ScrollSource` push progress outside `[0, 1]`, or a value that can be `NaN`, and rely on it being clamped for them?
 - Does the migrated document serialize deterministically?
 
 ## Compatibility policy

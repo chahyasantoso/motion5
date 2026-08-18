@@ -152,6 +152,8 @@ export class Motion {
       this.#progressJob = undefined;
     }
     this.#pendingProgress = undefined;
+    // seek stays a clamping scrub and is deliberately not routed through #scheduleProgress: it is
+    // leaf-level scrubbing rather than trigger input. See ADR-021 and ADR-034.
     this.#setProgress(Math.max(0, Math.min(1, progress)));
   }
   signal(signal: TriggerSignal): void {
@@ -160,12 +162,10 @@ export class Motion {
       throw new TypeError(
         "Motion has a configured trigger driver and does not accept external signals.",
       );
-    if (typeof signal === "object" && signal !== null && typeof signal.progress === "number") {
-      if (!Number.isFinite(signal.progress)) throw new TypeError("Motion progress must be finite.");
-      if (signal.progress < 0 || signal.progress > 1)
-        throw new RangeError("Progress must be between 0 and 1.");
+    // Delegates rather than carrying its own copy of the range rule. The two error types and both
+    // message strings are unchanged, so signal()'s contract is identical. See ADR-034.
+    if (typeof signal === "object" && signal !== null && typeof signal.progress === "number")
       this.#scheduleProgress(signal.progress);
-    }
   }
   onTick(event: ClockTick): void {
     this.assertActive();
@@ -193,12 +193,21 @@ export class Motion {
   }
   #onTick(event: ClockTick): void {
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;
-    const next = Math.min(1, this.#position + this.#progressDelta(event.delta));
+    // Clamps both bounds because this is internal arithmetic, not external input. It used to lean
+    // on #scheduleProgress for the lower bound, and that clamp is gone. See ADR-034.
+    const next = Math.max(0, Math.min(1, this.#position + this.#progressDelta(event.delta)));
     this.#scheduleProgress(next);
   }
   #scheduleProgress(progress: number): void {
+    // Validated before the liveness guard on purpose. A paused or unmounted Motion that quietly
+    // drops a malformed emission teaches the port nothing, and this is the one place every
+    // TriggerPort reaches, so it is the only place the rule can live exactly once. Normalization
+    // belongs to the source adapter, so by the time progress arrives here anything outside
+    // [0, 1] is a contract violation and must be loud rather than clamped. See ADR-034.
+    if (!Number.isFinite(progress)) throw new TypeError("Motion progress must be finite.");
+    if (progress < 0 || progress > 1) throw new RangeError("Progress must be between 0 and 1.");
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;
-    this.#pendingProgress = Math.max(0, Math.min(1, progress));
+    this.#pendingProgress = progress;
     if (this.#progressJob !== undefined) return;
     this.#progressJob = this.#scheduler.schedule(() => {
       const latest = this.#pendingProgress;
