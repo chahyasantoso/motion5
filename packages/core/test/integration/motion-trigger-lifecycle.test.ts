@@ -23,7 +23,9 @@ describe("Motion and trigger lifecycle", () => {
       scheduler,
       trigger,
       invalidate,
-      tracks: [{ id: "arm", track: track as never }],
+      tracks: [{ id: "arm" }],
+      resolveTrack: () => track as never,
+      disposeTracks: true,
     });
 
     motion.play();

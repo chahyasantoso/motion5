@@ -7,6 +7,7 @@ import { createManualClock } from "../../src/ports/clock";
 import {
   createFakeInterpolator,
   createFakeScheduler,
+  createFakeTrackRegistry,
   createFakeTriggerPort,
 } from "../../src/ports/fakes";
 import { createManualTriggerPort, assertTriggerPort } from "../../src/ports/trigger";
@@ -65,12 +66,15 @@ describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
       interpolator: createFakeInterpolator(),
       interpolationConfig: { id: "t1" },
     });
+    const registry = createFakeTrackRegistry<Track>();
+    registry.register("t1", track);
 
     const motion = new Motion({
       clock,
       scheduler,
       trigger,
-      tracks: [{ id: "t1", track }],
+      tracks: [{ id: "t1" }],
+      resolveTrack: registry.resolveTrack,
     });
 
     motion.play();
@@ -147,12 +151,15 @@ describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
       interpolator: createFakeInterpolator(),
       interpolationConfig: { id: "t1" },
     });
+    const registry = createFakeTrackRegistry<Track>();
+    registry.register("t1", track);
 
     const motion = new Motion({
       clock,
       scheduler,
       trigger: fakeTrigger,
-      tracks: [{ id: "t1", track }],
+      tracks: [{ id: "t1" }],
+      resolveTrack: registry.resolveTrack,
     });
 
     motion.play();

@@ -228,6 +228,8 @@ export class ProjectRuntime {
       throw error;
     }
     this.#tracks.set(id, { track: accepted, owner, motionId, token });
+    // Must run after compileTrack: Motion resolves by id against the live compiled map, so an
+    // earlier call would resolve nothing and reject the add. See ADR-031.
     if (motionId !== undefined) this.#addMotionTrack?.(motionId, id, accepted.duration);
     this.mount(id);
     return this.#handle(id, token);
@@ -288,6 +290,9 @@ export class ProjectRuntime {
     this.#disposeTrack?.(id);
     this.#compileTrack?.(accepted, id);
     this.#tracks.set(id, { ...entry, track: accepted });
+    // Must run after compileTrack: Motion resolves by id against the live compiled map, so an
+    // earlier call would resolve the disposed instance. This ordering is the only thing standing
+    // between the resolver and a retired Track. See ADR-031.
     if (entry.motionId !== undefined)
       this.#replaceMotionTrack?.(entry.motionId, id, accepted.duration);
   }

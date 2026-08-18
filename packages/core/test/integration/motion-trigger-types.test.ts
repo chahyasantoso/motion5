@@ -20,7 +20,8 @@ describe("Motion trigger types and clock ownership", () => {
         clock: createManualClock(),
         scheduler,
         trigger: createManualTriggerPort(),
-        tracks: [{ id: "track", track: current as never }],
+        tracks: [{ id: "track" }],
+        resolveTrack: () => current as never,
         invalidate,
         listenToClock: false,
       });
@@ -42,8 +43,10 @@ describe("Motion trigger types and clock ownership", () => {
     const motion = new Motion({
       clock,
       scheduler,
-      tracks: [{ id: "track", track: current as never, duration: 1000 }],
+      tracks: [{ id: "track", duration: 1000 }],
+      resolveTrack: () => current as never,
       invalidate: vi.fn(),
+      disposeTracks: true,
     });
 
     motion.play();
@@ -66,7 +69,8 @@ describe("Motion trigger types and clock ownership", () => {
       clock: createManualClock(),
       scheduler,
       trigger,
-      tracks: [{ id: "track", track: current as never }],
+      tracks: [{ id: "track" }],
+      resolveTrack: () => current as never,
       listenToClock: false,
     });
 

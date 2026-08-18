@@ -146,3 +146,29 @@ export function createFakeTriggerPort(): TriggerPort & {
     },
   };
 }
+
+/**
+ * Stands in for the owner of compiled Tracks. Generic so this module keeps its ports-layer
+ * independence from the domain layer; tests instantiate it as createFakeTrackRegistry<Track>().
+ */
+export function createFakeTrackRegistry<T>(): {
+  resolveTrack: (id: string) => T | undefined;
+  register(id: string, value: T): T;
+  drop(id: string): void;
+  readonly ids: readonly string[];
+} {
+  const entries = new Map<string, T>();
+  return {
+    resolveTrack: (id: string) => entries.get(id),
+    register(id: string, value: T) {
+      entries.set(id, value);
+      return value;
+    },
+    drop(id: string) {
+      entries.delete(id);
+    },
+    get ids() {
+      return [...entries.keys()];
+    },
+  };
+}
