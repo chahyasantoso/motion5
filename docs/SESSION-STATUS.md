@@ -2,8 +2,8 @@
 
 **Captured:** 2026-08-18, Asia/Jakarta  
 **Branch:** `feat/adopt-motion-track`  
-**Phase:** runtime mutation model (W1-W5) complete; trigger drivers complete through `T4`; compiled Track ownership (option C) merged; trigger slice `T5` in review. Phase 5 and Phase 6 remain as recorded below.  
-**Next action:** land `T5`, then land the T4/T5 parity plan document from its own branch so the tree stops carrying an amendment to a plan it does not hold.
+**Phase:** runtime mutation model (W1-W5) complete; trigger drivers complete through `T4`; compiled Track ownership (option C) merged; trigger slice `T5` in review; the `edgeKey` separator collision fix in review. Phase 5 and Phase 6 remain as recorded below.  
+**Next action:** land `T5` and the edge identity fix, then land the T4/T5 parity plan document from its own branch so the tree stops carrying an amendment to a plan it does not hold.
 
 This document reports current implementation reality. The detailed contract remains in `docs/PHASE5-DETAILED-PLAN.md`.
 
@@ -61,9 +61,19 @@ The trigger suites also drop their last `as never` track doubles for `createFake
 
 Seven further corrections to the T5 half of the plan are recorded in `docs/IMPLEMENTATION-PLAN-t4-t5-trigger-parity-corrections.md`. The load-bearing ones: `T5-2` and `T5-3` are already proved by `packages/core/test/contract/trigger-factory.test.ts`, so restating them in a second file would duplicate ownership of evidence; section 5.2's three replacement cases would have duplicated `trigger-time.test.ts` and `trigger-scroll.test.ts`; a cited case id has to be a plain `it` declaration or the evidence gate cannot see it; and section 5.6 needs no new ADR number because ADR-021 already owns the `seek` boundary.
 
+## Edge identity, ordering, and labels (finding 8.2)
+
+In review on branch `fix/edge-key-separator-collision`, from issue [#137](https://github.com/chahyasantoso/motion5/issues/137). The decision record is ADR-034.
+
+`edgeKey` is the single canonical edge identity, and it was not injective. It joined its fields with `|`, which is legal in a motion id, a track id, and a target, so a value could forge a field boundary. `canonicalizeProjection` had the same hole with `,` and `=`. Two genuinely different edges, `m/x` observing `m|y/z` and `m/x|m` observing `y/z`, both encoded to `m/x|m|y/z|input||`, and every id involved passes `validateV5`. The loud symptom was `Engine.load()` rejecting a legal project for a duplicate edge nobody authored twice; the silent ones were a dropped delta and a `removeObserve` that could remove the wrong observation.
+
+Fields are now length-prefixed, so the encoding is prefix-free and injective, and an absent target encodes as `-` rather than as an empty field. Because a length prefix reorders keys, ordering stopped being derived from identity: `compareEdges` is the single comparator, replacing `compareEdgeKeys` in the publisher and the private duplicate that `ObservationState` kept. That comparator decides published values, not only diagnostic text, since output merge precedence is whatever it says it is. `describeEdge` owns the readable label that used to be an encoded key inside four messages.
+
 ## Current architecture
 
 The runtime has one graph, one live observation state, one topology coordinator, one publisher, one patch registry, one project-wide clock subscription, and one owner of compiled Tracks. Authored and runtime Tracks share one removable store. Track mutation uses frozen definitions and capability handles with monotonic ABA protection; replacement preserves node identity and does not emit terminal destruction patches. No object outside `Engine` holds a compiled `Track` reference, so a recompiled node cannot leave a consumer driving a disposed instance. A runtime Motion is built before it is committed, so no public surface can name a Motion that failed to build.
+
+An observation edge has one identity, one ordering, and one label, and they are three functions rather than one string: `edgeKey` is prefix-free and therefore injective, `compareEdges` is the only comparator, and `describeEdge` is the only readable form. Nothing derives order from identity, so no published value depends on how long an id is.
 
 A declared trigger type selects a real driver or fails loudly. `time` gets a clock-fed driver that latches at `1`, `scroll` resolves an application-injected progress source or rejects with `trigger-driver-unavailable`, `manual` gets a manual port, and nothing falls back. The trigger factory is the only object that reads a trigger kind. A Motion's relationship to the one project clock is the three-state `ClockBinding`, so clock-advanced and push-driven pipelines coexist without any Motion holding both a driver and its own advance.
 
@@ -85,13 +95,15 @@ The migration landed on this branch in commit [`01cd580`](https://github.com/cha
 - T4 ordering: PR [#131](https://github.com/chahyasantoso/motion5/pull/131), CI run [32087189826](https://github.com/chahyasantoso/motion5/actions/runs/32087189826), 7/7 green. Integration evidence is `packages/core/test/integration/t4-runtime-motion-parity.test.ts`, cases `T-3` and `T-6`.
 - Red evidence for T4 is durable rather than claimed: PR [#132](https://github.com/chahyasantoso/motion5/pull/132), run [32096251602](https://github.com/chahyasantoso/motion5/actions/runs/32096251602), archived at `logs/32096251602/` on `ci-logs`, capturing `expected [Function] to throw an error` for `T-3` and `expected [] to deeply equal [ 'bad/id' ]` for `T-6` on the unmodified parent.
 - T5 no manual fallback: `packages/core/test/unit/adapters/trigger-factory-no-fallback.test.ts` cases `T-8` through `T-10`, and `packages/core/test/integration/motion-trigger-types.test.ts` cases `T-11` and `T-12`. No red run is cited, because this slice removes a claim rather than changing a behavior.
+- Edge identity and ordering: `packages/core/test/unit/graph/edge-key-separator.test.ts` cases `E-1`, `E-2`, `E-3`, `E-5`, `E-6`, and `packages/core/test/unit/graph/edge-order.test.ts` cases `E-4` and `E-7`.
+- Red evidence for the edge identity fix is durable rather than claimed: PR [#140](https://github.com/chahyasantoso/motion5/pull/140) applies the separator suite alone to the unmodified parent `dba6cfd`, where `E-1`, `E-2`, `E-3`, and `E-6` fail and `E-5` passes.
 
 ## Known remaining scope
 
 - The T4/T5 parity plan document still lives only on branch `docs/t4-t5-trigger-parity-plan`. Two slices have now landed amendments to a plan the tree does not hold. It should land from its own branch, and it has never been format-checked because `CI`'s `push:` trigger covers only `main`, `rescue/**`, `phase*/**`, and `feat/adopt-motion-track` and that branch has no pull request open.
 - Loop semantics may now be designed, as a new plan rather than an extension of the trigger plan. `repeat`, `yoyo`, and ping-pong are rejected at validation until one exists.
 - The deprecated owner-based adoption wrappers remain available for compatibility, but the current consumer no longer uses them.
-- Still open from section 8 of the trigger-driver plan: the `edgeKey` separator collision (8.2), `seek` bypassing the Motion beyond documenting it (8.3), and the `signal()` versus manual-port range disagreement (8.4). `T5` documents 8.3 and pins it with a test; it does not close it.
+- Still open from section 8 of the trigger-driver plan: `seek` bypassing the Motion beyond documenting it (8.3), and the `signal()` versus manual-port range disagreement (8.4). `T5` documents 8.3 and pins it with a test; it does not close it. The `edgeKey` separator collision (8.2) is closed by ADR-034, recorded above.
 - Open from the PR [#126](https://github.com/chahyasantoso/motion5/pull/126) review, deliberately not folded into any slice: a `#setProgress` sweep throw on the clock path is still laundered into a `flush-failure` diagnostic by `GraphRuntime.#onTick`, which blames the flush rather than the missing Track. That is issue [#114](https://github.com/chahyasantoso/motion5/issues/114) section 3.3's third consequence, unchanged, and it needs its own issue.
 - Open from the `T4` review, filed rather than folded in: issue [#133](https://github.com/chahyasantoso/motion5/issues/133), a rollback failure can outrank the failure that triggered it, in both `addMotion` and `#addTrack`; and issue [#134](https://github.com/chahyasantoso/motion5/issues/134), `buildMotion`'s `catch` releases the trigger but never disposes the Motion, so a throw after construction leaks an instance no map can reach.
 
