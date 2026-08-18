@@ -217,7 +217,11 @@ export class Engine {
         scheduler: this.#options.scheduler,
       });
       createdTriggers.set(definition.id, created);
-      let motion: Motion;
+      let motion!: Motion;
+      // A flag rather than a nullable local, so the invalidate closure and the clockBinding
+      // registration site below keep reading a Motion that is always present by the time they run.
+      // The catch is the only place that has to ask whether an instance exists at all.
+      let constructed = false;
       try {
         motion = new Motion({
           clock: this.#options.clock,
@@ -236,6 +240,7 @@ export class Engine {
           },
           stagger: definition.stagger,
         });
+        constructed = true;
         motion.play();
         if (consumers.has(definition.id))
           throw new TypeError(`Motion "${definition.id}" already has a clock consumer.`);
@@ -255,6 +260,13 @@ export class Engine {
         return motion;
       } catch (error) {
         releaseMotion(definition.id);
+        // releaseMotion owns the clock consumer and the created trigger. Nothing owned the Motion:
+        // it is never returned on this path, so it never enters `motions`, so disposeComposition
+        // cannot reach it either. Without this the instance keeps the lifecycle attachment and the
+        // trigger subscription play() made, and ADR-032's exactly-once disposal is exactly zero.
+        // Disposed after releaseMotion, matching the destroyMotion hook and disposeComposition.
+        // Issue #134.
+        if (constructed) motion.dispose();
         throw error;
       }
     };
