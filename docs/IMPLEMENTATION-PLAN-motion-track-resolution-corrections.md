@@ -26,7 +26,7 @@ Two construction styles are in play, and both are legitimate:
 
 The rest of 4.4 stands, and it earns its keep: `issue-114-motion-track-regressions.test.ts` and `replace-motion-track.test.ts` are genuinely untouched and green, which is what keeps ADR-029 evidenced independently of this slice.
 
-Semantic file count is 13, not the 9 predicted in sections 3 and 6.5. Still under the twenty-file ceiling in `docs/PR-WORKFLOW.md`.
+The slice is larger than sections 3 and 6.5 predicted, but the count belongs in the pull request body, not here. `docs/PR-WORKFLOW.md` defines what a semantic file is and says to state the number once; earlier revisions of this document carried a second count that disagreed with the PR's, which is exactly the failure that rule now prevents.
 
 ## C8 amended: `disposeTracks` defaults to `false`
 
@@ -44,6 +44,12 @@ Consequences, recorded rather than absorbed:
 - **Suites that own their Tracks now opt in explicitly.** `motion.test.ts`'s helper takes a third `disposeTracks` parameter and its owner-first disposal test passes `true`; `motion-trigger-lifecycle.test.ts` and `motion-trigger-types.test.ts` pass `disposeTracks: true` alongside their resolver injection. Those three additions are behavior opt-ins, **not** the mechanical constructor updates licensed above, and they are listed here for exactly that reason. No test name, assertion, or expected value changed in any of them.
 - **A fourth new test file exists.** `packages/core/test/unit/domain/motion-dispose-ownership.test.ts` is beyond section 3.6's two-file list. Its three cases are numbered C-14 through C-16 in the shared evidence series.
 - **ADR-031 carries the rationale** under `Disposal ownership`, and names the same three cases as its evidence.
+
+## Evidence case ids are one flat series
+
+The unit additions in `motion-track-resolution.test.ts` originally restarted at `C-9`, which already named an integration case in `option-c-track-resolution.test.ts`. They are renumbered **C-17 through C-20**, leaving one unambiguous series: C-1 to C-8 and C-17 to C-20 in the unit resolution suite, C-9 to C-13 in the integration suite, C-14 to C-16 in the disposal ownership suite. `packages/core/test/unit/scripts/evidence-case-ids.test.ts` now enforces it, and `docs/PR-WORKFLOW.md` records the convention.
+
+Related, and worth stating so the next reader does not read it as drift: `addTrack` and `replaceTrack` resolve the compiled Track **before** they mutate, where section 3.1's sketch resolved at the tail. That is deliberate. A rejected mutation is then atomic instead of leaving a ghost id that poisons the next progress sweep, and C-17 through C-20 prove it. `ProjectRuntime.#addTrack` calls `compileTrack` before `addMotionTrack`, so nothing regresses.
 
 ## The `tracks.get(` grep gate expects the wrong number
 
