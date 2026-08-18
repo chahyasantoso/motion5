@@ -45,6 +45,36 @@ function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
     .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
     .join(" ");
 }
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+/**
+ * Rejects an operation whose rollback can fail on its own.
+ *
+ * Both mutating entry points below roll back through a hook that reaches application code: the
+ * `destroyMotion` hook disposes a `CreatedTrigger` whose `dispose` closes over a host-owned
+ * `ScrollSource` unsubscribe, and `disposeTrack` disposes a compiled `Track`. A host whose
+ * teardown throws must not be able to replace the diagnosis with its own unrelated failure.
+ *
+ * Suppress and attach, never suppress and drop. When the rollback succeeds the rejection is
+ * rethrown untouched, so every existing message and error type contract holds. When it fails, one
+ * error carries both, which is the collect-then-report-once shape `Engine`'s clock consumer
+ * fanout already uses, so no new failure shape is invented here. See ADR-035.
+ */
+function rejectAfterRollback(rejection: unknown, rollback: () => void): never {
+  try {
+    rollback();
+  } catch (rollbackFailure) {
+    // The rejection's message comes first, verbatim, so a caller that anchored on it before a
+    // rollback could fail still matches it. Both facts stay first-class in `errors`, in the order
+    // they happened, and the rejection itself is not mutated: it is thrown from the graph layer,
+    // which does not own this failure and should not look like it does.
+    const errors = [rejection, rollbackFailure];
+    const detail = describeError(rollbackFailure);
+    throw new AggregateError(errors, `${describeError(rejection)} Rollback failed: ${detail}`);
+  }
+  throw rejection;
+}
 export class ProjectRuntime {
   readonly #project: ProjectDefinition;
   readonly #graph: GraphRuntime;
@@ -159,9 +189,9 @@ export class ProjectRuntime {
     } catch (error) {
       // The destroyMotion hook is already the exact rollback set -- it releases the clock
       // consumer, disposes the created trigger, disposes the Motion, and drops the map entry --
-      // and it is a no-op for an absent id, so no second rollback owner is introduced.
-      this.#destroyMotion?.(accepted.id);
-      throw error;
+      // and it is a no-op for an absent id, so no second rollback owner is introduced. It is also
+      // application code, which is why it runs inside the rejection owner. See ADR-035.
+      rejectAfterRollback(error, () => this.#destroyMotion?.(accepted.id));
     }
     this.#motions.set(accepted.id, accepted);
     return Object.freeze({ id: accepted.id });
@@ -237,8 +267,10 @@ export class ProjectRuntime {
     try {
       this.#graph.replaceGraph(this.#snapshot(next, this.#motions));
     } catch (error) {
-      this.#disposeTrack?.(id);
-      throw error;
+      // disposeTrack is application code too, and a compiled Track whose dispose throws must not
+      // hide the rule that rejected the candidate. Same owner, same shape as addMotion, because a
+      // rollback that can outrank its trigger is one defect rather than two. See ADR-035.
+      rejectAfterRollback(error, () => this.#disposeTrack?.(id));
     }
     this.#tracks.set(id, { track: accepted, owner, motionId, token });
     // Must run after compileTrack: Motion resolves by id against the live compiled map, so an

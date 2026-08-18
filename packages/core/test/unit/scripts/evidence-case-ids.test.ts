@@ -17,9 +17,14 @@ import { fileURLToPath } from "node:url";
 // to the trigger progress range fix, issue #138 and ADR-034. `E-` is reserved here for the
 // edgeKey separator fix, issue #137, so that whichever of those two lands second rebases instead
 // of widening this pattern a second time.
+//
+// `P-` belongs to the rollback error precedence fix (issue #133 and ADR-035). Reserving a spare
+// letter has now failed twice to prevent a widening, because both reservations above were claimed
+// by the issues they were reserved against. The pattern is therefore widened when a series is
+// actually opened, and nothing here is reserved for a series that does not exist yet.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:C|E|R|T)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:C|E|P|R|T)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
