@@ -23,6 +23,7 @@ function createRejectingInterpolator() {
     if (value === undefined) return timelineProgress;
     if (shouldReject && value === 0.5) throw new Error("timeline rejected progress");
     timelineProgress = value;
+    return timelineProgress;
   });
   const timeline = {
     duration: 1,
