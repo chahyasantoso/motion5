@@ -34,9 +34,16 @@ import { fileURLToPath } from "node:url";
 // the domain and both were opened against `Motion`, because `C-` owns how a Track is reached and
 // `M-` owns what a refusal costs. A letter is chosen that no plan already uses unhyphenated, so
 // `A3` and `A5` from the runtime mutation model cannot be misread as cases in this series.
+//
+// `L-` belongs to the `Track` leaf's own progress transition (issue #149): whether a refused
+// `setProgress` leaves the leaf reporting a value its timeline never accepted. Separate from `M-`
+// even though PR #148 found it, because `M-` owns a `Motion`'s entry list and `L-` owns one
+// leaf's bookkeeping, and separate from `C-` for the same reason `M-` is. `L` for the leaf, and
+// like `M` it is a letter no plan already uses unhyphenated, so `S4` and `S7` from the plugin and
+// recovery slices cannot be misread as cases here.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:C|D|E|M|P|R|T)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:C|D|E|L|M|P|R|T)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
