@@ -2,8 +2,8 @@
 
 **Captured:** 2026-08-18, Asia/Jakarta  
 **Branch:** `feat/adopt-motion-track`  
-**Phase:** runtime mutation model (W1-W5) complete; trigger drivers (T3) complete; compiled Track ownership (option C) merged; trigger slice `T4` in review. Phase 5 and Phase 6 remain as recorded below.  
-**Next action:** land `T4`, then `T5` (removal of inert trigger semantics) as its own pull request.
+**Phase:** runtime mutation model (W1-W5) complete; trigger drivers complete through `T4`; compiled Track ownership (option C) merged; trigger slice `T5` in review. Phase 5 and Phase 6 remain as recorded below.  
+**Next action:** land `T5`, then land the T4/T5 parity plan document from its own branch so the tree stops carrying an amendment to a plan it does not hold.
 
 This document reports current implementation reality. The detailed contract remains in `docs/PHASE5-DETAILED-PLAN.md`.
 
@@ -19,9 +19,9 @@ Stated in prose rather than a table. Hand-padded markdown tables are the repeate
 
 ## Trigger drivers
 
-`T0` through `T3` have landed. `T3` covered scroll and time trigger definitions, drivers, and the seam fixes for the root `T3` defects, in PR [#124](https://github.com/chahyasantoso/motion5/pull/124), 7/7 green on run [32026250864](https://github.com/chahyasantoso/motion5/actions/runs/32026250864).
+`T0` through `T4` have landed. `T3` covered scroll and time trigger definitions, drivers, and the seam fixes for the root `T3` defects, in PR [#124](https://github.com/chahyasantoso/motion5/pull/124), 7/7 green on run [32026250864](https://github.com/chahyasantoso/motion5/actions/runs/32026250864).
 
-The trigger-validation half of `T4` landed with ADR-028. What remained was creation and destruction ordering plus the parity evidence nobody had written.
+The trigger-validation half of `T4` landed with ADR-028, and the creation-ordering half landed with ADR-032. `T5` is the last slice.
 
 ## Compiled Track ownership (option C)
 
@@ -37,21 +37,35 @@ The rest of the review is on this base: one flat evidence id series with a gate 
 
 ## T4 runtime Motion creation ordering
 
-In review as PR [#131](https://github.com/chahyasantoso/motion5/pull/131) on branch `fix/t4-runtime-motion-creation-ordering`, 7/7 green on run [32087189826](https://github.com/chahyasantoso/motion5/actions/runs/32087189826), including the write-enabled `format` job, which found no drift. The decision record is ADR-032.
+Merged through PR [#131](https://github.com/chahyasantoso/motion5/pull/131), 7/7 green on run [32087189826](https://github.com/chahyasantoso/motion5/actions/runs/32087189826), including the write-enabled `format` job, which found no drift. The decision record is ADR-032.
 
 `ProjectRuntime.addMotion` published a motion id before it knew the Motion could be built. The order is now validate, reject, reject, `createMotion`, `replaceGraph` inside a `try`, roll back through the `destroyMotion` hook on rejection, then commit. `engine.ts` is unchanged; its hooks were already correct. `packages/core/src/domain/motion.ts` is untouched, so ADR-031's source guard stays green without being edited.
 
 Evidence is `packages/core/test/integration/t4-runtime-motion-parity.test.ts`. Cases `T-3` (the ghost definition and the compiled, unmounted Track it let through) and `T-6` (the rollback, proved by the factory's creation and dispose counters) are the red-before-green evidence. `T-1` compares whole emitted progress sequences between a runtime-created and an authored `time` Motion.
 
-That red is executed and archived rather than derived. All three original commits were pushed together, so the test-only commit `44a2296` never had a run of its own; branch `test/t4-red-evidence` and PR [#132](https://github.com/chahyasantoso/motion5/pull/132) apply the suite alone to the unmodified parent `a57634f` to close that gap. Run [32096251602](https://github.com/chahyasantoso/motion5/actions/runs/32096251602), archived at `logs/32096251602/`, reports `2 failed | 442 passed` with the two being exactly `T-3` and `T-6`, which also confirms the five guards are green on the parent. That branch is not for merge and should be closed once this slice lands.
+That red is executed and archived rather than derived. All three original commits were pushed together, so the test-only commit `44a2296` never had a run of its own; branch `test/t4-red-evidence` and PR [#132](https://github.com/chahyasantoso/motion5/pull/132) apply the suite alone to the unmodified parent `a57634f` to close that gap. Run [32096251602](https://github.com/chahyasantoso/motion5/actions/runs/32096251602), archived at `logs/32096251602/`, reports `2 failed | 442 passed` with the two being exactly `T-3` and `T-6`, which also confirms the five guards are green on the parent. That branch is not for merge and should be closed now that this slice has landed.
 
-The executable contract is the T4/T5 trigger parity plan, which still lives on branch `docs/t4-t5-trigger-parity-plan` and needs to land separately. Its amendment record is `docs/IMPLEMENTATION-PLAN-t4-t5-trigger-parity-corrections.md`, added here rather than promised, so the amendment currently cites a plan that is not in this tree. Twelve corrections are recorded there; the load-bearing ones are that `T5`'s manual-port grep gate would have failed on green code, that `T4-6` cannot inject a graph builder through `Engine` and does not need to, and that evidence case ids now use a `T-` series so they stop colliding with the `T4-n` locked decision ids.
+Two defects were filed rather than folded in: issue [#133](https://github.com/chahyasantoso/motion5/issues/133), a rollback failure can outrank the failure that triggered it, in both `addMotion` and `#addTrack`; and issue [#134](https://github.com/chahyasantoso/motion5/issues/134), `buildMotion`'s `catch` releases the trigger but never disposes the Motion.
+
+## T5 removal of inert trigger semantics
+
+In review on branch `test/t5-no-manual-trigger-fallback`. The decision record is ADR-033.
+
+The structural work was already done before this slice started: `default.ts` has no inert fallback left, `ClockBinding` is total, and unsupported playback fields are rejected at validation. What survived was the claim. Three integration cases asserted that `manual`, `scroll`, and `time` "use the same scheduled progress path" while constructing `Motion` directly around a manual port, so they would have stayed green no matter what the factory did. Four documents still described a contract with a fallback in it, and `docs/AUTHORED-SCHEMA.md` went further: its flagship example authored `trigger: { type: "time", autoplay: false }` with no `duration`, which the runtime it documents rejects twice over.
+
+So `T5` removes a claim rather than a behavior, and its proof is structural. `packages/core/test/unit/adapters/trigger-factory-no-fallback.test.ts` carries `T-8`, the positional source guard proving the factory reaches the manual port exactly once and only after both driver branches return; `T-9`, tying the time driver's `acceptsExternalSignal: false` and `driver` binding to the third call site so the guard bans a fallback rather than a transport; and `T-10`, proving `engine.ts` and every sibling under `src/adapters/trigger-factory/` build none. `packages/core/test/integration/motion-trigger-types.test.ts` retires the three misleading cases and replaces them with `T-11`, one side-by-side contrast across all three types through the real factory, plus `T-12`, which pins the `seek` interaction: a seek applies on a driver-backed node and the next driver tick overwrites it.
+
+No red-before-green evidence is required or claimed for this slice, and none is invented. Every case passes on the parent by construction, because the behavior they describe already shipped. Saying so is the honest form of the failing-first guardrail here.
+
+The trigger suites also drop their last `as never` track doubles for `createFakeTrackRegistry` plus `vi.spyOn` on real Track instances. That is test infrastructure, not a behavior opt-in, and it is the only way the `as never` gate and the "retained cases stay unchanged" instruction can both hold.
+
+Seven further corrections to the T5 half of the plan are recorded in `docs/IMPLEMENTATION-PLAN-t4-t5-trigger-parity-corrections.md`. The load-bearing ones: `T5-2` and `T5-3` are already proved by `packages/core/test/contract/trigger-factory.test.ts`, so restating them in a second file would duplicate ownership of evidence; section 5.2's three replacement cases would have duplicated `trigger-time.test.ts` and `trigger-scroll.test.ts`; a cited case id has to be a plain `it` declaration or the evidence gate cannot see it; and section 5.6 needs no new ADR number because ADR-021 already owns the `seek` boundary.
 
 ## Current architecture
 
 The runtime has one graph, one live observation state, one topology coordinator, one publisher, one patch registry, one project-wide clock subscription, and one owner of compiled Tracks. Authored and runtime Tracks share one removable store. Track mutation uses frozen definitions and capability handles with monotonic ABA protection; replacement preserves node identity and does not emit terminal destruction patches. No object outside `Engine` holds a compiled `Track` reference, so a recompiled node cannot leave a consumer driving a disposed instance. A runtime Motion is built before it is committed, so no public surface can name a Motion that failed to build.
 
-Trigger definitions are resolved through a seam layer that unifies scroll and time triggers with the manual trigger path. Drivers are injected at Composition time and cached per host, allowing clock-advanced and scroll-position-based motion pipelines to coexist.
+A declared trigger type selects a real driver or fails loudly. `time` gets a clock-fed driver that latches at `1`, `scroll` resolves an application-injected progress source or rejects with `trigger-driver-unavailable`, `manual` gets a manual port, and nothing falls back. The trigger factory is the only object that reads a trigger kind. A Motion's relationship to the one project clock is the three-state `ClockBinding`, so clock-advanced and push-driven pipelines coexist without any Motion holding both a driver and its own advance.
 
 ## React consumer migration
 
@@ -70,13 +84,14 @@ The migration landed on this branch in commit [`01cd580`](https://github.com/cha
 - Red evidence for option C is durable rather than claimed: `logs/32036837861/` and `logs/32036952950/` on `ci-logs` capture the four `TS2353` hits and the six runtime failures naming `Motion requires a resolveTrack function.`
 - T4 ordering: PR [#131](https://github.com/chahyasantoso/motion5/pull/131), CI run [32087189826](https://github.com/chahyasantoso/motion5/actions/runs/32087189826), 7/7 green. Integration evidence is `packages/core/test/integration/t4-runtime-motion-parity.test.ts`, cases `T-3` and `T-6`.
 - Red evidence for T4 is durable rather than claimed: PR [#132](https://github.com/chahyasantoso/motion5/pull/132), run [32096251602](https://github.com/chahyasantoso/motion5/actions/runs/32096251602), archived at `logs/32096251602/` on `ci-logs`, capturing `expected [Function] to throw an error` for `T-3` and `expected [] to deeply equal [ 'bad/id' ]` for `T-6` on the unmodified parent.
+- T5 no manual fallback: `packages/core/test/unit/adapters/trigger-factory-no-fallback.test.ts` cases `T-8` through `T-10`, and `packages/core/test/integration/motion-trigger-types.test.ts` cases `T-11` and `T-12`. No red run is cited, because this slice removes a claim rather than changing a behavior.
 
 ## Known remaining scope
 
-- `T5`, removal of inert trigger semantics, is the last trigger slice. The structural work is already done: `default.ts` has no inert fallback left. What remains is the source guard, the retirement of the three tests asserting that all three trigger types share the manual signal path, and the documentation.
-- Loop semantics stay undesigned until `T5` lands. `repeat`, `yoyo`, and ping-pong are a new plan, not an extension of the trigger plan.
+- The T4/T5 parity plan document still lives only on branch `docs/t4-t5-trigger-parity-plan`. Two slices have now landed amendments to a plan the tree does not hold. It should land from its own branch, and it has never been format-checked because `CI`'s `push:` trigger covers only `main`, `rescue/**`, `phase*/**`, and `feat/adopt-motion-track` and that branch has no pull request open.
+- Loop semantics may now be designed, as a new plan rather than an extension of the trigger plan. `repeat`, `yoyo`, and ping-pong are rejected at validation until one exists.
 - The deprecated owner-based adoption wrappers remain available for compatibility, but the current consumer no longer uses them.
-- Still open from section 8 of the trigger-driver plan: the `edgeKey` separator collision (8.2), `seek` bypassing the Motion (8.3), and the `signal()` versus manual-port range disagreement (8.4). None are touched by option C or `T4`.
+- Still open from section 8 of the trigger-driver plan: the `edgeKey` separator collision (8.2), `seek` bypassing the Motion beyond documenting it (8.3), and the `signal()` versus manual-port range disagreement (8.4). `T5` documents 8.3 and pins it with a test; it does not close it.
 - Open from the PR [#126](https://github.com/chahyasantoso/motion5/pull/126) review, deliberately not folded into any slice: a `#setProgress` sweep throw on the clock path is still laundered into a `flush-failure` diagnostic by `GraphRuntime.#onTick`, which blames the flush rather than the missing Track. That is issue [#114](https://github.com/chahyasantoso/motion5/issues/114) section 3.3's third consequence, unchanged, and it needs its own issue.
 - Open from the `T4` review, filed rather than folded in: issue [#133](https://github.com/chahyasantoso/motion5/issues/133), a rollback failure can outrank the failure that triggered it, in both `addMotion` and `#addTrack`; and issue [#134](https://github.com/chahyasantoso/motion5/issues/134), `buildMotion`'s `catch` releases the trigger but never disposes the Motion, so a throw after construction leaks an instance no map can reach.
 
@@ -86,8 +101,8 @@ The migration landed on this branch in commit [`01cd580`](https://github.com/cha
 - No graph rebuild or motionpath wholesale copy.
 - No compatibility aliases, flags, facades, or placeholder tests.
 - No renderer imports in core.
-- Every recovery slice starts with a failing-first test on its parent commit, and the failing run is archived on `ci-logs` rather than described in prose.
+- Every recovery slice starts with a failing-first test on its parent commit, and the failing run is archived on `ci-logs` rather than described in prose. A slice that removes a claim rather than a behavior says so instead of inventing a red run.
 - Docs, types, tests, and status move together.
-- An evidence case id names exactly one test in the whole suite.
+- An evidence case id names exactly one test in the whole suite, and it is declared with a plain `it` so the gate can see it.
 - A required check that only runs for some base branches is not a gate. Do not filter `pull_request` by base.
 - No hand-padded markdown tables in this file. `format:check` is a hard gate inside `quality`, and it runs before the write-enabled `format` job can repair anything.
