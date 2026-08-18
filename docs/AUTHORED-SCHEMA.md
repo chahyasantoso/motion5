@@ -23,7 +23,7 @@ const project = {
   motions: [
     {
       id: "hero",
-      trigger: { type: "time", autoplay: false },
+      trigger: { type: "time", duration: 1000 },
       stagger: 0.08,
       tracks: [
         {
@@ -59,6 +59,8 @@ const project = {
 };
 ```
 
+This example previously authored `trigger: { type: "time", autoplay: false }` with no `duration`, which the runtime rejects twice over. A normative document whose own example does not load is worse than no example, so the trigger rules below are stated in full.
+
 ## Top-level fields
 
 - **`schemaVersion`**: required number `5`.
@@ -70,7 +72,28 @@ const project = {
 
 ## Motion fields
 
-A motion has a unique `id`, a `trigger`, and a `tracks` array. The trigger type is `scroll`, `time`, or `manual`. Motion owns the schedule and playback of its tracks. A motion track id is local in authored input but becomes `motionId/trackId` at load.
+A motion has a unique `id`, a `trigger`, and a `tracks` array. Motion owns the schedule and playback of its tracks. A motion track id is local in authored input but becomes `motionId/trackId` at load.
+
+## Trigger
+
+The trigger type is `scroll`, `time`, or `manual`, and the type is enforced rather than decorative. A declared type selects a real driver or the load fails. No type falls back to manual, and no trigger field is accepted and then ignored. See ADR-033.
+
+- `{ type: "manual" }` takes no other fields. Progress arrives through `signal(motionId, { type, progress })`, and the Motion also advances on the project clock.
+- `{ type: "time", duration }` requires `duration` as a finite number greater than zero, in the same units as the clock delta. The driver emits elapsed time over `duration`, clamped to `1`, latches there, and emits nothing further. `autoplay` may be absent or `true`; playback always starts.
+- `{ type: "scroll", source }` is push-driven and registers no clock consumer, so a clock tick never moves it. `source` is a serializable string key resolved against an application-owned registry injected at load. Core never receives a selector, an element, or an animation-engine object.
+
+A driver-backed Motion rejects `signal()` with `Motion has a configured trigger driver and does not accept external signals.` Only `manual` accepts one. `seek(nodeId, progress)` is unaffected, because it is leaf-level scrubbing rather than Motion-level control; on a driver-backed Motion the next driver emission overwrites a seeked value. See ADR-021.
+
+Every trigger rejection is severity `error`:
+
+- `trigger-shape` for a non-object trigger, or a `type` outside `scroll`, `time`, and `manual`.
+- `trigger-time-duration` for a `time` trigger whose `duration` is absent, non-numeric, non-finite, or not greater than zero.
+- `trigger-time-autoplay-unsupported` for `autoplay` present and not `true`. `false` is not representable, because explicit paused behavior does not exist yet.
+- `trigger-time-repeat-unsupported` for `repeat` or `yoyo` present at any value, including `0`. Loop semantics are undesigned, and a field that validates has to be honored.
+- `trigger-scroll-source` for a `source` present but not a non-empty string.
+- `trigger-driver-unavailable` at `load()` or `addMotion` when a declared `scroll` trigger resolves no registered source. A missing `source` key is not a validation error: whether a key is required is the injected factory's business, and an unresolvable one fails at construction naming the motion id and the key.
+
+The same rules apply to a Motion created at runtime through `addMotion`, and nothing is committed until the Motion can be built. See ADR-028 and ADR-032.
 
 ## Track fields
 
@@ -114,4 +137,4 @@ Errors reject the candidate project before it can replace the active project. Wa
 
 ## Rejected input
 
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid trigger, invalid perspective, malformed edges, unknown sources, duplicate edges, self-reference, cycles, and legacy `use` entries are errors. Missing perspective for detected 3D content and unused free tracks are warnings.
+Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid trigger, invalid perspective, malformed edges, unknown sources, duplicate edges, self-reference, cycles, and legacy `use` entries are errors. The per-type trigger rules are listed under Trigger above. Missing perspective for detected 3D content and unused free tracks are warnings.

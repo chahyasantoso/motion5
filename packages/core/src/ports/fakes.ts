@@ -1,5 +1,6 @@
 import type { InterpolationTimeline, Interpolator } from "./interpolator";
 import type { Cancel, Scheduler } from "./scheduler";
+import type { TriggerPort } from "./trigger";
 interface FakeStop {
   readonly p: number;
   readonly v: unknown;
@@ -107,6 +108,67 @@ export function createFakeScheduler<Options = unknown>(): Scheduler<() => void, 
     flush() {
       const pending = jobs.splice(0, jobs.length);
       for (const entry of pending) if (!entry.cancelled) entry.job();
+    },
+  };
+}
+
+export function createFakeTriggerPort(): TriggerPort & {
+  emit(progress: number): void;
+  readonly subscriberCount: number;
+  dispose(): void;
+} {
+  let count = 0;
+  const listeners = new Set<(progress: number) => void>();
+  let disposed = false;
+  return {
+    subscribe(listener: (progress: number) => void) {
+      if (typeof listener !== "function")
+        throw new TypeError("TriggerPort listener must be a function.");
+      if (disposed) throw new Error("TriggerPort is disposed.");
+      count += 1;
+      listeners.add(listener);
+      return () => {
+        count -= 1;
+        listeners.delete(listener);
+      };
+    },
+    emit(progress: number) {
+      if (disposed) return;
+      for (const listener of [...listeners]) listener(progress);
+    },
+    get subscriberCount() {
+      return count;
+    },
+    dispose() {
+      if (disposed) return;
+      disposed = true;
+      listeners.clear();
+    },
+  };
+}
+
+/**
+ * Stands in for the owner of compiled Tracks. Generic so this module keeps its ports-layer
+ * independence from the domain layer; tests instantiate it as createFakeTrackRegistry<Track>().
+ */
+export function createFakeTrackRegistry<T>(): {
+  resolveTrack: (id: string) => T | undefined;
+  register(id: string, value: T): T;
+  drop(id: string): void;
+  readonly ids: readonly string[];
+} {
+  const entries = new Map<string, T>();
+  return {
+    resolveTrack: (id: string) => entries.get(id),
+    register(id: string, value: T) {
+      entries.set(id, value);
+      return value;
+    },
+    drop(id: string) {
+      entries.delete(id);
+    },
+    get ids() {
+      return [...entries.keys()];
     },
   };
 }

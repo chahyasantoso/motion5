@@ -1,31 +1,30 @@
 import type { Diagnostic, ProjectDefinition } from "../contract/v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import { GraphBinding } from "../graph/binding";
-import type { GraphNode } from "../graph/ir";
+import type { GraphNode, GraphIR } from "../graph/ir";
 import { GraphPublisher, type PublisherNode } from "./graph-publisher";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
 import type { Scheduler } from "../ports/scheduler";
-
 export type ComposeNode = PublisherNode["compose"];
 export type ComposeResolver = (node: GraphNode) => ComposeNode;
-
 export const DEFERRED_FLUSH_RULE = "reentrant-flush-deferred";
 export const CLOCK_REGRESSION_RULE = "clock-tick-regression";
 export const FLUSH_FAILURE_RULE = "flush-failure";
 export const SCHEDULER_FAILURE_RULE = "scheduler-failure";
-
+import type { GraphBuilder } from "../ports/graph-builder";
 export interface GraphRuntimeOptions {
   readonly scheduler?: Scheduler;
   readonly onFlushError?: (diagnostic: Diagnostic) => void;
+  readonly onClockTick?: (event: ClockTick) => void;
+  readonly graphBuilder?: GraphBuilder;
 }
 function deferredBatch(sequence: number, seeds: readonly string[]): PatchBatch {
   const ids = Object.freeze([...seeds]);
   const diagnostic: Diagnostic = Object.freeze({
     ruleId: DEFERRED_FLUSH_RULE,
-    path: ids[0] ?? "",
+    path: "deferred-flush",
     message:
-      "A flush requested while subscribers were being notified was queued as one follow-up " +
-      "invalidation for the scheduler.",
+      "A flush requested while subscribers were being notified was queued as one follow-up invalidation for the scheduler.",
     severity: "warning",
     ids,
   });
@@ -39,7 +38,6 @@ function deferredBatch(sequence: number, seeds: readonly string[]): PatchBatch {
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
-
 export class GraphRuntime {
   readonly #binding: GraphBinding;
   readonly #registry: PatchRegistry;
@@ -48,6 +46,7 @@ export class GraphRuntime {
   readonly #compose: ComposeResolver;
   readonly #scheduler: Scheduler | undefined;
   readonly #onFlushError: ((diagnostic: Diagnostic) => void) | undefined;
+  readonly #onClockTick: ((event: ClockTick) => void) | undefined;
   readonly #unsubscribe: () => void;
   readonly #members = new Set<string>();
   readonly #pendingSeeds = new Set<string>();
@@ -58,27 +57,27 @@ export class GraphRuntime {
   #flushing = false;
   #scheduledDrain = false;
   #disposed = false;
-
   constructor(
     project: ProjectDefinition,
     clock: Clock,
     compose: ComposeResolver,
     options: GraphRuntimeOptions = {},
   ) {
-    this.#binding = new GraphBinding(project);
+    this.#binding = new GraphBinding(project, { builder: options.graphBuilder });
     this.#registry = new PatchRegistry();
     this.#publisher = new GraphPublisher(this.#registry);
     this.#clock = clock;
     this.#compose = compose;
     this.#scheduler = options.scheduler;
     this.#onFlushError = options.onFlushError;
+    this.#onClockTick = options.onClockTick;
     this.#unsubscribe = this.#clock.subscribe((event) => this.#onTick(event));
-  }
-  get binding(): GraphBinding {
-    return this.#binding;
   }
   get state() {
     return this.#binding.state;
+  }
+  get graph(): GraphIR {
+    return this.#binding.graph;
   }
   get registry(): PatchRegistry {
     return this.#registry;
@@ -98,7 +97,6 @@ export class GraphRuntime {
   get pendingSeeds(): readonly string[] {
     return [...this.#pendingSeeds];
   }
-
   attach(nodeId: string): void {
     this.#assertLive();
     if (!this.#binding.graph.nodeById[nodeId])
@@ -108,8 +106,26 @@ export class GraphRuntime {
   detach(nodeId: string): void {
     this.#assertLive();
     this.#members.delete(nodeId);
+    this.#registry.remove(nodeId);
   }
-
+  evictNode(nodeId: string): void {
+    this.#assertLive();
+    this.#members.delete(nodeId);
+    this.#registry.evict(nodeId);
+  }
+  clearPublisherCache(): void {
+    this.#publisherNodes.clear();
+  }
+  replaceGraph(project: ProjectDefinition): void {
+    this.#assertLive();
+    this.#binding.replace(project);
+    for (const id of this.#members)
+      if (!this.#binding.graph.nodeById[id]) {
+        this.#members.delete(id);
+        this.#registry.evict(id);
+      }
+    this.#publisherNodes.clear();
+  }
   flush(seeds: readonly string[] = [...this.#members], tick?: number): PatchBatch {
     this.#assertLive();
     if (this.#flushing) {
@@ -163,6 +179,7 @@ export class GraphRuntime {
     this.#pendingSeeds.clear();
     this.#publisherNodes.clear();
     this.#scheduledDrain = false;
+    this.#registry.dispose();
   }
   #scheduleDrain(): void {
     if (this.#scheduler === undefined || this.#scheduledDrain || this.#disposed) return;
@@ -192,6 +209,7 @@ export class GraphRuntime {
       return;
     }
     try {
+      this.#onClockTick?.(event);
       this.flush([...this.#members], event.tick);
     } catch (error) {
       this.#report(FLUSH_FAILURE_RULE, `Flush at tick ${event.tick} failed: ${describe(error)}`);

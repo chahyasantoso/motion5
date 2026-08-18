@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator } from "../../src/ports/fakes";
-import { createFakeScheduler } from "../../src/ports/fakes";
+import {
+  createFakeInterpolator,
+  createFakeScheduler,
+  createFakeTriggerPort,
+} from "../../src/ports/fakes";
+import { assertTriggerPort, createManualTriggerPort } from "../../src/ports/trigger";
 
 describe("Clock port contract", () => {
   it("emits monotonic ticks and accumulated time", () => {
@@ -68,5 +72,35 @@ describe("Scheduler port contract", () => {
     scheduler.schedule(() => calls.push("kept"));
     scheduler.flush();
     expect(calls).toEqual(["kept"]);
+  });
+});
+
+describe("TriggerPort contract", () => {
+  it("subscribes, emits progress, and unsubscribes cleanly", () => {
+    const trigger = createManualTriggerPort();
+    const progressValues: number[] = [];
+    const unsubscribe = trigger.subscribe((p) => progressValues.push(p));
+
+    trigger.emit(0.25);
+    trigger.emit(0.75);
+    expect(progressValues).toEqual([0.25, 0.75]);
+
+    unsubscribe();
+    trigger.emit(1);
+    expect(progressValues).toEqual([0.25, 0.75]);
+    trigger.dispose();
+  });
+
+  it("fake trigger port tracks subscriber count", () => {
+    const fake = createFakeTriggerPort();
+    expect(fake.subscriberCount).toBe(0);
+    const un1 = fake.subscribe(() => undefined);
+    const un2 = fake.subscribe(() => undefined);
+    expect(fake.subscriberCount).toBe(2);
+    un1();
+    expect(fake.subscriberCount).toBe(1);
+    un2();
+    expect(fake.subscriberCount).toBe(0);
+    fake.dispose();
   });
 });

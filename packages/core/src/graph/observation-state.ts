@@ -1,6 +1,6 @@
 import { compareCodeUnits } from "./compare";
 import type { GraphEdge } from "./ir";
-import { edgeKey } from "./ir";
+import { compareEdges, describeEdge, edgeKey } from "./ir";
 
 /** A read-only structural view of live state, used for evidence and inspection. */
 export interface ObservationStateSnapshot {
@@ -15,27 +15,18 @@ type JournalEntry =
   | { readonly undo: "add-edge"; readonly edge: GraphEdge }
   | { readonly undo: "remove-edge"; readonly edge: GraphEdge };
 
-function compareEdges(a: GraphEdge, b: GraphEdge): number {
-  return (
-    compareCodeUnits(a.observerId, b.observerId) ||
-    compareCodeUnits(a.sourceId, b.sourceId) ||
-    compareCodeUnits(a.role, b.role) ||
-    compareCodeUnits(a.target ?? "", b.target ?? "")
-  );
-}
-
-/** Drop an explicit `undefined` target so edge identity has exactly one representation. */
+/** Drop an explicit `undefined` target/projection so edge identity has exactly one representation. */
 function normalizeEdge(edge: GraphEdge): GraphEdge {
-  return Object.freeze(
-    edge.target === undefined
-      ? { observerId: edge.observerId, sourceId: edge.sourceId, role: edge.role }
-      : {
-          observerId: edge.observerId,
-          sourceId: edge.sourceId,
-          role: edge.role,
-          target: edge.target,
-        },
-  );
+  const base: {
+    observerId: string;
+    sourceId: string;
+    role: "input" | "output";
+    target?: string;
+    projection?: import("../contract/v5").InputProjection;
+  } = { observerId: edge.observerId, sourceId: edge.sourceId, role: edge.role };
+  if (edge.target !== undefined) base.target = edge.target;
+  if (edge.projection !== undefined) base.projection = edge.projection;
+  return Object.freeze(base) as GraphEdge;
 }
 
 /**
@@ -47,6 +38,11 @@ function normalizeEdge(edge: GraphEdge): GraphEdge {
  * it. There is deliberately no method that reconstructs this object from a graph snapshot:
  * population is the transaction coordinator's job, and a rebuild seam would destroy the
  * identity that makes an undo journal meaningful.
+ *
+ * Identity, ordering, and labels all come from `graph/ir.ts`: `edgeKey` indexes, `compareEdges`
+ * orders every snapshot and adjacency read, and `describeEdge` writes the error text. A private
+ * comparator here would be a second ordering owner that could silently disagree with the
+ * publisher about which edge comes first.
  *
  * Implements I-1 and ADR-006. Satisfies FR-8, TR-G-08, and TR-G-12.
  */
@@ -102,7 +98,7 @@ export class ObservationState {
   addEdge(edge: GraphEdge): void {
     const live = normalizeEdge(edge);
     const key = edgeKey(live);
-    if (this.#edges.has(key)) throw new TypeError(`Edge "${key}" is already live.`);
+    if (this.#edges.has(key)) throw new TypeError(`Edge ${describeEdge(live)} is already live.`);
     if (!this.#nodes.has(live.observerId))
       throw new TypeError(`Edge observer "${live.observerId}" is not live.`);
     if (!this.#nodes.has(live.sourceId))
@@ -116,7 +112,7 @@ export class ObservationState {
   removeEdge(edge: GraphEdge): void {
     const key = edgeKey(edge);
     const live = this.#edges.get(key);
-    if (live === undefined) throw new TypeError(`Edge "${key}" is not live.`);
+    if (live === undefined) throw new TypeError(`Edge ${describeEdge(edge)} is not live.`);
     this.#edges.delete(key);
     this.#byObserver.get(live.observerId)?.delete(key);
     this.#bySource.get(live.sourceId)?.delete(key);
@@ -131,18 +127,31 @@ export class ObservationState {
   /** Replay the journal in reverse, then release it. Live identity is untouched. */
   rollback(): void {
     this.#replaying = true;
+    const errors: { index: number; undo: string; error: unknown }[] = [];
     try {
       for (let index = this.#journal.length - 1; index >= 0; index -= 1) {
         const entry = this.#journal[index];
         if (entry === undefined) continue;
-        if (entry.undo === "add-node") this.addNode(entry.id);
-        else if (entry.undo === "remove-node") this.removeNode(entry.id);
-        else if (entry.undo === "add-edge") this.addEdge(entry.edge);
-        else this.removeEdge(entry.edge);
+        try {
+          if (entry.undo === "add-node") this.addNode(entry.id);
+          else if (entry.undo === "remove-node") this.removeNode(entry.id);
+          else if (entry.undo === "add-edge") this.addEdge(entry.edge);
+          else this.removeEdge(entry.edge);
+        } catch (error) {
+          errors.push({ index, undo: entry.undo, error });
+        }
       }
     } finally {
       this.#journal = [];
       this.#replaying = false;
+    }
+    if (errors.length > 0) {
+      const first = errors[0]!;
+      throw new Error(
+        `Rollback incomplete: ${errors.length} entries failed. ` +
+          `First: journal[${first.index}] (${first.undo}): ` +
+          (first.error instanceof Error ? first.error.message : String(first.error)),
+      );
     }
   }
 

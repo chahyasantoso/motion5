@@ -3,8 +3,10 @@ import {
   type Diagnostic,
   type ProjectDefinition,
   type TrackDefinition,
+  type TriggerDefinition,
 } from "./v5";
 import { SUPPORTED_TRIGGER_TYPES } from "./v5";
+import { describeDiagnostics, diagnostic as issue } from "./diagnostics";
 import { buildGraphIR } from "../graph/ir";
 
 export interface ValidationResult {
@@ -17,21 +19,6 @@ export interface KeyframeValidationOptions {
   readonly ruleIdAliases?: Readonly<Record<string, string>>;
 }
 type RawObject = Record<string, unknown>;
-function issue(
-  ruleId: string,
-  path: string,
-  message: string,
-  severity: Diagnostic["severity"] = "error",
-  ids: readonly string[] = [],
-): Diagnostic {
-  return Object.freeze({
-    ruleId,
-    path,
-    message,
-    severity,
-    ...(ids.length ? { ids: Object.freeze([...ids]) } : {}),
-  });
-}
 function isObject(value: unknown): value is RawObject {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -111,6 +98,86 @@ function validateId(
     );
   return diagnostics;
 }
+export function validateMotionTrigger(trigger: unknown, path: string): Diagnostic[] {
+  if (!isObject(trigger))
+    return [
+      issue("trigger-shape", path, "Trigger must be an object with type scroll, time, or manual."),
+    ];
+  const type = trigger.type;
+  if (!SUPPORTED_TRIGGER_TYPES.includes(type as (typeof SUPPORTED_TRIGGER_TYPES)[number]))
+    return [
+      issue("trigger-shape", path, "Trigger must be an object with type scroll, time, or manual."),
+    ];
+  const diagnostics: Diagnostic[] = [];
+  if (type === "time") {
+    if (
+      typeof trigger.duration !== "number" ||
+      !Number.isFinite(trigger.duration) ||
+      trigger.duration <= 0
+    )
+      diagnostics.push(
+        issue(
+          "trigger-time-duration",
+          `${path}.duration`,
+          "Time trigger duration must be a finite number greater than zero.",
+        ),
+      );
+    if (trigger.autoplay !== undefined && trigger.autoplay !== true)
+      diagnostics.push(
+        issue(
+          "trigger-time-autoplay-unsupported",
+          `${path}.autoplay`,
+          "Time trigger autoplay must be true when present; paused behavior is not supported.",
+        ),
+      );
+    if (Object.prototype.hasOwnProperty.call(trigger, "repeat"))
+      diagnostics.push(
+        issue(
+          "trigger-time-repeat-unsupported",
+          `${path}.repeat`,
+          "Time trigger repeat is not supported yet.",
+        ),
+      );
+    if (Object.prototype.hasOwnProperty.call(trigger, "yoyo"))
+      diagnostics.push(
+        issue(
+          "trigger-time-repeat-unsupported",
+          `${path}.yoyo`,
+          "Time trigger yoyo is not supported yet.",
+        ),
+      );
+  }
+  if (
+    type === "scroll" &&
+    trigger.source !== undefined &&
+    (typeof trigger.source !== "string" || trigger.source.length === 0)
+  )
+    diagnostics.push(
+      issue(
+        "trigger-scroll-source",
+        `${path}.source`,
+        "Scroll trigger source must be a non-empty string when present.",
+      ),
+    );
+  return diagnostics;
+}
+/**
+ * The one narrowing boundary for authored triggers.
+ *
+ * `MotionDefinition.trigger` is deliberately structurally open (plan section 5.1) so authored
+ * extension keys survive validation. The cost is that `trigger.source` and `trigger.duration` are
+ * `unknown` to every consumer, which previously pushed each `TriggerFactory` into re-deriving the
+ * discriminated union with its own `typeof` guards and sentinels.
+ *
+ * By the time any factory runs the trigger is already proven valid, so the narrowing belongs here.
+ * This function holds the only cast from authored input to `TriggerDefinition`, and that cast is
+ * justified by the `validateMotionTrigger` call immediately above it.
+ */
+export function resolveTriggerDefinition(trigger: unknown, path: string): TriggerDefinition {
+  const diagnostics = validateMotionTrigger(trigger, path);
+  if (diagnostics.length > 0) throw new TypeError(describeDiagnostics(diagnostics));
+  return trigger as TriggerDefinition;
+}
 function usesThreeD(track: RawObject): boolean {
   const keyframes = isObject(track.keyframes) ? track.keyframes : null;
   if (!keyframes) return false;
@@ -189,6 +256,21 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   for (const child of Object.values(value)) deepFreeze(child, seen);
   return Object.freeze(value);
 }
+export interface TrackValidationResult {
+  readonly valid: boolean;
+  readonly diagnostics: readonly Diagnostic[];
+  readonly value: TrackDefinition | null;
+}
+export function validateTrackDefinition(track: unknown, path: string): TrackValidationResult {
+  const diagnostics: Diagnostic[] = [];
+  const validShape = validateTrackShape(track, path, new Set<string>(), diagnostics);
+  const valid = validShape && !diagnostics.some(({ severity }) => severity === "error");
+  return {
+    valid,
+    diagnostics: Object.freeze(diagnostics),
+    value: valid ? deepFreeze(clone(track) as TrackDefinition) : null,
+  };
+}
 export function validateV5(input: unknown): ValidationResult {
   const diagnostics: Diagnostic[] = [];
   if (!isObject(input))
@@ -238,19 +320,7 @@ export function validateV5(input: unknown): ValidationResult {
         );
       motionIds.add(id);
     }
-    if (
-      !isObject(rawMotion.trigger) ||
-      !SUPPORTED_TRIGGER_TYPES.includes(
-        rawMotion.trigger.type as (typeof SUPPORTED_TRIGGER_TYPES)[number],
-      )
-    )
-      diagnostics.push(
-        issue(
-          "trigger-shape",
-          `${path}.trigger`,
-          "Trigger must be an object with type scroll, time, or manual.",
-        ),
-      );
+    diagnostics.push(...validateMotionTrigger(rawMotion.trigger, `${path}.trigger`));
     if (!Array.isArray(rawMotion.tracks)) {
       diagnostics.push(
         issue("motion-tracks-shape", `${path}.tracks`, "Motion tracks must be an array."),

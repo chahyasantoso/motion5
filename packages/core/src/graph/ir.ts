@@ -1,6 +1,7 @@
 import type {
   Diagnostic,
   InputProjection,
+  ObservationDefinition,
   ProjectDefinition,
   TrackDefinition,
 } from "../contract/v5";
@@ -37,19 +38,91 @@ export interface GraphBuildResult {
   readonly graph?: GraphIR;
   readonly diagnostics: readonly Diagnostic[];
 }
+/**
+ * One encoded field of an edge identity, prefixed with its own length.
+ *
+ * The id guards reserve only `/` and `~`, and a target is an arbitrary string, so `|`, `:`,
+ * `,` and `=` are all authorable: a plain separator can be forged from inside a field value.
+ * A length prefix makes the encoding prefix-free, which is what makes `edgeKey` injective
+ * rather than merely usually-distinct.
+ */
+function field(value: string): string {
+  return `${value.length}:${value}`;
+}
+/**
+ * The ordering form of a target. `"-"` sorts before `":"`, so an absent target orders before
+ * every authored one, including the empty string, and the comparator separates exactly the
+ * edges the identity encoding separates.
+ */
+function targetOrder(edge: GraphEdge): string {
+  return edge.target === undefined ? "-" : `:${edge.target}`;
+}
+export function canonicalizeProjection(projection: InputProjection): string {
+  if (projection.pick !== undefined) {
+    const pickKeys = [...projection.pick].sort(compareCodeUnits);
+    return `pick:${pickKeys.map(field).join("")}`;
+  }
+  const map = projection.map ?? {};
+  const mapKeys = Object.keys(map).sort(compareCodeUnits);
+  return `map:${mapKeys.map((key) => `${field(key)}${field(map[key]!)}`).join("")}`;
+}
+/**
+ * Edge identity, and nothing else: two keys are equal exactly when the edges are one edge.
+ *
+ * Ordering belongs to `compareEdges` and the readable label to `describeEdge`. One string
+ * cannot own all three jobs, because injectivity wants length prefixes while the other two
+ * want the field values themselves.
+ */
 export function edgeKey(edge: GraphEdge): string {
-  return `${edge.observerId}|${edge.sourceId}|${edge.role}|${edge.target ?? ""}`;
+  const projection = edge.projection ? canonicalizeProjection(edge.projection) : "";
+  return [
+    field(edge.observerId),
+    field(edge.sourceId),
+    field(edge.role),
+    // "-" for an absent target, so an authored target of "" is not the same edge as no target.
+    edge.target === undefined ? "-" : field(edge.target),
+    field(projection),
+  ].join("");
+}
+/**
+ * The single ordering owner for observation edges.
+ *
+ * Field by field, never derived from `edgeKey`. This comparator decides published values in
+ * `runtime/graph-publisher.ts`: it picks the blocked upstream that gets named, it feeds
+ * `firstPendingEdge`, and it sets output merge precedence, where the later write wins.
+ * Sorting by an encoded identity would make that precedence depend on how long an id is.
+ */
+export function compareEdges(a: GraphEdge, b: GraphEdge): number {
+  return (
+    compareCodeUnits(a.observerId, b.observerId) ||
+    compareCodeUnits(a.sourceId, b.sourceId) ||
+    compareCodeUnits(a.role, b.role) ||
+    compareCodeUnits(targetOrder(a), targetOrder(b)) ||
+    compareCodeUnits(
+      a.projection ? canonicalizeProjection(a.projection) : "",
+      b.projection ? canonicalizeProjection(b.projection) : "",
+    )
+  );
+}
+/** The readable edge label for diagnostics and error text. Never an identity, never a key. */
+export function describeEdge(edge: GraphEdge): string {
+  return `${edge.observerId} <- ${edge.sourceId} (${edge.role})`;
 }
 function freeze<T>(value: T): T {
   return Object.freeze(value);
 }
-function diag(ruleId: string, path: string, message: string, ids?: readonly string[]): Diagnostic {
+export function diag(
+  ruleId: string,
+  path: string,
+  message: string,
+  ids?: readonly string[],
+): Diagnostic {
   return { ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) };
 }
-function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
+export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
   return compareCodeUnits(a.ruleId, b.ruleId) || compareCodeUnits(a.path, b.path);
 }
-function qualifySource(source: string, motionId: string): string {
+export function qualifySource(source: string, motionId: string): string {
   if (source.startsWith("~/")) return qualifyFreeTrack(source.slice(2)).value;
   if (source.includes("/"))
     return qualifyMotionTrack(
@@ -61,7 +134,6 @@ function qualifySource(source: string, motionId: string): string {
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
-
 function validateProjection(
   projection: unknown,
   path: string,
@@ -128,8 +200,7 @@ function validateProjection(
   }
   const map: Record<string, string> = {};
   for (const [source, target] of Object.entries(projection.map)) map[source] = target as string;
-  const targets = Object.values(map);
-  if (new Set(targets).size !== targets.length) {
+  if (new Set(Object.values(map)).size !== Object.values(map).length) {
     diagnostics.push(
       diag(
         "observation-input-projection",
@@ -141,8 +212,70 @@ function validateProjection(
   }
   return Object.freeze({ map: Object.freeze(map) });
 }
-
-function collectTrack(
+export interface ResolvedObservation {
+  readonly edge?: GraphEdge;
+  readonly diagnostics: readonly Diagnostic[];
+}
+export function resolveObservationEdge(
+  observation: ObservationDefinition,
+  observerNodeId: string,
+  ownerId: string,
+  path: string,
+): ResolvedObservation {
+  const diagnostics: Diagnostic[] = [];
+  const role = observation.role ?? "output";
+  if (role !== "input" && role !== "output") {
+    diagnostics.push(diag("observation-role", path, "Observation role must be input or output."));
+    return { diagnostics: Object.freeze(diagnostics) };
+  }
+  if (typeof observation.source !== "string" || observation.source.length === 0) {
+    diagnostics.push(diag("observation-source", path, "Observation source must be non-empty."));
+    return { diagnostics: Object.freeze(diagnostics) };
+  }
+  if (role === "output" && observation.target !== undefined) {
+    diagnostics.push(
+      diag("observation-output-target", path, "Output observations cannot define a target."),
+    );
+    return { diagnostics: Object.freeze(diagnostics) };
+  }
+  const projection =
+    role === "input" ? validateProjection(observation.projection, path, diagnostics) : undefined;
+  if (diagnostics.length > 0) return { diagnostics: Object.freeze(diagnostics) };
+  let sourceId: string;
+  try {
+    sourceId = qualifySource(observation.source, ownerId);
+  } catch (error) {
+    diagnostics.push(
+      diag("observation-source", path, String(error instanceof Error ? error.message : error), [
+        observation.source,
+      ]),
+    );
+    return { diagnostics: Object.freeze(diagnostics) };
+  }
+  const edge: GraphEdge = Object.freeze({
+    observerId: observerNodeId,
+    sourceId,
+    role,
+    ...(observation.target === undefined ? {} : { target: observation.target }),
+    ...(projection === undefined ? {} : { projection }),
+  });
+  return { edge, diagnostics: Object.freeze([]) };
+}
+export function observationEdgeKey(
+  observation: ObservationDefinition,
+  observerId: string,
+  ownerId: string,
+): string {
+  const resolved = resolveObservationEdge(observation, observerId, ownerId, "observation");
+  if (resolved.edge === undefined)
+    throw new TypeError(
+      resolved.diagnostics
+        .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
+        .join(" "),
+    );
+  return edgeKey(resolved.edge);
+}
+export function collectTrack(
   track: TrackDefinition,
   owner: "motion" | "free",
   ownerId: string,
@@ -168,49 +301,12 @@ function collectTrack(
   const edges: GraphEdge[] = [];
   for (const [index, observation] of (track.observes ?? []).entries()) {
     const path = `${owner === "free" ? `freeTracks[${authoredIndex}]` : `motions[${authoredIndex}].tracks[${index}].observes`}`;
-    const role = observation.role ?? "output";
-    if (role !== "input" && role !== "output") {
-      diagnostics.push(diag("observation-role", path, "Observation role must be input or output."));
-      continue;
-    }
-    if (typeof observation.source !== "string" || observation.source.length === 0) {
-      diagnostics.push(diag("observation-source", path, "Observation source must be non-empty."));
-      continue;
-    }
-    if (role === "output" && observation.target !== undefined) {
-      diagnostics.push(
-        diag("observation-output-target", path, "Output observations cannot define a target."),
-      );
-      continue;
-    }
-    const projection =
-      role === "input" ? validateProjection(observation.projection, path, diagnostics) : undefined;
-    if (role === "input" && observation.projection !== undefined && projection === undefined)
-      continue;
-    let sourceId: string;
-    try {
-      sourceId = qualifySource(observation.source, ownerId);
-    } catch (error) {
-      diagnostics.push(
-        diag("observation-source", path, String(error instanceof Error ? error.message : error), [
-          observation.source,
-        ]),
-      );
-      continue;
-    }
-    edges.push(
-      Object.freeze({
-        observerId: id,
-        sourceId,
-        role,
-        ...(observation.target === undefined ? {} : { target: observation.target }),
-        ...(projection === undefined ? {} : { projection }),
-      }),
-    );
+    const resolved = resolveObservationEdge(observation, id, ownerId, path);
+    diagnostics.push(...resolved.diagnostics);
+    if (resolved.edge !== undefined) edges.push(resolved.edge);
   }
   return Object.freeze({ id, owner, authoredIndex, track, edges: Object.freeze(edges) });
 }
-
 export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
   const diagnostics: Diagnostic[] = [];
   const nodes: GraphNode[] = [];
@@ -285,10 +381,12 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
       const key = edgeKey(edge);
       if (edgeKeys.has(key))
         diagnostics.push(
-          diag("observation-duplicate", edge.observerId, `Duplicate observation edge "${key}".`, [
+          diag(
+            "observation-duplicate",
             edge.observerId,
-            edge.sourceId,
-          ]),
+            `Duplicate observation edge ${describeEdge(edge)}.`,
+            [edge.observerId, edge.sourceId],
+          ),
         );
       edgeKeys.add(key);
       if (!known.has(edge.sourceId))

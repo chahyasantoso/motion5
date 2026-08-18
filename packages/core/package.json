@@ -12,6 +12,26 @@
     "./internal": {
       "types": "./dist/internal.d.ts",
       "default": "./dist/internal.js"
+    },
+    "./adapters": {
+      "types": "./dist/adapters/index.d.ts",
+      "default": "./dist/adapters/index.js"
+    },
+    "./adapters/browser-clock": {
+      "types": "./dist/adapters/browser-clock.d.ts",
+      "default": "./dist/adapters/browser-clock.js"
+    },
+    "./plugins/transform": {
+      "types": "./dist/plugins/transform.d.ts",
+      "default": "./dist/plugins/transform.js"
+    },
+    "./plugins/fk": {
+      "types": "./dist/plugins/fk.d.ts",
+      "default": "./dist/plugins/fk.js"
+    },
+    "./ports/fakes": {
+      "types": "./dist/ports/fakes.d.ts",
+      "default": "./dist/ports/fakes.js"
     }
   }
 }

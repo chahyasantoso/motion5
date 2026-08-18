@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2023",
-    "lib": ["ES2023"],
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "moduleDetection": "force",
@@ -17,8 +17,10 @@
     "paths": {
       "@motion5/core": ["packages/core/src/index.ts"],
       "@motion5/core/internal": ["packages/core/src/internal.ts"],
+      "@motion5/core/*": ["packages/core/src/*"],
       "@motion5/react": ["packages/react/src/index.ts"]
-    }
+    },
+    "jsx": "react-jsx"
   },
-  "include": ["packages/**/*.ts"]
+  "include": ["packages/**/*.ts", "demo/**/*", "apps/**/*"]
 }

@@ -29,7 +29,8 @@ describe("GraphRuntime", () => {
 
     expect(subscribe).toHaveBeenCalledTimes(1);
     expect(runtime.registry).toBe(runtime.registry);
-    expect(runtime.state).toBe(runtime.binding.state);
+    expect(runtime.state).toBe(runtime.state); // stable reference, not rebuilt per call
+    expect((runtime as unknown as { binding?: unknown }).binding).toBeUndefined();
     runtime.dispose();
   });
 

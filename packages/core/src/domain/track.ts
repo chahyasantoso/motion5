@@ -85,8 +85,8 @@ export class Track {
     if (!Number.isFinite(value)) throw new TypeError("Track progress must be finite.");
     const next = Math.max(0, Math.min(1, value));
     if (Object.is(next, this.#progress)) return false;
-    this.#progress = next;
     this.#timeline.progress(next);
+    this.#progress = next;
     this.#dirty = true;
     return true;
   }

@@ -20,6 +20,11 @@ export type {
   ProjectDefinition,
   TrackDefinition,
   TriggerType,
+  TriggerSignal,
+  TriggerDefinition,
+  ManualTriggerDefinition,
+  TimeTriggerDefinition,
+  ScrollTriggerDefinition,
   PatchStatus,
   Patch,
   PatchBatch,
@@ -27,15 +32,44 @@ export type {
 } from "./contract/v5";
 export { migrateV4ToV5 } from "./contract/migrate-v4-to-v5";
 export type { MigrationResult } from "./contract/migrate-v4-to-v5";
-export { validateV5 } from "./contract/validate-v5";
-export type { ValidationResult } from "./contract/validate-v5";
+export {
+  resolveTriggerDefinition,
+  validateV5,
+  validateTrackDefinition,
+  validateMotionTrigger,
+} from "./contract/validate-v5";
+export type { ValidationResult, TrackValidationResult } from "./contract/validate-v5";
 export { parseGolden, serializeGolden } from "./contract/golden";
 export type { GoldenFixture, GoldenValidationFixture } from "./contract/golden";
 export { Engine } from "./engine";
-export type { ProjectHandle } from "./engine";
+export type { ProjectHandle, TrackHandle } from "./engine";
 export { PluginRegistry } from "./domain/plugins";
 export type { PluginDefinition, ResolvedPlugins } from "./domain/plugins";
 export { assertClock, createManualClock } from "./ports/clock";
+export { assertTriggerPort, createManualTriggerPort } from "./ports/trigger";
+export type { TriggerPort } from "./ports/trigger";
+export { assertTriggerFactory } from "./ports/trigger-factory";
+export type {
+  ClockBinding,
+  ClockConsumer,
+  CreatedTrigger,
+  TriggerFactory,
+  TriggerFactoryContext,
+} from "./ports/trigger-factory";
+/**
+ * Trigger drivers are opt-in at the composition root, so the factory has to be reachable through
+ * the package exports map, not only through a deep source path.
+ */
+export {
+  createDefaultTriggerFactory,
+  createTriggerFactory,
+} from "./adapters/trigger-factory/default";
+export type {
+  ScrollSourceResolver,
+  ScrollSourceResolverContext,
+  TriggerFactoryOptions,
+} from "./adapters/trigger-factory/default";
+export type { ScrollSource } from "./adapters/scroll-trigger";
 export { assertInterpolator } from "./ports/interpolator";
 export type { InterpolationTimeline, Interpolator } from "./ports/interpolator";
 export { assertScheduler } from "./ports/scheduler";

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
+import { buildGraphIR } from "../../src/graph/ir";
 
 const project: ProjectDefinition = {
   schemaVersion: 5,
@@ -60,5 +61,32 @@ describe("ProjectRuntime", () => {
     expect(runtime.instanceCount).toBe(0);
     expect(subscriptions).toBe(1);
     expect(() => clock.tick()).not.toThrow();
+  });
+
+  it("uses a custom GraphBuilder if provided in options", () => {
+    let buildCount = 0;
+    const clock = createManualClock();
+
+    const customBuilder = {
+      build: (proj: ProjectDefinition) => {
+        buildCount += 1;
+        return buildGraphIR(proj);
+      },
+    };
+
+    const runtime = new ProjectRuntime(project, {
+      clock,
+      compose,
+      graphBuilder: customBuilder,
+    });
+
+    // 1 call during initial runtime construction
+    expect(buildCount).toBe(1);
+
+    // 1 call during adopt
+    runtime.adopt({ id: "adopted_1" }, {});
+    expect(buildCount).toBe(2);
+
+    runtime.dispose();
   });
 });
