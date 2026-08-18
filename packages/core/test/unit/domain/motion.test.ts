@@ -15,9 +15,11 @@ function createMotion(stagger = 0, duration?: number, disposeTracks = false) {
   const interpolator = createFakeInterpolator();
   const registry = createFakeTrackRegistry<Track>();
   const ids = ["track-0", "track-1", "track-2"];
+  // `instance`, not `track`: a MotionTrackEntry can never carry a compiled Track, and a fixture
+  // shaped like one defeats the grep gate that enforces it.
   const tracks = ids.map((id) => ({
     id,
-    track: registry.register(id, new Track({ interpolator })),
+    instance: registry.register(id, new Track({ interpolator })),
     ...(duration === undefined ? {} : { duration }),
   }));
   const motion = new Motion({
@@ -43,15 +45,15 @@ describe("Motion composite", () => {
     clock.tick(0.25);
     expect(scheduler.pending).toHaveLength(1);
     scheduler.flush();
-    expect(tracks[0]?.track.progress).toBe(0.25);
-    expect(tracks[1]?.track.progress).toBe(0.25);
+    expect(tracks[0]?.instance.progress).toBe(0.25);
+    expect(tracks[1]?.instance.progress).toBe(0.25);
   });
   it("converts clock time into normalized progress using authored duration", () => {
     const { clock, scheduler, motion, tracks } = createMotion(0, 2);
     motion.play();
     clock.tick(0.5);
     scheduler.flush();
-    expect(tracks[0]?.track.progress).toBe(0.25);
+    expect(tracks[0]?.instance.progress).toBe(0.25);
   });
   it("pausing detaches the clock and play resubscribes without duplicate work", () => {
     const { clock, scheduler, motion, tracks } = createMotion();
@@ -61,7 +63,7 @@ describe("Motion composite", () => {
     clock.tick(0.25);
     expect(scheduler.pending).toHaveLength(1);
     scheduler.flush();
-    expect(tracks[0]?.track.progress).toBe(0.25);
+    expect(tracks[0]?.instance.progress).toBe(0.25);
   });
   it("reattaches one trigger listener after pause and play", () => {
     const clock = createManualClock();
@@ -88,7 +90,7 @@ describe("Motion composite", () => {
   it("clamps seek and rejects non-finite values", () => {
     const { motion, tracks } = createMotion();
     motion.seek(2);
-    expect(tracks[0]?.track.progress).toBe(1);
+    expect(tracks[0]?.instance.progress).toBe(1);
     expect(() => motion.seek(Number.POSITIVE_INFINITY)).toThrow(/finite/);
   });
   it("pauses and disposes owner-first without leaking clock work", () => {
@@ -96,12 +98,12 @@ describe("Motion composite", () => {
     motion.play();
     motion.pause();
     clock.tick(0.5);
-    expect(tracks[0]?.track.progress).toBe(0);
+    expect(tracks[0]?.instance.progress).toBe(0);
     motion.dispose();
     expect(
-      tracks.every(({ track }) => {
+      tracks.every(({ instance }) => {
         try {
-          track.compose();
+          instance.compose();
           return false;
         } catch {
           return true;

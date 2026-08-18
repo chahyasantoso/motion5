@@ -284,12 +284,12 @@ export class Engine {
         addMotionTrack: (motionId, trackId, duration) => {
           const motion = motions.get(motionId);
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
-          motion.addTrack({ id: trackId, duration });
+          motion.addTrack({ id: trackId, ...(duration === undefined ? {} : { duration }) });
         },
         replaceMotionTrack: (motionId, trackId, duration) => {
           const motion = motions.get(motionId);
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
-          motion.replaceTrack({ id: trackId, duration });
+          motion.replaceTrack({ id: trackId, ...(duration === undefined ? {} : { duration }) });
         },
         removeMotionTrack: (motionId, trackId) => motions.get(motionId)?.removeTrack(trackId),
         createMotion: (definition) => motions.set(definition.id, buildMotion(definition, [])),
@@ -328,7 +328,12 @@ export class Engine {
       });
       for (const motionDefinition of acceptedProject.motions) {
         const ids = motionTrackIds.get(motionDefinition.id) ?? [];
-        const entries = ids.map((id) => ({ id, duration: nodes.get(id)?.duration }));
+        // Conditional spread, so a load-time entry never carries an explicitly undefined duration
+        // while the hook-built entries omit the key. One entry shape, both construction paths.
+        const entries = ids.map((id) => {
+          const duration = nodes.get(id)?.duration;
+          return { id, ...(duration === undefined ? {} : { duration }) };
+        });
         motions.set(motionDefinition.id, buildMotion(motionDefinition, entries));
       }
       return createHandle(runtime, (motionId, signal) => {
