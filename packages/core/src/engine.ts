@@ -100,6 +100,57 @@ function assertValidProject(project: unknown): ProjectDefinition {
     );
   return result.value;
 }
+// Local on purpose. ProjectRuntime formats its own errors for its own layer, and promoting a shared
+// formatter into the contract module would widen the package's declaration surface, which a
+// governance gate scans, for two call sites.
+function describeError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+/**
+ * Runs every step, then reports once.
+ *
+ * Teardown has no partial success worth keeping. A step that throws leaves the steps behind it
+ * unrun, and those are the ones that dispose the Motion, drop the map entry, and release the
+ * compiled Track, so stopping early converts one host failure into a leak. Every step is therefore
+ * attempted and the failures are collected. Issues #143 and #145.
+ *
+ * A lone failure is rethrown verbatim rather than wrapped. `ProjectRuntime.rejectAfterRollback`
+ * attaches whatever a rollback hook threw to its own `AggregateError`, and callers assert on that
+ * value's identity and message, so renaming a single host failure here would break the precedence
+ * contract this is meant to support. See ADR-035.
+ */
+function runAllAndReportOnce(steps: readonly (() => void)[], context: string): void {
+  const failures: unknown[] = [];
+  for (const step of steps) {
+    try {
+      step();
+    } catch (error) {
+      failures.push(error);
+    }
+  }
+  if (failures.length === 0) return;
+  throw failures.length === 1 ? failures[0] : new AggregateError(failures, context);
+}
+/**
+ * Returns the error to throw for `failure`, after running `cleanup`.
+ *
+ * A cleanup failure is attached, never substituted. The reason an operation was refused outranks
+ * anything its teardown reports, because the caller can act on the first and not on the second.
+ * Same rule and same shape as `ProjectRuntime.rejectAfterRollback`, applied at the owner that
+ * created the things being released. Returns rather than throws so control flow at each call site
+ * is a plain `throw`, with no reliance on never-returning call analysis.
+ */
+function afterCleanup(failure: unknown, cleanup: () => void): unknown {
+  try {
+    cleanup();
+  } catch (cleanupFailure) {
+    return new AggregateError(
+      [failure, cleanupFailure],
+      `${describeError(failure)} Cleanup failed: ${describeError(cleanupFailure)}`,
+    );
+  }
+  return failure;
+}
 export class Engine {
   readonly #options: EngineOptions;
   readonly #plugins: PluginRegistry | undefined;
@@ -193,11 +244,39 @@ export class Engine {
     const createdTriggers = new Map<string, CreatedTrigger>();
     const consumers = new Map<string, ClockConsumer>();
     const triggerFactory = this.#options.triggerFactory ?? createDefaultTriggerFactory();
-    let runtime: ProjectRuntime;
+    let runtime: ProjectRuntime | undefined;
+    // Drops both registrations before disposing, so a created trigger has exactly one owner even
+    // when a host `dispose` throws: the entry is already gone, so no later teardown can reach it a
+    // second time and no caller can reach a released driver by id. Issue #145.
     const releaseMotion = (motionId: string): void => {
+      const created = createdTriggers.get(motionId);
       consumers.delete(motionId);
-      createdTriggers.get(motionId)?.dispose();
       createdTriggers.delete(motionId);
+      created?.dispose();
+    };
+    // Hoisted out of the runtime options because the failed-load path needs it too: when `load()`
+    // throws before the runtime exists, there is no `runtime.dispose()` to route through. Emptying
+    // the maps before disposing anything also makes this idempotent, which it must be, because
+    // `ProjectRuntime`'s constructor already calls it when `GraphRuntime` throws. Issue #143.
+    const disposeComposition = (): void => {
+      const built = [...motions.values()];
+      const triggers = [...createdTriggers.values()];
+      const composed = [...tracks.values()];
+      motions.clear();
+      consumers.clear();
+      createdTriggers.clear();
+      tracks.clear();
+      // Triggers first, then Motions, then Tracks, unchanged: a driver must stop emitting before
+      // the Motion it feeds goes away. Every created trigger is covered here, including one built
+      // for a Motion that never reached `motions`, so releaseMotion is not repeated.
+      runAllAndReportOnce(
+        [
+          ...triggers.map((trigger) => () => trigger.dispose()),
+          ...built.map((motion) => () => motion.dispose()),
+          ...composed.map((track) => () => track.dispose()),
+        ],
+        "Composition disposal failed.",
+      );
     };
     const buildMotion = (
       definition: MotionDefinition,
@@ -236,7 +315,10 @@ export class Engine {
           acceptsExternalSignal: created.acceptsExternalSignal,
           invalidate: () => {
             const ids = motion.tracks.map((t) => t.id);
-            if (ids.length > 0) runtime.invalidate(ids);
+            // The runtime always exists by the time a Motion can invalidate: buildMotion runs from
+            // the load-time loop after construction, or from the createMotion hook the runtime
+            // itself calls. The optional call states that rather than asserting it.
+            if (ids.length > 0) runtime?.invalidate(ids);
           },
           stagger: definition.stagger,
         });
@@ -259,15 +341,16 @@ export class Engine {
         }
         return motion;
       } catch (error) {
-        releaseMotion(definition.id);
-        // releaseMotion owns the clock consumer and the created trigger. Nothing owned the Motion:
-        // it is never returned on this path, so it never enters `motions`, so disposeComposition
-        // cannot reach it either. Without this the instance keeps the lifecycle attachment and the
-        // trigger subscription play() made, and ADR-032's exactly-once disposal is exactly zero.
-        // Disposed after releaseMotion, matching the destroyMotion hook and disposeComposition.
-        // Issue #134.
-        if (constructed) motion.dispose();
-        throw error;
+        throw afterCleanup(error, () => {
+          // releaseMotion owns the clock consumer and the created trigger. Nothing owned the
+          // Motion: it is never returned on this path, so it never enters `motions`, so
+          // disposeComposition cannot reach it either. Without this the instance keeps the
+          // lifecycle attachment and the trigger subscription play() made, and ADR-032's
+          // exactly-once disposal is exactly zero. Issue #134.
+          const steps = [() => releaseMotion(definition.id)];
+          if (constructed) steps.push(() => motion.dispose());
+          runAllAndReportOnce(steps, `Cleaning up motion "${definition.id}" failed.`);
+        });
       }
     };
     try {
@@ -285,7 +368,7 @@ export class Engine {
             sourceRevisions: {},
           };
         };
-      runtime = new ProjectRuntime(acceptedProject, {
+      const created = new ProjectRuntime(acceptedProject, {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
         compose,
@@ -307,37 +390,31 @@ export class Engine {
         createMotion: (definition) => motions.set(definition.id, buildMotion(definition, [])),
         destroyMotion: (motionId) => {
           const motion = motions.get(motionId);
-          if (motion) {
-            releaseMotion(motionId);
-            motion.dispose();
-            motions.delete(motionId);
-          }
+          if (!motion) return;
+          // The map entry goes first, so a teardown failure can neither leave a destroyed Motion
+          // reachable by id nor let project disposal dispose it a second time. Then every step is
+          // attempted: a host trigger `dispose` that threw used to stop this hook before
+          // `motion.dispose()`, leaving a mounted Motion with a live lifecycle and trigger
+          // subscription plus a stale entry here, while ProjectRuntime stayed uncommitted. This is
+          // also the rollback path for a rejected addMotion, so its failure is reported to
+          // rejectAfterRollback rather than swallowed. Issue #145.
+          motions.delete(motionId);
+          runAllAndReportOnce(
+            [() => releaseMotion(motionId), () => motion.dispose()],
+            `Destroying motion "${motionId}" failed.`,
+          );
         },
         onClockTick: (event) => {
-          const failures: unknown[] = [];
-          for (const consumer of consumers.values()) {
-            try {
-              consumer.onTick(event);
-            } catch (error) {
-              failures.push(error);
-            }
-          }
-          if (failures.length > 0)
-            throw failures.length === 1
-              ? failures[0]
-              : new AggregateError(failures, "Clock consumer fanout failed.");
+          // One fanout owner and one report, sharing the teardown paths' collect-then-report shape
+          // for the same reason: a throwing consumer must not stop the consumers behind it.
+          runAllAndReportOnce(
+            [...consumers.values()].map((consumer) => () => consumer.onTick(event)),
+            "Clock consumer fanout failed.",
+          );
         },
-        disposeComposition: () => {
-          for (const motionId of [...motions.keys()]) releaseMotion(motionId);
-          for (const motion of motions.values()) motion.dispose();
-          motions.clear();
-          for (const trigger of createdTriggers.values()) trigger.dispose();
-          createdTriggers.clear();
-          consumers.clear();
-          for (const track of tracks.values()) track.dispose();
-          tracks.clear();
-        },
+        disposeComposition,
       });
+      runtime = created;
       for (const motionDefinition of acceptedProject.motions) {
         const ids = motionTrackIds.get(motionDefinition.id) ?? [];
         // Conditional spread, so a load-time entry never carries an explicitly undefined duration
@@ -348,19 +425,24 @@ export class Engine {
         });
         motions.set(motionDefinition.id, buildMotion(motionDefinition, entries));
       }
-      return createHandle(runtime, (motionId, signal) => {
+      return createHandle(created, (motionId, signal) => {
         const motion = motions.get(motionId);
         if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
         motion.signal(signal);
       });
     } catch (error) {
-      for (const motionId of [...motions.keys()]) releaseMotion(motionId);
-      for (const motion of motions.values()) motion.dispose();
-      motions.clear();
-      for (const trigger of createdTriggers.values()) trigger.dispose();
-      createdTriggers.clear();
-      for (const track of tracks.values()) track.dispose();
-      throw error;
+      throw afterCleanup(error, () => {
+        // `load()` owns everything it created, including the runtime. `GraphRuntime` takes the
+        // project's only `Clock.subscribe` in its own constructor, and a caller that never received
+        // a handle can never release it, so a failed load had to dispose the runtime itself.
+        // Issue #143.
+        //
+        // Exactly one owner: `runtime.dispose()` already calls disposeComposition, which owns the
+        // Motions, the created triggers and the compiled Tracks, so calling both would dispose
+        // everything twice. Only a failure that preceded the runtime leaves the composition here.
+        if (runtime === undefined) disposeComposition();
+        else runtime.dispose();
+      });
     }
   }
 }
