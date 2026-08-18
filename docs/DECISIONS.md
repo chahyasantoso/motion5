@@ -54,6 +54,8 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 
 **Consequences.** Callers use Motion for hierarchy and the runtime for graph observation. Track becomes simpler to test and safe to reuse as a leaf.
 
+**Clarified, 2026-08-18.** Track's ownership of its playhead is atomic, and it stops at Track's own bookkeeping. `setProgress` validates, clamps, and short-circuits an unchanged value first, then hands the value to the interpolation timeline, and commits `#progress` and `#dirty` only once that call returns. A timeline that refuses a value therefore leaves the leaf exactly as it was. Committing first was not merely a stale field: the refused value also fed the unchanged-value short circuit, so the next retry compared equal to a value the timeline never accepted and never reached the timeline again. What Track does not own is renderer state that a timeline mutated before it threw. A leaf cannot undo that generically, so it belongs to the interpolator adapter behind the port, and widening Track's guarantee to cover it would need a new record here rather than an implementation change. Pinned in executable form by cases `L-1` through `L-4` in `packages/core/test/unit/domain/track.test.ts`, with `L-5` and `L-6` as guards. See issue [#149](https://github.com/chahyasantoso/motion5/issues/149).
+
 ## ADR-005: Publication is one-way
 
 **Status:** Accepted, 2026-08-10
