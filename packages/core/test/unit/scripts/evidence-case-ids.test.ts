@@ -2,14 +2,18 @@ import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-// The C-series ids are this project's citation keys: the implementation plan, ADR-031, and every
+// The citation series are this project's evidence keys: implementation plans, ADRs, and every
 // pull request body name evidence by id rather than by test title. Two cases sharing one id makes
 // each of those citations ambiguous, so the gate is uniqueness across the whole suite, not within
 // a file. Titles are matched instead of bare ids so a comment referring to another case cannot
 // register as a second declaration.
+//
+// `C-` belongs to the option C plan (ADR-031). `T-` belongs to the T4/T5 trigger parity plan,
+// which needed its own prefix because that plan already uses `T4-n` and `T5-n` for its locked
+// decisions; reusing those for test cases would have made every citation two-valued.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"(C-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:C|T)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
@@ -24,7 +28,7 @@ function declaredCaseIds(relativePath: string): readonly string[] {
 }
 
 describe("evidence case ids", () => {
-  it("declares every C-series case id exactly once across the suite", () => {
+  it("declares every citation case id exactly once across the suite", () => {
     const owners = new Map<string, string[]>();
     for (const file of testFiles())
       for (const id of declaredCaseIds(file)) owners.set(id, [...(owners.get(id) ?? []), file]);
