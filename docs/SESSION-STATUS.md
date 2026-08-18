@@ -43,7 +43,7 @@ In review as PR [#131](https://github.com/chahyasantoso/motion5/pull/131) on bra
 
 Evidence is `packages/core/test/integration/t4-runtime-motion-parity.test.ts`. Cases `T-3` (the ghost definition and the compiled, unmounted Track it let through) and `T-6` (the rollback, proved by the factory's creation and dispose counters) are the red-before-green evidence. `T-1` compares whole emitted progress sequences between a runtime-created and an authored `time` Motion.
 
-Recorded rather than waived silently: that red evidence is derived by reading both trees, not executed. All three commits were pushed together, so the test-only commit `44a2296` never had a CI run of its own, and `ci-logs` therefore holds no archived failure for `T-3` or `T-6`. This is weaker than the option C red evidence below, which is durable. The guardrail "every recovery slice starts with a failing-first test on its parent commit" is satisfied in ordering but not in captured output, and closing that gap needs a run of the new suite against `a57634f`.
+That red is executed and archived rather than derived. All three original commits were pushed together, so the test-only commit `44a2296` never had a run of its own; branch `test/t4-red-evidence` and PR [#132](https://github.com/chahyasantoso/motion5/pull/132) apply the suite alone to the unmodified parent `a57634f` to close that gap. Run [32096251602](https://github.com/chahyasantoso/motion5/actions/runs/32096251602), archived at `logs/32096251602/`, reports `2 failed | 442 passed` with the two being exactly `T-3` and `T-6`, which also confirms the five guards are green on the parent. That branch is not for merge and should be closed once this slice lands.
 
 The executable contract is the T4/T5 trigger parity plan, which still lives on branch `docs/t4-t5-trigger-parity-plan` and needs to land separately. Its amendment record is `docs/IMPLEMENTATION-PLAN-t4-t5-trigger-parity-corrections.md`, added here rather than promised, so the amendment currently cites a plan that is not in this tree. Twelve corrections are recorded there; the load-bearing ones are that `T5`'s manual-port grep gate would have failed on green code, that `T4-6` cannot inject a graph builder through `Engine` and does not need to, and that evidence case ids now use a `T-` series so they stop colliding with the `T4-n` locked decision ids.
 
@@ -68,7 +68,8 @@ The migration landed on this branch in commit [`01cd580`](https://github.com/cha
 - Option C disposal ownership: `packages/core/test/unit/domain/motion-dispose-ownership.test.ts`, cases C-14 through C-16.
 - Follow-up gates: PR [#130](https://github.com/chahyasantoso/motion5/pull/130). `packages/core/test/unit/scripts/evidence-case-ids.test.ts` for id uniqueness, `packages/core/test/unit/engine/motion-entry-shape.test.ts` for entry shape.
 - Red evidence for option C is durable rather than claimed: `logs/32036837861/` and `logs/32036952950/` on `ci-logs` capture the four `TS2353` hits and the six runtime failures naming `Motion requires a resolveTrack function.`
-- T4 ordering: PR [#131](https://github.com/chahyasantoso/motion5/pull/131), CI run [32087189826](https://github.com/chahyasantoso/motion5/actions/runs/32087189826), 7/7 green. Integration evidence is `packages/core/test/integration/t4-runtime-motion-parity.test.ts`, cases `T-3` and `T-6`. No archived red run backs them; see the caveat above.
+- T4 ordering: PR [#131](https://github.com/chahyasantoso/motion5/pull/131), CI run [32087189826](https://github.com/chahyasantoso/motion5/actions/runs/32087189826), 7/7 green. Integration evidence is `packages/core/test/integration/t4-runtime-motion-parity.test.ts`, cases `T-3` and `T-6`.
+- Red evidence for T4 is durable rather than claimed: PR [#132](https://github.com/chahyasantoso/motion5/pull/132), run [32096251602](https://github.com/chahyasantoso/motion5/actions/runs/32096251602), archived at `logs/32096251602/` on `ci-logs`, capturing `expected [Function] to throw an error` for `T-3` and `expected [] to deeply equal [ 'bad/id' ]` for `T-6` on the unmodified parent.
 
 ## Known remaining scope
 
@@ -77,7 +78,7 @@ The migration landed on this branch in commit [`01cd580`](https://github.com/cha
 - The deprecated owner-based adoption wrappers remain available for compatibility, but the current consumer no longer uses them.
 - Still open from section 8 of the trigger-driver plan: the `edgeKey` separator collision (8.2), `seek` bypassing the Motion (8.3), and the `signal()` versus manual-port range disagreement (8.4). None are touched by option C or `T4`.
 - Open from the PR [#126](https://github.com/chahyasantoso/motion5/pull/126) review, deliberately not folded into any slice: a `#setProgress` sweep throw on the clock path is still laundered into a `flush-failure` diagnostic by `GraphRuntime.#onTick`, which blames the flush rather than the missing Track. That is issue [#114](https://github.com/chahyasantoso/motion5/issues/114) section 3.3's third consequence, unchanged, and it needs its own issue.
-- Open from the `T4` review, needing its own issue rather than a fold-in: `buildMotion`'s `catch` calls `releaseMotion` but never `motion.dispose()`, so a throw after `new Motion(...)` succeeds leaves an undisposed Motion that no map can reach. Only defensive paths reach it today, `motion.play()` and the duplicate-consumer guard, because `trigger-driver-unavailable` throws from `create` before the Motion exists.
+- Open from the `T4` review, filed rather than folded in: issue [#133](https://github.com/chahyasantoso/motion5/issues/133), a rollback failure can outrank the failure that triggered it, in both `addMotion` and `#addTrack`; and issue [#134](https://github.com/chahyasantoso/motion5/issues/134), `buildMotion`'s `catch` releases the trigger but never disposes the Motion, so a throw after construction leaks an instance no map can reach.
 
 ## Guardrails
 
@@ -85,7 +86,7 @@ The migration landed on this branch in commit [`01cd580`](https://github.com/cha
 - No graph rebuild or motionpath wholesale copy.
 - No compatibility aliases, flags, facades, or placeholder tests.
 - No renderer imports in core.
-- Every recovery slice starts with a failing-first test on its parent commit.
+- Every recovery slice starts with a failing-first test on its parent commit, and the failing run is archived on `ci-logs` rather than described in prose.
 - Docs, types, tests, and status move together.
 - An evidence case id names exactly one test in the whole suite.
 - A required check that only runs for some base branches is not a gate. Do not filter `pull_request` by base.
