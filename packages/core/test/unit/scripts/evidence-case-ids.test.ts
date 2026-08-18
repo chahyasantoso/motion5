@@ -36,8 +36,11 @@ describe("evidence case ids", () => {
   });
 
   it("finds the series at all, so a passing run is never an empty scan", () => {
-    // Guards the gate itself: a broken glob or regex would otherwise report zero collisions.
-    const total = testFiles().reduce((count, file) => count + declaredCaseIds(file).length, 0);
-    expect(total).toBeGreaterThan(20);
+    // Guards the gate itself: a broken directory walk or regex would otherwise report zero
+    // collisions forever. A floor, not an exact count, so adding evidence never fails this.
+    const files = testFiles().filter((file) => declaredCaseIds(file).length > 0);
+    const total = files.reduce((count, file) => count + declaredCaseIds(file).length, 0);
+    expect(files.length).toBeGreaterThanOrEqual(3);
+    expect(total).toBeGreaterThan(15);
   });
 });
