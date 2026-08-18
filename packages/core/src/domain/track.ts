@@ -85,8 +85,17 @@ export class Track {
     if (!Number.isFinite(value)) throw new TypeError("Track progress must be finite.");
     const next = Math.max(0, Math.min(1, value));
     if (Object.is(next, this.#progress)) return false;
-    this.#progress = next;
+    // The timeline call is the commit point, and it stays last. #timeline.progress is injected
+    // Interpolator code, so it can refuse a value this leaf already validated and clamped;
+    // assigning first made that refused value observable through the getter while the timeline
+    // still held the previous one. Worse than a stale field, because the assignment also fed the
+    // short circuit above: a retry compared equal to a value the timeline never accepted, so it
+    // returned early and the timeline never got another chance. Nothing is caught and undone
+    // here, since nothing is written until the call returns. The guarantee covers this Track's
+    // own bookkeeping only: renderer state a timeline mutated before throwing belongs to the
+    // interpolator adapter, not to the leaf. Issue #149, and ADR-004 for the ownership line.
     this.#timeline.progress(next);
+    this.#progress = next;
     this.#dirty = true;
     return true;
   }
