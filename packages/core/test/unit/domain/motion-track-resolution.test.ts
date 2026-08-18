@@ -147,7 +147,9 @@ describe("Motion resolves Tracks by id", () => {
     );
   });
 
-  it("C-9 failed addTrack is atomic when the compiled Track is unavailable", () => {
+  // C-9 through C-13 belong to option-c-track-resolution.test.ts. The unit additions below start
+  // at C-17 so one id never names two cases; C-14 through C-16 are the disposal ownership suite.
+  it("C-17 failed addTrack is atomic when the compiled Track is unavailable", () => {
     // A rejected mutation must not leave a ghost id that poisons the next progress sweep.
     const { motion } = setup([]);
     expect(() => motion.addTrack({ id: "missing" })).toThrow(
@@ -157,7 +159,7 @@ describe("Motion resolves Tracks by id", () => {
     expect(() => motion.seek(0.5)).not.toThrow();
   });
 
-  it("C-10 failed replaceTrack preserves the prior entry and can be retried", () => {
+  it("C-18 failed replaceTrack preserves the prior entry and can be retried", () => {
     // Failed replacement must not overwrite live metadata before its new compiled Track exists.
     const { motion, registry, interpolator } = setup(["arm"]);
     const before = motion.tracks[0];
@@ -171,7 +173,7 @@ describe("Motion resolves Tracks by id", () => {
     expect(motion.tracks[0]?.duration).toBe(200);
   });
 
-  it("C-11 failed addTrack is idempotently rejected without poisoning duplicate tracking", () => {
+  it("C-19 failed addTrack is idempotently rejected without poisoning duplicate ids", () => {
     // A second identical failure proves the first attempt never inserted the id into #trackMap.
     const { motion } = setup([]);
     const expected = 'Motion track "missing" has no compiled Track.';
@@ -179,7 +181,7 @@ describe("Motion resolves Tracks by id", () => {
     expect(() => motion.addTrack({ id: "missing" })).toThrow(expected);
   });
 
-  it("C-12 failed replaceTrack is idempotently rejected and preserves the entry identity", () => {
+  it("C-20 failed replaceTrack is idempotently rejected and preserves entry identity", () => {
     // Repeated failure must not mutate either the entry array or its duplicate-id bookkeeping.
     const { motion, registry } = setup(["arm"]);
     const before = motion.tracks[0];
