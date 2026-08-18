@@ -35,10 +35,7 @@ This document reports current implementation reality. The detailed contract rema
 
 ## Compiled Track ownership (option C)
 
-| Slice     | Scope                                                              | State                                                                                     |
-| --------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------- |
-| Option C  | Motion resolves compiled Tracks by id through an injected resolver | green, ready to squash, [#126](https://github.com/chahyasantoso/motion5/pull/126)         |
-| Follow-up | Review items 4 to 8: evidence ids, entry shape, ordering comments  | merged into #126, [#130](https://github.com/chahyasantoso/motion5/pull/130)               |
+**Slice:** Motion resolves compiled Tracks by id through an injected resolver. Green and ready to squash in PR [#126](https://github.com/chahyasantoso/motion5/pull/126). The review follow-up covering items 4 to 8 landed through PR [#130](https://github.com/chahyasantoso/motion5/pull/130) and is already part of that branch, so there is nothing outstanding behind it.
 
 `MotionTrackEntry` carries `{ id, duration? }`. `MotionOptions` requires `resolveTrack: (id) => Track | undefined`, and `Motion` calls it at every point of use rather than storing a compiled `Track`. `Engine`'s `tracks` map is the single owner, so the `addMotionTrack` and `replaceMotionTrack` hooks no longer resolve Tracks on `Motion`'s behalf.
 
@@ -46,7 +43,7 @@ This is the long-term fix deferred by section 8.1 of `docs/IMPLEMENTATION-PLAN-t
 
 Review of #126 amended one locked decision. `disposeTracks` now defaults to `false`, because option C hands Track lifetime to the resolver's caller and a `Motion` must not dispose a Track it merely resolved. `Engine` passes `false` explicitly, so production behavior is unchanged either way. The rationale is in ADR-031 under `Disposal ownership`, and the amendment is recorded in the corrections doc so no reader trusts an earlier claim that C1 through C10 all landed verbatim.
 
-The rest of the review landed through #130 and is now part of this branch: one flat evidence id series with a gate that enforces it, one entry shape from both construction paths, the hook-ordering comments in `ProjectRuntime`, and a single definition of "semantic files" in `docs/PR-WORKFLOW.md`. Review items 9 to 11 stay open by design; 9 and 11 are recorded in the corrections doc and below, and 10 needs its own issue.
+The rest of the review is now on the branch: one flat evidence id series with a gate that enforces it, one entry shape from both construction paths, the hook-ordering comments in `ProjectRuntime`, and a single definition of "semantic files" in `docs/PR-WORKFLOW.md`. Review items 9 to 11 stay open by design; 9 and 11 are recorded in the corrections doc and below, and 10 needs its own issue.
 
 **CI status:** 7/7 green on run [32084286445](https://github.com/chahyasantoso/motion5/actions/runs/32084286445), including the write-enabled `format` job, which found no drift. The branch carries 26 commits, past the twenty-five-commit recut tripwire in `docs/PR-WORKFLOW.md`. It is not being recut: the overrun is push granularity from an API-driven workflow plus one absorbed follow-up PR, not a second revert or a widened slice, and the squash collapses it to one commit. Recorded rather than waived silently.
 
