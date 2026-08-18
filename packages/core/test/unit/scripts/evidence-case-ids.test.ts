@@ -13,6 +13,10 @@ import { fileURLToPath } from "node:url";
 // decisions; reusing those for test cases would have made every citation two-valued. `E-` belongs
 // to edge identity, ordering, and labels (issue #137 and ADR-034). `R-` is reserved for the next
 // series, so the pattern does not have to be widened again to admit one.
+// decisions; reusing those for test cases would have made every citation two-valued. `R-` belongs
+// to the trigger progress range fix, issue #138 and ADR-034. `E-` is reserved here for the
+// edgeKey separator fix, issue #137, so that whichever of those two lands second rebases instead
+// of widening this pattern a second time.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE = /it\(\s*"((?:C|E|R|T)-\d+)/g;
