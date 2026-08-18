@@ -38,18 +38,75 @@ export interface GraphBuildResult {
   readonly graph?: GraphIR;
   readonly diagnostics: readonly Diagnostic[];
 }
-export function canonicalizeProjection(projection: InputProjection): string {
-  if (projection.pick !== undefined)
-    return `pick:${[...projection.pick].sort(compareCodeUnits).join(",")}`;
-  const map = projection.map ?? {};
-  return `map:${Object.keys(map)
-    .sort(compareCodeUnits)
-    .map((key) => `${key}=${map[key]}`)
-    .join(",")}`;
+/**
+ * One encoded field of an edge identity, prefixed with its own length.
+ *
+ * The id guards reserve only `/` and `~`, and a target is an arbitrary string, so `|`, `:`,
+ * `,` and `=` are all authorable: a plain separator can be forged from inside a field value.
+ * A length prefix makes the encoding prefix-free, which is what makes `edgeKey` injective
+ * rather than merely usually-distinct.
+ */
+function field(value: string): string {
+  return `${value.length}:${value}`;
 }
+/**
+ * The ordering form of a target. `"-"` sorts before `":"`, so an absent target orders before
+ * every authored one, including the empty string, and the comparator separates exactly the
+ * edges the identity encoding separates.
+ */
+function targetOrder(edge: GraphEdge): string {
+  return edge.target === undefined ? "-" : `:${edge.target}`;
+}
+export function canonicalizeProjection(projection: InputProjection): string {
+  if (projection.pick !== undefined) {
+    const pickKeys = [...projection.pick].sort(compareCodeUnits);
+    return `pick:${pickKeys.map(field).join("")}`;
+  }
+  const map = projection.map ?? {};
+  const mapKeys = Object.keys(map).sort(compareCodeUnits);
+  return `map:${mapKeys.map((key) => `${field(key)}${field(map[key]!)}`).join("")}`;
+}
+/**
+ * Edge identity, and nothing else: two keys are equal exactly when the edges are one edge.
+ *
+ * Ordering belongs to `compareEdges` and the readable label to `describeEdge`. One string
+ * cannot own all three jobs, because injectivity wants length prefixes while the other two
+ * want the field values themselves.
+ */
 export function edgeKey(edge: GraphEdge): string {
   const projection = edge.projection ? canonicalizeProjection(edge.projection) : "";
-  return `${edge.observerId}|${edge.sourceId}|${edge.role}|${edge.target ?? ""}|${projection}`;
+  return [
+    field(edge.observerId),
+    field(edge.sourceId),
+    field(edge.role),
+    // "-" for an absent target, so an authored target of "" is not the same edge as no target.
+    edge.target === undefined ? "-" : field(edge.target),
+    field(projection),
+  ].join("");
+}
+/**
+ * The single ordering owner for observation edges.
+ *
+ * Field by field, never derived from `edgeKey`. This comparator decides published values in
+ * `runtime/graph-publisher.ts`: it picks the blocked upstream that gets named, it feeds
+ * `firstPendingEdge`, and it sets output merge precedence, where the later write wins.
+ * Sorting by an encoded identity would make that precedence depend on how long an id is.
+ */
+export function compareEdges(a: GraphEdge, b: GraphEdge): number {
+  return (
+    compareCodeUnits(a.observerId, b.observerId) ||
+    compareCodeUnits(a.sourceId, b.sourceId) ||
+    compareCodeUnits(a.role, b.role) ||
+    compareCodeUnits(targetOrder(a), targetOrder(b)) ||
+    compareCodeUnits(
+      a.projection ? canonicalizeProjection(a.projection) : "",
+      b.projection ? canonicalizeProjection(b.projection) : "",
+    )
+  );
+}
+/** The readable edge label for diagnostics and error text. Never an identity, never a key. */
+export function describeEdge(edge: GraphEdge): string {
+  return `${edge.observerId} <- ${edge.sourceId} (${edge.role})`;
 }
 function freeze<T>(value: T): T {
   return Object.freeze(value);
@@ -324,10 +381,12 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
       const key = edgeKey(edge);
       if (edgeKeys.has(key))
         diagnostics.push(
-          diag("observation-duplicate", edge.observerId, `Duplicate observation edge "${key}".`, [
+          diag(
+            "observation-duplicate",
             edge.observerId,
-            edge.sourceId,
-          ]),
+            `Duplicate observation edge ${describeEdge(edge)}.`,
+            [edge.observerId, edge.sourceId],
+          ),
         );
       edgeKeys.add(key);
       if (!known.has(edge.sourceId))
