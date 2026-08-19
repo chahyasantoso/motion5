@@ -44,6 +44,7 @@ Optional implementations you opt into at your composition root.
 - `createGsapInterpolator(gsap)` and `createGsapOneTweenInterpolator(gsap)`, plus the structural types `GsapLike`, `GsapTimelineLike`, `GsapTweenLike`. Core never imports GSAP; you hand it in.
 - `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?, metadata?)`, plus `DomPatchAdapter`, `DomPatchWriter`, `DomTarget`, `DomTargetResolver`, `StageLike`.
 - `createScrollTriggerPort(source)` wraps a `ScrollSource` as a `TriggerPort`.
+- `createGsapScrollSource(scrollTrigger, options)`, plus the structural types `GsapScrollTriggerLike`, `GsapScrollTriggerInstanceLike`, and `GsapScrollSourceOptions`. Core never imports GSAP; you hand in `ScrollTrigger` and keep `gsap.registerPlugin(ScrollTrigger)` at your own composition root.
 - `FrameSource`, and the default graph builder.
 
 ## @motion5/core/plugins/transform and /plugins/fk

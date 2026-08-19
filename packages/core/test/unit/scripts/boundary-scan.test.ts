@@ -1,6 +1,7 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   bannedSymbol,
@@ -9,6 +10,7 @@ import {
   importsCoreInternals,
   importsRenderer,
   scan,
+  walk,
 } from "../../../../../scripts/boundary-scan.mjs";
 import {
   bannedSymbolFixture,
@@ -18,6 +20,8 @@ import {
   publicExportViolationFixture,
   rendererViolationFixture,
 } from "../../../../../scripts/boundary-scan-fixtures";
+
+const root = fileURLToPath(new URL("../../../../..", import.meta.url));
 
 /**
  * Plants one of every violation class the scanner owns into a throwaway tree:
@@ -112,5 +116,14 @@ describe("boundary scan planted violations", () => {
 
   it("executes the shipped scanner against the current tree", async () => {
     expect(await scan()).toEqual([]);
+  });
+
+  it("G-5: no file under packages/core/src imports gsap", async () => {
+    const offenders: string[] = [];
+    for (const path of await walk(join(root, "packages", "core", "src"))) {
+      const source = await readFile(path, "utf8");
+      if (/(?:from|import)\s*["']gsap(?:["'\/])/.test(source)) offenders.push(path);
+    }
+    expect(offenders).toEqual([]);
   });
 });

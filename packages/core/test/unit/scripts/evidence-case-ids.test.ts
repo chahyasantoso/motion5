@@ -49,9 +49,14 @@ import { fileURLToPath } from "node:url";
 // ADR-040). It owns how elapsed clock time becomes a cycle index, a direction, and a progress
 // value. `T-` owns which driver a declared trigger gets and `R-` owns what range may reach
 // `Motion` at all, so this extends neither: it is the arithmetic between those two questions.
+//
+// `G-` belongs to the GSAP-backed scroll source producer seam (issue #163): extracting the demo's
+// ScrollTrigger wiring into a core adapter that takes `ScrollTrigger` as an injected structural
+// dependency. It owns how a producer turns subscriber churn into exactly one lazily created
+// instance and its teardown.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:B|C|D|E|K|L|M|P|R|S|T)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:B|C|D|E|G|K|L|M|P|R|S|T)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
