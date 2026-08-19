@@ -4,7 +4,7 @@ Grouped by entrypoint, because the entrypoint is the contract. `packages/core/pa
 
 ## @motion5/core
 
-**Engine and handles.** `Engine`, and the types `ProjectHandle` and `TrackHandle`.
+**Engine and handles.** `Engine`, and the types `EngineOptions`, `ProjectHandle` and `TrackHandle`.
 
 `new Engine({ clock, interpolator, scheduler, plugins?, triggerFactory? })` validates all three ports at construction. `engine.load(project)` returns a `ProjectHandle`:
 
@@ -27,7 +27,11 @@ A `TrackHandle` carries `id`, `track`, and `remove()`, `replace(next)`, `addObse
 
 **Plugins.** `PluginRegistry`, and the types `PluginDefinition` and `ResolvedPlugins`.
 
-**Ports.** `createManualClock`, `createManualTriggerPort`, `createDefaultTriggerFactory`, `createTriggerFactory`, and the assertions `assertClock`, `assertInterpolator`, `assertScheduler`, `assertTriggerPort`, `assertTriggerFactory`. Port types: `TriggerPort`, `Interpolator`, `InterpolationTimeline`, `ClockBinding`, `ClockConsumer`, `CreatedTrigger`, `TriggerFactory`, `TriggerFactoryContext`, `TriggerFactoryOptions`, `ScrollSource`, `ScrollSourceResolver`, `ScrollSourceResolverContext`.
+**Ports.** `createManualClock`, `createMicrotaskScheduler`, `createManualTriggerPort`, `createDefaultTriggerFactory`, `createTriggerFactory`, and the assertions `assertClock`, `assertInterpolator`, `assertScheduler`, `assertTriggerPort`, `assertTriggerFactory`. Port types: `Clock`, `ClockTick`, `Scheduler`, `Cancel`, `SchedulerHost`, `MicrotaskSchedulerOptions`, `TriggerPort`, `Interpolator`, `InterpolationTimeline`, `ClockBinding`, `ClockConsumer`, `CreatedTrigger`, `TriggerFactory`, `TriggerFactoryContext`, `TriggerFactoryOptions`, `ScrollSource`, `ScrollSourceResolver`, `ScrollSourceResolverContext`.
+
+The port types are exported so you can write a reusable adapter or a typed factory. An object literal always satisfied these contracts structurally; naming one in a signature is what needed the export.
+
+`createMicrotaskScheduler(options?)` is the shipped `Scheduler`. It collects jobs and runs them in one pass on `options.host`, which defaults to a promise microtask, so a pending progress change is applied in the turn after the one that produced it. Cancellation is honoured right up to the moment a job runs, a job scheduled from inside a job runs in the next pass rather than extending the current one, and every job in a pass runs even when one of them throws. Pass `onError` to intercept the single failure a pass reports; without it the failure leaves through the host's own channel, which for the default host is an unhandled rejection. See ADR-038 for the pacing decision and the alternatives rejected.
 
 **Version.** `CORE_VERSION`, which is the package version and is independent of the schema version.
 
@@ -36,6 +40,7 @@ A `TrackHandle` carries `id`, `track`, and `remove()`, `replace(next)`, `addObse
 Optional implementations you opt into at your composition root.
 
 - `createBrowserClock(frameSource)` returns a `Clock` with `dispose()`. `frameSource` is `{ requestFrame, cancelFrame }`, so you pass `requestAnimationFrame` in rather than having it imported for you. A listener that throws no longer kills the frame loop: the next frame is requested before the error escapes.
+- `createMicrotaskScheduler(options?)`, plus the types `SchedulerHost` and `MicrotaskSchedulerOptions`. The same factory the root entry names; there is one implementation reachable from two declared paths, exactly like the trigger factory.
 - `createGsapInterpolator(gsap)` and `createGsapOneTweenInterpolator(gsap)`, plus the structural types `GsapLike`, `GsapTimelineLike`, `GsapTweenLike`. Core never imports GSAP; you hand it in.
 - `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?, metadata?)`, plus `DomPatchAdapter`, `DomPatchWriter`, `DomTarget`, `DomTargetResolver`, `StageLike`.
 - `createScrollTriggerPort(source)` wraps a `ScrollSource` as a `TriggerPort`.
@@ -53,7 +58,7 @@ Registering both is the rig case: `fk` produces the transform outputs that `tran
 
 Test doubles, supported for your tests and examples rather than production rendering: `createFakeInterpolator`, `createFakeScheduler`, `createFakeTriggerPort`, `createFakeTrackRegistry`, and `ScheduledJob`.
 
-`createFakeScheduler()` is the pragmatic answer to the missing scheduler: it collects jobs and exposes `pending` and `flush()`, which is exactly what a deterministic test wants.
+`createFakeScheduler()` collects jobs and exposes `pending` and `flush()`, which is what a deterministic test wants: the test decides when a pass happens, and asserts on what was queued before it. Anything that renders should compose `createMicrotaskScheduler` instead.
 
 ## @motion5/core/internal
 
@@ -67,6 +72,4 @@ A private channel between the core and React packages: `Patch`, `PatchListener`,
 
 These are real and worth knowing before you plan around them.
 
-1. **No `Scheduler` implementation ships.** `assertScheduler` is exported but no production scheduler is. Write your own, as in [Getting started](./getting-started.md), or use `createFakeScheduler` from `/ports/fakes`.
-2. **The `Clock`, `ClockTick`, `Scheduler`, and `Cancel` types are not exported,** and neither is `EngineOptions`. Object literals still typecheck structurally, so this bites you only when you want to name the type of your own clock or scheduler in a signature.
-3. **Neither package is published,** and both are `private` at `0.0.0`. Packaged consumer verification is still planned work, so treat the `exports` map as the contract and expect the install story to change.
+1. **Neither package is published,** and both are `private` at `0.0.0`. Packaged consumer verification is still planned work, so treat the `exports` map as the contract and expect the install story to change.
