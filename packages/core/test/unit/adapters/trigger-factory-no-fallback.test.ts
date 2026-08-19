@@ -39,8 +39,11 @@ describe("T5 no manual trigger fallback", () => {
     // branch returns is a fallback no matter how the branches below it read.
     expect(manualPortCalls(FACTORY_SOURCE)).toBe(1);
     const call = FACTORY_SOURCE.indexOf("createManualTriggerPort()");
-    const time = FACTORY_SOURCE.indexOf('if (trigger.type === "time") return');
-    const scroll = FACTORY_SOURCE.indexOf('if (trigger.type === "scroll") {');
+    // Anchored on the branch conditions, not whole statements. Prettier owns where a branch body
+    // wraps, and it moved the time branch's `return` to its own line once ADR-040 gave
+    // `createTimeDriver` a second argument. Position is the claim here; line breaks never were.
+    const time = FACTORY_SOURCE.indexOf('trigger.type === "time"');
+    const scroll = FACTORY_SOURCE.indexOf('trigger.type === "scroll"');
     // Guards the guard: two missing needles would otherwise both be -1 and compare as fine.
     expect(time).toBeGreaterThan(-1);
     expect(scroll).toBeGreaterThan(-1);

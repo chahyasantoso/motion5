@@ -86,6 +86,14 @@
     {
       "id": "b-clock-tick-error-boundaries",
       "test": "packages/core/test/unit/runtime/clock-consumer-error-boundary.test.ts"
+    },
+    {
+      "id": "l-time-loop-cycle",
+      "test": "packages/core/test/unit/adapters/time-loop-cycle.test.ts"
+    },
+    {
+      "id": "l-time-loop-semantics",
+      "test": "packages/core/test/integration/trigger-time-loop.test.ts"
     }
   ]
 }

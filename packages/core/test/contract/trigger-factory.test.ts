@@ -56,11 +56,12 @@ describe("trigger contract T1/T2/T3", () => {
     expect(ruleIds({ type: "time", duration: 1000, autoplay: false })).toEqual([
       "trigger-time-autoplay-unsupported",
     ]);
-    expect(ruleIds({ type: "time", duration: 1000, repeat: 0 })).toEqual([
-      "trigger-time-repeat-unsupported",
-    ]);
+    // The loop fields are supported since ADR-040, so the blanket rejection is gone and this case
+    // keeps only what is still unsupported. What replaced it is a loop that cannot loop, and the
+    // rules for that are named by `L-11` and `L-12`.
+    expect(ruleIds({ type: "time", duration: 1000, repeat: 0 })).toEqual([]);
     expect(ruleIds({ type: "time", duration: 1000, yoyo: true })).toEqual([
-      "trigger-time-repeat-unsupported",
+      "trigger-time-yoyo-requires-repeat",
     ]);
   });
 
@@ -69,6 +70,7 @@ describe("trigger contract T1/T2/T3", () => {
       [{}, "trigger-shape"],
       [{ type: "unknown" }, "trigger-shape"],
       [{ type: "time", duration: 0 }, "trigger-time-duration"],
+      [{ type: "time", duration: 1000, repeat: 1.5 }, "trigger-time-repeat-shape"],
       [{ type: "scroll", source: "" }, "trigger-scroll-source"],
       [{ type: "scroll", source: 42 }, "trigger-scroll-source"],
     ] as const;
@@ -76,6 +78,7 @@ describe("trigger contract T1/T2/T3", () => {
     const accepted = [
       { type: "time", duration: 1000 },
       { type: "time", duration: 1000, autoplay: true },
+      { type: "time", duration: 1000, repeat: -1, yoyo: true },
       { type: "manual" },
       { type: "scroll" },
       { type: "scroll", source: "hero" },
@@ -104,6 +107,7 @@ describe("trigger contract T1/T2/T3", () => {
     const cases = [
       [{ type: "manual" }, true, "motion"],
       [{ type: "time", duration: 1000 }, false, "driver"],
+      [{ type: "time", duration: 1000, repeat: -1, yoyo: true }, false, "driver"],
       [{ type: "scroll", source: "hero" }, false, "none"],
     ] as const;
     for (const [trigger, acceptsExternalSignal, kind] of cases) {

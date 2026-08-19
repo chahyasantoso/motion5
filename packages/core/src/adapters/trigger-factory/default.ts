@@ -33,7 +33,10 @@ export function createTriggerFactory(options: TriggerFactoryOptions = {}): Trigg
       // context.trigger is the canonical narrowed read. context.definition.trigger is raw authored
       // input and is not interchangeable with it.
       const trigger = context.trigger;
-      if (trigger.type === "time") return createTimeDriver(trigger.duration);
+      // The loop fields are forwarded rather than interpreted here. This function selects a driver;
+      // what the driver does with time belongs to the driver and its loop cycle. See ADR-040.
+      if (trigger.type === "time")
+        return createTimeDriver(trigger.duration, { repeat: trigger.repeat, yoyo: trigger.yoyo });
       if (trigger.type === "scroll") {
         const source = options.scroll?.({ ...context, trigger });
         if (source === undefined) {

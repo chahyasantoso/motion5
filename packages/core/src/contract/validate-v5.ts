@@ -130,20 +130,37 @@ export function validateMotionTrigger(trigger: unknown, path: string): Diagnosti
           "Time trigger autoplay must be true when present; paused behavior is not supported.",
         ),
       );
-    if (Object.prototype.hasOwnProperty.call(trigger, "repeat"))
+    // `repeat` counts the passes after the initial one, so 0 is a single pass and -1 is infinite.
+    // The blanket rejection this replaced existed only because loop semantics were undesigned;
+    // ADR-040 designs them, so the fields are now honored rather than refused.
+    const repeatValue = typeof trigger.repeat === "number" ? trigger.repeat : undefined;
+    const repeatValid =
+      repeatValue !== undefined && Number.isInteger(repeatValue) && repeatValue >= -1;
+    if (trigger.repeat !== undefined && !repeatValid)
       diagnostics.push(
         issue(
-          "trigger-time-repeat-unsupported",
+          "trigger-time-repeat-shape",
           `${path}.repeat`,
-          "Time trigger repeat is not supported yet.",
+          "Time trigger repeat must be an integer, -1 for infinite or 0 and above.",
         ),
       );
-    if (Object.prototype.hasOwnProperty.call(trigger, "yoyo"))
+    if (trigger.yoyo !== undefined && typeof trigger.yoyo !== "boolean")
       diagnostics.push(
         issue(
-          "trigger-time-repeat-unsupported",
+          "trigger-time-yoyo-shape",
           `${path}.yoyo`,
-          "Time trigger yoyo is not supported yet.",
+          "Time trigger yoyo must be a boolean when present.",
+        ),
+      );
+    // A yoyo with nothing to reverse would be a field accepted and then ignored, which rule 6 of
+    // ADR-033 forbids. `false` is refused for the same reason `true` is: neither has any effect
+    // without a repeat, so the rule is about presence rather than value.
+    if (trigger.yoyo !== undefined && !(repeatValid && repeatValue !== 0))
+      diagnostics.push(
+        issue(
+          "trigger-time-yoyo-requires-repeat",
+          `${path}.yoyo`,
+          "Time trigger yoyo requires repeat to be -1 or greater than zero.",
         ),
       );
   }

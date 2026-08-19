@@ -79,7 +79,8 @@ A motion has a unique `id`, a `trigger`, and a `tracks` array. Motion owns the s
 The trigger type is `scroll`, `time`, or `manual`, and the type is enforced rather than decorative. A declared type selects a real driver or the load fails. No type falls back to manual, and no trigger field is accepted and then ignored. See ADR-033.
 
 - `{ type: "manual" }` takes no other fields. Progress arrives through `signal(motionId, { type, progress })`, and the Motion also advances on the project clock.
-- `{ type: "time", duration }` requires `duration` as a finite number greater than zero, in the same units as the clock delta. The driver emits elapsed time over `duration`, clamped to `1`, latches there, and emits nothing further. `autoplay` may be absent or `true`; playback always starts.
+- `{ type: "time", duration }` requires `duration` as a finite number greater than zero, in the same units as the clock delta. The driver emits elapsed time over `duration` and stops emitting once the loop it was given has finished. `autoplay` may be absent or `true`; playback always starts.
+- `{ type: "time", duration, repeat, yoyo }` loops. Both loop fields are optional. `repeat` counts the passes after the initial one, so a finite loop runs `repeat + 1` cycles and `repeat: 0` is a single pass; `-1` is infinite and is the only spelling for it, so the field stays serializable. `yoyo` reverses every odd cycle and requires a `repeat` that repeats. Ping-pong is `{ repeat: -1, yoyo: true }` rather than a third field. A cycle is half-open at its start and closed at its end, so a tick landing exactly on a boundary emits that cycle's end state rather than skipping it. One tick produces one emission, at the position the clock reached; a tick that crossed several cycles does not replay them. See ADR-040.
 - `{ type: "scroll", source }` is push-driven and registers no clock consumer, so a clock tick never moves it. `source` is a serializable string key resolved against an application-owned registry injected at load. Core never receives a selector, an element, or an animation-engine object.
 
 A driver-backed Motion rejects `signal()` with `Motion has a configured trigger driver and does not accept external signals.` Only `manual` accepts one. `seek(nodeId, progress)` is unaffected, because it is leaf-level scrubbing rather than Motion-level control; on a driver-backed Motion the next driver emission overwrites a seeked value. See ADR-021.
@@ -89,7 +90,9 @@ Every trigger rejection is severity `error`:
 - `trigger-shape` for a non-object trigger, or a `type` outside `scroll`, `time`, and `manual`.
 - `trigger-time-duration` for a `time` trigger whose `duration` is absent, non-numeric, non-finite, or not greater than zero.
 - `trigger-time-autoplay-unsupported` for `autoplay` present and not `true`. `false` is not representable, because explicit paused behavior does not exist yet.
-- `trigger-time-repeat-unsupported` for `repeat` or `yoyo` present at any value, including `0`. Loop semantics are undesigned, and a field that validates has to be honored.
+- `trigger-time-repeat-shape` for a `repeat` that is not an integer of `-1` or above.
+- `trigger-time-yoyo-shape` for a `yoyo` that is not a boolean.
+- `trigger-time-yoyo-requires-repeat` for a `yoyo` whose `repeat` is absent or `0`, at either boolean value. Neither `true` nor `false` does anything without a repeat, and a field accepted and then ignored is what ADR-033 forbids.
 - `trigger-scroll-source` for a `source` present but not a non-empty string.
 - `trigger-driver-unavailable` at `load()` or `addMotion` when a declared `scroll` trigger resolves no registered source. A missing `source` key is not a validation error: whether a key is required is the injected factory's business, and an unresolvable one fails at construction naming the motion id and the key.
 
