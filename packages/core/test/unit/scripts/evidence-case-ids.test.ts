@@ -34,9 +34,14 @@ import { fileURLToPath } from "node:url";
 // `S-` belongs to progress state commits inside `Track` (issue #149). It answers what internal
 // bookkeeping a rejected interpolation timeline write may expose, not which Track a Motion owns
 // or what a refused Motion mutation commits, so it does not extend either `C-` or `M-`.
+//
+// `K-` belongs to the public port surface: the shipped Scheduler implementation (issue #155) and
+// the five port contracts the entry now names (issue #158). Every series above owns behavior
+// inside one object; `K-` owns what a consumer outside the package can construct and name at all,
+// which is why the scheduler cases and the declaration cases share one series rather than two.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:C|D|E|M|P|R|S|T)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:C|D|E|K|M|P|R|S|T)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })

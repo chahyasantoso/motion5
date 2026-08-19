@@ -74,6 +74,14 @@
     {
       "id": "p2-runtime-smells",
       "test": "packages/core/test/integration/p2-runtime-smells.test.ts"
+    },
+    {
+      "id": "k-production-scheduler",
+      "test": "packages/core/test/contract/microtask-scheduler.test.ts"
+    },
+    {
+      "id": "k-public-port-types",
+      "test": "packages/core/test/unit/scripts/public-port-types.test.ts"
     }
   ]
 }
