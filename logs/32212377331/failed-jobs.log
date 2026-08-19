@@ -1,0 +1,71 @@
+failing-first evidence	Replay assertion-level red against base and green against ref	﻿2026-08-19T03:30:36.0069333Z ##[group]Run set -euo pipefail
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0069711Z ^[[36;1mset -euo pipefail^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0069984Z ^[[36;1mmkdir -p audit-logs/failing-first^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0070294Z ^[[36;1mref_sha=$(git rev-parse HEAD)^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0070938Z ^[[36;1mbase_sha=${AUDIT_BASE:+$(git rev-parse "$AUDIT_BASE")}^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0071616Z ^[[36;1mbase_sha=${base_sha:-$(git rev-parse HEAD^)}^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0072633Z ^[[36;1mgit diff --name-only --diff-filter=AM "$base_sha" "$ref_sha" -- '*.test.ts' '*.test.tsx' > audit-logs/failing-first/new-tests.txt^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0073719Z ^[[36;1mif [ ! -s audit-logs/failing-first/new-tests.txt ]; then^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0074328Z ^[[36;1m  test -n "$FAILING_FIRST_EXCEPTION"^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0075119Z ^[[36;1m  printf 'exception: %s\n' "$FAILING_FIRST_EXCEPTION" > audit-logs/failing-first/exception.txt^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0075934Z ^[[36;1m  exit 0^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0076256Z ^[[36;1mfi^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0076591Z ^[[36;1mgit checkout -f "$base_sha"^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0077256Z ^[[36;1mgit checkout "$ref_sha" -- packages/core/test packages/react/test^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0078072Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund > audit-logs/failing-first/base-install.log 2>&1^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0079111Z ^[[36;1mif xargs -a audit-logs/failing-first/new-tests.txt npx vitest run --reporter=json --outputFile=audit-logs/failing-first/base.json > audit-logs/failing-first/base-run.log 2>&1; then exit 1; fi^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0079961Z ^[[36;1mnode --input-type=module <<'NODE'^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0080285Z ^[[36;1mimport { readFile } from "node:fs/promises";^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0081081Z ^[[36;1mconst report = JSON.parse(await readFile("audit-logs/failing-first/base.json", "utf8"));^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0081746Z ^[[36;1mconst failures = (report.testResults ?? []).filter((entry) => entry.status === "failed");^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0082686Z ^[[36;1mconst infrastructure = failures.filter((entry) => /Cannot find|failed to resolve|config|transform|import-resolution/i.test(String(entry.message ?? entry.assertionResults ?? "")));^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0083889Z ^[[36;1mif (infrastructure.length) throw new Error(`import-resolution/config red: ${infrastructure.length}`);^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0084530Z ^[[36;1mif (!failures.length) throw new Error("base red was not assertion-level");^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0085112Z ^[[36;1mconsole.log(`assertion-level red: ${failures.length}; import-resolution/config red: 0`);^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0085556Z ^[[36;1mNODE^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0085773Z ^[[36;1mgit checkout -f "$ref_sha"^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0086238Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund > audit-logs/failing-first/ref-install.log 2>&1^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0087170Z ^[[36;1mxargs -a audit-logs/failing-first/new-tests.txt npx vitest run --reporter=json --outputFile=audit-logs/failing-first/ref.json > audit-logs/failing-first/ref-run.log 2>&1^[[0m
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0124649Z shell: /usr/bin/bash -e {0}
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0124914Z env:
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0125097Z   NODE_VERSION: 24
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0125300Z   AUDIT_BASE: 
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0125515Z   FAILING_FIRST_EXCEPTION: 
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0125759Z ##[endgroup]
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0436255Z Note: switching to '144d789bde11b75dff4323ddb13a33f7c77b5c69'.
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0436762Z 
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0437288Z You are in 'detached HEAD' state. You can look around, make experimental
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0437957Z changes and commit them, and you can discard any commits you make in this
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0438532Z state without impacting any branches by switching back to a branch.
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0438827Z 
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0439150Z If you want to create a new branch to retain commits you create, you may
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0439704Z do so (now or later) by using -c with the switch command. Example:
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0439971Z 
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0440110Z   git switch -c <new-branch-name>
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0440285Z 
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0440412Z Or undo this operation with:
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0441061Z 
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0441165Z   git switch -
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0441293Z 
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0441888Z Turn off this advice by setting config variable advice.detachedHead to false
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0442471Z 
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:36.0443005Z HEAD is now at 144d789 docs: refresh verified remaining scope
+failing-first evidence	Replay assertion-level red against base and green against ref	2026-08-19T03:30:41.3248861Z ##[error]Process completed with exit code 1.
+audit report	Write durable ci-logs summary	﻿2026-08-19T03:30:59.5768209Z ##[group]Run set -euo pipefail
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5768911Z ^[[36;1mset -euo pipefail^[[0m
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5769438Z ^[[36;1mmkdir -p ci-logs^[[0m
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5770046Z ^[[36;1mcat > ci-logs/recovery-audit-32212377331.md <<EOF^[[0m
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5770729Z ^[[36;1m# Recovery audit 32212377331^[[0m
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5771254Z ^[[36;1mref: main^[[0m
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5771706Z ^[[36;1mcontract: success^[[0m
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5772202Z ^[[36;1mmutation: success^[[0m
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5772701Z ^[[36;1macceptance: success^[[0m
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5773203Z ^[[36;1mfailing-first: failure^[[0m
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5773714Z ^[[36;1mbuild: success^[[0m
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5774167Z ^[[36;1mEOF^[[0m
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5774926Z ^[[36;1mfor result in "success" "success" "success" "failure" "success"; do test "$result" = success; done^[[0m
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5820653Z shell: /usr/bin/bash -e {0}
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5821414Z env:
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5821823Z   NODE_VERSION: 24
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5822263Z ##[endgroup]
+audit report	Write durable ci-logs summary	2026-08-19T03:30:59.5987601Z ##[error]Process completed with exit code 1.
