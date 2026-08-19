@@ -28,6 +28,9 @@ export function createScrollTriggerPort(source: ScrollSource): TriggerPort & { d
 
   const unsubscribeSource = source.subscribe((progress) => {
     if (disposed) return;
+    // Math.max(0, Math.min(1, NaN)) is NaN, so the clamp alone is not a normalization. Forwarding
+    // a non-finite push would poison Motion.position and defer the throw to the scheduler flush,
+    // where it blames the Track for a value this port handed in.
     if (!Number.isFinite(progress))
       throw new TypeError("ScrollSource progress must be a finite number.");
     const clamped = Math.max(0, Math.min(1, progress));
