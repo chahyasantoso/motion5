@@ -40,6 +40,7 @@ const allowedPublicExports = new Set([
   "GoldenFixture",
   "GoldenValidationFixture",
   "Engine",
+  "EngineOptions",
   "ProjectHandle",
   "TrackHandle",
   "PluginRegistry",
@@ -47,6 +48,8 @@ const allowedPublicExports = new Set([
   "ResolvedPlugins",
   "assertClock",
   "createManualClock",
+  "Clock",
+  "ClockTick",
   "assertTriggerPort",
   "createManualTriggerPort",
   "TriggerPort",
@@ -66,6 +69,11 @@ const allowedPublicExports = new Set([
   "InterpolationTimeline",
   "Interpolator",
   "assertScheduler",
+  "Cancel",
+  "Scheduler",
+  "createMicrotaskScheduler",
+  "MicrotaskSchedulerOptions",
+  "SchedulerHost",
   "CORE_VERSION",
 ]);
 export async function walk(directory) {

@@ -28,7 +28,7 @@ interface QueuedJob {
 /**
  * `Promise` is an ECMAScript intrinsic rather than a host primitive, so this default reaches for no
  * global: no `queueMicrotask`, no `requestAnimationFrame`, no `globalThis`. It therefore works in a
- * browser, in Node, and in a worker without a environment check. Anything that wants a different
+ * browser, in Node, and in a worker without an environment check. Anything that wants a different
  * queue injects a `SchedulerHost`, exactly as `createBrowserClock` takes a `FrameSource`.
  */
 const promiseMicrotaskHost: SchedulerHost = {
