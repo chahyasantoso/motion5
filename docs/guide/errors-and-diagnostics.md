@@ -35,7 +35,8 @@ Warnings load and stay readable. Missing `perspective` alongside 3D content, and
 
 - `trigger-shape`, for a non-object trigger or a type outside `scroll`, `time`, and `manual`.
 - `trigger-time-duration`, for a `time` duration that is absent, non-numeric, non-finite, or not greater than zero.
-- `trigger-time-autoplay-unsupported` and `trigger-time-repeat-unsupported`, for playback fields that would otherwise validate and then be ignored.
+- `trigger-time-autoplay-unsupported`, for a playback field that would otherwise validate and then be ignored.
+- `trigger-time-repeat-shape`, `trigger-time-yoyo-shape`, and `trigger-time-yoyo-requires-repeat`, for the loop fields: a `repeat` that is not an integer of `-1` or above, a `yoyo` that is not a boolean, and a `yoyo` with no repeat to reverse.
 - `trigger-scroll-source`, for a `source` that is present but not a non-empty string.
 - `trigger-driver-unavailable`, at `load()` or `addMotion`, when a declared `scroll` trigger resolves no source. This one is a construction failure, not a validation failure.
 - `plugin-unknown-key`, when no registered plugin claims an authored keyframe key. This is the error you hit first if you forget to register a plugin.
@@ -66,6 +67,7 @@ These are your bugs, and they are loud on purpose rather than clamped or deferre
 - non-finite progress throws `TypeError: Motion progress must be finite.`
 - `signal()` on a driver-backed motion throws, because that motion already has a source of progress.
 - an unknown motion id on `signal` or `destroyMotion` throws `TypeError`.
+- destroying a motion that still owns tracks throws `TypeError`. Remove its tracks first; a motion is destroyed empty.
 - a disposed clock or trigger port throws when subscribed to.
 
 ## When several things fail at once

@@ -45,10 +45,10 @@ Missing perspective is a warning. Zero, negative, non-finite, or non-numeric pre
 
 ### Triggers
 
-A declared trigger type used to be decorative: every type resolved to a manual port, so a v4 document with a `scroll` or `time` trigger loaded and then moved only when something called `signal()`. It is now enforced, and five previously tolerated shapes are rejected. See ADR-033 and the Trigger section of [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md).
+A declared trigger type used to be decorative: every type resolved to a manual port, so a v4 document with a `scroll` or `time` trigger loaded and then moved only when something called `signal()`. It is now enforced, and the shapes listed below are rejected. See ADR-033, ADR-040, and the Trigger section of [AUTHORED-SCHEMA.md](./AUTHORED-SCHEMA.md).
 
 - A `time` trigger requires a finite `duration` greater than zero. Without it the load throws `trigger-time-duration at motions[i].trigger.duration: Time trigger duration must be a finite number greater than zero.`
-- `repeat` and `yoyo` are rejected at any value, including `0`, with `trigger-time-repeat-unsupported`. Drop them. Loop semantics are undesigned, and a field that validates has to be honored.
+- `repeat` and `yoyo` migrate as they are. They were briefly rejected outright, and are not any more: `repeat` counts the passes after the initial one, which is the count the predecessor engine used, so a migrated document keeps its cycle count rather than gaining one. `-1` stays infinite, and ping-pong is `{ repeat: -1, yoyo: true }`. `repeat` must be an integer of `-1` or above (`trigger-time-repeat-shape`), `yoyo` must be a boolean (`trigger-time-yoyo-shape`), and a `yoyo` with no repeat to reverse is rejected at either boolean value (`trigger-time-yoyo-requires-repeat`). `Infinity` is not accepted as a spelling for infinite, so the field stays serializable.
 - `autoplay` may be absent or `true`. `false` is rejected with `trigger-time-autoplay-unsupported`, because explicit paused behavior does not exist yet.
 - A declared `scroll` source with no registered resolver rejects both `load()` and `addMotion` with `trigger-driver-unavailable`, naming the motion id and the source key. Register an application-owned progress source for every scroll Motion you author, or author the Motion as `manual`.
 - `signal()` on a driver-backed Motion now throws `Motion has a configured trigger driver and does not accept external signals.` A v4 consumer that drove a `scroll` or `time` Motion by hand must either move that Motion to `manual` or feed it through its driver. `seek(nodeId, progress)` still works on any node, but the next driver emission overwrites it.
@@ -75,7 +75,7 @@ export function migrateV4ToV5(project) {
 
 This helper is safe only when the v4 producer’s top-level `tracks` is known to mean free tracks. Before applying it, validate that the source is an object, `tracks` is an array or absent, ids are unique, no id contains `/`, no motion is named `~`, and any free references are qualified. If both `tracks` and `freeTracks` exist, fail rather than choose one.
 
-The helper does not touch triggers, and it cannot: dropping `repeat` or inventing a `duration` would be a semantic decision made behind the author's back. Trigger migration is a review step, not a transformation.
+The helper does not touch triggers, and it cannot: dropping `autoplay: false` or inventing a `duration` would be a semantic decision made behind the author's back. Trigger migration is a review step, not a transformation.
 
 ## Semantic review checklist
 
@@ -85,7 +85,7 @@ The helper does not touch triggers, and it cannot: dropping `repeat` or inventin
 - Does 3D content need `perspective`?
 - Are any ids using `/` or the reserved motion id `~`?
 - Are any cycles introduced by qualifying references?
-- Does every `time` trigger carry a `duration`, and has every `repeat`, `yoyo`, and `autoplay: false` been removed?
+- Does every `time` trigger carry a `duration`, has every `autoplay: false` been removed, and does every `repeat` still mean the passes after the first?
 - Does every `scroll` trigger have a registered source, and does any consumer still call `signal()` on it?
 - Does any custom driver or `ScrollSource` push progress outside `[0, 1]`, or a value that can be `NaN`, and rely on it being clamped for them?
 - Does the migrated document serialize deterministically?
