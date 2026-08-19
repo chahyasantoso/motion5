@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
-import type { TrackDefinition } from "../../src/contract/v5";
+import type { AuthoredProperty, TrackDefinition } from "../../src/contract/v5";
 
 function makeHandle() {
   return new Engine({
@@ -32,12 +32,15 @@ describe("adopted track validation and immutability (W3)", () => {
 
     const adopted = handle.adopt(source, owner);
 
+    // An authored keyframe entry is a property or a plugin-named group, so reading stops off one
+    // narrows to the property form first. See ADR-041.
+    const property = adopted.track.keyframes?.x as AuthoredProperty | undefined;
     expect(adopted.track).not.toBe(source);
     expect(Object.isFrozen(adopted.track)).toBe(true);
     expect(Object.isFrozen(adopted.track.keyframes)).toBe(true);
-    expect(Object.isFrozen(adopted.track.keyframes?.x)).toBe(true);
-    expect(Object.isFrozen(adopted.track.keyframes?.x?.stops)).toBe(true);
-    expect(Object.isFrozen(adopted.track.keyframes?.x?.stops[0])).toBe(true);
+    expect(Object.isFrozen(property)).toBe(true);
+    expect(Object.isFrozen(property?.stops)).toBe(true);
+    expect(Object.isFrozen(property?.stops[0])).toBe(true);
 
     handle.destroyAdopted(adopted.id, owner);
     handle.dispose();
@@ -53,7 +56,8 @@ describe("adopted track validation and immutability (W3)", () => {
     const adopted = handle.adopt(source, owner);
 
     // The caller-owned source remains mutable. The runtime-owned clone must not change with it.
-    (source.keyframes!.x!.stops[1] as { p: number; v: unknown }).v = 999;
+    const property = source.keyframes!.x as AuthoredProperty;
+    (property.stops[1] as { p: number; v: unknown }).v = 999;
 
     handle.seek(adopted.id, 1);
     expect(handle.get(adopted.id)?.values).toEqual({ x: 100 });

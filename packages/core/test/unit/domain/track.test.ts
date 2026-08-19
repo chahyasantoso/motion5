@@ -50,6 +50,7 @@ function plugins(...items: ReturnType<typeof createPlugin>[]) {
   return {
     plugins: Object.freeze(items),
     diagnostics: Object.freeze([]),
+    authoredKeyframes: Object.freeze({}),
     internalKeys: Object.freeze([]),
     outputSerializers: Object.freeze({}),
     preparation: emptyPreparation,

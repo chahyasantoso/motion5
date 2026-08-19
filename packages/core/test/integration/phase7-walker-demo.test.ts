@@ -12,6 +12,8 @@ import { act, create } from "react-test-renderer";
 import { createElement } from "react";
 
 describe("Phase 7: Walker Demo Integration Suite", () => {
+  // Both plugins claim `rotation`, so each track names the one it means: a bone is authored under
+  // `fk` and the root under `transform`. Values and published keys are unchanged. See ADR-043.
   const walkerProject: ProjectDefinition = {
     schemaVersion: 5,
     motions: [
@@ -22,40 +24,44 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
           {
             id: "pelvis",
             keyframes: {
-              x: {
-                stops: [
-                  { p: 0, v: 0 },
-                  { p: 1, v: 200 },
-                ],
-              },
-              y: {
-                stops: [
-                  { p: 0, v: 100 },
-                  { p: 1, v: 100 },
-                ],
-              },
-              rotation: {
-                stops: [
-                  { p: 0, v: 0 },
-                  { p: 1, v: 0 },
-                ],
+              transform: {
+                x: {
+                  stops: [
+                    { p: 0, v: 0 },
+                    { p: 1, v: 200 },
+                  ],
+                },
+                y: {
+                  stops: [
+                    { p: 0, v: 100 },
+                    { p: 1, v: 100 },
+                  ],
+                },
+                rotation: {
+                  stops: [
+                    { p: 0, v: 0 },
+                    { p: 1, v: 0 },
+                  ],
+                },
               },
             },
           },
           {
             id: "thigh",
             keyframes: {
-              boneLength: {
-                stops: [
-                  { p: 0, v: 50 },
-                  { p: 1, v: 50 },
-                ],
-              },
-              boneRotation: {
-                stops: [
-                  { p: 0, v: 45 },
-                  { p: 1, v: 45 },
-                ],
+              fk: {
+                length: {
+                  stops: [
+                    { p: 0, v: 50 },
+                    { p: 1, v: 50 },
+                  ],
+                },
+                rotation: {
+                  stops: [
+                    { p: 0, v: 45 },
+                    { p: 1, v: 45 },
+                  ],
+                },
               },
             },
             observes: [
@@ -75,17 +81,19 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
           {
             id: "shin",
             keyframes: {
-              boneLength: {
-                stops: [
-                  { p: 0, v: 40 },
-                  { p: 1, v: 40 },
-                ],
-              },
-              boneRotation: {
-                stops: [
-                  { p: 0, v: -30 },
-                  { p: 1, v: -30 },
-                ],
+              fk: {
+                length: {
+                  stops: [
+                    { p: 0, v: 40 },
+                    { p: 1, v: 40 },
+                  ],
+                },
+                rotation: {
+                  stops: [
+                    { p: 0, v: -30 },
+                    { p: 1, v: -30 },
+                  ],
+                },
               },
             },
             observes: [
@@ -280,12 +288,12 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
     const thighPatch = batch.patches.find((p) => p.nodeId === "walk/thigh");
     const shinPatch = batch.patches.find((p) => p.nodeId === "walk/shin");
 
-    // Thigh (parentRot=0, boneRot=45): worldRot=45, x = 0 + 50*cos(45deg) = 35.355, y = 100 + 50*sin(45deg) = 135.355
+    // Thigh (parentRot=0, own rotation=45): worldRot=45, x = 0 + 50*cos(45deg) = 35.355, y = 100 + 50*sin(45deg) = 135.355
     expect(thighPatch?.values.x).toBeCloseTo(35.355, 2);
     expect(thighPatch?.values.y).toBeCloseTo(135.355, 2);
     expect(thighPatch?.values.rotation).toBeCloseTo(45, 2);
 
-    // Shin (parentRot=45, boneRot=-30): worldRot=15, x = 35.355 + 40*cos(15deg) = 73.997, y = 135.355 + 40*sin(15deg) = 145.707
+    // Shin (parentRot=45, own rotation=-30): worldRot=15, x = 35.355 + 40*cos(15deg) = 73.997, y = 135.355 + 40*sin(15deg) = 145.707
     expect(shinPatch?.values.x).toBeCloseTo(73.997, 2);
     expect(shinPatch?.values.y).toBeCloseTo(145.707, 2);
     expect(shinPatch?.values.rotation).toBeCloseTo(15, 2);

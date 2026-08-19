@@ -58,15 +58,19 @@ function defaultWriter(target: DomTarget, values: Readonly<Record<string, unknow
   else if (hadTransform) removeStyleProperty(target, "transform");
   transformState.set(target, state);
 }
+// No internal-key denylist here. `Track.compose` removes internal keys before publication, so this
+// adapter and every other renderer receive the same filtered values; consulting `internalKeys`
+// again here would be a second owner that only one of the two shipped renderers implements. What
+// remains is renderer business: `offset` is a tween-engine artifact, and `_` cannot reach a patch.
+// See ADR-042.
 function renderableValues(
   values: Readonly<Record<string, unknown>>,
   metadata?: ResolvedPlugins,
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
-  const internalKeys = metadata?.internalKeys ?? [];
   const outputSerializers = metadata?.outputSerializers ?? {};
   for (const [key, value] of Object.entries(values)) {
-    if (key.startsWith("_") || key === "offset" || internalKeys.includes(key)) continue;
+    if (key.startsWith("_") || key === "offset") continue;
     const serializer = outputSerializers[key];
     result[key] = serializer ? serializer(value) : value;
   }

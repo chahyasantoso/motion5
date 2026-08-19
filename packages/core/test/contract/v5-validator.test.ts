@@ -11,6 +11,15 @@ function projectWithKeyframes(keyframes: unknown) {
   };
 }
 
+function ramp(from: number, to: number) {
+  return {
+    stops: [
+      { p: 0, v: from },
+      { p: 1, v: to },
+    ],
+  };
+}
+
 describe("schema v5 validator", () => {
   it("accepts the minimal v5 project", () => {
     const result = validateV5(baseProject());
@@ -108,6 +117,67 @@ describe("schema v5 validator", () => {
     expect(result.valid).toBe(true);
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({ ruleId: "perspective-usage", severity: "warning" }),
+    );
+  });
+
+  it("F-1 accepts plugin-named keyframe groups alongside the flat form", () => {
+    const grouped = projectWithKeyframes({
+      opacity: ramp(0, 1),
+      fk: { boneLength: ramp(10, 20) },
+    });
+    const result = validateV5(grouped);
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toEqual([]);
+  });
+
+  it("F-2 keeps the perspective warning for 3D content authored inside a group", () => {
+    const grouped = projectWithKeyframes({ transform: { rotationY: ramp(0, 1) } });
+    const result = validateV5(grouped);
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ ruleId: "perspective-usage", severity: "warning" }),
+    );
+  });
+
+  it("F-3 rejects a colon in flat, group, and leaf keyframe names", () => {
+    const project = projectWithKeyframes({
+      "fk:length": ramp(0, 1),
+      fk: { "length:ratio": ramp(0, 1) },
+      "trans:form": { rotation: ramp(0, 1) },
+    });
+    const result = validateV5(project);
+    const reserved = result.diagnostics.filter(
+      ({ ruleId }) => ruleId === "keyframes-reserved-separator",
+    );
+    expect(result.valid).toBe(false);
+    expect(reserved.map(({ path }) => path)).toEqual([
+      "motions[0].tracks[0].keyframes.fk:length",
+      "motions[0].tracks[0].keyframes.fk.length:ratio",
+      "motions[0].tracks[0].keyframes.trans:form",
+    ]);
+  });
+
+  it("F-4 reports a grouped leaf stop error at the authored path", () => {
+    const project = projectWithKeyframes({ fk: { lenght: { stops: [{ p: 2, v: 1 }] } } });
+    const result = validateV5(project);
+    expect(result.valid).toBe(false);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        ruleId: "stop-position-range",
+        path: "motions[0].tracks[0].keyframes.fk.lenght.stops[0].p",
+      }),
+    );
+  });
+
+  it("F-5 rejects one compiled key authored under two spellings", () => {
+    const project = projectWithKeyframes({ x: ramp(0, 1), transform: { x: ramp(0, 2) } });
+    const result = validateV5(project);
+    expect(result.valid).toBe(false);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        ruleId: "keyframes-duplicate-key",
+        path: "motions[0].tracks[0].keyframes.transform.x",
+      }),
     );
   });
 

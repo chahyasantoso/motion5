@@ -54,9 +54,23 @@ import { fileURLToPath } from "node:url";
 // ScrollTrigger wiring into a core adapter that takes `ScrollTrigger` as an injected structural
 // dependency. It owns how a producer turns subscriber churn into exactly one lazily created
 // instance and its teardown.
+//
+// `F-` belongs to plugin-named authored keyframe groups (issue #165 and ADR-041): which authored
+// spellings of a keyframe are legal, which plugin owns a grouped leaf, and what the group is
+// flattened to before compilation. It owns the authored form rather than the published one.
+//
+// `H-` belongs to internal-key enforcement (issue #166 and ADR-042): which composed keys reach a
+// patch at all. It is the published counterpart of `F-` and stays a separate series because the
+// authored form and the published surface are separate contracts: a key can be legal to author,
+// legal to compose, and still never publishable.
+//
+// `N-` belongs to per-plugin key ownership (ADR-043): how many plugins may claim one key, which
+// one owns an authored entry, and what a flat spelling with several claimants does. It does not
+// extend `F-`, which owns the authored shapes a document may use; this owns who is allowed to
+// answer for a key at all, and it is the reason the group form stopped being pure sugar.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:B|C|D|E|G|K|L|M|P|R|S|T)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|H|K|L|M|N|P|R|S|T)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })

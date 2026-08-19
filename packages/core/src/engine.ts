@@ -13,6 +13,7 @@ import { resolveTriggerDefinition, validateV5 } from "./contract/validate-v5";
 import { IncrementalGraphBuilder } from "./adapters/graph-builder/incremental";
 import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
 import { compilePercentKeyframes } from "./domain/keyframe-compiler";
+import { flattenAuthoredKeyframes } from "./domain/keyframe-groups";
 import { Motion, type MotionTrackEntry } from "./domain/motion";
 import { PluginRegistry } from "./domain/plugins";
 import { Track } from "./domain/track";
@@ -59,6 +60,11 @@ export interface ProjectHandle {
   ): { readonly id: string; readonly track: TrackDefinition };
   destroyAdopted(nodeId: string, owner: object): void;
   dispose(): void;
+}
+interface CompilableTrack {
+  readonly id: string;
+  readonly duration?: number;
+  readonly keyframes?: Readonly<Record<string, unknown>>;
 }
 type RuntimeLike = ProjectRuntime;
 function createHandle(
@@ -164,10 +170,7 @@ export class Engine {
   load(project: ProjectDefinition): ProjectHandle {
     const acceptedProject = assertValidProject(project);
     const tracks = new Map<string, Track>();
-    const nodes = new Map<
-      string,
-      { id: string; duration?: number; keyframes?: Readonly<Record<string, unknown>> }
-    >();
+    const nodes = new Map<string, CompilableTrack>();
     const motionTrackIds = new Map<string, readonly string[]>();
     for (const motion of acceptedProject.motions) {
       const ids = motion.tracks.map((track) => qualifyMotionTrack(motion.id, track.id).value);
@@ -177,18 +180,25 @@ export class Engine {
     }
     for (const track of acceptedProject.freeTracks ?? [])
       nodes.set(qualifyFreeTrack(track.id).value, { ...track, id: track.id });
-    const compile = (nodeId: string): Track => {
+    // One owner for resolve, prepare, compile, and construct. Both entry points below reached the
+    // same four steps in their own copy, which is how the authored keyframes could be flattened for
+    // plugin resolution on one path and reach the interpolator still grouped on the other.
+    const compileTrack = (trackDef: CompilableTrack, nodeId: string): Track => {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
-      const definition = nodes.get(nodeId);
-      if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
       const path = `${nodeId}.keyframes`;
-      const resolved = this.#plugins?.resolveForKeyframes(definition.keyframes ?? {}, path, {
+      const resolved = this.#plugins?.resolveForKeyframes(trackDef.keyframes ?? {}, path, {
         id: nodeId,
-        duration: definition.duration,
+        duration: trackDef.duration,
       });
+      // Flattened with or without a registry. The resolver already did it when one exists; when
+      // none does there is no resolver to fall back on, and an authored group would reach the
+      // percent map and the interpolator as a nested object neither reads any stops from, so the
+      // track would compile with no diagnostics and then hold still at every progress.
+      const authoredKeyframes =
+        resolved?.authoredKeyframes ?? flattenAuthoredKeyframes(trackDef.keyframes ?? {}).keyframes;
       const preparedKeyframes = {
-        ...(definition.keyframes ?? {}),
+        ...authoredKeyframes,
         ...(resolved?.preparation.keyframes ?? {}),
       };
       const keyframeCompilation = compilePercentKeyframes(preparedKeyframes, path);
@@ -197,41 +207,22 @@ export class Engine {
         throw new TypeError(describeDiagnostics(diagnostics));
       const track = new Track({
         interpolator: this.#options.interpolator,
-        interpolationConfig: definition,
+        interpolationConfig: { ...trackDef, keyframes: authoredKeyframes },
         ...(resolved ? { plugins: resolved } : {}),
       });
       tracks.set(nodeId, track);
       return track;
     };
-    const compileTrackDefinition = (
-      trackDef: { id: string; duration?: number; keyframes?: Readonly<Record<string, unknown>> },
-      targetNodeId?: string,
-    ): void => {
+    const compile = (nodeId: string): Track => {
+      const definition = nodes.get(nodeId);
+      if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
+      return compileTrack(definition, nodeId);
+    };
+    const compileTrackDefinition = (trackDef: CompilableTrack, targetNodeId?: string): void => {
       const nodeId =
         targetNodeId ??
         (trackDef.id.includes("/") ? trackDef.id : qualifyFreeTrack(trackDef.id).value);
-      if (tracks.has(nodeId)) return;
-      const path = `${nodeId}.keyframes`;
-      const resolved = this.#plugins?.resolveForKeyframes(trackDef.keyframes ?? {}, path, {
-        id: nodeId,
-        duration: trackDef.duration,
-      });
-      const preparedKeyframes = {
-        ...(trackDef.keyframes ?? {}),
-        ...(resolved?.preparation.keyframes ?? {}),
-      };
-      const keyframeCompilation = compilePercentKeyframes(preparedKeyframes, path);
-      const diagnostics = [...(resolved?.diagnostics ?? []), ...keyframeCompilation.diagnostics];
-      if (diagnostics.some(({ severity }) => severity === "error"))
-        throw new TypeError(describeDiagnostics(diagnostics));
-      tracks.set(
-        nodeId,
-        new Track({
-          interpolator: this.#options.interpolator,
-          interpolationConfig: trackDef,
-          ...(resolved ? { plugins: resolved } : {}),
-        }),
-      );
+      compileTrack(trackDef, nodeId);
     };
     const disposeTrack = (nodeId: string): void => {
       const track = tracks.get(nodeId);
