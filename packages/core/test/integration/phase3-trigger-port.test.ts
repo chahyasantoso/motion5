@@ -80,7 +80,7 @@ describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
     motion.play();
 
     // This case asserted silent clamping until issue #138. The clamp was partial, so one rule had
-    // three owners and NaN passed all of them. ADR-034 gives the rule a single owner in
+    // three owners and NaN passed all of them. ADR-037 gives the rule a single owner in
     // Motion.#scheduleProgress, which rejects at the emit site rather than deferring to a flush.
     expect(() => trigger.emit(-0.5)).toThrow(RangeError);
     expect(() => trigger.emit(1.5)).toThrow(RangeError);

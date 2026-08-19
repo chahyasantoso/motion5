@@ -162,7 +162,7 @@ export class Motion {
     }
     this.#pendingProgress = undefined;
     // seek stays a clamping scrub and is deliberately not routed through #scheduleProgress: it is
-    // leaf-level scrubbing rather than trigger input. See ADR-021 and ADR-034.
+    // leaf-level scrubbing rather than trigger input. See ADR-021 and ADR-037.
     this.#setProgress(Math.max(0, Math.min(1, progress)));
   }
   signal(signal: TriggerSignal): void {
@@ -172,7 +172,7 @@ export class Motion {
         "Motion has a configured trigger driver and does not accept external signals.",
       );
     // Delegates rather than carrying its own copy of the range rule. The two error types and both
-    // message strings are unchanged, so signal()'s contract is identical. See ADR-034.
+    // message strings are unchanged, so signal()'s contract is identical. See ADR-037.
     if (typeof signal === "object" && signal !== null && typeof signal.progress === "number")
       this.#scheduleProgress(signal.progress);
   }
@@ -203,7 +203,7 @@ export class Motion {
   #onTick(event: ClockTick): void {
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;
     // Clamps both bounds because this is internal arithmetic, not external input. It used to lean
-    // on #scheduleProgress for the lower bound, and that clamp is gone. See ADR-034.
+    // on #scheduleProgress for the lower bound, and that clamp is gone. See ADR-037.
     const next = Math.max(0, Math.min(1, this.#position + this.#progressDelta(event.delta)));
     this.#scheduleProgress(next);
   }
@@ -212,7 +212,7 @@ export class Motion {
     // drops a malformed emission teaches the port nothing, and this is the one place every
     // TriggerPort reaches, so it is the only place the rule can live exactly once. Normalization
     // belongs to the source adapter, so by the time progress arrives here anything outside
-    // [0, 1] is a contract violation and must be loud rather than clamped. See ADR-034.
+    // [0, 1] is a contract violation and must be loud rather than clamped. See ADR-037.
     if (!Number.isFinite(progress)) throw new TypeError("Motion progress must be finite.");
     if (progress < 0 || progress > 1) throw new RangeError("Progress must be between 0 and 1.");
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;

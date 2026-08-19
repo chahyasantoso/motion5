@@ -35,7 +35,7 @@ describe("scroll adapter normalizes what it can and rejects what it cannot", () 
     source.push(-1);
     expect(seen).toEqual([1, 0]);
 
-    // Red before ADR-034. Math.max(0, Math.min(1, NaN)) is NaN, so the clamp was partial and a
+    // Red before ADR-037. Math.max(0, Math.min(1, NaN)) is NaN, so the clamp was partial and a
     // non-finite push reached Motion, where it poisoned position and threw at the flush instead.
     expect(() => source.push(Number.NaN)).toThrow(TypeError);
     expect(() => source.push(Number.POSITIVE_INFINITY)).toThrow(TypeError);

@@ -11,12 +11,8 @@ import { fileURLToPath } from "node:url";
 // `C-` belongs to the option C plan (ADR-031). `T-` belongs to the T4/T5 trigger parity plan,
 // which needed its own prefix because that plan already uses `T4-n` and `T5-n` for its locked
 // decisions; reusing those for test cases would have made every citation two-valued. `E-` belongs
-// to edge identity, ordering, and labels (issue #137 and ADR-034). `R-` is reserved for the next
-// series, so the pattern does not have to be widened again to admit one.
-// decisions; reusing those for test cases would have made every citation two-valued. `R-` belongs
-// to the trigger progress range fix, issue #138 and ADR-034. `E-` is reserved here for the
-// edgeKey separator fix, issue #137, so that whichever of those two lands second rebases instead
-// of widening this pattern a second time.
+// to edge identity, ordering, and labels (issue #137 and ADR-034). `R-` belongs to the trigger
+// progress range fix, issue #138 and ADR-037.
 //
 // `P-` belongs to the rollback error precedence fix (issue #133 and ADR-035). Reserving a spare
 // letter has now failed twice to prevent a widening, because both reservations above were claimed

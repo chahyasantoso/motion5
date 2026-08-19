@@ -20,7 +20,7 @@ export interface ScrollSource {
  *
  * This adapter owns normalization, and only because a scroll position is a measured quantity:
  * clamping 1.0000001 to 1 here is noise removal, not a fallback that hides a declared trigger
- * failure. It does not own the range rule; Motion.#scheduleProgress does. See ADR-034.
+ * failure. It does not own the range rule; Motion.#scheduleProgress does. See ADR-037.
  */
 export function createScrollTriggerPort(source: ScrollSource): TriggerPort & { dispose(): void } {
   const listeners = new Set<(progress: number) => void>();

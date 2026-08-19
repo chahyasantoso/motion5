@@ -55,7 +55,7 @@ A declared trigger type used to be decorative: every type resolved to a manual p
 
 ### Progress range on the trigger input path
 
-See ADR-034. Progress that reaches a `Motion` through a `TriggerPort` is validated once, in `Motion`, and is no longer clamped there.
+See ADR-037. Progress that reaches a `Motion` through a `TriggerPort` is validated once, in `Motion`, and is no longer clamped there.
 
 - An out-of-range emission throws `RangeError: Progress must be between 0 and 1.` and a non-finite one throws `TypeError: Motion progress must be finite.`, both at the emit site. A v4-era custom driver that leaned on the old silent clamp to push `1.2` or `-0.1` must clamp in its own adapter, which is where the measurement is understood.
 - A `ScrollSource` still has its overshoot clamped for it, because a scroll position is a measured quantity, but pushing `NaN` or `Infinity` now throws `TypeError: ScrollSource progress must be a finite number.` instead of being forwarded.

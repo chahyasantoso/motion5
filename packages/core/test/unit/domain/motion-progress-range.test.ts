@@ -43,7 +43,7 @@ describe("Motion owns the trigger progress range once", () => {
   it("R-1 rejects an out-of-range port emission exactly as signal() rejects it", () => {
     const { motion, trigger, scheduler, setProgress } = mounted();
     expect(() => motion.signal({ type: "manual", progress: 1.5 })).toThrow(RangeError);
-    // Red before ADR-034: emit() clamped to 1 in silence, so the same value carried two
+    // Red before ADR-037: emit() clamped to 1 in silence, so the same value carried two
     // contracts depending on which door it entered through.
     expect(() => trigger.emit(1.5)).toThrow(RangeError);
     scheduler.flush();
@@ -54,7 +54,7 @@ describe("Motion owns the trigger progress range once", () => {
   it("R-2 rejects a non-finite emission at the boundary instead of poisoning position", () => {
     const { motion, trigger, scheduler } = mounted();
     expect(() => motion.signal({ type: "manual", progress: Number.NaN })).toThrow(TypeError);
-    // Red before ADR-034: NaN survived both clamps, so the throw was deferred to the scheduler
+    // Red before ADR-037: NaN survived both clamps, so the throw was deferred to the scheduler
     // flush and blamed the Track for a value the port handed in, with position already NaN.
     expect(() => trigger.emit(Number.NaN)).toThrow(TypeError);
     expect(scheduler.pending).toHaveLength(0);
@@ -63,7 +63,7 @@ describe("Motion owns the trigger progress range once", () => {
   });
 
   it("R-3 rejects a malformed emission on a mounted Motion that is not playing", () => {
-    // Red before ADR-034: #scheduleProgress returned on the liveness guard before it ever looked
+    // Red before ADR-037: #scheduleProgress returned on the liveness guard before it ever looked
     // at the value, so a Motion that is attached but not advancing swallowed garbage and the port
     // never learned about its own bug.
     const { motion, trigger } = mounted({ playing: false });

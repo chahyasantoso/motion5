@@ -1,4 +1,4 @@
-# ADR-034: the trigger progress range has one owner, and normalization is a different job
+# ADR-037: the trigger progress range has one owner, and normalization is a different job
 
 **Status:** accepted  
 **Date:** 2026-08-18  
@@ -70,7 +70,7 @@ A custom driver that relied on the clamp to accept `1.0000001` must normalize in
 
 - `R-4` the adapter still clamps `1.5` and `-1` to `1` and `0`, and rejects `NaN` and `Infinity` rather than forwarding them.
 
-Red before green is executed and archived rather than described. The first commit on the fix branch is tests only, so run [32129333099](https://github.com/chahyasantoso/motion5/actions/runs/32129333099), archived at `logs/32129333099/` on `ci-logs`, is the failing run against the unmodified parent `dba6cfd`. It reports `5 failed | 446 passed` in `quality`, the five being `R-1` through `R-4` and the inverted phase 3 case, and it confirms `R-5` and the other 446 cases are green on the parent.
+Red before green is executed and archived rather than described. The first commit on the fix branch is tests only, so run [32129333099](https://github.com/chahyasantoso/motion5/actions/runs/32129333099), archived at `logs/32129333099/`, is the failing run against the unmodified parent `dba6cfd`. It reports `5 failed | 446 passed` in `quality`, the five being `R-1` through `R-4` and the inverted phase 3 case, and it confirms `R-5` and the other 446 cases are green on the parent.
 
 Case `3.1` of `packages/core/test/integration/trigger-scroll.test.ts` asserts end-to-end clamping of `2` and `-1` and stays green, because the adapter keeps clamping. The only other clamp assertions in the suite are on `Motion.seek` and `Track.setProgress`, and neither is touched.
 
