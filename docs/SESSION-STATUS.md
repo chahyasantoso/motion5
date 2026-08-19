@@ -48,7 +48,6 @@ A looping Motion has no pause of its own. Playback belongs to `Motion`, so a pau
 
 ## Known remaining scope
 
-- **Ambiguous ADR number:** two accepted records are named ADR-034. Issue [#157](https://github.com/chahyasantoso/motion5/issues/157) will renumber the trigger progress-range record and update progress-related citations while leaving edge identity as ADR-034.
 - **Loop follow-ups:** per-cycle easing, a repeat delay, a loop completion callback, and playback pause are out of scope for ADR-040. Each is a separate authored field with its own owner question, and none of them is needed to make a loop run.
 - **Phase 6 packaging:** neither package is published. Publication, packed-package consumer verification, API reporting, performance gates, and removal of transitional compatibility wrappers remain separate packaging work.
 

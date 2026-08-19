@@ -512,7 +512,7 @@ export const initialWalkerProject: ProjectDefinition = {
   motions: [
     {
       id: "walk",
-      trigger: { type: "scroll", source: WALK_SCROLL_SOURCE },
+      trigger: { type: "scroll", source: WALK_SCROLL_SOURCE }, // can this source be something 
       tracks: coreWalkerTracks,
     },
   ],
