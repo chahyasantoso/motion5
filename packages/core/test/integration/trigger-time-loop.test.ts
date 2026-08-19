@@ -232,6 +232,9 @@ describe("time loop semantics", () => {
     handle.mount("gone/arm");
     advance(25);
     expect(values("gone/arm")).toEqual({ x: 25 });
+    // A Motion is destroyed empty: ProjectRuntime refuses one that still owns tracks, and that
+    // rule predates looping. Removing the track first keeps this case about the released driver.
+    handle.track("gone/arm").remove();
     handle.destroyMotion("gone");
     // The surviving loop keeps its own phase. A released driver still in the fanout would either
     // throw into it or advance this node a second time per tick.
