@@ -14,10 +14,26 @@ import { fileURLToPath } from "node:url";
 // to edge identity, ordering, and labels (issue #137 and ADR-034). `R-` belongs to the trigger
 // progress range fix, issue #138 and ADR-037.
 //
-// `P-` belongs to the rollback error precedence fix (issue #133 and ADR-035). `D-` belongs to
-// teardown ownership inside `Engine` (issues #143 and #145). `M-` belongs to single-track
-// mutation atomicity inside `Motion` (issue #147). `S-` belongs to progress state commits inside
-// `Track` (issue #149).
+// `P-` belongs to the rollback error precedence fix (issue #133 and ADR-035). Reserving a spare
+// letter has now failed twice to prevent a widening, because both reservations above were claimed
+// by the issues they were reserved against. The pattern is therefore widened when a series is
+// actually opened, and nothing here is reserved for a series that does not exist yet.
+//
+// `D-` belongs to teardown ownership inside `Engine` (issues #143 and #145): disposing the
+// ProjectRuntime a failed `load()` created, and running every remaining cleanup step when one of
+// them throws. It is a separate series from `P-` on purpose. `P-` owns which error a caller sees
+// when a rollback fails, in `ProjectRuntime`; `D-` owns whether the cleanup ran at all, in
+// `Engine`. One citation, one owner, per the paragraph above.
+//
+// `M-` belongs to single-track mutation atomicity inside `Motion` (issue #147): what a refused
+// `addTrack` or `replaceTrack` leaves behind. It is separate from `C-` even though both live in
+// the domain and both were opened against `Motion`, because `C-` owns how a Track is reached and
+// `M-` owns what a refusal costs. A letter is chosen that no plan already uses unhyphenated, so
+// `A3` and `A5` from the runtime mutation model cannot be misread as cases in this series.
+//
+// `S-` belongs to progress state commits inside `Track` (issue #149). It answers what internal
+// bookkeeping a rejected interpolation timeline write may expose, not which Track a Motion owns
+// or what a refused Motion mutation commits, so it does not extend either `C-` or `M-`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE = /it\(\s*"((?:C|D|E|M|P|R|S|T)-\d+)/g;
@@ -47,6 +63,8 @@ describe("evidence case ids", () => {
   });
 
   it("finds the series at all, so a passing run is never an empty scan", () => {
+    // Guards the gate itself: a broken directory walk or regex would otherwise report zero
+    // collisions forever. A floor, not an exact count, so adding evidence never fails this.
     const files = testFiles().filter((file) => declaredCaseIds(file).length > 0);
     const total = files.reduce((count, file) => count + declaredCaseIds(file).length, 0);
     expect(files.length).toBeGreaterThanOrEqual(3);
