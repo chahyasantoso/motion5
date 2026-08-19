@@ -9,6 +9,7 @@ export type ComposeNode = PublisherNode["compose"];
 export type ComposeResolver = (node: GraphNode) => ComposeNode;
 export const DEFERRED_FLUSH_RULE = "reentrant-flush-deferred";
 export const CLOCK_REGRESSION_RULE = "clock-tick-regression";
+export const CLOCK_CONSUMER_FAILURE_RULE = "clock-consumer-failure";
 export const FLUSH_FAILURE_RULE = "flush-failure";
 export const SCHEDULER_FAILURE_RULE = "scheduler-failure";
 import type { GraphBuilder } from "../ports/graph-builder";
@@ -35,7 +36,20 @@ function deferredBatch(sequence: number, seeds: readonly string[]): PatchBatch {
     diagnostics: Object.freeze([diagnostic]),
   }) as PatchBatch;
 }
+/**
+ * Renders `error` for a diagnostic message, keeping every original cause.
+ *
+ * An `AggregateError` is flattened rather than printed by its own message. The clock consumer
+ * fanout reports two or more failures as one aggregate whose message is only the boundary's
+ * context string, so printing that alone would name the boundary and drop every cause it
+ * collected, which is the same attribution loss this module is fixing one level up. Recursive, so
+ * a nested aggregate flattens too. Issue #154.
+ */
 function describe(error: unknown): string {
+  if (error instanceof AggregateError) {
+    const causes = error.errors.map((cause: unknown) => describe(cause)).join("; ");
+    return [error.message, causes].filter((part) => part.length > 0).join(" ");
+  }
   return error instanceof Error ? error.message : String(error);
 }
 export class GraphRuntime {
@@ -208,17 +222,63 @@ export class GraphRuntime {
       );
       return;
     }
+    // Two boundaries, one subscription. Advancing the clock consumers and flushing the graph fail
+    // for unrelated reasons, so they are reported under unrelated rule ids and neither can be
+    // diagnosed as the other. See ADR-039.
+    this.#advanceConsumers(event);
+    this.#flushTick(event);
+  }
+  /**
+   * Advances the clock consumers for `event` inside their own error boundary.
+   *
+   * The fanout stays with the single `onClockTick` owner, and so does the rule that one throwing
+   * consumer does not stop the consumers behind it. This boundary only decides how that owner's
+   * failure is labelled, which is why there is still exactly one clock subscription.
+   */
+  #advanceConsumers(event: ClockTick): void {
     try {
       this.#onClockTick?.(event);
-      this.flush([...this.#members], event.tick);
     } catch (error) {
-      this.#report(FLUSH_FAILURE_RULE, `Flush at tick ${event.tick} failed: ${describe(error)}`);
+      this.#report(
+        CLOCK_CONSUMER_FAILURE_RULE,
+        `Clock consumers at tick ${event.tick} failed: ${describe(error)}`,
+        event.tick,
+      );
     }
   }
-  #report(ruleId: string, message: string): void {
+  /**
+   * Flushes the graph for `event` inside its own error boundary.
+   *
+   * The flush runs whether or not a consumer threw. A boundary that also cancelled the flush would
+   * not be a separate boundary: one Motion's driver would drop the frame for every node in the
+   * project, which is the fanout rule applied one step further out. Disposal from inside a consumer
+   * is the one thing that does stop it, because there is no longer a runtime to flush and `flush`
+   * would only refuse with a failure this tick did not cause.
+   */
+  #flushTick(event: ClockTick): void {
+    if (this.#disposed) return;
+    try {
+      this.flush([...this.#members], event.tick);
+    } catch (error) {
+      this.#report(
+        FLUSH_FAILURE_RULE,
+        `Flush at tick ${event.tick} failed: ${describe(error)}`,
+        event.tick,
+      );
+    }
+  }
+  /**
+   * Records one diagnostic and hands it to the host once.
+   *
+   * `tick` defaults to the last flushed tick, which is what a scheduled drain or a rejected clock
+   * regression is about. The two tick boundaries pass the tick they are handling instead: a
+   * consumer failure happens before `flush` advances `#lastTick`, so the default would file it
+   * under the previous frame and undo the attribution this exists for.
+   */
+  #report(ruleId: string, message: string, tick: number = this.#lastTick): void {
     const diagnostic: Diagnostic = Object.freeze({
       ruleId,
-      path: String(this.#lastTick),
+      path: String(tick),
       message,
       severity: "error",
       ids: Object.freeze([...this.#members]),
