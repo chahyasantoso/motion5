@@ -13,10 +13,15 @@ export interface MotionOptions {
   readonly clock: Clock;
   readonly scheduler: Scheduler;
   readonly tracks: readonly MotionTrackEntry[];
+  /**
+   * Resolves a node id to its compiled Track. Required, and called at every point of use: a Motion
+   * never stores a Track, so it can never drive a disposed or superseded one. See ADR-031.
+   */
   readonly resolveTrack: (id: string) => Track | undefined;
   readonly trigger?: TriggerPort;
   readonly invalidate?: (progress: number) => void;
   readonly stagger?: number;
+  /** Set true only when the resolver's caller delegates Track lifetime to this Motion. */
   readonly disposeTracks?: boolean;
   readonly listenToClock?: boolean;
   readonly acceptsExternalSignal?: boolean;
@@ -90,6 +95,11 @@ export class Motion {
     if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
       throw new TypeError(`Motion track duration must be a finite positive number: ${entry.id}.`);
     const track = this.#track(entry.id);
+    // Resolved, then seeded, then committed. Resolution alone was already atomic; the seeding call
+    // was not, and it can fail on its own: a resolvable Track can be disposed, and
+    // #timeline.progress is injected code. Seeding against the prospective list rather than the
+    // committed one is what keeps the value identical to the commit-first order, because
+    // #totalDuration reduces over the entries. Issue #147.
     const entries = [...this.#tracks, entry];
     track.setProgress(this.#effectiveProgress(entries.length - 1, entry, entries));
     this.#tracks.push(entry);
@@ -102,6 +112,8 @@ export class Motion {
     if (entry.duration !== undefined && (!Number.isFinite(entry.duration) || entry.duration <= 0))
       throw new TypeError(`Motion track duration must be a finite positive number: ${entry.id}.`);
     const track = this.#track(entry.id);
+    // Same order as addTrack, and the same reason for the prospective list. The replacement keeps
+    // its original array index, so ADR-029's index and stagger guarantee is untouched. Issue #147.
     const entries = [...this.#tracks];
     entries[index] = entry;
     track.setProgress(this.#effectiveProgress(index, entry, entries));
@@ -159,6 +171,8 @@ export class Motion {
       throw new TypeError(
         "Motion has a configured trigger driver and does not accept external signals.",
       );
+    // Delegates rather than carrying its own copy of the range rule. The two error types and both
+    // message strings are unchanged, so signal()'s contract is identical. See ADR-037.
     if (typeof signal === "object" && signal !== null && typeof signal.progress === "number")
       this.#scheduleProgress(signal.progress);
   }
@@ -188,10 +202,17 @@ export class Motion {
   }
   #onTick(event: ClockTick): void {
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;
+    // Clamps both bounds because this is internal arithmetic, not external input. It used to lean
+    // on #scheduleProgress for the lower bound, and that clamp is gone. See ADR-037.
     const next = Math.max(0, Math.min(1, this.#position + this.#progressDelta(event.delta)));
     this.#scheduleProgress(next);
   }
   #scheduleProgress(progress: number): void {
+    // Validated before the liveness guard on purpose. A paused or unmounted Motion that quietly
+    // drops a malformed emission teaches the port nothing, and this is the one place every
+    // TriggerPort reaches, so it is the only place the rule can live exactly once. Normalization
+    // belongs to the source adapter, so by the time progress arrives here anything outside
+    // [0, 1] is a contract violation and must be loud rather than clamped. See ADR-037.
     if (!Number.isFinite(progress)) throw new TypeError("Motion progress must be finite.");
     if (progress < 0 || progress > 1) throw new RangeError("Progress must be between 0 and 1.");
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;
@@ -216,6 +237,8 @@ export class Motion {
     for (let index = 0; index < this.#tracks.length; index += 1) {
       const entry = this.#tracks[index]!;
       const track = this.#resolveTrack(entry.id);
+      // An unresolved id must not abort the sweep. Siblings still advance and invalidation still
+      // fires, then the failure is reported once. Issue #114 symptoms 1 and 2.
       if (track === undefined) {
         unresolved.push(entry.id);
         continue;
@@ -226,6 +249,11 @@ export class Motion {
     if (unresolved.length > 0)
       throw new TypeError(`Motion tracks have no compiled Track: ${unresolved.join(", ")}.`);
   }
+  /**
+   * Takes the entry list explicitly because the answer depends on which list is used: a mutation
+   * seeds against the entries it is about to commit, while a sweep uses the live ones. Reading
+   * #tracks here instead would make that difference invisible at the call site. Issue #147.
+   */
   #effectiveProgress(
     index: number,
     entry: MotionTrackEntry,
