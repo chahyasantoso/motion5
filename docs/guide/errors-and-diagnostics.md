@@ -41,8 +41,9 @@ Warnings load and stay readable. Missing `perspective` alongside 3D content, and
 - `trigger-driver-unavailable`, at `load()` or `addMotion`, when a declared `scroll` trigger resolves no source. This one is a construction failure, not a validation failure.
 - `plugin-unknown-key`, when no registered plugin claims an authored keyframe key. This is the error you hit first if you forget to register a plugin.
 - `plugin-contribution-unsupported-entry`, for the legacy `use` field, which is not part of schema v5.
+- `keyframes-reserved-separator`, when a flat keyframe name, a plugin-named group, or a leaf name contains `:`. The colon is reserved for the namespaced-keyframe rule, so it is never legal in ordinary authored key names.
 
-Malformed or duplicate ids, reserved namespace characters, malformed edges, unknown sources, duplicate edges, self-reference, and cycles are all errors too. Track ids may not contain `/`, and motion ids may not contain `/` or equal `~`, because those characters carry the qualified namespace.
+Malformed or duplicate ids, reserved namespace characters, malformed edges, unknown sources, duplicate edges, self-reference, and cycles are all errors too. Track ids may not contain `/`, and motion ids may not contain `/` or equal `~`, because those characters carry the qualified namespace. Keyframe names may not contain `:` for the same reason: it is reserved for namespaced internal keys.
 
 ## A frame has two failure owners
 

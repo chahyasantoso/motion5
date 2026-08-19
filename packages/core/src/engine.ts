@@ -177,18 +177,20 @@ export class Engine {
     }
     for (const track of acceptedProject.freeTracks ?? [])
       nodes.set(qualifyFreeTrack(track.id).value, { ...track, id: track.id });
-    const compile = (nodeId: string): Track => {
+    const compileTrack = (
+      trackDef: { id: string; duration?: number; keyframes?: Readonly<Record<string, unknown>> },
+      nodeId: string,
+    ): Track => {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
-      const definition = nodes.get(nodeId);
-      if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
       const path = `${nodeId}.keyframes`;
-      const resolved = this.#plugins?.resolveForKeyframes(definition.keyframes ?? {}, path, {
+      const resolved = this.#plugins?.resolveForKeyframes(trackDef.keyframes ?? {}, path, {
         id: nodeId,
-        duration: definition.duration,
+        duration: trackDef.duration,
       });
+      const authoredKeyframes = resolved?.authoredKeyframes ?? trackDef.keyframes ?? {};
       const preparedKeyframes = {
-        ...(definition.keyframes ?? {}),
+        ...authoredKeyframes,
         ...(resolved?.preparation.keyframes ?? {}),
       };
       const keyframeCompilation = compilePercentKeyframes(preparedKeyframes, path);
@@ -197,11 +199,16 @@ export class Engine {
         throw new TypeError(describeDiagnostics(diagnostics));
       const track = new Track({
         interpolator: this.#options.interpolator,
-        interpolationConfig: definition,
+        interpolationConfig: { ...trackDef, keyframes: authoredKeyframes },
         ...(resolved ? { plugins: resolved } : {}),
       });
       tracks.set(nodeId, track);
       return track;
+    };
+    const compile = (nodeId: string): Track => {
+      const definition = nodes.get(nodeId);
+      if (!definition) throw new TypeError(`Unknown graph node "${nodeId}".`);
+      return compileTrack(definition, nodeId);
     };
     const compileTrackDefinition = (
       trackDef: { id: string; duration?: number; keyframes?: Readonly<Record<string, unknown>> },
@@ -210,28 +217,7 @@ export class Engine {
       const nodeId =
         targetNodeId ??
         (trackDef.id.includes("/") ? trackDef.id : qualifyFreeTrack(trackDef.id).value);
-      if (tracks.has(nodeId)) return;
-      const path = `${nodeId}.keyframes`;
-      const resolved = this.#plugins?.resolveForKeyframes(trackDef.keyframes ?? {}, path, {
-        id: nodeId,
-        duration: trackDef.duration,
-      });
-      const preparedKeyframes = {
-        ...(trackDef.keyframes ?? {}),
-        ...(resolved?.preparation.keyframes ?? {}),
-      };
-      const keyframeCompilation = compilePercentKeyframes(preparedKeyframes, path);
-      const diagnostics = [...(resolved?.diagnostics ?? []), ...keyframeCompilation.diagnostics];
-      if (diagnostics.some(({ severity }) => severity === "error"))
-        throw new TypeError(describeDiagnostics(diagnostics));
-      tracks.set(
-        nodeId,
-        new Track({
-          interpolator: this.#options.interpolator,
-          interpolationConfig: trackDef,
-          ...(resolved ? { plugins: resolved } : {}),
-        }),
-      );
+      compileTrack(trackDef, nodeId);
     };
     const disposeTrack = (nodeId: string): void => {
       const track = tracks.get(nodeId);

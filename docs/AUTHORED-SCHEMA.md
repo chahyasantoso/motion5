@@ -102,6 +102,8 @@ The same rules apply to a Motion created at runtime through `addMotion`, and not
 
 A track has a unique local `id`, optional `duration` and keyframes, and optional `observes` edges. Plugins are resolved from authored keyframe keys. The legacy `use` field is not part of schema v5 and is rejected at load with `plugin-contribution-unsupported-entry`; there is no empty plugin-preparation entry point. Track ids may not contain `/`; motion ids may not contain `/` or equal `~`. These restrictions preserve the qualified namespace.
 
+Keyframes may be authored flat (`{ x: { stops } }`) or grouped by plugin name (`{ fk: { boneLength: { stops } } }`). Grouping is authoring sugar: the resolver flattens grouped leaves back to unprefixed keys before compilation, so existing plugins compose unchanged. Group names and leaf names may not contain `:`, because that separator is reserved for namespaced internal keys.
+
 ## Free tracks
 
 A free track is authored under `freeTracks`, not `tracks`. It is project-owned and participates in the same graph as motion tracks, but no Motion schedules its progress. A host or adopting owner drives it externally. Its runtime id is `~/trackId`.

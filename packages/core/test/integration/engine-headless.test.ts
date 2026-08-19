@@ -108,4 +108,54 @@ describe("Engine", () => {
     );
     runtime.dispose();
   });
+
+  it("interpolates grouped keyframe leaves without renaming the owning plugin", () => {
+    const plugins = new PluginRegistry();
+    plugins.register({
+      name: "fk",
+      keys: ["boneLength", "boneRotation"],
+      compose: (values) => ({ ...values, boneLength: Number(values.boneLength) }),
+    });
+    const runtime = new Engine({
+      clock: createManualClock(),
+      interpolator: createFakeInterpolator(),
+      scheduler: createFakeScheduler(),
+      plugins,
+    }).load({
+      schemaVersion: 5,
+      motions: [
+        {
+          id: "hero",
+          trigger: { type: "manual" },
+          tracks: [
+            {
+              id: "arm",
+              keyframes: {
+                fk: {
+                  boneLength: {
+                    stops: [
+                      { p: 0, v: 10 },
+                      { p: 1, v: 20 },
+                    ],
+                  },
+                  boneRotation: {
+                    stops: [
+                      { p: 0, v: 0 },
+                      { p: 1, v: 90 },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+    runtime.mount("hero/arm");
+    const batch = runtime.seek("hero/arm", 0.5);
+    const patch = batch.patches.find(({ nodeId }) => nodeId === "hero/arm");
+    expect(patch?.values.boneLength).toBeCloseTo(15, 12);
+    expect(patch?.values.boneRotation).toBeCloseTo(45, 12);
+    runtime.dispose();
+  });
 });

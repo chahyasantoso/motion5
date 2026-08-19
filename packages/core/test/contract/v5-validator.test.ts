@@ -111,6 +111,67 @@ describe("schema v5 validator", () => {
     );
   });
 
+  it("accepts grouped keyframes and still warns for grouped 3D content", () => {
+    const result = validateV5({
+      schemaVersion: 5,
+      motions: [
+        {
+          id: "hero",
+          trigger: { type: "manual" },
+          tracks: [
+            {
+              id: "tilt",
+              keyframes: {
+                transform: {
+                  rotationY: {
+                    stops: [
+                      { p: 0, v: 0 },
+                      { p: 1, v: 1 },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+        },
+      ],
+    });
+    expect(result.valid).toBe(true);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({ ruleId: "perspective-usage", severity: "warning" }),
+    );
+  });
+
+  it("rejects a colon in flat, group, and leaf keyframe names", () => {
+    const result = validateV5(
+      projectWithKeyframes({
+        "fk:length": { stops: [{ p: 0, v: 1 }] },
+        fk: { "length:ratio": { stops: [{ p: 0, v: 1 }] } },
+      }),
+    );
+    expect(result.valid).toBe(false);
+    expect(
+      result.diagnostics.filter(({ ruleId }) => ruleId === "keyframes-reserved-separator"),
+    ).toHaveLength(2);
+  });
+
+  it("reports grouped leaf validation at authored paths", () => {
+    const result = validateV5(
+      projectWithKeyframes({
+        fk: {
+          lenght: { stops: [{ p: Number.NaN, v: 1 }] },
+        },
+      }),
+    );
+    expect(result.valid).toBe(false);
+    expect(result.diagnostics).toContainEqual(
+      expect.objectContaining({
+        ruleId: "stop-position",
+        path: "motions[0].tracks[0].keyframes.fk.lenght.stops[0].p",
+      }),
+    );
+  });
+
   it("rejects duplicate ids, invalid triggers, and malformed freeTracks", () => {
     const result = validateV5({
       schemaVersion: 5,

@@ -113,4 +113,32 @@ describe("plugin contribution contract (X-3)", () => {
     );
     expect(resolved.preparation.keyframes).toEqual({});
   });
+  it("passes grouped leaves to the contributor with authored paths", () => {
+    const registry = new PluginRegistry();
+    const calls: unknown[] = [];
+    registry.register({
+      name: "base",
+      keys: ["x"],
+      stage: "prepare",
+      contribute: (key, authoredStops, track) => {
+        calls.push([key, authoredStops, track]);
+        return undefined;
+      },
+      compose,
+    });
+    registry.resolveForKeyframes({ base: { x: stops(1) } }, "track.keyframes", {
+      id: "hero/arm",
+      duration: 2,
+    });
+    expect(calls).toEqual([
+      [
+        "x",
+        [
+          { p: 0, v: 1 },
+          { p: 1, v: 2 },
+        ],
+        { id: "hero/arm", duration: 2 },
+      ],
+    ]);
+  });
 });

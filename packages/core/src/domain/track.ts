@@ -56,6 +56,7 @@ function freezeComposition(values: unknown): ImmutableRecord {
 const EMPTY_RESOLVED_PLUGINS: ResolvedPlugins = Object.freeze({
   plugins: Object.freeze([]),
   diagnostics: Object.freeze([]),
+  authoredKeyframes: Object.freeze({}),
   internalKeys: Object.freeze([]),
   outputSerializers: Object.freeze({}),
   preparation: Object.freeze({ keyframes: Object.freeze({}), tweenVars: Object.freeze({}) }),

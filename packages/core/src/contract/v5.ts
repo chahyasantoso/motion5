@@ -83,6 +83,7 @@ export interface AuthoredStop {
 export interface AuthoredProperty {
   readonly stops: readonly AuthoredStop[];
 }
+export type AuthoredKeyframe = AuthoredProperty | Readonly<Record<string, AuthoredProperty>>;
 export interface InputProjection {
   readonly pick?: readonly string[];
   readonly map?: Readonly<Record<string, string>>;
@@ -90,7 +91,7 @@ export interface InputProjection {
 export interface TrackDefinition {
   readonly id: string;
   readonly duration?: number;
-  readonly keyframes?: Readonly<Record<string, AuthoredProperty>>;
+  readonly keyframes?: Readonly<Record<string, AuthoredKeyframe>>;
   readonly observes?: readonly ObservationDefinition[];
 }
 export interface ObservationDefinition {

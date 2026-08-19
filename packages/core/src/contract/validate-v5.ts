@@ -42,20 +42,10 @@ export function validateKeyframes(
     add("keyframes-shape", path, "Track keyframes must be an object.");
     return;
   }
-  for (const [key, rawProperty] of Object.entries(keyframes)) {
-    const propertyPath = `${path}.${key}`;
-    if (!isObject(rawProperty)) {
-      add("stops-shape", `${propertyPath}.stops`, "Authored properties require a stops array.");
-      continue;
-    }
-    if (Object.keys(rawProperty).length === 0) continue;
-    if (!Array.isArray(rawProperty.stops)) {
-      add("stops-shape", `${propertyPath}.stops`, "Authored properties require a stops array.");
-      continue;
-    }
+  const validateStops = (stops: unknown[], propertyPath: string): void => {
     let previous: number | undefined;
     const positions = new Set<number>();
-    for (const [index, rawStop] of rawProperty.stops.entries()) {
+    for (const [index, rawStop] of stops.entries()) {
       const stopPath = `${propertyPath}.stops[${index}]`;
       if (!isObject(rawStop) || typeof rawStop.p !== "number" || !Number.isFinite(rawStop.p)) {
         add("stop-position", `${stopPath}.p`, "Stop p must be a finite number.");
@@ -75,6 +65,44 @@ export function validateKeyframes(
       add("stop-missing-start", propertyPath, "Stop sequence does not define p=0.", "warning");
     if (positions.size > 0 && !positions.has(1))
       add("stop-missing-end", propertyPath, "Stop sequence does not define p=1.", "warning");
+  };
+  for (const [key, rawProperty] of Object.entries(keyframes)) {
+    const propertyPath = `${path}.${key}`;
+    if (key.includes(":"))
+      add(
+        "keyframes-reserved-separator",
+        propertyPath,
+        `Keyframe name '${key}' must not contain ':'.`,
+      );
+    if (!isObject(rawProperty)) {
+      add("stops-shape", `${propertyPath}.stops`, "Authored properties require a stops array.");
+      continue;
+    }
+    if (Object.keys(rawProperty).length === 0) continue;
+    if (!Array.isArray(rawProperty.stops)) {
+      const groupLeaves = Object.entries(rawProperty);
+      const isGroup = groupLeaves.length > 0 && groupLeaves.every(([, leaf]) => isObject(leaf));
+      if (!isGroup) {
+        add("stops-shape", `${propertyPath}.stops`, "Authored properties require a stops array.");
+        continue;
+      }
+      for (const [leafKey, leafProperty] of groupLeaves) {
+        const leafPath = `${propertyPath}.${leafKey}`;
+        if (leafKey.includes(":"))
+          add(
+            "keyframes-reserved-separator",
+            leafPath,
+            `Keyframe name '${leafKey}' must not contain ':'.`,
+          );
+        if (!isObject(leafProperty) || !Array.isArray(leafProperty.stops)) {
+          add("stops-shape", `${leafPath}.stops`, "Authored properties require a stops array.");
+          continue;
+        }
+        validateStops(leafProperty.stops, leafPath);
+      }
+      continue;
+    }
+    validateStops(rawProperty.stops, propertyPath);
   }
 }
 function validateId(
@@ -195,20 +223,26 @@ export function resolveTriggerDefinition(trigger: unknown, path: string): Trigge
   if (diagnostics.length > 0) throw new TypeError(describeDiagnostics(diagnostics));
   return trigger as TriggerDefinition;
 }
+function hasThreeDPath(property: RawObject): boolean {
+  return (
+    Array.isArray(property.points) &&
+    property.points.some((point) => isObject(point) && typeof point.z === "number" && point.z !== 0)
+  );
+}
 function usesThreeD(track: RawObject): boolean {
   const keyframes = isObject(track.keyframes) ? track.keyframes : null;
   if (!keyframes) return false;
-  if (
-    ["z", "rotationX", "rotationY"].some(
-      (key) => keyframes[key] !== undefined && keyframes[key] !== null,
-    )
-  )
-    return true;
-  const path = isObject(keyframes.path) ? keyframes.path : null;
-  return (
-    Array.isArray(path?.points) &&
-    path.points.some((point) => isObject(point) && typeof point.z === "number" && point.z !== 0)
-  );
+  const flatKeys = ["z", "rotationX", "rotationY"];
+  for (const [key, property] of Object.entries(keyframes)) {
+    if (flatKeys.includes(key) && property !== undefined && property !== null) return true;
+    if (key === "path" && isObject(property) && hasThreeDPath(property)) return true;
+    if (key.includes(":")) continue;
+    if (!isObject(property) || Array.isArray(property.stops)) continue;
+    for (const leaf of flatKeys)
+      if (property[leaf] !== undefined && property[leaf] !== null) return true;
+    if (isObject(property.path) && hasThreeDPath(property.path)) return true;
+  }
+  return false;
 }
 function validateTrackShape(
   track: unknown,

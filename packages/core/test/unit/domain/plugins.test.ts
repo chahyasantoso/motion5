@@ -142,4 +142,41 @@ describe("plugin registry", () => {
     expect(Object.isFrozen(resolved.plugins[0])).toBe(true);
     expect(resolved.plugins[0]?.compose).toBe(original.compose);
   });
+
+  it("rejects colons in plugin keys, inputs, and outputs", () => {
+    const registry = new PluginRegistry();
+    expect(() => registry.register(plugin("bad-key", { keys: ["fk:length"] }))).toThrow(/':/);
+    expect(() => registry.register(plugin("bad-input", { inputs: ["parent:x"] }))).toThrow(/':/);
+    expect(() => registry.register(plugin("bad-output", { outputs: ["fk:world"] }))).toThrow(/':/);
+  });
+
+  it("resolves grouped leaves against their owning plugin and reports authored paths", () => {
+    const registry = new PluginRegistry();
+    registry.register(plugin("fk", { keys: ["boneLength", "boneRotation"] }));
+    registry.register(plugin("transform", { keys: ["x", "y", "rotation"] }));
+
+    const resolved = registry.resolveForKeyframes(
+      {
+        fk: { boneLength: { stops: [] }, boneRotation: { stops: [] } },
+        transform: { x: { stops: [] } },
+        unknown: { opacity: { stops: [] } },
+      },
+      "track.keyframes",
+    );
+
+    expect(resolved.plugins.map(({ name }) => name)).toEqual(["fk", "transform"]);
+    expect(resolved.diagnostics).toContainEqual({
+      ruleId: "plugin-unknown-key",
+      path: "track.keyframes.unknown.opacity",
+      message: 'No registered plugin claims authored key "opacity".',
+      severity: "error",
+      ids: ["opacity"],
+    });
+    expect(resolved.authoredKeyframes).toEqual({
+      boneLength: { stops: [] },
+      boneRotation: { stops: [] },
+      x: { stops: [] },
+      opacity: { stops: [] },
+    });
+  });
 });

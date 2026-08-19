@@ -28,6 +28,7 @@ export interface PreparedContribution {
 export interface ResolvedPlugins {
   readonly plugins: readonly PluginDefinition[];
   readonly diagnostics: readonly Diagnostic[];
+  readonly authoredKeyframes: Readonly<Record<string, unknown>>;
   readonly internalKeys: readonly string[];
   readonly outputSerializers: Readonly<Record<string, OutputSerializer>>;
   readonly preparation: PreparedContribution;
@@ -114,6 +115,38 @@ function readStops(value: unknown): readonly AuthoredStop[] {
     ? (value.stops as readonly AuthoredStop[])
     : [];
 }
+interface FlattenedKeyframe {
+  readonly key: string;
+  readonly group?: string;
+  readonly leaf?: string;
+  readonly property: unknown;
+  readonly authoredPath: string;
+}
+function flattenGroups(authored: Readonly<Record<string, unknown>>): {
+  keyframes: Readonly<Record<string, unknown>>;
+  entries: readonly FlattenedKeyframe[];
+} {
+  const flattened: Record<string, unknown> = {};
+  const entries: FlattenedKeyframe[] = [];
+  for (const [key, property] of Object.entries(authored)) {
+    if (isRecord(property) && !Array.isArray(property.stops) && Object.keys(property).length > 0) {
+      for (const [leaf, leafProperty] of Object.entries(property)) {
+        flattened[leaf] = leafProperty;
+        entries.push({
+          key: leaf,
+          group: key,
+          leaf,
+          property: leafProperty,
+          authoredPath: `${key}.${leaf}`,
+        });
+      }
+    } else {
+      flattened[key] = property;
+      entries.push({ key, property, authoredPath: key });
+    }
+  }
+  return { keyframes: flattened, entries };
+}
 function validateContributionProperty(
   output: string,
   property: unknown,
@@ -139,6 +172,7 @@ function prepareContributions(
   track: TrackConfigView,
   path: string,
   diagnostics: Diagnostic[],
+  authoredPaths: ReadonlyMap<string, string> = new Map(),
 ): PreparedContribution {
   const keyframes: Record<string, AuthoredProperty> = {};
   const tweenVars: Record<string, unknown> = {};
@@ -147,6 +181,7 @@ function prepareContributions(
   const tweenOwners = new Map<string, string>();
   const ownerOf = (key: string): PluginDefinition | undefined =>
     exactOwners.get(key) ?? predicates.find((plugin) => claims(plugin, key));
+  const authoredPath = (key: string): string => `${path}.${authoredPaths.get(key) ?? key}`;
   for (const key of Object.keys(authored).sort()) {
     const plugin = ownerOf(key);
     if (plugin?.stage !== "prepare" || !plugin.contribute) continue;
@@ -159,14 +194,14 @@ function prepareContributions(
           Object.freeze({ id: track.id, duration: track.duration }),
         ),
         plugin,
-        `${path}.${key}`,
+        authoredPath(key),
         diagnostics,
       );
     } catch (error) {
       diagnostics.push(
         diagnostic(
           "plugin-contribution-failure",
-          `${path}.${key}`,
+          authoredPath(key),
           `Plugin "${plugin.name}" failed: ${error instanceof Error ? error.message : String(error)}.`,
           [plugin.name, key],
         ),
@@ -262,6 +297,7 @@ function prepareContributions(
 function result(
   plugins: PluginDefinition[],
   diagnostics: Diagnostic[],
+  authoredKeyframes: Readonly<Record<string, unknown>>,
   preparation: PreparedContribution,
 ): ResolvedPlugins {
   const internalKeys = Object.freeze(
@@ -294,6 +330,7 @@ function result(
   return Object.freeze({
     plugins: Object.freeze(plugins),
     diagnostics: Object.freeze(diagnostics),
+    authoredKeyframes: deepFreeze(authoredKeyframes),
     internalKeys,
     outputSerializers: Object.freeze(outputSerializers),
     preparation,
@@ -333,7 +370,10 @@ export class PluginRegistry {
       throw new Error(`Plugin "${plugin.name}" is already registered.`);
     const keys = [...(plugin.keys ?? [])];
     const inputs = [...(plugin.inputs ?? [])];
+    const outputs = [...(plugin.outputs ?? [])];
     for (const key of keys) {
+      if (key.includes(":"))
+        throw new TypeError(`Plugin "${plugin.name}" key "${key}" must not contain ':'.`);
       const owner = this.#keyOwners.get(key);
       if (owner)
         throw new TypeError(
@@ -341,17 +381,22 @@ export class PluginRegistry {
         );
     }
     for (const input of inputs) {
+      if (input.includes(":"))
+        throw new TypeError(`Plugin "${plugin.name}" input "${input}" must not contain ':'.`);
       const owner = this.#inputOwners.get(input);
       if (owner)
         throw new TypeError(
           `plugin-input-collision: Plugin "${owner.name}" already owns input "${input}".`,
         );
     }
+    for (const output of outputs)
+      if (output.includes(":"))
+        throw new TypeError(`Plugin "${plugin.name}" output "${output}" must not contain ':'.`);
     const frozen = Object.freeze({
       ...plugin,
       ...(plugin.keys ? { keys: Object.freeze(keys) } : {}),
       ...(plugin.inputs ? { inputs: Object.freeze(inputs) } : {}),
-      ...(plugin.outputs ? { outputs: Object.freeze([...plugin.outputs]) } : {}),
+      ...(plugin.outputs ? { outputs: Object.freeze(outputs) } : {}),
     });
     this.#plugins.set(plugin.name, frozen);
     this.#orders.set(plugin.name, this.#registrationOrder++);
@@ -364,19 +409,21 @@ export class PluginRegistry {
     path = "keyframes",
     track: TrackConfigView = {},
   ): ResolvedPlugins {
+    const { keyframes: flattened, entries } = flattenGroups(authored);
+    const paths = new Map(entries.map((entry) => [entry.key, entry.authoredPath]));
     const plugins: PluginDefinition[] = [];
     const diagnostics: Diagnostic[] = [];
     const ownerOf = (key: string): PluginDefinition | undefined =>
       this.#keyOwners.get(key) ?? this.#predicates.find((plugin) => claims(plugin, key));
-    for (const key of Object.keys(authored).sort()) {
-      const owner = ownerOf(key);
+    for (const entry of [...entries].sort((a, b) => a.key.localeCompare(b.key))) {
+      const owner = ownerOf(entry.key);
       if (!owner)
         diagnostics.push(
           diagnostic(
             "plugin-unknown-key",
-            `${path}.${key}`,
-            `No registered plugin claims authored key "${key}".`,
-            [key],
+            `${path}.${entry.authoredPath}`,
+            `No registered plugin claims authored key "${entry.key}".`,
+            [entry.key],
           ),
         );
       else if (!plugins.includes(owner)) plugins.push(owner);
@@ -405,7 +452,16 @@ export class PluginRegistry {
     return result(
       plugins,
       diagnostics,
-      prepareContributions(authored, this.#keyOwners, this.#predicates, track, path, diagnostics),
+      flattened,
+      prepareContributions(
+        flattened,
+        this.#keyOwners,
+        this.#predicates,
+        track,
+        path,
+        diagnostics,
+        paths,
+      ),
     );
   }
   has(name: string): boolean {
