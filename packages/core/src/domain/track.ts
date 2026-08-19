@@ -35,6 +35,40 @@ function preparedConfig(config: unknown, plugins: ResolvedPlugins): unknown {
     tweenVars: preparation.tweenVars,
   });
 }
+/**
+ * A key under a plugin's namespace is that plugin's private domain, by rule rather than by
+ * declaration. The colon is reserved in every authored keyframe name and in plugin `keys`,
+ * `inputs`, and `outputs`, so a namespaced key can only be something a plugin derived for itself.
+ * See ADR-041 and ADR-042.
+ */
+function isNamespacedInternal(key: string): boolean {
+  return key.includes(":");
+}
+/**
+ * The one enforcement point for internal keys.
+ *
+ * It is here, and not in a renderer, because `adapters/dom.ts` is not the only renderer:
+ * `packages/react` hands consumers the whole patch. A denylist applied per renderer has to be
+ * reimplemented by each of them, and a regression test written against one would pass while the
+ * other leaked. Filtering before the snapshot is frozen gives the publisher, `handle.get`,
+ * `subscribeNode`, and every adapter the same surface.
+ *
+ * `internalKeys` stays for unprefixed derived keys, which no rule can recognize. It is the
+ * declaration of last resort rather than the mechanism.
+ */
+function publishableValues(values: ImmutableRecord, plugins: ResolvedPlugins): ImmutableRecord {
+  const result: Record<string, unknown> = {};
+  const declared = plugins.internalKeys;
+  for (const [key, value] of Object.entries(values)) {
+    if (isNamespacedInternal(key) || declared.includes(key)) continue;
+    result[key] = value;
+  }
+  return result as ImmutableRecord;
+}
+// Underscore keys are interpolator scratch and are dropped before the plugin chain runs. This is
+// deliberately not the same rule as `publishableValues`: a namespaced key must survive the chain so
+// plugins can read each other's, and an underscore key invented by a plugin must still fail
+// `isRendererNeutral` loudly rather than be quietly hidden here.
 function rendererNeutralState(state: Readonly<Record<string, unknown>>): ImmutableRecord {
   if (!isRecord(state))
     throw new CompositionOutputError("Interpolator state must be a renderer-neutral record.");
@@ -56,6 +90,7 @@ function freezeComposition(values: unknown): ImmutableRecord {
 const EMPTY_RESOLVED_PLUGINS: ResolvedPlugins = Object.freeze({
   plugins: Object.freeze([]),
   diagnostics: Object.freeze([]),
+  authoredKeyframes: Object.freeze({}),
   internalKeys: Object.freeze([]),
   outputSerializers: Object.freeze({}),
   preparation: Object.freeze({ keyframes: Object.freeze({}), tweenVars: Object.freeze({}) }),
@@ -108,7 +143,10 @@ export class Track {
         );
       values = composed as ImmutableRecord;
     }
-    const snapshot = Object.freeze({ progress: this.#progress, values: freezeComposition(values) });
+    const snapshot = Object.freeze({
+      progress: this.#progress,
+      values: freezeComposition(publishableValues(values, this.#plugins)),
+    });
     this.#lastInputs = freezeValue({ ...inputs });
     this.#lastSnapshot = snapshot;
     this.#dirty = false;

@@ -2,7 +2,7 @@
 
 **Captured:** 2026-08-19, Asia/Jakarta  
 **Branch verified:** `main` at `d292076`  
-**Phase:** runtime mutation model, trigger drivers through `T5`, compiled Track ownership, edge identity, trigger progress ownership, teardown ownership, single-track mutation atomicity, user documentation, declared package entrypoints, the shipped Scheduler with the public port contracts, clock tick error attribution, time loop semantics, and the GSAP-backed scroll source producer seam have landed.
+**Phase:** runtime mutation model, trigger drivers through `T5`, compiled Track ownership, edge identity, trigger progress ownership, teardown ownership, single-track mutation atomicity, user documentation, declared package entrypoints, the shipped Scheduler with the public port contracts, clock tick error attribution, time loop semantics, the GSAP-backed scroll source producer seam, plugin-named authored keyframe groups, and one internal-key enforcement point have landed.
 
 This document reports current implementation reality. Plans and audits describe intent unless this file says they landed.
 
@@ -21,6 +21,8 @@ This document reports current implementation reality. Plans and audits describe 
 - Clock tick error attribution landed by closing issue [#154](https://github.com/chahyasantoso/motion5/issues/154). `GraphRuntime` advances the clock consumers and flushes the graph inside separate error boundaries: a consumer failure reports `clock-consumer-failure` with the tick it happened on, only a real `GraphRuntime.flush` failure reports `flush-failure`, and the flush still runs on a tick whose consumers threw. Multi-consumer failures keep every cause in the message. Still one clock subscription and one reporting path. ADR-039 records the split.
 - Time loop semantics landed through PR [#162](https://github.com/chahyasantoso/motion5/pull/162), closing issue [#156](https://github.com/chahyasantoso/motion5/issues/156). `createLoopCycle` is the single owner of loop state, the cycle index, direction, and the completion latch; `createTimeDriver` keeps the emission channel and disposal and no longer counts elapsed time. `Motion` is unmodified and gained no trigger-kind branch. `repeat` counts the passes after the initial one, so `repeat: 0` is the previous single-pass driver value for value; `-1` is infinite; ping-pong is `{ repeat: -1, yoyo: true }` rather than a third field. `trigger-time-repeat-unsupported` is deleted in favor of `trigger-time-repeat-shape`, `trigger-time-yoyo-shape`, and `trigger-time-yoyo-requires-repeat`. ADR-040 records the arithmetic.
 - The GSAP-backed scroll source producer seam landed, closing issue [#163](https://github.com/chahyasantoso/motion5/issues/163). `createGsapScrollSource(scrollTrigger, options)` in `@motion5/core/adapters` owns lazy first-subscriber creation, fan-out through a copied listener set, and kill-on-last-unsubscribe. The React demo now contributes only a thin `createWalkScrollSource()` binding with `gsap.registerPlugin(ScrollTrigger)` at the app layer. Cases `G-1` through `G-4` cover the producer behavior with a fake `GsapScrollTriggerLike`; `G-5` asserts no file under `packages/core/src` imports gsap.
+- Plugin-named authored keyframe groups landed, closing issue [#165](https://github.com/chahyasantoso/motion5/issues/165). `keyframes` accepts `{ fk: { boneLength } }` in addition to the flat form, which stays legal: the grouped form was rejected at load before this, so nothing authored can depend on it and nothing can be broken by accepting it. A group addresses a plugin by name and each leaf is checked against that plugin's own claimed keys, so no plugin was renamed and `#keyOwners` stays global. `flattenAuthoredKeyframes` is the only owner of the transform and the Engine calls it with or without a `PluginRegistry`, because a registry-less Engine has no resolver to fall back on and an unflattened group would compile clean and never move. Leaves keep their unprefixed names; the colon is instead rejected in every authored keyframe name and in plugin `keys`, `inputs`, and `outputs`. One compiled key authored twice is `keyframes-duplicate-key`, and `usesThreeD` reads group leaves so `perspective-usage` keeps firing. ADR-041 records the fork.
+- Internal-key enforcement moved to one point, closing issue [#166](https://github.com/chahyasantoso/motion5/issues/166). `Track.compose` removes namespaced and declared-internal keys after the plugin chain and before the snapshot is frozen, so the publisher, `handle.get`, `subscribeNode`, the DOM adapter, and React see one filtered surface; `dom.ts` no longer reads `internalKeys`, which only one of the two shipped renderers ever did. A plugin's private `fk:phase` needs no declaration; `internalKeys` remains for unprefixed derived keys, which no rule can recognize. `rendererNeutralState` and `isRendererNeutral` are unchanged, so an underscore key returned from `compose` is still rejected loudly instead of hidden. ADR-042 records the target and the two inverted criteria it declines.
 
 ## Documentation and package surface
 
@@ -31,6 +33,7 @@ This document reports current implementation reality. Plans and audits describe 
 - The React demo uses `TrackHandle` mutation, no longer calls the owner-based adoption wrappers, and now composes the shipped scheduler instead of the test fake. No consumer-facing document builds a runtime on `createFakeScheduler`.
 - The T4/T5 plan and its corrections are present under `docs/archived/`. Earlier status text claiming the plan existed only on another branch is obsolete.
 - The authored schema, the v4 migration guide, and `docs/guide/errors-and-diagnostics.md` describe the three loop rules rather than the deleted `trigger-time-repeat-unsupported`.
+- The authored schema documents the plugin-named group form, the reserved colon, and the `keyframes-reserved-separator` and `keyframes-duplicate-key` rule ids. `AuthoredKeyframe` is a type in the contract module, not a new public export, so the allow-listed entry surface is unchanged.
 - The packages remain private at `0.0.0`; packaged-consumer verification and publication remain Phase 6 work.
 
 ## Accepted behavior, not remaining defects
@@ -47,8 +50,11 @@ A Motion is destroyed empty. `destroyMotion` refuses a Motion that still owns tr
 
 A looping Motion has no pause of its own. Playback belongs to `Motion`, so a paused Motion detaches from its port while loop time keeps running and resuming lands on wall-clock loop time. ADR-040 owns this.
 
+A plugin-named group leaf whose value is an empty object is accepted, exactly as the flat form is. The contract layer has no plugin registry and must not gain one, so it cannot tell a one-leaf group from a malformed property; that ambiguity is resolved at plugin resolution as `plugin-unknown-key`. ADR-041 owns this.
+
 ## Known remaining scope
 
+- **Per-plugin key ownership:** grouped leaves keep their authored names, so `fkPlugin` still claims `boneLength` rather than the natural `length`. Scoping `#keyOwners` per plugin, which would let two plugins claim `rotation` and let a group leaf be spelled naturally, is a separate slice. ADR-041 records why it is not this one.
 - **Loop follow-ups:** per-cycle easing, a repeat delay, a loop completion callback, and playback pause are out of scope for ADR-040. Each is a separate authored field with its own owner question, and none of them is needed to make a loop run.
 - **Phase 6 packaging:** neither package is published. Publication, packed-package consumer verification, API reporting, performance gates, and removal of transitional compatibility wrappers remain separate packaging work.
 
@@ -67,6 +73,7 @@ A looping Motion has no pause of its own. Playback belongs to `Motion`, so a pau
 - Shipped scheduler and public port contracts: PR [#160](https://github.com/chahyasantoso/motion5/pull/160), cases `K-1` through `K-10`. Failing-first is replayed by dispatching `Recovery audit` with `base` set to `main`, because both new test files assert against modules that already exist on the parent commit rather than importing the module they introduce.
 - Clock tick error boundaries: cases `B-1` through `B-7` in `packages/core/test/unit/runtime/clock-consumer-error-boundary.test.ts`. Failing-first is replayed by dispatching `Recovery audit` with `base` set to `main`, because the tests and the behavior land as separate commits on the branch.
 - Time loop semantics: PR [#162](https://github.com/chahyasantoso/motion5/pull/162), red run [32221562839](https://github.com/chahyasantoso/motion5/actions/runs/32221562839) archived at `logs/32221562839/`, reporting `20 failed | 497 passed` in `quality` with every failure assertion-level or a contract throw. Cases `L-1` through `L-21`. `L-1` passes on the parent by design: it is the byte-for-byte single-pass compatibility guard and is not claimed as red.
+- Keyframe groups and internal-key enforcement: cases `F-1` through `F-12` and `H-1` through `H-4`. Failing-first is the two `test(...)` commits on `feat/issue-165-166-namespaced-keyframes`, each pushed before the behavior commit it justifies, so red is replayed by dispatching `Recovery audit` against either parent. Every new test reaches its subject through modules that already exist on that parent, so red is assertion-level rather than import-resolution red. `H-3` passes on its parent by design and is not claimed as red: it pins that an underscore key from `compose` stays a `composition-output-shape` rejection.
 
 ## Guardrails
 
@@ -85,3 +92,5 @@ A looping Motion has no pause of its own. Playback belongs to `Motion`, so a pau
 - Avoid hand-padded Markdown tables in this file; `format:check` is a hard gate inside `quality`.
 - Consumer-facing documents live under `docs/guide/` and name only symbols or subpaths declared by the package exports map.
 - Frame pacing belongs to `Clock` and applying belongs to `Scheduler`; a host primitive is injected rather than referenced.
+- An authored form is normalized once, by an owner that does not depend on optional wiring being present.
+- What may be published is decided once, before publication, never per renderer.
