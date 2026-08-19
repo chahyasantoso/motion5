@@ -63,10 +63,9 @@ function renderableValues(
   metadata?: ResolvedPlugins,
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
-  const internalKeys = metadata?.internalKeys ?? [];
   const outputSerializers = metadata?.outputSerializers ?? {};
   for (const [key, value] of Object.entries(values)) {
-    if (key.startsWith("_") || key === "offset" || internalKeys.includes(key)) continue;
+    if (key.startsWith("_") || key === "offset") continue;
     const serializer = outputSerializers[key];
     result[key] = serializer ? serializer(value) : value;
   }

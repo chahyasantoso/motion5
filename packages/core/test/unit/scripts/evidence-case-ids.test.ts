@@ -54,9 +54,13 @@ import { fileURLToPath } from "node:url";
 // ScrollTrigger wiring into a core adapter that takes `ScrollTrigger` as an injected structural
 // dependency. It owns how a producer turns subscriber churn into exactly one lazily created
 // instance and its teardown.
+//
+// `H-` belongs to stripping namespaced internal keys before publish (issue #166): one predicate
+// treats `_`-prefixed and `:`-namespaced keys as private after the plugin compose chain, so the
+// publisher and both renderers see a single already-filtered surface.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:B|C|D|E|G|K|L|M|P|R|S|T)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:B|C|D|E|G|H|K|L|M|P|R|S|T)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })

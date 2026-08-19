@@ -29,7 +29,6 @@ export interface ResolvedPlugins {
   readonly plugins: readonly PluginDefinition[];
   readonly diagnostics: readonly Diagnostic[];
   readonly authoredKeyframes: Readonly<Record<string, unknown>>;
-  readonly internalKeys: readonly string[];
   readonly outputSerializers: Readonly<Record<string, OutputSerializer>>;
   readonly preparation: PreparedContribution;
 }
@@ -41,7 +40,6 @@ export interface PluginDefinition {
   readonly stage?: string;
   readonly priority?: number;
   readonly outputs?: readonly string[];
-  readonly internalKeys?: readonly string[];
   readonly outputSerializers?: Readonly<Record<string, OutputSerializer>>;
   readonly contribute?: PluginContributor;
   readonly compose: PluginComposer;
@@ -300,9 +298,6 @@ function result(
   authoredKeyframes: Readonly<Record<string, unknown>>,
   preparation: PreparedContribution,
 ): ResolvedPlugins {
-  const internalKeys = Object.freeze(
-    [...new Set(plugins.flatMap((plugin) => plugin.internalKeys ?? []))].sort(),
-  );
   const outputSerializers: Record<string, OutputSerializer> = {};
   const owned = new Set(plugins.flatMap((plugin) => plugin.outputs ?? []));
   for (const plugin of plugins)
@@ -331,7 +326,6 @@ function result(
     plugins: Object.freeze(plugins),
     diagnostics: Object.freeze(diagnostics),
     authoredKeyframes: deepFreeze(authoredKeyframes),
-    internalKeys,
     outputSerializers: Object.freeze(outputSerializers),
     preparation,
   });

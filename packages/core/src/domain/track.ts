@@ -35,11 +35,19 @@ function preparedConfig(config: unknown, plugins: ResolvedPlugins): unknown {
     tweenVars: preparation.tweenVars,
   });
 }
+function isInternalKey(key: string): boolean {
+  return key.startsWith("_") || key.includes(":");
+}
+function publishableValues(values: ImmutableRecord): ImmutableRecord {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(values)) if (!isInternalKey(key)) result[key] = value;
+  return result as ImmutableRecord;
+}
 function rendererNeutralState(state: Readonly<Record<string, unknown>>): ImmutableRecord {
   if (!isRecord(state))
     throw new CompositionOutputError("Interpolator state must be a renderer-neutral record.");
   const values: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(state)) if (!key.startsWith("_")) values[key] = value;
+  for (const [key, value] of Object.entries(state)) if (!isInternalKey(key)) values[key] = value;
   return values as ImmutableRecord;
 }
 function freezeComposition(values: unknown): ImmutableRecord {
@@ -57,7 +65,6 @@ const EMPTY_RESOLVED_PLUGINS: ResolvedPlugins = Object.freeze({
   plugins: Object.freeze([]),
   diagnostics: Object.freeze([]),
   authoredKeyframes: Object.freeze({}),
-  internalKeys: Object.freeze([]),
   outputSerializers: Object.freeze({}),
   preparation: Object.freeze({ keyframes: Object.freeze({}), tweenVars: Object.freeze({}) }),
 });
@@ -109,7 +116,10 @@ export class Track {
         );
       values = composed as ImmutableRecord;
     }
-    const snapshot = Object.freeze({ progress: this.#progress, values: freezeComposition(values) });
+    const snapshot = Object.freeze({
+      progress: this.#progress,
+      values: freezeComposition(publishableValues(values)),
+    });
     this.#lastInputs = freezeValue({ ...inputs });
     this.#lastSnapshot = snapshot;
     this.#dirty = false;
