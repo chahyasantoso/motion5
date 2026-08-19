@@ -85,6 +85,52 @@ describe("plugin registry", () => {
     expect(registry.size).toBe(1);
   });
 
+  it("F-6 rejects a colon in plugin keys, inputs, and outputs", () => {
+    const registry = new PluginRegistry();
+    expect(() => registry.register(plugin("k", { keys: ["fk:length"] }))).toThrow(/':'/);
+    expect(() => registry.register(plugin("i", { inputs: ["parent:x"] }))).toThrow(/':'/);
+    expect(() => registry.register(plugin("o", { outputs: ["fk:world"] }))).toThrow(/':'/);
+    expect(registry.size).toBe(0);
+  });
+
+  it("F-7 resolves a grouped leaf against the plugin the group names", () => {
+    const registry = new PluginRegistry();
+    registry.register(plugin("fk", { keys: ["boneLength", "boneRotation"] }));
+    registry.register(plugin("transform", { keys: ["x", "y", "rotation"] }));
+    const authored = {
+      fk: { boneLength: {}, boneRotation: {} },
+      transform: { x: {} },
+    };
+    const resolved = registry.resolveForKeyframes(authored, "track.keyframes");
+    expect(resolved.diagnostics).toEqual([]);
+    expect(resolved.plugins.map(({ name }) => name)).toEqual(["fk", "transform"]);
+    expect(resolved.authoredKeyframes).toEqual({ boneLength: {}, boneRotation: {}, x: {} });
+  });
+
+  it("F-8 reports an unknown group and an unclaimed leaf at authored paths", () => {
+    const registry = new PluginRegistry();
+    registry.register(plugin("fk", { keys: ["boneLength"] }));
+    const authored = { fk: { boneWidth: {} }, mystery: { boneLength: {} } };
+    const resolved = registry.resolveForKeyframes(authored, "track.keyframes");
+    expect(resolved.plugins).toEqual([]);
+    expect(resolved.diagnostics).toEqual([
+      {
+        ruleId: "plugin-unknown-key",
+        path: "track.keyframes.fk.boneWidth",
+        message: 'Plugin "fk" does not claim authored key "boneWidth".',
+        severity: "error",
+        ids: ["fk", "boneWidth"],
+      },
+      {
+        ruleId: "plugin-unknown-key",
+        path: "track.keyframes.mystery",
+        message: 'No registered plugin is named "mystery".',
+        severity: "error",
+        ids: ["mystery"],
+      },
+    ]);
+  });
+
   it("lets exact ownership beat a predicate fallback", () => {
     const registry = new PluginRegistry();
     const predicate = vi.fn(() => true);

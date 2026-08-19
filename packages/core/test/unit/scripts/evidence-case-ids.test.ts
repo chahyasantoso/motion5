@@ -54,9 +54,13 @@ import { fileURLToPath } from "node:url";
 // ScrollTrigger wiring into a core adapter that takes `ScrollTrigger` as an injected structural
 // dependency. It owns how a producer turns subscriber churn into exactly one lazily created
 // instance and its teardown.
+//
+// `F-` belongs to plugin-named authored keyframe groups (issue #165 and ADR-041): which authored
+// spellings of a keyframe are legal, which plugin owns a grouped leaf, and what the group is
+// flattened to before compilation. It owns the authored form rather than the published one.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:B|C|D|E|G|K|L|M|P|R|S|T)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|K|L|M|P|R|S|T)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })

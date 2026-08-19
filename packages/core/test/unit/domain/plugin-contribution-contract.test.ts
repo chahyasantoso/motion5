@@ -39,6 +39,27 @@ describe("plugin contribution contract (X-3)", () => {
       ],
     ]);
   });
+  it("F-9 contributes per grouped leaf and reports the authored path", () => {
+    const calls: unknown[] = [];
+    const registry = new PluginRegistry();
+    registry.register({
+      name: "fk",
+      keys: ["boneLength"],
+      stage: "prepare",
+      contribute: (key, authoredStops) => {
+        calls.push([key, authoredStops]);
+        throw new Error("contribution refused");
+      },
+      compose,
+    });
+    const authored = { fk: { boneLength: stops(1) } };
+    const resolved = registry.resolveForKeyframes(authored, "track.keyframes");
+    // Real stops, per leaf. A group handed to the hook whole reads as an empty stop list, so the
+    // hook would be called with nothing to contribute from.
+    expect(calls).toEqual([["boneLength", stops(1).stops]]);
+    expect(resolved.diagnostics[0]?.ruleId).toBe("plugin-contribution-failure");
+    expect(resolved.diagnostics[0]?.path).toBe("track.keyframes.fk.boneLength");
+  });
   it("preserves both keyframes and tweenVars from one explicit contribution", () => {
     const registry = new PluginRegistry();
     registry.register({
