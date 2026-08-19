@@ -1,0 +1,14 @@
+quality (node 24)	Run npm run format:check	﻿2026-08-19T15:51:07.4910462Z ##[group]Run npm run format:check
+quality (node 24)	Run npm run format:check	2026-08-19T15:51:07.4910812Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Run npm run format:check	2026-08-19T15:51:07.4954249Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run format:check	2026-08-19T15:51:07.4954508Z env:
+quality (node 24)	Run npm run format:check	2026-08-19T15:51:07.4954712Z   NODE_VERSION: 24
+quality (node 24)	Run npm run format:check	2026-08-19T15:51:07.4954926Z ##[endgroup]
+quality (node 24)	Run npm run format:check	2026-08-19T15:51:07.5950635Z 
+quality (node 24)	Run npm run format:check	2026-08-19T15:51:07.5951428Z > motion5@0.0.0 format:check
+quality (node 24)	Run npm run format:check	2026-08-19T15:51:07.5951944Z > prettier . --check
+quality (node 24)	Run npm run format:check	2026-08-19T15:51:07.5952130Z 
+quality (node 24)	Run npm run format:check	2026-08-19T15:51:07.6954957Z Checking formatting...
+quality (node 24)	Run npm run format:check	2026-08-19T15:51:08.5557551Z [^[[33mwarn^[[39m] docs/ADR-042-internal-key-enforcement.md
+quality (node 24)	Run npm run format:check	2026-08-19T15:51:12.3309481Z [^[[33mwarn^[[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+quality (node 24)	Run npm run format:check	2026-08-19T15:51:12.3773519Z ##[error]Process completed with exit code 1.
