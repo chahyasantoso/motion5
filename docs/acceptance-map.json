@@ -82,6 +82,10 @@
     {
       "id": "k-public-port-types",
       "test": "packages/core/test/unit/scripts/public-port-types.test.ts"
+    },
+    {
+      "id": "b-clock-tick-error-boundaries",
+      "test": "packages/core/test/unit/runtime/clock-consumer-error-boundary.test.ts"
     }
   ]
 }

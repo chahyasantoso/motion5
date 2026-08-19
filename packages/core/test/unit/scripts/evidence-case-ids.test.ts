@@ -39,9 +39,14 @@ import { fileURLToPath } from "node:url";
 // the five port contracts the entry now names (issue #158). Every series above owns behavior
 // inside one object; `K-` owns what a consumer outside the package can construct and name at all,
 // which is why the scheduler cases and the declaration cases share one series rather than two.
+//
+// `B-` belongs to the tick error boundaries inside `GraphRuntime` (issue #154 and ADR-039): which
+// owner a tick failure is attributed to once the clock consumers and the graph flush can fail
+// independently. Every series above owns what an operation does or what it leaves behind; `B-`
+// owns what the diagnostic says happened, which is why it does not extend `D-` or `P-`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:C|D|E|K|M|P|R|S|T)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:B|C|D|E|K|M|P|R|S|T)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
