@@ -17,10 +17,31 @@ export interface ValidationResult {
 export interface KeyframeValidationOptions {
   readonly ruleIdPrefix?: string;
   readonly ruleIdAliases?: Readonly<Record<string, string>>;
+  /**
+   * Plugin-named groups are an authoring form. A contributed property is a single flat output, so
+   * the contribution path passes `false` and keeps the pre-group strictness: an object of objects
+   * contributed as a property stays a `stops-shape` error instead of being read as a group.
+   */
+  readonly allowGroups?: boolean;
 }
+const STOPS_REQUIRED = "Authored properties require a stops array.";
+const THREE_D_KEYS = ["z", "rotationX", "rotationY"];
 type RawObject = Record<string, unknown>;
 function isObject(value: unknown): value is RawObject {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+/**
+ * Whether an authored keyframe entry is a plugin-named group rather than a property.
+ *
+ * The test is structural because the contract layer has no plugin registry and must not gain one:
+ * a group is a non-empty object with no `stops` array whose every value is an object. Whether the
+ * group name addresses a registered plugin, and whether that plugin claims each leaf, is ownership
+ * rather than schema shape, and `plugin-unknown-key` owns it at resolve time. See ADR-041.
+ */
+export function isKeyframeGroup(value: unknown): value is RawObject {
+  if (!isObject(value) || Array.isArray(value.stops)) return false;
+  const leaves = Object.values(value);
+  return leaves.length > 0 && leaves.every((leaf) => isObject(leaf));
 }
 export function validateKeyframes(
   keyframes: unknown,
@@ -30,6 +51,7 @@ export function validateKeyframes(
 ): void {
   const prefix = options.ruleIdPrefix ?? "";
   const aliases = options.ruleIdAliases ?? {};
+  const allowGroups = options.allowGroups ?? true;
   const add = (
     ruleId: string,
     rulePath: string,
@@ -42,20 +64,32 @@ export function validateKeyframes(
     add("keyframes-shape", path, "Track keyframes must be an object.");
     return;
   }
-  for (const [key, rawProperty] of Object.entries(keyframes)) {
-    const propertyPath = `${path}.${key}`;
-    if (!isObject(rawProperty)) {
-      add("stops-shape", `${propertyPath}.stops`, "Authored properties require a stops array.");
-      continue;
+  // The colon is reserved rather than conventional. `Track` treats a colon key as a plugin's
+  // private namespace and never publishes it, so an authored key spelled with one would be
+  // animated and then hidden, and `{ "fk:length": ... }` would become a second spelling of the
+  // flattened `{ fk: { length: ... } }`. That is the dual namespace grouping exists to remove.
+  const checkName = (name: string, namePath: string): void => {
+    if (!name.includes(":")) return;
+    const detail = "must not contain ':', which is reserved for internal keys";
+    add("keyframes-reserved-separator", namePath, `Keyframe name '${name}' ${detail}.`);
+  };
+  // Every authored spelling of one compiled key. A group leaf that collides with another group's
+  // leaf or with a flat key is rejected here, which is why `flattenAuthoredKeyframes` may resolve
+  // ties by sorted order instead of reporting the same rule a second time from the domain layer.
+  const owners = new Map<string, string>();
+  const claim = (key: string, keyPath: string): void => {
+    const owner = owners.get(key);
+    if (owner === undefined) {
+      owners.set(key, keyPath);
+      return;
     }
-    if (Object.keys(rawProperty).length === 0) continue;
-    if (!Array.isArray(rawProperty.stops)) {
-      add("stops-shape", `${propertyPath}.stops`, "Authored properties require a stops array.");
-      continue;
-    }
+    const detail = `is already authored at '${owner}'`;
+    add("keyframes-duplicate-key", keyPath, `Keyframe key '${key}' ${detail}.`);
+  };
+  const validateStops = (stops: readonly unknown[], propertyPath: string): void => {
     let previous: number | undefined;
     const positions = new Set<number>();
-    for (const [index, rawStop] of rawProperty.stops.entries()) {
+    for (const [index, rawStop] of stops.entries()) {
       const stopPath = `${propertyPath}.stops[${index}]`;
       if (!isObject(rawStop) || typeof rawStop.p !== "number" || !Number.isFinite(rawStop.p)) {
         add("stop-position", `${stopPath}.p`, "Stop p must be a finite number.");
@@ -75,6 +109,35 @@ export function validateKeyframes(
       add("stop-missing-start", propertyPath, "Stop sequence does not define p=0.", "warning");
     if (positions.size > 0 && !positions.has(1))
       add("stop-missing-end", propertyPath, "Stop sequence does not define p=1.", "warning");
+  };
+  const validateProperty = (property: unknown, propertyPath: string): void => {
+    if (!isObject(property)) {
+      add("stops-shape", `${propertyPath}.stops`, STOPS_REQUIRED);
+      return;
+    }
+    if (Object.keys(property).length === 0) return;
+    if (!Array.isArray(property.stops)) {
+      add("stops-shape", `${propertyPath}.stops`, STOPS_REQUIRED);
+      return;
+    }
+    validateStops(property.stops, propertyPath);
+  };
+  for (const [key, rawProperty] of Object.entries(keyframes)) {
+    const propertyPath = `${path}.${key}`;
+    checkName(key, propertyPath);
+    if (!allowGroups || !isKeyframeGroup(rawProperty)) {
+      claim(key, propertyPath);
+      validateProperty(rawProperty, propertyPath);
+      continue;
+    }
+    // One level, not arbitrary depth. A group holds properties, and a property holds stops, so
+    // there is no third level for an author to reach for.
+    for (const [leaf, leafProperty] of Object.entries(rawProperty)) {
+      const leafPath = `${propertyPath}.${leaf}`;
+      checkName(leaf, leafPath);
+      claim(leaf, leafPath);
+      validateProperty(leafProperty, leafPath);
+    }
   }
 }
 function validateId(
@@ -195,20 +258,30 @@ export function resolveTriggerDefinition(trigger: unknown, path: string): Trigge
   if (diagnostics.length > 0) throw new TypeError(describeDiagnostics(diagnostics));
   return trigger as TriggerDefinition;
 }
+function hasThreeDPath(property: RawObject): boolean {
+  if (!Array.isArray(property.points)) return false;
+  return property.points.some(
+    (point) => isObject(point) && typeof point.z === "number" && point.z !== 0,
+  );
+}
+function isThreeDProperty(key: string, property: unknown): boolean {
+  if (THREE_D_KEYS.includes(key)) return property !== undefined && property !== null;
+  return key === "path" && isObject(property) && hasThreeDPath(property);
+}
+// Compares leaf names, not flat record keys. A `rotationY` authored inside a group is the same 3D
+// content as a flat one, and reading only the top level made `perspective-usage` stop firing for
+// it: a silently lost warning rather than a rejected project.
 function usesThreeD(track: RawObject): boolean {
   const keyframes = isObject(track.keyframes) ? track.keyframes : null;
   if (!keyframes) return false;
-  if (
-    ["z", "rotationX", "rotationY"].some(
-      (key) => keyframes[key] !== undefined && keyframes[key] !== null,
-    )
-  )
-    return true;
-  const path = isObject(keyframes.path) ? keyframes.path : null;
-  return (
-    Array.isArray(path?.points) &&
-    path.points.some((point) => isObject(point) && typeof point.z === "number" && point.z !== 0)
-  );
+  for (const [key, property] of Object.entries(keyframes)) {
+    if (isThreeDProperty(key, property)) return true;
+    if (!isKeyframeGroup(property)) continue;
+    for (const [leaf, leafProperty] of Object.entries(property)) {
+      if (isThreeDProperty(leaf, leafProperty)) return true;
+    }
+  }
+  return false;
 }
 function validateTrackShape(
   track: unknown,

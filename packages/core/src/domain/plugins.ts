@@ -1,5 +1,6 @@
 import { validateKeyframes } from "../contract/validate-v5";
 import type { AuthoredProperty, AuthoredStop, Diagnostic } from "../contract/v5";
+import { flattenAuthoredKeyframes, type FlattenedKeyframe } from "./keyframe-groups";
 import type { ImmutableRecord } from "./values";
 
 export type PluginComposer = (
@@ -28,6 +29,12 @@ export interface PreparedContribution {
 export interface ResolvedPlugins {
   readonly plugins: readonly PluginDefinition[];
   readonly diagnostics: readonly Diagnostic[];
+  /**
+   * The authored keyframes with every plugin-named group flattened into its leaves. This is the
+   * record the interpolator and the percent map must receive; the authored one may still be
+   * grouped. Callers with no registry flatten through `flattenAuthoredKeyframes` themselves.
+   */
+  readonly authoredKeyframes: Readonly<Record<string, unknown>>;
   readonly internalKeys: readonly string[];
   readonly outputSerializers: Readonly<Record<string, OutputSerializer>>;
   readonly preparation: PreparedContribution;
@@ -123,6 +130,7 @@ function validateContributionProperty(
   const before = diagnostics.length;
   validateKeyframes({ [output]: property }, path, diagnostics, {
     ruleIdPrefix: "plugin-contribution-",
+    allowGroups: false,
     ruleIdAliases: {
       "stop-position": "stop",
       "stop-position-range": "stop-range",
@@ -139,6 +147,7 @@ function prepareContributions(
   track: TrackConfigView,
   path: string,
   diagnostics: Diagnostic[],
+  authoredPaths: ReadonlyMap<string, string> = new Map(),
 ): PreparedContribution {
   const keyframes: Record<string, AuthoredProperty> = {};
   const tweenVars: Record<string, unknown> = {};
@@ -147,6 +156,9 @@ function prepareContributions(
   const tweenOwners = new Map<string, string>();
   const ownerOf = (key: string): PluginDefinition | undefined =>
     exactOwners.get(key) ?? predicates.find((plugin) => claims(plugin, key));
+  // The flattened key is what the hook is called with, but the author never typed it. Diagnostics
+  // cite the authored spelling so a mistake inside a group reads as `keyframes.fk.boneLength`.
+  const authoredPath = (key: string): string => `${path}.${authoredPaths.get(key) ?? key}`;
   for (const key of Object.keys(authored).sort()) {
     const plugin = ownerOf(key);
     if (plugin?.stage !== "prepare" || !plugin.contribute) continue;
@@ -159,14 +171,14 @@ function prepareContributions(
           Object.freeze({ id: track.id, duration: track.duration }),
         ),
         plugin,
-        `${path}.${key}`,
+        authoredPath(key),
         diagnostics,
       );
     } catch (error) {
       diagnostics.push(
         diagnostic(
           "plugin-contribution-failure",
-          `${path}.${key}`,
+          authoredPath(key),
           `Plugin "${plugin.name}" failed: ${error instanceof Error ? error.message : String(error)}.`,
           [plugin.name, key],
         ),
@@ -262,6 +274,7 @@ function prepareContributions(
 function result(
   plugins: PluginDefinition[],
   diagnostics: Diagnostic[],
+  authoredKeyframes: Readonly<Record<string, unknown>>,
   preparation: PreparedContribution,
 ): ResolvedPlugins {
   const internalKeys = Object.freeze(
@@ -294,6 +307,7 @@ function result(
   return Object.freeze({
     plugins: Object.freeze(plugins),
     diagnostics: Object.freeze(diagnostics),
+    authoredKeyframes,
     internalKeys,
     outputSerializers: Object.freeze(outputSerializers),
     preparation,
@@ -333,6 +347,15 @@ export class PluginRegistry {
       throw new Error(`Plugin "${plugin.name}" is already registered.`);
     const keys = [...(plugin.keys ?? [])];
     const inputs = [...(plugin.inputs ?? [])];
+    const outputs = [...(plugin.outputs ?? [])];
+    // The colon belongs to the internal-key rule, and this is where that reservation becomes real
+    // rather than a convention. A plugin free to declare an output named `fk:world` would have its
+    // public output treated as private and silently dropped before publication.
+    for (const name of [...keys, ...inputs, ...outputs]) {
+      if (!name.includes(":")) continue;
+      const detail = `metadata name "${name}" must not contain ':'`;
+      throw new TypeError(`Plugin "${plugin.name}" ${detail}.`);
+    }
     for (const key of keys) {
       const owner = this.#keyOwners.get(key);
       if (owner)
@@ -351,7 +374,7 @@ export class PluginRegistry {
       ...plugin,
       ...(plugin.keys ? { keys: Object.freeze(keys) } : {}),
       ...(plugin.inputs ? { inputs: Object.freeze(inputs) } : {}),
-      ...(plugin.outputs ? { outputs: Object.freeze([...plugin.outputs]) } : {}),
+      ...(plugin.outputs ? { outputs: Object.freeze(outputs) } : {}),
     });
     this.#plugins.set(plugin.name, frozen);
     this.#orders.set(plugin.name, this.#registrationOrder++);
@@ -359,27 +382,57 @@ export class PluginRegistry {
     for (const input of inputs) this.#inputOwners.set(input, frozen);
     if (keys.length === 0 && plugin.claimsKey) this.#predicates.push(frozen);
   }
+  #ownerOf(key: string): PluginDefinition | undefined {
+    return this.#keyOwners.get(key) ?? this.#predicates.find((plugin) => claims(plugin, key));
+  }
+  /**
+   * A flat key resolves against the global key map, unchanged. A grouped leaf resolves against the
+   * plugin the group names and nothing else, which is the granularity the group form exists for:
+   * routing the leaf through the global map instead would accept `boneLength` under any group name
+   * and report nothing at all for a group that names no registered plugin.
+   */
+  #ownerForEntry(
+    entry: FlattenedKeyframe,
+    path: string,
+    diagnostics: Diagnostic[],
+    reportedGroups: Set<string>,
+  ): PluginDefinition | undefined {
+    if (entry.group === undefined) {
+      const owner = this.#ownerOf(entry.key);
+      if (owner !== undefined) return owner;
+      const message = `No registered plugin claims authored key "${entry.key}".`;
+      diagnostics.push(diagnostic("plugin-unknown-key", `${path}.${entry.key}`, message, [entry.key]));
+      return undefined;
+    }
+    const named = this.#plugins.get(entry.group);
+    if (named === undefined) {
+      // Once per group, not once per leaf: the author made one mistake.
+      if (reportedGroups.has(entry.group)) return undefined;
+      reportedGroups.add(entry.group);
+      const message = `No registered plugin is named "${entry.group}".`;
+      const groupPath = `${path}.${entry.group}`;
+      diagnostics.push(diagnostic("plugin-unknown-key", groupPath, message, [entry.group]));
+      return undefined;
+    }
+    if (claims(named, entry.key)) return named;
+    const message = `Plugin "${entry.group}" does not claim authored key "${entry.key}".`;
+    const leafPath = `${path}.${entry.authoredPath}`;
+    const ids = [entry.group, entry.key];
+    diagnostics.push(diagnostic("plugin-unknown-key", leafPath, message, ids));
+    return undefined;
+  }
   resolveForKeyframes(
     authored: Readonly<Record<string, unknown>>,
     path = "keyframes",
     track: TrackConfigView = {},
   ): ResolvedPlugins {
+    const flattened = flattenAuthoredKeyframes(authored);
     const plugins: PluginDefinition[] = [];
     const diagnostics: Diagnostic[] = [];
-    const ownerOf = (key: string): PluginDefinition | undefined =>
-      this.#keyOwners.get(key) ?? this.#predicates.find((plugin) => claims(plugin, key));
-    for (const key of Object.keys(authored).sort()) {
-      const owner = ownerOf(key);
-      if (!owner)
-        diagnostics.push(
-          diagnostic(
-            "plugin-unknown-key",
-            `${path}.${key}`,
-            `No registered plugin claims authored key "${key}".`,
-            [key],
-          ),
-        );
-      else if (!plugins.includes(owner)) plugins.push(owner);
+    const reportedGroups = new Set<string>();
+    for (const entry of flattened.entries) {
+      const owner = this.#ownerForEntry(entry, path, diagnostics, reportedGroups);
+      if (owner !== undefined && !plugins.includes(owner)) plugins.push(owner);
     }
     plugins.sort(
       (a, b) =>
@@ -402,11 +455,18 @@ export class PluginRegistry {
           );
         else owners.set(output, plugin.name);
       }
-    return result(
-      plugins,
+    // Flattened, so a prepare-stage plugin's `contribute` hook receives each leaf with its real
+    // stops. Handed the group instead, the hook would be called once with an empty stop list.
+    const preparation = prepareContributions(
+      flattened.keyframes,
+      this.#keyOwners,
+      this.#predicates,
+      track,
+      path,
       diagnostics,
-      prepareContributions(authored, this.#keyOwners, this.#predicates, track, path, diagnostics),
+      flattened.authoredPaths,
     );
+    return result(plugins, diagnostics, flattened.keyframes, preparation);
   }
   has(name: string): boolean {
     return this.#plugins.has(name);

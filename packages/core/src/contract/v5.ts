@@ -83,6 +83,15 @@ export interface AuthoredStop {
 export interface AuthoredProperty {
   readonly stops: readonly AuthoredStop[];
 }
+/**
+ * One authored keyframe entry: a property, or a plugin-named group of properties.
+ *
+ * The group form names the plugin that owns its leaves, so `{ fk: { boneLength } }` scopes the leaf
+ * without the author inventing a disambiguated flat name. It is sugar with one canonical spelling:
+ * the group is flattened back to its unprefixed leaves before compilation, so no interpolator,
+ * adapter, or renderer ever receives a nested value. The flat form is unchanged. See ADR-041.
+ */
+export type AuthoredKeyframe = AuthoredProperty | Readonly<Record<string, AuthoredProperty>>;
 export interface InputProjection {
   readonly pick?: readonly string[];
   readonly map?: Readonly<Record<string, string>>;
@@ -90,7 +99,7 @@ export interface InputProjection {
 export interface TrackDefinition {
   readonly id: string;
   readonly duration?: number;
-  readonly keyframes?: Readonly<Record<string, AuthoredProperty>>;
+  readonly keyframes?: Readonly<Record<string, AuthoredKeyframe>>;
   readonly observes?: readonly ObservationDefinition[];
 }
 export interface ObservationDefinition {
