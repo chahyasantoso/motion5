@@ -12,6 +12,18 @@ export interface TimeTriggerDefinition {
   readonly type: "time";
   readonly duration: number;
   readonly autoplay?: true;
+  /**
+   * Passes after the initial one, so a finite loop runs `repeat + 1` cycles and the initial pass is
+   * never one of the repeats. `-1` is infinite; any other negative value or non-integer is
+   * rejected. See ADR-040.
+   */
+  readonly repeat?: number;
+  /**
+   * Reverse every odd cycle. Requires a `repeat` that actually repeats, because a yoyo with
+   * nothing to reverse would be a field accepted and then ignored. Ping-pong is this with
+   * `repeat: -1` rather than a third field.
+   */
+  readonly yoyo?: boolean;
 }
 export interface ScrollTriggerDefinition {
   readonly type: "scroll";
