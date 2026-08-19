@@ -17,7 +17,7 @@ npx tsc -p packages/core/tsconfig.build.json
 
 - **Clock** advances time. `createManualClock()` for tests and deterministic examples, `createBrowserClock(frameSource)` for a real page.
 - **Interpolator** turns authored keyframes into values. `createGsapInterpolator(gsap)` is the supported v1 implementation.
-- **Scheduler** decides _when_ a pending progress change is applied. Core ships no implementation for it; you own it, and it is about ten lines.
+- **Scheduler** decides _when_ a pending progress change is applied. `createMicrotaskScheduler()` is the shipped implementation: it drains on a microtask, so applying a change is always a separate turn from producing it. Inject a `SchedulerHost` if you need a different queue.
 
 A `PluginRegistry` is optional but practically required: every authored keyframe key must be claimed by a registered plugin, so a project with an `x` track and no plugins fails to load.
 
@@ -26,29 +26,13 @@ A `PluginRegistry` is optional but practically required: every authored keyframe
 ```ts
 import { Engine, PluginRegistry, createManualClock } from "@motion5/core";
 import type { ProjectDefinition } from "@motion5/core";
-import { createGsapInterpolator } from "@motion5/core/adapters";
+import { createGsapInterpolator, createMicrotaskScheduler } from "@motion5/core/adapters";
 import { transformPlugin } from "@motion5/core/plugins/transform";
 import gsap from "gsap";
 
-// You own the scheduler. This one collects jobs and lets the caller decide when they run, which
-// makes the whole pipeline deterministic. A browser app can call queueMicrotask instead.
-const jobs: (() => void)[] = [];
-const scheduler = {
-  schedule(job: () => void) {
-    jobs.push(job);
-    return {
-      cancel() {
-        const index = jobs.indexOf(job);
-        if (index >= 0) jobs.splice(index, 1);
-      },
-    };
-  },
-};
-
-// Drain until it settles: applying progress can enqueue the graph flush that publishes it.
-function flush(): void {
-  while (jobs.length > 0) for (const job of jobs.splice(0, jobs.length)) job();
-}
+// The scheduler drains on a microtask, so let the queue run before reading a value. Two passes can
+// chain: one applies progress, the next publishes the graph follow-up that applying it queued.
+const nextTurn = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 const plugins = new PluginRegistry();
 plugins.register(transformPlugin);
@@ -57,7 +41,7 @@ const clock = createManualClock();
 const engine = new Engine({
   clock,
   interpolator: createGsapInterpolator(gsap),
-  scheduler,
+  scheduler: createMicrotaskScheduler(),
   plugins,
 });
 
@@ -106,7 +90,7 @@ A loaded node publishes nothing until it is mounted. Mounting is explicit becaus
 handle.mount("hero/title");
 
 clock.tick(500);
-flush();
+await nextTurn();
 
 const patch = handle.get("hero/title");
 if (patch?.status === "ready") {
@@ -116,7 +100,11 @@ if (patch?.status === "ready") {
 }
 ```
 
-Two separate things just happened, and keeping them separate is the whole design. `clock.tick(500)` advanced time, which let the `time` driver emit progress. `flush()` ran the scheduler job that applied it and published the resulting patch. Nothing publishes mid-tick, and nothing publishes twice for the same value.
+Two separate things just happened, and keeping them separate is the whole design. `clock.tick(500)` advanced time, which let the `time` driver emit progress. The scheduler's microtask pass then ran the job that applied it and published the resulting patch. Nothing publishes mid-tick, and nothing publishes twice for the same value.
+
+In a browser you do not write `await nextTurn()`. The pass runs on its own at the end of the turn that produced the work, inside the same frame and before paint, so a patch is ready by the time anything renders. The helper exists for tests and scripts, where nothing else is driving the loop.
+
+If a scheduled job throws, the pass still runs every job behind it and then reports once. With the default host that report arrives as an unhandled rejection, so pass `onError` to `createMicrotaskScheduler` when you want to route failures yourself.
 
 ## Reading values
 
