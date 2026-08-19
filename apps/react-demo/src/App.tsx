@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import {
   Engine,
   PluginRegistry,
+  createMicrotaskScheduler,
   createTriggerFactory,
   type ProjectHandle,
   type TrackHandle,
@@ -9,7 +10,7 @@ import {
 import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
 import { fkPlugin } from "@motion5/core/plugins/fk";
 import { transformPlugin } from "@motion5/core/plugins/transform";
-import { createFakeInterpolator, createFakeScheduler } from "@motion5/core/ports/fakes";
+import { createFakeInterpolator } from "@motion5/core/ports/fakes";
 import { armTracks, initialWalkerProject, WALK_SCROLL_SOURCE } from "./full-body-project";
 import { createGsapScrollSource } from "./scroll-source-gsap";
 import { SkeletonRig } from "./components/SkeletonRig";
@@ -44,7 +45,6 @@ export const App: React.FC = () => {
       requestFrame: (cb: FrameRequestCallback) => requestAnimationFrame(cb),
       cancelFrame: (h: number) => cancelAnimationFrame(h),
     });
-    const scheduler = createFakeScheduler();
     const scrollSource = createGsapScrollSource({
       trigger: "#scroll-scene",
       start: "top top",
@@ -57,7 +57,9 @@ export const App: React.FC = () => {
     const project = new Engine({
       clock,
       interpolator: createFakeInterpolator(),
-      scheduler,
+      // The shipped scheduler drains on a microtask, so this app no longer flushes the queue by
+      // hand from inside the scroll subscriber below. Issue #155.
+      scheduler: createMicrotaskScheduler(),
       plugins,
       triggerFactory: createTriggerFactory({
         scroll: ({ trigger }) => (trigger.source === WALK_SCROLL_SOURCE ? scrollSource : undefined),
@@ -86,8 +88,6 @@ export const App: React.FC = () => {
         armHandlesRef.current = [];
         setArmsAdopted(false);
       }
-
-      scheduler.flush();
     });
 
     setHandle(project);
