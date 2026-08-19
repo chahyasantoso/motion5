@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { gsap } from "gsap";
 import {
   Engine,
   PluginRegistry,
@@ -8,9 +9,9 @@ import {
   type TrackHandle,
 } from "@motion5/core";
 import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
+import { createGsapInterpolator } from "@motion5/core/adapters";
 import { fkPlugin } from "@motion5/core/plugins/fk";
 import { transformPlugin } from "@motion5/core/plugins/transform";
-import { createFakeInterpolator } from "@motion5/core/ports/fakes";
 import { armTracks, initialWalkerProject, WALK_SCROLL_SOURCE } from "./full-body-project";
 import { createGsapScrollSource } from "./scroll-source-gsap";
 import { SkeletonRig } from "./components/SkeletonRig";
@@ -56,7 +57,7 @@ export const App: React.FC = () => {
     // source resolved from the serializable authored key, and nothing else.
     const project = new Engine({
       clock,
-      interpolator: createFakeInterpolator(),
+      interpolator: createGsapInterpolator(gsap),
       // The shipped scheduler drains on a microtask, so this app no longer flushes the queue by
       // hand from inside the scroll subscriber below. Issue #155.
       scheduler: createMicrotaskScheduler(),
