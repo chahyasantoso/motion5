@@ -9,7 +9,7 @@
 private derived value that was neither authored nor underscore-prefixed leaked it to the DOM with
 no error anywhere. Issue #166 diagnosed that correctly.
 
-The issue then proposed treating a namespace prefix as internal *in the renderer*, mirroring the
+The issue then proposed treating a namespace prefix as internal _in the renderer_, mirroring the
 underscore convention. Two things about that are wrong.
 
 First, `adapters/dom.ts` is not the only renderer. `packages/react/src/patch-store.ts` memoizes and
@@ -19,7 +19,7 @@ it, and one of the two shipped renderers never did, so a regression test written
 `createDomPatchAdapter` would pass while React kept leaking.
 
 Second, the underscore is not a renderer denylist to mirror. It is stripped from interpolator state
-before the plugin chain in `domain/track.ts`, and *rejected* after the chain by `isRendererNeutral`,
+before the plugin chain in `domain/track.ts`, and _rejected_ after the chain by `isRendererNeutral`,
 which publishes `composition-output-shape` and status `error`. The `dom.ts` underscore branch is
 unreachable on the publisher path. Those are two rules at two boundaries, not one convention.
 
@@ -50,7 +50,7 @@ snapshot is frozen.
 renderer and leaves React leaking.
 
 **Teaching `isRendererNeutral` about namespaced keys,** which was acceptance criterion 2 of the
-issue, is inverted: it treats `_` by *rejecting* it, so recognizing namespaced keys the same way
+issue, is inverted: it treats `_` by _rejecting_ it, so recognizing namespaced keys the same way
 would make it impossible for any plugin to derive one. A namespaced key passing validation is the
 precondition for the feature, not a hole in it.
 
