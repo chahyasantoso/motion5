@@ -55,6 +55,7 @@ export interface PluginDefinition {
 
 const VALID_STAGES = new Set(["prepare", "compose"]);
 const RESERVED_TWEEN_VARS = new Set(["keyframes", "duration", "paused", "id", "observes"]);
+const AMBIGUOUS_KEY_HINT = "Author it inside a plugin-named group to name one.";
 function diagnostic(
   ruleId: string,
   path: string,
@@ -68,6 +69,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 function claims(plugin: PluginDefinition, key: string): boolean {
   return Boolean(plugin.keys?.includes(key) || plugin.claimsKey?.(key));
+}
+function sortedNames(plugins: readonly PluginDefinition[]): readonly string[] {
+  return plugins.map(({ name }) => name).sort();
+}
+/** `"a" and "b"`, or `"a", "b" and "c"`: the wording every multi-plugin message here already uses. */
+function listNames(names: readonly string[]): string {
+  const quoted = names.map((name) => `"${name}"`);
+  if (quoted.length < 2) return quoted.join("");
+  return `${quoted.slice(0, -1).join(", ")} and ${quoted.at(-1)}`;
 }
 function stageRank(stage: string): number {
   return stage === "prepare" ? 0 : 1;
@@ -140,10 +150,20 @@ function validateContributionProperty(
   });
   return !diagnostics.slice(before).some(({ severity }) => severity === "error");
 }
+/**
+ * Runs the prepare-stage `contribute` hooks.
+ *
+ * `entryOwners` is the owner map the resolver already computed, not a second lookup: a key may have
+ * several claimants, so the plugin whose hook runs for an authored entry has to be the same plugin
+ * that entry resolved to. Re-deriving it from the registry's key map would run another claimant's
+ * hook for a grouped leaf, and would run a hook at all for a group that named no plugin. See
+ * ADR-043. `claimantsOf` answers for contributed keys only, which no author wrote and which no
+ * group can therefore name.
+ */
 function prepareContributions(
   authored: Readonly<Record<string, unknown>>,
-  exactOwners: ReadonlyMap<string, PluginDefinition>,
-  predicates: readonly PluginDefinition[],
+  entryOwners: ReadonlyMap<string, PluginDefinition>,
+  claimantsOf: (key: string) => readonly PluginDefinition[],
   track: TrackConfigView,
   path: string,
   diagnostics: Diagnostic[],
@@ -154,13 +174,11 @@ function prepareContributions(
   const authoredKeys = new Set(Object.keys(authored));
   const keyOwners = new Map<string, string>();
   const tweenOwners = new Map<string, string>();
-  const ownerOf = (key: string): PluginDefinition | undefined =>
-    exactOwners.get(key) ?? predicates.find((plugin) => claims(plugin, key));
   // The flattened key is what the hook is called with, but the author never typed it. Diagnostics
-  // cite the authored spelling, so a mistake inside a group reads as `keyframes.fk.boneLength`.
+  // cite the authored spelling, so a mistake inside a group reads as `keyframes.fk.length`.
   const authoredPath = (key: string): string => `${path}.${authoredPaths.get(key) ?? key}`;
   for (const key of Object.keys(authored).sort()) {
-    const plugin = ownerOf(key);
+    const plugin = entryOwners.get(key);
     if (plugin?.stage !== "prepare" || !plugin.contribute) continue;
     let contribution: Contribution;
     try {
@@ -211,8 +229,8 @@ function prepareContributions(
         );
         continue;
       }
-      const outputOwner = ownerOf(output);
-      if (!outputOwner) {
+      const outputClaimants = claimantsOf(output);
+      if (outputClaimants.length === 0) {
         diagnostics.push(
           diagnostic(
             "plugin-unknown-key",
@@ -223,13 +241,18 @@ function prepareContributions(
         );
         continue;
       }
-      if (outputOwner.contribute) {
+      // Any claimant with a hook, not a nominated one: a contributed key that some claimant would
+      // contribute from again is a second round however ownership of it would have been resolved.
+      const cascading = sortedNames(
+        outputClaimants.filter(({ contribute }) => contribute !== undefined),
+      );
+      if (cascading.length > 0) {
         diagnostics.push(
           diagnostic(
             "plugin-contribution-cascade",
             `${path}.${output}`,
             `Contributed key "${output}" would require another contribution round.`,
-            [plugin.name, outputOwner.name, output].sort(),
+            [plugin.name, ...cascading, output].sort(),
           ),
         );
         continue;
@@ -316,7 +339,7 @@ function result(
 
 export class PluginRegistry {
   readonly #plugins = new Map<string, PluginDefinition>();
-  readonly #keyOwners = new Map<string, PluginDefinition>();
+  readonly #keyClaimants = new Map<string, PluginDefinition[]>();
   readonly #inputOwners = new Map<string, PluginDefinition>();
   readonly #predicates: PluginDefinition[] = [];
   readonly #orders = new Map<string, number>();
@@ -356,13 +379,14 @@ export class PluginRegistry {
       const detail = `metadata name "${name}" must not contain ':'`;
       throw new TypeError(`Plugin "${plugin.name}" ${detail}.`);
     }
-    for (const key of keys) {
-      const owner = this.#keyOwners.get(key);
-      if (owner)
-        throw new TypeError(
-          `plugin-key-collision: Plugin "${owner.name}" already owns key "${key}".`,
-        );
-    }
+    // No key-collision guard. Two plugins may claim one key, and which of them owns an authored
+    // entry is a question about that entry rather than about registration order: a group names the
+    // owner, and a flat spelling with several claimants is `plugin-ambiguous-key` at resolve time.
+    // Refusing the second claimant here is what forced a plugin author to mangle a key name to
+    // route around a namespace they could not share. See ADR-043.
+    //
+    // `inputs` keeps its guard, because an input is not addressable by a group name, so nothing
+    // could ever name an owner for one and this is the only owner that rule has.
     for (const input of inputs) {
       const owner = this.#inputOwners.get(input);
       if (owner)
@@ -378,18 +402,41 @@ export class PluginRegistry {
     });
     this.#plugins.set(plugin.name, frozen);
     this.#orders.set(plugin.name, this.#registrationOrder++);
-    for (const key of keys) this.#keyOwners.set(key, frozen);
+    for (const key of keys) this.#claimantsFor(key).push(frozen);
     for (const input of inputs) this.#inputOwners.set(input, frozen);
     if (keys.length === 0 && plugin.claimsKey) this.#predicates.push(frozen);
   }
-  #ownerOf(key: string): PluginDefinition | undefined {
-    return this.#keyOwners.get(key) ?? this.#predicates.find((plugin) => claims(plugin, key));
+  #claimantsFor(key: string): PluginDefinition[] {
+    const existing = this.#keyClaimants.get(key);
+    if (existing !== undefined) return existing;
+    const created: PluginDefinition[] = [];
+    this.#keyClaimants.set(key, created);
+    return created;
   }
   /**
-   * A flat key resolves against the global key map, unchanged. A grouped leaf resolves against the
-   * plugin the group names and nothing else, which is the granularity the group form exists for:
-   * routing the leaf through the global map instead would accept `boneLength` under any group name
-   * and report nothing at all for a group that names no registered plugin.
+   * Every plugin that claims `key`, in registration order.
+   *
+   * An exact claim outranks a predicate, unchanged, and at most one predicate is ever returned. A
+   * predicate is the fallback for keys nobody named rather than a declaration of ownership, so two
+   * overlapping predicates keep first-registered precedence instead of becoming ambiguous: that
+   * rule has its own owner and its own evidence, and widening ambiguity to reach it would make
+   * every exactly-claimed key in a registry with a catch-all predicate unauthorable.
+   */
+  #claimantsOf(key: string): readonly PluginDefinition[] {
+    const exact = this.#keyClaimants.get(key);
+    if (exact !== undefined && exact.length > 0) return exact;
+    const predicate = this.#predicates.find((plugin) => claims(plugin, key));
+    return predicate === undefined ? [] : [predicate];
+  }
+  /**
+   * A grouped leaf resolves against the plugin the group names and nothing else, which is the
+   * granularity the group form exists for: routing the leaf through the claimant map instead would
+   * accept a leaf under any group name and report nothing at all for a group that names no
+   * registered plugin.
+   *
+   * A flat key resolves against its claimants. One claimant owns it. Several is refused rather than
+   * won, because the alternative is registration order deciding which plugin an authored key meant
+   * and the losing plugin's keys becoming quietly unreachable. See ADR-043.
    */
   #ownerForEntry(
     entry: FlattenedKeyframe,
@@ -398,11 +445,22 @@ export class PluginRegistry {
     reportedGroups: Set<string>,
   ): PluginDefinition | undefined {
     if (entry.group === undefined) {
-      const owner = this.#ownerOf(entry.key);
-      if (owner !== undefined) return owner;
-      const message = `No registered plugin claims authored key "${entry.key}".`;
+      const claimants = this.#claimantsOf(entry.key);
       const keyPath = `${path}.${entry.key}`;
-      diagnostics.push(diagnostic("plugin-unknown-key", keyPath, message, [entry.key]));
+      if (claimants.length === 1) return claimants[0];
+      if (claimants.length === 0) {
+        const unknown = `No registered plugin claims authored key "${entry.key}".`;
+        diagnostics.push(diagnostic("plugin-unknown-key", keyPath, unknown, [entry.key]));
+        return undefined;
+      }
+      const names = sortedNames(claimants);
+      const message = [
+        `Authored key "${entry.key}" is claimed by plugins ${listNames(names)}.`,
+        AMBIGUOUS_KEY_HINT,
+      ].join(" ");
+      diagnostics.push(
+        diagnostic("plugin-ambiguous-key", keyPath, message, [...names, entry.key].sort()),
+      );
       return undefined;
     }
     const named = this.#plugins.get(entry.group);
@@ -431,9 +489,14 @@ export class PluginRegistry {
     const plugins: PluginDefinition[] = [];
     const diagnostics: Diagnostic[] = [];
     const reportedGroups = new Set<string>();
+    // One owner per authored entry, decided once. Preparation reads this map rather than asking the
+    // registry again, so the hook that runs for an entry is the plugin that entry resolved to.
+    const entryOwners = new Map<string, PluginDefinition>();
     for (const entry of flattened.entries) {
       const owner = this.#ownerForEntry(entry, path, diagnostics, reportedGroups);
-      if (owner !== undefined && !plugins.includes(owner)) plugins.push(owner);
+      if (owner === undefined) continue;
+      entryOwners.set(entry.key, owner);
+      if (!plugins.includes(owner)) plugins.push(owner);
     }
     plugins.sort(
       (a, b) =>
@@ -460,8 +523,8 @@ export class PluginRegistry {
     // stops. Handed the group instead, the hook would be called once with an empty stop list.
     const preparation = prepareContributions(
       flattened.keyframes,
-      this.#keyOwners,
-      this.#predicates,
+      entryOwners,
+      (key) => this.#claimantsOf(key),
       track,
       path,
       diagnostics,
