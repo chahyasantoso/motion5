@@ -29,7 +29,7 @@ export function createManualTriggerPort(): TriggerPort & {
     // A dumb transport, deliberately. Range and finiteness are owned once by
     // Motion.#scheduleProgress, the single funnel every TriggerPort reaches, so validating here
     // would make a second owner of one rule. A malformed emission still fails at the emit site,
-    // because the throw propagates out of the listener. Do not add a check here. See ADR-034.
+    // because the throw propagates out of the listener. Do not add a check here. See ADR-037.
     emit(progress) {
       if (disposed) return;
       for (const listener of [...listeners]) listener(progress);
