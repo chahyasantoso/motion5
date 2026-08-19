@@ -1,6 +1,9 @@
 export { createBrowserClock } from "./browser-clock";
 export type { FrameSource } from "./browser-clock";
 
+export { createMicrotaskScheduler } from "./microtask-scheduler";
+export type { MicrotaskSchedulerOptions, SchedulerHost } from "./microtask-scheduler";
+
 export { createDomPatchAdapter } from "./dom";
 export type {
   DomPatchAdapter,
