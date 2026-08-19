@@ -3,7 +3,10 @@ import { isKeyframeGroup } from "../contract/validate-v5";
 export interface FlattenedKeyframe {
   /** The compiled key: a flat authored key, or a group leaf name with no prefix. */
   readonly key: string;
-  /** The plugin name the group addressed, absent for a flat key. */
+  /**
+   * The plugin name the group addressed, absent for a flat key. A grouped leaf resolves against
+   * that plugin alone, which is how an author names one owner for a key several plugins claim.
+   */
   readonly group?: string;
   /** `key`, or `group.leaf`, relative to the keyframes record. Diagnostics cite this. */
   readonly authoredPath: string;
@@ -24,10 +27,11 @@ export interface FlattenedKeyframes {
  * compile without a single diagnostic and then hold still at every progress. Ownership of *which*
  * plugin owns a leaf stays with the registry, which is a different question from this one.
  *
- * Leaves keep their authored names. Prefixing them (`fk:boneLength`) would rename the keys the
- * owning plugin's own `compose` reads and the adapters write, so a grouped track would animate
- * nothing; one canonical spelling is instead guaranteed by reserving the colon in every authored
- * keyframe name. See ADR-041.
+ * Leaves keep their authored names. Prefixing them (`fk:length`) would rename the keys the owning
+ * plugin's own `compose` reads and the adapters write, and ADR-042 then drops every namespaced key
+ * before publication, so a grouped track would animate nothing and publish nothing. One canonical
+ * spelling is instead guaranteed by reserving the colon in every authored keyframe name. See
+ * ADR-041 and ADR-043.
  *
  * Sorted, so which spelling wins is never a property of authoring order. A collision is already
  * rejected at validation by `keyframes-duplicate-key`, so nothing here reports it a second time.

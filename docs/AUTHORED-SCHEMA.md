@@ -108,12 +108,14 @@ A keyframe entry is either a property or a plugin-named group of properties. Bot
 
 ```text
 keyframes: {
-  opacity: { stops: [ ... ] },              // flat: resolved against every plugin
-  fk:      { boneLength: { stops: [...] } }, // grouped: resolved against the plugin named fk
+  opacity: { stops: [ ... ] },           // flat: resolved against every registered plugin
+  fk:      { length: { stops: [...] } }, // grouped: resolved against the plugin named fk
 }
 ```
 
-A group name addresses a registered plugin by name, and each leaf must be a key that plugin itself claims. A group naming no registered plugin, or a leaf the named plugin does not claim, is `plugin-unknown-key` reported at the authored path. Grouping is scoping, not renaming: the group is flattened to its unprefixed leaves before compilation, so `fk: { boneLength }` compiles, interpolates, composes, and renders exactly as flat `boneLength` does. Nesting is one level deep; a group holds properties and a property holds stops.
+A group name addresses a registered plugin by name, and each leaf must be a key that plugin itself claims. A group naming no registered plugin, or a leaf the named plugin does not claim, is `plugin-unknown-key` reported at the authored path. Grouping is scoping, not renaming: the group is flattened to its unprefixed leaves before compilation, so `fk: { length }` compiles, interpolates, composes, and renders exactly as flat `length` does. Nesting is one level deep; a group holds properties and a property holds stops.
+
+More than one plugin may claim the same key, so the group form is not always optional. `transformPlugin` claims `x`, `y`, and `rotation` while `fkPlugin` claims `length` and `rotation`, so in a project that registers both, flat `rotation` names no owner and is `plugin-ambiguous-key`: author a bone as `fk: { length, rotation }` and a root as `transform: { x, y, rotation }`. A key exactly one registered plugin claims keeps its flat spelling forever, so this appears only in a registry that has two claimants for one name. See ADR-043.
 
 Two restrictions make the two forms one namespace rather than two:
 
@@ -160,4 +162,4 @@ Errors reject the candidate project before it can replace the active project. Wa
 
 ## Rejected input
 
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid trigger, invalid perspective, malformed edges, unknown sources, duplicate edges, self-reference, cycles, and legacy `use` entries are errors. A keyframe name containing `:` and one compiled key authored under two spellings are errors too. The per-type trigger rules are listed under Trigger above. Missing perspective for detected 3D content and unused free tracks are warnings.
+Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid trigger, invalid perspective, malformed edges, unknown sources, duplicate edges, self-reference, cycles, and legacy `use` entries are errors. A keyframe name containing `:` and one compiled key authored under two spellings are errors too, as is the flat spelling of a key more than one registered plugin claims. The per-type trigger rules are listed under Trigger above. Missing perspective for detected 3D content and unused free tracks are warnings.

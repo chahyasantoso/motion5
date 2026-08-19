@@ -60,6 +60,41 @@ describe("plugin contribution contract (X-3)", () => {
     expect(resolved.diagnostics[0]?.ruleId).toBe("plugin-contribution-failure");
     expect(resolved.diagnostics[0]?.path).toBe("track.keyframes.fk.boneLength");
   });
+  it("N-6 runs the contribution hook of the plugin that owns the entry", () => {
+    const shared = new PluginRegistry();
+    const sharedHook = vi.fn(() => ({ tweenVars: { ease: "none" } }));
+    shared.register({
+      name: "fk",
+      keys: ["rotation"],
+      stage: "prepare",
+      contribute: sharedHook,
+      compose,
+    });
+    shared.register({ name: "transform", keys: ["rotation"], compose });
+    // `transform` owns the leaf its own group named and has no hook, so nothing is contributed.
+    // Resolving the hook through a global key map instead runs `fk`'s, which is the wrong plugin
+    // for this entry however the two agreed under one owner per key. See ADR-043.
+    const grouped = shared.resolveForKeyframes({ transform: { rotation: stops(1) } });
+    expect(grouped.diagnostics).toEqual([]);
+    expect(sharedHook).not.toHaveBeenCalled();
+    expect(grouped.preparation.tweenVars).toEqual({});
+
+    const orphan = new PluginRegistry();
+    const orphanHook = vi.fn(() => ({ tweenVars: { ease: "none" } }));
+    orphan.register({
+      name: "fk",
+      keys: ["length"],
+      stage: "prepare",
+      contribute: orphanHook,
+      compose,
+    });
+    // The group named no registered plugin, so the entry has no owner at all and there is no hook
+    // to run. Preparation must not contribute on behalf of a rejected entry.
+    const rejected = orphan.resolveForKeyframes({ mystery: { length: stops(1) } });
+    expect(rejected.diagnostics.map(({ ruleId }) => ruleId)).toEqual(["plugin-unknown-key"]);
+    expect(orphanHook).not.toHaveBeenCalled();
+    expect(rejected.preparation.tweenVars).toEqual({});
+  });
   it("preserves both keyframes and tweenVars from one explicit contribution", () => {
     const registry = new PluginRegistry();
     registry.register({

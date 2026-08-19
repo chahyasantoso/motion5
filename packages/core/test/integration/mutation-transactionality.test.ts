@@ -37,19 +37,25 @@ function ramp(from: number, to: number) {
   };
 }
 
+// Both plugins are registered, so `rotation` has two claimants and each track names the one it
+// means. `x` and `y` are claimed by `transform` alone and keep their flat spelling. See ADR-043.
 const rootTrack: TrackDefinition = {
   id: "root",
   keyframes: {
-    x: ramp(0, 100),
-    y: ramp(0, 0),
-    rotation: ramp(0, 0),
+    transform: {
+      x: ramp(0, 100),
+      y: ramp(0, 0),
+      rotation: ramp(0, 0),
+    },
   },
 };
 const dependentTrack: TrackDefinition = {
   id: "elbow",
   keyframes: {
-    boneLength: ramp(40, 40),
-    boneRotation: ramp(0, 0),
+    fk: {
+      length: ramp(40, 40),
+      rotation: ramp(0, 0),
+    },
   },
   observes: [
     {

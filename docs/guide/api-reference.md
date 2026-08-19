@@ -51,9 +51,9 @@ Optional implementations you opt into at your composition root.
 
 `transformPlugin` claims the keys `x`, `y`, and `rotation` and passes them through. Register it if you animate any of those.
 
-`fkPlugin` is a forward-kinematics compose-stage plugin: it claims `boneLength` and `boneRotation`, reads the inputs `parentX`, `parentY`, and `parentRotation`, and produces `x`, `y`, and `rotation` in world space. `composeWorld(parent, local)` is exported alongside it for the same math outside a plugin.
+`fkPlugin` is a forward-kinematics compose-stage plugin: it claims `length` and `rotation`, reads the inputs `parentX`, `parentY`, and `parentRotation`, and produces `x`, `y`, and `rotation` in world space. The authored `rotation` is the bone's rotation relative to its parent and the composed one is its rotation in world space, so the local value is replaced rather than published. `composeWorld(parent, local)` is exported alongside it for the same math outside a plugin.
 
-Registering both is the rig case: `fk` produces the transform outputs that `transform` claims.
+Registering both is the rig case: `fk` produces the transform outputs that `transform` claims. Both claim `rotation`, so a key with two claimants has no legal flat spelling in that registry, and each track names the plugin it means: a bone is `fk: { length, rotation }` and a root is `transform: { x, y, rotation }`. See ADR-043 and the keyframes section of the authored schema.
 
 ## @motion5/core/ports/fakes
 
