@@ -2,39 +2,11 @@ import { describe, expect, it } from "vitest";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
 import { PluginRegistry } from "../../src/domain/plugins";
 
+// The internal-key denylist used to be applied here. It is now applied once in `Track.compose`,
+// before publication, so every renderer receives the same already-filtered values and the React
+// path cannot leak what this adapter hid. `internal-key-strip.test.ts` owns that evidence; what
+// belongs to this adapter is serializing plugin-owned outputs.
 describe("DOM plugin metadata (X-2)", () => {
-  it("uses resolved internal-key metadata instead of hardcoding underscore filtering", () => {
-    const registry = new PluginRegistry();
-    registry.register({
-      name: "motion",
-      keys: ["x"],
-      internalKeys: ["secret", "offset"],
-      compose: (values) => values,
-    });
-    const resolved = registry.resolveForKeyframes({ x: {} });
-    expect(resolved.diagnostics).toEqual([]);
-    expect(resolved.internalKeys).toEqual(["offset", "secret"]);
-    const writes: Record<string, unknown>[] = [];
-    const stage = { style: {} as Record<string, unknown> };
-    const adapter = createDomPatchAdapter(
-      stage,
-      undefined,
-      () => stage,
-      (_target, values) => writes.push({ ...values }),
-      resolved,
-    );
-    adapter.apply({
-      nodeId: "hero/arm",
-      revision: 1,
-      values: { x: 10, secret: "do-not-render", offset: 4 },
-      sourceProgress: 0,
-      sourceRevisions: {},
-      status: "ready",
-      diagnostics: [],
-    });
-    expect(writes).toEqual([{ x: 10 }]);
-  });
-
   it("serializes plugin-owned outputs before writing to the DOM", () => {
     const registry = new PluginRegistry();
     registry.register({
@@ -63,10 +35,12 @@ describe("DOM plugin metadata (X-2)", () => {
       (_target, values) => writes.push({ ...values }),
       resolved,
     );
+    // The authored `path` value is already gone by the time a patch exists, so a renderer never
+    // has to know it was internal.
     adapter.apply({
       nodeId: "hero/path",
       revision: 1,
-      values: { transform: { x: 10, y: 20 }, path: { points: [] } },
+      values: { transform: { x: 10, y: 20 } },
       sourceProgress: 0,
       sourceRevisions: {},
       status: "ready",
