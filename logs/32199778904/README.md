@@ -1,0 +1,26 @@
+# CI log archive: 32199778904
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: fix/renumber-adr-034-progress-range
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/32199778904
+- Captured: 2026-08-19T00:05:01Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm run format:check	﻿2026-08-19T00:04:39.1733764Z ##[group]Run npm run format:check
+quality (node 24)	Run npm run format:check	2026-08-19T00:04:39.1734302Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Run npm run format:check	2026-08-19T00:04:39.1784042Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run format:check	2026-08-19T00:04:39.1784464Z env:
+quality (node 24)	Run npm run format:check	2026-08-19T00:04:39.1784799Z   NODE_VERSION: 24
+quality (node 24)	Run npm run format:check	2026-08-19T00:04:39.1785165Z ##[endgroup]
+quality (node 24)	Run npm run format:check	2026-08-19T00:04:39.2827686Z 
+quality (node 24)	Run npm run format:check	2026-08-19T00:04:39.2828190Z > motion5@0.0.0 format:check
+quality (node 24)	Run npm run format:check	2026-08-19T00:04:39.2828764Z > prettier . --check
+quality (node 24)	Run npm run format:check	2026-08-19T00:04:39.2829016Z 
+quality (node 24)	Run npm run format:check	2026-08-19T00:04:39.3698035Z Checking formatting...
+quality (node 24)	Run npm run format:check	2026-08-19T00:04:43.3125597Z [^[[33mwarn^[[39m] packages/core/test/integration/phase3-trigger-port.test.ts
+quality (node 24)	Run npm run format:check	2026-08-19T00:04:44.0016532Z [^[[33mwarn^[[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+quality (node 24)	Run npm run format:check	2026-08-19T00:04:44.0426888Z ##[error]Process completed with exit code 1.
+```
