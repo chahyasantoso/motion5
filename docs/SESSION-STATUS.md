@@ -2,7 +2,7 @@
 
 **Captured:** 2026-08-19, Asia/Jakarta  
 **Branch verified:** `main` at `d292076`  
-**Phase:** runtime mutation model, trigger drivers through `T5`, compiled Track ownership, edge identity, trigger progress ownership, teardown ownership, single-track mutation atomicity, user documentation, declared package entrypoints, and the shipped Scheduler with the public port contracts have landed.
+**Phase:** runtime mutation model, trigger drivers through `T5`, compiled Track ownership, edge identity, trigger progress ownership, teardown ownership, single-track mutation atomicity, user documentation, declared package entrypoints, the shipped Scheduler with the public port contracts, and clock tick error attribution have landed.
 
 This document reports current implementation reality. Plans and audits describe intent unless this file says they landed.
 
@@ -18,6 +18,7 @@ This document reports current implementation reality. Plans and audits describe 
 - Engine teardown ownership landed through PR [#146](https://github.com/chahyasantoso/motion5/pull/146), closing issues [#143](https://github.com/chahyasantoso/motion5/issues/143) and [#145](https://github.com/chahyasantoso/motion5/issues/145). Failed loads release the project clock subscription, and a throwing trigger disposal no longer prevents Motion disposal or map cleanup.
 - Single-track mutation atomicity landed through PR [#148](https://github.com/chahyasantoso/motion5/pull/148), closing issue [#147](https://github.com/chahyasantoso/motion5/issues/147). Motion track entries resolve and seed before commit.
 - `Track.setProgress` calls the injected timeline before committing its own progress, so a throwing interpolator does not leave Track progress ahead of the timeline.
+- Clock tick error attribution landed by closing issue [#154](https://github.com/chahyasantoso/motion5/issues/154). `GraphRuntime` advances the clock consumers and flushes the graph inside separate error boundaries: a consumer failure reports `clock-consumer-failure` with the tick it happened on, only a real `GraphRuntime.flush` failure reports `flush-failure`, and the flush still runs on a tick whose consumers threw. Multi-consumer failures keep every cause in the message. Still one clock subscription and one reporting path. ADR-039 records the split.
 
 ## Documentation and package surface
 
@@ -37,11 +38,12 @@ The owner-based `adopt` and `destroyAdopted` wrappers remain available for compa
 
 A scheduled job that throws is reported once, after every job in the pass has run, and a lone failure is rethrown verbatim. With the default microtask host that report reaches the environment as an unhandled rejection rather than at a caller's own drain site. `onError` is the interception point. ADR-038 owns this and the getting-started guide states it.
 
+A tick whose clock consumers failed still publishes a batch. Progress is whatever was last committed, so a stalled driver reads as a held frame rather than a dropped one. ADR-039 owns this and it is the reason a consumer failure no longer suppresses the flush.
+
 ## Known remaining scope
 
 - **Ambiguous ADR number:** two accepted records are named ADR-034. Issue [#157](https://github.com/chahyasantoso/motion5/issues/157) will renumber the trigger progress-range record and update progress-related citations while leaving edge identity as ADR-034.
 - **Loop semantics:** `repeat` and `yoyo` remain rejected at validation, and the time driver still latches once at `1`. Issue [#156](https://github.com/chahyasantoso/motion5/issues/156) owns a new design for repeat, yoyo, and ping-pong behavior rather than extending the completed trigger plan.
-- **Clock error attribution:** `GraphRuntime.#onTick` still reports clock-consumer failures as `flush-failure`, even when graph flushing never ran. Issue [#154](https://github.com/chahyasantoso/motion5/issues/154) will separate the two error boundaries without adding another clock subscription.
 - **Phase 6 packaging:** neither package is published. Publication, packed-package consumer verification, API reporting, performance gates, and removal of transitional compatibility wrappers remain separate packaging work.
 
 ## Evidence anchors
@@ -57,6 +59,7 @@ A scheduled job that throws is reported once, after every job in the pass has ru
 - Engine teardown ownership: PR [#146](https://github.com/chahyasantoso/motion5/pull/146), green run [32145446610](https://github.com/chahyasantoso/motion5/actions/runs/32145446610).
 - Single-track mutation atomicity: PR [#148](https://github.com/chahyasantoso/motion5/pull/148), red run [32148713472](https://github.com/chahyasantoso/motion5/actions/runs/32148713472).
 - Shipped scheduler and public port contracts: PR [#160](https://github.com/chahyasantoso/motion5/pull/160), cases `K-1` through `K-10`. Failing-first is replayed by dispatching `Recovery audit` with `base` set to `main`, because both new test files assert against modules that already exist on the parent commit rather than importing the module they introduce.
+- Clock tick error boundaries: cases `B-1` through `B-7` in `packages/core/test/unit/runtime/clock-consumer-error-boundary.test.ts`. Failing-first is replayed by dispatching `Recovery audit` with `base` set to `main`, because the tests and the behavior land as separate commits on the branch.
 
 ## Guardrails
 
@@ -69,6 +72,7 @@ A scheduled job that throws is reported once, after every job in the pass has ru
 - A cited evidence case id names exactly one plain `it` declaration in the whole suite.
 - A rollback runs inside the failure it is undoing and never reports ahead of the original rejection.
 - A single-track mutation resolves and seeds before it commits.
+- A tick failure is attributed to the owner that failed; clock consumer advancement and graph flushing are separate boundaries and neither cancels the other.
 - Pull request checks are not filtered in a way that skips integration bases.
 - Avoid hand-padded Markdown tables in this file; `format:check` is a hard gate inside `quality`.
 - Consumer-facing documents live under `docs/guide/` and name only symbols or subpaths declared by the package exports map.
