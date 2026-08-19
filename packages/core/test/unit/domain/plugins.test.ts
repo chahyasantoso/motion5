@@ -76,13 +76,75 @@ describe("plugin registry", () => {
     ]);
   });
 
-  it("rejects duplicate exact key ownership at registration", () => {
+  it("N-1 registers two plugins that claim one key", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("first", { keys: ["x"] }));
-    expect(() => registry.register(plugin("second", { keys: ["x"] }))).toThrow(
-      /plugin-key-collision/,
-    );
-    expect(registry.size).toBe(1);
+    registry.register(plugin("second", { keys: ["x"] }));
+    // `plugin-key-collision` is deleted. A shared key is a legal registry, because which plugin
+    // owns an authored entry is a question about that entry rather than about registration order.
+    // The registration guard could only ever answer it by refusing the second plugin outright,
+    // which is why `fkPlugin` had to mangle its own key names. See ADR-043.
+    expect(registry.size).toBe(2);
+  });
+
+  it("N-2 refuses a shared key authored flat instead of picking a winner", () => {
+    const registry = new PluginRegistry();
+    registry.register(plugin("transform", { keys: ["x", "y", "rotation"] }));
+    registry.register(plugin("fk", { keys: ["length", "rotation"] }));
+    const message = [
+      'Authored key "rotation" is claimed by plugins "fk" and "transform".',
+      "Author it inside a plugin-named group to name one.",
+    ].join(" ");
+    const resolved = registry.resolveForKeyframes({ rotation: {} }, "track.keyframes");
+    // No plugin is resolved and no value is compiled from an owner nobody named. The claimants are
+    // sorted, so the message never depends on which one was registered first.
+    expect(resolved.plugins).toEqual([]);
+    expect(resolved.diagnostics).toEqual([
+      {
+        ruleId: "plugin-ambiguous-key",
+        path: "track.keyframes.rotation",
+        message,
+        severity: "error",
+        ids: ["fk", "rotation", "transform"],
+      },
+    ]);
+  });
+
+  it("N-3 lets a group name the owner of a key several plugins claim", () => {
+    const registry = new PluginRegistry();
+    registry.register(plugin("transform", { keys: ["x", "y", "rotation"] }));
+    registry.register(plugin("fk", { keys: ["length", "rotation"] }));
+    const authored = { fk: { length: {}, rotation: {} } };
+    const resolved = registry.resolveForKeyframes(authored, "track.keyframes");
+    // The leaf is checked against `fk` alone, so `transform` never enters the chain even though it
+    // claims `rotation` too, and the compiled record still carries the unprefixed leaf names.
+    expect(resolved.diagnostics).toEqual([]);
+    expect(resolved.plugins.map(({ name }) => name)).toEqual(["fk"]);
+    expect(resolved.authoredKeyframes).toEqual({ length: {}, rotation: {} });
+  });
+
+  it("N-4 leaves a single claimant unambiguous whatever else is registered", () => {
+    const registry = new PluginRegistry();
+    registry.register(plugin("transform", { keys: ["x", "y", "rotation"] }));
+    registry.register(plugin("opacity", { keys: ["opacity"] }));
+    // Green on the parent by design, and not claimed as red. Ambiguity is a property of the
+    // registry, not of the plugin catalog: an app that registers no second claimant for `rotation`
+    // keeps authoring the flat spelling forever.
+    const resolved = registry.resolveForKeyframes({ rotation: {} }, "track.keyframes");
+    expect(resolved.diagnostics).toEqual([]);
+    expect(resolved.plugins.map(({ name }) => name)).toEqual(["transform"]);
+  });
+
+  it("N-5 keeps an exact claim ahead of a predicate that also claims the key", () => {
+    const registry = new PluginRegistry();
+    registry.register(plugin("predicate", { claimsKey: () => true }));
+    registry.register(plugin("exact", { keys: ["x"] }));
+    // Green on the parent by design, and not claimed as red. A predicate is the fallback for keys
+    // nobody named, so it is not a claimant that can make a named key ambiguous; treating it as
+    // one would make every exactly-claimed key in a registry with a predicate unauthorable.
+    const resolved = registry.resolveForKeyframes({ x: {} }, "track.keyframes");
+    expect(resolved.diagnostics).toEqual([]);
+    expect(resolved.plugins.map(({ name }) => name)).toEqual(["exact"]);
   });
 
   it("F-6 rejects a colon in plugin keys, inputs, and outputs", () => {
