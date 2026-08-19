@@ -13,7 +13,7 @@ import { createGsapInterpolator } from "@motion5/core/adapters";
 import { fkPlugin } from "@motion5/core/plugins/fk";
 import { transformPlugin } from "@motion5/core/plugins/transform";
 import { armTracks, initialWalkerProject, WALK_SCROLL_SOURCE } from "./full-body-project";
-import { createGsapScrollSource } from "./scroll-source-gsap";
+import { createWalkScrollSource } from "./scroll-source-gsap";
 import { SkeletonRig } from "./components/SkeletonRig";
 import { InspectorPanel } from "./components/InspectorPanel";
 
@@ -46,12 +46,7 @@ export const App: React.FC = () => {
       requestFrame: (cb: FrameRequestCallback) => requestAnimationFrame(cb),
       cancelFrame: (h: number) => cancelAnimationFrame(h),
     });
-    const scrollSource = createGsapScrollSource({
-      trigger: "#scroll-scene",
-      start: "top top",
-      end: "+=2500",
-      pin: true,
-    });
+    const scrollSource = createWalkScrollSource();
 
     // Core never sees the element, the selector, or GSAP. It receives a normalized progress
     // source resolved from the serializable authored key, and nothing else.
