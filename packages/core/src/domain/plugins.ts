@@ -157,7 +157,7 @@ function prepareContributions(
   const ownerOf = (key: string): PluginDefinition | undefined =>
     exactOwners.get(key) ?? predicates.find((plugin) => claims(plugin, key));
   // The flattened key is what the hook is called with, but the author never typed it. Diagnostics
-  // cite the authored spelling so a mistake inside a group reads as `keyframes.fk.boneLength`.
+  // cite the authored spelling, so a mistake inside a group reads as `keyframes.fk.boneLength`.
   const authoredPath = (key: string): string => `${path}.${authoredPaths.get(key) ?? key}`;
   for (const key of Object.keys(authored).sort()) {
     const plugin = ownerOf(key);
@@ -401,7 +401,8 @@ export class PluginRegistry {
       const owner = this.#ownerOf(entry.key);
       if (owner !== undefined) return owner;
       const message = `No registered plugin claims authored key "${entry.key}".`;
-      diagnostics.push(diagnostic("plugin-unknown-key", `${path}.${entry.key}`, message, [entry.key]));
+      const keyPath = `${path}.${entry.key}`;
+      diagnostics.push(diagnostic("plugin-unknown-key", keyPath, message, [entry.key]));
       return undefined;
     }
     const named = this.#plugins.get(entry.group);
