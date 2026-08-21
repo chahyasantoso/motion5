@@ -74,9 +74,15 @@ import { fileURLToPath } from "node:url";
 // binding derives, and how a bound upstream value reaches composition without entering the
 // track's authored value namespace. `F-` and `N-` both own authored keyframe *properties*; this
 // owns an authored section that is not a property at all, and the graph dependency it creates.
+//
+// `U-` belongs to transactional Track replacement (issue #176 and ADR-045): what a refused
+// recompile, a refused Motion entry rewrite, or a rejected candidate graph leaves behind when an
+// existing node is replaced. `P-` owns which error a caller sees once a rollback can fail, and
+// `M-` owns what a refused mutation inside one `Motion` commits; `U-` owns whether the graph, the
+// compiled map, and the Motion entry are allowed to disagree with each other at all.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|H|K|L|M|N|P|Q|R|S|T)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|H|K|L|M|N|P|Q|R|S|T|U)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
