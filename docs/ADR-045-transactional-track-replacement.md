@@ -45,4 +45,4 @@ Cases `U-1` through `U-4` exercise the public Engine surface. Cases `U-5` throug
 
 Failing-first run [32484448662](https://github.com/chahyasantoso/motion5/actions/runs/32484448662) reported `U-1` and `U-3` as assertion failures while 207 integration tests passed. Its quality job also named the absent `StagedTrack` and `stageTrack` seam at typecheck. The durable archive is `logs/32484448662/` on `ci-logs`.
 
-Source-only green run [32486813523](https://github.com/chahyasantoso/motion5/actions/runs/32486813523) proves the staged implementation against quality, integration, boundaries, build, end-to-end, and performance checks.
+Final green run [32487529184](https://github.com/chahyasantoso/motion5/actions/runs/32487529184) passed quality, integration, boundaries, build, end-to-end, performance, and the Prettier repair job.
