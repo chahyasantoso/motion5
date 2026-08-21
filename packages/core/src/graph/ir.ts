@@ -29,7 +29,6 @@ export interface GraphEdge {
   readonly observerId: string;
   readonly sourceId: string;
   readonly role: "input" | "output";
-  readonly target?: string;
   readonly projection?: InputProjection;
   readonly requirement?: EdgeRequirement;
 }
@@ -53,21 +52,14 @@ export interface GraphBuildResult {
 /**
  * One encoded field of an edge identity, prefixed with its own length.
  *
- * The id guards reserve only `/` and `~`, and a target is an arbitrary string, so `|`, `:`,
+ * The id guards reserve only `/` and `~`, and a projection key, a projection output name, a plugin
+ * name, and a requirement slot are every one of them an arbitrary non-empty string, so `|`, `:`,
  * `,` and `=` are all authorable: a plain separator can be forged from inside a field value.
  * A length prefix makes the encoding prefix-free, which is what makes `edgeKey` injective
  * rather than merely usually-distinct.
  */
 function field(value: string): string {
   return `${value.length}:${value}`;
-}
-/**
- * The ordering form of a target. `"-"` sorts before `":"`, so an absent target orders before
- * every authored one, including the empty string, and the comparator separates exactly the
- * edges the identity encoding separates.
- */
-function targetOrder(edge: GraphEdge): string {
-  return edge.target === undefined ? "-" : `:${edge.target}`;
 }
 /**
  * The identity form of a requirement, `"-"` for an absent one.
@@ -82,7 +74,11 @@ function requirementIdentity(edge: GraphEdge): string {
   if (requirement === undefined) return "-";
   return `${field(requirement.plugin)}${field(requirement.slot)}`;
 }
-/** The ordering form of a requirement's plugin. Same `"-"` before `":"` rule as `targetOrder`. */
+/**
+ * The ordering form of a requirement's plugin. `"-"` sorts before `":"`, so an absent requirement
+ * orders before every present one, including a plugin named with the empty string, and the
+ * comparator separates exactly the edges the identity encoding separates.
+ */
 function requirementOrder(edge: GraphEdge): string {
   return edge.requirement === undefined ? "-" : `:${edge.requirement.plugin}`;
 }
@@ -108,8 +104,6 @@ export function edgeKey(edge: GraphEdge): string {
     field(edge.observerId),
     field(edge.sourceId),
     field(edge.role),
-    // "-" for an absent target, so an authored target of "" is not the same edge as no target.
-    edge.target === undefined ? "-" : field(edge.target),
     field(projection),
     field(requirementIdentity(edge)),
   ].join("");
@@ -127,7 +121,6 @@ export function compareEdges(a: GraphEdge, b: GraphEdge): number {
     compareCodeUnits(a.observerId, b.observerId) ||
     compareCodeUnits(a.sourceId, b.sourceId) ||
     compareCodeUnits(a.role, b.role) ||
-    compareCodeUnits(targetOrder(a), targetOrder(b)) ||
     compareCodeUnits(
       a.projection ? canonicalizeProjection(a.projection) : "",
       b.projection ? canonicalizeProjection(b.projection) : "",
@@ -250,6 +243,21 @@ export interface ResolvedObservation {
   readonly edge?: GraphEdge;
   readonly diagnostics: readonly Diagnostic[];
 }
+const TARGET_UNSUPPORTED =
+  "Observation target is not supported; rename input keys with a projection, or bind a plugin requirement under keyframes.<plugin>.requires.";
+/**
+ * The authored `target` field, which `ObservationDefinition` no longer declares.
+ *
+ * Read through the record view rather than through a member access, because the point of the guard
+ * below is to refuse a key the type has already removed. Removing it from the type alone would
+ * leave it accepted and then ignored, which rule 6 of ADR-033 forbids, and here that would be
+ * worse than ignored: a target used to split one edge into two, so a project that bound two
+ * targets to one source would stop loading and report `observation-duplicate`, naming a duplicate
+ * edge the author never wrote. The legacy `use` field is refused the same way. See ADR-046.
+ */
+function readRemovedTarget(observation: ObservationDefinition): unknown {
+  return isRecord(observation) ? observation.target : undefined;
+}
 export function resolveObservationEdge(
   observation: ObservationDefinition,
   observerNodeId: string,
@@ -266,10 +274,10 @@ export function resolveObservationEdge(
     diagnostics.push(diag("observation-source", path, "Observation source must be non-empty."));
     return { diagnostics: Object.freeze(diagnostics) };
   }
-  if (role === "output" && observation.target !== undefined) {
-    diagnostics.push(
-      diag("observation-output-target", path, "Output observations cannot define a target."),
-    );
+  // One rule for both roles. `observation-output-target` was role-specific because an input target
+  // was once believed to name a destination key; nothing ever read it on either role.
+  if (readRemovedTarget(observation) !== undefined) {
+    diagnostics.push(diag("observation-target-unsupported", path, TARGET_UNSUPPORTED));
     return { diagnostics: Object.freeze(diagnostics) };
   }
   const projection =
@@ -290,7 +298,6 @@ export function resolveObservationEdge(
     observerId: observerNodeId,
     sourceId,
     role,
-    ...(observation.target === undefined ? {} : { target: observation.target }),
     ...(projection === undefined ? {} : { projection }),
   });
   return { edge, diagnostics: Object.freeze([]) };

@@ -80,9 +80,16 @@ import { fileURLToPath } from "node:url";
 // existing node is replaced. `P-` owns which error a caller sees once a rollback can fail, and
 // `M-` owns what a refused mutation inside one `Motion` commits; `U-` owns whether the graph, the
 // compiled map, and the Motion entry are allowed to disagree with each other at all.
+//
+// `V-` belongs to the removal of `ObservationDefinition.target` (issue #175 and ADR-046): whether
+// an authored field with no consumer is refused rather than quietly accepted, and what edge
+// identity, edge ordering, and live state carry once it is gone. `E-` owns how an edge is encoded,
+// ordered, and labelled, and it kept a case pinning an authored empty target as its own edge;
+// `V-` owns whether that field is authorable at all, which is why it retires that case instead of
+// extending the series.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|H|K|L|M|N|P|Q|R|S|T|U)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|H|K|L|M|N|P|Q|R|S|T|U|V)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })

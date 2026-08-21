@@ -27,11 +27,20 @@ Do not rename `motion.tracks`.
 ### Free references
 
 ```diff
-- { source: "cursor", role: "input", target: "pointer" }
-+ { source: "~/cursor", role: "input", target: "pointer" }
+- { source: "cursor", role: "input" }
++ { source: "~/cursor", role: "input" }
 ```
 
 Use qualified `motionId/trackId` for cross-motion references and `~/trackId` for free tracks. Local references inside one motion may remain local until normalization.
+
+### Observation targets
+
+```diff
+- { source: "~/cursor", role: "input", target: "pointer" }
++ { source: "~/cursor", role: "input" }
+```
+
+An authored `target` is rejected with `observation-target-unsupported`, on both roles. Dropping it changes no published value: the field was validated and carried in edge identity, but it never decided which values arrived or under which keys. Rename the incoming keys with `projection` if the observer needs different names, or bind the dependency under a plugin group's `requires` section if it belongs to a plugin. Two edges to one source that differed only by target were two edges before v5 removed the field and are one edge now, so drop the duplicate rather than renaming it. See ADR-046.
 
 ### Perspective
 
@@ -85,6 +94,7 @@ The helper does not touch triggers, and it cannot: dropping `autoplay: false` or
 - Does 3D content need `perspective`?
 - Are any ids using `/` or the reserved motion id `~`?
 - Are any cycles introduced by qualifying references?
+- Does any observation still carry a `target`, and does dropping it collapse two edges into one?
 - Does every `time` trigger carry a `duration`, has every `autoplay: false` been removed, and does every `repeat` still mean the passes after the first?
 - Does every `scroll` trigger have a registered source, and does any consumer still call `signal()` on it?
 - Does any custom driver or `ScrollSource` push progress outside `[0, 1]`, or a value that can be `NaN`, and rely on it being clamped for them?

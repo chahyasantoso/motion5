@@ -220,12 +220,7 @@ describe("schema v5 validator", () => {
         {
           id: "hero",
           trigger: { type: "manual" },
-          tracks: [
-            {
-              id: "pointer",
-              observes: [{ source: "~/cursor", role: "input", target: "position" }],
-            },
-          ],
+          tracks: [{ id: "pointer", observes: [{ source: "~/cursor", role: "input" }] }],
         },
       ],
       freeTracks: [{ id: "cursor" }],

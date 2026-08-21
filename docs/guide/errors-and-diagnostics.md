@@ -42,6 +42,7 @@ Warnings load and stay readable. Missing `perspective` alongside 3D content, and
 - `plugin-unknown-key`, when no registered plugin claims an authored keyframe key. This is the error you hit first if you forget to register a plugin. For a plugin-named group it also covers a group that names no registered plugin, and a leaf the named plugin does not claim.
 - `plugin-ambiguous-key`, when a flat keyframe key is claimed by more than one registered plugin. The message names every claimant in sorted order; author the key inside the group of the plugin you meant. Registering both `transformPlugin` and `fkPlugin` is the case you will meet, because both claim `rotation`. See ADR-043.
 - `plugin-contribution-unsupported-entry`, for the legacy `use` field, which is not part of schema v5.
+- `observation-target-unsupported`, for a `target` on an `observes` entry, on either role. The field is removed rather than kept and ignored: it never decided which values arrived or under which keys. Rename incoming keys with `projection`, or bind the dependency under the plugin group's `requires` section when it belongs to a plugin. See ADR-046.
 - `keyframes-reserved-separator`, when a flat keyframe name, a group name, or a leaf name contains `:`. The colon marks a plugin's private internal keys, so it is never legal in an authored name.
 - `keyframes-duplicate-key`, when one compiled key is authored twice: a group leaf colliding with another group's leaf, or with a flat key. The path names the second spelling and the message names the first.
 

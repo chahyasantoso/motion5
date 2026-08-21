@@ -24,9 +24,11 @@ handle.destroyMotion(id);
 const track = handle.addTrack(armTrack, { motionId: "walk" });
 
 track.replace(nextDefinition);
-track.addObserve({ source: "walk/chest", role: "input", target: "parentWorld" });
+track.addObserve({ source: "walk/chest", role: "input" });
 track.remove();
 ```
+
+An observation carries `source`, `role`, and an optional `projection`, and nothing else. `addObserve` throws `observation-target-unsupported` for a `target`: use `projection` to rename the incoming keys, or bind the dependency under the plugin group's `requires` section when it belongs to a plugin. See ADR-046.
 
 A handle carries a private token, so `remove` and `replace` are inert once the track is gone and cannot affect a later track that reuses the same id. `replace` preserves node identity and publishes through the normal ready path, so a React consumer does not see the node disappear and come back. Renaming is not a replace: it is a remove plus an add.
 

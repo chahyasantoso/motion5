@@ -16,7 +16,7 @@ type JournalEntry =
   | { readonly undo: "remove-edge"; readonly edge: GraphEdge };
 
 /**
- * Drop an explicit `undefined` target, projection, or requirement so edge identity has exactly one
+ * Drop an explicit `undefined` projection or requirement so edge identity has exactly one
  * representation. Every optional field of an edge has to be listed here: one left out would be
  * dropped from live state, so the live key would disagree with the candidate key and a removal
  * would be reported as an edge that is not live.
@@ -26,11 +26,9 @@ function normalizeEdge(edge: GraphEdge): GraphEdge {
     observerId: string;
     sourceId: string;
     role: "input" | "output";
-    target?: string;
     projection?: import("../contract/v5").InputProjection;
     requirement?: EdgeRequirement;
   } = { observerId: edge.observerId, sourceId: edge.sourceId, role: edge.role };
-  if (edge.target !== undefined) base.target = edge.target;
   if (edge.projection !== undefined) base.projection = edge.projection;
   if (edge.requirement !== undefined) base.requirement = edge.requirement;
   return Object.freeze(base) as GraphEdge;

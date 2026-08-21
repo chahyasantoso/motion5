@@ -9,12 +9,12 @@ const project = (tracks: ProjectDefinition["motions"][number]["tracks"]): Projec
 });
 
 const base = project([
-  { id: "arm", observes: [{ source: "~/cursor", role: "input", target: "pointer" }] },
+  { id: "arm", observes: [{ source: "~/cursor", role: "input" }] },
   { id: "halo", observes: [{ source: "arm" }] },
 ]);
 
 const changed = project([
-  { id: "arm", observes: [{ source: "~/cursor", role: "input", target: "pointer" }] },
+  { id: "arm", observes: [{ source: "~/cursor", role: "input" }] },
   { id: "badge", observes: [{ source: "arm" }] },
 ]);
 

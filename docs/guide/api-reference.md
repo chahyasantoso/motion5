@@ -25,6 +25,8 @@ A `TrackHandle` carries `id`, `track`, `remove()`, `replace(next)`, `addObserve(
 
 **Types.** `ProjectDefinition`, `MotionDefinition`, `TrackDefinition`, `ObservationDefinition`, `AuthoredProperty`, `AuthoredStop`, `TriggerDefinition` and its three members, `TriggerType`, `TriggerSignal`, `Patch`, `PatchBatch`, `PatchStatus`, `PatchListener`, `Diagnostic`, `DiagnosticSeverity`, `MigrationDiagnostic`, `MigrationResult`, `ValidationResult`, `TrackValidationResult`, `GoldenFixture`, and `GoldenValidationFixture`.
 
+An `ObservationDefinition` carries `source`, an optional `role`, and an optional `projection`. There is no `target`; an authored one is rejected with `observation-target-unsupported`. See ADR-046.
+
 **Plugins.** `PluginRegistry`, and the types `PluginDefinition` and `ResolvedPlugins`.
 
 A `PluginDefinition` may declare `requirements`, a record of optional input slots owned by that plugin. Its `compose` receives authored/interpolated values and a third argument containing that plugin's scoped inputs. `ResolvedPlugins.requirements` reports the bindings resolved for a track.
@@ -70,5 +72,4 @@ A private channel between core and React: `Patch`, `PatchListener`, and `PatchSo
 ## Known gaps
 
 1. Neither package is published; both remain private at `0.0.0`.
-2. [Issue #175](https://github.com/chahyasantoso/motion5/issues/175) tracks removal of the dead `ObservationDefinition.target` field.
-3. [Issue #176](https://github.com/chahyasantoso/motion5/issues/176) tracks transactional `replaceTrack` ordering after a failed recompile.
+2. [Issue #176](https://github.com/chahyasantoso/motion5/issues/176) tracks transactional `replaceTrack` ordering after a failed recompile.

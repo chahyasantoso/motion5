@@ -162,6 +162,8 @@ Generic edges remain available on the observing track:
 
 `source` may be local, qualified motion, or free-track. `role` is `input` or `output` and defaults to `output`. Input projections are generic graph behavior; plugin-owned requirements should be preferred when the dependency belongs to a plugin. Output observations merge the source contribution over the observer's composed patch.
 
+An edge has exactly three authored fields. There is no `target`, on either role, and an authored one is rejected with `observation-target-unsupported`. It was once validated and carried in edge identity while never being read at composition, which is the field accepted and then ignored that ADR-033 forbids. Rename incoming keys with `projection`, or bind the dependency under a plugin group's `requires` section when it belongs to a plugin. See ADR-046.
+
 The graph rejects unknown, duplicate, self-referential, and cyclic edges before mount.
 
 ## Free tracks
@@ -188,4 +190,4 @@ Errors reject a candidate project before it replaces the active project. Warning
 
 ## Rejected input
 
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, malformed bindings and edges, unknown sources, duplicate edges, self-reference, cycles, and legacy `use` entries are errors. Flat keys with multiple plugin claimants are also errors. Missing perspective for detected 3D content and unused free tracks are warnings.
+Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, malformed bindings and edges, unknown sources, duplicate edges, self-reference, cycles, removed fields such as an observation `target` or a track `use`, and legacy `use` entries are errors. Flat keys with multiple plugin claimants are also errors. Missing perspective for detected 3D content and unused free tracks are warnings.
