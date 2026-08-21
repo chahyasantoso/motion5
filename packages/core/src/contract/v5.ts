@@ -134,10 +134,18 @@ export interface TrackDefinition {
   readonly keyframes?: Readonly<Record<string, AuthoredKeyframe>>;
   readonly observes?: readonly ObservationDefinition[];
 }
+/**
+ * One generic `observes` entry: a graph edge the author writes by hand.
+ *
+ * There is deliberately no `target`. An input edge delivers its source's values under the source's
+ * own names, or under the names an `InputProjection` maps them to, and a dependency that belongs to
+ * a plugin is bound under `keyframes.<plugin>.requires` and arrives scoped to that plugin instead.
+ * A target name had no consumer on either role, so it is refused rather than accepted and ignored:
+ * `graph/ir.ts` reports `observation-target-unsupported`. See ADR-046.
+ */
 export interface ObservationDefinition {
   readonly source: string;
   readonly role?: "input" | "output";
-  readonly target?: string;
   readonly projection?: InputProjection;
 }
 export interface MotionDefinition {
