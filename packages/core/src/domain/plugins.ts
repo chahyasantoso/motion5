@@ -1,11 +1,34 @@
 import { validateKeyframes } from "../contract/validate-v5";
-import type { AuthoredProperty, AuthoredStop, Diagnostic } from "../contract/v5";
+import type {
+  AuthoredProperty,
+  AuthoredStop,
+  Diagnostic,
+  PluginRequiresBinding,
+} from "../contract/v5";
 import { flattenAuthoredKeyframes, type FlattenedKeyframe } from "./keyframe-groups";
 import type { ImmutableRecord } from "./values";
 
+/**
+ * The values one plugin's declared requirement slots resolved to, keyed by slot name.
+ *
+ * Each slot holds the source's published values under the source's own key names. There is no
+ * projection and no renaming, because the slot itself is the scope: `inputs.base.rotation` and the
+ * observer's authored `rotation` are distinguished by where they live rather than by being spelled
+ * differently. That is what makes an upstream value structurally unable to overwrite an authored
+ * one, and it is why `fkPlugin` needs no `parentRotation`. See ADR-044.
+ */
+export type PluginInputs = Readonly<ImmutableRecord>;
+/** Every plugin's scoped inputs for one composition, keyed by plugin name. */
+export type RequirementInputs = Readonly<Record<string, PluginInputs>>;
+
+/**
+ * `inputs` is appended rather than inserted, so every composer written against the two-argument
+ * form stays assignable and a plugin that needs no upstream value simply does not declare it.
+ */
 export type PluginComposer = (
   values: Readonly<ImmutableRecord>,
   progress: number,
+  inputs: PluginInputs,
 ) => ImmutableRecord;
 export interface TrackConfigView {
   readonly id?: string;
@@ -22,6 +45,23 @@ export type PluginContributor = (
 ) => Contribution | undefined;
 export type PluginKeyClaim = (key: string) => boolean;
 export type OutputSerializer = (value: unknown) => unknown;
+/**
+ * One input slot a plugin declares and an author may bind through `keyframes.<plugin>.requires`.
+ *
+ * Every slot is optional to bind. A plugin that wants a default owns it in its own `compose`, which
+ * is the only place that knows what an unbound slot means: `fk` composes against the origin, and a
+ * plugin for which no base is meaningless would refuse in its own composition instead. See ADR-044.
+ */
+export interface PluginRequirement {
+  /** What the slot is for. Documentation for the plugin's author; carries no behavior. */
+  readonly description?: string;
+}
+/** One authored binding that resolved against a declared slot of a registered plugin. */
+export interface ResolvedRequirement {
+  readonly plugin: string;
+  readonly slot: string;
+  readonly source: string;
+}
 export interface PreparedContribution {
   readonly keyframes: Readonly<Record<string, AuthoredProperty>>;
   readonly tweenVars: Readonly<Record<string, unknown>>;
@@ -35,6 +75,14 @@ export interface ResolvedPlugins {
    * grouped. Callers with no registry flatten through `flattenAuthoredKeyframes` themselves.
    */
   readonly authoredKeyframes: Readonly<Record<string, unknown>>;
+  /**
+   * The bindings that resolved against a declared slot, ordered by plugin then slot.
+   *
+   * Reporting rather than wiring. The graph derives its edges from the authored form directly, so
+   * this exists to tell a compiled-track owner which slots a track actually bound, and a second
+   * derivation from it would be a second owner of the same dependency. See ADR-044.
+   */
+  readonly requirements: readonly ResolvedRequirement[];
   readonly internalKeys: readonly string[];
   readonly outputSerializers: Readonly<Record<string, OutputSerializer>>;
   readonly preparation: PreparedContribution;
@@ -44,6 +92,7 @@ export interface PluginDefinition {
   readonly keys?: readonly string[];
   readonly claimsKey?: PluginKeyClaim;
   readonly inputs?: readonly string[];
+  readonly requirements?: Readonly<Record<string, PluginRequirement>>;
   readonly stage?: string;
   readonly priority?: number;
   readonly outputs?: readonly string[];
@@ -299,6 +348,7 @@ function result(
   diagnostics: Diagnostic[],
   authoredKeyframes: Readonly<Record<string, unknown>>,
   preparation: PreparedContribution,
+  requirements: readonly ResolvedRequirement[],
 ): ResolvedPlugins {
   const internalKeys = Object.freeze(
     [...new Set(plugins.flatMap((plugin) => plugin.internalKeys ?? []))].sort(),
@@ -331,6 +381,7 @@ function result(
     plugins: Object.freeze(plugins),
     diagnostics: Object.freeze(diagnostics),
     authoredKeyframes,
+    requirements,
     internalKeys,
     outputSerializers: Object.freeze(outputSerializers),
     preparation,
@@ -357,6 +408,8 @@ export class PluginRegistry {
       throw new TypeError("Plugin inputs must be an array when provided.");
     if (plugin.outputs !== undefined && !Array.isArray(plugin.outputs))
       throw new TypeError("Plugin outputs must be an array when provided.");
+    if (plugin.requirements !== undefined && !isRecord(plugin.requirements))
+      throw new TypeError("Plugin requirements must be an object when provided.");
     if (plugin.stage !== undefined && !VALID_STAGES.has(plugin.stage))
       throw new TypeError(`Unknown plugin stage "${plugin.stage}".`);
     if (plugin.contribute && plugin.stage !== "prepare")
@@ -371,10 +424,16 @@ export class PluginRegistry {
     const keys = [...(plugin.keys ?? [])];
     const inputs = [...(plugin.inputs ?? [])];
     const outputs = [...(plugin.outputs ?? [])];
+    const slots = Object.keys(plugin.requirements ?? {});
+    for (const slot of slots)
+      if (!slot.trim())
+        throw new TypeError(`Plugin "${plugin.name}" requirement slot must be non-empty.`);
     // The colon belongs to the internal-key rule, and this is where that reservation becomes real
     // rather than a convention. A plugin free to declare an output named `fk:world` would have its
-    // public output treated as private and silently dropped before publication.
-    for (const name of [...keys, ...inputs, ...outputs]) {
+    // public output treated as private and silently dropped before publication. A requirement slot
+    // is held to the same rule, because a namespaced slot would name a scoped input the author can
+    // never spell inside a group: `keyframes` rejects the colon in every authored name.
+    for (const name of [...keys, ...inputs, ...outputs, ...slots]) {
       if (!name.includes(":")) continue;
       const detail = `metadata name "${name}" must not contain ':'`;
       throw new TypeError(`Plugin "${plugin.name}" ${detail}.`);
@@ -386,7 +445,9 @@ export class PluginRegistry {
     // route around a namespace they could not share. See ADR-043.
     //
     // `inputs` keeps its guard, because an input is not addressable by a group name, so nothing
-    // could ever name an owner for one and this is the only owner that rule has.
+    // could ever name an owner for one and this is the only owner that rule has. `requirements`
+    // needs no such guard for the opposite reason: a slot is addressed through its owning plugin's
+    // group and delivered scoped to it, so two plugins declaring `base` never share a namespace.
     for (const input of inputs) {
       const owner = this.#inputOwners.get(input);
       if (owner)
@@ -399,6 +460,7 @@ export class PluginRegistry {
       ...(plugin.keys ? { keys: Object.freeze(keys) } : {}),
       ...(plugin.inputs ? { inputs: Object.freeze(inputs) } : {}),
       ...(plugin.outputs ? { outputs: Object.freeze(outputs) } : {}),
+      ...(plugin.requirements ? { requirements: deepFreeze({ ...plugin.requirements }) } : {}),
     });
     this.#plugins.set(plugin.name, frozen);
     this.#orders.set(plugin.name, this.#registrationOrder++);
@@ -480,6 +542,58 @@ export class PluginRegistry {
     diagnostics.push(diagnostic("plugin-unknown-key", leafPath, message, ids));
     return undefined;
   }
+  /**
+   * The registry-dependent half of binding validation.
+   *
+   * Two questions only: does the group name a registered plugin, and does that plugin declare the
+   * bound slot. The shape of the section is already proven by `validateKeyframes`, and whether the
+   * source resolves to a node belongs to graph construction, which runs on the authored form and
+   * needs no registry at all. See ADR-044.
+   *
+   * `reportedGroups` is shared with `#ownerForEntry` so a group naming no registered plugin is one
+   * diagnostic whether the author got there through a leaf, a binding, or both.
+   *
+   * The owning plugin joins `plugins` here, because a group may author nothing but bindings. Left
+   * out, such a track would derive its edge, receive its scoped input, and then run no composer at
+   * all: an edge with no consumer, which reads as a held value rather than as an error.
+   */
+  #resolveRequirements(
+    bindings: readonly PluginRequiresBinding[],
+    path: string,
+    diagnostics: Diagnostic[],
+    reportedGroups: Set<string>,
+    plugins: PluginDefinition[],
+  ): readonly ResolvedRequirement[] {
+    const resolved: ResolvedRequirement[] = [];
+    for (const binding of bindings) {
+      const named = this.#plugins.get(binding.plugin);
+      if (named === undefined) {
+        if (reportedGroups.has(binding.plugin)) continue;
+        reportedGroups.add(binding.plugin);
+        const message = `No registered plugin is named "${binding.plugin}".`;
+        const groupPath = `${path}.${binding.plugin}`;
+        diagnostics.push(diagnostic("plugin-unknown-key", groupPath, message, [binding.plugin]));
+        continue;
+      }
+      if (!(binding.slot in (named.requirements ?? {}))) {
+        const detail = `does not declare requirement "${binding.slot}"`;
+        diagnostics.push(
+          diagnostic(
+            "plugin-unknown-requirement",
+            `${path}.${binding.authoredPath}`,
+            `Plugin "${binding.plugin}" ${detail}.`,
+            [binding.plugin, binding.slot],
+          ),
+        );
+        continue;
+      }
+      if (!plugins.includes(named)) plugins.push(named);
+      resolved.push(
+        Object.freeze({ plugin: binding.plugin, slot: binding.slot, source: binding.source }),
+      );
+    }
+    return Object.freeze(resolved);
+  }
   resolveForKeyframes(
     authored: Readonly<Record<string, unknown>>,
     path = "keyframes",
@@ -498,6 +612,15 @@ export class PluginRegistry {
       entryOwners.set(entry.key, owner);
       if (!plugins.includes(owner)) plugins.push(owner);
     }
+    // After the entry loop, so an unknown group name is reported once, and before the sort, so a
+    // plugin reached only through a binding takes its place in stage and priority order.
+    const requirements = this.#resolveRequirements(
+      flattened.bindings,
+      path,
+      diagnostics,
+      reportedGroups,
+      plugins,
+    );
     plugins.sort(
       (a, b) =>
         comparePlugins(a, b) ||
@@ -530,7 +653,7 @@ export class PluginRegistry {
       diagnostics,
       flattened.authoredPaths,
     );
-    return result(plugins, diagnostics, flattened.keyframes, preparation);
+    return result(plugins, diagnostics, flattened.keyframes, preparation, requirements);
   }
   has(name: string): boolean {
     return this.#plugins.has(name);
