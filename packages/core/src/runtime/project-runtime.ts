@@ -23,6 +23,10 @@ export interface TrackHandle {
   addObserve(observation: ObservationDefinition): void;
   removeObserve(observation: ObservationDefinition): void;
 }
+export interface StagedTrack {
+  commit(): void;
+  rollback(): void;
+}
 export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly scheduler?: Scheduler;
@@ -30,6 +34,7 @@ export interface ProjectRuntimeOptions {
   readonly setProgress?: (nodeId: string, progress: number) => void;
   readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
   readonly disposeTrack?: (nodeId: string) => void;
+  readonly stageTrack?: (track: TrackDefinition, nodeId: string) => StagedTrack;
   readonly addMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly replaceMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly removeMotionTrack?: (motionId: string, trackId: string) => void;
@@ -47,6 +52,20 @@ function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
 }
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+function runRollbackSteps(steps: readonly (() => void)[]): void {
+  const failures: unknown[] = [];
+  for (const step of steps) {
+    try {
+      step();
+    } catch (error) {
+      failures.push(error);
+    }
+  }
+  if (failures.length === 0) return;
+  throw failures.length === 1
+    ? failures[0]
+    : new AggregateError(failures, "Track replacement rollback failed.");
 }
 /**
  * Rejects an operation whose rollback can fail on its own.
@@ -87,6 +106,9 @@ export class ProjectRuntime {
   readonly #setProgress: (nodeId: string, progress: number) => void;
   readonly #compileTrack: ((track: TrackDefinition, nodeId?: string) => void) | undefined;
   readonly #disposeTrack: ((nodeId: string) => void) | undefined;
+  readonly #stageTrack:
+    | ((track: TrackDefinition, nodeId: string) => StagedTrack)
+    | undefined;
   readonly #addMotionTrack:
     | ((motionId: string, trackId: string, duration?: number) => void)
     | undefined;
@@ -119,6 +141,7 @@ export class ProjectRuntime {
     this.#setProgress = options.setProgress ?? (() => undefined);
     this.#compileTrack = options.compileTrack;
     this.#disposeTrack = options.disposeTrack;
+    this.#stageTrack = options.stageTrack;
     this.#addMotionTrack = options.addMotionTrack;
     this.#replaceMotionTrack = options.replaceMotionTrack;
     this.#removeMotionTrack = options.removeMotionTrack;
@@ -331,15 +354,31 @@ export class ProjectRuntime {
     const accepted = validation.value;
     const replaced = new Map(this.#tracks);
     replaced.set(id, { ...entry, track: accepted });
-    this.#graph.replaceGraph(this.#snapshot(replaced, this.#motions));
-    this.#disposeTrack?.(id);
-    this.#compileTrack?.(accepted, id);
+
+    // The compiled-map owner publishes a prepared replacement while retaining the displaced Track.
+    // Motion must see that staged instance because it resolves and seeds by id. The graph is the
+    // final acceptance step; only after it accepts can the old compiled Track be released.
+    const staged = this.#stageTrack?.(accepted, id);
+    let motionReplaced = false;
+    try {
+      if (entry.motionId !== undefined) {
+        this.#replaceMotionTrack?.(entry.motionId, id, accepted.duration);
+        motionReplaced = true;
+      }
+      this.#graph.replaceGraph(this.#snapshot(replaced, this.#motions));
+    } catch (error) {
+      const rollbackSteps: (() => void)[] = [];
+      if (staged !== undefined) rollbackSteps.push(() => staged.rollback());
+      // Republish the displaced compiled Track before restoring Motion: its restore call resolves
+      // and seeds by id, so the old instance must already be live. See ADR-031 and ADR-045.
+      if (motionReplaced && entry.motionId !== undefined)
+        rollbackSteps.push(() =>
+          this.#replaceMotionTrack?.(entry.motionId!, id, entry.track.duration),
+        );
+      rejectAfterRollback(error, () => runRollbackSteps(rollbackSteps));
+    }
     this.#tracks.set(id, { ...entry, track: accepted });
-    // Must run after compileTrack: Motion resolves by id against the live compiled map, so an
-    // earlier call would resolve the disposed instance. This ordering is the only thing standing
-    // between the resolver and a retired Track. See ADR-031.
-    if (entry.motionId !== undefined)
-      this.#replaceMotionTrack?.(entry.motionId, id, accepted.duration);
+    staged?.commit();
   }
   #replaceWithObservation(
     id: string,
