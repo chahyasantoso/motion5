@@ -25,7 +25,6 @@ const project: ProjectDefinition = {
             {
               source: "base/root",
               role: "input",
-              target: "parentWorld",
               projection: { map: { self: "parentWorld" } },
             },
           ],
@@ -97,12 +96,7 @@ describe("P5-01 cross-motion references", () => {
         {
           id: "arm",
           trigger: { type: "manual" },
-          tracks: [
-            {
-              id: "child",
-              observes: [{ source: "missing/root", role: "input", target: "parentWorld" }],
-            },
-          ],
+          tracks: [{ id: "child", observes: [{ source: "missing/root", role: "input" }] }],
         },
       ],
     };

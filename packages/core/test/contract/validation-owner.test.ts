@@ -6,7 +6,6 @@ import { buildGraphIR } from "../../src/graph/ir";
 interface AuthoredObservation {
   source: string;
   role?: "input" | "output";
-  target?: string;
 }
 interface AuthoredTrack {
   id: string;

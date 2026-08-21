@@ -2,17 +2,14 @@ import { describe, expect, it } from "vitest";
 import type { GraphEdge } from "../../../src/graph/ir";
 import { compareEdges, edgeKey } from "../../../src/graph/ir";
 
-// Ids, targets, and projection keys that contain every character the identity encoding or the
-// comparator treats as punctuation, plus leading digits, which is what a length prefix looks
-// like from the outside. All thirteen are pairwise distinct edges.
+// Ids and projection keys that contain every character the identity encoding or the comparator
+// treats as punctuation, plus leading digits, which is what a length prefix looks like from the
+// outside. All ten are pairwise distinct edges.
 const EDGES: readonly GraphEdge[] = [
   { observerId: "a|b/c", sourceId: "d/e", role: "input" },
   { observerId: "a/b", sourceId: "d/e", role: "input" },
   { observerId: "a/b", sourceId: "d/e", role: "output" },
   { observerId: "a/b", sourceId: "d|e/f", role: "input" },
-  { observerId: "a/b", sourceId: "d/e", role: "input", target: "" },
-  { observerId: "a/b", sourceId: "d/e", role: "input", target: "1:x" },
-  { observerId: "a/b", sourceId: "d/e", role: "input", target: "x" },
   { observerId: "a/b", sourceId: "d/e", role: "input", projection: { pick: ["a,b"] } },
   { observerId: "a/b", sourceId: "d/e", role: "input", projection: { pick: ["a", "b"] } },
   { observerId: "a/b", sourceId: "d/e", role: "input", projection: { map: { a: "x,b=y" } } },

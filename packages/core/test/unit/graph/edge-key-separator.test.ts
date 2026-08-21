@@ -3,8 +3,8 @@ import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../sr
 import { buildGraphIR, edgeKey, type GraphBuildResult } from "../../../src/graph/ir";
 
 // Every id below passes validateV5 and the graph id guards: they reserve only "/" and "~", so
-// "|" is authorable everywhere edgeKey uses it as a field separator, and a target is an
-// arbitrary string. A separator that a value can forge is not a separator.
+// "|" is authorable everywhere edgeKey uses it as a field separator, and a projection key or
+// value is an arbitrary non-empty string. A separator a value can forge is not a separator.
 const observing = (id: string, source?: string): TrackDefinition =>
   source === undefined ? { id } : { id, observes: [{ source, role: "input" }] };
 
@@ -73,10 +73,5 @@ describe("edge identity survives a separator inside an id", () => {
     const result = buildGraphIR(REPEATED);
     expect(result.graph).toBeUndefined();
     expect(duplicates(result)).toHaveLength(1);
-  });
-
-  it("E-6 distinguishes an authored empty target from an absent target", () => {
-    // Both render as the empty string today, so one key stands in for two edges.
-    expect(edgeKey({ ...base, target: "" })).not.toBe(edgeKey(base));
   });
 });

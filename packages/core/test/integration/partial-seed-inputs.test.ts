@@ -45,8 +45,8 @@ describe("GraphPublisher partial-seed inputs", () => {
       "sink",
       2,
       [
-        { observerId: "sink", sourceId: "source-a", role: "input", target: "a" },
-        { observerId: "sink", sourceId: "source-b", role: "input", target: "b" },
+        { observerId: "sink", sourceId: "source-a", role: "input" },
+        { observerId: "sink", sourceId: "source-b", role: "input" },
       ],
       (inputs) => ({
         values: { total: (inputs.a as number) + (inputs.b as number) },

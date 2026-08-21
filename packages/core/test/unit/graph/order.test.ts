@@ -80,9 +80,7 @@ describe("canonical order and cycle detection", () => {
         {
           id: "hero",
           trigger: { type: "manual" },
-          tracks: [
-            { id: "arm", observes: [{ source: "~/cursor", role: "input", target: "pointer" }] },
-          ],
+          tracks: [{ id: "arm", observes: [{ source: "~/cursor", role: "input" }] }],
         },
       ],
       freeTracks: [{ id: "cursor" }],

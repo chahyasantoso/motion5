@@ -32,7 +32,7 @@ describe("observation projection validation (X-1)", () => {
     );
   });
 
-  it("accepts projected input observations without the compatibility target", () => {
+  it("accepts a projected input observation carrying nothing else", () => {
     const project = {
       schemaVersion: 5,
       motions: [

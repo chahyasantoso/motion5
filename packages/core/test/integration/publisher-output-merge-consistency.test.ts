@@ -37,7 +37,7 @@ describe("GraphPublisher: memo/registry consistency (recovery A1)", () => {
       ),
       node(
         "downstream",
-        [{ observerId: "downstream", sourceId: "sourceA", role: "input", target: "fromA" }],
+        [{ observerId: "downstream", sourceId: "sourceA", role: "input" }],
         (inputs) => ({ values: inputs, sourceProgress: 0, sourceRevisions: {} }),
       ),
     ];
@@ -66,7 +66,7 @@ describe("GraphPublisher: memo/registry consistency (recovery A1)", () => {
       ),
       node(
         "downstream",
-        [{ observerId: "downstream", sourceId: "sourceA", role: "input", target: "fromA" }],
+        [{ observerId: "downstream", sourceId: "sourceA", role: "input" }],
         (inputs) => ({
           values: { ...inputs, callCount: (downstreamCalls += 1) },
           sourceProgress: 0,
