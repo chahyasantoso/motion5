@@ -15,7 +15,7 @@ import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default"
 import { compilePercentKeyframes } from "./domain/keyframe-compiler";
 import { flattenAuthoredKeyframes } from "./domain/keyframe-groups";
 import { Motion, type MotionTrackEntry } from "./domain/motion";
-import { PluginRegistry } from "./domain/plugins";
+import { PluginRegistry, type RequirementInputs } from "./domain/plugins";
 import { Track } from "./domain/track";
 import type { ImmutableRecord } from "./domain/values";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
@@ -194,7 +194,7 @@ export class Engine {
       // Flattened with or without a registry. The resolver already did it when one exists; when
       // none does there is no resolver to fall back on, and an authored group would reach the
       // percent map and the interpolator as a nested object neither reads any stops from, so the
-      // track would compile with no diagnostics and then hold still at every progress.
+      // track would compile with no diagnostics and then hold still.
       const authoredKeyframes =
         resolved?.authoredKeyframes ?? flattenAuthoredKeyframes(trackDef.keyframes ?? {}).keyframes;
       const preparedKeyframes = {
@@ -346,13 +346,18 @@ export class Engine {
     };
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
+      // The only seam between the publisher's edge resolution and `Track.compose`, so it is the
+      // only place that forwards the scoped requirement inputs. They stay a separate argument all
+      // the way down: merging them into `inputs` here would undo the namespace separation the
+      // publisher just established. See ADR-044.
       const compose =
         (node: {
           id: string;
           track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> };
         }) =>
-        (inputs: Readonly<Record<string, unknown>>) => {
-          const snapshot = tracks.get(node.id)!.compose(inputs as Readonly<ImmutableRecord>);
+        (inputs: Readonly<Record<string, unknown>>, requirementInputs: RequirementInputs) => {
+          const track = tracks.get(node.id)!;
+          const snapshot = track.compose(inputs as Readonly<ImmutableRecord>, requirementInputs);
           return {
             values: snapshot.values,
             sourceProgress: snapshot.progress,
