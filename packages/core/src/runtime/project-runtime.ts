@@ -63,9 +63,8 @@ function runRollbackSteps(steps: readonly (() => void)[]): void {
     }
   }
   if (failures.length === 0) return;
-  throw failures.length === 1
-    ? failures[0]
-    : new AggregateError(failures, "Track replacement rollback failed.");
+  if (failures.length === 1) throw failures[0];
+  throw new AggregateError(failures, "Track replacement rollback failed.");
 }
 /**
  * Rejects an operation whose rollback can fail on its own.
@@ -106,9 +105,7 @@ export class ProjectRuntime {
   readonly #setProgress: (nodeId: string, progress: number) => void;
   readonly #compileTrack: ((track: TrackDefinition, nodeId?: string) => void) | undefined;
   readonly #disposeTrack: ((nodeId: string) => void) | undefined;
-  readonly #stageTrack:
-    | ((track: TrackDefinition, nodeId: string) => StagedTrack)
-    | undefined;
+  readonly #stageTrack: ((track: TrackDefinition, nodeId: string) => StagedTrack) | undefined;
   readonly #addMotionTrack:
     | ((motionId: string, trackId: string, duration?: number) => void)
     | undefined;
@@ -359,10 +356,11 @@ export class ProjectRuntime {
     // Motion must see that staged instance because it resolves and seeds by id. The graph is the
     // final acceptance step; only after it accepts can the old compiled Track be released.
     const staged = this.#stageTrack?.(accepted, id);
+    const motionId = entry.motionId;
     let motionReplaced = false;
     try {
-      if (entry.motionId !== undefined) {
-        this.#replaceMotionTrack?.(entry.motionId, id, accepted.duration);
+      if (motionId !== undefined) {
+        this.#replaceMotionTrack?.(motionId, id, accepted.duration);
         motionReplaced = true;
       }
       this.#graph.replaceGraph(this.#snapshot(replaced, this.#motions));
@@ -371,9 +369,9 @@ export class ProjectRuntime {
       if (staged !== undefined) rollbackSteps.push(() => staged.rollback());
       // Republish the displaced compiled Track before restoring Motion: its restore call resolves
       // and seeds by id, so the old instance must already be live. See ADR-031 and ADR-045.
-      if (motionReplaced && entry.motionId !== undefined)
+      if (motionReplaced && motionId !== undefined)
         rollbackSteps.push(() =>
-          this.#replaceMotionTrack?.(entry.motionId!, id, entry.track.duration),
+          this.#replaceMotionTrack?.(motionId, id, entry.track.duration),
         );
       rejectAfterRollback(error, () => runRollbackSteps(rollbackSteps));
     }
