@@ -1,0 +1,26 @@
+# CI log archive: 32487186496
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: fix/issue-176-transactional-track-replacement
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/32487186496
+- Captured: 2026-08-21T13:31:00Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm run format:check	﻿2026-08-21T13:30:38.6948814Z ##[group]Run npm run format:check
+quality (node 24)	Run npm run format:check	2026-08-21T13:30:38.6949183Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Run npm run format:check	2026-08-21T13:30:38.6987041Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run format:check	2026-08-21T13:30:38.6987339Z env:
+quality (node 24)	Run npm run format:check	2026-08-21T13:30:38.6987547Z   NODE_VERSION: 24
+quality (node 24)	Run npm run format:check	2026-08-21T13:30:38.6987767Z ##[endgroup]
+quality (node 24)	Run npm run format:check	2026-08-21T13:30:38.7977672Z 
+quality (node 24)	Run npm run format:check	2026-08-21T13:30:38.7978266Z > motion5@0.0.0 format:check
+quality (node 24)	Run npm run format:check	2026-08-21T13:30:38.7978829Z > prettier . --check
+quality (node 24)	Run npm run format:check	2026-08-21T13:30:38.7979048Z 
+quality (node 24)	Run npm run format:check	2026-08-21T13:30:38.8847280Z Checking formatting...
+quality (node 24)	Run npm run format:check	2026-08-21T13:30:42.4757483Z [^[[33mwarn^[[39m] packages/core/src/runtime/project-runtime.ts
+quality (node 24)	Run npm run format:check	2026-08-21T13:30:43.9956208Z [^[[33mwarn^[[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+quality (node 24)	Run npm run format:check	2026-08-21T13:30:44.0473852Z ##[error]Process completed with exit code 1.
+```
