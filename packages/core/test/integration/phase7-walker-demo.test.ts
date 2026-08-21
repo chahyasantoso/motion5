@@ -14,6 +14,10 @@ import { createElement } from "react";
 describe("Phase 7: Walker Demo Integration Suite", () => {
   // Both plugins claim `rotation`, so each track names the one it means: a bone is authored under
   // `fk` and the root under `transform`. Values and published keys are unchanged. See ADR-043.
+  //
+  // Each bone's parent is bound through the fk plugin's own `base` requirement rather than through
+  // a track-level input observation projecting onto `parentX`, `parentY`, and `parentRotation`.
+  // The composed world-space values are identical, which case 6 pins numerically. See ADR-044.
   const walkerProject: ProjectDefinition = {
     schemaVersion: 5,
     motions: [
@@ -62,21 +66,9 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
                     { p: 1, v: 45 },
                   ],
                 },
+                requires: { base: "walk/pelvis" },
               },
             },
-            observes: [
-              {
-                source: "walk/pelvis",
-                role: "input",
-                projection: {
-                  map: {
-                    x: "parentX",
-                    y: "parentY",
-                    rotation: "parentRotation",
-                  },
-                },
-              },
-            ],
           },
           {
             id: "shin",
@@ -94,21 +86,9 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
                     { p: 1, v: -30 },
                   ],
                 },
+                requires: { base: "walk/thigh" },
               },
             },
-            observes: [
-              {
-                source: "walk/thigh",
-                role: "input",
-                projection: {
-                  map: {
-                    x: "parentX",
-                    y: "parentY",
-                    rotation: "parentRotation",
-                  },
-                },
-              },
-            ],
           },
         ],
       },
@@ -288,12 +268,14 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
     const thighPatch = batch.patches.find((p) => p.nodeId === "walk/thigh");
     const shinPatch = batch.patches.find((p) => p.nodeId === "walk/shin");
 
-    // Thigh (parentRot=0, own rotation=45): worldRot=45, x = 0 + 50*cos(45deg) = 35.355, y = 100 + 50*sin(45deg) = 135.355
+    // Thigh (base.rotation=0, own rotation=45): worldRot=45, x = 0 + 50*cos(45deg) = 35.355,
+    // y = 100 + 50*sin(45deg) = 135.355
     expect(thighPatch?.values.x).toBeCloseTo(35.355, 2);
     expect(thighPatch?.values.y).toBeCloseTo(135.355, 2);
     expect(thighPatch?.values.rotation).toBeCloseTo(45, 2);
 
-    // Shin (parentRot=45, own rotation=-30): worldRot=15, x = 35.355 + 40*cos(15deg) = 73.997, y = 135.355 + 40*sin(15deg) = 145.707
+    // Shin (base.rotation=45, own rotation=-30): worldRot=15, x = 35.355 + 40*cos(15deg) = 73.997,
+    // y = 135.355 + 40*sin(15deg) = 145.707
     expect(shinPatch?.values.x).toBeCloseTo(73.997, 2);
     expect(shinPatch?.values.y).toBeCloseTo(145.707, 2);
     expect(shinPatch?.values.rotation).toBeCloseTo(15, 2);
