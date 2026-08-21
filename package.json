@@ -15,7 +15,7 @@
   "scripts": {
     "check": "npm run format:check && npm run typecheck && npm test",
     "format": "prettier . --write",
-    "format:check": "prettier . --check",
+    "format:check": "prettier . --write && git diff --exit-code",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",
     "test:migration": "vitest run packages/core/test/migration",
@@ -38,7 +38,7 @@
     "prettier": "3.6.2",
     "react": "19.2.8",
     "react-dom": "^19.2.8",
-    "react-test-renderer": "19.2.8",
+    "react-test-renderer": "19.1.0",
     "typescript": "5.8.3",
     "vitest": "^4.1.10"
   }
