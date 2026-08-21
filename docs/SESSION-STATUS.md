@@ -13,7 +13,7 @@ This document reports current implementation reality. Plans and audits describe 
 - Plugin-owned input requirements landed in [PR #174](https://github.com/chahyasantoso/motion5/pull/174), closing [issue #173](https://github.com/chahyasantoso/motion5/issues/173). A plugin declares `requirements`; an author binds those slots under `keyframes.<plugin>.requires`; the graph derives one input edge per binding; and composition receives the upstream values scoped by plugin and slot.
 - `fkPlugin` now declares the `base` requirement, reads `inputs.base`, and no longer requires the author to invent `parentX`, `parentY`, or `parentRotation`. The walker demo moved thirteen repeated projection blocks into bindings beside the FK keyframes. Published values are unchanged.
 - The authored `requires` section is metadata, not a keyframe. `validateKeyframes` owns registry-independent shape, `PluginRegistry` owns plugin and slot resolution, and graph construction owns source, cycle, duplicate, and self-reference validation. ADR-044 records the decision.
-- Track replacement is now staged and committed transactionally in [PR #178](https://github.com/chahyasantoso/motion5/pull/178), with ADR-045 and U-1 through U-8 evidence. Behavioral checks are green; formatting remains the only failing gate.
+- Track replacement is now staged and committed transactionally in [PR #178](https://github.com/chahyasantoso/motion5/pull/178), with ADR-045 and U-1 through U-8 evidence. All CI gates are green.
 
 ## Documentation and package surface
 
@@ -41,7 +41,7 @@ This document reports current implementation reality. Plans and audits describe 
 - Plugin-owned requirements red run: [32476954868](https://github.com/chahyasantoso/motion5/actions/runs/32476954868), archived at `logs/32476954868/` on `ci-logs`. The run reported `5 failed | 200 passed`; the key failure was `stops-shape` for `keyframes.fk.requires`, proving the new section was absent before implementation.
 - Plugin-owned requirements green run: [32478658229](https://github.com/chahyasantoso/motion5/actions/runs/32478658229), all six behavioral jobs green, including `format:check` inside `quality`.
 - Transactional Track replacement red run: [32484448662](https://github.com/chahyasantoso/motion5/actions/runs/32484448662), archived at `logs/32484448662/` on `ci-logs`; U-1/U-3 failed and typecheck named the absent staging seam.
-- Transactional Track replacement behavioral run: [32487186496](https://github.com/chahyasantoso/motion5/actions/runs/32487186496); integration, boundaries, build, end-to-end, and performance passed, while quality failed only at the read-only Prettier gate for `project-runtime.ts`.
+- Transactional Track replacement final green run: [32487529184](https://github.com/chahyasantoso/motion5/actions/runs/32487529184); quality, integration, boundaries, build, end-to-end, performance, and the Prettier repair job passed.
 - Cases `Q-1` through `Q-12` cover requirement shape, plugin-owned slot validation, derived graph edges, multi-source identity, and scoped composition. `Q-8` is a compatibility guard and passes on the parent by design.
 - Cases `U-1` through `U-8` cover replacement compile refusal, Motion refusal, graph rejection, staging order, rollback order, and rollback error precedence.
 - Per-plugin ownership evidence: cases `N-1` through `N-10` and [ADR-043](https://github.com/chahyasantoso/motion5/blob/main/docs/ADR-043-per-plugin-key-ownership.md).
