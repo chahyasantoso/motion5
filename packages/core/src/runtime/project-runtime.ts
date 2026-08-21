@@ -370,9 +370,7 @@ export class ProjectRuntime {
       // Republish the displaced compiled Track before restoring Motion: its restore call resolves
       // and seeds by id, so the old instance must already be live. See ADR-031 and ADR-045.
       if (motionReplaced && motionId !== undefined)
-        rollbackSteps.push(() =>
-          this.#replaceMotionTrack?.(motionId, id, entry.track.duration),
-        );
+        rollbackSteps.push(() => this.#replaceMotionTrack?.(motionId, id, entry.track.duration));
       rejectAfterRollback(error, () => runRollbackSteps(rollbackSteps));
     }
     this.#tracks.set(id, { ...entry, track: accepted });
