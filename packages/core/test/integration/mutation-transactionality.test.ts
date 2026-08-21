@@ -39,6 +39,10 @@ function ramp(from: number, to: number) {
 
 // Both plugins are registered, so `rotation` has two claimants and each track names the one it
 // means. `x` and `y` are claimed by `transform` alone and keep their flat spelling. See ADR-043.
+//
+// The dependent's edge is derived from `fk.requires.base` rather than authored as an input
+// observation, which is deliberate here: a derived edge is held to the same topology rules, so
+// destroying its source is still `observation-unknown-source`. See ADR-044.
 const rootTrack: TrackDefinition = {
   id: "root",
   keyframes: {
@@ -55,15 +59,9 @@ const dependentTrack: TrackDefinition = {
     fk: {
       length: ramp(40, 40),
       rotation: ramp(0, 0),
+      requires: { base: "~/root" },
     },
   },
-  observes: [
-    {
-      source: "~/root",
-      role: "input",
-      projection: { map: { x: "parentX", y: "parentY", rotation: "parentRotation" } },
-    },
-  ],
 };
 
 function snapshot(handle: ReturnType<typeof makeHandle>["handle"], ids: readonly string[]) {

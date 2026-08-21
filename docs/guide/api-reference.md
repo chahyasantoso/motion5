@@ -1,76 +1,74 @@
 # API reference
 
-Grouped by entrypoint, because the entrypoint is the contract. `packages/core/package.json` declares these and nothing else; anything you reach through a source path in a workspace checkout is not covered by this document and can move without notice.
+Grouped by entrypoint, because the entrypoint is the contract. `packages/core/package.json` declares these and nothing else; source paths in a workspace checkout are not covered by this document.
 
 ## @motion5/core
 
-**Engine and handles.** `Engine`, and the types `EngineOptions`, `ProjectHandle` and `TrackHandle`.
+**Engine and handles.** `Engine`, and the types `EngineOptions`, `ProjectHandle`, and `TrackHandle`.
 
-`new Engine({ clock, interpolator, scheduler, plugins?, triggerFactory? })` validates all three ports at construction. `engine.load(project)` returns a `ProjectHandle`:
+`new Engine({ clock, interpolator, scheduler, plugins?, triggerFactory? })` validates all three ports. `engine.load(project)` returns a `ProjectHandle`:
 
 - `mount(nodeId, instance?)` and `unmount(nodeId)` control membership.
 - `get(nodeId)` returns the retained `Patch` or `undefined`.
 - `subscribeNode(nodeId, listener)` returns an unsubscribe function. `subscribe` is the same call under an older name.
-- `seek(nodeId, progress)` scrubs one leaf and returns the resulting `PatchBatch`.
+- `seek(nodeId, progress)` scrubs one leaf and returns a `PatchBatch`.
 - `signal(motionId, signal)` controls a `manual` motion.
-- `addMotion(definition)` returns `{ id }`. `destroyMotion(motionId)` removes it.
-- `addTrack(track, { motionId? })` returns a `TrackHandle`. `track(nodeId)` returns the handle for an existing node.
-- `dependantsOf(nodeId)` lists observers, for editor preflight.
+- `addMotion(definition)` returns `{ id }`; `destroyMotion(motionId)` removes it.
+- `addTrack(track, { motionId? })` returns a `TrackHandle`; `track(nodeId)` returns the handle for an existing node.
+- `dependantsOf(nodeId)` lists observers for editor preflight.
 - `adopt(track, owner, options?)` and `destroyAdopted(nodeId, owner)` are the superseded owner-based API.
-- `dispose()` releases the project, its motions, its triggers, and its compiled tracks.
+- `dispose()` releases the project, motions, triggers, and compiled tracks.
 
-A `TrackHandle` carries `id`, `track`, and `remove()`, `replace(next)`, `addObserve(observation)`, `removeObserve(observation)`.
+A `TrackHandle` carries `id`, `track`, `remove()`, `replace(next)`, `addObserve(observation)`, and `removeObserve(observation)`. Generic observations remain available, but plugin-owned dependencies should use the plugin group's `requires` section.
 
-**Schema and validation.** `AUTHORED_SCHEMA_VERSION`, `SUPPORTED_TRIGGER_TYPES`, `DIAGNOSTIC_SEVERITIES`, `validateV5`, `validateTrackDefinition`, `validateMotionTrigger`, `resolveTriggerDefinition`, `migrateV4ToV5`, `parseGolden`, `serializeGolden`.
+**Schema and validation.** `AUTHORED_SCHEMA_VERSION`, `SUPPORTED_TRIGGER_TYPES`, `DIAGNOSTIC_SEVERITIES`, `validateV5`, `validateTrackDefinition`, `validateMotionTrigger`, `resolveTriggerDefinition`, `migrateV4ToV5`, `parseGolden`, and `serializeGolden`.
 
-**Types.** `ProjectDefinition`, `MotionDefinition`, `TrackDefinition`, `ObservationDefinition`, `AuthoredProperty`, `AuthoredStop`, `TriggerDefinition` and its three members, `TriggerType`, `TriggerSignal`, `Patch`, `PatchBatch`, `PatchStatus`, `PatchListener`, `Diagnostic`, `DiagnosticSeverity`, `MigrationDiagnostic`, `MigrationResult`, `ValidationResult`, `TrackValidationResult`, `GoldenFixture`, `GoldenValidationFixture`.
+**Types.** `ProjectDefinition`, `MotionDefinition`, `TrackDefinition`, `ObservationDefinition`, `AuthoredProperty`, `AuthoredStop`, `TriggerDefinition` and its three members, `TriggerType`, `TriggerSignal`, `Patch`, `PatchBatch`, `PatchStatus`, `PatchListener`, `Diagnostic`, `DiagnosticSeverity`, `MigrationDiagnostic`, `MigrationResult`, `ValidationResult`, `TrackValidationResult`, `GoldenFixture`, and `GoldenValidationFixture`.
 
 **Plugins.** `PluginRegistry`, and the types `PluginDefinition` and `ResolvedPlugins`.
 
-**Ports.** `createManualClock`, `createMicrotaskScheduler`, `createManualTriggerPort`, `createDefaultTriggerFactory`, `createTriggerFactory`, and the assertions `assertClock`, `assertInterpolator`, `assertScheduler`, `assertTriggerPort`, `assertTriggerFactory`. Port types: `Clock`, `ClockTick`, `Scheduler`, `Cancel`, `SchedulerHost`, `MicrotaskSchedulerOptions`, `TriggerPort`, `Interpolator`, `InterpolationTimeline`, `ClockBinding`, `ClockConsumer`, `CreatedTrigger`, `TriggerFactory`, `TriggerFactoryContext`, `TriggerFactoryOptions`, `ScrollSource`, `ScrollSourceResolver`, `ScrollSourceResolverContext`.
+A `PluginDefinition` may declare `requirements`, a record of optional input slots owned by that plugin. Its `compose` receives authored/interpolated values and a third argument containing that plugin's scoped inputs. `ResolvedPlugins.requirements` reports the bindings resolved for a track.
 
-The port types are exported so you can write a reusable adapter or a typed factory. An object literal always satisfied these contracts structurally; naming one in a signature is what needed the export.
+**Ports.** `createManualClock`, `createMicrotaskScheduler`, `createManualTriggerPort`, `createDefaultTriggerFactory`, `createTriggerFactory`, and the assertions `assertClock`, `assertInterpolator`, `assertScheduler`, `assertTriggerPort`, and `assertTriggerFactory`. Port types include `Clock`, `ClockTick`, `Scheduler`, `Cancel`, `SchedulerHost`, `MicrotaskSchedulerOptions`, `TriggerPort`, `Interpolator`, `InterpolationTimeline`, `ClockBinding`, `ClockConsumer`, `CreatedTrigger`, `TriggerFactory`, `TriggerFactoryContext`, `TriggerFactoryOptions`, `ScrollSource`, `ScrollSourceResolver`, and `ScrollSourceResolverContext`.
 
-`createMicrotaskScheduler(options?)` is the shipped `Scheduler`. It collects jobs and runs them in one pass on `options.host`, which defaults to a promise microtask, so a pending progress change is applied in the turn after the one that produced it. Cancellation is honoured right up to the moment a job runs, a job scheduled from inside a job runs in the next pass rather than extending the current one, and every job in a pass runs even when one of them throws. Pass `onError` to intercept the single failure a pass reports; without it the failure leaves through the host's own channel, which for the default host is an unhandled rejection. See ADR-038 for the pacing decision and the alternatives rejected.
+`createMicrotaskScheduler(options?)` is the shipped Scheduler. It runs queued jobs in one pass on the injected host, honors cancellation, and reports failures through `onError` without stopping later jobs in the same pass. See ADR-038.
 
-**Version.** `CORE_VERSION`, which is the package version and is independent of the schema version.
+**Version.** `CORE_VERSION`, independent of the authored schema version.
 
 ## @motion5/core/adapters
 
-Optional implementations you opt into at your composition root.
+Optional implementations for the composition root.
 
-- `createBrowserClock(frameSource)` returns a `Clock` with `dispose()`. `frameSource` is `{ requestFrame, cancelFrame }`, so you pass `requestAnimationFrame` in rather than having it imported for you. A listener that throws no longer kills the frame loop: the next frame is requested before the error escapes.
-- `createMicrotaskScheduler(options?)`, plus the types `SchedulerHost` and `MicrotaskSchedulerOptions`. The same factory the root entry names; there is one implementation reachable from two declared paths, exactly like the trigger factory.
-- `createGsapInterpolator(gsap)` and `createGsapOneTweenInterpolator(gsap)`, plus the structural types `GsapLike`, `GsapTimelineLike`, `GsapTweenLike`. Core never imports GSAP; you hand it in.
-- `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?, metadata?)`, plus `DomPatchAdapter`, `DomPatchWriter`, `DomTarget`, `DomTargetResolver`, `StageLike`.
+- `createBrowserClock(frameSource)` returns a `Clock` with `dispose()`.
+- `createMicrotaskScheduler(options?)`, plus `SchedulerHost` and `MicrotaskSchedulerOptions`.
+- `createGsapInterpolator(gsap)` and `createGsapOneTweenInterpolator(gsap)`, plus structural GSAP types.
+- `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?, metadata?)`, plus DOM adapter types.
 - `createScrollTriggerPort(source)` wraps a `ScrollSource` as a `TriggerPort`.
-- `createGsapScrollSource(scrollTrigger, options)`, plus the structural types `GsapScrollTriggerLike`, `GsapScrollTriggerInstanceLike`, and `GsapScrollSourceOptions`. Core never imports GSAP; you hand in `ScrollTrigger` and keep `gsap.registerPlugin(ScrollTrigger)` at your own composition root.
+- `createGsapScrollSource(scrollTrigger, options)`, plus structural GSAP scroll source types. Core never imports GSAP.
 - `FrameSource`, and the default graph builder.
 
 ## @motion5/core/plugins/transform and /plugins/fk
 
-`transformPlugin` claims the keys `x`, `y`, and `rotation` and passes them through. Register it if you animate any of those.
+`transformPlugin` claims `x`, `y`, and `rotation` and passes them through.
 
-`fkPlugin` is a forward-kinematics compose-stage plugin: it claims `length` and `rotation`, reads the inputs `parentX`, `parentY`, and `parentRotation`, and produces `x`, `y`, and `rotation` in world space. The authored `rotation` is the bone's rotation relative to its parent and the composed one is its rotation in world space, so the local value is replaced rather than published. `composeWorld(parent, local)` is exported alongside it for the same math outside a plugin.
+`fkPlugin` is a compose-stage forward-kinematics plugin. It claims `length` and `rotation`, declares the `base` requirement, reads `inputs.base`, and produces `x`, `y`, and world-space `rotation`. The authored `rotation` is relative to the parent and the composed one is world-space, so the local value is replaced rather than published beside it. `composeWorld(parent, local)` is exported alongside it.
 
-Registering both is the rig case: `fk` produces the transform outputs that `transform` claims. Both claim `rotation`, so a key with two claimants has no legal flat spelling in that registry, and each track names the plugin it means: a bone is `fk: { length, rotation }` and a root is `transform: { x, y, rotation }`. See ADR-043 and the keyframes section of the authored schema.
+Registering both is the rig case: both claim `rotation`, so flat `rotation` is ambiguous. Author a bone as `fk: { length, rotation, requires: { base: "walk/pelvis" } }` and a root as `transform: { x, y, rotation }`. The parent's natural `x`, `y`, and `rotation` values arrive inside `inputs.base`; no `parentX`, `parentY`, or `parentRotation` projection is needed. See ADR-043 and ADR-044.
 
 ## @motion5/core/ports/fakes
 
-Test doubles, supported for your tests and examples rather than production rendering: `createFakeInterpolator`, `createFakeScheduler`, `createFakeTriggerPort`, `createFakeTrackRegistry`, and `ScheduledJob`.
-
-`createFakeScheduler()` collects jobs and exposes `pending` and `flush()`, which is what a deterministic test wants: the test decides when a pass happens, and asserts on what was queued before it. Anything that renders should compose `createMicrotaskScheduler` instead.
+Test doubles supported for tests and examples: `createFakeInterpolator`, `createFakeScheduler`, `createFakeTriggerPort`, `createFakeTrackRegistry`, and `ScheduledJob`.
 
 ## @motion5/core/internal
 
-A private channel between the core and React packages: `Patch`, `PatchListener`, and `PatchSource`. Depend on it only if you are writing a consumer package that needs `PatchSource` structurally.
+A private channel between core and React: `Patch`, `PatchListener`, and `PatchSource`.
 
 ## @motion5/react
 
-`usePatch(source, nodeId)` and the re-exported `Patch`, `PatchListener`, and `PatchSource` types, so a consumer never has to import from `/internal` directly.
+`usePatch(source, nodeId)` and the re-exported `Patch`, `PatchListener`, and `PatchSource` types.
 
 ## Known gaps
 
-These are real and worth knowing before you plan around them.
-
-1. **Neither package is published,** and both are `private` at `0.0.0`. Packaged consumer verification is still planned work, so treat the `exports` map as the contract and expect the install story to change.
+1. Neither package is published; both remain private at `0.0.0`.
+2. [Issue #175](https://github.com/chahyasantoso/motion5/issues/175) tracks removal of the dead `ObservationDefinition.target` field.
+3. [Issue #176](https://github.com/chahyasantoso/motion5/issues/176) tracks transactional `replaceTrack` ordering after a failed recompile.

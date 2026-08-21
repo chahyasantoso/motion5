@@ -68,9 +68,15 @@ import { fileURLToPath } from "node:url";
 // one owns an authored entry, and what a flat spelling with several claimants does. It does not
 // extend `F-`, which owns the authored shapes a document may use; this owns who is allowed to
 // answer for a key at all, and it is the reason the group form stopped being pure sugar.
+//
+// `Q-` belongs to plugin-owned input requirements (issue #173 and ADR-044): which input slots a
+// plugin declares, how an author binds one inside that plugin's authored group, what edge the
+// binding derives, and how a bound upstream value reaches composition without entering the
+// track's authored value namespace. `F-` and `N-` both own authored keyframe *properties*; this
+// owns an authored section that is not a property at all, and the graph dependency it creates.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|H|K|L|M|N|P|R|S|T)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|H|K|L|M|N|P|Q|R|S|T)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })

@@ -7,6 +7,7 @@ import {
 } from "./v5";
 import { SUPPORTED_TRIGGER_TYPES } from "./v5";
 import { describeDiagnostics, diagnostic as issue } from "./diagnostics";
+import { isKeyframeGroup, PLUGIN_REQUIRES_SECTION } from "./keyframe-shape";
 import { buildGraphIR } from "../graph/ir";
 
 export interface ValidationResult {
@@ -20,7 +21,8 @@ export interface KeyframeValidationOptions {
   /**
    * Plugin-named groups are an authoring form. A contributed property is a single flat output, so
    * the contribution path passes `false` and keeps the pre-group strictness: an object of objects
-   * contributed as a property stays a `stops-shape` error instead of being read as a group.
+   * contributed as a property stays a `stops-shape` error instead of being read as a group. The
+   * `requires` reservation is scoped to the same flag, because a contributed key is not authored.
    */
   readonly allowGroups?: boolean;
 }
@@ -29,19 +31,6 @@ const THREE_D_KEYS = ["z", "rotationX", "rotationY"];
 type RawObject = Record<string, unknown>;
 function isObject(value: unknown): value is RawObject {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-/**
- * Whether an authored keyframe entry is a plugin-named group rather than a property.
- *
- * The test is structural because the contract layer has no plugin registry and must not gain one:
- * a group is a non-empty object with no `stops` array whose every value is an object. Whether the
- * group name addresses a registered plugin, and whether that plugin claims each leaf, is ownership
- * rather than schema shape, and `plugin-unknown-key` owns it at resolve time. See ADR-041.
- */
-export function isKeyframeGroup(value: unknown): value is RawObject {
-  if (!isObject(value) || Array.isArray(value.stops)) return false;
-  const leaves = Object.values(value);
-  return leaves.length > 0 && leaves.every((leaf) => isObject(leaf));
 }
 export function validateKeyframes(
   keyframes: unknown,
@@ -122,8 +111,53 @@ export function validateKeyframes(
     }
     validateStops(property.stops, propertyPath);
   };
+  /**
+   * The registry-independent half of binding validation.
+   *
+   * Shape only: an object mapping non-empty slot names to non-empty source ids. Whether the group
+   * names a registered plugin, and whether that plugin declares the slot, belongs to
+   * `PluginRegistry.resolveForKeyframes`; whether the source resolves to a node, and whether the
+   * derived edge is acyclic, belongs to graph construction. Three owners, because a single one
+   * would have to hold a plugin registry inside the contract layer to answer all three.
+   *
+   * An empty section is refused rather than ignored. Omitting `requires` is already the way to bind
+   * nothing, so an empty one is a field accepted and then ignored, which ADR-033 forbids.
+   * See ADR-044.
+   */
+  const validateRequires = (requires: unknown, requiresPath: string): void => {
+    if (!isObject(requires)) {
+      const detail = "must be an object mapping requirement slots to source ids";
+      add("keyframes-requires-shape", requiresPath, `Plugin requires ${detail}.`);
+      return;
+    }
+    const slots = Object.entries(requires);
+    if (slots.length === 0) {
+      const detail = "must declare at least one binding, or be omitted entirely";
+      add("keyframes-requires-empty", requiresPath, `Plugin requires ${detail}.`);
+      return;
+    }
+    for (const [slot, source] of slots) {
+      const slotPath = `${requiresPath}.${slot}`;
+      if (slot.length === 0 || slot.includes(":")) {
+        const detail = "must be non-empty and must not contain ':'";
+        add("keyframes-requires-slot", slotPath, `Requirement slot '${slot}' ${detail}.`);
+      }
+      if (typeof source !== "string" || source.length === 0) {
+        const detail = "must name a non-empty source id";
+        add("keyframes-requires-source", slotPath, `Requirement slot '${slot}' ${detail}.`);
+      }
+    }
+  };
   for (const [key, rawProperty] of Object.entries(keyframes)) {
     const propertyPath = `${path}.${key}`;
+    // A top-level `requires` names no plugin, so a binding written there could never have an owner.
+    // Accepting it would be a second authored spelling with no destination, which is the dual
+    // namespace the group form exists to remove.
+    if (allowGroups && key === PLUGIN_REQUIRES_SECTION) {
+      const detail = "is reserved for the bindings section of a plugin-named group";
+      add("keyframes-reserved-section", propertyPath, `Keyframe name '${key}' ${detail}.`);
+      continue;
+    }
     checkName(key, propertyPath);
     if (!allowGroups || !isKeyframeGroup(rawProperty)) {
       claim(key, propertyPath);
@@ -131,9 +165,14 @@ export function validateKeyframes(
       continue;
     }
     // One level, not arbitrary depth. A group holds properties, and a property holds stops, so
-    // there is no third level for an author to reach for.
+    // there is no third level for an author to reach for. `requires` is the one member of a group
+    // that is not a property: it compiles to nothing, so it claims no key and names nothing.
     for (const [leaf, leafProperty] of Object.entries(rawProperty)) {
       const leafPath = `${propertyPath}.${leaf}`;
+      if (leaf === PLUGIN_REQUIRES_SECTION) {
+        validateRequires(leafProperty, leafPath);
+        continue;
+      }
       checkName(leaf, leafPath);
       claim(leaf, leafPath);
       validateProperty(leafProperty, leafPath);

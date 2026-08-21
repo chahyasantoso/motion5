@@ -8,6 +8,7 @@ import {
 } from "../graph/ir";
 import { firstPendingEdge } from "../graph/references";
 import { CompositionOutputError } from "../domain/track";
+import type { RequirementInputs } from "../domain/plugins";
 import { PatchRegistry, REENTRANT_BATCH_MESSAGE, type PatchBatch } from "./patch-registry";
 
 export interface PublisherComposition {
@@ -16,7 +17,16 @@ export interface PublisherComposition {
   readonly sourceRevisions: Readonly<Record<string, number>>;
 }
 export interface PublisherNode extends GraphNode {
-  readonly compose: (inputs: Readonly<Record<string, unknown>>) => PublisherComposition;
+  /**
+   * `inputs` is the flat contribution of the node's generic `observes` edges. `requirementInputs`
+   * is the plugin-owned half, scoped by plugin name and requirement slot, and is deliberately a
+   * separate argument: merged into `inputs` it would re-create the one namespace that let an
+   * upstream value replace an authored one. See ADR-044.
+   */
+  readonly compose: (
+    inputs: Readonly<Record<string, unknown>>,
+    requirementInputs: RequirementInputs,
+  ) => PublisherComposition;
 }
 export interface PublisherSnapshot extends GraphIR {
   readonly nodes: readonly PublisherNode[];
@@ -96,6 +106,19 @@ function mergeValues(
   overlay: Readonly<Record<string, unknown>> | undefined,
 ): Readonly<Record<string, unknown>> {
   return overlay === undefined ? base : Object.freeze({ ...base, ...overlay });
+}
+/**
+ * Freezes the collected scoped inputs one level down, so a composer cannot reach back into the
+ * publisher's accumulator. There is no projection step: the slot is the scope, so the source's
+ * values arrive whole and under their own names. See ADR-044.
+ */
+function freezeRequirementInputs(
+  collected: Readonly<Record<string, Record<string, unknown>>>,
+): RequirementInputs {
+  const scoped: Record<string, Readonly<Record<string, unknown>>> = {};
+  for (const [plugin, slots] of Object.entries(collected))
+    scoped[plugin] = Object.freeze({ ...slots });
+  return Object.freeze(scoped) as RequirementInputs;
 }
 function projectValues(
   source: Readonly<Record<string, unknown>>,
@@ -192,6 +215,7 @@ export class GraphPublisher {
         try {
           const inputs: Record<string, unknown> = {};
           const inputKeys = new Map<string, string>();
+          const collected: Record<string, Record<string, unknown>> = {};
           const sourceRevisions: Record<string, number> = {};
           for (const edge of edgesByRole(node, "input")) {
             const sourcePatch = this.#registry.get(edge.sourceId);
@@ -209,6 +233,15 @@ export class GraphPublisher {
                 `Input observation source "${edge.sourceId}" must be a record.`,
               );
             if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
+            // A plugin-bound edge is delivered scoped to its plugin and slot, never projected and
+            // never merged. The slot is the scope, so there is no key to collide with and the
+            // collision guard below is not reached for it: a requirement is owned rather than
+            // negotiated. See ADR-044.
+            const requirement = edge.requirement;
+            if (requirement !== undefined) {
+              (collected[requirement.plugin] ??= {})[requirement.slot] = sourceValues;
+              continue;
+            }
             const projected = projectValues(sourceValues, edge.projection);
             for (const [key, value] of Object.entries(projected)) {
               const previous = inputKeys.get(key);
@@ -221,7 +254,7 @@ export class GraphPublisher {
               inputs[key] = value;
             }
           }
-          const composed = node.compose(inputs);
+          const composed = node.compose(inputs, freezeRequirementInputs(collected));
           validateComposition(composed.values);
           let values = composed.values;
           for (const edge of edgesByRole(node, "output")) {

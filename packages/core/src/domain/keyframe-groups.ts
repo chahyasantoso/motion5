@@ -1,4 +1,9 @@
-import { isKeyframeGroup } from "../contract/validate-v5";
+import {
+  isKeyframeGroup,
+  PLUGIN_REQUIRES_SECTION,
+  readPluginBindings,
+} from "../contract/keyframe-shape";
+import type { PluginRequiresBinding } from "../contract/v5";
 
 export interface FlattenedKeyframe {
   /** The compiled key: a flat authored key, or a group leaf name with no prefix. */
@@ -15,6 +20,13 @@ export interface FlattenedKeyframes {
   readonly keyframes: Readonly<Record<string, unknown>>;
   readonly entries: readonly FlattenedKeyframe[];
   readonly authoredPaths: ReadonlyMap<string, string>;
+  /**
+   * The plugin bindings authored in the groups, ordered by plugin then slot. Carried beside the
+   * flattened properties rather than inside them, because a binding is metadata: flattened as a
+   * leaf it would reach the percent map and the interpolator as a property with no stops, and the
+   * track would compile without a diagnostic and then hold still. See ADR-044.
+   */
+  readonly bindings: readonly PluginRequiresBinding[];
 }
 
 /**
@@ -32,6 +44,9 @@ export interface FlattenedKeyframes {
  * before publication, so a grouped track would animate nothing and publish nothing. One canonical
  * spelling is instead guaranteed by reserving the colon in every authored keyframe name. See
  * ADR-041 and ADR-043.
+ *
+ * The `requires` section is skipped rather than flattened, and surfaced as `bindings`. It is the
+ * one authored member of a group that is not a property. See ADR-044.
  *
  * Sorted, so which spelling wins is never a property of authoring order. A collision is already
  * rejected at validation by `keyframes-duplicate-key`, so nothing here reports it a second time.
@@ -55,6 +70,7 @@ export function flattenAuthoredKeyframes(
       continue;
     }
     for (const leaf of Object.keys(property).sort()) {
+      if (leaf === PLUGIN_REQUIRES_SECTION) continue;
       claim({ key: leaf, group: key, authoredPath: `${key}.${leaf}` }, property[leaf]);
     }
   }
@@ -62,5 +78,6 @@ export function flattenAuthoredKeyframes(
     keyframes: Object.freeze(keyframes),
     entries: Object.freeze(entries),
     authoredPaths,
+    bindings: readPluginBindings(authored),
   });
 }

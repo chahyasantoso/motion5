@@ -1,101 +1,53 @@
 # Session status
 
-**Captured:** 2026-08-20, Asia/Jakarta  
-**Branch verified:** `feat/issue-165-166-namespaced-keyframes` at `6048d54`  
-**Phase:** runtime mutation model, trigger drivers through `T5`, compiled Track ownership, edge identity, trigger progress ownership, teardown ownership, single-track mutation atomicity, user documentation, declared package entrypoints, the shipped Scheduler with the public port contracts, clock tick error attribution, time loop semantics, the GSAP-backed scroll source producer seam, plugin-named authored keyframe groups, one internal-key enforcement point, and per-plugin keyframe key ownership have landed.
+**Captured:** 2026-08-21, Asia/Jakarta  
+**Branch verified:** `feat/issue-173-plugin-owned-requirements`  
+**Phase:** runtime mutation model, trigger drivers, compiled Track ownership, edge identity, trigger progress ownership, teardown ownership, single-track mutation atomicity, declared package entrypoints, Scheduler and public port contracts, clock tick error attribution, time loop semantics, the GSAP-backed scroll source producer seam, plugin-named keyframe groups, internal-key enforcement, per-plugin key ownership, and plugin-owned input requirements.
 
 This document reports current implementation reality. Plans and audits describe intent unless this file says they landed.
 
 ## Shipped runtime work
 
 - Runtime mutation model W1 through W5 is complete through PRs [#109](https://github.com/chahyasantoso/motion5/pull/109), [#110](https://github.com/chahyasantoso/motion5/pull/110), [#111](https://github.com/chahyasantoso/motion5/pull/111), [#112](https://github.com/chahyasantoso/motion5/pull/112), and [#113](https://github.com/chahyasantoso/motion5/pull/113).
-- Trigger drivers through `T5` are complete. Runtime-created Motions use the same factory and construction path as authored Motions, and declared `time` and `scroll` triggers do not fall back to manual behavior.
-- Compiled Track ownership option C landed through PR [#126](https://github.com/chahyasantoso/motion5/pull/126). `Engine` owns compiled Tracks and `Motion` resolves them by id at every point of use.
-- Edge identity, ordering, and labels were separated through issue [#137](https://github.com/chahyasantoso/motion5/issues/137). Edge identity is length-prefixed and injective.
-- Trigger progress range ownership landed through PR [#140](https://github.com/chahyasantoso/motion5/pull/140). Source adapters normalize physical noise; `Motion.#scheduleProgress` validates the trigger input range.
-- Failed-build Motion disposal landed through PR [#142](https://github.com/chahyasantoso/motion5/pull/142), closing issue [#134](https://github.com/chahyasantoso/motion5/issues/134).
-- Rollback error precedence landed through PR [#144](https://github.com/chahyasantoso/motion5/pull/144), closing issue [#133](https://github.com/chahyasantoso/motion5/issues/133).
-- Engine teardown ownership landed through PR [#146](https://github.com/chahyasantoso/motion5/pull/146), closing issues [#143](https://github.com/chahyasantoso/motion5/issues/143) and [#145](https://github.com/chahyasantoso/motion5/issues/145). Failed loads release the project clock subscription, and a throwing trigger disposal no longer prevents Motion disposal or map cleanup.
-- Single-track mutation atomicity landed through PR [#148](https://github.com/chahyasantoso/motion5/pull/148), closing issue [#147](https://github.com/chahyasantoso/motion5/issues/147). Motion track entries resolve and seed before commit.
-- `Track.setProgress` calls the injected timeline before committing its own progress, so a throwing interpolator does not leave Track progress ahead of the timeline.
-- Clock tick error attribution landed by closing issue [#154](https://github.com/chahyasantoso/motion5/issues/154). `GraphRuntime` advances the clock consumers and flushes the graph inside separate error boundaries: a consumer failure reports `clock-consumer-failure` with the tick it happened on, only a real `GraphRuntime.flush` failure reports `flush-failure`, and the flush still runs on a tick whose consumers threw. Multi-consumer failures keep every cause in the message. Still one clock subscription and one reporting path. ADR-039 records the split.
-- Time loop semantics landed through PR [#162](https://github.com/chahyasantoso/motion5/pull/162), closing issue [#156](https://github.com/chahyasantoso/motion5/issues/156). `createLoopCycle` is the single owner of loop state, the cycle index, direction, and the completion latch; `createTimeDriver` keeps the emission channel and disposal and no longer counts elapsed time. `Motion` is unmodified and gained no trigger-kind branch. `repeat` counts the passes after the initial one, so `repeat: 0` is the previous single-pass driver value for value; `-1` is infinite; ping-pong is `{ repeat: -1, yoyo: true }` rather than a third field. `trigger-time-repeat-unsupported` is deleted in favor of `trigger-time-repeat-shape`, `trigger-time-yoyo-shape`, and `trigger-time-yoyo-requires-repeat`. ADR-040 records the arithmetic.
-- The GSAP-backed scroll source producer seam landed, closing issue [#163](https://github.com/chahyasantoso/motion5/issues/163). `createGsapScrollSource(scrollTrigger, options)` in `@motion5/core/adapters` owns lazy first-subscriber creation, fan-out through a copied listener set, and kill-on-last-unsubscribe. The React demo now contributes only a thin `createWalkScrollSource()` binding with `gsap.registerPlugin(ScrollTrigger)` at the app layer. Cases `G-1` through `G-4` cover the producer behavior with a fake `GsapScrollTriggerLike`; `G-5` asserts no file under `packages/core/src` imports gsap.
-- Plugin-named authored keyframe groups landed, closing issue [#165](https://github.com/chahyasantoso/motion5/issues/165). `keyframes` accepts `{ fk: { length } }` in addition to the flat form, which stays legal: the grouped form was rejected at load before this, so nothing authored can depend on it and nothing can be broken by accepting it. A group addresses a plugin by name and each leaf is checked against that plugin's own claimed keys. `flattenAuthoredKeyframes` is the only owner of the transform and the Engine calls it with or without a `PluginRegistry`, because a registry-less Engine has no resolver to fall back on and an unflattened group would compile clean and never move. Leaves keep their unprefixed names; the colon is instead rejected in every authored keyframe name and in plugin `keys`, `inputs`, and `outputs`. One compiled key authored twice is `keyframes-duplicate-key`, and `usesThreeD` reads group leaves so `perspective-usage` keeps firing. ADR-041 records the fork.
-- Internal-key enforcement moved to one point, closing issue [#166](https://github.com/chahyasantoso/motion5/issues/166). `Track.compose` removes namespaced and declared-internal keys after the plugin chain and before the snapshot is frozen, so the publisher, `handle.get`, `subscribeNode`, the DOM adapter, and React see one filtered surface; `dom.ts` no longer reads `internalKeys`, which only one of the two shipped renderers ever did. A plugin's private `fk:phase` needs no declaration; `internalKeys` remains for unprefixed derived keys, which no rule can recognize. `rendererNeutralState` and `isRendererNeutral` are unchanged, so an underscore key returned from `compose` is still rejected loudly instead of hidden. ADR-042 records the target and the two inverted criteria it declines.
-- Per-plugin keyframe key ownership landed, closing the one item ADR-041 deferred by name. `plugin-key-collision` is deleted and `#keyOwners` is now `#keyClaimants`: a key may have several claimants, an authored group names the one that owns an entry, and a flat spelling with two or more exact claimants is `plugin-ambiguous-key` with every claimant named in sorted order. `resolveForKeyframes` computes the entry-owner map once and `prepareContributions` reads it instead of re-deriving ownership, which is what ran another claimant's `contribute` hook for a grouped leaf and ran a hook at all for a group naming no plugin. `fkPlugin` therefore claims the natural `length` and `rotation`, and the walker fixtures and the React demo author bones as `fk: { length, rotation }` and roots as `transform: { x, y, rotation }`. Published values are unchanged. `claimsKey` precedence and `plugin-input-collision` are untouched, and prefixed canonical leaves are now rejected rather than deferred again, because ADR-042 drops every namespaced key before publication so a canonical `transform:x` would interpolate and then publish nothing. ADR-043 records both answers.
+- Trigger drivers through `T5`, compiled Track ownership option C, edge identity and ordering, progress range ownership, teardown ownership, clock error boundaries, time loop semantics, the GSAP scroll source seam, plugin-named groups, internal-key enforcement, and per-plugin key ownership have landed. See ADRs 034 and 039 through 043.
+- Plugin-owned input requirements landed in [PR #174](https://github.com/chahyasantoso/motion5/pull/174), closing [issue #173](https://github.com/chahyasantoso/motion5/issues/173). A plugin declares `requirements`; an author binds those slots under `keyframes.<plugin>.requires`; the graph derives one input edge per binding; and composition receives the upstream values scoped by plugin and slot.
+- `fkPlugin` now declares the `base` requirement, reads `inputs.base`, and no longer requires the author to invent `parentX`, `parentY`, or `parentRotation`. The walker demo moved thirteen repeated projection blocks into bindings beside the FK keyframes. Published values are unchanged.
+- The authored `requires` section is metadata, not a keyframe. `validateKeyframes` owns registry-independent shape, `PluginRegistry` owns plugin and slot resolution, and graph construction owns source, cycle, duplicate, and self-reference validation. ADR-044 records the decision.
 
 ## Documentation and package surface
 
 - Consumer documentation lives under `docs/guide/` and names only declared package entrypoints.
-- `@motion5/core` declares the root, adapters, browser clock, transform plugin, FK plugin, and test-fakes entrypoints. ADR-036 records the widening.
-- The Scheduler port has a shipped implementation, and the port contracts are nameable. `createMicrotaskScheduler` is exported from the root entry and the adapters barrel, and `Clock`, `ClockTick`, `Scheduler`, `Cancel` and `EngineOptions` are exported as types. Landed through PR [#160](https://github.com/chahyasantoso/motion5/pull/160), closing issues [#155](https://github.com/chahyasantoso/motion5/issues/155) and [#158](https://github.com/chahyasantoso/motion5/issues/158). ADR-038 records the scheduling semantics.
-- The `exports` map is unchanged by that slice. The scheduler is named from two declared paths rather than through a new subpath, which is the shape `createDefaultTriggerFactory` already uses.
-- The React demo uses `TrackHandle` mutation, no longer calls the owner-based adoption wrappers, and now composes the shipped scheduler instead of the test fake. No consumer-facing document builds a runtime on `createFakeScheduler`.
-- The T4/T5 plan and its corrections are present under `docs/archived/`. Earlier status text claiming the plan existed only on another branch is obsolete.
-- The authored schema, the v4 migration guide, and `docs/guide/errors-and-diagnostics.md` describe the three loop rules rather than the deleted `trigger-time-repeat-unsupported`.
-- The authored schema documents the plugin-named group form, the reserved colon, and the `keyframes-reserved-separator` and `keyframes-duplicate-key` rule ids. `AuthoredKeyframe` is a type in the contract module, not a new public export, so the allow-listed entry surface is unchanged.
-- The authored schema and the diagnostics guide document `plugin-ambiguous-key` and the rig authoring form, and the API reference states the keys `fkPlugin` claims. Ownership is internal to `PluginRegistry`, so no export changed with it either.
-- The packages remain private at `0.0.0`; packaged-consumer verification and publication remain Phase 6 work.
+- `@motion5/core` remains private at `0.0.0`; packaged-consumer verification and publication remain Phase 6 work.
+- `PluginDefinition.requirements` is optional. `PluginComposer` receives a third argument containing that plugin's scoped inputs. `ResolvedPlugins.requirements` reports resolved bindings. The public entrypoint allow-list is unchanged.
+- The schema now documents plugin-owned requirements, scoped composition inputs, and the fact that `requires` replaces FK projection maps. Generic `observes` remains available for generic graph edges.
 
 ## Accepted behavior, not remaining defects
 
-`ProjectHandle.seek(nodeId, progress)` is leaf-level scrubbing. On a driver-backed Motion, the next driver emission overwrites that value. ADR-021 owns this boundary and the trigger parity evidence pins it. Do not gate `seek` behind the Motion-level external-signal capability.
+- `ProjectHandle.seek(nodeId, progress)` is leaf-level scrubbing. On a driver-backed Motion, the next driver emission overwrites a seeked value.
+- Owner-based `adopt` and `destroyAdopted` remain available for compatibility; current consumer code should use `addTrack` and `TrackHandle.
+- A scheduled job runs in its scheduler pass even when another job throws; the configured error boundary reports the failure once.
+- A tick whose clock consumer fails still flushes the graph. The failure is attributed to the consumer boundary, not to graph flushing.
+- A Motion is destroyed empty. Remove its tracks before destroying it.
+- `fkPlugin` replaces local authored `rotation` with world-space `rotation` in its composed output. The local value is not published beside the world value.
 
-The owner-based `adopt` and `destroyAdopted` wrappers remain available for compatibility, but current consumer code should use `addTrack` and `TrackHandle`. Add deprecation annotations before removing the wrappers in the planned Phase 6 breaking change.
+## Follow-up issues
 
-A scheduled job that throws is reported once, after every job in the pass has run, and a lone failure is rethrown verbatim. With the default microtask host that report reaches the environment as an unhandled rejection rather than at a caller's own drain site. `onError` is the interception point. ADR-038 owns this and the getting-started guide states it.
-
-A tick whose clock consumers failed still publishes a batch. Progress is whatever was last committed, so a stalled driver reads as a held frame rather than a dropped one. ADR-039 owns this and it is the reason a consumer failure no longer suppresses the flush.
-
-A Motion is destroyed empty. `destroyMotion` refuses a Motion that still owns tracks, and looping does not change that: remove the tracks, then destroy the Motion, and the released driver leaves the clock fanout with it.
-
-A looping Motion has no pause of its own. Playback belongs to `Motion`, so a paused Motion detaches from its port while loop time keeps running and resuming lands on wall-clock loop time. ADR-040 owns this.
-
-A plugin-named group leaf whose value is an empty object is accepted, exactly as the flat form is. The contract layer has no plugin registry and must not gain one, so it cannot tell a one-leaf group from a malformed property; that ambiguity is resolved at plugin resolution as `plugin-unknown-key`. ADR-041 owns this.
-
-`fkPlugin` claims `rotation` and also produces it. The authored value is a bone's rotation relative to its parent and the composed value is its rotation in world space, which is what a child observes and what a renderer writes, so the local value is replaced rather than published beside its own result. A plugin also still sees keys it does not own in a track, because the composed value bag has always been flat: ownership decides which plugin resolves into the chain and which spellings are legal, not what a composer may read. ADR-043 owns this.
-
-## Known remaining scope
-
-- **Loop follow-ups:** per-cycle easing, a repeat delay, a loop completion callback, and playback pause are out of scope for ADR-040. Each is a separate authored field with its own owner question, and none of them is needed to make a loop run.
-- **Phase 6 packaging:** neither package is published. Publication, packed-package consumer verification, API reporting, performance gates, and removal of transitional compatibility wrappers remain separate packaging work.
+- [#175](https://github.com/chahyasantoso/motion5/issues/175): remove `ObservationDefinition.target`. It is validated and included in edge identity and ordering but never consumed by composition, so it is dead API surface.
+- [#176](https://github.com/chahyasantoso/motion5/issues/176): make `ProjectRuntime.#replaceTrack` transactional. It currently replaces the graph before recompiling, so a failed compile can leave a committed graph with no compiled Track.
 
 ## Evidence anchors
 
-- Runtime mutation model: run [31989827456](https://github.com/chahyasantoso/motion5/actions/runs/31989827456), seven checks green.
-- Trigger drivers: PR [#124](https://github.com/chahyasantoso/motion5/pull/124), run [32026250864](https://github.com/chahyasantoso/motion5/actions/runs/32026250864).
-- Option C Track ownership: PR [#126](https://github.com/chahyasantoso/motion5/pull/126), run [32084286445](https://github.com/chahyasantoso/motion5/actions/runs/32084286445).
-- Runtime Motion ordering: PR [#131](https://github.com/chahyasantoso/motion5/pull/131), run [32087189826](https://github.com/chahyasantoso/motion5/actions/runs/32087189826).
-- Edge identity red evidence: run [32129021992](https://github.com/chahyasantoso/motion5/actions/runs/32129021992).
-- Trigger progress range: PR [#140](https://github.com/chahyasantoso/motion5/pull/140), red run [32129333099](https://github.com/chahyasantoso/motion5/actions/runs/32129333099).
-- Failed-build disposal: PR [#142](https://github.com/chahyasantoso/motion5/pull/142), green run [32139209239](https://github.com/chahyasantoso/motion5/actions/runs/32139209239).
-- Rollback precedence: PR [#144](https://github.com/chahyasantoso/motion5/pull/144), red run [32142133852](https://github.com/chahyasantoso/motion5/actions/runs/32142133852).
-- Engine teardown ownership: PR [#146](https://github.com/chahyasantoso/motion5/pull/146), green run [32145446610](https://github.com/chahyasantoso/motion5/actions/runs/32145446610).
-- Single-track mutation atomicity: PR [#148](https://github.com/chahyasantoso/motion5/pull/148), red run [32148713472](https://github.com/chahyasantoso/motion5/actions/runs/32148713472).
-- Shipped scheduler and public port contracts: PR [#160](https://github.com/chahyasantoso/motion5/pull/160), cases `K-1` through `K-10`. Failing-first is replayed by dispatching `Recovery audit` with `base` set to `main`, because both new test files assert against modules that already exist on the parent commit rather than importing the module they introduce.
-- Clock tick error boundaries: cases `B-1` through `B-7` in `packages/core/test/unit/runtime/clock-consumer-error-boundary.test.ts`. Failing-first is replayed by dispatching `Recovery audit` with `base` set to `main`, because the tests and the behavior land as separate commits on the branch.
-- Time loop semantics: PR [#162](https://github.com/chahyasantoso/motion5/pull/162), red run [32221562839](https://github.com/chahyasantoso/motion5/actions/runs/32221562839) archived at `logs/32221562839/`, reporting `20 failed | 497 passed` in `quality` with every failure assertion-level or a contract throw. Cases `L-1` through `L-21`. `L-1` passes on the parent by design: it is the byte-for-byte single-pass compatibility guard and is not claimed as red.
-- Keyframe groups and internal-key enforcement: cases `F-1` through `F-12` and `H-1` through `H-4`. Failing-first is the two `test(...)` commits on `feat/issue-165-166-namespaced-keyframes`, each pushed before the behavior commit it justifies, so red is replayed by dispatching `Recovery audit` against either parent. Every new test reaches its subject through modules that already exist on that parent, so red is assertion-level rather than import-resolution red. `H-3` passes on its parent by design and is not claimed as red: it pins that an underscore key from `compose` stays a `composition-output-shape` rejection.
-- Per-plugin key ownership: cases `N-1` through `N-10`. Failing-first is the `test(domain)` commit on `feat/issue-165-per-plugin-key-ownership`, pushed before the behavior commit it justifies, so red is replayed by dispatching `Recovery audit` against that parent. `N-4`, `N-5`, and `N-10` pass on the parent by design and are not claimed as red: they pin that a single claimant stays unambiguous, that an exact claim still outranks a predicate, and that a grouped leaf publishes unprefixed, which is the guard a canonical `transform:x` leaf would break rather than migrate.
+- Plugin-owned requirements red run: [32476954868](https://github.com/chahyasantoso/motion5/actions/runs/32476954868), archived at `logs/32476954868/` on `ci-logs`. The run reported `5 failed | 200 passed`; the key failure was `stops-shape` for `keyframes.fk.requires`, proving the new section was absent before implementation.
+- Plugin-owned requirements green run: [32478658229](https://github.com/chahyasantoso/motion5/actions/runs/32478658229), all six behavioral jobs green, including `format:check` inside `quality`.
+- Cases `Q-1` through `Q-12` cover requirement shape, plugin-owned slot validation, derived graph edges, multi-source identity, and scoped composition. `Q-8` is a compatibility guard and passes on the parent by design.
+- Per-plugin ownership evidence: cases `N-1` through `N-10` and [ADR-043](https://github.com/chahyasantoso/motion5/blob/main/docs/ADR-043-per-plugin-key-ownership.md).
 
 ## Guardrails
 
-- One owner per state transition.
-- No graph rebuild or motionpath wholesale copy.
-- No compatibility flags, facades, or placeholder tests.
-- No renderer, DOM, or GSAP imports in core.
-- Every behavioral recovery slice starts with failing-first evidence on its parent and archives the failing run when the pipeline supports it.
+- One owner per state transition and one owner per normalization.
+- No compatibility flags, facades, placeholder tests, renderer imports, or core GSAP imports.
+- Every behavioral recovery slice starts with failing-first evidence and archives the failed run when the pipeline supports it.
 - Docs, public types, tests, and status move together.
-- A cited evidence case id names exactly one plain `it` declaration in the whole suite.
-- A rollback runs inside the failure it is undoing and never reports ahead of the original rejection.
-- A single-track mutation resolves and seeds before it commits.
-- A tick failure is attributed to the owner that failed; clock consumer advancement and graph flushing are separate boundaries and neither cancels the other.
-- A source guard anchors on the structure it polices, never on where Prettier chose to wrap a line.
-- Pull request checks are not filtered in a way that skips integration bases.
-- Avoid hand-padded Markdown tables in this file; `format:check` is a hard gate inside `quality`.
-- Consumer-facing documents live under `docs/guide/` and name only symbols or subpaths declared by the package exports map.
-- Frame pacing belongs to `Clock` and applying belongs to `Scheduler`; a host primitive is injected rather than referenced.
-- An authored form is normalized once, by an owner that does not depend on optional wiring being present.
-- What may be published is decided once, before publication, never per renderer.
-- A key may have several claimants; the authored group names the one that owns an entry, and nothing resolves ownership by registration order.
+- A cited evidence case id names exactly one test in the suite.
+- Formatting is a hard CI gate; hand-padded Markdown tables are avoided.
+- A key may have several claimants; the authored group names the owner. A plugin-owned requirement is scoped and never merged into authored values.

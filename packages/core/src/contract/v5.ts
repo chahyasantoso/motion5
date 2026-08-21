@@ -84,6 +84,26 @@ export interface AuthoredProperty {
   readonly stops: readonly AuthoredStop[];
 }
 /**
+ * The optional bindings section of a plugin-named group: one graph source id per requirement slot
+ * the named plugin declares.
+ *
+ * The slot name is the destination, so there is no author-facing projection map and no naming
+ * convention such as `parentX` for the author to keep synchronized with the plugin. Omitting the
+ * section, or a slot within it, derives no edge and leaves the unbound case to the plugin.
+ * See ADR-044.
+ */
+export type AuthoredPluginRequires = Readonly<Record<string, string>>;
+/** One member of a plugin-named group: an authored property, or the bindings section. */
+export type AuthoredPluginMember = AuthoredProperty | AuthoredPluginRequires;
+/**
+ * A plugin-named group: the properties that plugin claims, plus its optional `requires` section.
+ *
+ * The section is reserved by name rather than typed as a distinct key, because the contract layer
+ * has no plugin registry and a group's property names are the plugin's to choose.
+ * `contract/keyframe-shape` owns telling the two apart.
+ */
+export type AuthoredPluginGroup = Readonly<Record<string, AuthoredPluginMember>>;
+/**
  * One authored keyframe entry: a property, or a plugin-named group of properties.
  *
  * The group form names the plugin that owns its leaves, so `{ fk: { length } }` scopes the leaf
@@ -95,7 +115,15 @@ export interface AuthoredProperty {
  * For a key several plugins claim it is not sugar: the flat spelling is `plugin-ambiguous-key`, and
  * the group is the only way to name an owner. See ADR-041 and ADR-043.
  */
-export type AuthoredKeyframe = AuthoredProperty | Readonly<Record<string, AuthoredProperty>>;
+export type AuthoredKeyframe = AuthoredProperty | AuthoredPluginGroup;
+/** One `keyframes.<plugin>.requires.<slot>` entry, as read from authored input. See ADR-044. */
+export interface PluginRequiresBinding {
+  readonly plugin: string;
+  readonly slot: string;
+  readonly source: string;
+  /** `plugin.requires.slot`, relative to the keyframes record. Diagnostics cite this. */
+  readonly authoredPath: string;
+}
 export interface InputProjection {
   readonly pick?: readonly string[];
   readonly map?: Readonly<Record<string, string>>;

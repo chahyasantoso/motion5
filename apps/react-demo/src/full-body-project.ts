@@ -11,6 +11,12 @@ export const WALK_SCROLL_SOURCE = "walk";
  * names the plugin that owns its keys: a bone is authored under `fk` and the pelvis under
  * `transform`. The flat spelling of a key with two claimants is `plugin-ambiguous-key` at load.
  * See ADR-043 and the keyframes section of docs/AUTHORED-SCHEMA.md.
+ *
+ * Each bone names its parent once, as `fk.requires.base`, beside the keyframes that parent frame
+ * composes against. That replaced a five-line `observes` block per bone whose projection map
+ * restated the fk plugin's own input contract as `parentX`, `parentY`, and `parentRotation`. The
+ * graph derives the same input edge from the binding, and the parent's values arrive scoped to the
+ * `base` slot under their own names. See ADR-044.
  */
 export const armTracks: readonly TrackDefinition[] = [
   // 10. Left Arm Upper (Foreground - Observes Chest which is -90deg UP, so 180deg hangs DOWN)
@@ -37,21 +43,9 @@ export const armTracks: readonly TrackDefinition[] = [
             { p: 1, v: 210 },
           ],
         },
+        requires: { base: "walk/chest" },
       },
     },
-    observes: [
-      {
-        source: "walk/chest",
-        role: "input",
-        projection: {
-          map: {
-            x: "parentX",
-            y: "parentY",
-            rotation: "parentRotation",
-          },
-        },
-      },
-    ],
   },
 
   // 11. Left Arm Lower
@@ -78,21 +72,9 @@ export const armTracks: readonly TrackDefinition[] = [
             { p: 1, v: 20 },
           ],
         },
+        requires: { base: "walk/armL_upper" },
       },
     },
-    observes: [
-      {
-        source: "walk/armL_upper",
-        role: "input",
-        projection: {
-          map: {
-            x: "parentX",
-            y: "parentY",
-            rotation: "parentRotation",
-          },
-        },
-      },
-    ],
   },
 
   // 12. Right Arm Upper (Background - In phase with Left Leg)
@@ -119,21 +101,9 @@ export const armTracks: readonly TrackDefinition[] = [
             { p: 1, v: 150 },
           ],
         },
+        requires: { base: "walk/chest" },
       },
     },
-    observes: [
-      {
-        source: "walk/chest",
-        role: "input",
-        projection: {
-          map: {
-            x: "parentX",
-            y: "parentY",
-            rotation: "parentRotation",
-          },
-        },
-      },
-    ],
   },
 
   // 13. Right Arm Lower
@@ -160,21 +130,9 @@ export const armTracks: readonly TrackDefinition[] = [
             { p: 1, v: 45 },
           ],
         },
+        requires: { base: "walk/armR_upper" },
       },
     },
-    observes: [
-      {
-        source: "walk/armR_upper",
-        role: "input",
-        projection: {
-          map: {
-            x: "parentX",
-            y: "parentY",
-            rotation: "parentRotation",
-          },
-        },
-      },
-    ],
   },
 ];
 
@@ -237,21 +195,9 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
             { p: 1, v: -87 },
           ],
         },
+        requires: { base: "walk/pelvis" },
       },
     },
-    observes: [
-      {
-        source: "walk/pelvis",
-        role: "input",
-        projection: {
-          map: {
-            x: "parentX",
-            y: "parentY",
-            rotation: "parentRotation",
-          },
-        },
-      },
-    ],
   },
 
   // 3. Head (Continues UP 0deg from Chest)
@@ -274,21 +220,9 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
             { p: 1, v: -3 },
           ],
         },
+        requires: { base: "walk/chest" },
       },
     },
-    observes: [
-      {
-        source: "walk/chest",
-        role: "input",
-        projection: {
-          map: {
-            x: "parentX",
-            y: "parentY",
-            rotation: "parentRotation",
-          },
-        },
-      },
-    ],
   },
 
   // 4. Left Leg Thigh (Foreground - Points DOWN ~90deg from Pelvis)
@@ -315,21 +249,9 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
             { p: 1, v: 65 },
           ],
         },
+        requires: { base: "walk/pelvis" },
       },
     },
-    observes: [
-      {
-        source: "walk/pelvis",
-        role: "input",
-        projection: {
-          map: {
-            x: "parentX",
-            y: "parentY",
-            rotation: "parentRotation",
-          },
-        },
-      },
-    ],
   },
 
   // 5. Left Leg Shin (Extends from Thigh)
@@ -356,21 +278,9 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
             { p: 1, v: 5 },
           ],
         },
+        requires: { base: "walk/legL_thigh" },
       },
     },
-    observes: [
-      {
-        source: "walk/legL_thigh",
-        role: "input",
-        projection: {
-          map: {
-            x: "parentX",
-            y: "parentY",
-            rotation: "parentRotation",
-          },
-        },
-      },
-    ],
   },
 
   // 6. Left Leg Foot (Points FORWARD +X ~-90deg from Shin)
@@ -397,21 +307,9 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
             { p: 1, v: -75 },
           ],
         },
+        requires: { base: "walk/legL_shin" },
       },
     },
-    observes: [
-      {
-        source: "walk/legL_shin",
-        role: "input",
-        projection: {
-          map: {
-            x: "parentX",
-            y: "parentY",
-            rotation: "parentRotation",
-          },
-        },
-      },
-    ],
   },
 
   // 7. Right Leg Thigh (Background - 180deg / 0.5 phase offset)
@@ -438,21 +336,9 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
             { p: 1, v: 115 },
           ],
         },
+        requires: { base: "walk/pelvis" },
       },
     },
-    observes: [
-      {
-        source: "walk/pelvis",
-        role: "input",
-        projection: {
-          map: {
-            x: "parentX",
-            y: "parentY",
-            rotation: "parentRotation",
-          },
-        },
-      },
-    ],
   },
 
   // 8. Right Leg Shin
@@ -479,21 +365,9 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
             { p: 1, v: 25 },
           ],
         },
+        requires: { base: "walk/legR_thigh" },
       },
     },
-    observes: [
-      {
-        source: "walk/legR_thigh",
-        role: "input",
-        projection: {
-          map: {
-            x: "parentX",
-            y: "parentY",
-            rotation: "parentRotation",
-          },
-        },
-      },
-    ],
   },
 
   // 9. Right Leg Foot
@@ -520,21 +394,9 @@ export const coreWalkerTracks: readonly TrackDefinition[] = [
             { p: 1, v: -105 },
           ],
         },
+        requires: { base: "walk/legR_shin" },
       },
     },
-    observes: [
-      {
-        source: "walk/legR_shin",
-        role: "input",
-        projection: {
-          map: {
-            x: "parentX",
-            y: "parentY",
-            rotation: "parentRotation",
-          },
-        },
-      },
-    ],
   },
 ];
 
@@ -544,7 +406,7 @@ export const initialWalkerProject: ProjectDefinition = {
   motions: [
     {
       id: "walk",
-      trigger: { type: "scroll", source: WALK_SCROLL_SOURCE }, // can this source be something
+      trigger: { type: "scroll", source: WALK_SCROLL_SOURCE },
       tracks: coreWalkerTracks,
     },
   ],

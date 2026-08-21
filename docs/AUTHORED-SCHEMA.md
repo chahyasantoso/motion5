@@ -37,7 +37,6 @@ const project = {
               ],
             },
           },
-          observes: [{ source: "~/cursor", role: "input", target: "pointer" }],
         },
       ],
     },
@@ -59,92 +58,119 @@ const project = {
 };
 ```
 
-This example previously authored `trigger: { type: "time", autoplay: false }` with no `duration`, which the runtime rejects twice over. A normative document whose own example does not load is worse than no example, so the trigger rules below are stated in full.
-
 ## Top-level fields
 
 - **`schemaVersion`**: required number `5`.
 - **`projectId`**: optional non-empty informational string.
-- **`perspective`**: optional finite number greater than zero, interpreted as CSS pixels by a renderer adapter. Core validates and preserves it but does not animate or publish it.
+- **`perspective`**: optional finite number greater than zero. Core preserves it but does not animate or publish it.
 - **`templates`**: optional reusable keyframe bundles.
 - **`motions`**: required array, possibly empty.
-- **`freeTracks`**: optional array, defaulting to empty. These tracks have no trigger and no automatic schedule.
+- **`freeTracks`**: optional array, defaulting to empty. Free tracks have no trigger or automatic schedule.
 
 ## Motion fields
 
-A motion has a unique `id`, a `trigger`, and a `tracks` array. Motion owns the schedule and playback of its tracks. A motion track id is local in authored input but becomes `motionId/trackId` at load.
+A motion has a unique `id`, a `trigger`, and a `tracks` array. Motion owns schedule and playback. A motion track id is local in authored input and becomes `motionId/trackId` at load.
 
 ## Trigger
 
-The trigger type is `scroll`, `time`, or `manual`, and the type is enforced rather than decorative. A declared type selects a real driver or the load fails. No type falls back to manual, and no trigger field is accepted and then ignored. See ADR-033.
+The trigger type is `scroll`, `time`, or `manual`, and the type is enforced. No type falls back to manual and no trigger field is accepted and then ignored. See ADR-033.
 
-- `{ type: "manual" }` takes no other fields. Progress arrives through `signal(motionId, { type, progress })`, and the Motion also advances on the project clock.
-- `{ type: "time", duration }` requires `duration` as a finite number greater than zero, in the same units as the clock delta. The driver emits elapsed time over `duration` and stops emitting once the loop it was given has finished. `autoplay` may be absent or `true`; playback always starts.
-- `{ type: "time", duration, repeat, yoyo }` loops. Both loop fields are optional. `repeat` counts the passes after the initial one, so a finite loop runs `repeat + 1` cycles and `repeat: 0` is a single pass; `-1` is infinite and is the only spelling for it, so the field stays serializable. `yoyo` reverses every odd cycle and requires a `repeat` that repeats. Ping-pong is `{ repeat: -1, yoyo: true }` rather than a third field. A cycle is half-open at its start and closed at its end, so a tick landing exactly on a boundary emits that cycle's end state rather than skipping it. One tick produces one emission, at the position the clock reached; a tick that crossed several cycles does not replay them. See ADR-040.
-- `{ type: "scroll", source }` is push-driven and registers no clock consumer, so a clock tick never moves it. `source` is a serializable string key resolved against an application-owned registry injected at load. Core never receives a selector, an element, or an animation-engine object.
+- `{ type: "manual" }` accepts progress through `signal(motionId, { type, progress })` and also advances on the project clock.
+- `{ type: "time", duration }` requires a finite positive duration. `repeat` counts passes after the initial cycle, `-1` is infinite, and `yoyo` reverses odd cycles when a repeating `repeat` is present. See ADR-040.
+- `{ type: "scroll", source }` is push-driven. `source` is a serializable key resolved by an injected application-owned registry.
 
-A driver-backed Motion rejects `signal()` with `Motion has a configured trigger driver and does not accept external signals.` Only `manual` accepts one. `seek(nodeId, progress)` is unaffected, because it is leaf-level scrubbing rather than Motion-level control; on a driver-backed Motion the next driver emission overwrites a seeked value. See ADR-021.
-
-Every trigger rejection is severity `error`:
-
-- `trigger-shape` for a non-object trigger, or a `type` outside `scroll`, `time`, and `manual`.
-- `trigger-time-duration` for a `time` trigger whose `duration` is absent, non-numeric, non-finite, or not greater than zero.
-- `trigger-time-autoplay-unsupported` for `autoplay` present and not `true`. `false` is not representable, because explicit paused behavior does not exist yet.
-- `trigger-time-repeat-shape` for a `repeat` that is not an integer of `-1` or above.
-- `trigger-time-yoyo-shape` for a `yoyo` that is not a boolean.
-- `trigger-time-yoyo-requires-repeat` for a `yoyo` whose `repeat` is absent or `0`, at either boolean value. Neither `true` nor `false` does anything without a repeat, and a field accepted and then ignored is what ADR-033 forbids.
-- `trigger-scroll-source` for a `source` present but not a non-empty string.
-- `trigger-driver-unavailable` at `load()` or `addMotion` when a declared `scroll` trigger resolves no registered source. A missing `source` key is not a validation error: whether a key is required is the injected factory's business, and an unresolvable one fails at construction naming the motion id and the key.
-
-The same rules apply to a Motion created at runtime through `addMotion`, and nothing is committed until the Motion can be built. See ADR-028 and ADR-032.
+Trigger errors include `trigger-shape`, `trigger-time-duration`, `trigger-time-autoplay-unsupported`, `trigger-time-repeat-shape`, `trigger-time-yoyo-shape`, `trigger-time-yoyo-requires-repeat`, `trigger-scroll-source`, and `trigger-driver-unavailable`.
 
 ## Track fields
 
-A track has a unique local `id`, optional `duration` and keyframes, and optional `observes` edges. Plugins are resolved from authored keyframe keys. The legacy `use` field is not part of schema v5 and is rejected at load with `plugin-contribution-unsupported-entry`; there is no empty plugin-preparation entry point. Track ids may not contain `/`; motion ids may not contain `/` or equal `~`. These restrictions preserve the qualified namespace.
+A track has a unique local `id`, optional `duration`, optional keyframes, and optional generic `observes` edges. Plugins are resolved from authored keyframe keys. The legacy `use` field is rejected with `plugin-contribution-unsupported-entry`. Track ids may not contain `/`; motion ids may not contain `/` or equal `~`.
 
 ## Keyframes
 
-A keyframe entry is either a property or a plugin-named group of properties. Both forms are legal in the same track, and the flat form is unchanged:
+A keyframe entry is either a property or a plugin-named group. Grouping scopes ownership; it does not rename leaves:
 
 ```text
 keyframes: {
-  opacity: { stops: [ ... ] },           // flat: resolved against every registered plugin
-  fk:      { length: { stops: [...] } }, // grouped: resolved against the plugin named fk
+  opacity: { stops: [ ... ] },
+  transform: {
+    x: { stops: [ ... ] },
+    y: { stops: [ ... ] },
+    rotation: { stops: [ ... ] },
+  },
+  fk: {
+    length: { stops: [ ... ] },
+    rotation: { stops: [ ... ] },
+    requires: { base: "walk/pelvis" },
+  },
 }
 ```
 
-A group name addresses a registered plugin by name, and each leaf must be a key that plugin itself claims. A group naming no registered plugin, or a leaf the named plugin does not claim, is `plugin-unknown-key` reported at the authored path. Grouping is scoping, not renaming: the group is flattened to its unprefixed leaves before compilation, so `fk: { length }` compiles, interpolates, composes, and renders exactly as flat `length` does. Nesting is one level deep; a group holds properties and a property holds stops.
+A group name addresses a registered plugin and every property leaf must be a key that plugin claims. The group is flattened to unprefixed leaves before interpolation and composition. Nesting is one level deep.
 
-More than one plugin may claim the same key, so the group form is not always optional. `transformPlugin` claims `x`, `y`, and `rotation` while `fkPlugin` claims `length` and `rotation`, so in a project that registers both, flat `rotation` names no owner and is `plugin-ambiguous-key`: author a bone as `fk: { length, rotation }` and a root as `transform: { x, y, rotation }`. A key exactly one registered plugin claims keeps its flat spelling forever, so this appears only in a registry that has two claimants for one name. See ADR-043.
+More than one plugin may claim the same key. `transformPlugin` claims `x`, `y`, and `rotation`, while `fkPlugin` claims `length` and `rotation`. With both registered, flat `rotation` is `plugin-ambiguous-key`; author a bone under `fk` and a root under `transform`.
 
-Two restrictions make the two forms one namespace rather than two:
+### Plugin-owned requirements
 
-- A keyframe name may not contain `:`, in a flat key, a group name, or a leaf name. The colon marks a plugin's private internal keys, which are never published. Violations are `keyframes-reserved-separator`.
-- One compiled key may be authored once. A leaf that collides with another group's leaf, or with a flat key, is `keyframes-duplicate-key` rather than a silent overwrite.
+A plugin may declare requirement slots in its definition:
 
-3D content is detected by leaf name, so `z`, `rotationX`, `rotationY`, and non-zero path-point `z` still raise `perspective-usage` when authored inside a group. See ADR-041.
+```ts
+const fkPlugin = {
+  name: "fk",
+  requirements: {
+    base: {},
+  },
+};
+```
 
-## Free tracks
+An author binds an optional slot inside that plugin's group:
 
-A free track is authored under `freeTracks`, not `tracks`. It is project-owned and participates in the same graph as motion tracks, but no Motion schedules its progress. A host or adopting owner drives it externally. Its runtime id is `~/trackId`.
+```js
+keyframes: {
+  fk: {
+    length: { stops: [ ... ] },
+    rotation: { stops: [ ... ] },
+    requires: {
+      base: "walk/pelvis",
+    },
+  },
+}
+```
 
-Use free tracks for shared roots such as cursor, scroll, or rig state, and for project-defined tracks that will be adopted by a runtime owner later. A free track is not a different graph type and is not gated by a capability flag.
+`requires` is metadata, not a keyframe. It is skipped by flattening and creates no compiled property. Omitting `requires`, or omitting one slot, creates no edge; the plugin owns its unbound behavior. Every configured slot must be declared by the named plugin, otherwise load fails with `plugin-unknown-requirement`.
 
-## Perspective
+The graph derives one normal input edge per binding. Unknown sources, self-reference, duplicate edges, and cycles are rejected before mount. A requirement is part of edge identity, so two slots such as `base` and `destination` may intentionally bind the same source.
 
-`perspective` describes the stage’s 3D projection in CSS pixels. Without it, `z`, `rotationX`, `rotationY`, or non-zero path-point `z` values can render with flat or misleading depth. Missing perspective alongside 3D content is a warning. Invalid present perspective is an error. The renderer owns applying it to a stage container; core does not import CSS or DOM APIs.
+At composition, generic `observes` inputs remain in the flat input bag. Plugin-owned inputs are separate: a source bound to `fk.requires.base` arrives at the FK plugin as `inputs.base`, retaining the source's natural keys such as `x`, `y`, and `rotation`. It cannot overwrite the track's authored `values.rotation`; the two values are separated by object scope rather than renamed keys.
+
+The contract layer owns binding shape, the plugin registry owns plugin and slot resolution, and graph construction owns topology. This keeps validation registry-independent and avoids duplicate normalization owners. See ADR-044.
+
+### Keyframe namespace rules
+
+- A keyframe name may not contain `:` in a flat key, group name, or leaf name. The colon marks private internal keys and is rejected with `keyframes-reserved-separator`.
+- Requirement slots may not be empty or contain `:`. Malformed sections use `keyframes-requires-shape`, `keyframes-requires-empty`, `keyframes-requires-slot`, and `keyframes-requires-source`.
+- A top-level `requires` is rejected with `keyframes-reserved-section` because it has no owning plugin.
+- One compiled key may be authored once. Collisions use `keyframes-duplicate-key`.
+- 3D content is detected by leaf name, including inside groups, and missing perspective is a warning.
 
 ## Observation edges
 
-Edges are declared on the observing track:
+Generic edges remain available on the observing track:
 
 ```js
-{ source: "motionA/arm", role: "input", target: "parentWorld" }
+{ source: "motionA/arm", role: "input", projection: { pick: ["x", "rotation"] } }
 ```
 
-`source` may be local, qualified motion, or free-track. `role` is `input` or `output`; it defaults to `output`. Input requires a non-empty `target` and contributes under that property. Output forbids `target` and merges the source contribution over the observer’s composed patch. Edge identity includes source, role, and target, so one source may provide both roles.
+`source` may be local, qualified motion, or free-track. `role` is `input` or `output` and defaults to `output`. Input projections are generic graph behavior; plugin-owned requirements should be preferred when the dependency belongs to a plugin. Output observations merge the source contribution over the observer's composed patch.
 
 The graph rejects unknown, duplicate, self-referential, and cyclic edges before mount.
+
+## Free tracks
+
+A free track is authored under `freeTracks`, participates in the same graph, and has no Motion schedule. Its runtime id is `~/trackId`.
+
+## Perspective
+
+`perspective` describes the stage's 3D projection in CSS pixels. Missing perspective alongside 3D content is a warning; invalid present perspective is an error. The renderer owns applying it.
 
 ## Diagnostics
 
@@ -158,8 +184,8 @@ interface Diagnostic {
 }
 ```
 
-Errors reject the candidate project before it can replace the active project. Warnings load and remain readable. No flag promotes warnings to errors.
+Errors reject a candidate project before it replaces the active project. Warnings load and remain readable.
 
 ## Rejected input
 
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid trigger, invalid perspective, malformed edges, unknown sources, duplicate edges, self-reference, cycles, and legacy `use` entries are errors. A keyframe name containing `:` and one compiled key authored under two spellings are errors too, as is the flat spelling of a key more than one registered plugin claims. The per-type trigger rules are listed under Trigger above. Missing perspective for detected 3D content and unused free tracks are warnings.
+Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, malformed bindings and edges, unknown sources, duplicate edges, self-reference, cycles, and legacy `use` entries are errors. Flat keys with multiple plugin claimants are also errors. Missing perspective for detected 3D content and unused free tracks are warnings.

@@ -1,7 +1,7 @@
 import type { ImmutableRecord } from "./values";
 import { equalValues, freezeValue } from "./values";
 import type { InterpolationTimeline, Interpolator } from "../ports/interpolator";
-import type { ResolvedPlugins } from "./plugins";
+import type { PluginInputs, RequirementInputs, ResolvedPlugins } from "./plugins";
 
 export interface TrackSnapshot {
   readonly progress: number;
@@ -38,8 +38,8 @@ function preparedConfig(config: unknown, plugins: ResolvedPlugins): unknown {
 /**
  * A key under a plugin's namespace is that plugin's private domain, by rule rather than by
  * declaration. The colon is reserved in every authored keyframe name and in plugin `keys`,
- * `inputs`, and `outputs`, so a namespaced key can only be something a plugin derived for itself.
- * See ADR-041 and ADR-042.
+ * `inputs`, `outputs`, and requirement slots, so a namespaced key can only be something a plugin
+ * derived for itself. See ADR-041 and ADR-042.
  */
 function isNamespacedInternal(key: string): boolean {
   return key.includes(":");
@@ -87,10 +87,13 @@ function freezeComposition(values: unknown): ImmutableRecord {
     );
   }
 }
+const NO_PLUGIN_INPUTS: PluginInputs = Object.freeze({});
+const NO_REQUIREMENT_INPUTS: RequirementInputs = Object.freeze({});
 const EMPTY_RESOLVED_PLUGINS: ResolvedPlugins = Object.freeze({
   plugins: Object.freeze([]),
   diagnostics: Object.freeze([]),
   authoredKeyframes: Object.freeze({}),
+  requirements: Object.freeze([]),
   internalKeys: Object.freeze([]),
   outputSerializers: Object.freeze({}),
   preparation: Object.freeze({ keyframes: Object.freeze({}), tweenVars: Object.freeze({}) }),
@@ -103,6 +106,7 @@ export class Track {
   #disposed = false;
   #lastSnapshot: TrackSnapshot | undefined;
   #lastInputs: Readonly<ImmutableRecord> | undefined;
+  #lastRequirementInputs: RequirementInputs | undefined;
   constructor(options: TrackOptions) {
     this.#plugins = options.plugins ?? EMPTY_RESOLVED_PLUGINS;
     this.#timeline = options.interpolator.create(
@@ -125,18 +129,35 @@ export class Track {
     this.#dirty = true;
     return true;
   }
-  compose(inputs: Readonly<ImmutableRecord> = {}): TrackSnapshot {
+  /**
+   * Composes this track's values, then runs the plugin chain over them.
+   *
+   * `inputs` is the flat contribution of the track's own `observes` edges and is merged into the
+   * value bag, unchanged. `requirementInputs` is the plugin-owned half and is deliberately not:
+   * each plugin receives only the slots it declared, so a source's `rotation` reaches `fk` as
+   * `inputs.base.rotation` while the bone's authored `rotation` stays `values.rotation`. Merging
+   * both into one bag is what made an upstream value able to replace an authored one, and what
+   * forced a plugin to invent `parentRotation` to stay out of the way. See ADR-044.
+   */
+  compose(
+    inputs: Readonly<ImmutableRecord> = {},
+    requirementInputs: RequirementInputs = NO_REQUIREMENT_INPUTS,
+  ): TrackSnapshot {
     this.assertActive();
     if (
       !this.#dirty &&
       this.#lastSnapshot &&
       this.#lastInputs !== undefined &&
-      (this.#lastInputs === inputs || equalValues(this.#lastInputs, inputs))
+      (this.#lastInputs === inputs || equalValues(this.#lastInputs, inputs)) &&
+      this.#lastRequirementInputs !== undefined &&
+      (this.#lastRequirementInputs === requirementInputs ||
+        equalValues(this.#lastRequirementInputs, requirementInputs))
     )
       return this.#lastSnapshot;
     let values: ImmutableRecord = { ...rendererNeutralState(this.#timeline.state), ...inputs };
     for (const plugin of this.#plugins.plugins) {
-      const composed = plugin.compose(values, this.#progress);
+      const scoped = requirementInputs[plugin.name] ?? NO_PLUGIN_INPUTS;
+      const composed = plugin.compose(values, this.#progress, scoped);
       if (!isRecord(composed))
         throw new CompositionOutputError(
           `Plugin "${plugin.name}" must return a renderer-neutral record.`,
@@ -148,6 +169,7 @@ export class Track {
       values: freezeComposition(publishableValues(values, this.#plugins)),
     });
     this.#lastInputs = freezeValue({ ...inputs });
+    this.#lastRequirementInputs = Object.freeze({ ...requirementInputs });
     this.#lastSnapshot = snapshot;
     this.#dirty = false;
     return snapshot;
@@ -158,6 +180,7 @@ export class Track {
     this.#timeline.kill();
     this.#lastSnapshot = undefined;
     this.#lastInputs = undefined;
+    this.#lastRequirementInputs = undefined;
   }
   private assertActive(): void {
     if (this.#disposed) throw new Error("Track is disposed.");
