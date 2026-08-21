@@ -51,6 +51,9 @@ function plugins(...items: ReturnType<typeof createPlugin>[]) {
     plugins: Object.freeze(items),
     diagnostics: Object.freeze([]),
     authoredKeyframes: Object.freeze({}),
+    // Required rather than optional on `ResolvedPlugins`: a resolver that computed bindings and
+    // then forgot to report them should not typecheck. See ADR-044.
+    requirements: Object.freeze([]),
     internalKeys: Object.freeze([]),
     outputSerializers: Object.freeze({}),
     preparation: emptyPreparation,

@@ -79,7 +79,8 @@ describe("per-plugin keyframe key ownership", () => {
     // its parent; the composed one is its rotation in world space, which is what a child observes
     // and what a renderer writes. The parent's own `rotation` arrives inside the `base` slot, so
     // the two never share a namespace and neither has to be renamed.
-    const composed = fkPlugin.compose({ length: 10, rotation: -90 }, 1, { base: { rotation: 90 } });
+    const parent = { base: { rotation: 90 } };
+    const composed = fkPlugin.compose({ length: 10, rotation: -90 }, 1, parent);
     expect(composed.x).toBeCloseTo(10, 12);
     expect(composed.y).toBeCloseTo(0, 12);
     expect(composed.rotation).toBe(0);
@@ -106,7 +107,10 @@ describe("per-plugin keyframe key ownership", () => {
   it("N-9 refuses the flat spelling of a key both plugins claim", () => {
     const flatRotation: TrackDefinition = {
       id: "thigh",
-      keyframes: { fk: { length: hold(50), requires: { base: "walk/pelvis" } }, rotation: hold(45) },
+      keyframes: {
+        fk: { length: hold(50), requires: { base: "walk/pelvis" } },
+        rotation: hold(45),
+      },
     };
 
     // Not a winner decided by registration order, and not a silent overwrite. The load is refused
