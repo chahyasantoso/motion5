@@ -1,0 +1,648 @@
+# CI log archive: 32486959898
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: fix/issue-176-transactional-track-replacement
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/32486959898
+- Captured: 2026-08-21T13:28:27Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	﻿2026-08-21T13:28:02.5866308Z ##[group]Run npm ci --ignore-scripts --no-audit --no-fund
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:02.5866832Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund^[[0m
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:02.5898000Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:02.5898320Z env:
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:02.5898582Z   NODE_VERSION: 24
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:02.5898831Z ##[endgroup]
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2771157Z npm error code EUSAGE
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2812793Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2813880Z npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2814817Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2815277Z npm error Invalid: lock file's react-test-renderer@19.2.8 does not satisfy react-test-renderer@19.1.0
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2815723Z npm error Missing: scheduler@0.26.0 from lock file
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2816044Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2816353Z npm error Clean install a project
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2816613Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2816950Z npm error Usage:
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2817302Z npm error npm ci
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2817548Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2817759Z npm error Options:
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2818184Z npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2818795Z npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2819599Z npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2820110Z npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts]
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2820579Z npm error [--allow-directory <all|none|root>] [--allow-file <all|none|root>]
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2821149Z npm error [--allow-git <all|none|root>] [--allow-remote <all|none|root>]
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2821783Z npm error [--allow-scripts <package-list> [--allow-scripts <package-list> ...]]
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2822320Z npm error [--strict-allow-scripts] [--dangerously-allow-all-scripts] [--no-audit]
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2822734Z npm error [--no-bin-links] [--no-fund] [--dry-run]
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2823199Z npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2823638Z npm error [--workspaces] [--include-workspace-root] [--install-links]
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2823944Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2824241Z npm error   --install-strategy
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2824632Z npm error     Sets the strategy for installing packages in node_modules.
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2824961Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2825218Z npm error   --legacy-bundling
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2825642Z npm error     Instead of hoisting package installs in `node_modules`, install packages
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2825982Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2826227Z npm error   --global-style
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2826595Z npm error     Only install direct dependencies in the top level `node_modules`,
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2826932Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2827275Z npm error   --omit
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2827618Z npm error     Dependency types to omit from the installation tree on disk.
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2827932Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2828187Z npm error   --include
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2828556Z npm error     Option that allows for defining which types of dependencies to install.
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2828909Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2829275Z npm error   --strict-peer-deps
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2829697Z npm error     If set to `true`, and `--legacy-peer-deps` is not set, then _any_
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2830006Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2830292Z npm error   --foreground-scripts
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2830747Z npm error     Run all build scripts (ie, `preinstall`, `install`, and
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2831040Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2831274Z npm error   --ignore-scripts
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2831664Z npm error     If true, npm does not run scripts specified in package.json files.
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2832013Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2832246Z npm error   --allow-directory
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2832818Z npm error     Limits the ability for npm to install dependencies from directories.
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2833170Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2833412Z npm error   --allow-file
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2833830Z npm error     Limits the ability for npm to install dependencies from tarball files.
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2834155Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2834352Z npm error   --allow-git
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2834763Z npm error     Limits the ability for npm to fetch dependencies from git references.
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2835104Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2835336Z npm error   --allow-remote
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2835811Z npm error     Limits the ability for npm to fetch dependencies from urls.
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2836120Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2836363Z npm error   --allow-scripts
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2836754Z npm error     Comma-separated list of packages whose install-time lifecycle scripts
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2837104Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2837353Z npm error   --strict-allow-scripts
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2837733Z npm error     If `true`, turn the install-script policy from a warning into a hard
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2838111Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2838358Z npm error   --dangerously-allow-all-scripts
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2838774Z npm error     If `true`, bypass the `allowScripts` policy entirely and run every
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2839206Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2839478Z npm error   --audit
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2839844Z npm error     When "true" submit audit reports alongside the current npm command to the
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2840208Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2840432Z npm error   --bin-links
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2840797Z npm error     Tells npm to create symlinks (or `.cmd` shims on Windows) for package
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2841187Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2841397Z npm error   --fund
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2841738Z npm error     When "true" displays the message at the end of each `npm install`
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2842084Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2842286Z npm error   --dry-run
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2842691Z npm error     Indicates that you don't want npm to make any changes and that it should
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2843045Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2843289Z npm error   -w|--workspace
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2843666Z npm error     Enable running a command in the context of the configured workspaces of the
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2844048Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2844274Z npm error   --workspaces
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2844629Z npm error     Set to true to run the command in the context of **all** configured
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2844973Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2845215Z npm error   --include-workspace-root
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2845824Z npm error     Include the workspace root when workspaces are enabled for a command.
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2846162Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2846391Z npm error   --install-links
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2846777Z npm error     When set file: protocol dependencies will be packed and installed as
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2847097Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2847349Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2847654Z npm error aliases: clean-install, ic, install-clean, isntall-clean
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2847938Z npm error
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2848236Z npm error Run "npm help ci" for more info
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2848734Z npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-08-21T13_28_02_634Z-debug-0.log
+quality (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:28:08.2987155Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	﻿2026-08-21T13:27:56.4989563Z ##[group]Run npm ci --ignore-scripts --no-audit --no-fund
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.4990090Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund^[[0m
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.5021092Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.5021482Z env:
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.5021745Z   NODE_VERSION: 24
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.5022009Z ##[endgroup]
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5005952Z npm error code EUSAGE
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5041512Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5042820Z npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5043832Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5044310Z npm error Invalid: lock file's react-test-renderer@19.2.8 does not satisfy react-test-renderer@19.1.0
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5044835Z npm error Missing: scheduler@0.26.0 from lock file
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5045146Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5045437Z npm error Clean install a project
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5045719Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5046098Z npm error Usage:
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5046330Z npm error npm ci
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5046595Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5046854Z npm error Options:
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5047308Z npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5047856Z npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5048422Z npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5048977Z npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts]
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5049473Z npm error [--allow-directory <all|none|root>] [--allow-file <all|none|root>]
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5049985Z npm error [--allow-git <all|none|root>] [--allow-remote <all|none|root>]
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5050465Z npm error [--allow-scripts <package-list> [--allow-scripts <package-list> ...]]
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5050979Z npm error [--strict-allow-scripts] [--dangerously-allow-all-scripts] [--no-audit]
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5051481Z npm error [--no-bin-links] [--no-fund] [--dry-run]
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5051908Z npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5052408Z npm error [--workspaces] [--include-workspace-root] [--install-links]
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5052987Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5053322Z npm error   --install-strategy
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5053785Z npm error     Sets the strategy for installing packages in node_modules.
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5054146Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5054395Z npm error   --legacy-bundling
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5054823Z npm error     Instead of hoisting package installs in `node_modules`, install packages
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5055245Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5055486Z npm error   --global-style
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5055876Z npm error     Only install direct dependencies in the top level `node_modules`,
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5056257Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5056471Z npm error   --omit
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5056921Z npm error     Dependency types to omit from the installation tree on disk.
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5057296Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5057543Z npm error   --include
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5057933Z npm error     Option that allows for defining which types of dependencies to install.
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5058281Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5058610Z npm error   --strict-peer-deps
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5059005Z npm error     If set to `true`, and `--legacy-peer-deps` is not set, then _any_
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5059350Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5059633Z npm error   --foreground-scripts
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5060026Z npm error     Run all build scripts (ie, `preinstall`, `install`, and
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5060408Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5060662Z npm error   --ignore-scripts
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5061076Z npm error     If true, npm does not run scripts specified in package.json files.
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5061418Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5061731Z npm error   --allow-directory
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5062268Z npm error     Limits the ability for npm to install dependencies from directories.
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5062600Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5063070Z npm error   --allow-file
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5063492Z npm error     Limits the ability for npm to install dependencies from tarball files.
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5063857Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5064114Z npm error   --allow-git
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5064498Z npm error     Limits the ability for npm to fetch dependencies from git references.
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5064854Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5065107Z npm error   --allow-remote
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5065590Z npm error     Limits the ability for npm to fetch dependencies from urls.
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5065921Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5066158Z npm error   --allow-scripts
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5066620Z npm error     Comma-separated list of packages whose install-time lifecycle scripts
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5066964Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5067285Z npm error   --strict-allow-scripts
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5067760Z npm error     If `true`, turn the install-script policy from a warning into a hard
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5068122Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5068445Z npm error   --dangerously-allow-all-scripts
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5068877Z npm error     If `true`, bypass the `allowScripts` policy entirely and run every
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5069230Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5069487Z npm error   --audit
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5069935Z npm error     When "true" submit audit reports alongside the current npm command to the
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5070295Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5070573Z npm error   --bin-links
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5070966Z npm error     Tells npm to create symlinks (or `.cmd` shims on Windows) for package
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5071311Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5071604Z npm error   --fund
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5071971Z npm error     When "true" displays the message at the end of each `npm install`
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5072317Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5072545Z npm error   --dry-run
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5073070Z npm error     Indicates that you don't want npm to make any changes and that it should
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5073454Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5073786Z npm error   -w|--workspace
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5074245Z npm error     Enable running a command in the context of the configured workspaces of the
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5074619Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5074853Z npm error   --workspaces
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5075292Z npm error     Set to true to run the command in the context of **all** configured
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5075611Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5075901Z npm error   --include-workspace-root
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5076341Z npm error     Include the workspace root when workspaces are enabled for a command.
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5076717Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5076950Z npm error   --install-links
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5077384Z npm error     When set file: protocol dependencies will be packed and installed as
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5077742Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5077959Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5078348Z npm error aliases: clean-install, ic, install-clean, isntall-clean
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5078670Z npm error
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5078932Z npm error Run "npm help ci" for more info
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5270422Z npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-08-21T13_27_56_550Z-debug-0.log
+end-to-end (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:59.5450623Z ##[error]Process completed with exit code 1.
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	﻿2026-08-21T13:27:53.6431134Z ##[group]Run npm ci --ignore-scripts --no-audit --no-fund
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:53.6431751Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund^[[0m
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:53.6483089Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:53.6483418Z env:
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:53.6483642Z   NODE_VERSION: 24
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:53.6483874Z ##[endgroup]
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1204452Z npm error code EUSAGE
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1270919Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1272913Z npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1274928Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1276019Z npm error Invalid: lock file's react-test-renderer@19.2.8 does not satisfy react-test-renderer@19.1.0
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1277221Z npm error Missing: scheduler@0.26.0 from lock file
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1277845Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1278399Z npm error Clean install a project
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1278944Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1279699Z npm error Usage:
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1280184Z npm error npm ci
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1280663Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1281110Z npm error Options:
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1282054Z npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1283446Z npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1284870Z npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1286112Z npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts]
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1287328Z npm error [--allow-directory <all|none|root>] [--allow-file <all|none|root>]
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1288461Z npm error [--allow-git <all|none|root>] [--allow-remote <all|none|root>]
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1289917Z npm error [--allow-scripts <package-list> [--allow-scripts <package-list> ...]]
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1291220Z npm error [--strict-allow-scripts] [--dangerously-allow-all-scripts] [--no-audit]
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1292231Z npm error [--no-bin-links] [--no-fund] [--dry-run]
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1293207Z npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1294324Z npm error [--workspaces] [--include-workspace-root] [--install-links]
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1295029Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1295496Z npm error   --install-strategy
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1296367Z npm error     Sets the strategy for installing packages in node_modules.
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1297062Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1297488Z npm error   --legacy-bundling
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1298429Z npm error     Instead of hoisting package installs in `node_modules`, install packages
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1299208Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1299940Z npm error   --global-style
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1300803Z npm error     Only install direct dependencies in the top level `node_modules`,
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1301541Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1301927Z npm error   --omit
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1302707Z npm error     Dependency types to omit from the installation tree on disk.
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1303415Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1303810Z npm error   --include
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1304667Z npm error     Option that allows for defining which types of dependencies to install.
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1305431Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1305882Z npm error   --strict-peer-deps
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1306727Z npm error     If set to `true`, and `--legacy-peer-deps` is not set, then _any_
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1307423Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1307879Z npm error   --foreground-scripts
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1308688Z npm error     Run all build scripts (ie, `preinstall`, `install`, and
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1309528Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1309966Z npm error   --ignore-scripts
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1310816Z npm error     If true, npm does not run scripts specified in package.json files.
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1311534Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1311947Z npm error   --allow-directory
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1313083Z npm error     Limits the ability for npm to install dependencies from directories.
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1313845Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1314252Z npm error   --allow-file
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1315109Z npm error     Limits the ability for npm to install dependencies from tarball files.
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1315877Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1316263Z npm error   --allow-git
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1317103Z npm error     Limits the ability for npm to fetch dependencies from git references.
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1317857Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1318253Z npm error   --allow-remote
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1319242Z npm error     Limits the ability for npm to fetch dependencies from urls.
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1320211Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1320620Z npm error   --allow-scripts
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1321516Z npm error     Comma-separated list of packages whose install-time lifecycle scripts
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1322285Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1322749Z npm error   --strict-allow-scripts
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1323681Z npm error     If `true`, turn the install-script policy from a warning into a hard
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1324486Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1324997Z npm error   --dangerously-allow-all-scripts
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1326003Z npm error     If `true`, bypass the `allowScripts` policy entirely and run every
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1326723Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1327096Z npm error   --audit
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1327943Z npm error     When "true" submit audit reports alongside the current npm command to the
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1328718Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1329105Z npm error   --bin-links
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1330163Z npm error     Tells npm to create symlinks (or `.cmd` shims on Windows) for package
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1330909Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1331295Z npm error   --fund
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1332074Z npm error     When "true" displays the message at the end of each `npm install`
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1332783Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1333178Z npm error   --dry-run
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1334037Z npm error     Indicates that you don't want npm to make any changes and that it should
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1334789Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1335196Z npm error   -w|--workspace
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1336110Z npm error     Enable running a command in the context of the configured workspaces of the
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1336921Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1337324Z npm error   --workspaces
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1338149Z npm error     Set to true to run the command in the context of **all** configured
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1338869Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1339572Z npm error   --include-workspace-root
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1340561Z npm error     Include the workspace root when workspaces are enabled for a command.
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1341319Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1341724Z npm error   --install-links
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1342609Z npm error     When set file: protocol dependencies will be packed and installed as
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1343360Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1343702Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1344389Z npm error aliases: clean-install, ic, install-clean, isntall-clean
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1345051Z npm error
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1345539Z npm error Run "npm help ci" for more info
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1346727Z npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-08-21T13_27_53_712Z-debug-0.log
+integration (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.1725168Z ##[error]Process completed with exit code 1.
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	﻿2026-08-21T13:27:55.0864698Z ##[group]Run npm ci --ignore-scripts --no-audit --no-fund
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.0865161Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund^[[0m
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.0907051Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.0907298Z env:
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.0907473Z   NODE_VERSION: 24
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.0907673Z ##[endgroup]
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8792008Z npm error code EUSAGE
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8841619Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8842708Z npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8843628Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8844077Z npm error Invalid: lock file's react-test-renderer@19.2.8 does not satisfy react-test-renderer@19.1.0
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8844567Z npm error Missing: scheduler@0.26.0 from lock file
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8844846Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8845070Z npm error Clean install a project
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8845289Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8845511Z npm error Usage:
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8845716Z npm error npm ci
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8845896Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8846080Z npm error Options:
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8846461Z npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8847144Z npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8847673Z npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8848172Z npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts]
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8848666Z npm error [--allow-directory <all|none|root>] [--allow-file <all|none|root>]
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8849107Z npm error [--allow-git <all|none|root>] [--allow-remote <all|none|root>]
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8849548Z npm error [--allow-scripts <package-list> [--allow-scripts <package-list> ...]]
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8850028Z npm error [--strict-allow-scripts] [--dangerously-allow-all-scripts] [--no-audit]
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8850432Z npm error [--no-bin-links] [--no-fund] [--dry-run]
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8850832Z npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8851286Z npm error [--workspaces] [--include-workspace-root] [--install-links]
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8851589Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8851797Z npm error   --install-strategy
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8852305Z npm error     Sets the strategy for installing packages in node_modules.
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8852690Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8852889Z npm error   --legacy-bundling
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8853283Z npm error     Instead of hoisting package installs in `node_modules`, install packages
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8853607Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8853792Z npm error   --global-style
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8854152Z npm error     Only install direct dependencies in the top level `node_modules`,
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8854457Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8854744Z npm error   --omit
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8855071Z npm error     Dependency types to omit from the installation tree on disk.
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8855361Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8855542Z npm error   --include
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8855897Z npm error     Option that allows for defining which types of dependencies to install.
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8856208Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8856412Z npm error   --strict-peer-deps
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8856850Z npm error     If set to `true`, and `--legacy-peer-deps` is not set, then _any_
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8857145Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8857356Z npm error   --foreground-scripts
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8857701Z npm error     Run all build scripts (ie, `preinstall`, `install`, and
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8857979Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8858164Z npm error   --ignore-scripts
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8858520Z npm error     If true, npm does not run scripts specified in package.json files.
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8858847Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8859028Z npm error   --allow-directory
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8859588Z npm error     Limits the ability for npm to install dependencies from directories.
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8859894Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8860070Z npm error   --allow-file
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8860434Z npm error     Limits the ability for npm to install dependencies from tarball files.
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8860739Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8860910Z npm error   --allow-git
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8861258Z npm error     Limits the ability for npm to fetch dependencies from git references.
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8861563Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8861738Z npm error   --allow-remote
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8862179Z npm error     Limits the ability for npm to fetch dependencies from urls.
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8862477Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8862657Z npm error   --allow-scripts
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8863031Z npm error     Comma-separated list of packages whose install-time lifecycle scripts
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8863352Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8863554Z npm error   --strict-allow-scripts
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8863955Z npm error     If `true`, turn the install-script policy from a warning into a hard
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8864295Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8864516Z npm error   --dangerously-allow-all-scripts
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8864908Z npm error     If `true`, bypass the `allowScripts` policy entirely and run every
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8865202Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8865371Z npm error   --audit
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8865724Z npm error     When "true" submit audit reports alongside the current npm command to the
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8866047Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8866224Z npm error   --bin-links
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8866584Z npm error     Tells npm to create symlinks (or `.cmd` shims on Windows) for package
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8866993Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8867168Z npm error   --fund
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8867494Z npm error     When "true" displays the message at the end of each `npm install`
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8867790Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8867962Z npm error   --dry-run
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8868333Z npm error     Indicates that you don't want npm to make any changes and that it should
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8868649Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8868830Z npm error   -w|--workspace
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8869208Z npm error     Enable running a command in the context of the configured workspaces of the
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8869532Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8869713Z npm error   --workspaces
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8870056Z npm error     Set to true to run the command in the context of **all** configured
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8870349Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8870563Z npm error   --include-workspace-root
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8870951Z npm error     Include the workspace root when workspaces are enabled for a command.
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8871253Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8871438Z npm error   --install-links
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8871802Z npm error     When set file: protocol dependencies will be packed and installed as
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8872101Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8872264Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8872558Z npm error aliases: clean-install, ic, install-clean, isntall-clean
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8872836Z npm error
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8873042Z npm error Run "npm help ci" for more info
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.8873521Z npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-08-21T13_27_55_141Z-debug-0.log
+build (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.9181932Z ##[error]Process completed with exit code 1.
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	﻿2026-08-21T13:27:56.6109269Z ##[group]Run npm ci --ignore-scripts --no-audit --no-fund
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.6109806Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund^[[0m
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.6165110Z shell: /usr/bin/bash -e {0}
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.6165437Z env:
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.6165659Z   NODE_VERSION: 24
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:56.6165900Z ##[endgroup]
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0708845Z npm error code EUSAGE
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0775408Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0778166Z npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0779806Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0781191Z npm error Invalid: lock file's react-test-renderer@19.2.8 does not satisfy react-test-renderer@19.1.0
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0782514Z npm error Missing: scheduler@0.26.0 from lock file
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0783072Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0783561Z npm error Clean install a project
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0784031Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0784538Z npm error Usage:
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0784969Z npm error npm ci
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0785395Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0785791Z npm error Options:
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0786892Z npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0788143Z npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0789350Z npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0790117Z npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts]
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0790776Z npm error [--allow-directory <all|none|root>] [--allow-file <all|none|root>]
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0791416Z npm error [--allow-git <all|none|root>] [--allow-remote <all|none|root>]
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0792077Z npm error [--allow-scripts <package-list> [--allow-scripts <package-list> ...]]
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0792805Z npm error [--strict-allow-scripts] [--dangerously-allow-all-scripts] [--no-audit]
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0793385Z npm error [--no-bin-links] [--no-fund] [--dry-run]
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0794034Z npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0795196Z npm error [--workspaces] [--include-workspace-root] [--install-links]
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0795809Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0796107Z npm error   --install-strategy
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0796910Z npm error     Sets the strategy for installing packages in node_modules.
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0797345Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0797602Z npm error   --legacy-bundling
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0798142Z npm error     Instead of hoisting package installs in `node_modules`, install packages
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0798580Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0798817Z npm error   --global-style
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0799299Z npm error     Only install direct dependencies in the top level `node_modules`,
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0799715Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0799942Z npm error   --omit
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0800382Z npm error     Dependency types to omit from the installation tree on disk.
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0800778Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0801017Z npm error   --include
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0801496Z npm error     Option that allows for defining which types of dependencies to install.
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0801922Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0802196Z npm error   --strict-peer-deps
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0802678Z npm error     If set to `true`, and `--legacy-peer-deps` is not set, then _any_
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0803070Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0803345Z npm error   --foreground-scripts
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0803795Z npm error     Run all build scripts (ie, `preinstall`, `install`, and
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0804173Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0804411Z npm error   --ignore-scripts
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0804900Z npm error     If true, npm does not run scripts specified in package.json files.
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0805306Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0805550Z npm error   --allow-directory
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0806676Z npm error     Limits the ability for npm to install dependencies from directories.
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0807137Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0807384Z npm error   --allow-file
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0807888Z npm error     Limits the ability for npm to install dependencies from tarball files.
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0808314Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0808553Z npm error   --allow-git
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0809198Z npm error     Limits the ability for npm to fetch dependencies from git references.
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0809628Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0809874Z npm error   --allow-remote
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0810326Z npm error     Limits the ability for npm to fetch dependencies from urls.
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0810722Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0810967Z npm error   --allow-scripts
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0811478Z npm error     Comma-separated list of packages whose install-time lifecycle scripts
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0811911Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0812214Z npm error   --strict-allow-scripts
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0812784Z npm error     If `true`, turn the install-script policy from a warning into a hard
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0813263Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0813571Z npm error   --dangerously-allow-all-scripts
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0814109Z npm error     If `true`, bypass the `allowScripts` policy entirely and run every
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0814516Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0814757Z npm error   --audit
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0815254Z npm error     When "true" submit audit reports alongside the current npm command to the
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0815694Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0815937Z npm error   --bin-links
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0816740Z npm error     Tells npm to create symlinks (or `.cmd` shims on Windows) for package
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0817178Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0817414Z npm error   --fund
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0817860Z npm error     When "true" displays the message at the end of each `npm install`
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0818263Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0818494Z npm error   --dry-run
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0818999Z npm error     Indicates that you don't want npm to make any changes and that it should
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0819423Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0819658Z npm error   -w|--workspace
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0820179Z npm error     Enable running a command in the context of the configured workspaces of the
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0820620Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0820863Z npm error   --workspaces
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0821332Z npm error     Set to true to run the command in the context of **all** configured
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0821735Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0822016Z npm error   --include-workspace-root
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0822564Z npm error     Include the workspace root when workspaces are enabled for a command.
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0822988Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0823231Z npm error   --install-links
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0823729Z npm error     When set file: protocol dependencies will be packed and installed as
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0824158Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0824369Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0824762Z npm error aliases: clean-install, ic, install-clean, isntall-clean
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0825150Z npm error
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0825434Z npm error Run "npm help ci" for more info
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.0826112Z npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-08-21T13_27_56_675Z-debug-0.log
+performance (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:58.1217648Z ##[error]Process completed with exit code 1.
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	﻿2026-08-21T13:27:53.5842928Z ##[group]Run npm ci --ignore-scripts --no-audit --no-fund
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:53.5843551Z ^[[36;1mnpm ci --ignore-scripts --no-audit --no-fund^[[0m
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:53.5896767Z shell: /usr/bin/bash -e {0}
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:53.5897101Z env:
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:53.5897326Z   NODE_VERSION: 24
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:53.5897565Z ##[endgroup]
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6069931Z npm error code EUSAGE
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6136118Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6138063Z npm error `npm ci` can only install packages when your package.json and package-lock.json or npm-shrinkwrap.json are in sync. Please update your lock file with `npm install` before continuing.
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6139939Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6140925Z npm error Invalid: lock file's react-test-renderer@19.2.8 does not satisfy react-test-renderer@19.1.0
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6141955Z npm error Missing: scheduler@0.26.0 from lock file
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6142496Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6142974Z npm error Clean install a project
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6143386Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6143802Z npm error Usage:
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6144192Z npm error npm ci
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6144869Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6145229Z npm error Options:
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6146035Z npm error [--install-strategy <hoisted|nested|shallow|linked>] [--legacy-bundling]
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6147241Z npm error [--global-style] [--omit <dev|optional|peer> [--omit <dev|optional|peer> ...]]
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6148438Z npm error [--include <prod|dev|optional|peer> [--include <prod|dev|optional|peer> ...]]
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6149554Z npm error [--strict-peer-deps] [--foreground-scripts] [--ignore-scripts]
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6150606Z npm error [--allow-directory <all|none|root>] [--allow-file <all|none|root>]
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6151612Z npm error [--allow-git <all|none|root>] [--allow-remote <all|none|root>]
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6152627Z npm error [--allow-scripts <package-list> [--allow-scripts <package-list> ...]]
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6153752Z npm error [--strict-allow-scripts] [--dangerously-allow-all-scripts] [--no-audit]
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6154884Z npm error [--no-bin-links] [--no-fund] [--dry-run]
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6155767Z npm error [-w|--workspace <workspace-name> [-w|--workspace <workspace-name> ...]]
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6156686Z npm error [--workspaces] [--include-workspace-root] [--install-links]
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6157288Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6157704Z npm error   --install-strategy
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6158485Z npm error     Sets the strategy for installing packages in node_modules.
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6159097Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6159473Z npm error   --legacy-bundling
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6160355Z npm error     Instead of hoisting package installs in `node_modules`, install packages
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6161042Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6161407Z npm error   --global-style
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6162176Z npm error     Only install direct dependencies in the top level `node_modules`,
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6162838Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6163179Z npm error   --omit
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6163872Z npm error     Dependency types to omit from the installation tree on disk.
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6164748Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6165124Z npm error   --include
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6165893Z npm error     Option that allows for defining which types of dependencies to install.
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6166573Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6167033Z npm error   --strict-peer-deps
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6167805Z npm error     If set to `true`, and `--legacy-peer-deps` is not set, then _any_
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6168419Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6168837Z npm error   --foreground-scripts
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6169551Z npm error     Run all build scripts (ie, `preinstall`, `install`, and
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6170128Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6170494Z npm error   --ignore-scripts
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6171256Z npm error     If true, npm does not run scripts specified in package.json files.
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6171896Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6172260Z npm error   --allow-directory
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6173284Z npm error     Limits the ability for npm to install dependencies from directories.
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6173932Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6174280Z npm error   --allow-file
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6175244Z npm error     Limits the ability for npm to install dependencies from tarball files.
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6175917Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6176262Z npm error   --allow-git
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6177089Z npm error     Limits the ability for npm to fetch dependencies from git references.
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6177742Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6178089Z npm error   --allow-remote
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6178946Z npm error     Limits the ability for npm to fetch dependencies from urls.
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6179563Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6179914Z npm error   --allow-scripts
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6180709Z npm error     Comma-separated list of packages whose install-time lifecycle scripts
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6181401Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6181819Z npm error   --strict-allow-scripts
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6182675Z npm error     If `true`, turn the install-script policy from a warning into a hard
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6183397Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6183850Z npm error   --dangerously-allow-all-scripts
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6184864Z npm error     If `true`, bypass the `allowScripts` policy entirely and run every
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6185502Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6185842Z npm error   --audit
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6186616Z npm error     When "true" submit audit reports alongside the current npm command to the
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6187305Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6187662Z npm error   --bin-links
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6188424Z npm error     Tells npm to create symlinks (or `.cmd` shims on Windows) for package
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6189083Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6189423Z npm error   --fund
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6190124Z npm error     When "true" displays the message at the end of each `npm install`
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6190755Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6191103Z npm error   --dry-run
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6191884Z npm error     Indicates that you don't want npm to make any changes and that it should
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6192574Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6192933Z npm error   -w|--workspace
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6193747Z npm error     Enable running a command in the context of the configured workspaces of the
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6194603Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6194971Z npm error   --workspaces
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6195710Z npm error     Set to true to run the command in the context of **all** configured
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6196329Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6196775Z npm error   --include-workspace-root
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6197612Z npm error     Include the workspace root when workspaces are enabled for a command.
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6198275Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6198650Z npm error   --install-links
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6199456Z npm error     When set file: protocol dependencies will be packed and installed as
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6200127Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6200462Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6201080Z npm error aliases: clean-install, ic, install-clean, isntall-clean
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6201671Z npm error
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6202103Z npm error Run "npm help ci" for more info
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6203199Z npm error A complete log of this run can be found in: /home/runner/.npm/_logs/2026-08-21T13_27_53_651Z-debug-0.log
+boundaries (node 24)	Run npm ci --ignore-scripts --no-audit --no-fund	2026-08-21T13:27:55.6599848Z ##[error]Process completed with exit code 1.
+```
