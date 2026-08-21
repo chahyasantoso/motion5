@@ -1,5 +1,8 @@
-import { isKeyframeGroup, PLUGIN_REQUIRES_SECTION } from "../contract/keyframe-shape";
-import { readPluginBindings } from "../contract/keyframe-shape";
+import {
+  isKeyframeGroup,
+  PLUGIN_REQUIRES_SECTION,
+  readPluginBindings,
+} from "../contract/keyframe-shape";
 import type { PluginRequiresBinding } from "../contract/v5";
 
 export interface FlattenedKeyframe {

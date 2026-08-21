@@ -15,6 +15,12 @@ export function composeWorld(
   };
 }
 
+interface WorldFrame {
+  readonly x: number;
+  readonly y: number;
+  readonly rotation: number;
+}
+
 function readNumber(value: unknown): number {
   return typeof value === "number" ? value : 0;
 }
@@ -25,11 +31,7 @@ function readNumber(value: unknown): number {
  * The unbound case belongs to the plugin rather than to the schema: `fk.requires.base` is optional,
  * so a root bone authored with no binding composes against the origin instead of failing to load.
  */
-function readBase(input: ImmutableValue | undefined): {
-  x: number;
-  y: number;
-  rotation: number;
-} {
+function readBase(input: ImmutableValue | undefined): WorldFrame {
   if (input === null || typeof input !== "object" || Array.isArray(input))
     return { x: 0, y: 0, rotation: 0 };
   const record = input as Readonly<Record<string, unknown>>;
@@ -53,8 +55,8 @@ function readBase(input: ImmutableValue | undefined): {
  * flat `parentX`, `parentY`, and `parentRotation` inputs an author had to produce with a projection
  * map. The slot is scoped to this plugin, so the source keeps its natural `x`, `y`, and `rotation`
  * names and none of them can collide with this bone's own authored values. That is why `rotation`
- * can be both an authored local value and an observed parent value in the same composition. See
- * ADR-044.
+ * can be both an authored local value and an observed parent value in one composition, without a
+ * global input-collision guard and without either one being renamed. See ADR-044.
  *
  * `rotation` is claimed and produced. The authored value is this bone's rotation relative to its
  * parent, and the composed one is its rotation in world space, which is what a child observes and

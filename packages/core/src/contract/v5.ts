@@ -89,18 +89,20 @@ export interface AuthoredProperty {
  *
  * The slot name is the destination, so there is no author-facing projection map and no naming
  * convention such as `parentX` for the author to keep synchronized with the plugin. Omitting the
- * section, or a slot within it, derives no edge and leaves the unbound case to the plugin. See
- * ADR-044.
+ * section, or a slot within it, derives no edge and leaves the unbound case to the plugin.
+ * See ADR-044.
  */
 export type AuthoredPluginRequires = Readonly<Record<string, string>>;
+/** One member of a plugin-named group: an authored property, or the bindings section. */
+export type AuthoredPluginMember = AuthoredProperty | AuthoredPluginRequires;
 /**
  * A plugin-named group: the properties that plugin claims, plus its optional `requires` section.
  *
- * The section is reserved rather than typed as a distinct key, because the contract layer has no
- * plugin registry and a group's property names are the plugin's to choose. `contract/keyframe-shape`
- * owns telling them apart.
+ * The section is reserved by name rather than typed as a distinct key, because the contract layer
+ * has no plugin registry and a group's property names are the plugin's to choose.
+ * `contract/keyframe-shape` owns telling the two apart.
  */
-export type AuthoredPluginGroup = Readonly<Record<string, AuthoredProperty | AuthoredPluginRequires>>;
+export type AuthoredPluginGroup = Readonly<Record<string, AuthoredPluginMember>>;
 /**
  * One authored keyframe entry: a property, or a plugin-named group of properties.
  *
