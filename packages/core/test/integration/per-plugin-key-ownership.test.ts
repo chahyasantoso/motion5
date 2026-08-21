@@ -25,19 +25,15 @@ function ramp(from: number, to: number) {
   };
 }
 
-const observesPelvis = {
-  source: "walk/pelvis",
-  role: "input",
-  projection: { map: { x: "parentX", y: "parentY", rotation: "parentRotation" } },
-} as const;
-
 // The rig case: `transform` claims `x`, `y`, `rotation` and `fk` claims `length`, `rotation`, so
 // `rotation` has two claimants and each track names the one it means. Registration used to refuse
 // this registry outright, which is the whole reason `fkPlugin` mangled its own key names.
+//
+// The parent is now bound through `fk.requires.base` rather than through a track-level input
+// observation with a projection map onto `parentX`, `parentY`, and `parentRotation`. See ADR-044.
 const thigh: TrackDefinition = {
   id: "thigh",
-  keyframes: { fk: { length: hold(50), rotation: hold(45) } },
-  observes: [observesPelvis],
+  keyframes: { fk: { length: hold(50), rotation: hold(45), requires: { base: "walk/pelvis" } } },
 };
 
 function rig(bone: TrackDefinition): ProjectDefinition {
@@ -81,8 +77,9 @@ describe("per-plugin keyframe key ownership", () => {
 
     // `rotation` is claimed and produced. The authored value is this bone's rotation relative to
     // its parent; the composed one is its rotation in world space, which is what a child observes
-    // and what a renderer writes.
-    const composed = fkPlugin.compose({ parentRotation: 90, length: 10, rotation: -90 }, 1);
+    // and what a renderer writes. The parent's own `rotation` arrives inside the `base` slot, so
+    // the two never share a namespace and neither has to be renamed.
+    const composed = fkPlugin.compose({ length: 10, rotation: -90 }, 1, { base: { rotation: 90 } });
     expect(composed.x).toBeCloseTo(10, 12);
     expect(composed.y).toBeCloseTo(0, 12);
     expect(composed.rotation).toBe(0);
@@ -109,8 +106,7 @@ describe("per-plugin keyframe key ownership", () => {
   it("N-9 refuses the flat spelling of a key both plugins claim", () => {
     const flatRotation: TrackDefinition = {
       id: "thigh",
-      keyframes: { fk: { length: hold(50) }, rotation: hold(45) },
-      observes: [observesPelvis],
+      keyframes: { fk: { length: hold(50), requires: { base: "walk/pelvis" } }, rotation: hold(45) },
     };
 
     // Not a winner decided by registration order, and not a silent overwrite. The load is refused
