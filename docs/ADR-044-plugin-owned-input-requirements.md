@@ -18,7 +18,7 @@ That block is repeated on all thirteen bones of the walker rig, and it is the au
 
 The renaming is not decoration either. `fk` reads a parent rotation and animates a local one, and both would be spelled `rotation` in one flat value bag, so the projection existed to move the upstream value out of the way. That put every plugin's inputs in the same namespace as every track's authored values, where an upstream value could silently replace an authored one and where two plugins wanting the same input name needed `plugin-input-collision` to arbitrate.
 
-ADR-041 and ADR-043 made an authored keyframe *property* scopable by plugin. They left the plugin's *dependencies* unscoped.
+ADR-041 and ADR-043 made an authored keyframe _property_ scopable by plugin. They left the plugin's _dependencies_ unscoped.
 
 ## Decision
 
