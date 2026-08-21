@@ -23,7 +23,7 @@ import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
 import { assertScheduler, type Scheduler } from "./ports/scheduler";
 import type { ClockConsumer, CreatedTrigger, TriggerFactory } from "./ports/trigger-factory";
-import { ProjectRuntime } from "./runtime/project-runtime";
+import { ProjectRuntime, type StagedTrack } from "./runtime/project-runtime";
 
 export interface EngineOptions {
   readonly clock: Clock;
@@ -224,6 +224,34 @@ export class Engine {
         (trackDef.id.includes("/") ? trackDef.id : qualifyFreeTrack(trackDef.id).value);
       compileTrack(trackDef, nodeId);
     };
+    const stageTrackDefinition = (trackDef: CompilableTrack, nodeId: string): StagedTrack => {
+      const displaced = tracks.get(nodeId);
+      // `compileTrack` intentionally reuses a live entry. Remove it only for the synchronous build,
+      // then restore it if preparation rejects. Nothing outside this owner can observe the gap.
+      tracks.delete(nodeId);
+      let replacement: Track;
+      try {
+        replacement = compileTrack(trackDef, nodeId);
+      } catch (error) {
+        if (displaced !== undefined) tracks.set(nodeId, displaced);
+        throw error;
+      }
+      let settled = false;
+      return {
+        commit() {
+          if (settled) return;
+          settled = true;
+          displaced?.dispose();
+        },
+        rollback() {
+          if (settled) return;
+          settled = true;
+          if (displaced === undefined) tracks.delete(nodeId);
+          else tracks.set(nodeId, displaced);
+          replacement.dispose();
+        },
+      };
+    };
     const disposeTrack = (nodeId: string): void => {
       const track = tracks.get(nodeId);
       if (track) {
@@ -372,6 +400,7 @@ export class Engine {
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
         compileTrack: compileTrackDefinition,
         disposeTrack,
+        stageTrack: stageTrackDefinition,
         addMotionTrack: (motionId, trackId, duration) => {
           const motion = motions.get(motionId);
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
