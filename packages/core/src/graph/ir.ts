@@ -5,6 +5,7 @@ import type {
   ProjectDefinition,
   TrackDefinition,
 } from "../contract/v5";
+import { readPluginBindings } from "../contract/keyframe-shape";
 import { compareCodeUnits } from "./compare";
 import {
   assertAuthoredMotionId,
@@ -14,12 +15,23 @@ import {
 } from "./ids";
 import { orderGraph } from "./order";
 
+/**
+ * The plugin and slot a derived input edge fills.
+ *
+ * Present only on an edge the graph derived from `keyframes.<plugin>.requires`. A generic `observes`
+ * edge has none, which is how the publisher knows to merge one and to scope the other.
+ */
+export interface EdgeRequirement {
+  readonly plugin: string;
+  readonly slot: string;
+}
 export interface GraphEdge {
   readonly observerId: string;
   readonly sourceId: string;
   readonly role: "input" | "output";
   readonly target?: string;
   readonly projection?: InputProjection;
+  readonly requirement?: EdgeRequirement;
 }
 export interface GraphNode {
   readonly id: string;
@@ -57,6 +69,23 @@ function field(value: string): string {
 function targetOrder(edge: GraphEdge): string {
   return edge.target === undefined ? "-" : `:${edge.target}`;
 }
+/**
+ * The identity form of a requirement, `"-"` for an absent one.
+ *
+ * A requirement belongs in identity because two slots of one plugin may intentionally bind the same
+ * source: an IK plugin binding `base` and `destination` to one node is two dependencies, not a
+ * duplicate edge. It also separates a derived edge from a generic `observes` edge to the same
+ * source, which the publisher composes differently. See ADR-044.
+ */
+function requirementIdentity(edge: GraphEdge): string {
+  const requirement = edge.requirement;
+  if (requirement === undefined) return "-";
+  return `${field(requirement.plugin)}${field(requirement.slot)}`;
+}
+/** The ordering form of a requirement's plugin. Same `"-"` before `":"` rule as `targetOrder`. */
+function requirementOrder(edge: GraphEdge): string {
+  return edge.requirement === undefined ? "-" : `:${edge.requirement.plugin}`;
+}
 export function canonicalizeProjection(projection: InputProjection): string {
   if (projection.pick !== undefined) {
     const pickKeys = [...projection.pick].sort(compareCodeUnits);
@@ -82,6 +111,7 @@ export function edgeKey(edge: GraphEdge): string {
     // "-" for an absent target, so an authored target of "" is not the same edge as no target.
     edge.target === undefined ? "-" : field(edge.target),
     field(projection),
+    field(requirementIdentity(edge)),
   ].join("");
 }
 /**
@@ -101,12 +131,16 @@ export function compareEdges(a: GraphEdge, b: GraphEdge): number {
     compareCodeUnits(
       a.projection ? canonicalizeProjection(a.projection) : "",
       b.projection ? canonicalizeProjection(b.projection) : "",
-    )
+    ) ||
+    compareCodeUnits(requirementOrder(a), requirementOrder(b)) ||
+    compareCodeUnits(a.requirement?.slot ?? "", b.requirement?.slot ?? "")
   );
 }
 /** The readable edge label for diagnostics and error text. Never an identity, never a key. */
 export function describeEdge(edge: GraphEdge): string {
-  return `${edge.observerId} <- ${edge.sourceId} (${edge.role})`;
+  const requirement = edge.requirement;
+  const scope = requirement === undefined ? "" : ` [${requirement.plugin}.${requirement.slot}]`;
+  return `${edge.observerId} <- ${edge.sourceId} (${edge.role})${scope}`;
 }
 function freeze<T>(value: T): T {
   return Object.freeze(value);
@@ -304,6 +338,28 @@ export function collectTrack(
     const resolved = resolveObservationEdge(observation, id, ownerId, path);
     diagnostics.push(...resolved.diagnostics);
     if (resolved.edge !== undefined) edges.push(resolved.edge);
+  }
+  // Derived from the authored form, with no plugin registry in reach. Whether `fk` is registered
+  // and declares `base` is `PluginRegistry.resolveForKeyframes`' question; whether the source is a
+  // node, is not this node, and introduces no cycle is this layer's. That split is what lets
+  // `validateV5` build the graph without holding a registry it must not have. See ADR-044.
+  for (const binding of readPluginBindings(track.keyframes)) {
+    const bindingPath = `${id}.keyframes.${binding.authoredPath}`;
+    let boundSourceId: string;
+    try {
+      boundSourceId = qualifySource(binding.source, ownerId);
+    } catch (error) {
+      const message = String(error instanceof Error ? error.message : error);
+      diagnostics.push(diag("requirement-source", bindingPath, message, [binding.source]));
+      continue;
+    }
+    const bindingEdge: GraphEdge = Object.freeze({
+      observerId: id,
+      sourceId: boundSourceId,
+      role: "input",
+      requirement: Object.freeze({ plugin: binding.plugin, slot: binding.slot }),
+    });
+    edges.push(bindingEdge);
   }
   return Object.freeze({ id, owner, authoredIndex, track, edges: Object.freeze(edges) });
 }
