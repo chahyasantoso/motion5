@@ -1,7 +1,8 @@
 import {
   isKeyframeGroup,
-  PLUGIN_REQUIRES_SECTION,
+  PLUGIN_VALUES_SECTION,
   readPluginBindings,
+  readPluginValues,
 } from "../contract/keyframe-shape";
 import type { PluginRequiresBinding } from "../contract/v5";
 
@@ -13,7 +14,7 @@ export interface FlattenedKeyframe {
    * that plugin alone, which is how an author names one owner for a key several plugins claim.
    */
   readonly group?: string;
-  /** `key`, or `group.leaf`, relative to the keyframes record. Diagnostics cite this. */
+  /** `key`, or `group.values.leaf`, relative to the keyframes record. Diagnostics cite this. */
   readonly authoredPath: string;
 }
 export interface FlattenedKeyframes {
@@ -45,8 +46,9 @@ export interface FlattenedKeyframes {
  * spelling is instead guaranteed by reserving the colon in every authored keyframe name. See
  * ADR-041 and ADR-043.
  *
- * The `requires` section is skipped rather than flattened, and surfaced as `bindings`. It is the
- * one authored member of a group that is not a property. See ADR-044.
+ * The `values` section is the only thing read here, which is what makes "`values` is the only
+ * compiled value domain" structural rather than enforced. `requires` is not a sibling of the
+ * leaves to be skipped any more; it is a section of its own, surfaced as `bindings`. See ADR-049.
  *
  * Sorted, so which spelling wins is never a property of authoring order. A collision is already
  * rejected at validation by `keyframes-duplicate-key`, so nothing here reports it a second time.
@@ -69,9 +71,10 @@ export function flattenAuthoredKeyframes(
       claim({ key, authoredPath: key }, property);
       continue;
     }
-    for (const leaf of Object.keys(property).sort()) {
-      if (leaf === PLUGIN_REQUIRES_SECTION) continue;
-      claim({ key: leaf, group: key, authoredPath: `${key}.${leaf}` }, property[leaf]);
+    const values = readPluginValues(property);
+    for (const leaf of Object.keys(values).sort()) {
+      const authoredPath = `${key}.${PLUGIN_VALUES_SECTION}.${leaf}`;
+      claim({ key: leaf, group: key, authoredPath }, values[leaf]);
     }
   }
   return Object.freeze({

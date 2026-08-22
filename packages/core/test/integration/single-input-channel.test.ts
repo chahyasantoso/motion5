@@ -20,12 +20,12 @@ function hold(value: number) {
 // composition and neither is renamed, because the requirement slot is the scope rather than a key.
 const PELVIS: TrackDefinition = {
   id: "pelvis",
-  keyframes: { transform: { x: hold(0), y: hold(0), rotation: hold(30) } },
+  keyframes: { transform: { values: { x: hold(0), y: hold(0), rotation: hold(30) } } },
 };
 const THIGH: TrackDefinition = {
   id: "thigh",
   keyframes: {
-    fk: { length: hold(50), rotation: hold(45), requires: { base: "walk/pelvis" } },
+    fk: { values: { length: hold(50), rotation: hold(45) }, requires: { base: "walk/pelvis" } },
   },
 };
 const project: ProjectDefinition = {

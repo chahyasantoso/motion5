@@ -36,10 +36,14 @@ function armTrack(from: number, to: number): TrackDefinition {
  * is not: `nope` is a structurally valid plugin group naming no registered plugin. That is the
  * recompile failure the issue reproduces, and the reason a compile step cannot be treated as
  * infallible once the graph is already committed.
+ *
+ * The leaf sits under `values` so the group stays well-formed. Authored at the group top level it
+ * would be refused by `validateKeyframes` as `keyframes-missing-values-section` instead, one layer
+ * earlier than the resolver this suite is about. See ADR-049.
  */
 const UNRESOLVABLE: TrackDefinition = {
   id: "arm",
-  keyframes: { nope: { x: ramp(0, 250) } },
+  keyframes: { nope: { values: { x: ramp(0, 250) } } },
 };
 /** Refused by `Motion.replaceTrack`, one step after the recompile has already succeeded. */
 const REFUSED_BY_MOTION: TrackDefinition = {

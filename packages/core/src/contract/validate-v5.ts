@@ -7,7 +7,14 @@ import {
 } from "./v5";
 import { SUPPORTED_TRIGGER_TYPES } from "./v5";
 import { describeDiagnostics, diagnostic as issue } from "./diagnostics";
-import { isKeyframeGroup, PLUGIN_REQUIRES_SECTION } from "./keyframe-shape";
+import {
+  isKeyframeGroup,
+  looksLikeLegacyGroup,
+  PLUGIN_GROUP_SECTIONS,
+  PLUGIN_REQUIRES_SECTION,
+  PLUGIN_VALUES_SECTION,
+  readPluginValues,
+} from "./keyframe-shape";
 import { buildGraphIR } from "../graph/ir";
 
 export interface ValidationResult {
@@ -21,12 +28,14 @@ export interface KeyframeValidationOptions {
   /**
    * Plugin-named groups are an authoring form. A contributed property is a single flat output, so
    * the contribution path passes `false` and keeps the pre-group strictness: an object of objects
-   * contributed as a property stays a `stops-shape` error instead of being read as a group. The
-   * `requires` reservation is scoped to the same flag, because a contributed key is not authored.
+   * contributed as a property stays a `stops-shape` error instead of being read as a group. Both
+   * section reservations are scoped to the same flag, because a contributed key is not authored.
    */
   readonly allowGroups?: boolean;
 }
 const STOPS_REQUIRED = "Authored properties require a stops array.";
+/** `'requires' or 'values'`, so the unknown-section message never hardcodes the legal set twice. */
+const SECTION_NAMES = PLUGIN_GROUP_SECTIONS.map((name) => `'${name}'`).join(" or ");
 const THREE_D_KEYS = ["z", "rotationX", "rotationY"];
 type RawObject = Record<string, unknown>;
 function isObject(value: unknown): value is RawObject {
@@ -56,7 +65,7 @@ export function validateKeyframes(
   // The colon is reserved rather than conventional. `Track` treats a colon key as a plugin's
   // private namespace and never publishes it, so an authored key spelled with one would be
   // animated and then hidden, and `{ "fk:length": ... }` would become a second spelling of the
-  // flattened `{ fk: { length: ... } }`. That is the dual namespace grouping exists to remove.
+  // flattened `{ fk: { values: { length: ... } } }`. That is the dual namespace grouping removes.
   const checkName = (name: string, namePath: string): void => {
     if (!name.includes(":")) return;
     const detail = "must not contain ':', which is reserved for internal keys";
@@ -148,34 +157,79 @@ export function validateKeyframes(
       }
     }
   };
+  /**
+   * The values section: every property the named plugin claims, and the only compiled value domain.
+   *
+   * A leaf is held to exactly the rules a flat property is held to, and claims its compiled key
+   * through the same `claim`, so a leaf colliding with a flat key or with another group's leaf is
+   * still one `keyframes-duplicate-key` reported by one owner.
+   *
+   * An empty section is refused rather than ignored. Omitting `values` is already the way to author
+   * no properties, so an empty one is a field accepted and then ignored, which rule 6 of ADR-033
+   * forbids. Identical reasoning to `keyframes-requires-empty` above. See ADR-049.
+   */
+  const validateValues = (values: unknown, valuesPath: string): void => {
+    if (!isObject(values)) {
+      const detail = "must be an object mapping keyframe names to authored properties";
+      add("keyframes-values-shape", valuesPath, `Plugin values ${detail}.`);
+      return;
+    }
+    const leaves = Object.entries(values);
+    if (leaves.length === 0) {
+      const detail = "must declare at least one property, or be omitted entirely";
+      add("keyframes-values-empty", valuesPath, `Plugin values ${detail}.`);
+      return;
+    }
+    for (const [leaf, leafProperty] of leaves) {
+      const leafPath = `${valuesPath}.${leaf}`;
+      checkName(leaf, leafPath);
+      claim(leaf, leafPath);
+      validateProperty(leafProperty, leafPath);
+    }
+  };
   for (const [key, rawProperty] of Object.entries(keyframes)) {
     const propertyPath = `${path}.${key}`;
-    // A top-level `requires` names no plugin, so a binding written there could never have an owner.
-    // Accepting it would be a second authored spelling with no destination, which is the dual
-    // namespace the group form exists to remove.
-    if (allowGroups && key === PLUGIN_REQUIRES_SECTION) {
-      const detail = "is reserved for the bindings section of a plugin-named group";
+    // A top-level section name addresses no plugin, so neither a property nor a binding written
+    // there could ever have an owner. Accepting one would be a second authored spelling with no
+    // destination, which is the dual namespace the group form exists to remove.
+    if (allowGroups && PLUGIN_GROUP_SECTIONS.includes(key)) {
+      const detail = "is reserved for a section of a plugin-named group";
       add("keyframes-reserved-section", propertyPath, `Keyframe name '${key}' ${detail}.`);
       continue;
     }
     checkName(key, propertyPath);
+    // The pre-ADR-049 form, refused by name and never normalized. Without this branch the entry
+    // falls through to `validateProperty` and is reported as a group with no stops array, which
+    // named the group rather than the mistake the author actually made.
+    if (allowGroups && looksLikeLegacyGroup(rawProperty)) {
+      const detail = "must author its properties under a 'values' section";
+      add("keyframes-missing-values-section", propertyPath, `Plugin group '${key}' ${detail}.`);
+      continue;
+    }
     if (!allowGroups || !isKeyframeGroup(rawProperty)) {
       claim(key, propertyPath);
       validateProperty(rawProperty, propertyPath);
       continue;
     }
-    // One level, not arbitrary depth. A group holds properties, and a property holds stops, so
-    // there is no third level for an author to reach for. `requires` is the one member of a group
-    // that is not a property: it compiles to nothing, so it claims no key and names nothing.
-    for (const [leaf, leafProperty] of Object.entries(rawProperty)) {
-      const leafPath = `${propertyPath}.${leaf}`;
-      if (leaf === PLUGIN_REQUIRES_SECTION) {
-        validateRequires(leafProperty, leafPath);
+    // Two members, one level. A group holds a `values` section of properties and a `requires`
+    // section of bindings; a property holds stops, so there is no third level for an author to
+    // reach for. `requires` compiles to nothing, so it claims no key and names nothing.
+    //
+    // A group of only unknown sections is reachable and is rejected by the errors below, so it
+    // needs no rule of its own. A group that is literally `{}` never reaches here: it names no
+    // section, so it is not a group, and it stays the accepted no-op property it always was.
+    for (const [section, member] of Object.entries(rawProperty)) {
+      const sectionPath = `${propertyPath}.${section}`;
+      if (section === PLUGIN_VALUES_SECTION) {
+        validateValues(member, sectionPath);
         continue;
       }
-      checkName(leaf, leafPath);
-      claim(leaf, leafPath);
-      validateProperty(leafProperty, leafPath);
+      if (section === PLUGIN_REQUIRES_SECTION) {
+        validateRequires(member, sectionPath);
+        continue;
+      }
+      const detail = `must be ${SECTION_NAMES}`;
+      add("keyframes-unknown-section", sectionPath, `Keyframe section '${section}' ${detail}.`);
     }
   }
 }
@@ -309,14 +363,16 @@ function isThreeDProperty(key: string, property: unknown): boolean {
 }
 // Compares leaf names, not flat record keys. A `rotationY` authored inside a group is the same 3D
 // content as a flat one, and reading only the top level made `perspective-usage` stop firing for
-// it: a silently lost warning rather than a rejected project.
+// it: a silently lost warning rather than a rejected project. The leaves now live under `values`,
+// so this asks `readPluginValues` for them rather than iterating the group's own entries, which
+// would only ever see the section name and reintroduce that exact regression. See ADR-049.
 function usesThreeD(track: RawObject): boolean {
   const keyframes = isObject(track.keyframes) ? track.keyframes : null;
   if (!keyframes) return false;
   for (const [key, property] of Object.entries(keyframes)) {
     if (isThreeDProperty(key, property)) return true;
     if (!isKeyframeGroup(property)) continue;
-    for (const [leaf, leafProperty] of Object.entries(property)) {
+    for (const [leaf, leafProperty] of Object.entries(readPluginValues(property))) {
       if (isThreeDProperty(leaf, leafProperty)) return true;
     }
   }

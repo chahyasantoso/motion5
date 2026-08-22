@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import path from "node:path";
 
 export default defineConfig({
@@ -20,5 +20,8 @@ export default defineConfig({
   },
   optimizeDeps: {
     exclude: ["@motion5/core", "@motion5/react"],
+  },
+  test: {
+    setupFiles: ["./test/setup.ts"],
   },
 });

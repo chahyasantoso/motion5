@@ -52,13 +52,13 @@ describe("plugin contribution contract (X-3)", () => {
       },
       compose,
     });
-    const authored = { fk: { boneLength: stops(1) } };
+    const authored = { fk: { values: { boneLength: stops(1) } } };
     const resolved = registry.resolveForKeyframes(authored, "track.keyframes");
     // Real stops, per leaf. A group handed to the hook whole reads as an empty stop list, so the
     // hook would be called with nothing to contribute from.
     expect(calls).toEqual([["boneLength", stops(1).stops]]);
     expect(resolved.diagnostics[0]?.ruleId).toBe("plugin-contribution-failure");
-    expect(resolved.diagnostics[0]?.path).toBe("track.keyframes.fk.boneLength");
+    expect(resolved.diagnostics[0]?.path).toBe("track.keyframes.fk.values.boneLength");
   });
   it("N-6 runs the contribution hook of the plugin that owns the entry", () => {
     const shared = new PluginRegistry();
@@ -74,7 +74,8 @@ describe("plugin contribution contract (X-3)", () => {
     // `transform` owns the leaf its own group named and has no hook, so nothing is contributed.
     // Resolving the hook through a global key map instead runs `fk`'s, which is the wrong plugin
     // for this entry however the two agreed under one owner per key. See ADR-043.
-    const grouped = shared.resolveForKeyframes({ transform: { rotation: stops(1) } });
+    const values = { rotation: stops(1) };
+    const grouped = shared.resolveForKeyframes({ transform: { values } });
     expect(grouped.diagnostics).toEqual([]);
     expect(sharedHook).not.toHaveBeenCalled();
     expect(grouped.preparation.tweenVars).toEqual({});
@@ -90,7 +91,7 @@ describe("plugin contribution contract (X-3)", () => {
     });
     // The group named no registered plugin, so the entry has no owner at all and there is no hook
     // to run. Preparation must not contribute on behalf of a rejected entry.
-    const rejected = orphan.resolveForKeyframes({ mystery: { length: stops(1) } });
+    const rejected = orphan.resolveForKeyframes({ mystery: { values: { length: stops(1) } } });
     expect(rejected.diagnostics.map(({ ruleId }) => ruleId)).toEqual(["plugin-unknown-key"]);
     expect(orphanHook).not.toHaveBeenCalled();
     expect(rejected.preparation.tweenVars).toEqual({});

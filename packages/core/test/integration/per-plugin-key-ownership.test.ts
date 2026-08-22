@@ -31,9 +31,12 @@ function ramp(from: number, to: number) {
 //
 // The parent is now bound through `fk.requires.base` rather than through a track-level input
 // observation with a projection map onto `parentX`, `parentY`, and `parentRotation`. See ADR-044.
+// The claimed leaves live under `fk.values`, beside that section rather than around it. See ADR-049.
 const thigh: TrackDefinition = {
   id: "thigh",
-  keyframes: { fk: { length: hold(50), rotation: hold(45), requires: { base: "walk/pelvis" } } },
+  keyframes: {
+    fk: { values: { length: hold(50), rotation: hold(45) }, requires: { base: "walk/pelvis" } },
+  },
 };
 
 function rig(bone: TrackDefinition): ProjectDefinition {
@@ -46,7 +49,9 @@ function rig(bone: TrackDefinition): ProjectDefinition {
         tracks: [
           {
             id: "pelvis",
-            keyframes: { transform: { x: ramp(0, 200), y: hold(100), rotation: hold(0) } },
+            keyframes: {
+              transform: { values: { x: ramp(0, 200), y: hold(100), rotation: hold(0) } },
+            },
           },
           bone,
         ],
@@ -108,7 +113,7 @@ describe("per-plugin keyframe key ownership", () => {
     const flatRotation: TrackDefinition = {
       id: "thigh",
       keyframes: {
-        fk: { length: hold(50), requires: { base: "walk/pelvis" } },
+        fk: { values: { length: hold(50) }, requires: { base: "walk/pelvis" } },
         rotation: hold(45),
       },
     };

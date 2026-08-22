@@ -9,11 +9,13 @@ import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/f
 
 // Issue #173 and ADR-044. The authored form under test is the plugin-owned one:
 //
-//   keyframes: { fk: { length, rotation, requires: { base: "walk/pelvis" } } }
+//   keyframes: { fk: { values: { length, rotation }, requires: { base: "walk/pelvis" } } }
 //
 // The projection map it replaces made the author repeat the plugin's own input contract, and the
 // projected keys landed in the same flat bag as the track's authored values, where an upstream
 // `rotation` could silently replace a bone's local one.
+//
+// The bindings section sits beside the `values` section rather than beside the leaves, per ADR-049.
 
 function hold(value: number) {
   return {
@@ -55,7 +57,7 @@ const reachPlugin: PluginDefinition = {
 const bone: TrackDefinition = {
   id: "thigh",
   keyframes: {
-    fk: { length: hold(50), rotation: hold(45), requires: { base: "walk/pelvis" } },
+    fk: { values: { length: hold(50), rotation: hold(45) }, requires: { base: "walk/pelvis" } },
   },
 };
 
@@ -69,7 +71,9 @@ function rig(child: TrackDefinition): ProjectDefinition {
         tracks: [
           {
             id: "pelvis",
-            keyframes: { transform: { x: ramp(0, 200), y: hold(100), rotation: hold(0) } },
+            keyframes: {
+              transform: { values: { x: ramp(0, 200), y: hold(100), rotation: hold(0) } },
+            },
           },
           child,
         ],
@@ -116,7 +120,7 @@ describe("plugin-owned requirements end to end", () => {
   it("Q-8 leaves an omitted binding with no edge and lets the plugin own the unbound case", () => {
     const unbound: TrackDefinition = {
       id: "thigh",
-      keyframes: { fk: { length: hold(50), rotation: hold(0) } },
+      keyframes: { fk: { values: { length: hold(50), rotation: hold(0) } } },
     };
     const handle = load(rig(unbound), rigRegistry());
     handle.mount("walk/thigh");
@@ -133,7 +137,10 @@ describe("plugin-owned requirements end to end", () => {
     const dangling: TrackDefinition = {
       id: "thigh",
       keyframes: {
-        fk: { length: hold(50), rotation: hold(45), requires: { base: "walk/missing" } },
+        fk: {
+          values: { length: hold(50), rotation: hold(45) },
+          requires: { base: "walk/missing" },
+        },
       },
     };
     expect(() => load(rig(dangling), rigRegistry())).toThrow(/observation-unknown-source/);
@@ -144,7 +151,7 @@ describe("plugin-owned requirements end to end", () => {
       id: "span",
       keyframes: {
         reach: {
-          weight: hold(1),
+          values: { weight: hold(1) },
           requires: { base: "walk/pelvis", destination: "walk/pelvis" },
         },
       },
@@ -173,7 +180,9 @@ describe("plugin-owned requirements end to end", () => {
           tracks: [
             {
               id: "pelvis",
-              keyframes: { transform: { x: hold(0), y: hold(0), rotation: hold(30) } },
+              keyframes: {
+                transform: { values: { x: hold(0), y: hold(0), rotation: hold(30) } },
+              },
             },
             bone,
           ],
@@ -195,7 +204,10 @@ describe("plugin-owned requirements end to end", () => {
     const bad: TrackDefinition = {
       id: "thigh",
       keyframes: {
-        fk: { length: hold(50), rotation: hold(45), requires: { debug: "walk/pelvis" } },
+        fk: {
+          values: { length: hold(50), rotation: hold(45) },
+          requires: { debug: "walk/pelvis" },
+        },
       },
     };
     expect(() => load(rig(bad), rigRegistry())).toThrow(/plugin-unknown-requirement/);

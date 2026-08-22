@@ -18,6 +18,9 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
   // Each bone's parent is bound through the fk plugin's own `base` requirement rather than through
   // a track-level input observation projecting onto `parentX`, `parentY`, and `parentRotation`.
   // The composed world-space values are identical, which case 6 pins numerically. See ADR-044.
+  //
+  // A group's animated properties live under its `values` section and its bindings beside them,
+  // which is the only authored shape a group has. See ADR-049.
   const walkerProject: ProjectDefinition = {
     schemaVersion: 5,
     motions: [
@@ -29,23 +32,25 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
             id: "pelvis",
             keyframes: {
               transform: {
-                x: {
-                  stops: [
-                    { p: 0, v: 0 },
-                    { p: 1, v: 200 },
-                  ],
-                },
-                y: {
-                  stops: [
-                    { p: 0, v: 100 },
-                    { p: 1, v: 100 },
-                  ],
-                },
-                rotation: {
-                  stops: [
-                    { p: 0, v: 0 },
-                    { p: 1, v: 0 },
-                  ],
+                values: {
+                  x: {
+                    stops: [
+                      { p: 0, v: 0 },
+                      { p: 1, v: 200 },
+                    ],
+                  },
+                  y: {
+                    stops: [
+                      { p: 0, v: 100 },
+                      { p: 1, v: 100 },
+                    ],
+                  },
+                  rotation: {
+                    stops: [
+                      { p: 0, v: 0 },
+                      { p: 1, v: 0 },
+                    ],
+                  },
                 },
               },
             },
@@ -54,17 +59,19 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
             id: "thigh",
             keyframes: {
               fk: {
-                length: {
-                  stops: [
-                    { p: 0, v: 50 },
-                    { p: 1, v: 50 },
-                  ],
-                },
-                rotation: {
-                  stops: [
-                    { p: 0, v: 45 },
-                    { p: 1, v: 45 },
-                  ],
+                values: {
+                  length: {
+                    stops: [
+                      { p: 0, v: 50 },
+                      { p: 1, v: 50 },
+                    ],
+                  },
+                  rotation: {
+                    stops: [
+                      { p: 0, v: 45 },
+                      { p: 1, v: 45 },
+                    ],
+                  },
                 },
                 requires: { base: "walk/pelvis" },
               },
@@ -74,17 +81,19 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
             id: "shin",
             keyframes: {
               fk: {
-                length: {
-                  stops: [
-                    { p: 0, v: 40 },
-                    { p: 1, v: 40 },
-                  ],
-                },
-                rotation: {
-                  stops: [
-                    { p: 0, v: -30 },
-                    { p: 1, v: -30 },
-                  ],
+                values: {
+                  length: {
+                    stops: [
+                      { p: 0, v: 40 },
+                      { p: 1, v: 40 },
+                    ],
+                  },
+                  rotation: {
+                    stops: [
+                      { p: 0, v: -30 },
+                      { p: 1, v: -30 },
+                    ],
+                  },
                 },
                 requires: { base: "walk/thigh" },
               },

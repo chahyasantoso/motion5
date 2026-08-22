@@ -51,9 +51,21 @@ Warnings load and stay readable. Missing `perspective` alongside 3D content, and
 - `keyframes-reserved-separator`, when a flat keyframe name, a group name, or a leaf name contains `:`. The colon marks a plugin's private internal keys, so it is never legal in an authored name.
 - `keyframes-duplicate-key`, when one compiled key is authored twice: a group leaf colliding with another group's leaf, or with a flat key. The path names the second spelling and the message names the first.
 
+### The two sections of a plugin group
+
+A plugin-named group has exactly two members, `values` and `requires`, and both names are reserved. These five rule ids are the whole surface of that rule. See ADR-049.
+
+- `keyframes-missing-values-section`, when a group authors its properties directly under the plugin name instead of under `values`. This is the pre-ADR-049 shape, and it is refused by name rather than normalized: two authoring shapes would be two validation paths and two documentation paths. Wrap the leaves; nothing else changes.
+- `keyframes-unknown-section`, for any key inside a group that is neither `values` nor `requires`. The message names both legal sections. A typo'd section is reported as one rather than misread as a property with no stops.
+- `keyframes-values-shape`, when `values` is present but not an object.
+- `keyframes-values-empty`, when `values` is an empty object. Omitting the section is already how you author no properties, so an empty one would be a field accepted and then ignored.
+- `keyframes-reserved-section`, for a top-level `values` or a top-level `requires`. A section name at the top level addresses no plugin, so nothing written there could have an owner.
+
+Two shapes deliberately stay legal. A group may author `requires` with no `values`, which is how a plugin joins composition to receive an upstream value without animating anything of its own. And a leaf named `values` _inside_ the section is an ordinary property, because the reservation is on section position rather than on the string everywhere.
+
 Malformed or duplicate ids, reserved namespace characters, malformed edges, unknown sources, duplicate edges, self-reference, and cycles are all errors too. Track ids may not contain `/`, and motion ids may not contain `/` or equal `~`, because those characters carry the qualified namespace.
 
-A diagnostic about a grouped keyframe cites the path you typed, `keyframes.fk.length`, not the flattened key the compiler works with. See ADR-041.
+A diagnostic about a grouped keyframe cites the path you typed, `keyframes.fk.values.length`, not the flattened key the compiler works with. See ADR-041 and ADR-049.
 
 ## A frame has two failure owners
 

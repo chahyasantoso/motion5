@@ -12,6 +12,9 @@ import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugi
 // registry-independent shape of the bindings section, `PluginRegistry.resolveForKeyframes` owns
 // whether a named plugin declares a bound slot, and topology is the graph layer's. A test that
 // asserted all three through one entry point would not be able to tell which owner regressed.
+//
+// The bindings section sits beside the `values` section rather than beside the leaves, per ADR-049.
+// Its own authored path is unchanged, which is why every rule id below is too.
 
 function hold(value: number) {
   return {
@@ -53,7 +56,7 @@ describe("plugin-owned input requirements", () => {
 
   it("Q-2 reports a binding to a slot the named plugin never declared", () => {
     const resolved = registry(fkStub).resolveForKeyframes({
-      fk: { length: hold(50), requires: { destination: "walk/hand" } },
+      fk: { values: { length: hold(50) }, requires: { destination: "walk/hand" } },
     });
     const unknown = resolved.diagnostics.find(
       ({ ruleId }) => ruleId === "plugin-unknown-requirement",
@@ -77,7 +80,7 @@ describe("plugin-owned input requirements", () => {
     // `requires` is metadata, not a property. Flattened as a leaf it would reach the percent map
     // and the interpolator as a property with no stops, and the track would hold still.
     const flattened = flattenAuthoredKeyframes({
-      fk: { length: hold(50), requires: { base: "walk/pelvis" } },
+      fk: { values: { length: hold(50) }, requires: { base: "walk/pelvis" } },
     });
     expect(Object.keys(flattened.keyframes)).toEqual(["length"]);
     expect(flattened.bindings).toEqual([
