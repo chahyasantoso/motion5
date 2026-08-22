@@ -87,25 +87,33 @@ A track has a unique local `id`, optional `duration`, optional keyframes, and op
 
 ## Keyframes
 
-A keyframe entry is either a property or a plugin-named group. Grouping scopes ownership; it does not rename leaves:
+A keyframe entry is either a property or a plugin-named group. A group has exactly two members, both reserved by name: `values` holds the properties the named plugin claims, and `requires` holds the graph bindings that plugin owns. Grouping scopes ownership; it does not rename leaves:
 
 ```text
 keyframes: {
   opacity: { stops: [ ... ] },
   transform: {
-    x: { stops: [ ... ] },
-    y: { stops: [ ... ] },
-    rotation: { stops: [ ... ] },
+    values: {
+      x: { stops: [ ... ] },
+      y: { stops: [ ... ] },
+      rotation: { stops: [ ... ] },
+    },
   },
   fk: {
-    length: { stops: [ ... ] },
-    rotation: { stops: [ ... ] },
+    values: {
+      length: { stops: [ ... ] },
+      rotation: { stops: [ ... ] },
+    },
     requires: { base: "walk/pelvis" },
   },
 }
 ```
 
-A group name addresses a registered plugin and every property leaf must be a key that plugin claims. The group is flattened to unprefixed leaves before interpolation and composition. Nesting is one level deep.
+A group name addresses a registered plugin and every leaf of its `values` section must be a key that plugin claims. The section is flattened to unprefixed leaves before interpolation and composition, and it is the only compiled value domain. Nesting is one level deep inside `values`.
+
+Because both section names are reserved, a group is recognised by the sections it names rather than by the shape of its leaves. That is what lets the registry-free contract layer tell a section from a property, report a typo'd section as `keyframes-unknown-section`, and refuse the pre-v5-final leaf form as `keyframes-missing-values-section` instead of as a property with no stops array. There is one authored group shape and no compatibility form. See ADR-049.
+
+Two shapes are deliberately legal and worth knowing. A group may author `requires` with no `values`, which is how a plugin joins composition to receive an upstream value without animating anything itself. And a leaf named `values` inside the section is an ordinary property, because the reservation is on section position rather than on the string everywhere.
 
 More than one plugin may claim the same key. `transformPlugin` claims `x`, `y`, and `rotation`, while `fkPlugin` claims `length` and `rotation`. With both registered, flat `rotation` is `plugin-ambiguous-key`; author a bone under `fk` and a root under `transform`.
 
@@ -122,13 +130,15 @@ const fkPlugin = {
 };
 ```
 
-An author binds an optional slot inside that plugin's group:
+An author binds an optional slot in that plugin's group, beside its `values` section:
 
-```js
+```text
 keyframes: {
   fk: {
-    length: { stops: [ ... ] },
-    rotation: { stops: [ ... ] },
+    values: {
+      length: { stops: [ ... ] },
+      rotation: { stops: [ ... ] },
+    },
     requires: {
       base: "walk/pelvis",
     },
@@ -136,21 +146,24 @@ keyframes: {
 }
 ```
 
-`requires` is metadata, not a keyframe. It is skipped by flattening and creates no compiled property. Omitting `requires`, or omitting one slot, creates no edge; the plugin owns its unbound behavior. Every configured slot must be declared by the named plugin, otherwise load fails with `plugin-unknown-requirement`.
+`requires` is metadata, not a keyframe. Flattening reads `values` and nothing else, so a binding creates no compiled property at all rather than being skipped on the way past. Omitting `requires`, or omitting one slot, creates no edge; the plugin owns its unbound behavior. Every configured slot must be declared by the named plugin, otherwise load fails with `plugin-unknown-requirement`.
 
 The graph derives one input edge per binding. Unknown sources, self-reference, duplicate edges, and cycles are rejected before mount. A requirement is part of edge identity, so two slots such as `base` and `destination` may intentionally bind the same source.
 
 A binding is the only way a value enters composition. A source bound to `fk.requires.base` arrives at the FK plugin as `inputs.base`, retaining the source's natural keys such as `x`, `y`, and `rotation`. It cannot overwrite the track's authored `values.rotation`: the two are separated by object scope rather than by renamed keys, and there is no flat input bag beside the scope for either of them to land in. See ADR-044 and ADR-047.
 
-The contract layer owns binding shape, the plugin registry owns plugin and slot resolution, and graph construction owns topology. This keeps validation registry-independent and avoids duplicate normalization owners. See ADR-044.
+The contract layer owns section and binding shape, the plugin registry owns plugin and slot resolution, and graph construction owns topology. This keeps validation registry-independent and avoids duplicate normalization owners. See ADR-044 and ADR-049.
 
 ### Keyframe namespace rules
 
 - A keyframe name may not contain `:` in a flat key, group name, or leaf name. The colon marks private internal keys and is rejected with `keyframes-reserved-separator`.
+- A group holds only `values` and `requires`. Anything else is `keyframes-unknown-section`, and a group authoring its leaves at the top level is `keyframes-missing-values-section`.
+- A present `values` must be a non-empty object: `keyframes-values-shape` and `keyframes-values-empty`. Omitting it is how you author no properties.
 - Requirement slots may not be empty or contain `:`. Malformed sections use `keyframes-requires-shape`, `keyframes-requires-empty`, `keyframes-requires-slot`, and `keyframes-requires-source`.
-- A top-level `requires` is rejected with `keyframes-reserved-section` because it has no owning plugin.
+- A top-level `values` or `requires` is rejected with `keyframes-reserved-section` because it has no owning plugin.
+- An empty object is an accepted no-op property rather than a group, because it names no section.
 - One compiled key may be authored once. Collisions use `keyframes-duplicate-key`.
-- 3D content is detected by leaf name, including inside groups, and missing perspective is a warning.
+- 3D content is detected by leaf name, including inside a `values` section, and missing perspective is a warning.
 
 ## Observation edges
 
@@ -196,6 +209,8 @@ interface Diagnostic {
 
 Errors reject a candidate project before it replaces the active project. Warnings load and remain readable.
 
+A diagnostic about a grouped leaf cites the authored path, including the section: `keyframes.fk.values.length`.
+
 ## Rejected input
 
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, malformed bindings and edges, unknown sources, duplicate edges, self-reference, cycles, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, and a track `use`. Flat keys with multiple plugin claimants are also errors. Missing perspective for detected 3D content and unused free tracks are warnings.
+Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, malformed group sections, malformed bindings and edges, unknown sources, duplicate edges, self-reference, cycles, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Flat keys with multiple plugin claimants are errors too. Missing perspective for detected 3D content and unused free tracks are warnings.
