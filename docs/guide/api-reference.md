@@ -2,6 +2,18 @@
 
 Grouped by entrypoint, because the entrypoint is the contract. `packages/core/package.json` declares these and nothing else; source paths in a workspace checkout are not covered by this document.
 
+## Entrypoint tiers
+
+A declared subpath is not automatically production API. The tier says who may import it, and for the test-support tier that answer is enforced by `scripts/boundary-scan.mjs` rather than by this table: no package under `packages/*` except core, and no app under `apps/*`, may name it. See ADR-036 and ADR-048.
+
+| subpath                                             | tier           | may a production consumer import it |
+| --------------------------------------------------- | -------------- | ----------------------------------- |
+| `@motion5/core`                                     | public         | yes                                 |
+| `@motion5/core/adapters`, `/adapters/browser-clock` | public adapter | yes                                 |
+| `@motion5/core/plugins/fk`, `/plugins/transform`    | public plugin  | yes                                 |
+| `@motion5/core/testing`                             | test support   | no, enforced by the boundary scan   |
+| `@motion5/core/internal`                            | unadvertised   | no stability promise                |
+
 ## @motion5/core
 
 **Engine and handles.** `Engine`, and the types `EngineOptions`, `ProjectHandle`, and `TrackHandle`.
@@ -57,9 +69,11 @@ Optional implementations for the composition root.
 
 Registering both is the rig case: both claim `rotation`, so flat `rotation` is ambiguous. Author a bone as `fk: { length, rotation, requires: { base: "walk/pelvis" } }` and a root as `transform: { x, y, rotation }`. The parent's natural `x`, `y`, and `rotation` values arrive inside `inputs.base`; no `parentX`, `parentY`, or `parentRotation` is needed, and there is no projection primitive left with which to invent one. See ADR-043, ADR-044, and ADR-047.
 
-## @motion5/core/ports/fakes
+## @motion5/core/testing
 
-Test doubles supported for tests and examples: `createFakeInterpolator`, `createFakeScheduler`, `createFakeTriggerPort`, `createFakeTrackRegistry`, and `ScheduledJob`.
+Test support, and the only tier a production consumer may not import: `createFakeInterpolator`, `createFakeScheduler`, `createFakeTriggerPort`, `createFakeTrackRegistry`, and `ScheduledJob`.
+
+These are the implementations the core suite runs the port contract suite against, per TR-P-05, so they ship inside the package rather than beside it. The restriction is mechanical, not advisory: `scripts/boundary-scan.mjs` scans every workspace declared in the root `package.json`, `apps/*` included, and reports a `testing entrypoint import` violation for any consumer that names this path or reaches `packages/core/src/testing` directly. This path replaces `@motion5/core/ports/fakes`, which is no longer declared. See ADR-048.
 
 ## @motion5/core/internal
 
