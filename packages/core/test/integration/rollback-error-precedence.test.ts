@@ -3,7 +3,7 @@ import type { MotionDefinition, ProjectDefinition, TrackDefinition } from "../..
 import { createDefaultTriggerFactory } from "../../src/adapters/trigger-factory/default";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type {
   CreatedTrigger,
   TriggerFactory,

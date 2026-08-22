@@ -7,7 +7,7 @@ import {
   createFakeInterpolator,
   createFakeScheduler,
   createFakeTrackRegistry,
-} from "../../../src/ports/fakes";
+} from "../../../src/testing/fakes";
 
 const DISPOSED = "Track is disposed.";
 const TIMELINE_FAILURE = "interpolation timeline refused the progress";

@@ -4,7 +4,7 @@ import { PluginRegistry } from "../../src/domain/plugins";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { transformPlugin } from "../../src/plugins/transform";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 
 /**
  * Issue #176. `ProjectRuntime.#replaceTrack` committed the candidate graph first and only then

@@ -3,7 +3,7 @@ import type { ProjectDefinition } from "../../src/contract/v5";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeScheduler } from "../../src/ports/fakes";
+import { createFakeScheduler } from "../../src/testing/fakes";
 import type { Patch } from "../../src/runtime/patch-registry";
 import { createRealGsapSeam } from "../support/real-gsap";
 

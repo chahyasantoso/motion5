@@ -29,9 +29,9 @@
       "types": "./dist/plugins/fk.d.ts",
       "default": "./dist/plugins/fk.js"
     },
-    "./ports/fakes": {
-      "types": "./dist/ports/fakes.d.ts",
-      "default": "./dist/ports/fakes.js"
+    "./testing": {
+      "types": "./dist/testing/fakes.d.ts",
+      "default": "./dist/testing/fakes.js"
     }
   }
 }

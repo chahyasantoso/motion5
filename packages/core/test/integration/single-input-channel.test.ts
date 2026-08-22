@@ -5,7 +5,7 @@ import { Engine } from "../../src/engine";
 import { fkPlugin } from "../../src/plugins/fk";
 import { transformPlugin } from "../../src/plugins/transform";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 
 function hold(value: number) {
   return {

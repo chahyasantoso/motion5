@@ -12,7 +12,7 @@ import {
   createFakeInterpolator,
   createFakeScheduler,
   createFakeTriggerPort,
-} from "../../src/ports/fakes";
+} from "../../src/testing/fakes";
 import {
   assertTriggerFactory,
   type TriggerFactory,

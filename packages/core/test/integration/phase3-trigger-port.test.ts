@@ -9,7 +9,7 @@ import {
   createFakeScheduler,
   createFakeTrackRegistry,
   createFakeTriggerPort,
-} from "../../src/ports/fakes";
+} from "../../src/testing/fakes";
 import { createManualTriggerPort, assertTriggerPort } from "../../src/ports/trigger";
 
 describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {

@@ -6,7 +6,7 @@ import {
   createFakeInterpolator,
   createFakeScheduler,
   createFakeTriggerPort,
-} from "../../src/ports/fakes";
+} from "../../src/testing/fakes";
 import type { TriggerFactory } from "../../src/ports/trigger-factory";
 
 function track(id: string) {

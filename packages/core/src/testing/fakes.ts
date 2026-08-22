@@ -1,6 +1,11 @@
-import type { InterpolationTimeline, Interpolator } from "./interpolator";
-import type { Cancel, Scheduler } from "./scheduler";
-import type { TriggerPort } from "./trigger";
+/**
+ * Test support. Reachable only through `@motion5/core/testing`, which no production consumer or
+ * app may import; `scripts/boundary-scan.mjs` enforces that. These are the implementations the
+ * core suite runs the port contract suite against, per TR-P-05. See ADR-048.
+ */
+import type { InterpolationTimeline, Interpolator } from "../ports/interpolator";
+import type { Cancel, Scheduler } from "../ports/scheduler";
+import type { TriggerPort } from "../ports/trigger";
 interface FakeStop {
   readonly p: number;
   readonly v: unknown;

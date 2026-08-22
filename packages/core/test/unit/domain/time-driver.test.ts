@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createTimeDriver } from "../../../src/adapters/trigger-factory/time-driver";
 import type { ClockTick } from "../../../src/ports/clock";
-import { createFakeTriggerPort } from "../../../src/ports/fakes";
+import { createFakeTriggerPort } from "../../../src/testing/fakes";
 import type { CreatedTrigger } from "../../../src/ports/trigger-factory";
 
 /**

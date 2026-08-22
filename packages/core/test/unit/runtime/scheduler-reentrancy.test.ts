@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
-import { createFakeScheduler } from "../../../src/ports/fakes";
+import { createFakeScheduler } from "../../../src/testing/fakes";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
 
 const project: ProjectDefinition = {

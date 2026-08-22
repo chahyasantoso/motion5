@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type { MotionDefinition, TrackDefinition } from "../../src/contract/v5";
 
 const emptyProject = { schemaVersion: 5 as const, projectId: "runtime-motion", motions: [] };

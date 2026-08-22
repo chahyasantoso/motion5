@@ -5,7 +5,7 @@ import { PatchRegistry } from "../../core/src/runtime/patch-registry";
 import { PluginRegistry } from "../../core/src/domain/plugins";
 import { Engine } from "../../core/src/engine";
 import { createManualClock } from "../../core/src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../core/src/ports/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "../../core/src/testing/fakes";
 import { usePatch } from "../src/index";
 
 function publish(registry: PatchRegistry, tick: number, opacity: number): void {

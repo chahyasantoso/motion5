@@ -4,7 +4,7 @@ import { createDefaultTriggerFactory } from "../../src/adapters/trigger-factory/
 import { Motion } from "../../src/domain/motion";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock, type Clock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type {
   CreatedTrigger,
   TriggerFactory,

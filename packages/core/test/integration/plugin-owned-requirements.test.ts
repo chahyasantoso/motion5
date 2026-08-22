@@ -5,7 +5,7 @@ import { PluginRegistry, type PluginDefinition } from "../../src/domain/plugins"
 import { fkPlugin } from "../../src/plugins/fk";
 import { transformPlugin } from "../../src/plugins/transform";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 
 // Issue #173 and ADR-044. The authored form under test is the plugin-owned one:
 //
