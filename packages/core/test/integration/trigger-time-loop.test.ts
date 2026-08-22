@@ -9,7 +9,7 @@ import {
 import { Motion } from "../../src/domain/motion";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 
 const LOOPING: MotionDefinition["trigger"] = { type: "time", duration: 100, repeat: 1, yoyo: true };
 const TWICE: MotionDefinition["trigger"] = { type: "time", duration: 100, repeat: 1 };
