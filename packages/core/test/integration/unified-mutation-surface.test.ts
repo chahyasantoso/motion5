@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
-import type { MotionDefinition, ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
+import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
 
 function ramp(from: number, to: number) {
   return {
@@ -77,11 +77,7 @@ describe("unified runtime mutation surface (W5)", () => {
   it("reads dependants from the committed graph and rejects source removal", () => {
     const handle = makeHandle();
     const root = handle.addTrack(track("root", 0, 100));
-    const child = handle.addTrack(
-      track("child", 0, 50, [
-        { source: "~/root", role: "input", projection: { map: { x: "parentX" } } },
-      ]),
-    );
+    const child = handle.addTrack(track("child", 0, 50, [{ source: "~/root" }]));
     expect(handle.dependantsOf(root.id)).toEqual([child.id]);
     expect(() => root.remove()).toThrow(/depend|unknown-source/);
     expect(handle.dependantsOf(root.id)).toEqual([child.id]);
@@ -93,11 +89,7 @@ describe("unified runtime mutation surface (W5)", () => {
     const handle = makeHandle();
     const root = handle.addTrack(track("root", 0, 100));
     const child = handle.addTrack(track("child", 0, 50));
-    const observation = {
-      source: root.id,
-      role: "input" as const,
-      projection: { map: { x: "parentX" } },
-    };
+    const observation = { source: root.id };
     child.addObserve(observation);
     expect(handle.dependantsOf(root.id)).toEqual([child.id]);
     child.removeObserve(observation);

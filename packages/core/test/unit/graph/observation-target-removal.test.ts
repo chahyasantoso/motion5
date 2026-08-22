@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ObservationDefinition, ProjectDefinition } from "../../../src/contract/v5";
 import { validateV5 } from "../../../src/contract/validate-v5";
 import type { GraphEdge } from "../../../src/graph/ir";
-import { compareEdges, edgeKey, resolveObservationEdge } from "../../../src/graph/ir";
+import { resolveObservationEdge } from "../../../src/graph/ir";
 import { ObservationState } from "../../../src/graph/observation-state";
 
 /**
@@ -30,12 +30,6 @@ const OUTPUT_WITH_TARGET = {
   role: "output",
   target: "pointer",
 } as unknown as ObservationDefinition;
-
-const PROJECTED: ObservationDefinition = {
-  source: "root",
-  role: "input",
-  projection: { map: { x: "parentX" } },
-};
 
 /**
  * Two input edges to one source, separated only by the removed field.
@@ -68,6 +62,12 @@ const TWO_TARGETS = {
 const ruleIds = (diagnostics: readonly { readonly ruleId: string }[]): readonly string[] =>
   diagnostics.map(({ ruleId }) => ruleId);
 
+// `V-6` retires with the generic input channel it guarded: it pinned that a projected input
+// observation still resolved to one identified, ordered edge, and there is no projected input
+// observation left to resolve. `J-4` refuses the field it authored. See ADR-047.
+//
+// The target guard deliberately runs ahead of the two refusals ADR-047 adds, so `V-2` through
+// `V-4` still report `observation-target-unsupported` for a fixture that carries a role too.
 describe("ObservationDefinition.target is removed, not ignored", () => {
   it("V-1 declares no target on the authored observation or on the graph edge", () => {
     // Red in `typecheck` rather than in the runner: both constants are `true` at run time on the
@@ -113,21 +113,5 @@ describe("ObservationDefinition.target is removed, not ignored", () => {
     expect(state.hasEdge(stray)).toBe(true);
     expect(() => state.addEdge(stray)).toThrow(TypeError);
     expect(state.snapshot().edges).toEqual([live]);
-  });
-
-  it("V-6 still resolves a projected input observation to one identified, ordered edge", () => {
-    // Passes on the parent by design and is not claimed as red: it is the guard that the generic
-    // primitive survives the removal, so a change that deleted the edge would read as green here.
-    const resolved = resolveObservationEdge(PROJECTED, "hero/child", "hero", PATH);
-    expect(resolved.diagnostics).toEqual([]);
-    expect(resolved.edge).toBeDefined();
-    const expected: GraphEdge = {
-      observerId: "hero/child",
-      sourceId: "hero/root",
-      role: "input",
-      projection: { map: { x: "parentX" } },
-    };
-    expect(edgeKey(resolved.edge!)).toBe(edgeKey(expected));
-    expect(compareEdges(resolved.edge!, expected)).toBe(0);
   });
 });

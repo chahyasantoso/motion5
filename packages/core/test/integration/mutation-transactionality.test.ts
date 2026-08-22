@@ -40,9 +40,9 @@ function ramp(from: number, to: number) {
 // Both plugins are registered, so `rotation` has two claimants and each track names the one it
 // means. `x` and `y` are claimed by `transform` alone and keep their flat spelling. See ADR-043.
 //
-// The dependent's edge is derived from `fk.requires.base` rather than authored as an input
-// observation, which is deliberate here: a derived edge is held to the same topology rules, so
-// destroying its source is still `observation-unknown-source`. See ADR-044.
+// The dependent's edge is derived from `fk.requires.base`, which is now the only way a value enters
+// composition. A derived edge is held to the same topology rules, so destroying its source is still
+// `observation-unknown-source`. See ADR-044 and ADR-047.
 const rootTrack: TrackDefinition = {
   id: "root",
   keyframes: {
@@ -108,13 +108,7 @@ describe("runtime mutation transactionality (W2)", () => {
     const invalid: TrackDefinition = {
       id: "child",
       keyframes: { x: ramp(0, 10) },
-      observes: [
-        {
-          source: "~/missing",
-          role: "input",
-          projection: { map: { x: "parentX" } },
-        },
-      ],
+      observes: [{ source: "~/missing" }],
     };
 
     expect(() => handle.adopt(invalid, owner)).toThrow(/observation-unknown-source/);
@@ -136,13 +130,7 @@ describe("runtime mutation transactionality (W2)", () => {
     const invalid: TrackDefinition = {
       id: "self",
       keyframes: { x: ramp(0, 10) },
-      observes: [
-        {
-          source: "~/self",
-          role: "input",
-          projection: { map: { x: "selfX" } },
-        },
-      ],
+      observes: [{ source: "~/self" }],
     };
 
     expect(() => handle.adopt(invalid, owner)).toThrow(/observation-self-reference/);

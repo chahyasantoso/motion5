@@ -193,7 +193,7 @@ describe("schema v5 validator", () => {
     );
   });
 
-  it("rejects invalid observation roles, unknown sources, self references, and cycles", () => {
+  it("rejects unknown sources, self references, and cycles", () => {
     const result = validateV5({
       schemaVersion: 5,
       motions: [
@@ -201,7 +201,7 @@ describe("schema v5 validator", () => {
           id: "hero",
           trigger: { type: "manual" },
           tracks: [
-            { id: "a", observes: [{ source: "b", role: "input" }] },
+            { id: "a", observes: [{ source: "b" }] },
             { id: "b", observes: [{ source: "a" }] },
           ],
         },
@@ -220,7 +220,7 @@ describe("schema v5 validator", () => {
         {
           id: "hero",
           trigger: { type: "manual" },
-          tracks: [{ id: "pointer", observes: [{ source: "~/cursor", role: "input" }] }],
+          tracks: [{ id: "pointer", observes: [{ source: "~/cursor" }] }],
         },
       ],
       freeTracks: [{ id: "cursor" }],

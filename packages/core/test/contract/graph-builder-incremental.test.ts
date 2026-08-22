@@ -38,7 +38,7 @@ describe("IncrementalGraphBuilder Equivalence", () => {
             ],
           },
         },
-        observes: [{ source: "m1/t1", role: "input", projection: { pick: ["x"] } }],
+        observes: [{ source: "m1/t1" }],
       },
     ],
   });
@@ -71,7 +71,7 @@ describe("IncrementalGraphBuilder Equivalence", () => {
           ],
         },
       },
-      observes: [{ source: "~/f1", role: "input", projection: { pick: ["y"] } }],
+      observes: [{ source: "~/f1" }],
     };
 
     const nextProject: ProjectDefinition = {
