@@ -3,23 +3,29 @@
  * app may import; `scripts/boundary-scan.mjs` enforces that. These are the implementations the
  * core suite runs the port contract suite against, per TR-P-05. See ADR-048.
  */
+import { readCompilableStops } from "../contract/authored-leaf";
+import type { AuthoredStop } from "../contract/v5";
 import type { InterpolationTimeline, Interpolator } from "../ports/interpolator";
 import type { Cancel, Scheduler } from "../ports/scheduler";
 import type { TriggerPort } from "../ports/trigger";
-interface FakeStop {
-  readonly p: number;
-  readonly v: unknown;
-}
-function readStops(config: unknown): Record<string, readonly FakeStop[]> {
+/**
+ * Which authored leaves this fake publishes, decided by the shared reader rather than by a private
+ * copy of it.
+ *
+ * The private copy this replaced accepted any non-empty authored list, so a stop whose position did
+ * not parse, or one carrying no value, published a key the real compiler drops. A fake that
+ * publishes keys the production pipeline never produces makes a schema mistake look like a
+ * composition bug, which is the failure `LF-3` states as an assertion. See issue #192.
+ */
+function readLeaves(config: unknown): Record<string, readonly AuthoredStop[]> {
   if (!config || typeof config !== "object" || !("keyframes" in config)) return {};
   const keyframes = (config as { keyframes?: unknown }).keyframes;
   if (!keyframes || typeof keyframes !== "object" || Array.isArray(keyframes)) return {};
-  const result: Record<string, readonly FakeStop[]> = {};
+  const result: Record<string, readonly AuthoredStop[]> = {};
   for (const [key, property] of Object.entries(keyframes)) {
-    if (!property || typeof property !== "object" || !("stops" in property)) continue;
-    const stops = (property as { stops?: unknown }).stops;
-    if (!Array.isArray(stops) || stops.length === 0) continue;
-    result[key] = stops as readonly FakeStop[];
+    const stops = readCompilableStops(property);
+    if (stops.length === 0) continue;
+    result[key] = stops;
   }
   return result;
 }
@@ -27,7 +33,7 @@ function interpolate(a: unknown, b: unknown, amount: number): unknown {
   if (typeof a === "number" && typeof b === "number") return a + (b - a) * amount;
   return amount < 1 ? a : b;
 }
-function valueAt(stops: readonly FakeStop[], progress: number): unknown {
+function valueAt(stops: readonly AuthoredStop[], progress: number): unknown {
   const first = stops[0];
   if (!first) return undefined;
   if (progress <= first.p) return first.v;
@@ -53,12 +59,12 @@ export function createFakeInterpolator(): Interpolator {
         typeof config.duration === "number"
           ? config.duration
           : 0;
-      const stops = readStops(config);
+      const leaves = readLeaves(config);
       const state: Record<string, unknown> = {};
       let currentProgress = 0;
       let killed = false;
       const update = () => {
-        for (const [key, propertyStops] of Object.entries(stops))
+        for (const [key, propertyStops] of Object.entries(leaves))
           state[key] = valueAt(propertyStops, currentProgress);
       };
       update();

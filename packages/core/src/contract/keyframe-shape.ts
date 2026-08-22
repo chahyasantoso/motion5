@@ -1,3 +1,4 @@
+import { readAuthoredLeaf } from "./authored-leaf";
 import type { AuthoredPluginGroup, PluginRequiresBinding } from "./v5";
 
 /**
@@ -44,12 +45,15 @@ function isObject(value: unknown): value is Record<string, unknown> {
 /**
  * Whether an authored keyframe entry is a plugin-named group rather than a property.
  *
- * Exact rather than heuristic. A group is an object with no `stops` array that names at least one
- * reserved section. Both section names are reserved for the same reason the colon is, so this test
- * needs no plugin registry and makes no guess about what the author meant. Whether the group name
- * addresses a registered plugin, whether that plugin claims each leaf, and whether it declares each
- * bound slot are all ownership rather than schema shape; `plugin-unknown-key` and
+ * Exact rather than heuristic. A group is an object that is not itself an animated leaf and that
+ * names at least one reserved section. Both section names are reserved for the same reason the colon
+ * is, so this test needs no plugin registry and makes no guess about what the author meant. Whether
+ * the group name addresses a registered plugin, whether that plugin claims each leaf, and whether it
+ * declares each bound slot are all ownership rather than schema shape; `plugin-unknown-key` and
  * `plugin-unknown-requirement` own them at resolve time.
+ *
+ * The leaf test is `readAuthoredLeaf` rather than an inline array check, so this predicate and the
+ * compiler cannot end up disagreeing about what a leaf is. See issue #192.
  *
  * `some` and not `every`, so a group carrying an unknown sibling is still read as a group and
  * reported as `keyframes-unknown-section` rather than misdiagnosed as a property. An object naming
@@ -58,7 +62,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
  * See ADR-041, ADR-044, and ADR-049.
  */
 export function isKeyframeGroup(value: unknown): value is AuthoredPluginGroup {
-  if (!isObject(value) || Array.isArray(value.stops)) return false;
+  if (!isObject(value) || readAuthoredLeaf(value).kind === "animated") return false;
   const names = Object.keys(value);
   if (names.length === 0) return false;
   return names.some((name) => PLUGIN_GROUP_SECTIONS.includes(name));
@@ -74,7 +78,7 @@ export function isKeyframeGroup(value: unknown): value is AuthoredPluginGroup {
  * See ADR-049.
  */
 export function looksLikeLegacyGroup(value: unknown): boolean {
-  if (!isObject(value) || Array.isArray(value.stops)) return false;
+  if (!isObject(value) || readAuthoredLeaf(value).kind === "animated") return false;
   const names = Object.keys(value);
   if (names.length === 0) return false;
   if (names.some((name) => PLUGIN_GROUP_SECTIONS.includes(name))) return false;

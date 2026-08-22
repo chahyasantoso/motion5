@@ -1,3 +1,4 @@
+import { readCompilableStops } from "../contract/authored-leaf";
 import type { AuthoredStop, Diagnostic } from "../contract/v5";
 
 export interface CompiledProperty {
@@ -28,13 +29,6 @@ function toPercentKey(position: number): string {
 function percentValue(percent: string): number {
   return Number.parseFloat(percent.slice(0, -1));
 }
-function readStops(value: unknown): readonly AuthoredStop[] {
-  if (!isRecord(value) || !Array.isArray(value.stops)) return [];
-  return value.stops.filter(
-    (stop): stop is AuthoredStop =>
-      isRecord(stop) && typeof stop.p === "number" && Number.isFinite(stop.p) && "v" in stop,
-  );
-}
 
 /**
  * Compile authored properties without projecting them onto a sibling's percent grid.
@@ -42,6 +36,10 @@ function readStops(value: unknown): readonly AuthoredStop[] {
  * Motion5 intentionally seeds each proxy property from its first authored value, even
  * when that stop is after 0%. This preserves the leading hold without inventing a 0%
  * keyframe, unlike the oracle's 0%-only proxy seeding.
+ *
+ * Which stops a leaf contributes is `readCompilableStops`, not a local reader. That is the one
+ * owner of the leaf shape, so this compiler and the fake interpolator cannot disagree about what a
+ * malformed stop publishes. See issue #192.
  */
 export function compilePercentKeyframes(keyframes: unknown, path = "keyframes"): CompiledKeyframes {
   if (!isRecord(keyframes))
@@ -85,7 +83,7 @@ export function compilePercentKeyframes(keyframes: unknown, path = "keyframes"):
   for (const [key, property] of Object.entries(keyframes).sort(([left], [right]) =>
     left.localeCompare(right),
   )) {
-    const stops = readStops(property);
+    const stops = readCompilableStops(property);
     const first = stops[0];
     if (!first) continue;
     const frozenStops = Object.freeze([...stops]);
