@@ -47,7 +47,7 @@ A group has exactly two possible members and nesting stays one level inside `val
 
 **The wrapper is required, in v5, now.** Not optional, no migration window, no schema v6. Scope item 8 of the issue supplies the reason itself: two authoring shapes create two validation paths and two documentation paths, which TR-A-08 bans and rule 6 of ADR-033 forbids. The old form is refused with a dedicated rule id, never normalized.
 
-The cost is that no author may animate a flat property named `values` and no plugin may claim that key at group level. Both are the existing `requires` precedent exactly, and the reservation is on section *position*: a leaf named `values` inside the section is an ordinary property, which `Y-8` pins.
+The cost is that no author may animate a flat property named `values` and no plugin may claim that key at group level. Both are the existing `requires` precedent exactly, and the reservation is on section _position_: a leaf named `values` inside the section is an ordinary property, which `Y-8` pins.
 
 ### Ownership
 
