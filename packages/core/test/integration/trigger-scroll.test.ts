@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { MotionDefinition } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type { ScrollSource } from "../../src/adapters/scroll-trigger";
 import {
   createTriggerFactory,
