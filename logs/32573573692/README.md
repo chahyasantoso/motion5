@@ -1,0 +1,404 @@
+# CI log archive: 32573573692
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: feat/plugin-group-values-section
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/32573573692
+- Captured: 2026-08-22T12:39:52Z
+
+## Failed job output
+
+```text
+integration (node 24)	Run npm run test:integration	﻿2026-08-22T12:39:35.4117870Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:35.4118275Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:35.4140428Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:35.4140884Z env:
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:35.4141173Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:35.4141398Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:35.5586912Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:35.5587474Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:35.5588014Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:35.5588199Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:35.9001661Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:35.9005294Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:35.9005818Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.4797254Z  ^[[32m✓^[[39m packages/core/test/integration/engine-teardown-ownership.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.4875267Z  ^[[32m✓^[[39m packages/core/test/integration/t4-runtime-motion-parity.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.4916349Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-group-values-section.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.6379405Z  ^[[32m✓^[[39m packages/core/test/integration/rollback-error-precedence.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.6690396Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-time-loop.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.7241007Z  ^[[31m❯^[[39m packages/core/test/integration/phase7-walker-demo.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m | ^[[22m^[[31m10 failed^[[39m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.7242573Z ^[[31m     ^[[31m×^[[31m 1. Load valid walker project through Engine with plugin registry^[[39m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.7246910Z ^[[31m     ^[[31m×^[[31m 2. Render walker nodes through createDomPatchAdapter^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.7248213Z ^[[31m     ^[[31m×^[[31m 3. Demonstrate time playback using single injected browser clock^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.7249386Z ^[[31m     ^[[31m×^[[31m 4. Demonstrate progress through TriggerPort and manual signals^[[39m^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.7250590Z ^[[31m     ^[[31m×^[[31m 5. Render multiple tracks from one Motion in one published batch^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.7253569Z ^[[31m     ^[[31m×^[[31m 6. Demonstrate FK graph observation dependency chain (pelvis -> thigh -> shin)^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.7254840Z ^[[31m     ^[[31m×^[[31m 7. Mount, unmount, remount, and dispose without duplicate subscriptions^[[39m^[[32m 0^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.7256119Z ^[[31m     ^[[31m×^[[31m 8. Show blocked/pending/error diagnostics without crashing the app^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.7257214Z ^[[31m     ^[[31m×^[[31m 9. Use React usePatch hook at the React boundary^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.7258163Z ^[[31m     ^[[31m×^[[31m 10. Automated end-to-end integration test passes clean^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.8111416Z  ^[[32m✓^[[39m packages/core/test/integration/phase0-red-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.8373431Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-types.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.8997276Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-owned-requirements.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.9731276Z  ^[[32m✓^[[39m packages/core/test/integration/phase4-dynamic-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:36.9837596Z  ^[[32m✓^[[39m packages/core/test/integration/adoption.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.0685359Z  ^[[31m❯^[[39m packages/core/test/integration/replace-track-transactionality.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.0690799Z ^[[31m     ^[[31m×^[[31m U-1 keeps the live compiled Track when the recompile is refused^[[39m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.0692387Z ^[[31m     ^[[31m×^[[31m U-2 leaves a refused recompile retryable rather than stranding the node^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.0706057Z      ^[[32m✓^[[39m U-3 changes nothing when the owning Motion refuses the replacement^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.0726465Z      ^[[32m✓^[[39m U-4 changes nothing when the candidate graph refuses a derived observation^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.1572223Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-time.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.1602662Z  ^[[32m✓^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.2260703Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-scroll.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.3152503Z  ^[[32m✓^[[39m packages/core/test/integration/phase3-trigger-port.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.3266740Z  ^[[32m✓^[[39m packages/core/test/integration/per-plugin-key-ownership.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.3820540Z  ^[[32m✓^[[39m packages/core/test/integration/mutation-transactionality.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.4792011Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.4955848Z  ^[[32m✓^[[39m packages/core/test/integration/option-c-track-resolution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.5333008Z  ^[[32m✓^[[39m packages/core/test/integration/phase2-motion-scheduling.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.6289687Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.6552228Z  ^[[32m✓^[[39m packages/core/test/integration/observation-identity.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.7000449Z  ^[[32m✓^[[39m packages/core/test/integration/cross-motion.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.7843943Z  ^[[32m✓^[[39m packages/core/test/integration/diagnostics.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.7948529Z  ^[[32m✓^[[39m packages/core/test/integration/issue-114-motion-track-regressions.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.8791053Z  ^[[32m✓^[[39m packages/core/test/integration/unified-mutation-surface.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.9487339Z  ^[[32m✓^[[39m packages/core/test/integration/adopted-track-immutability.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:37.9566084Z  ^[[32m✓^[[39m packages/core/test/integration/replace-motion-track.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.0477414Z  ^[[32m✓^[[39m packages/core/test/integration/keyframe-groups.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.0901007Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.1236920Z  ^[[32m✓^[[39m packages/core/test/integration/internal-key-strip.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.1811810Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.2370102Z  ^[[32m✓^[[39m packages/core/test/integration/remount.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.2813769Z  ^[[32m✓^[[39m packages/core/test/integration/handle-adoption.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.3120884Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.3754476Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.4229506Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.4490638Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.5242005Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.5567676Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.6207745Z  ^[[32m✓^[[39m packages/core/test/integration/single-input-channel.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.6523916Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.6769281Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.7853532Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.7947149Z  ^[[32m✓^[[39m packages/core/test/integration/adopt-destroy-readopt.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.9411989Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.9704843Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:38.9940469Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.0817254Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.1239546Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.1410927Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2313619Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-trigger-validation.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2604074Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2705652Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2736318Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2737004Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 12 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2737256Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2740376Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m1. Load valid walker project through Engine with plugin registry
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2746128Z ^[[31m^[[1mTypeError^[[22m: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2748458Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2799595Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2800893Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2801945Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2802566Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2804420Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2805385Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2806389Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2807478Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m136:27^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2808106Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2808956Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/12]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2809234Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2810446Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m2. Render walker nodes through createDomPatchAdapter
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2814688Z ^[[31m^[[1mTypeError^[[22m: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2817668Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2818438Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2819370Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2820233Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2820754Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2822080Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2822995Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2823723Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2825469Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m155:27^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2825909Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2826210Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/12]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2826423Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2827432Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m3. Demonstrate time playback using single injected browser clock
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2831925Z ^[[31m^[[1mTypeError^[[22m: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2835182Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2836136Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2837047Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2837885Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2838389Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2839027Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2839908Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2840593Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2841496Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m190:27^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2841896Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2842209Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/12]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2842462Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2843574Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m4. Demonstrate progress through TriggerPort and manual signals
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2848213Z ^[[31m^[[1mTypeError^[[22m: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2851278Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2852102Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2853331Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2854194Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2854707Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2855559Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2856268Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2857056Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2857942Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m210:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2858332Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2858636Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/12]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2858935Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2860117Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m5. Render multiple tracks from one Motion in one published batch
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2866752Z ^[[31m^[[1mTypeError^[[22m: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2868856Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2869409Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2870035Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2870563Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2870893Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2871358Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2871825Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2872296Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2873125Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m234:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2873454Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2873666Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/12]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2873959Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2874666Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m6. Demonstrate FK graph observation dependency chain (pelvis -> thigh -> shin)
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2878214Z ^[[31m^[[1mTypeError^[[22m: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2880925Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2881481Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2882373Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2883095Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2883512Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2884011Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2884579Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2885135Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2885794Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m260:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2886239Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2886423Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/12]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2886677Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2887538Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m7. Mount, unmount, remount, and dispose without duplicate subscriptions
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2890560Z ^[[31m^[[1mTypeError^[[22m: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2893388Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2893925Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2894615Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2895380Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2895784Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2896206Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2896645Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2897147Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2897701Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m296:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2898000Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2898177Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/12]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2898358Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2899022Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m8. Show blocked/pending/error diagnostics without crashing the app
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2901527Z ^[[31m^[[1mTypeError^[[22m: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2903565Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2904077Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2904677Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2905182Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2905542Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2905968Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2906431Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2907058Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2907630Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m321:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2907897Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2908062Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/12]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2908278Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2908871Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m9. Use React usePatch hook at the React boundary
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2911375Z ^[[31m^[[1mTypeError^[[22m: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2913381Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2913880Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2914500Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2914986Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2915353Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2915747Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2916250Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2916754Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2917275Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m342:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2917592Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2917869Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/12]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2918131Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2919018Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m10. Automated end-to-end integration test passes clean
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2922565Z ^[[31m^[[1mTypeError^[[22m: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2925140Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2925905Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2926750Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2927429Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2927912Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2928651Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2929350Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2929970Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2930747Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m378:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2931577Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2931892Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/12]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2932095Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2933147Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/replace-track-transactionality.test.ts^[[2m > ^[[22ma refused Track replacement commits nothing^[[2m > ^[[22mU-1 keeps the live compiled Track when the recompile is refused
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2934449Z ^[[31m^[[1mAssertionError^[[22m: expected 'keyframes-missing-values-section at r…' to match /^plugin-unknown-key at /^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2934915Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2935130Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2935451Z /^plugin-unknown-key at /
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2935693Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2935863Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2936496Z "keyframes-missing-values-section at replaceTrack(scene/arm).keyframes.nope: Plugin group 'nope' must author its properties under a 'values' section."
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2936909Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2937285Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/replace-track-transactionality.test.ts:^[[2m96:39^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2937888Z     ^[[90m 94|^[[39m     const thrown = thrownBy(() => handle.track(NODE_ID).replace(UNRESO…
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2938240Z     ^[[90m 95|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2938629Z     ^[[90m 96|^[[39m     expect((thrown as Error).message).toMatch(/^plugin-unknown-key at …
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2939070Z     ^[[90m   |^[[39m                                       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2939529Z     ^[[90m 97|^[[39m     // Red on the parent: the graph was already replaced and the live …
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2940034Z     ^[[90m 98|^[[39m     // the next flush resolved nothing and published a composition fai…
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2940243Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2940473Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/12]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2940655Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2941354Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/replace-track-transactionality.test.ts^[[2m > ^[[22ma refused Track replacement commits nothing^[[2m > ^[[22mU-2 leaves a refused recompile retryable rather than stranding the node
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2942403Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-unknown-key/ but got 'keyframes-missing-values-section at r…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2943093Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2943221Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2943483Z /plugin-unknown-key/
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2943622Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2943775Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2944338Z "keyframes-missing-values-section at replaceTrack(scene/arm).keyframes.nope: Plugin group 'nope' must author its properties under a 'values' section."
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2944748Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2945163Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/replace-track-transactionality.test.ts:^[[2m111:63^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2945703Z     ^[[90m109|^[[39m     ^[[35mconst^[[39m handle ^[[33m=^[[39m ^[[34mload^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2946026Z     ^[[90m110|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2946443Z     ^[[90m111|^[[39m     expect(() => handle.track(NODE_ID).replace(UNRESOLVABLE)).toThrow(…
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2946887Z     ^[[90m   |^[[39m                                                               ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2947576Z     ^[[90m112|^[[39m     handle^[[33m.^[[39m^[[34mtrack^[[39m(^[[33mNODE_ID^[[39m)^[[33m.^[[39m^[[34mreplace^[[39m(^[[34marmTrack^[[39m(^[[34m0^[[39m^[[33m,^[[39m ^[[34m200^[[39m))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2948040Z     ^[[90m113|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2948162Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2948343Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/12]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2948903Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2948928Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2949276Z ^[[2m Test Files ^[[22m ^[[1m^[[31m2 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m53 passed^[[39m^[[22m^[[90m (55)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2949895Z ^[[2m      Tests ^[[22m ^[[1m^[[31m12 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m213 passed^[[39m^[[22m^[[90m (225)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2950319Z ^[[2m   Start at ^[[22m 12:39:35
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2950816Z ^[[2m   Duration ^[[22m 3.36s^[[2m (transform 1.13s, setup 0ms, import 3.46s, tests 654ms, environment 4ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2951107Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2951112Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2969223Z ##[error]TypeError: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:136:27
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2976830Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2981430Z ##[error]TypeError: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:155:27
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2984128Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2988291Z ##[error]TypeError: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:190:27
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2990481Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2994801Z ##[error]TypeError: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:210:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.2997120Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3001170Z ##[error]TypeError: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:234:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3003475Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3007608Z ##[error]TypeError: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:260:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3009699Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3013831Z ##[error]TypeError: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:296:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3016048Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3020051Z ##[error]TypeError: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:321:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3022230Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3026324Z ##[error]TypeError: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:342:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3028669Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3032682Z ##[error]TypeError: keyframes-missing-values-section at motions[0].tracks[0].keyframes.transform: Plugin group 'transform' must author its properties under a 'values' section. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[1].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.length: Keyframe section 'length' must be 'requires' or 'values'. keyframes-unknown-section at motions[0].tracks[2].keyframes.fk.rotation: Keyframe section 'rotation' must be 'requires' or 'values'.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:378:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3035079Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3037280Z ##[error]AssertionError: expected 'keyframes-missing-values-section at r…' to match /^plugin-unknown-key at /
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/^plugin-unknown-key at /
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"keyframes-missing-values-section at replaceTrack(scene/arm).keyframes.nope: Plugin group 'nope' must author its properties under a 'values' section."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/replace-track-transactionality.test.ts:96:39
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3038527Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3040736Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-unknown-key/ but got 'keyframes-missing-values-section at r…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-unknown-key/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"keyframes-missing-values-section at replaceTrack(scene/arm).keyframes.nope: Plugin group 'nope' must author its properties under a 'values' section."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/replace-track-transactionality.test.ts:111:63
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-22T12:39:39.3228716Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run npm run typecheck	﻿2026-08-22T12:39:32.2989179Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:32.2989607Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:32.3019787Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:32.3020391Z env:
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:32.3020812Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:32.3021152Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:32.3955184Z 
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:32.3956026Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:32.3956881Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:32.3957293Z 
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6827376Z ##[error]apps/react-demo/src/full-body-project.ts(27,9): error TS2353: Object literal may only specify known properties, and 'length' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6838482Z ##[error]apps/react-demo/src/full-body-project.ts(56,9): error TS2353: Object literal may only specify known properties, and 'length' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6841919Z ##[error]apps/react-demo/src/full-body-project.ts(85,9): error TS2353: Object literal may only specify known properties, and 'length' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6845761Z ##[error]apps/react-demo/src/full-body-project.ts(114,9): error TS2353: Object literal may only specify known properties, and 'length' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6848933Z ##[error]apps/react-demo/src/full-body-project.ts(145,9): error TS2353: Object literal may only specify known properties, and 'x' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6852152Z ##[error]apps/react-demo/src/full-body-project.ts(183,9): error TS2353: Object literal may only specify known properties, and 'length' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6855423Z ##[error]apps/react-demo/src/full-body-project.ts(208,9): error TS2353: Object literal may only specify known properties, and 'length' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6858515Z ##[error]apps/react-demo/src/full-body-project.ts(233,9): error TS2353: Object literal may only specify known properties, and 'length' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6861938Z ##[error]apps/react-demo/src/full-body-project.ts(262,9): error TS2353: Object literal may only specify known properties, and 'length' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6865356Z ##[error]apps/react-demo/src/full-body-project.ts(291,9): error TS2353: Object literal may only specify known properties, and 'length' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6868521Z ##[error]apps/react-demo/src/full-body-project.ts(320,9): error TS2353: Object literal may only specify known properties, and 'length' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6871660Z ##[error]apps/react-demo/src/full-body-project.ts(349,9): error TS2353: Object literal may only specify known properties, and 'length' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6874826Z ##[error]apps/react-demo/src/full-body-project.ts(378,9): error TS2353: Object literal may only specify known properties, and 'length' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6878354Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(32,17): error TS2353: Object literal may only specify known properties, and 'x' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6882088Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(57,17): error TS2353: Object literal may only specify known properties, and 'length' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6885809Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(77,17): error TS2353: Object literal may only specify known properties, and 'length' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.6889331Z ##[error]packages/core/test/integration/replace-track-transactionality.test.ts(42,24): error TS2353: Object literal may only specify known properties, and 'x' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:39:35.7089265Z ##[error]Process completed with exit code 2.
+```
