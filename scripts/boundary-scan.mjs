@@ -2,7 +2,7 @@ import { readdir, readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("..", import.meta.url));
-const coreLayers = ["contract", "domain", "graph", "runtime", "ports"];
+const coreLayers = ["contract", "domain", "graph", "runtime", "ports", "testing"];
 const scannedExtensions = [".ts", ".tsx", ".js", ".mjs"];
 const allowedPublicExports = new Set([
   "AUTHORED_SCHEMA_VERSION",
@@ -101,12 +101,17 @@ export function importsBoundary(source) {
   );
 }
 export function importsRenderer(source) {
-  return /(?:from|import)\s*["'](?:gsap|react|react-dom|node:dom|domino|(?:\.\/|\.\.\/)[^"']*(?:^|\/)\b(?:dom|renderer|react|gsap)\b)["'/]/i.test(
+  return /(?:from|import)\s*["'](?:gsap|react|react-dom|node:dom|domino|(?:\.\/)(?:\.\.)/[^"']*(?:^|\/)\b(?:dom|renderer|react|gsap)\b)["'/]/i.test(
     source,
   );
 }
 export function importsCoreInternals(source) {
-  return /(?:from|import)\s*["'][^"']*(?:packages\/core\/src|\.\.\/\.\.\/core\/src)(?:["'/]|$)/.test(
+  return /(?:from|import)\s*["'][^"']*(?:packages\/core\/src|\.\.\/)(?:\.\/)core\/src)["'/]|$)/.test(
+    source,
+  );
+}
+export function importsTestingEntrypoint(source) {
+  return /(?:from|import)\s*["'](?:@motion5\/core\/testing|[^"']*core\/src\/testing)(?:["'/]|$)/.test(
     source,
   );
 }
@@ -156,29 +161,58 @@ async function scanCoreEntries(scanRoot, violations) {
     checkCoreSource(await readFile(path, "utf8"), relative(path, scanRoot), violations);
   }
 }
-async function discoverConsumerPackages(scanRoot) {
-  let entries;
+async function discoverConsumerWorkspaces(scanRoot) {
+  let rootPackageJson;
   try {
-    entries = await readdir(join(scanRoot, "packages"), { withFileTypes: true });
+    rootPackageJson = JSON.parse(await readFile(join(scanRoot, "package.json"), "utf8"));
   } catch (error) {
-    if (error?.code === "ENOENT") return [];
-    throw error;
+    return [];
   }
-  return entries
-    .filter((entry) => entry.isDirectory() && entry.name !== "core")
-    .map((entry) => entry.name);
+  const workspaces = rootPackageJson.workspaces ?? [];
+  const discovered = [];
+  for (const globPattern of workspaces) {
+    if (globPattern === "packages/*") {
+      let entries;
+      try {
+        entries = await readdir(join(scanRoot, "packages"), { withFileTypes: true });
+      } catch (error) {
+        if (error?.code === "ENOENT") continue;
+        throw error;
+      }
+      for (const entry of entries) {
+        if (entry.isDirectory() && entry.name !== "core") {
+          discovered.push({ root: "packages", name: entry.name });
+        }
+      }
+    } else if (globPattern === "apps/*") {
+      let entries;
+      try {
+        entries = await readdir(join(scanRoot, "apps"), { withFileTypes: true });
+      } catch (error) {
+        if (error?.code === "ENOENT") continue;
+        throw error;
+      }
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          discovered.push({ root: "apps", name: entry.name });
+        }
+      }
+    }
+  }
+  return discovered;
 }
 export async function scan(scanRoot = root) {
   const violations = [];
   for (const layer of coreLayers)
     await scanFiles(join(scanRoot, "packages", "core", "src", layer), scanRoot, violations);
   await scanCoreEntries(scanRoot, violations);
-  for (const packageName of await discoverConsumerPackages(scanRoot)) {
-    const directory = join(scanRoot, "packages", packageName, "src");
+  for (const workspace of await discoverConsumerWorkspaces(scanRoot)) {
+    const directory = join(scanRoot, workspace.root, workspace.name, "src");
     for (const path of await walk(directory)) {
       const source = await readFile(path, "utf8");
       const file = relative(path, scanRoot);
       if (importsCoreInternals(source)) violations.push(`${file}: core source-internal import`);
+      if (importsTestingEntrypoint(source)) violations.push(`${file}: test-only entrypoint import`);
     }
   }
   const indexPath = join(scanRoot, "packages", "core", "src", "index.ts");
