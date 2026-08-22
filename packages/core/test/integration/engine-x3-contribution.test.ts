@@ -3,7 +3,7 @@ import { PluginRegistry } from "../../src/domain/plugins";
 import { Engine } from "../../src/engine";
 import type { ImmutableRecord } from "../../src/domain/values";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 const projectWith = (keyframes: unknown, duration = 1) => ({
   schemaVersion: 5,
   motions: [
