@@ -1,0 +1,173 @@
+# CI log archive: 32573658619
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: feat/plugin-group-values-section
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/32573658619
+- Captured: 2026-08-22T12:41:49Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm run typecheck	﻿2026-08-22T12:41:22.6689513Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-22T12:41:22.6689901Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-22T12:41:22.6740170Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-22T12:41:22.6740527Z env:
+quality (node 24)	Run npm run typecheck	2026-08-22T12:41:22.6741084Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-22T12:41:22.6741321Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-22T12:41:22.7798018Z 
+quality (node 24)	Run npm run typecheck	2026-08-22T12:41:22.7799047Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-22T12:41:22.7799876Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-22T12:41:22.7800221Z 
+quality (node 24)	Run npm run typecheck	2026-08-22T12:41:26.3978304Z ##[error]packages/core/test/integration/replace-track-transactionality.test.ts(42,24): error TS2353: Object literal may only specify known properties, and 'x' does not exist in type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-22T12:41:26.4409752Z ##[error]Process completed with exit code 2.
+integration (node 24)	Run npm run test:integration	﻿2026-08-22T12:41:27.9194159Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:27.9194539Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:27.9234143Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:27.9234697Z env:
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:27.9234916Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:27.9235130Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:28.0346854Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:28.0348093Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:28.0349060Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:28.0349571Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:28.4870933Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:28.4875486Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:28.4876329Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.0399661Z  ^[[32m✓^[[39m packages/core/test/integration/engine-teardown-ownership.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.0529162Z  ^[[32m✓^[[39m packages/core/test/integration/t4-runtime-motion-parity.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 36^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.0686254Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-group-values-section.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[32m 42^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.3013698Z  ^[[32m✓^[[39m packages/core/test/integration/rollback-error-precedence.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.3799497Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-time-loop.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 45^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.4400164Z ^[[90mstderr^[[2m | packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22m^[[2mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m^[[2m9. Use React usePatch hook at the React boundary
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.4408889Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.4436956Z The current testing environment is not configured to support act(...)
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.4446173Z  ^[[32m✓^[[39m packages/core/test/integration/phase7-walker-demo.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 66^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.4472270Z The current testing environment is not configured to support act(...)
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.4487650Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.5498479Z  ^[[32m✓^[[39m packages/core/test/integration/phase0-red-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.6619142Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-types.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.7631094Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-owned-requirements.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 42^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.8191508Z  ^[[32m✓^[[39m packages/core/test/integration/phase4-dynamic-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:29.9090764Z  ^[[32m✓^[[39m packages/core/test/integration/adoption.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.0428477Z  ^[[31m❯^[[39m packages/core/test/integration/replace-track-transactionality.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 37^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.0431149Z ^[[31m     ^[[31m×^[[31m U-1 keeps the live compiled Track when the recompile is refused^[[39m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.0445221Z ^[[31m     ^[[31m×^[[31m U-2 leaves a refused recompile retryable rather than stranding the node^[[39m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.0447420Z      ^[[32m✓^[[39m U-3 changes nothing when the owning Motion refuses the replacement^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.0449091Z      ^[[32m✓^[[39m U-4 changes nothing when the candidate graph refuses a derived observation^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.0968247Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-time.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.2007785Z  ^[[32m✓^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 41^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.3043131Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-scroll.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.3511937Z  ^[[32m✓^[[39m packages/core/test/integration/phase3-trigger-port.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.4999504Z  ^[[32m✓^[[39m packages/core/test/integration/per-plugin-key-ownership.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 43^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.5854159Z  ^[[32m✓^[[39m packages/core/test/integration/mutation-transactionality.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 41^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.6333822Z  ^[[32m✓^[[39m packages/core/test/integration/option-c-track-resolution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 34^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.7252521Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.8412750Z  ^[[32m✓^[[39m packages/core/test/integration/phase2-motion-scheduling.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:30.9109181Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 28^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:31.0131427Z  ^[[32m✓^[[39m packages/core/test/integration/observation-identity.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:31.0579860Z  ^[[32m✓^[[39m packages/core/test/integration/cross-motion.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:31.1774365Z  ^[[32m✓^[[39m packages/core/test/integration/issue-114-motion-track-regressions.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 31^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:31.2649118Z  ^[[32m✓^[[39m packages/core/test/integration/diagnostics.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:31.3187476Z  ^[[32m✓^[[39m packages/core/test/integration/unified-mutation-surface.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:31.4696596Z  ^[[32m✓^[[39m packages/core/test/integration/replace-motion-track.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:31.5350114Z  ^[[32m✓^[[39m packages/core/test/integration/adopted-track-immutability.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:31.5589130Z  ^[[32m✓^[[39m packages/core/test/integration/keyframe-groups.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:31.7559871Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:31.7641303Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:31.8088437Z  ^[[32m✓^[[39m packages/core/test/integration/internal-key-strip.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:32.0094709Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:32.0270231Z  ^[[32m✓^[[39m packages/core/test/integration/remount.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:32.0459317Z  ^[[32m✓^[[39m packages/core/test/integration/handle-adoption.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:32.2406069Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:32.2555744Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:32.2962058Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:32.4908781Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:32.5019081Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:32.5882567Z  ^[[32m✓^[[39m packages/core/test/integration/single-input-channel.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 34^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:32.6782843Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:32.7249221Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:32.8618356Z  ^[[32m✓^[[39m packages/core/test/integration/adopt-destroy-readopt.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:32.9113681Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.1238391Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.1369010Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.1558281Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.3268917Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.3855593Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.3924686Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.5686386Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-trigger-validation.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.5912874Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6218505Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6252188Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6253222Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 2 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6253724Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6258570Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/replace-track-transactionality.test.ts^[[2m > ^[[22ma refused Track replacement commits nothing^[[2m > ^[[22mU-1 keeps the live compiled Track when the recompile is refused
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6264597Z ^[[31m^[[1mAssertionError^[[22m: expected 'keyframes-missing-values-section at r…' to match /^plugin-unknown-key at /^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6265520Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6265760Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6266234Z /^plugin-unknown-key at /
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6266506Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6266928Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6268351Z "keyframes-missing-values-section at replaceTrack(scene/arm).keyframes.nope: Plugin group 'nope' must author its properties under a 'values' section."
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6269396Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6270359Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/replace-track-transactionality.test.ts:^[[2m96:39^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6313002Z     ^[[90m 94|^[[39m     const thrown = thrownBy(() => handle.track(NODE_ID).replace(UNRESO…
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6313876Z     ^[[90m 95|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6314675Z     ^[[90m 96|^[[39m     expect((thrown as Error).message).toMatch(/^plugin-unknown-key at …
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6315286Z     ^[[90m   |^[[39m                                       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6317396Z     ^[[90m 97|^[[39m     // Red on the parent: the graph was already replaced and the live …
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6318522Z     ^[[90m 98|^[[39m     // the next flush resolved nothing and published a composition fai…
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6319346Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6319791Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6320140Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6321918Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/replace-track-transactionality.test.ts^[[2m > ^[[22ma refused Track replacement commits nothing^[[2m > ^[[22mU-2 leaves a refused recompile retryable rather than stranding the node
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6324917Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-unknown-key/ but got 'keyframes-missing-values-section at r…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6325972Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6326255Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6326948Z /plugin-unknown-key/
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6327233Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6327485Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6328948Z "keyframes-missing-values-section at replaceTrack(scene/arm).keyframes.nope: Plugin group 'nope' must author its properties under a 'values' section."
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6330037Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6330878Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/replace-track-transactionality.test.ts:^[[2m111:63^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6332322Z     ^[[90m109|^[[39m     ^[[35mconst^[[39m handle ^[[33m=^[[39m ^[[34mload^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6333099Z     ^[[90m110|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6334053Z     ^[[90m111|^[[39m     expect(() => handle.track(NODE_ID).replace(UNRESOLVABLE)).toThrow(…
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6334702Z     ^[[90m   |^[[39m                                                               ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6335777Z     ^[[90m112|^[[39m     handle^[[33m.^[[39m^[[34mtrack^[[39m(^[[33mNODE_ID^[[39m)^[[33m.^[[39m^[[34mreplace^[[39m(^[[34marmTrack^[[39m(^[[34m0^[[39m^[[33m,^[[39m ^[[34m200^[[39m))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6337123Z     ^[[90m113|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6337388Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6337818Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6338052Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6338093Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6338630Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m54 passed^[[39m^[[22m^[[90m (55)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6339866Z ^[[2m      Tests ^[[22m ^[[1m^[[31m2 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m223 passed^[[39m^[[22m^[[90m (225)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6340483Z ^[[2m   Start at ^[[22m 12:41:28
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6341155Z ^[[2m   Duration ^[[22m 5.12s^[[2m (transform 1.38s, setup 0ms, import 4.35s, tests 1.21s, environment 8ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6341648Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6356623Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6381616Z ##[error]AssertionError: expected 'keyframes-missing-values-section at r…' to match /^plugin-unknown-key at /
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/^plugin-unknown-key at /
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"keyframes-missing-values-section at replaceTrack(scene/arm).keyframes.nope: Plugin group 'nope' must author its properties under a 'values' section."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/replace-track-transactionality.test.ts:96:39
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6391444Z 
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6396078Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-unknown-key/ but got 'keyframes-missing-values-section at r…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-unknown-key/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"keyframes-missing-values-section at replaceTrack(scene/arm).keyframes.nope: Plugin group 'nope' must author its properties under a 'values' section."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/replace-track-transactionality.test.ts:111:63
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-22T12:41:33.6710706Z ##[error]Process completed with exit code 1.
+```
