@@ -2,7 +2,8 @@ import { readdir, readFile } from "node:fs/promises";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("..", import.meta.url));
-const coreLayers = ["contract", "domain", "graph", "runtime", "ports"];
+const coreLayers = ["contract", "domain", "graph", "runtime", "ports", "testing"];
+const corePackage = "packages/core";
 const scannedExtensions = [".ts", ".tsx", ".js", ".mjs"];
 const allowedPublicExports = new Set([
   "AUTHORED_SCHEMA_VERSION",
@@ -110,6 +111,11 @@ export function importsCoreInternals(source) {
     source,
   );
 }
+export function importsTestingEntrypoint(source) {
+  return /(?:from|import)\s*["'](?:@motion5\/core\/testing|[^"']*core\/src\/testing)(?:["'/]|$)/.test(
+    source,
+  );
+}
 export function bannedSymbol(source) {
   return /(?:compatibility|facade|parityMode|rollout|capabilityFlag|observationAlias|groupHost)/i.test(
     source,
@@ -156,29 +162,55 @@ async function scanCoreEntries(scanRoot, violations) {
     checkCoreSource(await readFile(path, "utf8"), relative(path, scanRoot), violations);
   }
 }
-async function discoverConsumerPackages(scanRoot) {
-  let entries;
+/**
+ * Workspace roots are read from the root manifest rather than named here, so a third workspace
+ * glob is scanned the moment it is declared. A tree with no manifest is refused: a discovery step
+ * that quietly walks nothing reports a clean boundary for a workspace it never opened, which is
+ * the failure this scan was extended to remove.
+ */
+async function discoverConsumerWorkspaces(scanRoot) {
+  const manifestPath = join(scanRoot, "package.json");
+  let manifest;
   try {
-    entries = await readdir(join(scanRoot, "packages"), { withFileTypes: true });
+    manifest = JSON.parse(await readFile(manifestPath, "utf8"));
   } catch (error) {
-    if (error?.code === "ENOENT") return [];
+    if (error?.code === "ENOENT") throw new Error(`boundary scan found no ${manifestPath}`);
     throw error;
   }
-  return entries
-    .filter((entry) => entry.isDirectory() && entry.name !== "core")
-    .map((entry) => entry.name);
+  const declared = Array.isArray(manifest.workspaces) ? manifest.workspaces : [];
+  const roots = [];
+  for (const entry of declared) {
+    if (typeof entry !== "string") continue;
+    const workspaceRoot = entry.endsWith("/*") ? entry.slice(0, -2) : entry;
+    if (!workspaceRoot.includes("*") && !roots.includes(workspaceRoot)) roots.push(workspaceRoot);
+  }
+  if (roots.length === 0) throw new Error(`boundary scan found no workspaces in ${manifestPath}`);
+  const workspaces = [];
+  for (const workspaceRoot of roots) {
+    let entries;
+    try {
+      entries = await readdir(join(scanRoot, workspaceRoot), { withFileTypes: true });
+    } catch (error) {
+      if (error?.code === "ENOENT") continue;
+      throw error;
+    }
+    for (const entry of entries.filter((candidate) => candidate.isDirectory()))
+      if (`${workspaceRoot}/${entry.name}` !== corePackage)
+        workspaces.push(`${workspaceRoot}/${entry.name}`);
+  }
+  return workspaces;
 }
 export async function scan(scanRoot = root) {
   const violations = [];
   for (const layer of coreLayers)
     await scanFiles(join(scanRoot, "packages", "core", "src", layer), scanRoot, violations);
   await scanCoreEntries(scanRoot, violations);
-  for (const packageName of await discoverConsumerPackages(scanRoot)) {
-    const directory = join(scanRoot, "packages", packageName, "src");
-    for (const path of await walk(directory)) {
+  for (const workspace of await discoverConsumerWorkspaces(scanRoot)) {
+    for (const path of await walk(join(scanRoot, workspace, "src"))) {
       const source = await readFile(path, "utf8");
       const file = relative(path, scanRoot);
       if (importsCoreInternals(source)) violations.push(`${file}: core source-internal import`);
+      if (importsTestingEntrypoint(source)) violations.push(`${file}: testing entrypoint import`);
     }
   }
   const indexPath = join(scanRoot, "packages", "core", "src", "index.ts");
