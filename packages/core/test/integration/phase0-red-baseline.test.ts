@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type { ProjectRuntime } from "../../src/runtime/project-runtime";
 
 describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
