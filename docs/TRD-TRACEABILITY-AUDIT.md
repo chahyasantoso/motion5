@@ -2,14 +2,14 @@
 
 This audit closes issue #186 against `docs/TRD.md` on 2026-08-22. Every binding requirement in sections 3 through 15 has at least one inbound trace to an accepted product requirement, architecture invariant, or decision record. No requirement was deleted, softened, or left aspirational.
 
-The canonical requirement text remains in `docs/TRD.md`; this file is the reviewable audit record and is intended to be folded into section 16 in the implementation PR if the project keeps one-file traceability.
+The canonical requirement text remains in `docs/TRD.md`; this file is a reviewable audit record, not a second requirements source.
 
 ## System context and constraints
 
-- TR-C-01: ADR-001, ADR-009, TR-SC-02.
-- TR-C-02: ADR-001, I-11, TR-T-01.
+- TR-C-01: ADR-001, ADR-009.
+- TR-C-02: ADR-001, I-11.
 - TR-C-03: FR-18, FR-23, ADR-015, ADR-017.
-- TR-C-04: I-12, FR-22, TR-T-03.
+- TR-C-04: I-12, FR-22.
 - TR-C-05: ADR-009, FR-22.
 
 ## Architecture and boundaries
@@ -27,15 +27,15 @@ The canonical requirement text remains in `docs/TRD.md`; this file is the review
 
 - TR-D-01: FR-1, ADR-011.
 - TR-D-02: FR-2.
-- TR-D-03: TR-G-01, TR-D-11, ADR-014.
+- TR-D-03: FR-3, ADR-014.
 - TR-D-04: FR-4, ADR-012.
 - TR-D-05: FR-20, ADR-034, ADR-044, ADR-046, ADR-047.
 - TR-D-06: FR-2, FR-20.
 - TR-D-07: FR-5, ADR-011.
 - TR-D-08: FR-5, ADR-011.
 - TR-D-09: FR-5, ADR-011.
-- TR-D-10: FR-5, TR-T-02, TR-T-03.
-- TR-D-11: FR-3, TR-G-01, ADR-014.
+- TR-D-10: FR-5, ADR-011.
+- TR-D-11: FR-3, ADR-014.
 
 ## Graph kernel
 
@@ -77,7 +77,7 @@ The canonical requirement text remains in `docs/TRD.md`; this file is the review
 - TR-M-02: FR-15, ADR-023.
 - TR-M-03: FR-16, ADR-004.
 - TR-M-04: FR-16, I-4.
-- TR-M-05: FR-16, ADR-004.
+- TR-M-05: FR-16, ADR-043.
 - TR-M-06: FR-15, ADR-033.
 - TR-M-07: FR-16, ADR-037.
 
@@ -129,23 +129,23 @@ The canonical requirement text remains in `docs/TRD.md`; this file is the review
 ## Performance
 
 - TR-PF-01: FR-22.
-- TR-PF-02: FR-22, TR-T-02, TR-T-03.
+- TR-PF-02: FR-22, ADR-008.
 - TR-PF-03: FR-22.
 - TR-PF-04: FR-22.
-- TR-PF-05: FR-22, TR-T-07.
-- TR-PF-06: FR-22, TR-T-07.
+- TR-PF-05: FR-22, ADR-008.
+- TR-PF-06: FR-22, ADR-008.
 
 ## Supply chain and toolchain
 
 - TR-SC-01: FR-22, ADR-011.
-- TR-SC-02: FR-22, TR-C-01.
+- TR-SC-02: FR-22, ADR-001.
 - TR-SC-03: ADR-007, ADR-019.
 - TR-SC-04: ADR-019, ADR-005.
 
 ## Testability and CI
 
 - TR-T-01: FR-17, I-11.
-- TR-T-02: ADR-008, I-1 through I-15.
+- TR-T-02: ADR-008, I-1, I-2, I-3, I-4, I-5, I-6, I-7, I-8, I-9, I-10, I-11, I-12, I-13, I-14, I-15.
 - TR-T-03: ADR-008, I-12.
 - TR-T-04: ADR-001.
 - TR-T-05: ADR-008.
@@ -157,4 +157,4 @@ The canonical requirement text remains in `docs/TRD.md`; this file is the review
 
 ## Audit findings
 
-No new FR, invariant, or ADR was necessary. No requirement was deleted. The existing traceability sections in `docs/TRD.md` already cover product requirements, invariants, and the four original locked decisions; this audit adds the reverse direction so every technical requirement has an inbound owner. The implementation plan remains the delivery map, while this file remains an audit artifact rather than a second normative requirements source.
+No new FR, invariant, or ADR was necessary. No requirement was deleted. The audit uses only FR, I, and ADR references as inbound owners, as required by issue #186. The normative matrix is in section 16 of `docs/TRD.md`; this file is a review artifact only.
