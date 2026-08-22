@@ -114,7 +114,7 @@ describe("plugin registry", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("transform", { keys: ["x", "y", "rotation"] }));
     registry.register(plugin("fk", { keys: ["length", "rotation"] }));
-    const authored = { fk: { length: {}, rotation: {} } };
+    const authored = { fk: { values: { length: {}, rotation: {} } } };
     const resolved = registry.resolveForKeyframes(authored, "track.keyframes");
     // The leaf is checked against `fk` alone, so `transform` never enters the chain even though it
     // claims `rotation` too, and the compiled record still carries the unprefixed leaf names.
@@ -160,8 +160,8 @@ describe("plugin registry", () => {
     registry.register(plugin("fk", { keys: ["boneLength", "boneRotation"] }));
     registry.register(plugin("transform", { keys: ["x", "y", "rotation"] }));
     const authored = {
-      fk: { boneLength: {}, boneRotation: {} },
-      transform: { x: {} },
+      fk: { values: { boneLength: {}, boneRotation: {} } },
+      transform: { values: { x: {} } },
     };
     const resolved = registry.resolveForKeyframes(authored, "track.keyframes");
     expect(resolved.diagnostics).toEqual([]);
@@ -172,13 +172,16 @@ describe("plugin registry", () => {
   it("F-8 reports an unknown group and an unclaimed leaf at authored paths", () => {
     const registry = new PluginRegistry();
     registry.register(plugin("fk", { keys: ["boneLength"] }));
-    const authored = { fk: { boneWidth: {} }, mystery: { boneLength: {} } };
+    const authored = {
+      fk: { values: { boneWidth: {} } },
+      mystery: { values: { boneLength: {} } },
+    };
     const resolved = registry.resolveForKeyframes(authored, "track.keyframes");
     expect(resolved.plugins).toEqual([]);
     expect(resolved.diagnostics).toEqual([
       {
         ruleId: "plugin-unknown-key",
-        path: "track.keyframes.fk.boneWidth",
+        path: "track.keyframes.fk.values.boneWidth",
         message: 'Plugin "fk" does not claim authored key "boneWidth".',
         severity: "error",
         ids: ["fk", "boneWidth"],

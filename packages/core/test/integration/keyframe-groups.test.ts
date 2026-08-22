@@ -52,8 +52,8 @@ function load(definition: ProjectDefinition, plugins?: PluginRegistry) {
 
 describe("plugin-named authored keyframe groups", () => {
   it("F-10 interpolates grouped leaves without renaming the owning plugin", () => {
-    const grouped = { fk: { boneLength: ramp(10, 20), boneRotation: ramp(0, 90) } };
-    const handle = load(project(grouped), fkRegistry());
+    const values = { boneLength: ramp(10, 20), boneRotation: ramp(0, 90) };
+    const handle = load(project({ fk: { values } }), fkRegistry());
     handle.mount("hero/arm");
 
     const batch = handle.seek("hero/arm", 0.5);
@@ -67,7 +67,7 @@ describe("plugin-named authored keyframe groups", () => {
   });
 
   it("F-11 interpolates a grouped track when the Engine has no plugin registry", () => {
-    const handle = load(project({ fk: { boneLength: ramp(10, 20) } }));
+    const handle = load(project({ fk: { values: { boneLength: ramp(10, 20) } } }));
     handle.mount("hero/arm");
 
     const batch = handle.seek("hero/arm", 0.5);
@@ -79,7 +79,8 @@ describe("plugin-named authored keyframe groups", () => {
 
   it("F-12 publishes identical values for the flat and grouped spellings", () => {
     const flat = load(project({ boneLength: ramp(10, 20) }), fkRegistry());
-    const grouped = load(project({ fk: { boneLength: ramp(10, 20) } }), fkRegistry());
+    const values = { boneLength: ramp(10, 20) };
+    const grouped = load(project({ fk: { values } }), fkRegistry());
     flat.mount("hero/arm");
     grouped.mount("hero/arm");
 
