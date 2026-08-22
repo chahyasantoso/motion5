@@ -5,7 +5,7 @@ import {
   createFakeInterpolator,
   createFakeScheduler,
   createFakeTriggerPort,
-} from "../../src/ports/fakes";
+} from "../../src/testing/fakes";
 import { assertTriggerPort, createManualTriggerPort } from "../../src/ports/trigger";
 
 describe("Clock port contract", () => {
