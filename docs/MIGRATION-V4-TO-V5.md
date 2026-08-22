@@ -28,19 +28,35 @@ Do not rename `motion.tracks`.
 
 ```diff
 - { source: "cursor", role: "input" }
-+ { source: "~/cursor", role: "input" }
++ { source: "~/cursor" }
 ```
 
 Use qualified `motionId/trackId` for cross-motion references and `~/trackId` for free tracks. Local references inside one motion may remain local until normalization.
 
-### Observation targets
+### Observation edges carry one field
+
+An `observes` entry has exactly one authored field, `source`, and the edge it declares is always an output edge: the source's contribution merges over the observer's composed patch. Three v4-era fields are removed, and each is refused rather than ignored.
 
 ```diff
 - { source: "~/cursor", role: "input", target: "pointer" }
-+ { source: "~/cursor", role: "input" }
+- { source: "~/cursor", role: "input", projection: { map: { x: "parentX" } } }
++ { source: "~/cursor" }
 ```
 
-An authored `target` is rejected with `observation-target-unsupported`, on both roles. Dropping it changes no published value: the field was validated and carried in edge identity, but it never decided which values arrived or under which keys. Rename the incoming keys with `projection` if the observer needs different names, or bind the dependency under a plugin group's `requires` section if it belongs to a plugin. Two edges to one source that differed only by target were two edges before v5 removed the field and are one edge now, so drop the duplicate rather than renaming it. See ADR-046.
+`target` is rejected with `observation-target-unsupported`. Dropping it changes no published value: the field was validated and carried in edge identity, but it never decided which values arrived or under which keys. Two edges to one source that differed only by target were two edges before v5 removed the field and are one edge now, so drop the duplicate rather than renaming it. See ADR-046.
+
+`role` is rejected with `observation-role-unsupported`, at either value. `"output"` is refused as firmly as `"input"`, because it is the only remaining behavior and writing it would be a field accepted and then ignored.
+
+`projection` is rejected with `observation-projection-unsupported`. It existed to rename an upstream key so it would stop colliding inside a flat input bag, and that bag is gone.
+
+A v4 document that used `role: "input"` to feed a value into a track's own composition does not translate to a generic edge at all. Bind it under the group of the plugin that consumes it:
+
+```diff
+- observes: [{ source: "walk/pelvis", role: "input", projection: { map: { rotation: "parentRotation" } } }]
++ keyframes: { fk: { length: { stops: [ ... ] }, requires: { base: "walk/pelvis" } } }
+```
+
+The upstream values arrive as `inputs.base`, under their own names, scoped to the plugin that asked for them. Nothing is renamed and nothing can overwrite an authored value. See ADR-044 and ADR-047.
 
 ### Perspective
 
@@ -84,7 +100,7 @@ export function migrateV4ToV5(project) {
 
 This helper is safe only when the v4 producer’s top-level `tracks` is known to mean free tracks. Before applying it, validate that the source is an object, `tracks` is an array or absent, ids are unique, no id contains `/`, no motion is named `~`, and any free references are qualified. If both `tracks` and `freeTracks` exist, fail rather than choose one.
 
-The helper does not touch triggers, and it cannot: dropping `autoplay: false` or inventing a `duration` would be a semantic decision made behind the author's back. Trigger migration is a review step, not a transformation.
+The helper does not touch triggers, and it cannot: dropping `autoplay: false` or inventing a `duration` would be a semantic decision made behind the author's back. Trigger migration is a review step, not a transformation. It does not touch observation edges either, for the same reason: deciding which plugin should consume a v4 input edge is a design decision about the rig, not a rename.
 
 ## Semantic review checklist
 
@@ -95,6 +111,7 @@ The helper does not touch triggers, and it cannot: dropping `autoplay: false` or
 - Are any ids using `/` or the reserved motion id `~`?
 - Are any cycles introduced by qualifying references?
 - Does any observation still carry a `target`, and does dropping it collapse two edges into one?
+- Does any observation still carry a `role` or a `projection`, and for each one that was an input edge, which plugin actually consumes the value?
 - Does every `time` trigger carry a `duration`, has every `autoplay: false` been removed, and does every `repeat` still mean the passes after the first?
 - Does every `scroll` trigger have a registered source, and does any consumer still call `signal()` on it?
 - Does any custom driver or `ScrollSource` push progress outside `[0, 1]`, or a value that can be `NaN`, and rely on it being clamped for them?

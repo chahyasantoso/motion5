@@ -19,17 +19,17 @@ Grouped by entrypoint, because the entrypoint is the contract. `packages/core/pa
 - `adopt(track, owner, options?)` and `destroyAdopted(nodeId, owner)` are the superseded owner-based API.
 - `dispose()` releases the project, motions, triggers, and compiled tracks.
 
-A `TrackHandle` carries `id`, `track`, `remove()`, `replace(next)`, `addObserve(observation)`, and `removeObserve(observation)`. Generic observations remain available, but plugin-owned dependencies should use the plugin group's `requires` section.
+A `TrackHandle` carries `id`, `track`, `remove()`, `replace(next)`, `addObserve(observation)`, and `removeObserve(observation)`. A generic observation declares an output edge, which merges the source's contribution over the observer's composed patch. A dependency that feeds a track's own composition is bound under the plugin group's `requires` section, which is the only way a value enters composition.
 
 **Schema and validation.** `AUTHORED_SCHEMA_VERSION`, `SUPPORTED_TRIGGER_TYPES`, `DIAGNOSTIC_SEVERITIES`, `validateV5`, `validateTrackDefinition`, `validateMotionTrigger`, `resolveTriggerDefinition`, `migrateV4ToV5`, `parseGolden`, and `serializeGolden`.
 
 **Types.** `ProjectDefinition`, `MotionDefinition`, `TrackDefinition`, `ObservationDefinition`, `AuthoredProperty`, `AuthoredStop`, `TriggerDefinition` and its three members, `TriggerType`, `TriggerSignal`, `Patch`, `PatchBatch`, `PatchStatus`, `PatchListener`, `Diagnostic`, `DiagnosticSeverity`, `MigrationDiagnostic`, `MigrationResult`, `ValidationResult`, `TrackValidationResult`, `GoldenFixture`, and `GoldenValidationFixture`.
 
-An `ObservationDefinition` carries `source`, an optional `role`, and an optional `projection`. There is no `target`; an authored one is rejected with `observation-target-unsupported`. See ADR-046.
+An `ObservationDefinition` carries `source` and nothing else. There is no `target`, no `role`, and no `projection`, and an authored one of each is rejected with `observation-target-unsupported`, `observation-role-unsupported`, or `observation-projection-unsupported`. `InputProjection` is gone with the primitive it described. See ADR-046 and ADR-047.
 
 **Plugins.** `PluginRegistry`, and the types `PluginDefinition` and `ResolvedPlugins`.
 
-A `PluginDefinition` may declare `requirements`, a record of optional input slots owned by that plugin. Its `compose` receives authored/interpolated values and a third argument containing that plugin's scoped inputs. `ResolvedPlugins.requirements` reports the bindings resolved for a track.
+A `PluginDefinition` may declare `requirements`, a record of optional input slots owned by that plugin. Its `compose` receives authored/interpolated values, the track's progress, and that plugin's scoped inputs. `ResolvedPlugins.requirements` reports the bindings resolved for a track.
 
 **Ports.** `createManualClock`, `createMicrotaskScheduler`, `createManualTriggerPort`, `createDefaultTriggerFactory`, `createTriggerFactory`, and the assertions `assertClock`, `assertInterpolator`, `assertScheduler`, `assertTriggerPort`, and `assertTriggerFactory`. Port types include `Clock`, `ClockTick`, `Scheduler`, `Cancel`, `SchedulerHost`, `MicrotaskSchedulerOptions`, `TriggerPort`, `Interpolator`, `InterpolationTimeline`, `ClockBinding`, `ClockConsumer`, `CreatedTrigger`, `TriggerFactory`, `TriggerFactoryContext`, `TriggerFactoryOptions`, `ScrollSource`, `ScrollSourceResolver`, and `ScrollSourceResolverContext`.
 
@@ -55,7 +55,7 @@ Optional implementations for the composition root.
 
 `fkPlugin` is a compose-stage forward-kinematics plugin. It claims `length` and `rotation`, declares the `base` requirement, reads `inputs.base`, and produces `x`, `y`, and world-space `rotation`. The authored `rotation` is relative to the parent and the composed one is world-space, so the local value is replaced rather than published beside it. `composeWorld(parent, local)` is exported alongside it.
 
-Registering both is the rig case: both claim `rotation`, so flat `rotation` is ambiguous. Author a bone as `fk: { length, rotation, requires: { base: "walk/pelvis" } }` and a root as `transform: { x, y, rotation }`. The parent's natural `x`, `y`, and `rotation` values arrive inside `inputs.base`; no `parentX`, `parentY`, or `parentRotation` projection is needed. See ADR-043 and ADR-044.
+Registering both is the rig case: both claim `rotation`, so flat `rotation` is ambiguous. Author a bone as `fk: { length, rotation, requires: { base: "walk/pelvis" } }` and a root as `transform: { x, y, rotation }`. The parent's natural `x`, `y`, and `rotation` values arrive inside `inputs.base`; no `parentX`, `parentY`, or `parentRotation` is needed, and there is no projection primitive left with which to invent one. See ADR-043, ADR-044, and ADR-047.
 
 ## @motion5/core/ports/fakes
 
