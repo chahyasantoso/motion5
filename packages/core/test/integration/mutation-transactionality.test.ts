@@ -4,7 +4,7 @@ import { PluginRegistry } from "../../src/domain/plugins";
 import { fkPlugin } from "../../src/plugins/fk";
 import { transformPlugin } from "../../src/plugins/transform";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type { Patch } from "../../src/contract/v5";
 import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
 

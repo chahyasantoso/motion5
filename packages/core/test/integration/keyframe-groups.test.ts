@@ -3,7 +3,7 @@ import type { AuthoredKeyframe, ProjectDefinition } from "../../src/contract/v5"
 import { PluginRegistry } from "../../src/domain/plugins";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 
 function ramp(from: number, to: number) {
   return {

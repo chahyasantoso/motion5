@@ -10,7 +10,7 @@ import {
   createFakeInterpolator,
   createFakeScheduler,
   createFakeTrackRegistry,
-} from "../../src/ports/fakes";
+} from "../../src/testing/fakes";
 import { createManualTriggerPort } from "../../src/ports/trigger";
 
 const DRIVER_BACKED =
