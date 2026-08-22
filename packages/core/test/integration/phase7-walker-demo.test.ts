@@ -5,7 +5,7 @@ import { PluginRegistry, type PluginDefinition } from "../../src/domain/plugins"
 import { fkPlugin } from "../../src/plugins/fk";
 import { createBrowserClock, type FrameSource } from "../../src/adapters/browser-clock";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/ports/fakes";
+import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import { createManualTriggerPort } from "../../src/ports/trigger";
 import { usePatch } from "../../../react/src/index";
 import { act, create } from "react-test-renderer";
