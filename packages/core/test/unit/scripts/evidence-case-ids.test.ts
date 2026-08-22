@@ -87,9 +87,14 @@ import { fileURLToPath } from "node:url";
 // ordered, and labelled, and it kept a case pinning an authored empty target as its own edge;
 // `V-` owns whether that field is authorable at all, which is why it retires that case instead of
 // extending the series.
+//
+// `Z-` belongs to edge-construction symmetry in `graph/ir.ts` (issue #181): both authored forms
+// which derive an edge are resolved by a named function of the same shape, and neither the edge
+// nor its diagnostics change when that becomes true. `E-` owns how an edge is encoded, ordered,
+// and labelled; `Z-` owns who is allowed to build one.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|H|K|L|M|N|P|Q|R|S|T|U|V)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|H|K|L|M|N|P|Q|R|S|T|U|V|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
@@ -116,8 +121,6 @@ describe("evidence case ids", () => {
   });
 
   it("finds the series at all, so a passing run is never an empty scan", () => {
-    // Guards the gate itself: a broken directory walk or regex would otherwise report zero
-    // collisions forever. A floor, not an exact count, so adding evidence never fails this.
     const files = testFiles().filter((file) => declaredCaseIds(file).length > 0);
     const total = files.reduce((count, file) => count + declaredCaseIds(file).length, 0);
     expect(files.length).toBeGreaterThanOrEqual(3);

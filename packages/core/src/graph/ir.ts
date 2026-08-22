@@ -2,6 +2,7 @@ import type {
   Diagnostic,
   InputProjection,
   ObservationDefinition,
+  PluginRequiresBinding,
   ProjectDefinition,
   TrackDefinition,
 } from "../contract/v5";
@@ -15,12 +16,6 @@ import {
 } from "./ids";
 import { orderGraph } from "./order";
 
-/**
- * The plugin and slot a derived input edge fills.
- *
- * Present only on an edge the graph derived from `keyframes.<plugin>.requires`. A generic `observes`
- * edge has none, which is how the publisher knows to merge one and to scope the other.
- */
 export interface EdgeRequirement {
   readonly plugin: string;
   readonly slot: string;
@@ -49,39 +44,21 @@ export interface GraphBuildResult {
   readonly graph?: GraphIR;
   readonly diagnostics: readonly Diagnostic[];
 }
-/**
- * One encoded field of an edge identity, prefixed with its own length.
- *
- * The id guards reserve only `/` and `~`, and a projection key, a projection output name, a plugin
- * name, and a requirement slot are every one of them an arbitrary non-empty string, so `|`, `:`,
- * `,` and `=` are all authorable: a plain separator can be forged from inside a field value.
- * A length prefix makes the encoding prefix-free, which is what makes `edgeKey` injective
- * rather than merely usually-distinct.
- */
+
 function field(value: string): string {
   return `${value.length}:${value}`;
 }
-/**
- * The identity form of a requirement, `"-"` for an absent one.
- *
- * A requirement belongs in identity because two slots of one plugin may intentionally bind the same
- * source: an IK plugin binding `base` and `destination` to one node is two dependencies, not a
- * duplicate edge. It also separates a derived edge from a generic `observes` edge to the same
- * source, which the publisher composes differently. See ADR-044.
- */
+
 function requirementIdentity(edge: GraphEdge): string {
   const requirement = edge.requirement;
   if (requirement === undefined) return "-";
   return `${field(requirement.plugin)}${field(requirement.slot)}`;
 }
-/**
- * The ordering form of a requirement's plugin. `"-"` sorts before `":"`, so an absent requirement
- * orders before every present one, including a plugin named with the empty string, and the
- * comparator separates exactly the edges the identity encoding separates.
- */
+
 function requirementOrder(edge: GraphEdge): string {
   return edge.requirement === undefined ? "-" : `:${edge.requirement.plugin}`;
 }
+
 export function canonicalizeProjection(projection: InputProjection): string {
   if (projection.pick !== undefined) {
     const pickKeys = [...projection.pick].sort(compareCodeUnits);
@@ -91,13 +68,7 @@ export function canonicalizeProjection(projection: InputProjection): string {
   const mapKeys = Object.keys(map).sort(compareCodeUnits);
   return `map:${mapKeys.map((key) => `${field(key)}${field(map[key]!)}`).join("")}`;
 }
-/**
- * Edge identity, and nothing else: two keys are equal exactly when the edges are one edge.
- *
- * Ordering belongs to `compareEdges` and the readable label to `describeEdge`. One string
- * cannot own all three jobs, because injectivity wants length prefixes while the other two
- * want the field values themselves.
- */
+
 export function edgeKey(edge: GraphEdge): string {
   const projection = edge.projection ? canonicalizeProjection(edge.projection) : "";
   return [
@@ -108,14 +79,7 @@ export function edgeKey(edge: GraphEdge): string {
     field(requirementIdentity(edge)),
   ].join("");
 }
-/**
- * The single ordering owner for observation edges.
- *
- * Field by field, never derived from `edgeKey`. This comparator decides published values in
- * `runtime/graph-publisher.ts`: it picks the blocked upstream that gets named, it feeds
- * `firstPendingEdge`, and it sets output merge precedence, where the later write wins.
- * Sorting by an encoded identity would make that precedence depend on how long an id is.
- */
+
 export function compareEdges(a: GraphEdge, b: GraphEdge): number {
   return (
     compareCodeUnits(a.observerId, b.observerId) ||
@@ -129,15 +93,17 @@ export function compareEdges(a: GraphEdge, b: GraphEdge): number {
     compareCodeUnits(a.requirement?.slot ?? "", b.requirement?.slot ?? "")
   );
 }
-/** The readable edge label for diagnostics and error text. Never an identity, never a key. */
+
 export function describeEdge(edge: GraphEdge): string {
   const requirement = edge.requirement;
   const scope = requirement === undefined ? "" : ` [${requirement.plugin}.${requirement.slot}]`;
   return `${edge.observerId} <- ${edge.sourceId} (${edge.role})${scope}`;
 }
+
 function freeze<T>(value: T): T {
   return Object.freeze(value);
 }
+
 export function diag(
   ruleId: string,
   path: string,
@@ -146,9 +112,11 @@ export function diag(
 ): Diagnostic {
   return { ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) };
 }
+
 export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
   return compareCodeUnits(a.ruleId, b.ruleId) || compareCodeUnits(a.path, b.path);
 }
+
 export function qualifySource(source: string, motionId: string): string {
   if (source.startsWith("~/")) return qualifyFreeTrack(source.slice(2)).value;
   if (source.includes("/"))
@@ -158,9 +126,11 @@ export function qualifySource(source: string, motionId: string): string {
     ).value;
   return qualifyMotionTrack(motionId, source).value;
 }
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
+
 function validateProjection(
   projection: unknown,
   path: string,
@@ -239,31 +209,25 @@ function validateProjection(
   }
   return Object.freeze({ map: Object.freeze(map) });
 }
-export interface ResolvedObservation {
+
+export interface ResolvedEdge {
   readonly edge?: GraphEdge;
   readonly diagnostics: readonly Diagnostic[];
 }
+
 const TARGET_UNSUPPORTED =
   "Observation target is not supported; rename input keys with a projection, or bind a plugin requirement under keyframes.<plugin>.requires.";
-/**
- * The authored `target` field, which `ObservationDefinition` no longer declares.
- *
- * Read through the record view rather than through a member access, because the point of the guard
- * below is to refuse a key the type has already removed. Removing it from the type alone would
- * leave it accepted and then ignored, which rule 6 of ADR-033 forbids, and here that would be
- * worse than ignored: a target used to split one edge into two, so a project that bound two
- * targets to one source would stop loading and report `observation-duplicate`, naming a duplicate
- * edge the author never wrote. The legacy `use` field is refused the same way. See ADR-046.
- */
+
 function readRemovedTarget(observation: ObservationDefinition): unknown {
   return isRecord(observation) ? observation.target : undefined;
 }
+
 export function resolveObservationEdge(
   observation: ObservationDefinition,
   observerNodeId: string,
   ownerId: string,
   path: string,
-): ResolvedObservation {
+): ResolvedEdge {
   const diagnostics: Diagnostic[] = [];
   const role = observation.role ?? "output";
   if (role !== "input" && role !== "output") {
@@ -274,8 +238,6 @@ export function resolveObservationEdge(
     diagnostics.push(diag("observation-source", path, "Observation source must be non-empty."));
     return { diagnostics: Object.freeze(diagnostics) };
   }
-  // One rule for both roles. `observation-output-target` was role-specific because an input target
-  // was once believed to name a destination key; nothing ever read it on either role.
   if (readRemovedTarget(observation) !== undefined) {
     diagnostics.push(diag("observation-target-unsupported", path, TARGET_UNSUPPORTED));
     return { diagnostics: Object.freeze(diagnostics) };
@@ -302,6 +264,31 @@ export function resolveObservationEdge(
   });
   return { edge, diagnostics: Object.freeze([]) };
 }
+
+export function resolveRequirementEdge(
+  binding: PluginRequiresBinding,
+  observerNodeId: string,
+  ownerId: string,
+  path: string,
+): ResolvedEdge {
+  let sourceId: string;
+  try {
+    sourceId = qualifySource(binding.source, ownerId);
+  } catch (error) {
+    const message = String(error instanceof Error ? error.message : error);
+    return {
+      diagnostics: Object.freeze([diag("requirement-source", path, message, [binding.source])]),
+    };
+  }
+  const edge: GraphEdge = Object.freeze({
+    observerId: observerNodeId,
+    sourceId,
+    role: "input",
+    requirement: Object.freeze({ plugin: binding.plugin, slot: binding.slot }),
+  });
+  return { edge, diagnostics: Object.freeze([]) };
+}
+
 export function observationEdgeKey(
   observation: ObservationDefinition,
   observerId: string,
@@ -316,6 +303,7 @@ export function observationEdgeKey(
     );
   return edgeKey(resolved.edge);
 }
+
 export function collectTrack(
   track: TrackDefinition,
   owner: "motion" | "free",
@@ -352,24 +340,13 @@ export function collectTrack(
   // `validateV5` build the graph without holding a registry it must not have. See ADR-044.
   for (const binding of readPluginBindings(track.keyframes)) {
     const bindingPath = `${id}.keyframes.${binding.authoredPath}`;
-    let boundSourceId: string;
-    try {
-      boundSourceId = qualifySource(binding.source, ownerId);
-    } catch (error) {
-      const message = String(error instanceof Error ? error.message : error);
-      diagnostics.push(diag("requirement-source", bindingPath, message, [binding.source]));
-      continue;
-    }
-    const bindingEdge: GraphEdge = Object.freeze({
-      observerId: id,
-      sourceId: boundSourceId,
-      role: "input",
-      requirement: Object.freeze({ plugin: binding.plugin, slot: binding.slot }),
-    });
-    edges.push(bindingEdge);
+    const resolved = resolveRequirementEdge(binding, id, ownerId, bindingPath);
+    diagnostics.push(...resolved.diagnostics);
+    if (resolved.edge !== undefined) edges.push(resolved.edge);
   }
   return Object.freeze({ id, owner, authoredIndex, track, edges: Object.freeze(edges) });
 }
+
 export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
   const diagnostics: Diagnostic[] = [];
   const nodes: GraphNode[] = [];
