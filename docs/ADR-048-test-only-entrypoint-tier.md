@@ -15,8 +15,18 @@ So the demo mistake behind #164 was not a reach into forbidden internals. It pic
 The issue is right about that, and it stops one step short of the reason. `scripts/boundary-scan.mjs` discovered consumers like this:
 
 ```js
-const entries = await readdir(join(scanRoot, "packages"), { withFileTypes: true });
-return entries.filter((entry) => entry.isDirectory() && entry.name !== "core").map(...);
+async function discoverConsumerPackages(scanRoot) {
+  let entries;
+  try {
+    entries = await readdir(join(scanRoot, "packages"), { withFileTypes: true });
+  } catch (error) {
+    if (error?.code === "ENOENT") return [];
+    throw error;
+  }
+  return entries
+    .filter((entry) => entry.isDirectory() && entry.name !== "core")
+    .map((entry) => entry.name);
+}
 ```
 
 **The scan never walked `apps/`.** It covered `packages/core/src/{contract,domain,graph,runtime,ports}`, the core root entries, `packages/*/src` for non-core packages, and the `index.ts` export allow list. `apps/react-demo`, the workspace that made the #164 mistake, was invisible to every gate in that file.
@@ -62,6 +72,8 @@ export function importsTestingEntrypoint(source) {
 }
 ```
 
+The scan is an `.mjs` module with a hand-written `scripts/boundary-scan.d.mts` beside it, so a new export is named in both. That declaration file is the surface `W-1` reports against under `typecheck`, and it is the reason a red `boundaries` job and a red `quality` job are two different pieces of evidence about the same missing function rather than one.
+
 A scan root with no manifest is refused rather than treated as an empty workspace list. A discovery step that quietly walks nothing reports a clean boundary for a workspace it never opened, which is the exact failure being removed.
 
 Documentation states the tier rather than implying it. `docs/guide/api-reference.md` gains an entrypoint tier table, because the second acceptance criterion of the issue is that the public surface distinguishes test-only entrypoints from production adapters and plugins. A table is how that becomes checkable by a human reader and the scan is how it becomes checkable by CI. Both are required; neither substitutes for the other.
@@ -95,8 +107,8 @@ Evidence ids gain the `W-` series, and `packages/core/test/unit/scripts/evidence
 - `W-1` the predicate names `@motion5/core/testing` and a relative `core/src/testing` path, and does not name `@motion5/core`, `/plugins/fk`, or `/adapters/browser-clock`.
 - `W-2` the scan reports an app that imports the test-only entrypoint.
 - `W-3` the scan reports an app that reaches into core source. This is #164's actual mistake, finally visible to a gate.
-- `W-4` the scan reports a renderer import inside the core testing layer, which is D2's guard.
-- `W-5` the export map declares `./testing` and does not declare `./ports/fakes`. The one case that legitimately asserts on file content rather than behavior, because the export map *is* the artifact under test.
+- `W-4` the scan reports a renderer import inside the core testing layer, which is the `coreLayers` guard.
+- `W-5` the export map declares `./testing` and does not declare `./ports/fakes`. The one case that legitimately asserts on file content rather than behavior, because the export map is the artifact under test.
 - `W-6` the real repository has no violation mentioning `testing`. The regression guard, and the only case allowed to read the real tree.
 - `W-7` the workspace roots come from the root manifest: a tree declaring `packages/*` only does not report the app that a tree declaring `apps/*` too does report, and a tree with no manifest is refused rather than scanned as empty.
 
