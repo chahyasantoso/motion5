@@ -50,10 +50,7 @@ describe("requirement edge construction", () => {
         id: "chest",
         observes: [{ source: "pelvis" }],
         keyframes: {
-          fk: {
-            length: { stops: [{ p: 0, v: 1 }] },
-            requires: { base: "pelvis" },
-          },
+          fk: { values: { length: { stops: [{ p: 0, v: 1 }] } }, requires: { base: "pelvis" } },
         },
       },
       "motion",

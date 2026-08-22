@@ -47,9 +47,11 @@ const rootTrack: TrackDefinition = {
   id: "root",
   keyframes: {
     transform: {
-      x: ramp(0, 100),
-      y: ramp(0, 0),
-      rotation: ramp(0, 0),
+      values: {
+        x: ramp(0, 100),
+        y: ramp(0, 0),
+        rotation: ramp(0, 0),
+      },
     },
   },
 };
@@ -57,8 +59,10 @@ const dependentTrack: TrackDefinition = {
   id: "elbow",
   keyframes: {
     fk: {
-      length: ramp(40, 40),
-      rotation: ramp(0, 0),
+      values: {
+        length: ramp(40, 40),
+        rotation: ramp(0, 0),
+      },
       requires: { base: "~/root" },
     },
   },
