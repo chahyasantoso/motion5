@@ -120,9 +120,8 @@ function diagnose(keyframes: unknown): readonly Diagnostic[] {
 }
 
 function ruleIds(keyframes: unknown): readonly string[] {
-  return diagnose(keyframes)
-    .map(({ ruleId }) => ruleId)
-    .sort();
+  const diagnostics = diagnose(keyframes);
+  return diagnostics.map(({ ruleId }) => ruleId).sort();
 }
 
 function load(definition: ProjectDefinition, plugins: PluginRegistry) {
