@@ -1,11 +1,11 @@
-import type { PluginRequiresBinding } from "./v5";
+import type { AuthoredPluginGroup, PluginRequiresBinding } from "./v5";
 
 /**
- * The reserved section name inside a plugin-named keyframe group.
+ * The reserved bindings section of a plugin-named keyframe group.
  *
- * A plugin group holds authored properties and, optionally, the graph bindings the named plugin
- * owns. `requires` is that section. It is metadata rather than a property, so it never reaches the
- * percent map, the interpolator, or a published patch.
+ * A plugin group holds the properties the named plugin claims, under `values`, and optionally the
+ * graph bindings that plugin owns. `requires` is that second section. It is metadata rather than a
+ * property, so it never reaches the percent map, the interpolator, or a published patch.
  *
  * It is reserved rather than conventional, for the same reason the colon is. Left authorable as a
  * property name, one spelling would mean a keyframe in one group and a binding set in another, and
@@ -14,6 +14,29 @@ import type { PluginRequiresBinding } from "./v5";
  */
 export const PLUGIN_REQUIRES_SECTION = "requires";
 
+/**
+ * The reserved values section of a plugin-named keyframe group: the properties the plugin claims.
+ *
+ * Reserved by name, in the same module, under the same rule, for the same reason as `requires`
+ * above. That reservation is what makes group detection exact rather than a guess about the shape
+ * of the leaves, and it is why an unknown sibling can be reported as an unknown section instead of
+ * being misread as a property with no stops.
+ *
+ * The cost is that no author may animate a flat property called `values` and no plugin may claim
+ * the key at group level. The reservation is on section position rather than on the string
+ * everywhere, so a leaf named `values` inside the section is an ordinary property. See ADR-049.
+ */
+export const PLUGIN_VALUES_SECTION = "values";
+
+/** Sorted, so a diagnostic listing the legal sections never depends on declaration order. */
+export const PLUGIN_GROUP_SECTIONS: readonly string[] = Object.freeze([
+  PLUGIN_REQUIRES_SECTION,
+  PLUGIN_VALUES_SECTION,
+]);
+
+/** One frozen empty record, so a group with no readable section allocates nothing. */
+const EMPTY_VALUES: Readonly<Record<string, unknown>> = Object.freeze({});
+
 function isObject(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -21,23 +44,55 @@ function isObject(value: unknown): value is Record<string, unknown> {
 /**
  * Whether an authored keyframe entry is a plugin-named group rather than a property.
  *
- * The test is structural because the contract layer has no plugin registry and must not gain one:
- * a group is a non-empty object with no `stops` array that either carries a `requires` section or
- * whose every value is an object. Whether the group name addresses a registered plugin, whether
- * that plugin claims each leaf, and whether it declares each bound slot are all ownership rather
- * than schema shape; `plugin-unknown-key` and `plugin-unknown-requirement` own them at resolve
- * time.
+ * Exact rather than heuristic. A group is an object with no `stops` array that names at least one
+ * reserved section. Both section names are reserved for the same reason the colon is, so this test
+ * needs no plugin registry and makes no guess about what the author meant. Whether the group name
+ * addresses a registered plugin, whether that plugin claims each leaf, and whether it declares each
+ * bound slot are all ownership rather than schema shape; `plugin-unknown-key` and
+ * `plugin-unknown-requirement` own them at resolve time.
  *
- * The `requires` clause is what makes a malformed binding diagnosable at all. Without it,
- * `{ fk: { requires: "walk/pelvis" } }` has a non-object leaf, reads as a property, and is reported
- * as a missing stops array rather than as the binding mistake it is. See ADR-041 and ADR-044.
+ * `some` and not `every`, so a group carrying an unknown sibling is still read as a group and
+ * reported as `keyframes-unknown-section` rather than misdiagnosed as a property. An object naming
+ * no section at all is not a group: `{ fk: {} }` stays the accepted no-op property it always was,
+ * and the pre-ADR-049 leaf form is refused by name through `looksLikeLegacyGroup` instead.
+ * See ADR-041, ADR-044, and ADR-049.
  */
-export function isKeyframeGroup(value: unknown): value is Record<string, unknown> {
+export function isKeyframeGroup(value: unknown): value is AuthoredPluginGroup {
   if (!isObject(value) || Array.isArray(value.stops)) return false;
   const names = Object.keys(value);
   if (names.length === 0) return false;
-  if (names.includes(PLUGIN_REQUIRES_SECTION)) return true;
+  return names.some((name) => PLUGIN_GROUP_SECTIONS.includes(name));
+}
+
+/**
+ * Whether an entry is the pre-ADR-049 group form: properties directly under the plugin name.
+ *
+ * This is the body `isKeyframeGroup` used to have, kept for a different job. It is not detection
+ * any more; it exists so a document written against the old shape is refused by name rather than
+ * reported as a property with no stops array, which named the group and not the mistake. Refused,
+ * never normalized: two authoring shapes are two validation paths and two documentation paths.
+ * See ADR-049.
+ */
+export function looksLikeLegacyGroup(value: unknown): boolean {
+  if (!isObject(value) || Array.isArray(value.stops)) return false;
+  const names = Object.keys(value);
+  if (names.length === 0) return false;
+  if (names.some((name) => PLUGIN_GROUP_SECTIONS.includes(name))) return false;
   return names.every((name) => isObject(value[name]));
+}
+
+/**
+ * The properties a group authored, or an empty record.
+ *
+ * The single reader of the `values` section, so `flattenAuthoredKeyframes`, `validateKeyframes`, and
+ * 3D detection all ask one function rather than three that can disagree about what an author wrote.
+ * Tolerant by design, exactly like `readPluginBindings`: a malformed section is empty here and
+ * reported by `validateKeyframes`, which owns shape. See ADR-049.
+ */
+export function readPluginValues(group: unknown): Readonly<Record<string, unknown>> {
+  if (!isObject(group)) return EMPTY_VALUES;
+  const values = group[PLUGIN_VALUES_SECTION];
+  return isObject(values) ? values : EMPTY_VALUES;
 }
 
 /**

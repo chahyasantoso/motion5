@@ -93,27 +93,31 @@ export interface AuthoredProperty {
  * See ADR-044.
  */
 export type AuthoredPluginRequires = Readonly<Record<string, string>>;
-/** One member of a plugin-named group: an authored property, or the bindings section. */
-export type AuthoredPluginMember = AuthoredProperty | AuthoredPluginRequires;
 /**
- * A plugin-named group: the properties that plugin claims, plus its optional `requires` section.
+ * A plugin-named group: the properties that plugin claims, under `values`, plus its optional
+ * `requires` section.
  *
- * The section is reserved by name rather than typed as a distinct key, because the contract layer
- * has no plugin registry and a group's property names are the plugin's to choose.
- * `contract/keyframe-shape` owns telling the two apart.
+ * Two named members, not an open record of a union. Both section names are reserved in
+ * `contract/keyframe-shape`, so the contract layer can tell a section from a property without a
+ * plugin registry, and the type can say what a group is instead of what it might contain. A group
+ * that names neither section is not a group at all; it stays an ordinary property. Anything else
+ * inside one is `keyframes-unknown-section`. See ADR-049.
  */
-export type AuthoredPluginGroup = Readonly<Record<string, AuthoredPluginMember>>;
+export interface AuthoredPluginGroup {
+  readonly values?: Readonly<Record<string, AuthoredProperty>>;
+  readonly requires?: AuthoredPluginRequires;
+}
 /**
  * One authored keyframe entry: a property, or a plugin-named group of properties.
  *
- * The group form names the plugin that owns its leaves, so `{ fk: { length } }` scopes the leaf
- * without the author inventing a disambiguated flat name. The group is flattened back to its
- * unprefixed leaves before compilation, so no interpolator, adapter, or renderer ever receives a
- * nested value.
+ * The group form names the plugin that owns its leaves, so `{ fk: { values: { length } } }` scopes
+ * the leaf without the author inventing a disambiguated flat name. The group is flattened back to
+ * its unprefixed leaves before compilation, so no interpolator, adapter, or renderer ever receives
+ * a nested value.
  *
  * The flat form is unchanged, and stays legal for every key exactly one registered plugin claims.
  * For a key several plugins claim it is not sugar: the flat spelling is `plugin-ambiguous-key`, and
- * the group is the only way to name an owner. See ADR-041 and ADR-043.
+ * the group is the only way to name an owner. See ADR-041, ADR-043, and ADR-049.
  */
 export type AuthoredKeyframe = AuthoredProperty | AuthoredPluginGroup;
 /** One `keyframes.<plugin>.requires.<slot>` entry, as read from authored input. See ADR-044. */
