@@ -28,7 +28,7 @@ describe("graph IR and candidate validation", () => {
           {
             id: "hero",
             trigger: { type: "manual" },
-            tracks: [{ id: "arm", observes: [{ source: "~/cursor", role: "input" }] }],
+            tracks: [{ id: "arm", observes: [{ source: "~/cursor" }] }],
           },
           {
             id: "caption",
@@ -45,8 +45,9 @@ describe("graph IR and candidate validation", () => {
   });
 
   it("rejects unknown, duplicate, and self-referential edges before mount", () => {
-    // The removed `target` field has its own owner in observation-target-removal.test.ts, so it
-    // is not authored here: this case owns topology, and one rule belongs to one test.
+    // The removed `target`, `role`, and `projection` fields have their own owners in
+    // observation-target-removal.test.ts and single-input-channel.test.ts, so none of them is
+    // authored here: this case owns topology, and one rule belongs to one test.
     const result = buildGraphIR(
       project({
         motions: [
@@ -60,7 +61,7 @@ describe("graph IR and candidate validation", () => {
                   { source: "missing" },
                   { source: "missing" },
                   { source: "arm" },
-                  { source: "cursor", role: "input" },
+                  { source: "cursor" },
                 ],
               },
             ],
