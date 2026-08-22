@@ -280,6 +280,7 @@ describe("Engine owns the teardown of everything a failed operation created", ()
       expect((thrown as Error).message).toMatch(/^motion-id at motions\[0\]\.id:/);
       expect(thrown).toBeInstanceOf(AggregateError);
       const errors = (thrown as AggregateError).errors as readonly unknown[];
+      expect(errors[0]).toBeInstanceOf(TypeError);
       // Identity survives the new collect-then-report step: a lone failure is rethrown verbatim.
       expect(errors[1]).toBe(triggers.disposeFailure);
       // Attempted exactly once, as the issue requires. Not retried, not skipped.
