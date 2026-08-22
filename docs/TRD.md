@@ -23,7 +23,7 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 - **Track:** a leaf. Owns playhead, interpolation inputs, local plugin composition, and renderer-neutral snapshots.
 - **Free track:** a project-level track that nothing schedules, qualified `~/trackId`.
 - **Qualified id:** the runtime identity of a node, either `motionId/trackId` or `~/trackId`.
-- **Observation edge:** a declared dependency from an observing track to a source, with role `input` or `output`.
+- **Observation edge:** a dependency from an observing track to a source. An output edge is authored with `observes`. An input edge is derived from a plugin requirement binding and is never authored as an edge.
 - **IR:** the immutable graph intermediate representation produced by normalization.
 - **Live state:** the long-lived `ObservationState` object holding live edges and observers.
 - **Commit:** replacing the immutable IR snapshot after a successful transaction.
@@ -57,7 +57,7 @@ This document is the acceptance contract for implementers and reviewers. A pull 
 - **TR-D-02 Structural validation.** Loading must validate ids, triggers, tracks, perspective, observation edges, duplicates, and cycles before anything mounts. Implements FR-2.
 - **TR-D-03 Reserved namespace.** Track ids must not contain `/`. Motion ids must not contain `/` and must not equal `~`. Violations are errors.
 - **TR-D-04 Perspective.** `perspective` is optional. When present it must be a finite number greater than zero; anything else is an error. Missing perspective alongside detected 3D content is a warning.
-- **TR-D-05 Edge semantics.** An edge is identified by `(source, role, target)`. `role` defaults to `output`. `input` requires a non-empty `target` and contributes under that property before local composition. `output` forbids `target` and merges over the observer's composed patch after it. One source may supply both roles to one observer.
+- **TR-D-05 Edge semantics.** An edge is identified by `(observer, source, role, requirement)`, where an absent requirement is a distinct value from any present one. `observes` declares output edges only and carries no authored `role`, `target`, or `projection`; an authored one is an error. An output edge merges the source's finished patch over the observer's composed patch after local composition. An input edge is never authored directly: the graph derives exactly one per `keyframes..requires.` binding, and its value is delivered to the named plugin scoped by slot, never merged into the observer's authored values. Two slots of one plugin may bind the same source and are two edges.
 - **TR-D-06 Rejected input.** Wrong version, malformed or duplicate ids, reserved characters, invalid trigger, invalid perspective, malformed edges, unknown sources, duplicate edges, self-reference, and cycles must all be errors. Missing perspective for 3D content and unused free tracks must be warnings.
 - **TR-D-07 Pure migration.** The v4-to-v5 migration must be a pure function outside the runtime. It must not mutate its input and must return the input unchanged for a non-v4 document. Implements FR-5.
 - **TR-D-08 Migration idempotence.** Applying migration to an already-migrated document must produce a structurally equal document.
