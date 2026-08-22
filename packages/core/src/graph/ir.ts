@@ -2,6 +2,7 @@ import type {
   Diagnostic,
   InputProjection,
   ObservationDefinition,
+  PluginRequiresBinding,
   ProjectDefinition,
   TrackDefinition,
 } from "../contract/v5";
@@ -55,8 +56,8 @@ export interface GraphBuildResult {
  * The id guards reserve only `/` and `~`, and a projection key, a projection output name, a plugin
  * name, and a requirement slot are every one of them an arbitrary non-empty string, so `|`, `:`,
  * `,` and `=` are all authorable: a plain separator can be forged from inside a field value.
- * A length prefix makes the encoding prefix-free, which is what makes `edgeKey` injective
- * rather than merely usually-distinct.
+ * A length prefix makes the encoding prefix-free, which is what makes `edgeKey` injective rather
+ * than merely usually-distinct.
  */
 function field(value: string): string {
   return `${value.length}:${value}`;
@@ -76,8 +77,8 @@ function requirementIdentity(edge: GraphEdge): string {
 }
 /**
  * The ordering form of a requirement's plugin. `"-"` sorts before `":"`, so an absent requirement
- * orders before every present one, including a plugin named with the empty string, and the
- * comparator separates exactly the edges the identity encoding separates.
+ * orders before every present one, including a plugin named with the empty string, and the comparator
+ * separates exactly the edges the identity encoding separates.
  */
 function requirementOrder(edge: GraphEdge): string {
   return edge.requirement === undefined ? "-" : `:${edge.requirement.plugin}`;
@@ -94,9 +95,9 @@ export function canonicalizeProjection(projection: InputProjection): string {
 /**
  * Edge identity, and nothing else: two keys are equal exactly when the edges are one edge.
  *
- * Ordering belongs to `compareEdges` and the readable label to `describeEdge`. One string
- * cannot own all three jobs, because injectivity wants length prefixes while the other two
- * want the field values themselves.
+ * Ordering belongs to `compareEdges` and the readable label to `describeEdge`. One string cannot own
+ * all three jobs, because injectivity wants length prefixes while the other two want the field
+ * values themselves.
  */
 export function edgeKey(edge: GraphEdge): string {
   const projection = edge.projection ? canonicalizeProjection(edge.projection) : "";
@@ -203,8 +204,6 @@ function validateProjection(
     if (new Set(projection.pick).size !== projection.pick.length) {
       diagnostics.push(
         diag("observation-input-projection", path, "Input projection pick keys must be unique."),
-      );
-      return undefined;
     }
     return Object.freeze({ pick: Object.freeze([...projection.pick]) });
   }
@@ -235,7 +234,6 @@ function validateProjection(
         "Input projection map output keys must be unique.",
       ),
     );
-    return undefined;
   }
   return Object.freeze({ map: Object.freeze(map) });
 }
@@ -250,10 +248,10 @@ const TARGET_UNSUPPORTED =
  *
  * Read through the record view rather than through a member access, because the point of the guard
  * below is to refuse a key the type has already removed. Removing it from the type alone would
- * leave it accepted and then ignored, which rule 6 of ADR-033 forbids, and here that would be
- * worse than ignored: a target used to split one edge into two, so a project that bound two
- * targets to one source would stop loading and report `observation-duplicate`, naming a duplicate
- * edge the author never wrote. The legacy `use` field is refused the same way. See ADR-046.
+ * leave it accepted and then ignored, which rule 6 of ADR-033 forbids, and here that would be worse
+ * than ignored: a target used to split one edge into two, so a project that bound two targets to one
+ * source would stop loading and report `observation-duplicate`, naming a duplicate edge the author
+ * never wrote. The legacy `use` field is refused the same way. See ADR-046.
  */
 function readRemovedTarget(observation: ObservationDefinition): unknown {
   return isRecord(observation) ? observation.target : undefined;
@@ -299,6 +297,39 @@ export function resolveObservationEdge(
     sourceId,
     role,
     ...(projection === undefined ? {} : { projection }),
+  });
+  return { edge, diagnostics: Object.freeze([]) };
+}
+/**
+ * One derived input edge for one authored `keyframes.<plugin>.requires.<slot>` binding.
+ *
+ * Sibling of `resolveObservationEdge` in name, arity, and return type, because both answer the same
+ * question for the two authored forms that produce an edge. `collectTrack` constructs no edge
+ * itself, so a third authored form has one pattern to extend rather than a literal to copy.
+ *
+ * Shape only, no registry: whether `fk` is registered and declares `base` is
+ * `PluginRegistry.resolveForKeyframes`' question. See ADR-044.
+ */
+export function resolveRequirementEdge(
+  binding: PluginRequiresBinding,
+  observerNodeId: string,
+  ownerId: string,
+  path: string,
+): ResolvedObservation {
+  let sourceId: string;
+  try {
+    sourceId = qualifySource(binding.source, ownerId);
+  } catch (error) {
+    const message = String(error instanceof Error ? error.message : error);
+    return {
+      diagnostics: Object.freeze([diag("requirement-source", path, message, [binding.source])]),
+    };
+  }
+  const edge: GraphEdge = Object.freeze({
+    observerId: observerNodeId,
+    sourceId,
+    role: "input",
+    requirement: Object.freeze({ plugin: binding.plugin, slot: binding.slot }),
   });
   return { edge, diagnostics: Object.freeze([]) };
 }
@@ -352,21 +383,9 @@ export function collectTrack(
   // `validateV5` build the graph without holding a registry it must not have. See ADR-044.
   for (const binding of readPluginBindings(track.keyframes)) {
     const bindingPath = `${id}.keyframes.${binding.authoredPath}`;
-    let boundSourceId: string;
-    try {
-      boundSourceId = qualifySource(binding.source, ownerId);
-    } catch (error) {
-      const message = String(error instanceof Error ? error.message : error);
-      diagnostics.push(diag("requirement-source", bindingPath, message, [binding.source]));
-      continue;
-    }
-    const bindingEdge: GraphEdge = Object.freeze({
-      observerId: id,
-      sourceId: boundSourceId,
-      role: "input",
-      requirement: Object.freeze({ plugin: binding.plugin, slot: binding.slot }),
-    });
-    edges.push(bindingEdge);
+    const resolved = resolveRequirementEdge(binding, id, ownerId, bindingPath);
+    diagnostics.push(...resolved.diagnostics);
+    if (resolved.edge !== undefined) edges.push(resolved.edge);
   }
   return Object.freeze({ id, owner, authoredIndex, track, edges: Object.freeze(edges) });
 }
