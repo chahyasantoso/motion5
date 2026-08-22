@@ -102,9 +102,15 @@ import { fileURLToPath } from "node:url";
 // consumer may import, and whether a mechanical gate can see the workspaces that would get it
 // wrong. `K-` owns what a consumer outside the package can construct and name; `W-` owns which of
 // those things it is allowed to name at all, and where the scan is looking when it decides.
+//
+// `Y-` belongs to the explicit `values` section (issue #177 and ADR-049): which authored spellings
+// of a plugin group are legal now that both of a group's members are reserved by name, what an
+// unknown or a missing section reports, and that the compiled value domain is the `values` section
+// and nothing else. `F-` owns the group form's introduction and `N-` owns who may claim a key;
+// `Y-` owns what a group is allowed to contain at all.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Z)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
