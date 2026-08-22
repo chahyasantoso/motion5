@@ -124,10 +124,6 @@ export interface PluginRequiresBinding {
   /** `plugin.requires.slot`, relative to the keyframes record. Diagnostics cite this. */
   readonly authoredPath: string;
 }
-export interface InputProjection {
-  readonly pick?: readonly string[];
-  readonly map?: Readonly<Record<string, string>>;
-}
 export interface TrackDefinition {
   readonly id: string;
   readonly duration?: number;
@@ -135,18 +131,28 @@ export interface TrackDefinition {
   readonly observes?: readonly ObservationDefinition[];
 }
 /**
- * One generic `observes` entry: a graph edge the author writes by hand.
+ * One generic `observes` entry: a graph edge the author writes by hand, declaring an output edge
+ * and nothing else.
  *
- * There is deliberately no `target`. An input edge delivers its source's values under the source's
- * own names, or under the names an `InputProjection` maps them to, and a dependency that belongs to
- * a plugin is bound under `keyframes.<plugin>.requires` and arrives scoped to that plugin instead.
- * A target name had no consumer on either role, so it is refused rather than accepted and ignored:
- * `graph/ir.ts` reports `observation-target-unsupported`. See ADR-046.
+ * One authored field, and deliberately only one.
+ *
+ * There is no `target`. It named a destination key that no consumer ever read, on either role.
+ * See ADR-046.
+ *
+ * There is no `role`. Every edge this form derives is `role: "output"`, so writing the only legal
+ * value would be a field accepted and then ignored.
+ *
+ * There is no `projection`. Renaming an upstream key existed to keep it from colliding inside a
+ * flat input bag, and an output edge merges the source's patch whole rather than renaming anything.
+ *
+ * A dependency that feeds composition is bound under `keyframes.<plugin>.requires` and arrives
+ * scoped to that plugin, which is now the only way a value enters composition. All three removed
+ * fields are refused rather than accepted and ignored: `graph/ir.ts` reports
+ * `observation-target-unsupported`, `observation-role-unsupported`, and
+ * `observation-projection-unsupported`. See ADR-047.
  */
 export interface ObservationDefinition {
   readonly source: string;
-  readonly role?: "input" | "output";
-  readonly projection?: InputProjection;
 }
 export interface MotionDefinition {
   readonly id: string;
