@@ -1,4 +1,4 @@
-import type { Diagnostic, InputProjection } from "../contract/v5";
+import type { Diagnostic } from "../contract/v5";
 import {
   compareEdges,
   describeEdge,
@@ -18,15 +18,15 @@ export interface PublisherComposition {
 }
 export interface PublisherNode extends GraphNode {
   /**
-   * `inputs` is the flat contribution of the node's generic `observes` edges. `requirementInputs`
-   * is the plugin-owned half, scoped by plugin name and requirement slot, and is deliberately a
-   * separate argument: merged into `inputs` it would re-create the one namespace that let an
-   * upstream value replace an authored one. See ADR-044.
+   * Composes the node against its scoped requirement inputs: one record per plugin, one entry per
+   * requirement slot the track bound.
+   *
+   * One parameter, and deliberately only one. There is no flat bag beside it, so there is no code
+   * path by which an upstream value can enter the node's authored value namespace. That is a
+   * stronger guarantee than "no caller merges one": no parameter exists to merge one with.
+   * See ADR-044 and ADR-047.
    */
-  readonly compose: (
-    inputs: Readonly<Record<string, unknown>>,
-    requirementInputs: RequirementInputs,
-  ) => PublisherComposition;
+  readonly compose: (requirementInputs: RequirementInputs) => PublisherComposition;
 }
 export interface PublisherSnapshot extends GraphIR {
   readonly nodes: readonly PublisherNode[];
@@ -38,10 +38,7 @@ export interface PublisherFailure {
 
 class InputObservationError extends Error {
   constructor(
-    readonly ruleId:
-      | "observation-input-shape"
-      | "observation-input-collision"
-      | "observation-missing-upstream",
+    readonly ruleId: "observation-input-shape" | "observation-missing-upstream",
     message: string,
   ) {
     super(message);
@@ -74,6 +71,10 @@ function diagnostic(nodeId: string, error: unknown): Diagnostic {
  * A node's edges of one role in canonical order. `compareEdges` in `graph/ir.ts` is the only
  * ordering owner, so which source wins an output merge is never authored-order dependent and
  * never a property of how an id encodes.
+ *
+ * `role` names the composition phase: inputs are collected before `node.compose`, outputs are
+ * merged after it. Every input edge now carries a requirement, so this split is also the split
+ * between derived dependencies and authored `observes` entries. See ADR-047.
  */
 function edgesByRole(node: PublisherNode, role: GraphEdge["role"]): readonly GraphEdge[] {
   return node.edges.filter((edge) => edge.role === role).sort(compareEdges);
@@ -119,26 +120,6 @@ function freezeRequirementInputs(
   for (const [plugin, slots] of Object.entries(collected))
     scoped[plugin] = Object.freeze({ ...slots });
   return Object.freeze(scoped) as RequirementInputs;
-}
-function projectValues(
-  source: Readonly<Record<string, unknown>>,
-  projection: InputProjection | undefined,
-): Readonly<Record<string, unknown>> {
-  if (projection === undefined) return source;
-  if (projection.pick !== undefined)
-    return Object.fromEntries(
-      projection.pick.filter((key) => key in source).map((key) => [key, source[key]]),
-    );
-  if (projection.map !== undefined)
-    return Object.fromEntries(
-      Object.entries(projection.map)
-        .filter(([sourceKey]) => sourceKey in source)
-        .map(([sourceKey, targetKey]) => [targetKey, source[sourceKey]]),
-    );
-  throw new InputObservationError(
-    "observation-input-shape",
-    "Input projection must define pick or map.",
-  );
 }
 
 export class GraphPublisher {
@@ -213,8 +194,6 @@ export class GraphPublisher {
           continue;
         }
         try {
-          const inputs: Record<string, unknown> = {};
-          const inputKeys = new Map<string, string>();
           const collected: Record<string, Record<string, unknown>> = {};
           const sourceRevisions: Record<string, number> = {};
           for (const edge of edgesByRole(node, "input")) {
@@ -233,28 +212,23 @@ export class GraphPublisher {
                 `Input observation source "${edge.sourceId}" must be a record.`,
               );
             if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
-            // A plugin-bound edge is delivered scoped to its plugin and slot, never projected and
-            // never merged. The slot is the scope, so there is no key to collide with and the
-            // collision guard below is not reached for it: a requirement is owned rather than
-            // negotiated. See ADR-044.
             const requirement = edge.requirement;
-            if (requirement !== undefined) {
-              (collected[requirement.plugin] ??= {})[requirement.slot] = sourceValues;
-              continue;
-            }
-            const projected = projectValues(sourceValues, edge.projection);
-            for (const [key, value] of Object.entries(projected)) {
-              const previous = inputKeys.get(key);
-              if (previous !== undefined)
-                throw new InputObservationError(
-                  "observation-input-collision",
-                  `Input key "${key}" from ${describeEdge(edge)} collides with ${previous}.`,
-                );
-              inputKeys.set(key, describeEdge(edge));
-              inputs[key] = value;
-            }
+            // Unreachable by construction now that `observes` is output-only: every input edge is
+            // derived from a binding and carries its scope. Thrown rather than skipped, because an
+            // edge in the input phase with nothing to scope it has no destination at all, and a
+            // silent skip would drop a dependency graph construction accepted. Same shape as the
+            // two guards above. See ADR-047.
+            if (requirement === undefined)
+              throw new InputObservationError(
+                "observation-input-shape",
+                `Input observation edge ${describeEdge(edge)} carries no requirement.`,
+              );
+            // The slot is the scope, so the source's values arrive whole and under their own names.
+            // Nothing is projected and nothing is flat-merged, so there is no key left to collide
+            // with and no collision guard left to reach. See ADR-044.
+            (collected[requirement.plugin] ??= {})[requirement.slot] = sourceValues;
           }
-          const composed = node.compose(inputs, freezeRequirementInputs(collected));
+          const composed = node.compose(freezeRequirementInputs(collected));
           validateComposition(composed.values);
           let values = composed.values;
           for (const edge of edgesByRole(node, "output")) {
