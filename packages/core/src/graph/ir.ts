@@ -210,7 +210,7 @@ function validateProjection(
   return Object.freeze({ map: Object.freeze(map) });
 }
 
-export interface ResolvedObservation {
+export interface ResolvedEdge {
   readonly edge?: GraphEdge;
   readonly diagnostics: readonly Diagnostic[];
 }
@@ -227,7 +227,7 @@ export function resolveObservationEdge(
   observerNodeId: string,
   ownerId: string,
   path: string,
-): ResolvedObservation {
+): ResolvedEdge {
   const diagnostics: Diagnostic[] = [];
   const role = observation.role ?? "output";
   if (role !== "input" && role !== "output") {
@@ -270,7 +270,7 @@ export function resolveRequirementEdge(
   observerNodeId: string,
   ownerId: string,
   path: string,
-): ResolvedObservation {
+): ResolvedEdge {
   let sourceId: string;
   try {
     sourceId = qualifySource(binding.source, ownerId);
