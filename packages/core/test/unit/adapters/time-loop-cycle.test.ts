@@ -3,7 +3,7 @@ import { createTriggerFactory } from "../../../src/adapters/trigger-factory/defa
 import type { MotionDefinition } from "../../../src/contract/v5";
 import { resolveTriggerDefinition } from "../../../src/contract/validate-v5";
 import { createManualClock } from "../../../src/ports/clock";
-import { createFakeScheduler } from "../../../src/ports/fakes";
+import { createFakeScheduler } from "../../../src/testing/fakes";
 
 // Loop arithmetic is exercised through the trigger factory rather than by importing the loop module
 // directly, and deliberately. Every case here has to be runnable against the parent commit so its

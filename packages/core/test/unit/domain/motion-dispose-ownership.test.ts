@@ -7,7 +7,7 @@ import {
   createFakeInterpolator,
   createFakeScheduler,
   createFakeTriggerPort,
-} from "../../../src/ports/fakes";
+} from "../../../src/testing/fakes";
 import type { CreatedTrigger, TriggerFactory } from "../../../src/ports/trigger-factory";
 
 describe("Motion compiled Track disposal ownership", () => {

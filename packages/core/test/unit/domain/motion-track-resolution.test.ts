@@ -8,7 +8,7 @@ import {
   createFakeInterpolator,
   createFakeScheduler,
   createFakeTrackRegistry,
-} from "../../../src/ports/fakes";
+} from "../../../src/testing/fakes";
 
 // Read the domain source once. C-3 asserts on the source itself, because "Motion never holds a
 // compiled Track" is invisible to behavioral tests as long as a cached reference happens to be
