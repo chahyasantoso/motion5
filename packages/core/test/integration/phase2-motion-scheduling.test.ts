@@ -6,7 +6,7 @@ import {
   createFakeInterpolator,
   createFakeScheduler,
   createFakeTrackRegistry,
-} from "../../src/ports/fakes";
+} from "../../src/testing/fakes";
 import { Motion } from "../../src/domain/motion";
 import { Track } from "../../src/domain/track";
 
