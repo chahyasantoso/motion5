@@ -12,6 +12,11 @@ function getHeapMb() {
  * Build a project with N motions, each having one track.
  * ~10% of tracks observe the previous track (cross-edges), creating
  * real topological ordering pressure.
+ *
+ * An `observes` entry declares an output edge and carries `source` alone: `role` and `projection`
+ * are refused authored fields now. What these scenarios measure is edge count and ordering
+ * pressure, and an output edge supplies both, so nothing here needs a plugin requirement and a
+ * registry to resolve it. See ADR-047.
  */
 function buildProject(nodeCount, crossEdgeRatio = 0.1) {
   const motions = [];
@@ -28,15 +33,7 @@ function buildProject(nodeCount, crossEdgeRatio = 0.1) {
           },
         },
         observes:
-          i > 0 && Math.random() < crossEdgeRatio
-            ? [
-                {
-                  source: `m_${i - 1}/t_${i - 1}`,
-                  role: "input",
-                  projection: { pick: ["x"] },
-                },
-              ]
-            : [],
+          i > 0 && Math.random() < crossEdgeRatio ? [{ source: `m_${i - 1}/t_${i - 1}` }] : [],
       },
     ];
     motions.push({
@@ -134,13 +131,7 @@ async function runBenchmark() {
               ],
             },
           },
-          observes: [
-            {
-              source: observeTarget,
-              role: "input",
-              projection: { pick: ["x"] },
-            },
-          ],
+          observes: [{ source: observeTarget }],
         },
         ownerB,
       );
@@ -183,13 +174,7 @@ async function runBenchmark() {
               ],
             },
           },
-          observes: [
-            {
-              source: previousSource,
-              role: "input",
-              projection: { pick: ["x"] },
-            },
-          ],
+          observes: [{ source: previousSource }],
         },
         ownerC,
       );
@@ -246,7 +231,7 @@ async function runBenchmark() {
               ],
             },
           },
-          observes: [{ source: observeTarget, role: "input", projection: { pick: ["x"] } }],
+          observes: [{ source: observeTarget }],
         },
         ownerD,
       );

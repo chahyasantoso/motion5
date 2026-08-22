@@ -83,7 +83,7 @@ Trigger errors include `trigger-shape`, `trigger-time-duration`, `trigger-time-a
 
 ## Track fields
 
-A track has a unique local `id`, optional `duration`, optional keyframes, and optional generic `observes` edges. Plugins are resolved from authored keyframe keys. The legacy `use` field is rejected with `plugin-contribution-unsupported-entry`. Track ids may not contain `/`; motion ids may not contain `/` or equal `~`.
+A track has a unique local `id`, optional `duration`, optional keyframes, and optional generic `observes` output edges. Plugins are resolved from authored keyframe keys. The legacy `use` field is rejected with `plugin-contribution-unsupported-entry`. Track ids may not contain `/`; motion ids may not contain `/` or equal `~`.
 
 ## Keyframes
 
@@ -138,9 +138,9 @@ keyframes: {
 
 `requires` is metadata, not a keyframe. It is skipped by flattening and creates no compiled property. Omitting `requires`, or omitting one slot, creates no edge; the plugin owns its unbound behavior. Every configured slot must be declared by the named plugin, otherwise load fails with `plugin-unknown-requirement`.
 
-The graph derives one normal input edge per binding. Unknown sources, self-reference, duplicate edges, and cycles are rejected before mount. A requirement is part of edge identity, so two slots such as `base` and `destination` may intentionally bind the same source.
+The graph derives one input edge per binding. Unknown sources, self-reference, duplicate edges, and cycles are rejected before mount. A requirement is part of edge identity, so two slots such as `base` and `destination` may intentionally bind the same source.
 
-At composition, generic `observes` inputs remain in the flat input bag. Plugin-owned inputs are separate: a source bound to `fk.requires.base` arrives at the FK plugin as `inputs.base`, retaining the source's natural keys such as `x`, `y`, and `rotation`. It cannot overwrite the track's authored `values.rotation`; the two values are separated by object scope rather than renamed keys.
+A binding is the only way a value enters composition. A source bound to `fk.requires.base` arrives at the FK plugin as `inputs.base`, retaining the source's natural keys such as `x`, `y`, and `rotation`. It cannot overwrite the track's authored `values.rotation`: the two are separated by object scope rather than by renamed keys, and there is no flat input bag beside the scope for either of them to land in. See ADR-044 and ADR-047.
 
 The contract layer owns binding shape, the plugin registry owns plugin and slot resolution, and graph construction owns topology. This keeps validation registry-independent and avoids duplicate normalization owners. See ADR-044.
 
@@ -154,15 +154,23 @@ The contract layer owns binding shape, the plugin registry owns plugin and slot 
 
 ## Observation edges
 
-Generic edges remain available on the observing track:
+Generic edges remain available on the observing track, and carry exactly one authored field:
 
-```js
-{ source: "motionA/arm", role: "input", projection: { pick: ["x", "rotation"] } }
+```text
+{ source: "motionA/arm" }
 ```
 
-`source` may be local, qualified motion, or free-track. `role` is `input` or `output` and defaults to `output`. Input projections are generic graph behavior; plugin-owned requirements should be preferred when the dependency belongs to a plugin. Output observations merge the source contribution over the observer's composed patch.
+`source` may be local, qualified motion, or free-track.
 
-An edge has exactly three authored fields. There is no `target`, on either role, and an authored one is rejected with `observation-target-unsupported`. It was once validated and carried in edge identity while never being read at composition, which is the field accepted and then ignored that ADR-033 forbids. Rename incoming keys with `projection`, or bind the dependency under a plugin group's `requires` section when it belongs to a plugin. See ADR-046.
+Every edge an `observes` entry declares is an output edge: the source's contribution merges over the observer's composed patch. There is no way to declare an input edge by hand, and no need for one. A dependency that feeds a track's own composition is bound under a plugin group's `requires` section and arrives scoped to that plugin.
+
+Three authored fields were removed, and each is refused rather than accepted and ignored:
+
+- `target` is `observation-target-unsupported`. It named a destination key that no consumer read on either role. See ADR-046.
+- `role` is `observation-role-unsupported`, for `"input"` and for `"output"` alike. It is refused on both, because if the only legal value is the default then writing it is a field accepted and then ignored.
+- `projection` is `observation-projection-unsupported`. It renamed an upstream key to keep it from colliding inside a flat input bag, and an output edge merges the source's whole patch rather than renaming anything.
+
+See ADR-047.
 
 The graph rejects unknown, duplicate, self-referential, and cyclic edges before mount.
 
@@ -190,4 +198,4 @@ Errors reject a candidate project before it replaces the active project. Warning
 
 ## Rejected input
 
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, malformed bindings and edges, unknown sources, duplicate edges, self-reference, cycles, removed fields such as an observation `target` or a track `use`, and legacy `use` entries are errors. Flat keys with multiple plugin claimants are also errors. Missing perspective for detected 3D content and unused free tracks are warnings.
+Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, malformed bindings and edges, unknown sources, duplicate edges, self-reference, cycles, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, and a track `use`. Flat keys with multiple plugin claimants are also errors. Missing perspective for detected 3D content and unused free tracks are warnings.

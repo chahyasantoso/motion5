@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { GraphEdge, GraphIR } from "../../src/graph/ir";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 import { GraphPublisher, type PublisherNode } from "../../src/runtime/graph-publisher";
+import { slotOf } from "../helpers/requirement-inputs";
 
 const node = (id: string, edges: GraphEdge[], compose: PublisherNode["compose"]): PublisherNode =>
   Object.freeze({
@@ -22,8 +23,15 @@ const snapshot = (
   diagnostics: Object.freeze([]),
 });
 
+const REQUIREMENT_EDGE: GraphEdge = {
+  observerId: "downstream",
+  sourceId: "sourceA",
+  role: "input",
+  requirement: { plugin: "p", slot: "s" },
+};
+
 describe("GraphPublisher: memo/registry consistency (recovery A1)", () => {
-  it("a same-flush input-role consumer sees the source's merged flat value", () => {
+  it("a same-flush requirement consumer sees the source's merged value", () => {
     const nodes = [
       node("overlaySource", [], () => ({
         values: { overlay: 99 },
@@ -35,11 +43,11 @@ describe("GraphPublisher: memo/registry consistency (recovery A1)", () => {
         [{ observerId: "sourceA", sourceId: "overlaySource", role: "output" }],
         () => ({ values: { base: 1 }, sourceProgress: 0, sourceRevisions: {} }),
       ),
-      node(
-        "downstream",
-        [{ observerId: "downstream", sourceId: "sourceA", role: "input" }],
-        (inputs) => ({ values: inputs, sourceProgress: 0, sourceRevisions: {} }),
-      ),
+      node("downstream", [REQUIREMENT_EDGE], (inputs) => ({
+        values: slotOf(inputs, "p", "s"),
+        sourceProgress: 0,
+        sourceRevisions: {},
+      })),
     ];
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
@@ -51,7 +59,7 @@ describe("GraphPublisher: memo/registry consistency (recovery A1)", () => {
     expect(downstreamPatch?.values).toEqual({ base: 1, overlay: 99 });
   });
 
-  it("a later flush resolves the source's merged flat value via registry fallback", () => {
+  it("a later flush resolves the source's merged value via registry fallback", () => {
     let downstreamCalls = 0;
     const nodes = [
       node("overlaySource", [], () => ({
@@ -64,15 +72,11 @@ describe("GraphPublisher: memo/registry consistency (recovery A1)", () => {
         [{ observerId: "sourceA", sourceId: "overlaySource", role: "output" }],
         () => ({ values: { base: 1 }, sourceProgress: 0, sourceRevisions: {} }),
       ),
-      node(
-        "downstream",
-        [{ observerId: "downstream", sourceId: "sourceA", role: "input" }],
-        (inputs) => ({
-          values: { ...inputs, callCount: (downstreamCalls += 1) },
-          sourceProgress: 0,
-          sourceRevisions: {},
-        }),
-      ),
+      node("downstream", [REQUIREMENT_EDGE], (inputs) => ({
+        values: { ...slotOf(inputs, "p", "s"), callCount: (downstreamCalls += 1) },
+        sourceProgress: 0,
+        sourceRevisions: {},
+      })),
     ];
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);

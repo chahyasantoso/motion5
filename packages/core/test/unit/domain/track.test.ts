@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { Track } from "../../../src/domain/track";
-import type { ImmutableRecord } from "../../../src/domain/values";
+import type { PluginComposer } from "../../../src/domain/plugins";
 
 const emptyPreparation = { keyframes: Object.freeze({}), tweenVars: Object.freeze({}) } as const;
 function createInterpolator() {
@@ -40,10 +40,7 @@ function createRejectingInterpolator() {
     timelineProgress: () => timelineProgress,
   };
 }
-function createPlugin(
-  name: string,
-  compose: (values: Readonly<ImmutableRecord>, progress: number) => ImmutableRecord,
-) {
+function createPlugin(name: string, compose: PluginComposer) {
   return { name, compose };
 }
 function plugins(...items: ReturnType<typeof createPlugin>[]) {
@@ -72,27 +69,38 @@ describe("Track leaf", () => {
   });
   it("rejects non-finite progress and composes local values once per dirty state", () => {
     const fake = createInterpolator();
-    const compose = vi.fn((values: Readonly<ImmutableRecord>) => ({ ...values, opacity: 1 }));
+    // The plugin reads its own scoped slot. There is no flat bag to read instead: the one
+    // parameter `compose` still takes is the requirement scope. See ADR-047. The default keeps an
+    // unbound slot out of the composed record, which is the plugin's job rather than Track's.
+    const composer: PluginComposer = (values, progress, inputs) => ({
+      ...values,
+      opacity: inputs.level ?? 0,
+    });
+    const compose = vi.fn(composer);
     const track = new Track({
       interpolator: fake.interpolator,
       plugins: plugins(createPlugin("opacity", compose)),
     });
     expect(() => track.setProgress(Number.NaN)).toThrow(/finite/);
-    const first = track.compose({ x: 1 });
-    const second = track.compose({ x: 1 });
+    const first = track.compose({ opacity: { level: 1 } });
+    const second = track.compose({ opacity: { level: 1 } });
     expect(second).toBe(first);
     expect(compose).toHaveBeenCalledTimes(1);
-    expect(first.values).toEqual({ x: 1, opacity: 1 });
+    expect(first.values).toEqual({ opacity: 1 });
   });
-  it("recomposes a clean track when its inputs change", () => {
+  it("recomposes a clean track when its requirement inputs change", () => {
     const fake = createInterpolator();
-    const compose = vi.fn((values: Readonly<ImmutableRecord>) => ({ ...values }));
+    const composer: PluginComposer = (values, progress, inputs) => ({
+      ...values,
+      x: inputs.level ?? 0,
+    });
+    const compose = vi.fn(composer);
     const track = new Track({
       interpolator: fake.interpolator,
       plugins: plugins(createPlugin("passthrough", compose)),
     });
-    const first = track.compose({ x: 1 });
-    const second = track.compose({ x: 2 });
+    const first = track.compose({ passthrough: { level: 1 } });
+    const second = track.compose({ passthrough: { level: 2 } });
     expect(second).not.toBe(first);
     expect(second.values).toEqual({ x: 2 });
     expect(compose).toHaveBeenCalledTimes(2);

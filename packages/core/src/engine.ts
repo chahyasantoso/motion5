@@ -17,7 +17,6 @@ import { flattenAuthoredKeyframes } from "./domain/keyframe-groups";
 import { Motion, type MotionTrackEntry } from "./domain/motion";
 import { PluginRegistry, type RequirementInputs } from "./domain/plugins";
 import { Track } from "./domain/track";
-import type { ImmutableRecord } from "./domain/values";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import { assertClock, type Clock } from "./ports/clock";
 import { assertInterpolator, type Interpolator } from "./ports/interpolator";
@@ -374,18 +373,19 @@ export class Engine {
     };
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
-      // The only seam between the publisher's edge resolution and `Track.compose`, so it is the
-      // only place that forwards the scoped requirement inputs. They stay a separate argument all
-      // the way down: merging them into `inputs` here would undo the namespace separation the
-      // publisher just established. See ADR-044.
+      // The only seam between the publisher's edge resolution and `Track.compose`, and it forwards
+      // one argument because there is only one to forward. The flat input bag that used to travel
+      // beside the scoped requirement inputs is gone with the channel that filled it, so this seam
+      // can no longer undo the namespace separation the publisher established: there is no
+      // parameter here to merge an upstream value into. See ADR-044 and ADR-047.
       const compose =
         (node: {
           id: string;
           track: { duration?: number; keyframes?: Readonly<Record<string, unknown>> };
         }) =>
-        (inputs: Readonly<Record<string, unknown>>, requirementInputs: RequirementInputs) => {
+        (requirementInputs: RequirementInputs) => {
           const track = tracks.get(node.id)!;
-          const snapshot = track.compose(inputs as Readonly<ImmutableRecord>, requirementInputs);
+          const snapshot = track.compose(requirementInputs);
           return {
             values: snapshot.values,
             sourceProgress: snapshot.progress,

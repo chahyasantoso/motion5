@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
+import type { RequirementInputs } from "../../src/domain/plugins";
 import { createManualClock } from "../../src/ports/clock";
 import { GraphRuntime } from "../../src/runtime/graph-runtime";
+import { slotOf } from "../helpers/requirement-inputs";
 
 /**
  * Deterministic diagnostic rule id a pending cross-motion reference must carry. Written as a
@@ -11,6 +13,9 @@ import { GraphRuntime } from "../../src/runtime/graph-runtime";
  */
 const PENDING_REFERENCE_RULE_ID = "observation-pending-reference";
 
+// The cross-motion dependency is authored as a plugin requirement, which is the only way a value
+// enters composition. Graph construction reads the binding syntactically and holds no registry, so
+// `rig` here names nothing that has to be registered. See ADR-047.
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [
@@ -21,24 +26,21 @@ const project: ProjectDefinition = {
       tracks: [
         {
           id: "child",
-          observes: [
-            {
-              source: "base/root",
-              role: "input",
-              projection: { map: { self: "parentWorld" } },
-            },
-          ],
+          keyframes: { rig: { requires: { parent: "base/root" } } },
         },
       ],
     },
   ],
 };
 
-// `self` is written after spreading `inputs` so the node's own identity always wins on a key
-// collision. This deliberately avoids a footgun where an unprojected upstream value could
-// silently overwrite a node's own composed identity if inputs were spread last instead.
-const compose = (node: { id: string }) => (inputs: Readonly<Record<string, unknown>>) => ({
-  values: Object.freeze({ ...inputs, self: node.id }),
+// `self` is the node's own identity and `parentWorld` is the upstream's. They cannot collide any
+// more, because the slot is the scope rather than a renamed key, but the case still asserts that
+// the observer's own value is the one it publishes.
+const compose = (node: { id: string }) => (requirementInputs: RequirementInputs) => ({
+  values: Object.freeze({
+    parentWorld: slotOf(requirementInputs, "rig", "parent").self ?? null,
+    self: node.id,
+  }),
   sourceProgress: 0,
   sourceRevisions: {},
 });
@@ -96,7 +98,7 @@ describe("P5-01 cross-motion references", () => {
         {
           id: "arm",
           trigger: { type: "manual" },
-          tracks: [{ id: "child", observes: [{ source: "missing/root", role: "input" }] }],
+          tracks: [{ id: "child", observes: [{ source: "missing/root" }] }],
         },
       ],
     };

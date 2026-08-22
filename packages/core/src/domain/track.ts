@@ -105,7 +105,6 @@ export class Track {
   #dirty = true;
   #disposed = false;
   #lastSnapshot: TrackSnapshot | undefined;
-  #lastInputs: Readonly<ImmutableRecord> | undefined;
   #lastRequirementInputs: RequirementInputs | undefined;
   constructor(options: TrackOptions) {
     this.#plugins = options.plugins ?? EMPTY_RESOLVED_PLUGINS;
@@ -132,29 +131,26 @@ export class Track {
   /**
    * Composes this track's values, then runs the plugin chain over them.
    *
-   * `inputs` is the flat contribution of the track's own `observes` edges and is merged into the
-   * value bag, unchanged. `requirementInputs` is the plugin-owned half and is deliberately not:
-   * each plugin receives only the slots it declared, so a source's `rotation` reaches `fk` as
-   * `inputs.base.rotation` while the bone's authored `rotation` stays `values.rotation`. Merging
-   * both into one bag is what made an upstream value able to replace an authored one, and what
-   * forced a plugin to invent `parentRotation` to stay out of the way. See ADR-044.
+   * One parameter, and it is the plugin-owned scope: each plugin receives only the slots it
+   * declared, so a source's `rotation` reaches `fk` as `inputs.base.rotation` while the bone's
+   * authored `rotation` stays `values.rotation`. They are distinguished by where they live rather
+   * than by being spelled differently, which is why `fkPlugin` needs no `parentRotation`.
+   *
+   * There is no flat bag beside it. The generic `observes` channel that used to fill one declares
+   * output edges only, so nothing merges an upstream value into the authored namespace and no
+   * parameter exists to merge one with. See ADR-044 and ADR-047.
    */
-  compose(
-    inputs: Readonly<ImmutableRecord> = {},
-    requirementInputs: RequirementInputs = NO_REQUIREMENT_INPUTS,
-  ): TrackSnapshot {
+  compose(requirementInputs: RequirementInputs = NO_REQUIREMENT_INPUTS): TrackSnapshot {
     this.assertActive();
     if (
       !this.#dirty &&
       this.#lastSnapshot &&
-      this.#lastInputs !== undefined &&
-      (this.#lastInputs === inputs || equalValues(this.#lastInputs, inputs)) &&
       this.#lastRequirementInputs !== undefined &&
       (this.#lastRequirementInputs === requirementInputs ||
         equalValues(this.#lastRequirementInputs, requirementInputs))
     )
       return this.#lastSnapshot;
-    let values: ImmutableRecord = { ...rendererNeutralState(this.#timeline.state), ...inputs };
+    let values: ImmutableRecord = rendererNeutralState(this.#timeline.state);
     for (const plugin of this.#plugins.plugins) {
       const scoped = requirementInputs[plugin.name] ?? NO_PLUGIN_INPUTS;
       const composed = plugin.compose(values, this.#progress, scoped);
@@ -168,7 +164,6 @@ export class Track {
       progress: this.#progress,
       values: freezeComposition(publishableValues(values, this.#plugins)),
     });
-    this.#lastInputs = freezeValue({ ...inputs });
     this.#lastRequirementInputs = Object.freeze({ ...requirementInputs });
     this.#lastSnapshot = snapshot;
     this.#dirty = false;
@@ -179,7 +174,6 @@ export class Track {
     this.#disposed = true;
     this.#timeline.kill();
     this.#lastSnapshot = undefined;
-    this.#lastInputs = undefined;
     this.#lastRequirementInputs = undefined;
   }
   private assertActive(): void {

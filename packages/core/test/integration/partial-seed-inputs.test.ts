@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { GraphEdge, GraphIR } from "../../src/graph/ir";
 import { GraphPublisher, type PublisherNode } from "../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
+import { slotOf } from "../helpers/requirement-inputs";
 
 const snapshot = (
   nodes: readonly PublisherNode[],
@@ -27,8 +28,11 @@ const node = (
     compose,
   });
 
-describe("GraphPublisher partial-seed inputs", () => {
-  it("uses the last published flat value for an unseeded input source", () => {
+// TR-R-02, on the surviving input channel. Two slots of one plugin replace two flat edges; what
+// the case asks -- what an unseeded upstream contributes to a partial flush -- is unchanged, so
+// the scenario is converted rather than deleted. See ADR-047.
+describe("GraphPublisher partial-seed requirement inputs", () => {
+  it("uses the last published value for an unseeded requirement source", () => {
     const registry = new PatchRegistry();
     let a = 2;
     const sourceA = node("source-a", 0, [], () => ({
@@ -45,14 +49,24 @@ describe("GraphPublisher partial-seed inputs", () => {
       "sink",
       2,
       [
-        { observerId: "sink", sourceId: "source-a", role: "input" },
-        { observerId: "sink", sourceId: "source-b", role: "input" },
+        {
+          observerId: "sink",
+          sourceId: "source-a",
+          role: "input",
+          requirement: { plugin: "sum", slot: "left" },
+        },
+        {
+          observerId: "sink",
+          sourceId: "source-b",
+          role: "input",
+          requirement: { plugin: "sum", slot: "right" },
+        },
       ],
-      (inputs) => ({
-        values: { total: (inputs.a as number) + (inputs.b as number) },
-        sourceProgress: 0,
-        sourceRevisions: {},
-      }),
+      (requirementInputs) => {
+        const left = Number(slotOf(requirementInputs, "sum", "left").a ?? 0);
+        const right = Number(slotOf(requirementInputs, "sum", "right").b ?? 0);
+        return { values: { total: left + right }, sourceProgress: 0, sourceRevisions: {} };
+      },
     );
     const graph = snapshot([sourceA, sourceB, sink]);
     const publisher = new GraphPublisher(registry);

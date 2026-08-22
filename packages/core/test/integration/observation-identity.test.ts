@@ -20,6 +20,13 @@ const TARGET_OUTPUT = {
   target: "x",
 } as unknown as ObservationDefinition;
 
+const ROLE_INPUT = { source: "hero/root", role: "input" } as unknown as ObservationDefinition;
+const ROLE_OUTPUT = { source: "hero/root", role: "output" } as unknown as ObservationDefinition;
+const PROJECTED = {
+  source: "hero/root",
+  projection: { pick: ["x"] },
+} as unknown as ObservationDefinition;
+
 function track(id: string, observes?: TrackDefinition["observes"]): TrackDefinition {
   return {
     id,
@@ -53,22 +60,14 @@ function project(
 }
 
 describe("observation identity", () => {
-  it("covers property order, default role, source spelling, and projection map order", () => {
+  it("covers source spelling across an add and its matching remove", () => {
+    // One authored field is left, so identity is source spelling and nothing else: a local
+    // spelling and its qualified form name the same edge.
     const handle = makeHandle(project());
     const child = handle.track("hero/child");
-    child.addObserve({ source: "root", role: "input" });
-    child.removeObserve({ source: "hero/root", role: "input" });
-    expect(handle.dependantsOf("hero/root")).toEqual([]);
-    child.addObserve({
-      source: "hero/root",
-      role: "input",
-      projection: { map: { a: "x", b: "y" } },
-    });
-    child.removeObserve({
-      role: "input",
-      source: "hero/root",
-      projection: { map: { b: "y", a: "x" } },
-    });
+    child.addObserve({ source: "root" });
+    expect(handle.dependantsOf("hero/root")).toEqual(["hero/child"]);
+    child.removeObserve({ source: "hero/root" });
     expect(handle.dependantsOf("hero/root")).toEqual([]);
     handle.dispose();
   });
@@ -78,11 +77,11 @@ describe("observation identity", () => {
     child.addObserve({ source: "root" });
     const sequence = (handle as unknown as { _runtime: { graph: { sequence: number } } })._runtime
       .graph.sequence;
-    expect(() => child.addObserve({ role: "output", source: "root" })).not.toThrow();
+    expect(() => child.addObserve({ source: "hero/root" })).not.toThrow();
     expect(
       (handle as unknown as { _runtime: { graph: { sequence: number } } })._runtime.graph.sequence,
     ).toBe(sequence);
-    expect(() => child.removeObserve({ source: "root", role: "output" })).not.toThrow();
+    expect(() => child.removeObserve({ source: "root" })).not.toThrow();
     expect(handle.dependantsOf("hero/root")).toEqual([]);
     handle.dispose();
   });
@@ -97,6 +96,20 @@ describe("observation identity", () => {
     const child = handle.track("hero/child");
     expect(() => child.addObserve(TARGET_INPUT)).toThrow(/observation-target-unsupported/);
     expect(() => child.addObserve(TARGET_OUTPUT)).toThrow(/observation-target-unsupported/);
+    expect(handle.dependantsOf("hero/root")).toEqual([]);
+    handle.dispose();
+  });
+  it("J-7 refuses an authored role or projection through addObserve", () => {
+    const handle = makeHandle(project());
+    const child = handle.track("hero/child");
+    expect(() => child.addObserve(ROLE_INPUT)).toThrow(/observation-role-unsupported/);
+    expect(() => child.addObserve(ROLE_OUTPUT)).toThrow(/observation-role-unsupported/);
+    expect(() => child.addObserve(PROJECTED)).toThrow(/observation-projection-unsupported/);
+    expect(handle.dependantsOf("hero/root")).toEqual([]);
+    // The one authored form that is left still works, and still removes.
+    child.addObserve({ source: "root" });
+    expect(handle.dependantsOf("hero/root")).toEqual(["hero/child"]);
+    child.removeObserve({ source: "root" });
     expect(handle.dependantsOf("hero/root")).toEqual([]);
     handle.dispose();
   });

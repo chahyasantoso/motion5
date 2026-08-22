@@ -1,19 +1,25 @@
 import { describe, expect, it } from "vitest";
-import type { GraphEdge } from "../../../src/graph/ir";
+import type { EdgeRequirement, GraphEdge } from "../../../src/graph/ir";
 import { compareEdges, edgeKey } from "../../../src/graph/ir";
 
-// Ids and projection keys that contain every character the identity encoding or the comparator
+// Ids and requirement names that contain every character the identity encoding or the comparator
 // treats as punctuation, plus leading digits, which is what a length prefix looks like from the
 // outside. All ten are pairwise distinct edges.
+//
+// The four projection rows retire with that primitive and are replaced by requirement rows, so the
+// fixture still carries ten and identity and ordering are still proved to agree on distinctness.
+// See ADR-047.
+const requires = (plugin: string, slot: string): EdgeRequirement => ({ plugin, slot });
+
 const EDGES: readonly GraphEdge[] = [
-  { observerId: "a|b/c", sourceId: "d/e", role: "input" },
-  { observerId: "a/b", sourceId: "d/e", role: "input" },
+  { observerId: "a|b/c", sourceId: "d/e", role: "input", requirement: requires("p", "s") },
+  { observerId: "a/b", sourceId: "d/e", role: "input", requirement: requires("p", "s") },
   { observerId: "a/b", sourceId: "d/e", role: "output" },
-  { observerId: "a/b", sourceId: "d|e/f", role: "input" },
-  { observerId: "a/b", sourceId: "d/e", role: "input", projection: { pick: ["a,b"] } },
-  { observerId: "a/b", sourceId: "d/e", role: "input", projection: { pick: ["a", "b"] } },
-  { observerId: "a/b", sourceId: "d/e", role: "input", projection: { map: { a: "x,b=y" } } },
-  { observerId: "a/b", sourceId: "d/e", role: "input", projection: { map: { a: "x", b: "y" } } },
+  { observerId: "a/b", sourceId: "d|e/f", role: "input", requirement: requires("p", "s") },
+  { observerId: "a/b", sourceId: "d/e", role: "input", requirement: requires("p", "t") },
+  { observerId: "a/b", sourceId: "d/e", role: "input", requirement: requires("q", "s") },
+  { observerId: "a/b", sourceId: "d/e", role: "input", requirement: requires("p|q", "s") },
+  { observerId: "a/b", sourceId: "d/e", role: "input", requirement: requires("p", "s|t") },
   { observerId: "10/x", sourceId: "d/e", role: "output" },
   { observerId: "2/x", sourceId: "d/e", role: "output" },
 ];

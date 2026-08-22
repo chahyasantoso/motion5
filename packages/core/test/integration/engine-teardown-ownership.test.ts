@@ -340,7 +340,7 @@ describe("Engine owns the teardown of everything a failed operation created", ()
         {
           id: "hero",
           trigger: { type: "manual" },
-          tracks: [{ id: "arm", observes: [{ source: "~/missing", role: "input" }] }],
+          tracks: [{ id: "arm", observes: [{ source: "~/missing" }] }],
         },
       ],
     };

@@ -137,7 +137,7 @@ describe("a refused Track replacement commits nothing", () => {
     // and compile steps at all. Pinned here so the reordering cannot regress the one refusal that
     // replacement already handled correctly.
     const handle = load();
-    const observation = { source: "scene/missing", role: "input" } as const;
+    const observation = { source: "scene/missing" } as const;
 
     const thrown = thrownBy(() => handle.track(NODE_ID).addObserve(observation));
 

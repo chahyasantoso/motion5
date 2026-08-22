@@ -1,39 +1,40 @@
 import { describe, expect, it } from "vitest";
-import { edgeKey, resolveObservationEdge } from "../../../src/graph/ir";
+import type { PluginRequiresBinding } from "../../../src/contract/v5";
+import type { GraphEdge } from "../../../src/graph/ir";
+import { edgeKey, resolveObservationEdge, resolveRequirementEdge } from "../../../src/graph/ir";
+
+// Canonical identity carried two authored string fields. Projection ordering was one, and it
+// retires with the primitive; the requirement's plugin and slot are the other, and are all that is
+// left to canonicalize. See ADR-047.
+const OBSERVER = "hero/child";
+const SOURCE = "hero/root";
+
+const binding = (slot: string): PluginRequiresBinding =>
+  Object.freeze({ plugin: "fk", slot, source: "root", authoredPath: `fk.requires.${slot}` });
 
 describe("canonical observation edge identity", () => {
-  const base = { observerId: "hero/child", sourceId: "hero/root", role: "input" as const };
-  it("ignores projection map and pick ordering", () => {
-    expect(edgeKey({ ...base, projection: { map: { a: "x", b: "y" } } })).toBe(
-      edgeKey({ ...base, projection: { map: { b: "y", a: "x" } } }),
-    );
-    expect(edgeKey({ ...base, projection: { pick: ["a", "b"] } })).toBe(
-      edgeKey({ ...base, projection: { pick: ["b", "a"] } }),
-    );
-  });
-  it("keeps genuinely different projections distinct", () => {
-    expect(edgeKey({ ...base, projection: { pick: ["a"] } })).not.toBe(
-      edgeKey({ ...base, projection: { pick: ["a", "b"] } }),
-    );
-    expect(edgeKey({ ...base, projection: { map: { a: "x" } } })).not.toBe(
-      edgeKey({ ...base, projection: { map: { a: "y" } } }),
-    );
-  });
   it("shares identity with the authored observation resolver", () => {
-    const resolved = resolveObservationEdge(
-      { source: "root", role: "input", projection: { map: { b: "y", a: "x" } } },
-      "hero/child",
-      "hero",
-      "test",
-    );
+    const resolved = resolveObservationEdge({ source: "root" }, OBSERVER, "hero", "test");
+    const expected: GraphEdge = { observerId: OBSERVER, sourceId: SOURCE, role: "output" };
     expect(resolved.edge).toBeDefined();
-    expect(edgeKey(resolved.edge!)).toBe(
-      edgeKey({
-        observerId: "hero/child",
-        sourceId: "hero/root",
-        role: "input",
-        projection: { map: { a: "x", b: "y" } },
-      }),
-    );
+    expect(edgeKey(resolved.edge!)).toBe(edgeKey(expected));
+  });
+
+  it("shares identity with the authored requirement resolver", () => {
+    const resolved = resolveRequirementEdge(binding("base"), OBSERVER, "hero", "test");
+    const expected: GraphEdge = {
+      observerId: OBSERVER,
+      sourceId: SOURCE,
+      role: "input",
+      requirement: { plugin: "fk", slot: "base" },
+    };
+    expect(resolved.edge).toBeDefined();
+    expect(edgeKey(resolved.edge!)).toBe(edgeKey(expected));
+  });
+
+  it("keeps two slots bound to one source distinct", () => {
+    const base = resolveRequirementEdge(binding("base"), OBSERVER, "hero", "test");
+    const other = resolveRequirementEdge(binding("destination"), OBSERVER, "hero", "test");
+    expect(edgeKey(base.edge!)).not.toBe(edgeKey(other.edge!));
   });
 });

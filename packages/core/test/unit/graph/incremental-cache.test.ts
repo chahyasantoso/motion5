@@ -26,26 +26,25 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
   // This is silent data loss, not a stale-cache annoyance.
   it("re-reports a rejected observation edge instead of caching the omission", () => {
     const root: TrackDefinition = { id: "root", keyframes: { x: ramp(0, 100) } };
-    const child: TrackDefinition = {
+    // An authored projection: `resolveObservationEdge` refuses it, `collectTrack` collects the
+    // diagnostic and drops the edge, and the node comes back incomplete. Cast, because the field
+    // is no longer declared and a JavaScript author can still write it.
+    const child = {
       id: "child",
       keyframes: { y: ramp(0, 50) },
-      // pick and map together: validateProjection rejects it, collectTrack `continue`s, and
-      // the node comes back with this edge dropped.
-      observes: [
-        { source: "~/root", role: "input", projection: { pick: ["x"], map: { x: "px" } } },
-      ],
-    };
+      observes: [{ source: "~/root", projection: { pick: ["x"] } }],
+    } as unknown as TrackDefinition;
     const project = freeProject([root, child]);
     const builder = new IncrementalGraphBuilder();
 
     const first = builder.build(project);
     expect(first.graph).toBeUndefined();
-    expect(ruleIds(first.diagnostics)).toContain("observation-input-projection");
+    expect(ruleIds(first.diagnostics)).toContain("observation-projection-unsupported");
 
-    // Today: diagnostics are empty and a graph is returned, with ~/child present and its
-    // declared observation edge gone forever.
+    // Before the fix: diagnostics were empty and a graph was returned, with ~/child present and
+    // its declared observation edge gone forever.
     const second = builder.build(project);
-    expect(ruleIds(second.diagnostics)).toContain("observation-input-projection");
+    expect(ruleIds(second.diagnostics)).toContain("observation-projection-unsupported");
     expect(second.graph).toBeUndefined();
   });
 

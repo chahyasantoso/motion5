@@ -21,7 +21,7 @@ export const freeTrackProject = {
     {
       id: "hero",
       trigger: { type: "manual" },
-      tracks: [{ id: "pointer", observes: [{ source: "~/cursor", role: "input" }] }],
+      tracks: [{ id: "pointer", observes: [{ source: "~/cursor" }] }],
     },
   ],
   freeTracks: [{ id: "cursor" }],

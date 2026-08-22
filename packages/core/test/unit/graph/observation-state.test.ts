@@ -11,7 +11,7 @@ const project: ProjectDefinition = {
       id: "hero",
       trigger: { type: "manual" },
       tracks: [
-        { id: "arm", observes: [{ source: "~/cursor", role: "input" }] },
+        { id: "arm", observes: [{ source: "~/cursor" }] },
         { id: "halo", observes: [{ source: "arm" }] },
       ],
     },

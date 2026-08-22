@@ -1,6 +1,5 @@
 import type {
   Diagnostic,
-  InputProjection,
   ObservationDefinition,
   PluginRequiresBinding,
   ProjectDefinition,
@@ -20,11 +19,19 @@ export interface EdgeRequirement {
   readonly plugin: string;
   readonly slot: string;
 }
+/**
+ * One edge of the observation graph.
+ *
+ * `role` names the composition phase rather than an authored field: inputs are collected before
+ * `node.compose`, outputs are merged after it. It is not derivable-and-redundant even though every
+ * input edge now carries a `requirement`, because a conditional inside the single ordering owner is
+ * worse than a field two resolvers set with one literal each. `J-5` pins the equivalence over a
+ * whole built graph, so the two cannot disagree. See ADR-047.
+ */
 export interface GraphEdge {
   readonly observerId: string;
   readonly sourceId: string;
   readonly role: "input" | "output";
-  readonly projection?: InputProjection;
   readonly requirement?: EdgeRequirement;
 }
 export interface GraphNode {
@@ -59,23 +66,18 @@ function requirementOrder(edge: GraphEdge): string {
   return edge.requirement === undefined ? "-" : `:${edge.requirement.plugin}`;
 }
 
-export function canonicalizeProjection(projection: InputProjection): string {
-  if (projection.pick !== undefined) {
-    const pickKeys = [...projection.pick].sort(compareCodeUnits);
-    return `pick:${pickKeys.map(field).join("")}`;
-  }
-  const map = projection.map ?? {};
-  const mapKeys = Object.keys(map).sort(compareCodeUnits);
-  return `map:${mapKeys.map((key) => `${field(key)}${field(map[key]!)}`).join("")}`;
-}
-
+/**
+ * The injective identity encoding for an edge.
+ *
+ * Every part is length-prefixed, so no authored string can forge a field boundary. The requirement
+ * plugin and slot are the only authored string pair left inside it, now that the canonical
+ * projection is gone with the primitive it encoded. See ADR-034, ADR-046, and ADR-047.
+ */
 export function edgeKey(edge: GraphEdge): string {
-  const projection = edge.projection ? canonicalizeProjection(edge.projection) : "";
   return [
     field(edge.observerId),
     field(edge.sourceId),
     field(edge.role),
-    field(projection),
     field(requirementIdentity(edge)),
   ].join("");
 }
@@ -85,10 +87,6 @@ export function compareEdges(a: GraphEdge, b: GraphEdge): number {
     compareCodeUnits(a.observerId, b.observerId) ||
     compareCodeUnits(a.sourceId, b.sourceId) ||
     compareCodeUnits(a.role, b.role) ||
-    compareCodeUnits(
-      a.projection ? canonicalizeProjection(a.projection) : "",
-      b.projection ? canonicalizeProjection(b.projection) : "",
-    ) ||
     compareCodeUnits(requirementOrder(a), requirementOrder(b)) ||
     compareCodeUnits(a.requirement?.slot ?? "", b.requirement?.slot ?? "")
   );
@@ -131,95 +129,25 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function validateProjection(
-  projection: unknown,
-  path: string,
-  diagnostics: Diagnostic[],
-): InputProjection | undefined {
-  if (projection === undefined) return undefined;
-  if (!isRecord(projection)) {
-    diagnostics.push(
-      diag("observation-input-projection", path, "Input projection must be an object."),
-    );
-    return undefined;
-  }
-  const hasPick = projection.pick !== undefined;
-  const hasMap = projection.map !== undefined;
-  if (hasPick === hasMap) {
-    diagnostics.push(
-      diag(
-        "observation-input-projection",
-        path,
-        "Input projection must define exactly one of pick or map.",
-      ),
-    );
-    return undefined;
-  }
-  if (hasPick) {
-    if (
-      !Array.isArray(projection.pick) ||
-      projection.pick.length === 0 ||
-      projection.pick.some((key) => typeof key !== "string" || key.length === 0)
-    ) {
-      diagnostics.push(
-        diag(
-          "observation-input-projection",
-          path,
-          "Input projection pick must be a non-empty list of non-empty keys.",
-        ),
-      );
-      return undefined;
-    }
-    if (new Set(projection.pick).size !== projection.pick.length) {
-      diagnostics.push(
-        diag("observation-input-projection", path, "Input projection pick keys must be unique."),
-      );
-      return undefined;
-    }
-    return Object.freeze({ pick: Object.freeze([...projection.pick]) });
-  }
-  if (
-    !isRecord(projection.map) ||
-    Object.keys(projection.map).length === 0 ||
-    Object.entries(projection.map).some(
-      ([source, target]) =>
-        source.length === 0 || typeof target !== "string" || target.length === 0,
-    )
-  ) {
-    diagnostics.push(
-      diag(
-        "observation-input-projection",
-        path,
-        "Input projection map must map non-empty source keys to non-empty output keys.",
-      ),
-    );
-    return undefined;
-  }
-  const map: Record<string, string> = {};
-  for (const [source, target] of Object.entries(projection.map)) map[source] = target as string;
-  if (new Set(Object.values(map)).size !== Object.values(map).length) {
-    diagnostics.push(
-      diag(
-        "observation-input-projection",
-        path,
-        "Input projection map output keys must be unique.",
-      ),
-    );
-    return undefined;
-  }
-  return Object.freeze({ map: Object.freeze(map) });
-}
-
 export interface ResolvedEdge {
   readonly edge?: GraphEdge;
   readonly diagnostics: readonly Diagnostic[];
 }
 
-const TARGET_UNSUPPORTED =
-  "Observation target is not supported; rename input keys with a projection, or bind a plugin requirement under keyframes.<plugin>.requires.";
+const BIND_INSTEAD = "Bind the dependency under keyframes.<plugin>.requires instead.";
+const TARGET_UNSUPPORTED = `Observation target is not supported; an observes entry declares an output edge and names no destination key. ${BIND_INSTEAD}`;
+const ROLE_UNSUPPORTED = `Observation role is not supported; an observes entry declares an output edge only. ${BIND_INSTEAD}`;
+const PROJECTION_UNSUPPORTED = `Observation projection is not supported; an output edge merges the source patch whole and renames nothing. ${BIND_INSTEAD}`;
 
-function readRemovedTarget(observation: ObservationDefinition): unknown {
-  return isRecord(observation) ? observation.target : undefined;
+/**
+ * Reads a removed authored field through the record view.
+ *
+ * The member is gone from `ObservationDefinition`, so a TypeScript author cannot write it, and a
+ * JavaScript author still can. Reading it structurally is what turns "undeclared" into "refused",
+ * which is the difference between a removal and a field accepted and then ignored. See ADR-046.
+ */
+function readRemoved(observation: ObservationDefinition, name: string): unknown {
+  return isRecord(observation) ? observation[name] : undefined;
 }
 
 export function resolveObservationEdge(
@@ -229,22 +157,25 @@ export function resolveObservationEdge(
   path: string,
 ): ResolvedEdge {
   const diagnostics: Diagnostic[] = [];
-  const role = observation.role ?? "output";
-  if (role !== "input" && role !== "output") {
-    diagnostics.push(diag("observation-role", path, "Observation role must be input or output."));
-    return { diagnostics: Object.freeze(diagnostics) };
-  }
   if (typeof observation.source !== "string" || observation.source.length === 0) {
     diagnostics.push(diag("observation-source", path, "Observation source must be non-empty."));
     return { diagnostics: Object.freeze(diagnostics) };
   }
-  if (readRemovedTarget(observation) !== undefined) {
+  // Three removed fields, one rule id each, because a diagnostic has to name what the author
+  // actually wrote rather than the removal they share. The target guard stays first, so ADR-046's
+  // `V-2` through `V-4` still report a target for a fixture that also carries a role.
+  if (readRemoved(observation, "target") !== undefined) {
     diagnostics.push(diag("observation-target-unsupported", path, TARGET_UNSUPPORTED));
     return { diagnostics: Object.freeze(diagnostics) };
   }
-  const projection =
-    role === "input" ? validateProjection(observation.projection, path, diagnostics) : undefined;
-  if (diagnostics.length > 0) return { diagnostics: Object.freeze(diagnostics) };
+  if (readRemoved(observation, "role") !== undefined) {
+    diagnostics.push(diag("observation-role-unsupported", path, ROLE_UNSUPPORTED));
+    return { diagnostics: Object.freeze(diagnostics) };
+  }
+  if (readRemoved(observation, "projection") !== undefined) {
+    diagnostics.push(diag("observation-projection-unsupported", path, PROJECTION_UNSUPPORTED));
+    return { diagnostics: Object.freeze(diagnostics) };
+  }
   let sourceId: string;
   try {
     sourceId = qualifySource(observation.source, ownerId);
@@ -256,11 +187,12 @@ export function resolveObservationEdge(
     );
     return { diagnostics: Object.freeze(diagnostics) };
   }
+  // One literal, in one place. `role` is not read from authored input any more, so this resolver
+  // and `resolveRequirementEdge` are the only two things that can set it, one value each.
   const edge: GraphEdge = Object.freeze({
     observerId: observerNodeId,
     sourceId,
-    role,
-    ...(projection === undefined ? {} : { projection }),
+    role: "output",
   });
   return { edge, diagnostics: Object.freeze([]) };
 }

@@ -104,7 +104,7 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
     expect(result).toBeUndefined();
   });
 
-  it("5. Projection-only replacement updates edge identity consistently with GraphIR", () => {
+  it("5. Requirement-scoped replacement updates edge identity consistently with GraphIR", () => {
     const runtime = new ProjectRuntime(
       {
         schemaVersion: 5,
@@ -115,13 +115,7 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
           },
           {
             id: "observer",
-            observes: [
-              {
-                source: "~/source",
-                role: "input" as const,
-                projection: { pick: ["x"] },
-              },
-            ],
+            keyframes: { rig: { requires: { upstream: "~/source" } } },
           },
         ],
       },
@@ -132,8 +126,10 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
     const edge = snapshot.edges.find(
       (e) => e.observerId === "~/observer" && e.sourceId === "~/source",
     );
-    // Projection must be preserved in the live edge
-    expect(edge?.projection).toEqual({ pick: ["x"] });
+    // The requirement must survive into the live edge, the way the projection used to have to: one
+    // optional field left out of `normalizeEdge` makes the live key disagree with the candidate
+    // key, and a removal is then reported as an edge that is not live.
+    expect(edge?.requirement).toEqual({ plugin: "rig", slot: "upstream" });
 
     runtime.dispose();
   });

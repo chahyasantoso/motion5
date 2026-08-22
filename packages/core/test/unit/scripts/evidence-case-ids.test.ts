@@ -92,9 +92,14 @@ import { fileURLToPath } from "node:url";
 // which derive an edge are resolved by a named function of the same shape, and neither the edge
 // nor its diagnostics change when that becomes true. `E-` owns how an edge is encoded, ordered,
 // and labelled; `Z-` owns who is allowed to build one.
+//
+// `J-` belongs to the single input channel (issue #180 and ADR-047): that `observes` declares an
+// output edge only, that a plugin requirement is the only way a value enters composition, and that
+// no parameter exists by which an upstream value could reach a track's authored namespace. `Q-`
+// owns what a declared requirement does; `J-` owns that it is the only thing that does it.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|H|K|L|M|N|P|Q|R|S|T|U|V|Z)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
