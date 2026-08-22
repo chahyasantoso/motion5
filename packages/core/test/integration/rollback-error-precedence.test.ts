@@ -31,7 +31,7 @@ const BASE_PROJECT: ProjectDefinition = {
 /** Rejected by the candidate graph rather than by authored validation, so the rollback runs. */
 const REJECTED_TRACK: TrackDefinition = {
   id: "child",
-  observes: [{ source: "~/missing", role: "input", projection: { map: { x: "parentX" } } }],
+  observes: [{ source: "~/missing" }],
 };
 
 /** A slashed id reaches assertAuthoredMotionId, the same graph rejection `T-6` uses. */

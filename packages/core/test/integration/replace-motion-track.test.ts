@@ -100,7 +100,7 @@ describe("motion-owned Track replacement", () => {
     });
     handle.mount("scene/arm");
     handle.mount("scene/label");
-    handle.track("scene/label").addObserve({ source: "scene/arm", role: "input" });
+    handle.track("scene/label").addObserve({ source: "scene/arm" });
 
     expect(() => {
       handle.signal("scene", { type: "manual", progress: 0.5 });

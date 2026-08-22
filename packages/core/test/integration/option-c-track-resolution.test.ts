@@ -89,8 +89,8 @@ describe("option C: compiled Track ownership through the public surface", () => 
     handle.mount("scene/arm");
     handle.mount("scene/label");
     const label = handle.track("scene/label");
-    label.addObserve({ source: "scene/arm", role: "input" });
-    label.removeObserve({ role: "input", source: "scene/arm" });
+    label.addObserve({ source: "scene/arm" });
+    label.removeObserve({ source: "scene/arm" });
     expect(() => {
       handle.signal("scene", { type: "manual", progress: 0.5 });
       scheduler.flush();
