@@ -18,6 +18,7 @@ This document reports current implementation reality. Plans and audits describe 
 - `observes` declares an output edge only, closing [issue #180](https://github.com/chahyasantoso/motion5/issues/180) with ADR-047 and J-1 through J-9 evidence. `keyframes.<plugin>.requires` is now the only way a value enters composition. An `observes` entry has exactly one authored field, `source`, which supersedes the three-field description ADR-046 left behind. An authored `role` is refused as `observation-role-unsupported` at either value, and an authored `projection` as `observation-projection-unsupported`.
 - The flat input bag is gone rather than merely unused. `InputProjection`, `GraphEdge.projection`, `validateProjection`, `canonicalizeProjection`, and `projectValues` are deleted, `Track.compose` and `PublisherNode.compose` take one parameter, and `Track` no longer keeps `#lastInputs` or its half of the dirty check. `observation-input-collision` and `observation-input-projection` retire with the primitives they guarded, and so does `observation-role`. The invariant is not that no caller merges an upstream value into a track's authored namespace; it is that no parameter exists to merge one with.
 - `GraphEdge.role` stays and names the composition phase. It cannot drift from `requirement`: each is set by one literal in one resolver, and `J-5` pins the equivalence over a whole built graph.
+- `docs/TRD.md` TR-D-05 and Glossary entry corrected in [issue #182](https://github.com/chahyasantoso/motion5/issues/182) to match current edge identity and semantics post ADR-034, ADR-044, ADR-046, and ADR-047.
 
 ## Documentation and package surface
 
@@ -40,10 +41,6 @@ This document reports current implementation reality. Plans and audits describe 
 - An authored observation `target`, `role`, or `projection` is an error rather than an ignored key, for the same reason `use` is. Both packages are unpublished at `0.0.0`, so no removal carries a compatibility shim.
 - A generic `observes` entry cannot feed a track's own composition, by design. There is no authored form for an input edge; a plugin requirement is the only one.
 - An input edge carrying no requirement is unreachable by construction and throws `observation-input-shape` naming the edge. It is an explicit guard rather than a reachable state.
-
-## Follow-up issues
-
-- `TR-D-05` of `docs/TRD.md` still describes an observation edge as `(source, role, target)` and still requires a non-empty `target` for an input edge. Both statements were already superseded, first by ADR-034's edge identity and then by the input projection work, and ADR-047 adds a third contradiction by removing the authored `role`. [Issue #182](https://github.com/chahyasantoso/motion5/issues/182) owns that docs slice, together with the `core/graph/validate.ts` owner that `docs/IMPLEMENTATION-PLAN.md` still names for the same rules. It is deliberately not edited here: two owners for one paragraph is how a normative requirement ends up saying two things.
 
 ## Evidence anchors
 
