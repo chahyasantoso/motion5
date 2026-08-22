@@ -1,0 +1,52 @@
+# CI log archive: 32567589108
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: feat/core-testing-entrypoint
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/32567589108
+- Captured: 2026-08-22T10:26:37Z
+
+## Failed job output
+
+```text
+boundaries (node 24)	Run npm run test:boundaries	﻿2026-08-22T10:26:17.3603905Z ##[group]Run npm run test:boundaries
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.3604294Z ^[[36;1mnpm run test:boundaries^[[0m
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.3649065Z shell: /usr/bin/bash -e {0}
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.3650027Z env:
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.3650250Z   NODE_VERSION: 24
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.3650469Z ##[endgroup]
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.4801152Z 
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.4802468Z > motion5@0.0.0 test:boundaries
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.4803729Z > node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.4804473Z 
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5220995Z file:///home/runner/work/motion5/motion5/scripts/boundary-scan.mjs:104
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5232838Z   return /(?:from|import)\s*["'](?:gsap|react|react-dom|node:dom|domino|(?:\.\/)(?:\.\.)/[^"']*(?:^|\/)\b(?:dom|renderer|react|gsap)\b)["'/]/i.test(
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5234452Z          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5250043Z 
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5251614Z SyntaxError: Invalid regular expression: /(?:from|import)\s*["'](?:gsap|react|react-dom|node:dom|domino|(?:\.\/)(?:\.\.)/: Unterminated group
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5253664Z     at compileSourceTextModule (node:internal/modules/esm/utils:318:16)
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5255188Z     at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:89:18)
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5256536Z     at #translate (node:internal/modules/esm/loader:434:20)
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5257633Z     at afterLoad (node:internal/modules/esm/loader:502:29)
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5258931Z     at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:507:12)
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5262162Z     at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:560:36)
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5265284Z     at afterResolve (node:internal/modules/esm/loader:607:52)
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5266738Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:613:12)
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5268078Z     at node:internal/modules/esm/loader:632:32
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5269562Z     at TracingChannel.tracePromise (node:diagnostics_channel:362:14)
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5271655Z 
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5272161Z Node.js v24.19.0
+boundaries (node 24)	Run npm run test:boundaries	2026-08-22T10:26:17.5379065Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run npm run typecheck	﻿2026-08-22T10:26:16.7910659Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-22T10:26:16.7911014Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-22T10:26:16.7952644Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-22T10:26:16.7952935Z env:
+quality (node 24)	Run npm run typecheck	2026-08-22T10:26:16.7953362Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-22T10:26:16.7953592Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-22T10:26:16.9040947Z 
+quality (node 24)	Run npm run typecheck	2026-08-22T10:26:16.9041566Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-22T10:26:16.9042235Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-22T10:26:16.9042573Z 
+quality (node 24)	Run npm run typecheck	2026-08-22T10:26:20.0856344Z ##[error]packages/core/test/unit/scripts/boundary-scan.test.ts(12,3): error TS2305: Module '"../../../../../scripts/boundary-scan.mjs"' has no exported member 'importsTestingEntrypoint'.
+quality (node 24)	Run npm run typecheck	2026-08-22T10:26:20.1288196Z ##[error]Process completed with exit code 2.
+```
