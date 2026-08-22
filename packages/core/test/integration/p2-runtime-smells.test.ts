@@ -4,6 +4,7 @@ import { GraphPublisher, type PublisherNode } from "../../src/runtime/graph-publ
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 import { Track } from "../../src/domain/track";
 import type { Interpolator } from "../../src/ports/interpolator";
+import { slotOf } from "../helpers/requirement-inputs";
 
 const node = (id: string, edges: GraphEdge[], compose: PublisherNode["compose"]): PublisherNode =>
   Object.freeze({
@@ -21,6 +22,14 @@ const snapshot = (
   nodeById: Object.freeze(Object.fromEntries(nodes.map((entry) => [entry.id, entry]))),
   order: Object.freeze(nodes.map(({ id }) => id)),
   diagnostics: Object.freeze([]),
+});
+// Every input edge carries a requirement now, so the fixtures below name one. `slot` is what
+// distinguishes two edges of one plugin; the ids still decide their order. See ADR-047.
+const requires = (observerId: string, sourceId: string, slot: string): GraphEdge => ({
+  observerId,
+  sourceId,
+  role: "input",
+  requirement: { plugin: "p", slot },
 });
 function fakeInterpolator(state: Readonly<Record<string, unknown>> = { x: 1 }) {
   const kill = vi.fn();
@@ -52,22 +61,23 @@ describe("P2 runtime smell hardening", () => {
       sourceProgress: 0,
       sourceRevisions: {},
     }));
-    const consumer = node(
-      "consumer",
-      [{ observerId: "consumer", sourceId: "source", role: "input" }],
-      (inputs) => ({ values: inputs, sourceProgress: 0, sourceRevisions: {} }),
-    );
+    const consumer = node("consumer", [requires("consumer", "source", "s")], (inputs) => ({
+      values: slotOf(inputs, "p", "s"),
+      sourceProgress: 0,
+      sourceRevisions: {},
+    }));
     publisher.flush(snapshot([source, consumer]), ["source", "consumer"], 1);
     expect(registry.get("consumer")?.sourceRevisions).toEqual({ source: 1 });
+    expect(registry.get("consumer")?.values).toEqual({ x: 1 });
   });
   it("reports a pending reference instead of silently composing with an input hole", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
-    const consumer = node(
-      "consumer",
-      [{ observerId: "consumer", sourceId: "missing", role: "input" }],
-      (inputs) => ({ values: inputs, sourceProgress: 0, sourceRevisions: {} }),
-    );
+    const consumer = node("consumer", [requires("consumer", "missing", "s")], (inputs) => ({
+      values: slotOf(inputs, "p", "s"),
+      sourceProgress: 0,
+      sourceRevisions: {},
+    }));
     publisher.flush(snapshot([consumer]), ["consumer"], 1);
     expect(registry.get("consumer")?.status).toBe("blocked");
     expect(registry.get("consumer")?.diagnostics[0]?.ruleId).toBe("observation-pending-reference");
@@ -84,11 +94,8 @@ describe("P2 runtime smell hardening", () => {
     });
     const consumer = node(
       "consumer",
-      [
-        { observerId: "consumer", sourceId: "b", role: "input" },
-        { observerId: "consumer", sourceId: "a", role: "input" },
-      ],
-      (inputs) => ({ values: inputs, sourceProgress: 0, sourceRevisions: {} }),
+      [requires("consumer", "b", "right"), requires("consumer", "a", "left")],
+      () => ({ values: {}, sourceProgress: 0, sourceRevisions: {} }),
     );
     publisher.flush(snapshot([failedA, failedB, consumer]), ["a", "b", "consumer"], 1);
     expect(registry.get("consumer")?.diagnostics[0]?.ids).toEqual(["a", "consumer"]);

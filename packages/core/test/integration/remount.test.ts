@@ -1,19 +1,25 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
+import type { RequirementInputs } from "../../src/domain/plugins";
 import { createManualClock } from "../../src/ports/clock";
 import { ProjectRuntime } from "../../src/runtime/project-runtime";
 
 const sourceId = "~/source";
 const consumerId = "~/consumer";
+// The dependency is a plugin requirement, which is the only way a value enters composition. It is
+// still an input edge, so it is still what makes the consumer pending while upstream is unmounted.
 const project: ProjectDefinition = {
   schemaVersion: 5,
   motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [] }],
   freeTracks: [
     { id: "source" },
-    { id: "consumer", observes: [{ source: sourceId, role: "input" }] },
+    {
+      id: "consumer",
+      keyframes: { rig: { requires: { upstream: sourceId } } },
+    },
   ],
 };
-const compose = (node: { id: string }) => (inputs: Readonly<Record<string, unknown>>) => ({
+const compose = (node: { id: string }) => (inputs: RequirementInputs) => ({
   values: { node: node.id, inputs },
   sourceProgress: 0,
   sourceRevisions: {},

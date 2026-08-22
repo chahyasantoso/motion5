@@ -26,7 +26,7 @@ const BASE_PROJECT: ProjectDefinition = {
 /** Rejected by the candidate graph rather than by authored validation, so the rollback runs. */
 const REJECTED_REPLACEMENT: TrackDefinition = {
   id: "arm",
-  observes: [{ source: "~/missing", role: "input", projection: { map: { x: "parentX" } } }],
+  observes: [{ source: "~/missing" }],
 };
 const compose = (node: { id: string }) => () => ({
   values: { node: node.id },
