@@ -1,0 +1,26 @@
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-08-22T07:53:39.0383459Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-22T07:53:39.0383981Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-22T07:53:39.0428927Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-22T07:53:39.0429225Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-22T07:53:39.0429431Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-22T07:53:39.0429649Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-22T07:53:41.3259771Z ##[error]packages/core/src/engine.ts(388,79): error TS2554: Expected 0-1 arguments, but got 2.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-22T07:53:41.3275566Z ##[error]packages/core/src/engine.ts(398,9): error TS2322: Type '(node: { id: string; track: { duration?: number; keyframes?: Readonly<Record<string, unknown>>; }; }) => (inputs: Readonly<Record<string, unknown>>, requirementInputs: RequirementInputs) => { values: Readonly<ImmutableRecord>; sourceProgress: number; sourceRevisions: {}; }' is not assignable to type 'ComposeResolver'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-22T07:53:41.3281228Z   Type '(inputs: Readonly<Record<string, unknown>>, requirementInputs: RequirementInputs) => { values: Readonly<ImmutableRecord>; sourceProgress: number; sourceRevisions: {}; }' is not assignable to type '(requirementInputs: Readonly<Record<string, Readonly<ImmutableRecord>>>) => PublisherComposition'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-22T07:53:41.3283729Z     Target signature provides too few arguments. Expected 2 or more, but got 1.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-22T07:53:41.3629639Z ##[error]Process completed with exit code 2.
+quality (node 24)	Run npm run typecheck	﻿2026-08-22T07:53:36.7921481Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-22T07:53:36.7922039Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-22T07:53:36.7977325Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-22T07:53:36.7978005Z env:
+quality (node 24)	Run npm run typecheck	2026-08-22T07:53:36.7978321Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-22T07:53:36.7978674Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-22T07:53:36.9645789Z 
+quality (node 24)	Run npm run typecheck	2026-08-22T07:53:36.9646370Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-22T07:53:36.9646996Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-22T07:53:36.9647301Z 
+quality (node 24)	Run npm run typecheck	2026-08-22T07:53:40.1775495Z ##[error]packages/core/src/engine.ts(388,79): error TS2554: Expected 0-1 arguments, but got 2.
+quality (node 24)	Run npm run typecheck	2026-08-22T07:53:40.1790604Z ##[error]packages/core/src/engine.ts(398,9): error TS2322: Type '(node: { id: string; track: { duration?: number; keyframes?: Readonly<Record<string, unknown>>; }; }) => (inputs: Readonly<Record<string, unknown>>, requirementInputs: RequirementInputs) => { values: Readonly<ImmutableRecord>; sourceProgress: number; sourceRevisions: {}; }' is not assignable to type 'ComposeResolver'.
+quality (node 24)	Run npm run typecheck	2026-08-22T07:53:40.1796217Z   Type '(inputs: Readonly<Record<string, unknown>>, requirementInputs: RequirementInputs) => { values: Readonly<ImmutableRecord>; sourceProgress: number; sourceRevisions: {}; }' is not assignable to type '(requirementInputs: Readonly<Record<string, Readonly<ImmutableRecord>>>) => PublisherComposition'.
+quality (node 24)	Run npm run typecheck	2026-08-22T07:53:40.1798819Z     Target signature provides too few arguments. Expected 2 or more, but got 1.
+quality (node 24)	Run npm run typecheck	2026-08-22T07:53:40.2158076Z ##[error]Process completed with exit code 2.
