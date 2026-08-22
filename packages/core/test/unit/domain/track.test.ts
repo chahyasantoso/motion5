@@ -70,10 +70,11 @@ describe("Track leaf", () => {
   it("rejects non-finite progress and composes local values once per dirty state", () => {
     const fake = createInterpolator();
     // The plugin reads its own scoped slot. There is no flat bag to read instead: the one
-    // parameter `compose` still takes is the requirement scope. See ADR-047.
+    // parameter `compose` still takes is the requirement scope. See ADR-047. The default keeps an
+    // unbound slot out of the composed record, which is the plugin's job rather than Track's.
     const composer: PluginComposer = (values, progress, inputs) => ({
       ...values,
-      opacity: inputs.level,
+      opacity: inputs.level ?? 0,
     });
     const compose = vi.fn(composer);
     const track = new Track({
@@ -91,7 +92,7 @@ describe("Track leaf", () => {
     const fake = createInterpolator();
     const composer: PluginComposer = (values, progress, inputs) => ({
       ...values,
-      x: inputs.level,
+      x: inputs.level ?? 0,
     });
     const compose = vi.fn(composer);
     const track = new Track({
