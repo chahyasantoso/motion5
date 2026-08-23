@@ -6,12 +6,10 @@ import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 
 function ramp(from: number, to: number) {
-  return {
-    stops: [
-      { p: 0, v: from },
-      { p: 1, v: to },
-    ],
-  };
+  return [
+    { p: 0, v: from },
+    { p: 1, v: to },
+  ];
 }
 
 function project(keyframes: Readonly<Record<string, AuthoredKeyframe>>): ProjectDefinition {

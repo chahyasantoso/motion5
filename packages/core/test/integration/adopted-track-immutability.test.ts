@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
-import type { AuthoredProperty, TrackDefinition } from "../../src/contract/v5";
+import type { AuthoredStop, TrackDefinition } from "../../src/contract/v5";
 
 function makeHandle() {
   return new Engine({
@@ -13,12 +13,10 @@ function makeHandle() {
 }
 
 function ramp(from: number, to: number) {
-  return {
-    stops: [
-      { p: 0, v: from },
-      { p: 1, v: to },
-    ],
-  };
+  return [
+    { p: 0, v: from },
+    { p: 1, v: to },
+  ];
 }
 
 describe("adopted track validation and immutability (W3)", () => {
@@ -33,14 +31,15 @@ describe("adopted track validation and immutability (W3)", () => {
     const adopted = handle.adopt(source, owner);
 
     // An authored keyframe entry is a property or a plugin-named group, so reading stops off one
-    // narrows to the property form first. See ADR-041.
-    const property = adopted.track.keyframes?.x as AuthoredProperty | undefined;
+    // narrows to the property form first. Since ADR-050 that property *is* the stops array, so the
+    // levels the freeze has to reach are the array and each stop in it, not a wrapper object, its
+    // `stops` member, and then the stop.
+    const stops = adopted.track.keyframes?.x as readonly AuthoredStop[] | undefined;
     expect(adopted.track).not.toBe(source);
     expect(Object.isFrozen(adopted.track)).toBe(true);
     expect(Object.isFrozen(adopted.track.keyframes)).toBe(true);
-    expect(Object.isFrozen(property)).toBe(true);
-    expect(Object.isFrozen(property?.stops)).toBe(true);
-    expect(Object.isFrozen(property?.stops[0])).toBe(true);
+    expect(Object.isFrozen(stops)).toBe(true);
+    expect(Object.isFrozen(stops?.[0])).toBe(true);
 
     handle.destroyAdopted(adopted.id, owner);
     handle.dispose();
@@ -56,8 +55,8 @@ describe("adopted track validation and immutability (W3)", () => {
     const adopted = handle.adopt(source, owner);
 
     // The caller-owned source remains mutable. The runtime-owned clone must not change with it.
-    const property = source.keyframes!.x as AuthoredProperty;
-    (property.stops[1] as { p: number; v: unknown }).v = 999;
+    const stops = source.keyframes!.x as readonly AuthoredStop[];
+    (stops[1] as { p: number; v: unknown }).v = 999;
 
     handle.seek(adopted.id, 1);
     expect(handle.get(adopted.id)?.values).toEqual({ x: 100 });

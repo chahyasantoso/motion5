@@ -21,12 +21,10 @@ import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/f
 const NODE_ID = "scene/arm";
 
 function ramp(from: number, to: number) {
-  return {
-    stops: [
-      { p: 0, v: from },
-      { p: 1, v: to },
-    ],
-  };
+  return [
+    { p: 0, v: from },
+    { p: 1, v: to },
+  ];
 }
 function armTrack(from: number, to: number): TrackDefinition {
   return { id: "arm", keyframes: { x: ramp(from, to) } };

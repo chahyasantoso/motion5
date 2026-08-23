@@ -46,12 +46,10 @@ describe("adoption through ProjectHandle (G2)", () => {
     const bad = {
       id: "bad",
       keyframes: {
-        x: {
-          stops: [
-            { p: Number.NaN, v: 0 },
-            { p: 0.5, v: 1 },
-          ],
-        },
+        x: [
+          { p: Number.NaN, v: 0 },
+          { p: 0.5, v: 1 },
+        ],
       },
     };
     expect(() => handle.adopt(bad, owner)).toThrow(/stop-position/);
@@ -70,12 +68,10 @@ describe("adoption through ProjectHandle (G2)", () => {
       {
         id: "leg",
         keyframes: {
-          x: {
-            stops: [
-              { p: 0, v: 0 },
-              { p: 1, v: 100 },
-            ],
-          },
+          x: [
+            { p: 0, v: 0 },
+            { p: 1, v: 100 },
+          ],
         },
       },
       owner,

@@ -22,7 +22,7 @@ describe("S7 plugin evidence", () => {
     registry.register(first);
     registry.register(second);
 
-    const resolved = registry.resolveForKeyframes({ x: { stops: [] }, y: { stops: [] } });
+    const resolved = registry.resolveForKeyframes({ x: [], y: [] });
 
     expect(first.contribute).toHaveBeenCalledOnce();
     expect(second.contribute).toHaveBeenCalledOnce();
@@ -35,7 +35,7 @@ describe("S7 plugin evidence", () => {
       const registry = new PluginRegistry();
       const plugins = [contributor("first", "x"), contributor("second", "y")];
       for (const plugin of reverse ? plugins.reverse() : plugins) registry.register(plugin);
-      return registry.resolveForKeyframes({ x: { stops: [] }, y: { stops: [] } });
+      return registry.resolveForKeyframes({ x: [], y: [] });
     };
 
     const forward = resolve(false);

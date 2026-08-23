@@ -8,21 +8,14 @@ import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 
 function hold(value: number) {
-  return {
-    stops: [
-      { p: 0, v: value },
-      { p: 1, v: value },
-    ],
-  };
+  return value;
 }
 
 function ramp(from: number, to: number) {
-  return {
-    stops: [
-      { p: 0, v: from },
-      { p: 1, v: to },
-    ],
-  };
+  return [
+    { p: 0, v: from },
+    { p: 1, v: to },
+  ];
 }
 
 // The rig case: `transform` claims `x`, `y`, `rotation` and `fk` claims `length`, `rotation`, so

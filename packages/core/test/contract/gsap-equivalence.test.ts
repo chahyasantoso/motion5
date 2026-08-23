@@ -18,13 +18,11 @@ describe("GSAP interpolator semantic equivalence (P5 baseline)", () => {
     const timeline = seam.interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.5, v: 50, ease: "power2.in" },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 0.5, v: 50, ease: "power2.in" },
+          { p: 1, v: 100 },
+        ],
       },
     });
 
@@ -50,12 +48,10 @@ describe("GSAP interpolator semantic equivalence (P5 baseline)", () => {
     const timeline = seam.interpolator.create({
       duration: 0,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 42 },
-            { p: 1, v: 42 },
-          ],
-        },
+        x: [
+          { p: 0, v: 42 },
+          { p: 1, v: 42 },
+        ],
       },
     });
     expect(timeline.duration).toBe(0);
@@ -71,12 +67,10 @@ describe("GSAP interpolator semantic equivalence (P5 baseline)", () => {
     const timeline = seam.interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
       },
     });
     timeline.progress(0.33);
@@ -91,12 +85,10 @@ describe("GSAP interpolator semantic equivalence (P5 baseline)", () => {
     const timeline = seam.interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 1, v: 10 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 10 },
+        ],
       },
     });
     expect(() => {
@@ -110,12 +102,10 @@ describe("GSAP interpolator semantic equivalence (P5 baseline)", () => {
     const timeline = seam.interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
       },
     });
     const ref = timeline.state;
@@ -131,18 +121,14 @@ describe("GSAP interpolator semantic equivalence (P5 baseline)", () => {
     const timeline = seam.interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.6, v: 60 },
-          ],
-        },
-        y: {
-          stops: [
-            { p: 0.4, v: 40 },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 0.6, v: 60 },
+        ],
+        y: [
+          { p: 0.4, v: 40 },
+          { p: 1, v: 100 },
+        ],
       },
     });
     timeline.progress(0.3);

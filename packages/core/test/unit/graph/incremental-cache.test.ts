@@ -5,12 +5,10 @@ import { validateV5 } from "../../../src/contract/validate-v5";
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 
 function ramp(from: number, to: number) {
-  return {
-    stops: [
-      { p: 0, v: from },
-      { p: 1, v: to },
-    ],
-  };
+  return [
+    { p: 0, v: from },
+    { p: 1, v: to },
+  ];
 }
 function ruleIds(diagnostics: readonly Diagnostic[]): readonly string[] {
   return diagnostics.map(({ ruleId }) => ruleId);

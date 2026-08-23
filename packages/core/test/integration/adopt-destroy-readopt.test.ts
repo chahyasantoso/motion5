@@ -7,12 +7,10 @@ import type { Patch } from "../../src/runtime/patch-registry";
 const armTrack = {
   id: "arm",
   keyframes: {
-    x: {
-      stops: [
-        { p: 0, v: 0 },
-        { p: 1, v: 100 },
-      ],
-    },
+    x: [
+      { p: 0, v: 0 },
+      { p: 1, v: 100 },
+    ],
   },
 };
 

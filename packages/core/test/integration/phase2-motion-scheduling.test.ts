@@ -21,12 +21,10 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
           {
             id: "t1",
             keyframes: {
-              x: {
-                stops: [
-                  { p: 0, v: 0 },
-                  { p: 1, v: 100 },
-                ],
-              },
+              x: [
+                { p: 0, v: 0 },
+                { p: 1, v: 100 },
+              ],
             },
           },
         ],

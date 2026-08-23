@@ -8,13 +8,11 @@ describe("GSAP multi-stop compilation (B2)", () => {
     const timeline = seam.interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.5, v: 50 },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 0.5, v: 50 },
+          { p: 1, v: 100 },
+        ],
       },
     });
 
