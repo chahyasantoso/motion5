@@ -1,0 +1,26 @@
+# CI log archive: 32615858060
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: main
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/32615858060
+- Captured: 2026-08-23T03:38:59Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm run typecheck	﻿2026-08-23T03:38:40.0098029Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-23T03:38:40.0098412Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-23T03:38:40.0119881Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-23T03:38:40.0120222Z env:
+quality (node 24)	Run npm run typecheck	2026-08-23T03:38:40.0120626Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-23T03:38:40.0120918Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-23T03:38:40.1188455Z 
+quality (node 24)	Run npm run typecheck	2026-08-23T03:38:40.1189332Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-23T03:38:40.1190176Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-23T03:38:40.1190454Z 
+quality (node 24)	Run npm run typecheck	2026-08-23T03:38:42.5440154Z ##[error]packages/core/test/unit/scripts/traceability-scan.test.ts(9,8): error TS2307: Cannot find module '../../../../../scripts/traceability-scan.mjs' or its corresponding type declarations.
+quality (node 24)	Run npm run typecheck	2026-08-23T03:38:42.5447404Z ##[error]packages/core/test/unit/scripts/traceability-scan.test.ts(30,8): error TS2307: Cannot find module '../../../../../scripts/traceability-scan-fixtures' or its corresponding type declarations.
+quality (node 24)	Run npm run typecheck	2026-08-23T03:38:42.5449260Z ##[error]packages/core/test/unit/scripts/traceability-scan.test.ts(156,24): error TS7006: Parameter 'id' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-23T03:38:42.5663637Z ##[error]Process completed with exit code 2.
+```
