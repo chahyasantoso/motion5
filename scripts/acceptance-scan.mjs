@@ -31,8 +31,11 @@ function normalizeReport(report) {
 }
 
 function readTechnicalRequirements(trd) {
-  const sections = trd.match(/^## (?:[3-9]|1[0-5])\..*?(?=^## |$)/gms) ?? [];
-  return new Set(sections.flatMap((section) => section.match(/TR-[A-Z]+(?:-[A-Z]+)?-\d+/g) ?? []));
+  const start = trd.search(/^## 3\. /m);
+  const end = trd.search(/^## 16\. /m);
+  if (start < 0) return new Set();
+  const body = trd.slice(start, end < 0 ? trd.length : end);
+  return new Set(body.match(/TR-[A-Z]+(?:-[A-Z]+)?-\d+/g) ?? []);
 }
 
 export async function scanAcceptance(scanRoot = root, reportPath) {
