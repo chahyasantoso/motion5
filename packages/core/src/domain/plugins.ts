@@ -1,3 +1,4 @@
+import { readCompilableStops } from "../contract/authored-leaf";
 import { validateKeyframes } from "../contract/validate-v5";
 import type {
   AuthoredProperty,
@@ -175,11 +176,6 @@ function normalizeContribution(
     ...(isRecord(value.tweenVars) ? { tweenVars: value.tweenVars } : {}),
   };
 }
-function readStops(value: unknown): readonly AuthoredStop[] {
-  return isRecord(value) && Array.isArray(value.stops)
-    ? (value.stops as readonly AuthoredStop[])
-    : [];
-}
 function validateContributionProperty(
   output: string,
   property: unknown,
@@ -208,6 +204,10 @@ function validateContributionProperty(
  * hook for a grouped leaf, and would run a hook at all for a group that named no plugin. See
  * ADR-043. `claimantsOf` answers for contributed keys only, which no author wrote and which no
  * group can therefore name.
+ *
+ * The stops a hook receives come from `readCompilableStops`, the one owner of the leaf shape, so a
+ * hook sees exactly the stops the interpolation compiler would rather than a second reading of the
+ * same authored record. See issue #192.
  */
 function prepareContributions(
   authored: Readonly<Record<string, unknown>>,
@@ -234,7 +234,7 @@ function prepareContributions(
       contribution = normalizeContribution(
         plugin.contribute(
           key,
-          readStops(authored[key]),
+          readCompilableStops(authored[key]),
           Object.freeze({ id: track.id, duration: track.duration }),
         ),
         plugin,
