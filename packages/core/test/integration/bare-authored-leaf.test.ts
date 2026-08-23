@@ -56,6 +56,21 @@ const SCANNED_EXTENSIONS = [".ts", ".tsx"];
 /** `stops:` followed by an array literal. The retired wrapper, and nothing else. */
 const WRAPPER_AUTHORING = /\bstops\s*:\s*\[/;
 
+/** The two comment forms, either of which may name the retired shape it documents. */
+const COMMENT = /\/\*[\s\S]*?\*\/|\/\/[^\n]*/.source;
+/** A quoted body, which is where a diagnostic message names the shape it refuses. */
+const QUOTED = /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/.source;
+/** A template body. Interpolations go with it: no authored leaf has ever lived in one. */
+const TEMPLATE = /`(?:[^`\\]|\\.)*`/.source;
+/**
+ * Every comment and every quoted body, matched left to right in one pass.
+ *
+ * Order inside the alternation is what makes the interleaving come out right. A `//` inside a string
+ * is consumed as part of that string, because the opening quote matched first; an apostrophe inside a
+ * comment is consumed as part of that comment, for the same reason.
+ */
+const PROSE = new RegExp(`${COMMENT}|${QUOTED}|${TEMPLATE}`, "g");
+
 /**
  * `true` exactly when a bare static value is a legal authored leaf.
  *
@@ -185,6 +200,24 @@ function scannedFiles(root: string): readonly string[] {
     .filter((entry) => SCANNED_EXTENSIONS.some((extension) => entry.endsWith(extension)));
 }
 
+/**
+ * One file's source with its prose removed and its code left intact.
+ *
+ * The probe is a regex, and a regex cannot tell a schema from a sentence about one. Three modules own
+ * the refusal of the retired form and every one of them has to be able to name it: `authored-leaf`
+ * and `v5` in a doc comment, and `validate-v5` in the diagnostic message an author actually reads.
+ * Scanning that prose left the gate unsatisfiable by exactly the code that satisfies it, and the
+ * alternative was to reword a diagnostic to dodge a grep, which makes product text a function of an
+ * assertion's imprecision.
+ *
+ * Same reasoning that puts `docs/` out of scope, applied one level down. An authored leaf is object
+ * syntax, so it never lives inside a comment or a quoted body: what survives this is code, and code
+ * is the only thing the gate was ever about.
+ */
+function codeOnly(source: string): string {
+  return source.replace(PROSE, " ");
+}
+
 describe("the bare authored leaf", () => {
   it("LF-5 interpolates a bare array of stops", () => {
     expect(ruleIds({ length: RAMP })).toEqual([]);
@@ -257,7 +290,12 @@ describe("the bare authored leaf", () => {
     expect(ruleIds({ x: Number.NaN })).toEqual(["stops-shape"]);
     expect(ruleIds({ x: Number.POSITIVE_INFINITY })).toEqual(["stops-shape"]);
     expect(ruleIds({ x: () => 1 })).toEqual(["stops-shape"]);
-    expect(ruleIds({ x: { hold: 1 } })).toEqual(["stops-shape"]);
+    // An object is refused too, and under the rule id ADR-049 already owns rather than this one.
+    // `{ hold: 1 }` is a key holding a record of one scalar, which is exactly the pre-ADR-049 group
+    // form that `LF-12` pins; the two shapes are indistinguishable, so no predicate on the value can
+    // report one as a bad leaf and the other as a group missing its section. What this case owns is
+    // that no object is ever a static value, and the more specific rule id says that as firmly.
+    expect(ruleIds({ x: { hold: 1 } })).toEqual(["keyframes-missing-values-section"]);
     // The shape error cites the property the author wrote, not a `.stops` path that no longer
     // exists anywhere in the document.
     expect(diagnose({ x: null })[0]?.path).toBe("keyframes.x");
@@ -335,7 +373,7 @@ describe("the bare authored leaf", () => {
     for (const root of SCHEMA_ROOTS)
       for (const file of scannedFiles(root)) {
         if (file === SELF) continue;
-        if (WRAPPER_AUTHORING.test(readFileSync(`${REPO_ROOT}${file}`, "utf8")))
+        if (WRAPPER_AUTHORING.test(codeOnly(readFileSync(`${REPO_ROOT}${file}`, "utf8"))))
           offenders.push(file);
       }
     // Migration completeness as a gate rather than as a promise in a review. The suite would already

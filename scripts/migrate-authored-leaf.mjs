@@ -46,25 +46,40 @@ const IGNORED_DIRECTORIES = new Set([
 ]);
 
 /**
- * The spec that names the retired form. It is the gate, never the subject.
+ * The specs that name the retired form. They are the gate, never the subject.
  *
- * A test that refuses a shape has to be able to write that shape down, so migrating this file would
- * make its own assertion unsatisfiable.
+ * A test that refuses a shape has to be able to write that shape down, so migrating either of these
+ * would make its own assertion unsatisfiable. `bare-authored-leaf` writes the wrapper as a literal.
+ * `authored-leaf-reader` builds it around a named array, which keeps it out of `LF-16`'s probe but
+ * not out of an AST transform's reach: unwrapping it is what turned `LF-1` and `LF-3` red.
  */
-const SKIPPED_FILES = new Set(["packages/core/test/integration/bare-authored-leaf.test.ts"]);
+const SKIPPED_FILES = new Set([
+  "packages/core/test/integration/bare-authored-leaf.test.ts",
+  "packages/core/test/integration/authored-leaf-reader.test.ts",
+]);
 
 /** `stops:` followed by an array literal. The retired wrapper, and nothing else. `LF-16`'s probe. */
 const WRAPPER_AUTHORING = /\bstops\s*:\s*\[/;
 
-/** Fixtures whose meaning changes rather than whose shape changes, so a human reads them. */
-const REVIEW_SIGNALS = [
-  {
-    pattern: /contribute\s*[:(]/,
-    note: "contributes keyframes: a wrapper here is now a diagnostic",
-  },
-  { pattern: /plugin-contribution/, note: "asserts a plugin-contribution rule id" },
-  { pattern: /stops-shape|property-stops-wrapper/, note: "asserts a leaf-shape rule id" },
-];
+/** The two comment forms, either of which may name the retired shape it documents. */
+const COMMENT = /\/\*[\s\S]*?\*\/|\/\/[^\n]*/.source;
+/** A quoted body, which is where a diagnostic message names the shape it refuses. */
+const QUOTED = /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/.source;
+/** A template body. Interpolations go with it: no authored leaf has ever lived in one. */
+const TEMPLATE = /`(?:[^`\\]|\\.)*`/.source;
+/** Every comment and every quoted body, matched left to right in one pass. `LF-16` owns this. */
+const PROSE = new RegExp(`${COMMENT}|${QUOTED}|${TEMPLATE}`, "g");
+
+/**
+ * Code with its prose removed, so the gate reads schemas rather than sentences about them.
+ *
+ * The three modules that own the refusal all have to name the retired form, two in a doc comment and
+ * `validate-v5` in the diagnostic message itself. Reading that prose left `--check` red forever on
+ * exactly the code that satisfies it. See `LF-16`, which owns the reasoning.
+ */
+function codeOnly(text) {
+  return text.replace(PROSE, " ");
+}
 
 const argv = new Set(process.argv.slice(2));
 const options = {
@@ -172,7 +187,7 @@ function holdHelperName(node) {
 function rewriteAuthoredPath(value) {
   if (!value.includes(".stops")) return value;
   if (!/(^|\.)keyframes\./.test(value)) return value;
-  return value.replace(/\.stops(?=\[)/g, "").replace(/\.stops(?=["'`]?$)/, "");
+  return value.replace(/\.stops(?=\[)/g, "").replace(/\.stops$/, "");
 }
 
 function collect(file, text) {
@@ -200,11 +215,21 @@ function collect(file, text) {
       }
     }
 
+    // `node.text` and not `getText()`. The raw text carries its quotes, and a leading quote is
+    // neither the `.` nor the string start the guard inside `rewriteAuthoredPath` anchors on, so
+    // every path edit silently no-opped and `Y-7` stayed red for a reason that read like a defect.
     if (options.paths && ts.isStringLiteralLike(node)) {
-      const raw = node.getText(source);
-      const rewritten = rewriteAuthoredPath(raw);
-      if (rewritten !== raw)
-        edits.push({ start: node.getStart(source), end: node.end, text: rewritten, kind: "path" });
+      const rewritten = rewriteAuthoredPath(node.text);
+      if (rewritten !== node.text) {
+        const start = node.getStart(source);
+        const quote = source.text[start];
+        edits.push({
+          start,
+          end: node.end,
+          text: `${quote}${rewritten}${quote}`,
+          kind: "path",
+        });
+      }
     }
 
     if (
@@ -241,9 +266,19 @@ function reviewNotes(text) {
   return REVIEW_SIGNALS.filter(({ pattern }) => pattern.test(text)).map(({ note }) => note);
 }
 
+/** Fixtures whose meaning changes rather than whose shape changes, so a human reads them. */
+const REVIEW_SIGNALS = [
+  {
+    pattern: /contribute\s*[:(]/,
+    note: "contributes keyframes: a wrapper here is now a diagnostic",
+  },
+  { pattern: /plugin-contribution/, note: "asserts a plugin-contribution rule id" },
+  { pattern: /stops-shape|property-stops-wrapper/, note: "asserts a leaf-shape rule id" },
+];
+
 function offenders(files) {
   return files.filter((file) =>
-    WRAPPER_AUTHORING.test(readFileSync(path.join(REPO_ROOT, file), "utf8")),
+    WRAPPER_AUTHORING.test(codeOnly(readFileSync(path.join(REPO_ROOT, file), "utf8"))),
   );
 }
 
