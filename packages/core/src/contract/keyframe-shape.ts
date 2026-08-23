@@ -1,3 +1,4 @@
+import { readAuthoredLeaf } from "./authored-leaf";
 import type { AuthoredPluginGroup, PluginRequiresBinding } from "./v5";
 
 /**
@@ -44,12 +45,18 @@ function isObject(value: unknown): value is Record<string, unknown> {
 /**
  * Whether an authored keyframe entry is a plugin-named group rather than a property.
  *
- * Exact rather than heuristic. A group is an object with no `stops` array that names at least one
- * reserved section. Both section names are reserved for the same reason the colon is, so this test
- * needs no plugin registry and makes no guess about what the author meant. Whether the group name
- * addresses a registered plugin, whether that plugin claims each leaf, and whether it declares each
- * bound slot are all ownership rather than schema shape; `plugin-unknown-key` and
- * `plugin-unknown-requirement` own them at resolve time.
+ * Exact rather than heuristic. A group is an object that names at least one reserved section. Both
+ * section names are reserved for the same reason the colon is, so this test needs no plugin registry
+ * and makes no guess about what the author meant. Whether the group name addresses a registered
+ * plugin, whether that plugin claims each leaf, and whether it declares each bound slot are all
+ * ownership rather than schema shape; `plugin-unknown-key` and `plugin-unknown-requirement` own them
+ * at resolve time.
+ *
+ * Since ADR-050 there is no leaf test here at all. Both canonical leaf forms fail `isObject` before
+ * the section check runs, because arrays are excluded from its definition and a scalar is never
+ * `typeof === "object"`, and the retired wrapper names no reserved section. The `Array.isArray`
+ * clause this line used to carry became inert, so it is deleted rather than left as a check that
+ * reads as load-bearing. `LF-11` pins the behavior it used to guard.
  *
  * `some` and not `every`, so a group carrying an unknown sibling is still read as a group and
  * reported as `keyframes-unknown-section` rather than misdiagnosed as a property. An object naming
@@ -58,7 +65,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
  * See ADR-041, ADR-044, and ADR-049.
  */
 export function isKeyframeGroup(value: unknown): value is AuthoredPluginGroup {
-  if (!isObject(value) || Array.isArray(value.stops)) return false;
+  if (!isObject(value)) return false;
   const names = Object.keys(value);
   if (names.length === 0) return false;
   return names.some((name) => PLUGIN_GROUP_SECTIONS.includes(name));
@@ -72,13 +79,22 @@ export function isKeyframeGroup(value: unknown): value is AuthoredPluginGroup {
  * reported as a property with no stops array, which named the group and not the mistake. Refused,
  * never normalized: two authoring shapes are two validation paths and two documentation paths.
  * See ADR-049.
+ *
+ * Membership is "every member reads as a leaf", not "every member is an object", and that is the
+ * whole of ADR-050's effect here. A legacy group written against the new leaf forms has arrays and
+ * scalars for members, both of which `isObject` excludes by definition, so the object test would
+ * have stopped recognising the very shape this predicate exists to refuse.
+ *
+ * The retired wrapper bails first. It is an object whose one member is an array, so it reads as a
+ * one-leaf legacy group otherwise, and bailing here rather than relying on the caller's branch order
+ * keeps the two refusals independent of each other.
  */
 export function looksLikeLegacyGroup(value: unknown): boolean {
-  if (!isObject(value) || Array.isArray(value.stops)) return false;
+  if (!isObject(value) || readAuthoredLeaf(value).kind === "wrapper") return false;
   const names = Object.keys(value);
   if (names.length === 0) return false;
   if (names.some((name) => PLUGIN_GROUP_SECTIONS.includes(name))) return false;
-  return names.every((name) => isObject(value[name]));
+  return names.every((name) => readAuthoredLeaf(value[name]).kind !== "invalid");
 }
 
 /**

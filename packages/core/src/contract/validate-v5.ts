@@ -6,6 +6,7 @@ import {
   type TriggerDefinition,
 } from "./v5";
 import { SUPPORTED_TRIGGER_TYPES } from "./v5";
+import { readAuthoredLeaf } from "./authored-leaf";
 import { describeDiagnostics, diagnostic as issue } from "./diagnostics";
 import {
   isKeyframeGroup,
@@ -33,7 +34,19 @@ export interface KeyframeValidationOptions {
    */
   readonly allowGroups?: boolean;
 }
-const STOPS_REQUIRED = "Authored properties require a stops array.";
+/**
+ * The shape error for a leaf that is neither canonical form.
+ *
+ * The rule id stays `stops-shape` through ADR-050. The animated form still *is* stops, so "this is
+ * not a legal authored property" remains exactly what the rule says, and renaming it would churn the
+ * `plugin-contribution-stops-shape` alias in `domain/plugins.ts` and every citation of it across the
+ * contract suite for no semantic gain. The message and the cited path are corrected instead.
+ */
+const STOPS_REQUIRED =
+  "An authored property must be an array of stops or a static number, string, or boolean.";
+/** The retired form, refused by name so the diagnostic names the migration and not a shape. */
+const WRAPPER_RETIRED =
+  "The { stops: [...] } wrapper is retired; author the stops array directly as the value.";
 /** `'requires' or 'values'`, so the unknown-section message never hardcodes the legal set twice. */
 const SECTION_NAMES = PLUGIN_GROUP_SECTIONS.map((name) => `'${name}'`).join(" or ");
 const THREE_D_KEYS = ["z", "rotationX", "rotationY"];
@@ -88,7 +101,7 @@ export function validateKeyframes(
     let previous: number | undefined;
     const positions = new Set<number>();
     for (const [index, rawStop] of stops.entries()) {
-      const stopPath = `${propertyPath}.stops[${index}]`;
+      const stopPath = `${propertyPath}[${index}]`;
       if (!isObject(rawStop) || typeof rawStop.p !== "number" || !Number.isFinite(rawStop.p)) {
         add("stop-position", `${stopPath}.p`, "Stop p must be a finite number.");
         continue;
@@ -108,17 +121,32 @@ export function validateKeyframes(
     if (positions.size > 0 && !positions.has(1))
       add("stop-missing-end", propertyPath, "Stop sequence does not define p=1.", "warning");
   };
+  /**
+   * The authoring-shape gate for one leaf.
+   *
+   * What shape a leaf has is `readAuthoredLeaf`, not a record test and an array test written here.
+   * Five other sites used to ask that question independently and two of them already disagreed, so
+   * this reads the answer instead of recomputing it.
+   *
+   * A static value carries no stops to validate and no slot for an `ease`, so knowing the shape is
+   * the whole of validating it. The empty record stays the accepted no-op property it has always
+   * been, which is a kind of its own rather than a shape refused by accident. See issue #192.
+   *
+   * Every path cited here is a path the author actually wrote. The shape error used to append
+   * `.stops` to it, which named a member that no longer exists anywhere in a v5 document.
+   */
   const validateProperty = (property: unknown, propertyPath: string): void => {
-    if (!isObject(property)) {
-      add("stops-shape", `${propertyPath}.stops`, STOPS_REQUIRED);
+    const leaf = readAuthoredLeaf(property);
+    if (leaf.kind === "static" || leaf.kind === "empty") return;
+    if (leaf.kind === "wrapper") {
+      add("property-stops-wrapper", propertyPath, WRAPPER_RETIRED);
       return;
     }
-    if (Object.keys(property).length === 0) return;
-    if (!Array.isArray(property.stops)) {
-      add("stops-shape", `${propertyPath}.stops`, STOPS_REQUIRED);
+    if (leaf.kind === "invalid") {
+      add("stops-shape", propertyPath, STOPS_REQUIRED);
       return;
     }
-    validateStops(property.stops, propertyPath);
+    validateStops(leaf.stops, propertyPath);
   };
   /**
    * The registry-independent half of binding validation.
@@ -366,6 +394,9 @@ function isThreeDProperty(key: string, property: unknown): boolean {
 // it: a silently lost warning rather than a rejected project. The leaves now live under `values`,
 // so this asks `readPluginValues` for them rather than iterating the group's own entries, which
 // would only ever see the section name and reintroduce that exact regression. See ADR-049.
+//
+// Both leaf forms ADR-050 introduces are non-null, so a 3D key authored as a bare array or as a
+// bare static value still fires `perspective-usage`. `Y-9` and `LF-13` cover the section case.
 function usesThreeD(track: RawObject): boolean {
   const keyframes = isObject(track.keyframes) ? track.keyframes : null;
   if (!keyframes) return false;

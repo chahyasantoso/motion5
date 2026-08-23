@@ -11,12 +11,10 @@ describe("GSAP authored-duration pinning (P0-3b)", () => {
     const timeline = seam.interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.5, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 0.5, v: 100 },
+        ],
       },
     });
     const x = (): number => readNumber(timeline.state, "x");
@@ -39,12 +37,10 @@ describe("GSAP authored-duration pinning (P0-3b)", () => {
     const timeline = seam.interpolator.create({
       duration: 2,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.5, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 0.5, v: 100 },
+        ],
       },
     });
     expect(timeline.duration).toBeCloseTo(2, 10);
@@ -59,18 +55,14 @@ describe("GSAP authored-duration pinning (P0-3b)", () => {
     const timeline = seam.interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.4, v: 40 },
-          ],
-        },
-        y: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.75, v: 75 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 0.4, v: 40 },
+        ],
+        y: [
+          { p: 0, v: 0 },
+          { p: 0.75, v: 75 },
+        ],
       },
     });
     const x = (): number => readNumber(timeline.state, "x");
@@ -97,12 +89,10 @@ describe("GSAP authored-duration pinning (P0-3b)", () => {
     const completeTimeline = complete.interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
       },
     });
     expect(complete.created[0]?.tweenCount()).toBe(1);
@@ -112,12 +102,10 @@ describe("GSAP authored-duration pinning (P0-3b)", () => {
     const shortTimeline = short.interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.5, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 0.5, v: 100 },
+        ],
       },
     });
     expect(short.created[0]?.tweenCount()).toBe(1);

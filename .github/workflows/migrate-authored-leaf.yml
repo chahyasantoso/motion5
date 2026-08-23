@@ -1,18 +1,5 @@
 name: Migrate authored leaf
 
-# Slice B of issue #192. The remaining migration is one mechanical edit across the fixtures, so it is
-# run as a rule with a checkout and a formatter rather than as hand rewrites without either.
-#
-# `report` writes nothing and prints the whole plan, including the fixtures whose assertions change
-# meaning rather than shape. Run it first; the other two modes commit.
-#
-# Dispatch this against the branch you want migrated. The run uses that ref's copy of the workflow
-# and of the codemod; this file lives on the default branch only so the Actions UI lists it at all.
-#
-# The report and the logs are written to `RUNNER_TEMP` rather than into the checkout, so the commit
-# is a plain `git add -A`. Writing them into the working tree meant staging had to exclude them, and
-# an exclude-only pathspec includes nothing and fails.
-
 on:
   workflow_dispatch:
     inputs:

@@ -51,11 +51,23 @@ Warnings load and stay readable. Missing `perspective` alongside 3D content, and
 - `keyframes-reserved-separator`, when a flat keyframe name, a group name, or a leaf name contains `:`. The colon marks a plugin's private internal keys, so it is never legal in an authored name.
 - `keyframes-duplicate-key`, when one compiled key is authored twice: a group leaf colliding with another group's leaf, or with a flat key. The path names the second spelling and the message names the first.
 
+### The two forms of a leaf
+
+A property is an array of stops, or a static scalar. There is no wrapper around either, and these three rule ids are the whole surface of that rule. See ADR-050.
+
+- `property-stops-wrapper`, for the retired `{ stops: [...] }` object. Refused by name rather than folded into a generic shape error, and never normalized: two authoring shapes would be two validation paths and two documentation paths. Drop the wrapper and keep the array; nothing else changes.
+- `stops-shape`, when a leaf is neither an array of stops nor a static number, string, or boolean. `null`, `undefined`, a non-finite number, and a function all land here. An object does not, and that is deliberate: a key holding a record of leaves is the pre-ADR-049 group shape whatever the key is called, so `x: { hold: 1 }` is reported as `keyframes-missing-values-section` and keeps the more specific id. What ADR-050 closes is that no object is ever a static value; which refusal names it belongs to ADR-049. The id itself predates the bare form and keeps its name, because the animated form still is stops.
+- `plugin-contribution-static-unsupported`, when a static leaf is authored on a key owned by a prepare-stage plugin with a `contribute` hook. Such a hook derives a contribution from stops, and a static leaf has none; calling it with an empty list would be a field accepted and then ignored.
+
+A static leaf is worth understanding rather than just spelling. It never enters the interpolator, so it takes no percent-map entry and no tween, and it cannot collide with a sibling's `ease` because it has nowhere to carry one. `length: 62` is not shorthand for two identical stops; it is a different and cheaper thing.
+
+The stop rules themselves are unchanged: `stop-position` for a non-finite `p`, `stop-position-range` outside `[0, 1]`, `stop-position-order` for a non-monotonic sequence, `stop-position-duplicate` for a repeated position, and `stop-missing-start` and `stop-missing-end` as warnings.
+
 ### The two sections of a plugin group
 
 A plugin-named group has exactly two members, `values` and `requires`, and both names are reserved. These five rule ids are the whole surface of that rule. See ADR-049.
 
-- `keyframes-missing-values-section`, when a group authors its properties directly under the plugin name instead of under `values`. This is the pre-ADR-049 shape, and it is refused by name rather than normalized: two authoring shapes would be two validation paths and two documentation paths. Wrap the leaves; nothing else changes.
+- `keyframes-missing-values-section`, when a group authors its properties directly under the plugin name instead of under `values`. This is the pre-ADR-049 shape, and it is refused by name rather than normalized: two authoring shapes would be two validation paths and two documentation paths. Wrap the leaves; nothing else changes. It also covers an object written where a leaf belongs, such as `x: { hold: 1 }`, because that is the same shape as a group whose leaves sit directly under the plugin name and no reader can tell the two apart.
 - `keyframes-unknown-section`, for any key inside a group that is neither `values` nor `requires`. The message names both legal sections. A typo'd section is reported as one rather than misread as a property with no stops.
 - `keyframes-values-shape`, when `values` is present but not an object.
 - `keyframes-values-empty`, when `values` is an empty object. Omitting the section is already how you author no properties, so an empty one would be a field accepted and then ignored.
@@ -65,7 +77,7 @@ Two shapes deliberately stay legal. A group may author `requires` with no `value
 
 Malformed or duplicate ids, reserved namespace characters, malformed edges, unknown sources, duplicate edges, self-reference, and cycles are all errors too. Track ids may not contain `/`, and motion ids may not contain `/` or equal `~`, because those characters carry the qualified namespace.
 
-A diagnostic about a grouped keyframe cites the path you typed, `keyframes.fk.values.length`, not the flattened key the compiler works with. See ADR-041 and ADR-049.
+A diagnostic about a grouped keyframe cites the path you typed, `keyframes.fk.values.length`, not the flattened key the compiler works with. A diagnostic about a stop cites its index on the property, `keyframes.x[0].p`. Every path a leaf diagnostic carries is a path you wrote. See ADR-041, ADR-049, and ADR-050.
 
 ## A frame has two failure owners
 

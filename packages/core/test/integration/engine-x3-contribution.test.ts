@@ -16,12 +16,10 @@ const options = () => ({
   scheduler: createFakeScheduler(),
 });
 const compose = (values: Readonly<ImmutableRecord>): ImmutableRecord => values;
-const property = (value: number) => ({
-  stops: [
-    { p: 0, v: value },
-    { p: 1, v: value + 1 },
-  ],
-});
+const property = (value: number) => [
+  { p: 0, v: value },
+  { p: 1, v: value + 1 },
+];
 const registerDerivedOwner = (registry: PluginRegistry): void =>
   registry.register({ name: "derived", keys: ["derived"], compose });
 describe("X-3 contribution through the product load path", () => {
@@ -38,7 +36,8 @@ describe("X-3 contribution through the product load path", () => {
     const runtime = new Engine({ ...options(), interpolator, plugins: registry }).load(
       projectWith({ x: property(1) }, 2) as never,
     );
-    expect(contribute).toHaveBeenCalledWith("x", property(1).stops, {
+    // The hook receives the authored leaf, and since ADR-050 the leaf is the stops array itself.
+    expect(contribute).toHaveBeenCalledWith("x", property(1), {
       id: "hero/arm",
       duration: 2,
     });
@@ -88,12 +87,10 @@ describe("X-3 contribution through the product load path", () => {
       stage: "prepare",
       contribute: () => ({
         keyframes: {
-          derived: {
-            stops: [
-              { p: 0.8, v: 1 },
-              { p: 0.2, v: 2 },
-            ],
-          },
+          derived: [
+            { p: 0.8, v: 1 },
+            { p: 0.2, v: 2 },
+          ],
         },
       }),
       compose,
@@ -114,20 +111,16 @@ describe("X-3 contribution through the product load path", () => {
     expect(() =>
       new Engine({ ...options(), interpolator }).load(
         projectWith({
-          x: {
-            stops: [
-              { p: 0, v: 0 },
-              { p: 0.5, v: 50, ease: "power1.out" },
-              { p: 1, v: 100 },
-            ],
-          },
-          y: {
-            stops: [
-              { p: 0, v: 0 },
-              { p: 0.5, v: 50, ease: "power2.out" },
-              { p: 1, v: 100 },
-            ],
-          },
+          x: [
+            { p: 0, v: 0 },
+            { p: 0.5, v: 50, ease: "power1.out" },
+            { p: 1, v: 100 },
+          ],
+          y: [
+            { p: 0, v: 0 },
+            { p: 0.5, v: 50, ease: "power2.out" },
+            { p: 1, v: 100 },
+          ],
         }) as never,
       ),
     ).toThrow(/plugin-contribution-ease-collision/);
@@ -141,13 +134,11 @@ describe("X-3 contribution through the product load path", () => {
       stage: "prepare",
       contribute: () => ({
         keyframes: {
-          derived: {
-            stops: [
-              { p: 0, v: 0 },
-              { p: 0.5, v: 50, ease: "power2.out" },
-              { p: 1, v: 100 },
-            ],
-          },
+          derived: [
+            { p: 0, v: 0 },
+            { p: 0.5, v: 50, ease: "power2.out" },
+            { p: 1, v: 100 },
+          ],
         },
       }),
       compose,
@@ -158,13 +149,11 @@ describe("X-3 contribution through the product load path", () => {
     expect(() =>
       new Engine({ ...options(), interpolator, plugins: registry }).load(
         projectWith({
-          x: {
-            stops: [
-              { p: 0, v: 0 },
-              { p: 0.5, v: 50, ease: "power1.out" },
-              { p: 1, v: 100 },
-            ],
-          },
+          x: [
+            { p: 0, v: 0 },
+            { p: 0.5, v: 50, ease: "power1.out" },
+            { p: 1, v: 100 },
+          ],
         }) as never,
       ),
     ).toThrow(/plugin-contribution-ease-collision/);

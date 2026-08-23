@@ -13,12 +13,10 @@ describe("adapter ports", () => {
     const timeline = seam.interpolator.create({
       duration: 2,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
       },
     });
     expect(timeline.state).toMatchObject({ x: 0 });

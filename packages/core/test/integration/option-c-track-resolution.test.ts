@@ -6,12 +6,10 @@ import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/f
 import type { Interpolator } from "../../src/ports/interpolator";
 
 function ramp(from: number, to: number) {
-  return {
-    stops: [
-      { p: 0, v: from },
-      { p: 1, v: to },
-    ],
-  };
+  return [
+    { p: 0, v: from },
+    { p: 1, v: to },
+  ];
 }
 function track(id: string, from: number, to: number, duration?: number): TrackDefinition {
   return { id, ...(duration === undefined ? {} : { duration }), keyframes: { x: ramp(from, to) } };

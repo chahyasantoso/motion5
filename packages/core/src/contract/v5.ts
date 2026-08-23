@@ -80,9 +80,33 @@ export interface AuthoredStop {
   readonly v: unknown;
   readonly ease?: unknown;
 }
-export interface AuthoredProperty {
-  readonly stops: readonly AuthoredStop[];
-}
+/**
+ * A leaf that never changes: `length: 62`, not two identical stops pretending to be an animation.
+ *
+ * Closed to a finite number, string, or boolean, and that is forced rather than chosen. If an
+ * object were a legal static value then `{ stops: [...] }` would be one too, and the refusal that
+ * retires it would have nothing to fire on. `null` and `undefined` are excluded because omitting
+ * the key already spells absence, and a non-finite number is excluded for the same reason
+ * `AuthoredStop.p` requires one.
+ *
+ * Not re-exported from the package entry. A consumer that needs to name a leaf names
+ * `AuthoredProperty`, so this adds no entry to the export map or to the boundary allow-list.
+ * See ADR-050.
+ */
+export type AuthoredStaticValue = number | string | boolean;
+/**
+ * One authored leaf: the stops themselves, or a static value.
+ *
+ * The `{ stops: [...] }` wrapper is retired rather than kept as an accepted alias, on the precedent
+ * ADR-049 set: two accepted shapes are two validation paths and two documentation paths. It is
+ * refused by name as `property-stops-wrapper`.
+ *
+ * A static value is not sugar for a two-stop hold. It never enters the interpolator, so it produces
+ * no percent-map entry, no compiled property and no tween, which is the reason the syntax change is
+ * worth making at all. It also has no slot for an `ease`, so "a static value with a meaningless
+ * ease" is unrepresentable by shape rather than something a validator has to catch. See ADR-050.
+ */
+export type AuthoredProperty = readonly AuthoredStop[] | AuthoredStaticValue;
 /**
  * The optional bindings section of a plugin-named group: one graph source id per requirement slot
  * the named plugin declares.
@@ -118,6 +142,9 @@ export interface AuthoredPluginGroup {
  * The flat form is unchanged, and stays legal for every key exactly one registered plugin claims.
  * For a key several plugins claim it is not sugar: the flat spelling is `plugin-ambiguous-key`, and
  * the group is the only way to name an owner. See ADR-041, ADR-043, and ADR-049.
+ *
+ * Group detection is unaffected by the leaf forms ADR-050 introduces: a bare array and a bare
+ * scalar both fail the group predicate's `isObject` test before its section check ever runs.
  */
 export type AuthoredKeyframe = AuthoredProperty | AuthoredPluginGroup;
 /** One `keyframes.<plugin>.requires.<slot>` entry, as read from authored input. See ADR-044. */

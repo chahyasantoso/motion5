@@ -17,12 +17,7 @@ import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugi
 // Its own authored path is unchanged, which is why every rule id below is too.
 
 function hold(value: number) {
-  return {
-    stops: [
-      { p: 0, v: value },
-      { p: 1, v: value },
-    ],
-  };
+  return value;
 }
 
 function ruleIds(keyframes: unknown): readonly string[] {

@@ -160,12 +160,10 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
     const badTrack: TrackDefinition = {
       id: "bad",
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0, v: 100 }, // duplicate p — not monotonic
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 0, v: 100 }, // duplicate p — not monotonic
+        ],
       },
     };
 

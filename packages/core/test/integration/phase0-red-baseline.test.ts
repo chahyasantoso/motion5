@@ -20,12 +20,10 @@ describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
               id: "rotation",
               duration: 1000,
               keyframes: {
-                angle: {
-                  stops: [
-                    { p: 0, v: 0 },
-                    { p: 1, v: 360 },
-                  ],
-                },
+                angle: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 360 },
+                ],
               },
             },
           ],
@@ -67,23 +65,19 @@ describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
             {
               id: "t1",
               keyframes: {
-                x: {
-                  stops: [
-                    { p: 0, v: 0 },
-                    { p: 1, v: 100 },
-                  ],
-                },
+                x: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 100 },
+                ],
               },
             },
             {
               id: "t2",
               keyframes: {
-                y: {
-                  stops: [
-                    { p: 0, v: 0 },
-                    { p: 1, v: 200 },
-                  ],
-                },
+                y: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 200 },
+                ],
               },
             },
           ],
@@ -143,12 +137,10 @@ describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
         {
           id: "cursor",
           keyframes: {
-            opacity: {
-              stops: [
-                { p: 0, v: 0 },
-                { p: 1, v: 1 },
-              ],
-            },
+            opacity: [
+              { p: 0, v: 0 },
+              { p: 1, v: 1 },
+            ],
           },
         },
         owner,
@@ -179,12 +171,10 @@ describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
             {
               id: "t1",
               keyframes: {
-                x: {
-                  stops: [
-                    { p: 0, v: 0 },
-                    { p: 1, v: 100 },
-                  ],
-                },
+                x: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 100 },
+                ],
               },
             },
           ],
@@ -225,12 +215,10 @@ describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
             {
               id: "t1",
               keyframes: {
-                x: {
-                  stops: [
-                    { p: 0, v: 0 },
-                    { p: 1, v: 100 },
-                  ],
-                },
+                x: [
+                  { p: 0, v: 0 },
+                  { p: 1, v: 100 },
+                ],
               },
             },
           ],

@@ -108,9 +108,19 @@ import { fileURLToPath } from "node:url";
 // unknown or a missing section reports, and that the compiled value domain is the `values` section
 // and nothing else. `F-` owns the group form's introduction and `N-` owns who may claim a key;
 // `Y-` owns what a group is allowed to contain at all.
+//
+// `LF-` belongs to the authored leaf form (issue #192): what a single authored property may be
+// once the object wrapper is retired, whether a static value enters compilation at all, and who is
+// allowed to answer either question. It is the first two-letter series, and that is forced rather
+// than chosen. Every single letter is either already claimed above, or excluded by the `M-`
+// paragraph's own rule against a letter a plan uses unhyphenated (`A3` and `A5` in the runtime
+// mutation model, `X3` in the recovery audit), or unusable in a citation beside a digit (`I` and
+// `O`). The `P-` paragraph sets the policy this widening follows: the pattern is widened when a
+// series is actually opened. `Y-` owns what a plugin group may contain; `LF-` owns what a leaf may
+// be, which is the other half of the same authored record and a separate contract.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:LF|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })

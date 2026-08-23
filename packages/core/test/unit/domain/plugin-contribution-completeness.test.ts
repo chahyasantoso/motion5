@@ -3,12 +3,10 @@ import type { ImmutableRecord } from "../../../src/domain/values";
 import { PluginRegistry } from "../../../src/domain/plugins";
 
 const compose = (values: Readonly<ImmutableRecord>): ImmutableRecord => values;
-const property = (value: number) => ({
-  stops: [
-    { p: 0, v: value },
-    { p: 1, v: value + 1 },
-  ],
-});
+const property = (value: number) => [
+  { p: 0, v: value },
+  { p: 1, v: value + 1 },
+];
 
 describe("S5 contribution completeness", () => {
   it("rejects a contributed key with no registered owner", () => {

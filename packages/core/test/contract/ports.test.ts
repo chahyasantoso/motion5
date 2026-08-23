@@ -39,12 +39,10 @@ describe("Interpolator port contract", () => {
     const timeline = createFakeInterpolator().create({
       duration: 2,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 10 },
-            { p: 1, v: 30 },
-          ],
-        },
+        x: [
+          { p: 0, v: 10 },
+          { p: 1, v: 30 },
+        ],
       },
     });
     expect(timeline.state).toEqual({ x: 10 });

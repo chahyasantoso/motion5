@@ -1,3 +1,4 @@
+import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
 import { validateKeyframes } from "../contract/validate-v5";
 import type {
   AuthoredProperty,
@@ -38,6 +39,13 @@ export interface Contribution {
   readonly keyframes?: Readonly<Record<string, AuthoredProperty>>;
   readonly tweenVars?: Readonly<Record<string, unknown>>;
 }
+/**
+ * A prepare-stage hook, called once per authored entry the plugin owns.
+ *
+ * `stops` stays the second parameter through ADR-050. A static leaf has none, and rather than hand
+ * the hook an empty list it is refused by name as `plugin-contribution-static-unsupported`, so the
+ * signature keeps saying that a contribution is derived from an interpolated property.
+ */
 export type PluginContributor = (
   key: string,
   stops: readonly AuthoredStop[],
@@ -175,11 +183,6 @@ function normalizeContribution(
     ...(isRecord(value.tweenVars) ? { tweenVars: value.tweenVars } : {}),
   };
 }
-function readStops(value: unknown): readonly AuthoredStop[] {
-  return isRecord(value) && Array.isArray(value.stops)
-    ? (value.stops as readonly AuthoredStop[])
-    : [];
-}
 function validateContributionProperty(
   output: string,
   property: unknown,
@@ -208,6 +211,10 @@ function validateContributionProperty(
  * hook for a grouped leaf, and would run a hook at all for a group that named no plugin. See
  * ADR-043. `claimantsOf` answers for contributed keys only, which no author wrote and which no
  * group can therefore name.
+ *
+ * The stops a hook receives come from `readCompilableStops`, the one owner of the leaf shape, so a
+ * hook sees exactly the stops the interpolation compiler would rather than a second reading of the
+ * same authored record. See issue #192.
  */
 function prepareContributions(
   authored: Readonly<Record<string, unknown>>,
@@ -229,12 +236,28 @@ function prepareContributions(
   for (const key of Object.keys(authored).sort()) {
     const plugin = entryOwners.get(key);
     if (plugin?.stage !== "prepare" || !plugin.contribute) continue;
+    // A static leaf never enters compilation, so there is no percent grid for a contribution to
+    // land on. Calling the hook with an empty stop list instead would be a field accepted and then
+    // ignored, which rule 6 of ADR-033 forbids, and it would read as a hook that ran and declined.
+    // Refused by name, so the author is told which leaf the plugin cannot work from. See ADR-050.
+    if (readAuthoredLeaf(authored[key]).kind === "static") {
+      const detail = `cannot contribute from static key "${key}"`;
+      diagnostics.push(
+        diagnostic(
+          "plugin-contribution-static-unsupported",
+          authoredPath(key),
+          `Plugin "${plugin.name}" ${detail}.`,
+          [plugin.name, key],
+        ),
+      );
+      continue;
+    }
     let contribution: Contribution;
     try {
       contribution = normalizeContribution(
         plugin.contribute(
           key,
-          readStops(authored[key]),
+          readCompilableStops(authored[key]),
           Object.freeze({ id: track.id, duration: track.duration }),
         ),
         plugin,

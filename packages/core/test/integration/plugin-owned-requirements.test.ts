@@ -18,21 +18,14 @@ import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/f
 // The bindings section sits beside the `values` section rather than beside the leaves, per ADR-049.
 
 function hold(value: number) {
-  return {
-    stops: [
-      { p: 0, v: value },
-      { p: 1, v: value },
-    ],
-  };
+  return value;
 }
 
 function ramp(from: number, to: number) {
-  return {
-    stops: [
-      { p: 0, v: from },
-      { p: 1, v: to },
-    ],
-  };
+  return [
+    { p: 0, v: from },
+    { p: 1, v: to },
+  ];
 }
 
 function readX(value: unknown): number {

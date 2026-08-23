@@ -3,31 +3,55 @@
  * app may import; `scripts/boundary-scan.mjs` enforces that. These are the implementations the
  * core suite runs the port contract suite against, per TR-P-05. See ADR-048.
  */
+import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
+import type { AuthoredStaticValue, AuthoredStop } from "../contract/v5";
 import type { InterpolationTimeline, Interpolator } from "../ports/interpolator";
 import type { Cancel, Scheduler } from "../ports/scheduler";
 import type { TriggerPort } from "../ports/trigger";
-interface FakeStop {
-  readonly p: number;
-  readonly v: unknown;
+
+interface AuthoredLeaves {
+  readonly animated: Record<string, readonly AuthoredStop[]>;
+  readonly statics: Record<string, AuthoredStaticValue>;
 }
-function readStops(config: unknown): Record<string, readonly FakeStop[]> {
-  if (!config || typeof config !== "object" || !("keyframes" in config)) return {};
+
+/**
+ * Which authored leaves this fake publishes, decided by the shared reader rather than by a private
+ * copy of it.
+ *
+ * The private copy this replaced accepted any non-empty authored list, so a stop whose position did
+ * not parse, or one carrying no value, published a key the real compiler drops. A fake that
+ * publishes keys the production pipeline never produces makes a schema mistake look like a
+ * composition bug, which is the failure `LF-3` states as an assertion. See issue #192.
+ *
+ * A static leaf is separated from an animated one here for the same reason the compiler separates
+ * them: it enters `state` once and is never interpolated, so this double agrees with
+ * `compilePercentKeyframes` about what a value that never changes costs. See ADR-050.
+ */
+function readLeaves(config: unknown): AuthoredLeaves {
+  const animated: Record<string, readonly AuthoredStop[]> = {};
+  const statics: Record<string, AuthoredStaticValue> = {};
+  if (!config || typeof config !== "object" || !("keyframes" in config))
+    return { animated, statics };
   const keyframes = (config as { keyframes?: unknown }).keyframes;
-  if (!keyframes || typeof keyframes !== "object" || Array.isArray(keyframes)) return {};
-  const result: Record<string, readonly FakeStop[]> = {};
+  if (!keyframes || typeof keyframes !== "object" || Array.isArray(keyframes))
+    return { animated, statics };
   for (const [key, property] of Object.entries(keyframes)) {
-    if (!property || typeof property !== "object" || !("stops" in property)) continue;
-    const stops = (property as { stops?: unknown }).stops;
-    if (!Array.isArray(stops) || stops.length === 0) continue;
-    result[key] = stops as readonly FakeStop[];
+    const leaf = readAuthoredLeaf(property);
+    if (leaf.kind === "static") {
+      statics[key] = leaf.value;
+      continue;
+    }
+    const stops = readCompilableStops(property);
+    if (stops.length === 0) continue;
+    animated[key] = stops;
   }
-  return result;
+  return { animated, statics };
 }
 function interpolate(a: unknown, b: unknown, amount: number): unknown {
   if (typeof a === "number" && typeof b === "number") return a + (b - a) * amount;
   return amount < 1 ? a : b;
 }
-function valueAt(stops: readonly FakeStop[], progress: number): unknown {
+function valueAt(stops: readonly AuthoredStop[], progress: number): unknown {
   const first = stops[0];
   if (!first) return undefined;
   if (progress <= first.p) return first.v;
@@ -53,12 +77,14 @@ export function createFakeInterpolator(): Interpolator {
         typeof config.duration === "number"
           ? config.duration
           : 0;
-      const stops = readStops(config);
-      const state: Record<string, unknown> = {};
+      const { animated, statics } = readLeaves(config);
+      // Seeded once and never touched by `update`, which is the whole of the static bypass at this
+      // seam: no progress value can move a leaf that never changes.
+      const state: Record<string, unknown> = { ...statics };
       let currentProgress = 0;
       let killed = false;
       const update = () => {
-        for (const [key, propertyStops] of Object.entries(stops))
+        for (const [key, propertyStops] of Object.entries(animated))
           state[key] = valueAt(propertyStops, currentProgress);
       };
       update();
