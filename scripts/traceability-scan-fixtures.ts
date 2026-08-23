@@ -79,69 +79,61 @@ Nothing needed deletion.
 const FIRST_ROW = "- TR-C-01: FR-1, ADR-001.";
 const SECOND_ROW = "- TR-C-02: I-1, I-2.";
 const THIRD_ROW = "- TR-A-01: ADR-001, FR-2.";
+const HEADING = "### Inbound traceability: technical requirements to owners";
+
+/** Multi-row edits are named so no fixture declaration approaches the print width. */
+const ORDERED = `${FIRST_ROW}\n${SECOND_ROW}`;
+const SWAPPED = `${SECOND_ROW}\n${FIRST_ROW}`;
+const TWICE = `${SECOND_ROW}\n${SECOND_ROW}`;
+const ORPHANED = `${THIRD_ROW}\n- TR-G-01: FR-1.`;
+const DROPPED = `${THIRD_ROW}\n`;
+
+function withRow(from: string, to: string): string {
+  return cleanTrdFixture.replace(from, to);
+}
+
+function withAuditRow(from: string, to: string): string {
+  return cleanAuditFixture.replace(from, to);
+}
 
 /** A row that names another technical requirement as its owner: the issue #186 violation. */
-export const requirementOwnerFixture = cleanTrdFixture.replace(
-  FIRST_ROW,
-  "- TR-C-01: FR-1, TR-A-01.",
-);
+export const requirementOwnerFixture = withRow(FIRST_ROW, "- TR-C-01: FR-1, TR-A-01.");
 
 /** A row that abbreviates its owners as a range instead of naming each one. */
-export const rangeOwnerFixture = cleanTrdFixture.replace(
-  SECOND_ROW,
-  "- TR-C-02: I-1 through I-2.",
-);
+export const rangeOwnerFixture = withRow(SECOND_ROW, "- TR-C-02: I-1 through I-2.");
 
 /** A row pointing at an owner that no product, architecture, or decision document defines. */
-export const unknownOwnerFixture = cleanTrdFixture.replace(FIRST_ROW, "- TR-C-01: FR-1, FR-9.");
+export const unknownOwnerFixture = withRow(FIRST_ROW, "- TR-C-01: FR-1, FR-9.");
 
-/** A row that names the same owner twice, which hides how many owners a requirement really has. */
-export const duplicateOwnerFixture = cleanTrdFixture.replace(FIRST_ROW, "- TR-C-01: FR-1, FR-1.");
+/** A row naming the same owner twice, which hides how many owners a requirement really has. */
+export const duplicateOwnerFixture = withRow(FIRST_ROW, "- TR-C-01: FR-1, FR-1.");
 
 /** A row with a colon and nothing behind it, which is an ownerless requirement in disguise. */
-export const ownerlessRowFixture = cleanTrdFixture.replace(FIRST_ROW, "- TR-C-01: .");
+export const ownerlessRowFixture = withRow(FIRST_ROW, "- TR-C-01: .");
 
 /** A row missing its terminating period, which makes the last owner unparseable. */
-export const unterminatedRowFixture = cleanTrdFixture.replace(
-  FIRST_ROW,
-  "- TR-C-01: FR-1, ADR-001",
-);
+export const unterminatedRowFixture = withRow(FIRST_ROW, "- TR-C-01: FR-1, ADR-001");
 
 /** A binding requirement with no inbound row at all: ownerless, which is what #186 forbids. */
-export const missingRowFixture = cleanTrdFixture.replace(`${THIRD_ROW}\n`, "");
+export const missingRowFixture = withRow(DROPPED, "");
 
 /** A row for a requirement that no section declares, which is residue from a deleted rule. */
-export const orphanRowFixture = cleanTrdFixture.replace(
-  THIRD_ROW,
-  `${THIRD_ROW}\n- TR-G-01: FR-1.`,
-);
+export const orphanRowFixture = withRow(THIRD_ROW, ORPHANED);
 
 /** The same requirement traced twice, so one row can be corrected while the other rots. */
-export const duplicateRowFixture = cleanTrdFixture.replace(
-  SECOND_ROW,
-  `${SECOND_ROW}\n${SECOND_ROW}`,
-);
+export const duplicateRowFixture = withRow(SECOND_ROW, TWICE);
 
 /** Rows that no longer follow the order the requirements are declared in. */
-export const outOfOrderFixture = cleanTrdFixture.replace(
-  `${FIRST_ROW}\n${SECOND_ROW}`,
-  `${SECOND_ROW}\n${FIRST_ROW}`,
-);
+export const outOfOrderFixture = withRow(ORDERED, SWAPPED);
 
 /** A TRD that lost its inbound section entirely, which must throw rather than scan nothing. */
-export const missingSectionFixture = cleanTrdFixture.replace(
-  "### Inbound traceability: technical requirements to owners",
-  "### Something else entirely",
-);
+export const missingSectionFixture = withRow(HEADING, "### Something else entirely");
 
 /** The audit artifact and the normative matrix disagreeing about who owns a requirement. */
-export const auditDriftFixture = cleanAuditFixture.replace(SECOND_ROW, "- TR-C-02: I-1.");
+export const auditDriftFixture = withAuditRow(SECOND_ROW, "- TR-C-02: I-1.");
 
 /** A requirement traced in the TRD but absent from the audit artifact. */
-export const auditMissingRowFixture = cleanAuditFixture.replace(`${THIRD_ROW}\n`, "");
+export const auditMissingRowFixture = withAuditRow(DROPPED, "");
 
 /** A requirement audited but never traced in the normative matrix. */
-export const auditExtraRowFixture = cleanAuditFixture.replace(
-  THIRD_ROW,
-  `${THIRD_ROW}\n- TR-G-01: FR-1.`,
-);
+export const auditExtraRowFixture = withAuditRow(THIRD_ROW, ORPHANED);
