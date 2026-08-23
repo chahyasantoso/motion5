@@ -1,0 +1,157 @@
+name: Migrate authored leaf
+
+# Slice B of issue #192. The remaining migration is one mechanical edit across the fixtures, so it is
+# run as a rule with a checkout and a formatter rather than as hand rewrites without either.
+#
+# `report` writes nothing and prints the whole plan, including the fixtures whose assertions change
+# meaning rather than shape. Run it first; the other two modes commit.
+#
+# Dispatch this against the branch you want migrated. The run uses that ref's copy of the workflow
+# and of the codemod; this file lives on the default branch only so the Actions UI lists it at all.
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Report the plan, commit it to this branch, or open a pull request.
+        type: choice
+        default: report
+        options:
+          - report
+          - direct-commit
+          - pull-request
+      hold:
+        description: Convert hold() helpers to the static leaf form (ADR-050).
+        type: boolean
+        default: true
+      paths:
+        description: Correct authored path strings that lost their .stops segment.
+        type: boolean
+        default: true
+      run_checks:
+        description: Run typecheck and the suite after migrating, and report without gating.
+        type: boolean
+        default: true
+
+concurrency:
+  group: migrate-authored-leaf-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  migrate:
+    name: codemod (manual)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Run the codemod
+        run: |
+          flags=""
+          if [ "${{ inputs.mode }}" != "report" ]; then flags="$flags --write"; fi
+          if [ "${{ inputs.hold }}" != "true" ]; then flags="$flags --no-hold"; fi
+          if [ "${{ inputs.paths }}" != "true" ]; then flags="$flags --no-paths"; fi
+          node scripts/migrate-authored-leaf.mjs $flags | tee migration-report.md
+          cat migration-report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Apply the formatter
+        if: inputs.mode != 'report'
+        run: npm run format
+
+      - name: Detect drift
+        id: drift
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff --stat | tail -n 1
+          fi
+
+      - name: Nothing to migrate
+        if: steps.drift.outputs.changed == 'false'
+        run: echo "No authored wrapper left to rewrite."
+
+      - name: Wrapper gate (LF-16)
+        if: inputs.mode != 'report'
+        continue-on-error: true
+        run: |
+          if node scripts/migrate-authored-leaf.mjs --check; then
+            echo "### LF-16 gate: clean" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### LF-16 gate: wrappers remain, see the report above" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Typecheck
+        if: inputs.run_checks && steps.drift.outputs.changed == 'true'
+        continue-on-error: true
+        run: |
+          npm run typecheck 2>&1 | tee typecheck.log | tail -n 40
+          {
+            echo "### typecheck"
+            echo '```'
+            tail -n 40 typecheck.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Suite
+        if: inputs.run_checks && steps.drift.outputs.changed == 'true'
+        continue-on-error: true
+        run: |
+          npm test 2>&1 | tee test.log | tail -n 60
+          {
+            echo "### vitest"
+            echo '```'
+            grep -E "Tests|Test Files|FAIL" test.log | tail -n 40
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Archive the report and the logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: authored-leaf-migration-${{ github.run_id }}
+          path: |
+            migration-report.md
+            typecheck.log
+            test.log
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Commit to this branch
+        if: steps.drift.outputs.changed == 'true' && inputs.mode == 'direct-commit'
+        env:
+          TARGET_BRANCH: ${{ github.ref_name }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A ':!migration-report.md' ':!typecheck.log' ':!test.log'
+          git commit -m "refactor(test): migrate authored leaves off the stops wrapper" -m "Mechanical only, produced by scripts/migrate-authored-leaf.mjs and prettier. No assertion was rewritten by hand in this commit."
+          git push origin "HEAD:${TARGET_BRANCH}"
+
+      - name: Open a migration pull request
+        if: steps.drift.outputs.changed == 'true' && inputs.mode == 'pull-request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="refactor/authored-leaf-migration-${{ github.run_id }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add -A ':!migration-report.md' ':!typecheck.log' ':!test.log'
+          git commit -m "refactor(test): migrate authored leaves off the stops wrapper" -m "Mechanical only, produced by scripts/migrate-authored-leaf.mjs and prettier."
+          git push origin "$branch"
+          gh pr create --base "${{ github.ref_name }}" --head "$branch" --title "refactor(test): migrate authored leaves off the stops wrapper" --body-file migration-report.md
