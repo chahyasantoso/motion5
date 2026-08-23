@@ -1,0 +1,530 @@
+# CI log archive: 32611705468
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: feat/lf-bare-authored-leaf
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/32611705468
+- Captured: 2026-08-23T02:00:07Z
+
+## Failed job output
+
+```text
+integration (node 24)	Run npm run test:integration	﻿2026-08-23T01:59:50.1479881Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:50.1480251Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:50.1519014Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:50.1519528Z env:
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:50.1519740Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:50.1519950Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:50.2581859Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:50.2582852Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:50.2583510Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:50.2583812Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:50.7927937Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:50.7932738Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:50.7933503Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3177969Z  ^[[32m✓^[[39m packages/core/test/integration/engine-teardown-ownership.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3300563Z  ^[[32m✓^[[39m packages/core/test/integration/t4-runtime-motion-parity.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 33^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3811739Z  ^[[31m❯^[[39m packages/core/test/integration/bare-authored-leaf.test.ts ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 58^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3826412Z      ^[[32m✓^[[39m LF-5 interpolates a bare array of stops^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3828372Z      ^[[32m✓^[[39m LF-6 publishes a bare static value and holds it at every progress^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3830657Z      ^[[32m✓^[[39m LF-7 keeps a static leaf out of the percent map and out of the compiled properties^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3833132Z      ^[[32m✓^[[39m LF-8 contributes no tween for a static leaf^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3834753Z      ^[[32m✓^[[39m LF-9 refuses the retired object wrapper by name^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3836554Z ^[[31m     ^[[31m×^[[31m LF-10 closes the static domain instead of leaving it open^[[39m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3838204Z      ^[[32m✓^[[39m LF-11 never reads either leaf form as a plugin group^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3839798Z      ^[[32m✓^[[39m LF-12 still refuses a migrated legacy group by name^[[32m 0^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3841494Z      ^[[32m✓^[[39m LF-13 accepts both leaf forms inside a values section^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3843380Z      ^[[32m✓^[[39m LF-14 refuses a static leaf on a prepare-stage contributor's key^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3845590Z      ^[[32m✓^[[39m LF-15 declares the leaf as a union and deletes the wrapper interface^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.3847731Z ^[[31m     ^[[31m×^[[31m LF-16 leaves no authored schema in the repository on the retired form^[[39m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6310835Z  ^[[31m❯^[[39m packages/core/test/integration/plugin-group-values-section.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 53^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6313634Z      ^[[32m✓^[[39m Y-1 compiles the values section to leaves and the requires section to nothing^[[32m 18^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6315648Z      ^[[32m✓^[[39m Y-2 refuses the legacy leaf form by name rather than as a missing stops array^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6317051Z      ^[[32m✓^[[39m Y-3 reports an unknown section once and names both legal sections^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6318777Z      ^[[32m✓^[[39m Y-4 reserves a top-level values under the rule id a top-level requires gets^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6320288Z      ^[[32m✓^[[39m Y-5 refuses a malformed or an empty values section^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6321812Z      ^[[32m✓^[[39m Y-6 leaves an empty object an accepted no-op property rather than a group^[[32m 0^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6323861Z ^[[31m     ^[[31m×^[[31m Y-7 cites the section in a diagnostic about a leaf inside it^[[39m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6325500Z      ^[[32m✓^[[39m Y-8 keeps a leaf named values legal inside the section, and resolvable^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6327206Z      ^[[32m✓^[[39m Y-9 keeps the perspective warning for 3D content inside the values section^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6329495Z      ^[[32m✓^[[39m Y-10 refuses one compiled key authored under two groups' values sections^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6331475Z      ^[[32m✓^[[39m Y-11 joins a bindings-only group to the composer chain and scopes its input^[[32m 0^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6352710Z      ^[[32m✓^[[39m Y-12 declares the group as two named sections and deletes the member union^[[32m 0^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6354615Z      ^[[32m✓^[[39m Y-13 composes the walker rig's world frame through the values section^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.6743042Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-time-loop.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 41^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.7006989Z ^[[90mstderr^[[2m | packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22m^[[2mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m^[[2m9. Use React usePatch hook at the React boundary
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.7034290Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.7063471Z An update to Root inside a test was not wrapped in act(...).
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.7064392Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.7084039Z When testing, code that causes React state updates should be wrapped into act(...):
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.7084958Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.7085352Z act(() => {
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.7086333Z   /* fire events that update state */
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.7088178Z });
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.7088847Z /* assert on the output */
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.7089389Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.7091144Z This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.7092856Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.7094153Z  ^[[32m✓^[[39m packages/core/test/integration/phase7-walker-demo.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 71^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.8991415Z  ^[[31m❯^[[39m packages/core/test/integration/authored-leaf-reader.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.9017540Z ^[[31m     ^[[31m×^[[31m LF-1 answers the leaf shape question from one module^[[39m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.9018411Z      ^[[32m✓^[[39m LF-2 leaves no consumer holding a second copy of the check^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.9019347Z ^[[31m     ^[[31m×^[[31m LF-3 makes the compiler and the fake interpolator agree on what a leaf publishes^[[39m^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.9020330Z      ^[[32m✓^[[39m LF-4 moves no diagnostic that the authored form did not move^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.9046835Z  ^[[32m✓^[[39m packages/core/test/integration/rollback-error-precedence.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:51.9984542Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-types.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.1555200Z  ^[[32m✓^[[39m packages/core/test/integration/phase0-red-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.1721092Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-owned-requirements.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 37^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.2665309Z  ^[[32m✓^[[39m packages/core/test/integration/replace-track-transactionality.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.3986717Z  ^[[32m✓^[[39m packages/core/test/integration/phase4-dynamic-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.4334858Z  ^[[32m✓^[[39m packages/core/test/integration/adoption.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.5112041Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-time.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.6550518Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-scroll.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.7144871Z  ^[[31m❯^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 50^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.7154030Z ^[[31m     ^[[31m×^[[31m passes contribution context and creates the prepared timeline at load^[[39m^[[32m 38^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.7155367Z      ^[[32m✓^[[39m selects one predicate contributor through Engine.load^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.7156568Z      ^[[32m✓^[[39m rejects malformed contributions during Engine.load^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.7158208Z      ^[[32m✓^[[39m rejects authored ease collisions before any timeline is created^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.7159724Z      ^[[32m✓^[[39m merges contributed keyframes into compiler diagnostics before timeline creation^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.7645186Z  ^[[32m✓^[[39m packages/core/test/integration/phase3-trigger-port.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:52.9144438Z  ^[[32m✓^[[39m packages/core/test/integration/per-plugin-key-ownership.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 29^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.0104150Z  ^[[32m✓^[[39m packages/core/test/integration/mutation-transactionality.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 40^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.0150049Z  ^[[32m✓^[[39m packages/core/test/integration/option-c-track-resolution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 29^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.1318827Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.2489209Z  ^[[32m✓^[[39m packages/core/test/integration/phase2-motion-scheduling.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.2613213Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 28^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.3853264Z  ^[[32m✓^[[39m packages/core/test/integration/observation-identity.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.4697021Z  ^[[32m✓^[[39m packages/core/test/integration/cross-motion.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.5324940Z  ^[[32m✓^[[39m packages/core/test/integration/issue-114-motion-track-regressions.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.6056314Z  ^[[32m✓^[[39m packages/core/test/integration/diagnostics.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.7454026Z  ^[[32m✓^[[39m packages/core/test/integration/unified-mutation-surface.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 31^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.8098272Z  ^[[32m✓^[[39m packages/core/test/integration/replace-motion-track.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.8405476Z  ^[[31m❯^[[39m packages/core/test/integration/adopted-track-immutability.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.8413916Z ^[[31m     ^[[31m×^[[31m returns a deeply frozen runtime-owned definition^[[39m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.8416084Z ^[[31m     ^[[31m×^[[31m isolates caller mutation from the frozen graph definition^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.8425197Z      ^[[32m✓^[[39m uses the authored validation owner for malformed runtime track structure^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.8426931Z      ^[[32m✓^[[39m keeps the existing same-source destroy and readopt path working^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:53.9996066Z  ^[[32m✓^[[39m packages/core/test/integration/keyframe-groups.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:54.0519825Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:54.0948362Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:54.2530168Z  ^[[32m✓^[[39m packages/core/test/integration/internal-key-strip.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:54.2684278Z  ^[[32m✓^[[39m packages/core/test/integration/remount.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:54.3579298Z  ^[[32m✓^[[39m packages/core/test/integration/handle-adoption.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:54.4537423Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:54.4854509Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:54.5944102Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:54.6681415Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:54.7045028Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:54.8364068Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:54.8739130Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:54.9805867Z  ^[[32m✓^[[39m packages/core/test/integration/single-input-channel.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 37^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.0214893Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.1084660Z  ^[[32m✓^[[39m packages/core/test/integration/adopt-destroy-readopt.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.2209078Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.2434442Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.4654228Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.4860162Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.5094493Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.7198232Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.7284796Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-trigger-validation.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.7303394Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.8984079Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9201447Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9232693Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9233477Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 8 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9234328Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9238075Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adopted-track-immutability.test.ts^[[2m > ^[[22madopted track validation and immutability (W3)^[[2m > ^[[22mreturns a deeply frozen runtime-owned definition
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9242555Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading '0')^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9244311Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/adopted-track-immutability.test.ts:^[[2m41:38^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9277687Z     ^[[90m 39|^[[39m     ^[[34mexpect^[[39m(^[[33mObject^[[39m^[[33m.^[[39m^[[34misFrozen^[[39m(property))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9279930Z     ^[[90m 40|^[[39m     ^[[34mexpect^[[39m(^[[33mObject^[[39m^[[33m.^[[39m^[[34misFrozen^[[39m(property^[[33m?.^[[39mstops))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9282085Z     ^[[90m 41|^[[39m     ^[[34mexpect^[[39m(^[[33mObject^[[39m^[[33m.^[[39m^[[34misFrozen^[[39m(property^[[33m?.^[[39mstops[^[[34m0^[[39m]))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9283417Z     ^[[90m   |^[[39m                                      ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9283784Z     ^[[90m 42|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9284360Z     ^[[90m 43|^[[39m     handle^[[33m.^[[39m^[[34mdestroyAdopted^[[39m(adopted^[[33m.^[[39mid^[[33m,^[[39m owner)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9284756Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9285012Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9285326Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9286437Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adopted-track-immutability.test.ts^[[2m > ^[[22madopted track validation and immutability (W3)^[[2m > ^[[22misolates caller mutation from the frozen graph definition
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9288295Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading '1')^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9289194Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/adopted-track-immutability.test.ts:^[[2m58:15^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9290440Z     ^[[90m 56|^[[39m     // The caller-owned source remains mutable. The runtime-owned clon…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9291685Z     ^[[90m 57|^[[39m     ^[[35mconst^[[39m property ^[[33m=^[[39m source^[[33m.^[[39mkeyframes^[[33m!^[[39m^[[33m.^[[39mx ^[[35mas^[[39m ^[[33mAuthoredProperty^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9293737Z     ^[[90m 58|^[[39m     (property^[[33m.^[[39mstops[^[[34m1^[[39m] ^[[35mas^[[39m { p^[[33m:^[[39m number^[[33m;^[[39m v^[[33m:^[[39m unknown })^[[33m.^[[39mv ^[[33m=^[[39m ^[[34m999^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9294469Z     ^[[90m   |^[[39m               ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9294772Z     ^[[90m 59|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9295306Z     ^[[90m 60|^[[39m     handle^[[33m.^[[39m^[[34mseek^[[39m(adopted^[[33m.^[[39mid^[[33m,^[[39m ^[[34m1^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9295697Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9295946Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9296159Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9297094Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/authored-leaf-reader.test.ts^[[2m > ^[[22mone owner for the authored leaf shape^[[2m > ^[[22mLF-1 answers the leaf shape question from one module
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9298338Z ^[[31m^[[1mAssertionError^[[22m: expected { kind: 'animated', stops: [ …(2) ] } to deeply equal { kind: 'wrapper' }^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9298779Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9298914Z ^[[32m- Expected^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9299174Z ^[[31m+ Received^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9299311Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9299419Z ^[[2m  {^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9299699Z ^[[32m-   "kind": "wrapper",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9300028Z ^[[31m+   "kind": "animated",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9300327Z ^[[31m+   "stops": [^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9300588Z ^[[31m+     {^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9300837Z ^[[31m+       "p": 0,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9301104Z ^[[31m+       "v": 0,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9301364Z ^[[31m+     },^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9301599Z ^[[31m+     {^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9301840Z ^[[31m+       "p": 1,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9302100Z ^[[31m+       "v": 10,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9304058Z ^[[31m+     },^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9304626Z ^[[31m+   ],^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9304870Z ^[[2m  }^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9305005Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9305674Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/authored-leaf-reader.test.ts:^[[2m190:39^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9319628Z     ^[[90m188|^[[39m     expect(readAuthoredLeaf(RAMP)).toEqual({ kind: "animated", stops: …
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9320826Z     ^[[90m189|^[[39m     expect(readAuthoredLeaf(62)).toEqual({ kind: "static", value: 62 }…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9323243Z     ^[[90m190|^[[39m     ^[[34mexpect^[[39m(^[[34mreadAuthoredLeaf^[[39m(^[[33mWRAPPED^[[39m))^[[33m.^[[39m^[[34mtoEqual^[[39m({ kind^[[33m:^[[39m ^[[32m"wrapper"^[[39m })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9324789Z     ^[[90m   |^[[39m                                       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9343100Z     ^[[90m191|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9344145Z     ^[[90m192|^[[39m     // `{}` is a deliberately accepted no-op property that `Y-6` alrea…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9344726Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9345151Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9345533Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9347454Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/authored-leaf-reader.test.ts^[[2m > ^[[22mone owner for the authored leaf shape^[[2m > ^[[22mLF-3 makes the compiler and the fake interpolator agree on what a leaf publishes
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9349273Z ^[[31m^[[1mAssertionError^[[22m: compiler, the retired wrapper, which is refused rather than normalized: expected [ 'x' ] to deeply equal []^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9349801Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9349937Z ^[[32m- Expected^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9350206Z ^[[31m+ Received^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9350343Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9350447Z ^[[32m- []^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9350674Z ^[[31m+ [^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9350909Z ^[[31m+   "x",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9351128Z ^[[31m+ ]^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9351241Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9351732Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/authored-leaf-reader.test.ts:^[[2m224:59^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9352834Z     ^[[90m222|^[[39m   it("LF-3 makes the compiler and the fake interpolator agree on what …
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9354409Z     ^[[90m223|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m { what^[[33m,^[[39m authored^[[33m,^[[39m published } ^[[35mof^[[39m ^[[33mPUBLICATION^[[39m) {
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9355979Z     ^[[90m224|^[[39m       expect(compiledKeys(authored), `compiler, ${what}`).toEqual(publ…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9357158Z     ^[[90m   |^[[39m                                                           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9358299Z     ^[[90m225|^[[39m       // Red on the parent of slice A for the two malformed stops. The…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9359566Z     ^[[90m226|^[[39m       // an unparseable position or no value; the private copy in the …
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9360176Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9360647Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9361058Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9362996Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/bare-authored-leaf.test.ts^[[2m > ^[[22mthe bare authored leaf^[[2m > ^[[22mLF-10 closes the static domain instead of leaving it open
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9365391Z ^[[31m^[[1mAssertionError^[[22m: expected [ 'keyframes-missing-values-section' ] to deeply equal [ 'stops-shape' ]^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9366278Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9366567Z ^[[32m- Expected^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9367068Z ^[[31m+ Received^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9367321Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9367518Z ^[[2m  [^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9367979Z ^[[32m-   "stops-shape",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9368717Z ^[[31m+   "keyframes-missing-values-section",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9369363Z ^[[2m  ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9369563Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9370444Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/bare-authored-leaf.test.ts:^[[2m260:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9374622Z     ^[[90m258|^[[39m     expect(ruleIds({ x: Number.POSITIVE_INFINITY })).toEqual(["stops-s…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9376716Z     ^[[90m259|^[[39m     ^[[34mexpect^[[39m(^[[34mruleIds^[[39m({ x^[[33m:^[[39m () ^[[33m=>^[[39m ^[[34m1^[[39m }))^[[33m.^[[39m^[[34mtoEqual^[[39m([^[[32m"stops-shape"^[[39m])^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9379276Z     ^[[90m260|^[[39m     ^[[34mexpect^[[39m(^[[34mruleIds^[[39m({ x^[[33m:^[[39m { hold^[[33m:^[[39m ^[[34m1^[[39m } }))^[[33m.^[[39m^[[34mtoEqual^[[39m([^[[32m"stops-shape"^[[39m])^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9383463Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9384536Z     ^[[90m261|^[[39m     // The shape error cites the property the author wrote, not a `.st…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9385592Z     ^[[90m262|^[[39m     ^[[90m// exists anywhere in the document.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9386270Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9387060Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9387915Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9389943Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/bare-authored-leaf.test.ts^[[2m > ^[[22mthe bare authored leaf^[[2m > ^[[22mLF-16 leaves no authored schema in the repository on the retired form
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9392082Z ^[[31m^[[1mAssertionError^[[22m: expected [ …(3) ] to deeply equal []^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9393122Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9393615Z ^[[32m- Expected^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9394333Z ^[[31m+ Received^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9394767Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9395152Z ^[[32m- []^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9395807Z ^[[31m+ [^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9396887Z ^[[31m+   "packages/core/src/contract/authored-leaf.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9398146Z ^[[31m+   "packages/core/src/contract/v5.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9399387Z ^[[31m+   "packages/core/src/contract/validate-v5.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9400260Z ^[[31m+ ]^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9400707Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9401786Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/bare-authored-leaf.test.ts:^[[2m344:30^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9403695Z     ^[[90m342|^[[39m     // be red for a fixture that authors the retired form, but a fixtu…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9405147Z     ^[[90m343|^[[39m     // and that is the one that reads as an accepted second shape late…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9406772Z     ^[[90m344|^[[39m     ^[[34mexpect^[[39m(offenders^[[33m.^[[39m^[[34msort^[[39m())^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9408151Z     ^[[90m   |^[[39m                              ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9409052Z     ^[[90m345|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9409849Z     ^[[90m346|^[[39m })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9410355Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9411014Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9411607Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9414109Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mpasses contribution context and creates the prepared timeline at load
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9416835Z ^[[31m^[[1mAssertionError^[[22m: expected "vi.fn()" to be called with arguments: [ 'x', undefined, …(1) ]^[[90m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9417794Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9418155Z Received:
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9418574Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9419050Z ^[[1m  1st vi.fn() call:
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9419528Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9419980Z ^[[22m^[[2m  [^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9420609Z ^[[2m    "x",^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9421255Z ^[[32m-   undefined,^[[90m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9421943Z ^[[31m+   [^[[90m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9422972Z ^[[31m+     {^[[90m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9423744Z ^[[31m+       "p": 0,^[[90m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9424465Z ^[[31m+       "v": 1,^[[90m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9425211Z ^[[31m+     },^[[90m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9425904Z ^[[31m+     {^[[90m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9426548Z ^[[31m+       "p": 1,^[[90m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9427309Z ^[[31m+       "v": 2,^[[90m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9428075Z ^[[31m+     },^[[90m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9428338Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9428740Z ^[[31m+   ],^[[90m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9429304Z ^[[2m    {^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9429951Z ^[[2m      "duration": 2,^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9430758Z ^[[2m      "id": "hero/arm",^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9431497Z ^[[2m    },^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9432183Z ^[[2m  ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9433146Z ^[[31m^[[90m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9433597Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9434124Z Number of calls: ^[[1m1^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9435184Z ^[[31m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9436481Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m39:24^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9438787Z     ^[[90m 37|^[[39m       ^[[34mprojectWith^[[39m({ x^[[33m:^[[39m ^[[34mproperty^[[39m(^[[34m1^[[39m) }^[[33m,^[[39m ^[[34m2^[[39m) ^[[35mas^[[39m never^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9440724Z ^[[2m Test Files ^[[22m ^[[1m^[[31m5 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m52 passed^[[39m^[[22m^[[90m (57)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9442733Z ^[[2m      Tests ^[[22m ^[[1m^[[31m8 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m233 passed^[[39m^[[22m^[[90m (241)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9443865Z ^[[2m   Start at ^[[22m 01:59:50
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9445264Z ^[[2m   Duration ^[[22m 5.11s^[[2m (transform 1.26s, setup 480ms, import 3.75s, tests 1.27s, environment 9ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9446015Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9446690Z     ^[[90m 38|^[[39m     )^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9448341Z     ^[[90m 39|^[[39m     ^[[34mexpect^[[39m(contribute)^[[33m.^[[39m^[[34mtoHaveBeenCalledWith^[[39m(^[[32m"x"^[[39m^[[33m,^[[39m ^[[34mproperty^[[39m(^[[34m1^[[39m)^[[33m.^[[39mstops^[[33m,^[[39m {
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9449823Z     ^[[90m   |^[[39m                        ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9450661Z     ^[[90m 40|^[[39m       id^[[33m:^[[39m ^[[32m"hero/arm"^[[39m^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9451508Z     ^[[90m 41|^[[39m       duration^[[33m:^[[39m ^[[34m2^[[39m^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9451828Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9452640Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9453058Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9455159Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-group-values-section.test.ts^[[2m > ^[[22man explicit values section inside plugin groups^[[2m > ^[[22mY-7 cites the section in a diagnostic about a leaf inside it
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9457340Z ^[[31m^[[1mAssertionError^[[22m: expected [ { …(4) }, { …(4) }, { …(4) } ] to deep equally contain ObjectContaining{…}^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9457771Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9457919Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9458195Z ObjectContaining {
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9458607Z   "path": "keyframes.fk.values.length.stops[0].p",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9459299Z   "ruleId": "stop-position-range",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9459764Z }
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9459945Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9460161Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9460385Z [
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9460558Z   {
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9460822Z     "message": "Stop p must be between 0 and 1.",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9461245Z     "path": "keyframes.fk.values.length[0].p",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9461895Z     "ruleId": "stop-position-range",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9462260Z     "severity": "error",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9462804Z   },
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9462994Z   {
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9463268Z     "message": "Stop sequence does not define p=0.",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9463640Z     "path": "keyframes.fk.values.length",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9463969Z     "ruleId": "stop-missing-start",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9464249Z     "severity": "warning",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9464478Z   },
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9464663Z   {
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9465043Z     "message": "Stop sequence does not define p=1.",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9465411Z     "path": "keyframes.fk.values.length",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9465739Z     "ruleId": "stop-missing-end",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9466002Z     "severity": "warning",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9466220Z   },
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9466400Z ]
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9466496Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9467059Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m207:32^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9467937Z     ^[[90m205|^[[39m   it("Y-7 cites the section in a diagnostic about a leaf inside it", (…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9469016Z     ^[[90m206|^[[39m     ^[[35mconst^[[39m authored ^[[33m=^[[39m { fk^[[33m:^[[39m { values^[[33m:^[[39m { length^[[33m:^[[39m [{ p^[[33m:^[[39m ^[[34m2^[[39m^[[33m,^[[39m v^[[33m:^[[39m ^[[34m1^[[39m }] } } }^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9470240Z     ^[[90m207|^[[39m     ^[[34mexpect^[[39m(^[[34mdiagnose^[[39m(authored))^[[33m.^[[39m^[[34mtoContainEqual^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9472016Z     ^[[90m   |^[[39m                                ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9473128Z     ^[[90m208|^[[39m       expect^[[33m.^[[39m^[[34mobjectContaining^[[39m({
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9474244Z     ^[[90m209|^[[39m         ruleId^[[33m:^[[39m ^[[32m"stop-position-range"^[[39m^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9474562Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9474816Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9475029Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9475054Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9497361Z ##[error]TypeError: Cannot read properties of undefined (reading '0')
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/adopted-track-immutability.test.ts:41:38
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9505476Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9507553Z ##[error]TypeError: Cannot read properties of undefined (reading '1')
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/adopted-track-immutability.test.ts:58:15
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9509475Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9512835Z ##[error]AssertionError: expected { kind: 'animated', stops: [ …(2) ] } to deeply equal { kind: 'wrapper' }
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected
+integration (node 24)	Run npm run test:integration	+ Received
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	  {
+integration (node 24)	Run npm run test:integration	-   "kind": "wrapper",
+integration (node 24)	Run npm run test:integration	+   "kind": "animated",
+integration (node 24)	Run npm run test:integration	+   "stops": [
+integration (node 24)	Run npm run test:integration	+     {
+integration (node 24)	Run npm run test:integration	+       "p": 0,
+integration (node 24)	Run npm run test:integration	+       "v": 0,
+integration (node 24)	Run npm run test:integration	+     },
+integration (node 24)	Run npm run test:integration	+     {
+integration (node 24)	Run npm run test:integration	+       "p": 1,
+integration (node 24)	Run npm run test:integration	+       "v": 10,
+integration (node 24)	Run npm run test:integration	+     },
+integration (node 24)	Run npm run test:integration	+   ],
+integration (node 24)	Run npm run test:integration	  }
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/authored-leaf-reader.test.ts:190:39
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9514789Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9518019Z ##[error]AssertionError: compiler, the retired wrapper, which is refused rather than normalized: expected [ 'x' ] to deeply equal []
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected
+integration (node 24)	Run npm run test:integration	+ Received
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- []
+integration (node 24)	Run npm run test:integration	+ [
+integration (node 24)	Run npm run test:integration	+   "x",
+integration (node 24)	Run npm run test:integration	+ ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/authored-leaf-reader.test.ts:224:59
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9520481Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9524765Z ##[error]AssertionError: expected [ 'keyframes-missing-values-section' ] to deeply equal [ 'stops-shape' ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected
+integration (node 24)	Run npm run test:integration	+ Received
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	  [
+integration (node 24)	Run npm run test:integration	-   "stops-shape",
+integration (node 24)	Run npm run test:integration	+   "keyframes-missing-values-section",
+integration (node 24)	Run npm run test:integration	  ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/bare-authored-leaf.test.ts:260:41
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9527335Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9531435Z ##[error]AssertionError: expected [ …(3) ] to deeply equal []
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected
+integration (node 24)	Run npm run test:integration	+ Received
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- []
+integration (node 24)	Run npm run test:integration	+ [
+integration (node 24)	Run npm run test:integration	+   "packages/core/src/contract/authored-leaf.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/src/contract/v5.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/src/contract/validate-v5.ts",
+integration (node 24)	Run npm run test:integration	+ ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/bare-authored-leaf.test.ts:344:30
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9534327Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9538971Z ##[error]AssertionError: expected "vi.fn()" to be called with arguments: [ 'x', undefined, …(1) ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	Received:
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	  1st vi.fn() call:
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	  [
+integration (node 24)	Run npm run test:integration	    "x",
+integration (node 24)	Run npm run test:integration	-   undefined,
+integration (node 24)	Run npm run test:integration	+   [
+integration (node 24)	Run npm run test:integration	+     {
+integration (node 24)	Run npm run test:integration	+       "p": 0,
+integration (node 24)	Run npm run test:integration	+       "v": 1,
+integration (node 24)	Run npm run test:integration	+     },
+integration (node 24)	Run npm run test:integration	+     {
+integration (node 24)	Run npm run test:integration	+       "p": 1,
+integration (node 24)	Run npm run test:integration	+       "v": 2,
+integration (node 24)	Run npm run test:integration	+     },
+integration (node 24)	Run npm run test:integration	+   ],
+integration (node 24)	Run npm run test:integration	    {
+integration (node 24)	Run npm run test:integration	      "duration": 2,
+integration (node 24)	Run npm run test:integration	      "id": "hero/arm",
+integration (node 24)	Run npm run test:integration	    },
+integration (node 24)	Run npm run test:integration	  ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	Number of calls: 1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:39:24
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9541704Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9550265Z ##[error]AssertionError: expected [ { …(4) }, { …(4) }, { …(4) } ] to deep equally contain ObjectContaining{…}
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	ObjectContaining {
+integration (node 24)	Run npm run test:integration	  "path": "keyframes.fk.values.length.stops[0].p",
+integration (node 24)	Run npm run test:integration	  "ruleId": "stop-position-range",
+integration (node 24)	Run npm run test:integration	}
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	[
+integration (node 24)	Run npm run test:integration	  {
+integration (node 24)	Run npm run test:integration	    "message": "Stop p must be between 0 and 1.",
+integration (node 24)	Run npm run test:integration	    "path": "keyframes.fk.values.length[0].p",
+integration (node 24)	Run npm run test:integration	    "ruleId": "stop-position-range",
+integration (node 24)	Run npm run test:integration	    "severity": "error",
+integration (node 24)	Run npm run test:integration	  },
+integration (node 24)	Run npm run test:integration	  {
+integration (node 24)	Run npm run test:integration	    "message": "Stop sequence does not define p=0.",
+integration (node 24)	Run npm run test:integration	    "path": "keyframes.fk.values.length",
+integration (node 24)	Run npm run test:integration	    "ruleId": "stop-missing-start",
+integration (node 24)	Run npm run test:integration	    "severity": "warning",
+integration (node 24)	Run npm run test:integration	  },
+integration (node 24)	Run npm run test:integration	  {
+integration (node 24)	Run npm run test:integration	    "message": "Stop sequence does not define p=1.",
+integration (node 24)	Run npm run test:integration	    "path": "keyframes.fk.values.length",
+integration (node 24)	Run npm run test:integration	    "ruleId": "stop-missing-end",
+integration (node 24)	Run npm run test:integration	    "severity": "warning",
+integration (node 24)	Run npm run test:integration	  },
+integration (node 24)	Run npm run test:integration	]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-group-values-section.test.ts:207:32
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:59:55.9851876Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run npm run typecheck	﻿2026-08-23T01:59:50.1664913Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:50.1665263Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:50.1688119Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:50.1688604Z env:
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:50.1688901Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:50.1689147Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:50.2423941Z 
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:50.2425056Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:50.2425658Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:50.2425831Z 
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4726878Z ##[error]packages/core/test/contract/validation-owner.test.ts(105,11): error TS2741: Property 'stops' is missing in type '{ p: number; v: number; }[]' but required in type '{ stops: { p: number; v: unknown; }[]; }'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4733049Z ##[error]packages/core/test/contract/validation-owner.test.ts(119,18): error TS2532: Object is possibly 'undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4735098Z ##[error]packages/core/test/contract/validation-owner.test.ts(119,18): error TS7053: Element implicitly has an 'any' type because expression of type '1' can't be used to index type '{ stops: { p: number; v: unknown; }[]; }'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4736368Z   Property '1' does not exist on type '{ stops: { p: number; v: unknown; }[]; }'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4737447Z ##[error]packages/core/test/integration/adopted-track-immutability.test.ts(40,38): error TS2339: Property 'stops' does not exist on type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4738339Z   Property 'stops' does not exist on type 'string'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4739251Z ##[error]packages/core/test/integration/adopted-track-immutability.test.ts(41,38): error TS2339: Property 'stops' does not exist on type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4740075Z   Property 'stops' does not exist on type 'string'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4740939Z ##[error]packages/core/test/integration/adopted-track-immutability.test.ts(58,15): error TS2339: Property 'stops' does not exist on type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4741793Z   Property 'stops' does not exist on type 'string'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4742617Z ##[error]packages/core/test/integration/engine-x3-contribution.test.ts(39,62): error TS2339: Property 'stops' does not exist on type '{ p: number; v: number; }[]'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4744531Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(5,79): error TS2741: Property 'stops' is missing in type '{ p: number; v: number; }[]' but required in type '{ readonly stops: readonly AuthoredStop[]; }'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4746592Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(103,7): error TS2322: Type '() => { keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4748032Z   Call signature return types '{ keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4748686Z     The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4749271Z       Type '{ derived: { readonly stops: readonly AuthoredStop[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4749819Z         Property 'derived' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4750302Z           Type '{ readonly stops: readonly AuthoredStop[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4752030Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(126,7): error TS2322: Type 'Mock<() => { keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }>' is not assignable to type 'PluginContributor | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4754098Z   Type 'Mock<() => { keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }>' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4755470Z     Call signature return types '{ keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4756516Z       The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4757330Z         Type '{ derived: { readonly stops: readonly AuthoredStop[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4757893Z           Property 'derived' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4758385Z             Type '{ readonly stops: readonly AuthoredStop[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4760232Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(133,7): error TS2322: Type 'Mock<() => { keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }>' is not assignable to type 'PluginContributor | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4762118Z   Type 'Mock<() => { keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }>' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4762954Z     Call signature return types '{ keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4763674Z       The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4764809Z         Type '{ derived: { readonly stops: readonly AuthoredStop[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4765376Z           Property 'derived' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4765860Z             Type '{ readonly stops: readonly AuthoredStop[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:59:52.4938466Z ##[error]Process completed with exit code 2.
+```
