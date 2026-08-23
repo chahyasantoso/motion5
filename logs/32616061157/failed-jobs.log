@@ -1,0 +1,16 @@
+quality (node 24)	Run npm run format:check	﻿2026-08-23T03:43:42.6557792Z ##[group]Run npm run format:check
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:42.6558147Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:42.6596530Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:42.6596797Z env:
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:42.6597030Z   NODE_VERSION: 24
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:42.6597251Z ##[endgroup]
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:42.7570927Z 
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:42.7571663Z > motion5@0.0.0 format:check
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:42.7572286Z > prettier . --check
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:42.7572532Z 
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:42.8439079Z Checking formatting...
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:43.4041859Z [^[[33mwarn^[[39m] docs/acceptance-map.json
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:45.8922910Z [^[[33mwarn^[[39m] package.json
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:48.1210065Z [^[[33mwarn^[[39m] scripts/acceptance-scan.mjs
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:48.2325726Z [^[[33mwarn^[[39m] Code style issues found in 3 files. Run Prettier with --write to fix.
+quality (node 24)	Run npm run format:check	2026-08-23T03:43:48.2763776Z ##[error]Process completed with exit code 1.
