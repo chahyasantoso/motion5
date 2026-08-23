@@ -13,12 +13,10 @@ function makeHandle() {
 }
 
 function ramp(from: number, to: number) {
-  return {
-    stops: [
-      { p: 0, v: from },
-      { p: 1, v: to },
-    ],
-  };
+  return [
+    { p: 0, v: from },
+    { p: 1, v: to },
+  ];
 }
 
 describe("adopted track validation and immutability (W3)", () => {

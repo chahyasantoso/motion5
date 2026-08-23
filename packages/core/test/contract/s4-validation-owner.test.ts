@@ -5,7 +5,7 @@ import type { Diagnostic } from "../../src/contract/v5";
 describe("S4 single authored-stop validator", () => {
   it("exports the shared validator and reports authored missing-boundary warnings", () => {
     const diagnostics: Diagnostic[] = [];
-    validateKeyframes({ opacity: { stops: [{ p: 0.5, v: 1 }] } }, "track.keyframes", diagnostics);
+    validateKeyframes({ opacity: [{ p: 0.5, v: 1 }] }, "track.keyframes", diagnostics);
     expect(diagnostics.map(({ ruleId, severity }) => ({ ruleId, severity }))).toEqual([
       { ruleId: "stop-missing-start", severity: "warning" },
       { ruleId: "stop-missing-end", severity: "warning" },
@@ -16,12 +16,10 @@ describe("S4 single authored-stop validator", () => {
     const diagnostics: Diagnostic[] = [];
     validateKeyframes(
       {
-        derived: {
-          stops: [
-            { p: 0.8, v: 1 },
-            { p: 0.2, v: 2 },
-          ],
-        },
+        derived: [
+          { p: 0.8, v: 1 },
+          { p: 0.2, v: 2 },
+        ],
       },
       "track.keyframes",
       diagnostics,

@@ -5,12 +5,10 @@ import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 
 function ramp() {
-  return {
-    stops: [
-      { p: 0, v: 0 },
-      { p: 1, v: 1 },
-    ],
-  };
+  return [
+    { p: 0, v: 0 },
+    { p: 1, v: 1 },
+  ];
 }
 
 function load(plugins: PluginRegistry) {

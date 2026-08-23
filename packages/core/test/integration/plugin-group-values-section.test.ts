@@ -42,21 +42,14 @@ const GROUP_DECLARES_REQUIRES: Present<AuthoredPluginGroup, "requires"> = true;
 const GROUP_DECLARES_NOTHING_ELSE: OnlyTheTwoSections = true;
 
 function ramp(from: number, to: number) {
-  return {
-    stops: [
-      { p: 0, v: from },
-      { p: 1, v: to },
-    ],
-  };
+  return [
+    { p: 0, v: from },
+    { p: 1, v: to },
+  ];
 }
 
 function hold(value: number) {
-  return {
-    stops: [
-      { p: 0, v: value },
-      { p: 1, v: value },
-    ],
-  };
+  return value;
 }
 
 /**
@@ -210,7 +203,7 @@ describe("an explicit values section inside plugin groups", () => {
   });
 
   it("Y-7 cites the section in a diagnostic about a leaf inside it", () => {
-    const authored = { fk: { values: { length: { stops: [{ p: 2, v: 1 }] } } } };
+    const authored = { fk: { values: { length: [{ p: 2, v: 1 }] } } };
     expect(diagnose(authored)).toContainEqual(
       expect.objectContaining({
         ruleId: "stop-position-range",

@@ -26,7 +26,7 @@ describe("Engine product-load validation (X-1 follow-up)", () => {
     const interpolator = createFakeInterpolator();
     const create = vi.spyOn(interpolator, "create");
     const engine = new Engine({ ...options(), interpolator });
-    const invalid = projectWith({ opacity: { stops: [{ p: Number.NaN, v: 1 }] } });
+    const invalid = projectWith({ opacity: [{ p: Number.NaN, v: 1 }] });
 
     expect(() => engine.load(invalid as never)).toThrow(/stop-position/);
     expect(create).not.toHaveBeenCalled();
@@ -37,12 +37,10 @@ describe("Engine product-load validation (X-1 follow-up)", () => {
     const create = vi.spyOn(interpolator, "create");
     const engine = new Engine({ ...options(), interpolator });
     const invalid = projectWith({
-      opacity: {
-        stops: [
-          { p: 0.8, v: 0 },
-          { p: 0.2, v: 1 },
-        ],
-      },
+      opacity: [
+        { p: 0.8, v: 0 },
+        { p: 0.2, v: 1 },
+      ],
     });
 
     expect(() => engine.load(invalid as never)).toThrow(/stop-position-order/);
@@ -60,9 +58,9 @@ describe("Engine product-load validation (X-1 follow-up)", () => {
     const create = vi.spyOn(interpolator, "create");
     const engine = new Engine({ ...options(), interpolator, plugins });
 
-    expect(() =>
-      engine.load(projectWith({ unknown: { stops: [{ p: 0, v: 0 }] } }) as never),
-    ).toThrow(/plugin-unknown-key/);
+    expect(() => engine.load(projectWith({ unknown: [{ p: 0, v: 0 }] }) as never)).toThrow(
+      /plugin-unknown-key/,
+    );
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -73,12 +71,10 @@ describe("Engine product-load validation (X-1 follow-up)", () => {
 
     const runtime = engine.load(
       projectWith({
-        opacity: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 1, v: 1 },
-          ],
-        },
+        opacity: [
+          { p: 0, v: 0 },
+          { p: 1, v: 1 },
+        ],
       }) as never,
     );
     expect(create).toHaveBeenCalledTimes(1);

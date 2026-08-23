@@ -12,12 +12,10 @@ function projectWithKeyframes(keyframes: unknown) {
 }
 
 function ramp(from: number, to: number) {
-  return {
-    stops: [
-      { p: 0, v: from },
-      { p: 1, v: to },
-    ],
-  };
+  return [
+    { p: 0, v: from },
+    { p: 1, v: to },
+  ];
 }
 
 describe("schema v5 validator", () => {
@@ -30,26 +28,20 @@ describe("schema v5 validator", () => {
   it("rejects malformed, non-finite, out-of-range, non-monotonic, and duplicate stops", () => {
     const result = validateV5(
       projectWithKeyframes({
-        malformed: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.5, v: 1 },
-          ],
-        },
-        nan: { stops: [{ p: Number.NaN, v: 0 }] },
-        range: { stops: [{ p: 1.5, v: 0 }] },
-        order: {
-          stops: [
-            { p: 0.8, v: 0 },
-            { p: 0.2, v: 1 },
-          ],
-        },
-        duplicate: {
-          stops: [
-            { p: 0.2, v: 0 },
-            { p: 0.2, v: 1 },
-          ],
-        },
+        malformed: [
+          { p: 0, v: 0 },
+          { p: 0.5, v: 1 },
+        ],
+        nan: [{ p: Number.NaN, v: 0 }],
+        range: [{ p: 1.5, v: 0 }],
+        order: [
+          { p: 0.8, v: 0 },
+          { p: 0.2, v: 1 },
+        ],
+        duplicate: [
+          { p: 0.2, v: 0 },
+          { p: 0.2, v: 1 },
+        ],
       }),
     );
     expect(result.valid).toBe(false);
@@ -64,7 +56,7 @@ describe("schema v5 validator", () => {
   });
 
   it("warns when a property does not cover both interpolation endpoints", () => {
-    const result = validateV5(projectWithKeyframes({ opacity: { stops: [{ p: 0.25, v: 0.5 }] } }));
+    const result = validateV5(projectWithKeyframes({ opacity: [{ p: 0.25, v: 0.5 }] }));
     expect(result.valid).toBe(true);
     expect(result.diagnostics).toEqual(
       expect.arrayContaining([
@@ -158,13 +150,13 @@ describe("schema v5 validator", () => {
   });
 
   it("F-4 reports a grouped leaf stop error at the authored path", () => {
-    const leaf = { lenght: { stops: [{ p: 2, v: 1 }] } };
+    const leaf = { lenght: [{ p: 2, v: 1 }] };
     const result = validateV5(projectWithKeyframes({ fk: { values: leaf } }));
     expect(result.valid).toBe(false);
     expect(result.diagnostics).toContainEqual(
       expect.objectContaining({
         ruleId: "stop-position-range",
-        path: "motions[0].tracks[0].keyframes.fk.values.lenght.stops[0].p",
+        path: "motions[0].tracks[0].keyframes.fk.values.lenght[0].p",
       }),
     );
   });

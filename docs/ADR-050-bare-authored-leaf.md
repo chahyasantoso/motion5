@@ -4,7 +4,7 @@
 **Date:** 2026-08-23  
 **Closes:** issue [#192](https://github.com/chahyasantoso/motion5/issues/192)
 
-This record amends ADR-049 by replacing the shape of a leaf, not the shape of a group. ADR-049 is not edited: its two reserved sections, its exact group detection, and its refusal of the pre-ADR-049 form all survive unchanged. What changes is what may appear *inside* `values`, and what may appear as a flat authored property.
+This record amends ADR-049 by replacing the shape of a leaf, not the shape of a group. ADR-049 is not edited: its two reserved sections, its exact group detection, and its refusal of the pre-ADR-049 form all survive unchanged. What changes is what may appear _inside_ `values`, and what may appear as a flat authored property.
 
 ## Context
 
@@ -73,7 +73,7 @@ Appendix item 2 is correct as written. `isKeyframeGroup`'s clause is genuinely i
 
 - `property-stops-wrapper` is new: the retired form, refused by name at the property's own path. Distinct rule id rather than folded into a generic shape error, on the naming precedent `keyframes-missing-values-section` and `observation-role-unsupported` set.
 - `plugin-contribution-static-unsupported` is new: a static leaf on a prepare-stage contributor's key.
-- `stops-shape` **keeps its id**, and that is a decision rather than an oversight. The animated form still *is* stops, so "this is not a legal authored property" remains exactly what the rule says. Renaming it would churn the `plugin-contribution-stops-shape` alias in `domain/plugins.ts` and every citation of it across the contract suite for no semantic gain. Its message and its cited path are corrected instead.
+- `stops-shape` **keeps its id**, and that is a decision rather than an oversight. The animated form still _is_ stops, so "this is not a legal authored property" remains exactly what the rule says. Renaming it would churn the `plugin-contribution-stops-shape` alias in `domain/plugins.ts` and every citation of it across the contract suite for no semantic gain. Its message and its cited path are corrected instead.
 - Every path a leaf diagnostic cites is now a path the author wrote. `stops-shape` used to append `.stops` to it, and a stop position reported at `keyframes.x.stops[0].p`; both named a member that no longer exists anywhere in a v5 document, so they are now `keyframes.x` and `keyframes.x[0].p`.
 
 ### The prepare-stage contribution path

@@ -5,12 +5,10 @@ import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/f
 import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
 
 function ramp(from: number, to: number) {
-  return {
-    stops: [
-      { p: 0, v: from },
-      { p: 1, v: to },
-    ],
-  };
+  return [
+    { p: 0, v: from },
+    { p: 1, v: to },
+  ];
 }
 function track(
   id: string,

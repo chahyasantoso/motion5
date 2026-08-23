@@ -102,12 +102,10 @@ describe("one observation-validation owner (P1-12)", () => {
       {
         id: "arm",
         keyframes: {
-          opacity: {
-            stops: [
-              { p: 0, v: 0 },
-              { p: 1, v: 1 },
-            ],
-          },
+          opacity: [
+            { p: 0, v: 0 },
+            { p: 1, v: 1 },
+          ],
         },
       },
     ]);
@@ -118,7 +116,7 @@ describe("one observation-validation owner (P1-12)", () => {
     expect(Object.isFrozen(accepted)).toBe(true);
     expect(Object.isFrozen(accepted?.motions[0]?.tracks[0])).toBe(true);
 
-    const stop = project.motions[0]?.tracks[0]?.keyframes?.opacity?.stops[1];
+    const stop = project.motions[0]?.tracks[0]?.keyframes?.opacity[1];
     expect(stop).toBeDefined();
     stop!.v = 999;
 

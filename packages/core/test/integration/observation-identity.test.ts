@@ -31,12 +31,10 @@ function track(id: string, observes?: TrackDefinition["observes"]): TrackDefinit
   return {
     id,
     keyframes: {
-      x: {
-        stops: [
-          { p: 0, v: 0 },
-          { p: 1, v: 1 },
-        ],
-      },
+      x: [
+        { p: 0, v: 0 },
+        { p: 1, v: 1 },
+      ],
     },
     ...(observes ? { observes } : {}),
   };

@@ -8,12 +8,7 @@ import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 
 function hold(value: number) {
-  return {
-    stops: [
-      { p: 0, v: value },
-      { p: 1, v: value },
-    ],
-  };
+  return value;
 }
 
 // The pelvis publishes its own `rotation` and the bone authors one under `fk`. They meet in one

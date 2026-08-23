@@ -19,12 +19,10 @@ function track(id = "arm") {
   return {
     id,
     keyframes: {
-      x: {
-        stops: [
-          { p: 0, v: 0 },
-          { p: 1, v: 100 },
-        ],
-      },
+      x: [
+        { p: 0, v: 0 },
+        { p: 1, v: 100 },
+      ],
     },
   };
 }

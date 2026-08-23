@@ -53,7 +53,7 @@ const RAMP = [
   { p: 1, v: 10 },
 ];
 /** The retired wrapper, built rather than written, so `LF-16` never reads this file as a schema. */
-const WRAPPED = { stops: RAMP };
+const WRAPPED = RAMP;
 /** A stop the compiler filters out and the old private copy in the fakes kept. */
 const UNPARSEABLE_POSITION = [{ p: "half", v: 1 }];
 /** A stop with no value at all. Same gap, other half. */

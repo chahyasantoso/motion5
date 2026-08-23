@@ -33,24 +33,18 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
             keyframes: {
               transform: {
                 values: {
-                  x: {
-                    stops: [
-                      { p: 0, v: 0 },
-                      { p: 1, v: 200 },
-                    ],
-                  },
-                  y: {
-                    stops: [
-                      { p: 0, v: 100 },
-                      { p: 1, v: 100 },
-                    ],
-                  },
-                  rotation: {
-                    stops: [
-                      { p: 0, v: 0 },
-                      { p: 1, v: 0 },
-                    ],
-                  },
+                  x: [
+                    { p: 0, v: 0 },
+                    { p: 1, v: 200 },
+                  ],
+                  y: [
+                    { p: 0, v: 100 },
+                    { p: 1, v: 100 },
+                  ],
+                  rotation: [
+                    { p: 0, v: 0 },
+                    { p: 1, v: 0 },
+                  ],
                 },
               },
             },
@@ -60,18 +54,14 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
             keyframes: {
               fk: {
                 values: {
-                  length: {
-                    stops: [
-                      { p: 0, v: 50 },
-                      { p: 1, v: 50 },
-                    ],
-                  },
-                  rotation: {
-                    stops: [
-                      { p: 0, v: 45 },
-                      { p: 1, v: 45 },
-                    ],
-                  },
+                  length: [
+                    { p: 0, v: 50 },
+                    { p: 1, v: 50 },
+                  ],
+                  rotation: [
+                    { p: 0, v: 45 },
+                    { p: 1, v: 45 },
+                  ],
                 },
                 requires: { base: "walk/pelvis" },
               },
@@ -82,18 +72,14 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
             keyframes: {
               fk: {
                 values: {
-                  length: {
-                    stops: [
-                      { p: 0, v: 40 },
-                      { p: 1, v: 40 },
-                    ],
-                  },
-                  rotation: {
-                    stops: [
-                      { p: 0, v: -30 },
-                      { p: 1, v: -30 },
-                    ],
-                  },
+                  length: [
+                    { p: 0, v: 40 },
+                    { p: 1, v: 40 },
+                  ],
+                  rotation: [
+                    { p: 0, v: -30 },
+                    { p: 1, v: -30 },
+                  ],
                 },
                 requires: { base: "walk/thigh" },
               },

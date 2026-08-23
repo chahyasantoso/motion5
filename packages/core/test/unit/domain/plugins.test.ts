@@ -56,7 +56,7 @@ describe("plugin registry", () => {
     const registry = new PluginRegistry();
     const contribute = vi.fn(() => undefined);
     registry.register(plugin("first", { keys: ["x"], stage: "prepare", contribute }));
-    const resolved = registry.resolveForKeyframes({ x: { stops: [] } });
+    const resolved = registry.resolveForKeyframes({ x: [] });
     expect(resolved.plugins[0]?.contribute).toBe(contribute);
     expect(contribute).toHaveBeenCalledOnce();
   });
@@ -204,7 +204,7 @@ describe("plugin registry", () => {
       plugin("predicate", { claimsKey: predicate, stage: "prepare", contribute: predicate }),
     );
     registry.register(plugin("exact", { keys: ["x"], stage: "prepare", contribute: exact }));
-    registry.resolveForKeyframes({ x: { stops: [] } });
+    registry.resolveForKeyframes({ x: [] });
     expect(exact).toHaveBeenCalledOnce();
     expect(predicate).not.toHaveBeenCalled();
   });

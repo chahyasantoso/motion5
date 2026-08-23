@@ -9,12 +9,10 @@ describe("One-Tween GSAP Interpolator Contract Tests", () => {
     const tl = interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
       },
     });
     const ref = tl.state;
@@ -28,12 +26,10 @@ describe("One-Tween GSAP Interpolator Contract Tests", () => {
     const tl = interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
       },
     });
     tl.progress(0.33);
@@ -47,13 +43,11 @@ describe("One-Tween GSAP Interpolator Contract Tests", () => {
     const tl = interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.5, v: 50, ease: "power2.in" },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 0.5, v: 50, ease: "power2.in" },
+          { p: 1, v: 100 },
+        ],
       },
     });
 
@@ -73,12 +67,10 @@ describe("One-Tween GSAP Interpolator Contract Tests", () => {
     const tl = interpolator.create({
       duration: 0,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 42 },
-            { p: 1, v: 42 },
-          ],
-        },
+        x: [
+          { p: 0, v: 42 },
+          { p: 1, v: 42 },
+        ],
       },
     });
     expect(tl.duration).toBe(0);
@@ -93,12 +85,10 @@ describe("One-Tween GSAP Interpolator Contract Tests", () => {
     const tl = interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 1, v: 10 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 10 },
+        ],
       },
     });
     expect(() => {
@@ -111,20 +101,16 @@ describe("One-Tween GSAP Interpolator Contract Tests", () => {
     const tl = interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.5, v: 50 },
-            { p: 1, v: 100 },
-          ],
-        },
-        y: {
-          stops: [
-            { p: 0.2, v: 20 },
-            { p: 0.25, v: 25 },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 0.5, v: 50 },
+          { p: 1, v: 100 },
+        ],
+        y: [
+          { p: 0.2, v: 20 },
+          { p: 0.25, v: 25 },
+          { p: 1, v: 100 },
+        ],
       },
     });
 
@@ -155,20 +141,16 @@ describe("One-Tween GSAP Interpolator Contract Tests", () => {
     const tl = interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.5, v: 100, ease: "power2.out" },
-            { p: 1, v: 100 },
-          ],
-        },
-        y: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.25, v: 25 },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 0.5, v: 100, ease: "power2.out" },
+          { p: 1, v: 100 },
+        ],
+        y: [
+          { p: 0, v: 0 },
+          { p: 0.25, v: 25 },
+          { p: 1, v: 100 },
+        ],
       },
     });
 
@@ -185,12 +167,10 @@ describe("One-Tween GSAP Interpolator Contract Tests", () => {
     const tl = interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.5, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 0.5, v: 100 },
+        ],
       },
     });
 
@@ -209,18 +189,14 @@ describe("One-Tween GSAP Interpolator Contract Tests", () => {
     const tl = interpolator.create({
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.4, v: 40 },
-          ],
-        },
-        y: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 0.75, v: 75 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 0.4, v: 40 },
+        ],
+        y: [
+          { p: 0, v: 0 },
+          { p: 0.75, v: 75 },
+        ],
       },
     });
 
@@ -240,12 +216,10 @@ describe("One-Tween GSAP Interpolator Contract Tests", () => {
       duration: 1,
       tweenVars: { ease: "power1.in" },
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
       },
     });
 
