@@ -30,12 +30,10 @@ const project = {
           id: "title",
           duration: 1,
           keyframes: {
-            opacity: {
-              stops: [
-                { p: 0, v: 0 },
-                { p: 1, v: 1 },
-              ],
-            },
+            opacity: [
+              { p: 0, v: 0 },
+              { p: 1, v: 1 },
+            ],
           },
         },
       ],
@@ -46,12 +44,10 @@ const project = {
       id: "cursor",
       duration: 1,
       keyframes: {
-        x: {
-          stops: [
-            { p: 0, v: 0 },
-            { p: 1, v: 100 },
-          ],
-        },
+        x: [
+          { p: 0, v: 0 },
+          { p: 1, v: 100 },
+        ],
       },
     },
   ],
@@ -87,31 +83,54 @@ A track has a unique local `id`, optional `duration`, optional keyframes, and op
 
 ## Keyframes
 
-A keyframe entry is either a property or a plugin-named group. A group has exactly two members, both reserved by name: `values` holds the properties the named plugin claims, and `requires` holds the graph bindings that plugin owns. Grouping scopes ownership; it does not rename leaves:
+A keyframe entry is either a property or a plugin-named group.
+
+### A property is the stops, or a static value
+
+There are exactly two ways to author a leaf, and no wrapper around either:
+
+```text
+opacity: [ { p: 0, v: 0 }, { p: 1, v: 1 } ]   // animated: the array is the value
+length: 62                                    // static: never changes, never interpolated
+```
+
+A stop is `{ p, v }` with an optional `ease`, where `p` is a finite position between 0 and 1. Positions must be monotonic and unique. A sequence that does not define `p=0` or `p=1` loads with a warning.
+
+A static value is a finite number, a string, or a boolean. It is not sugar for two identical stops: a static leaf never enters the interpolator, so it produces no percent-map entry, no tween, and no contribution to the merged timeline. It is published at every progress from the compiled initial values. That also means a static value has nowhere to put an `ease`, which is the point: a hold with a meaningless easing curve is unrepresentable rather than rejected.
+
+The static domain stops at scalars deliberately. `null` and `undefined` are refused because omitting the key is already how you author nothing, a non-finite number is refused for the same reason a stop position must be finite, and an object is refused because that is what makes the retired wrapper diagnosable at all.
+
+The `{ stops: [...] }` wrapper is **retired**, and refused by name as `property-stops-wrapper`. It is not an accepted alias and it is never normalized: two authoring shapes would be two validation paths and two documentation paths. Drop the wrapper and keep the array. See ADR-050.
+
+### A group names the plugin that owns its leaves
+
+A group has exactly two members, both reserved by name: `values` holds the properties the named plugin claims, and `requires` holds the graph bindings that plugin owns. Grouping scopes ownership; it does not rename leaves:
 
 ```text
 keyframes: {
-  opacity: { stops: [ ... ] },
+  opacity: [ ... ],
   transform: {
     values: {
-      x: { stops: [ ... ] },
-      y: { stops: [ ... ] },
-      rotation: { stops: [ ... ] },
+      x: [ ... ],
+      y: [ ... ],
+      rotation: [ ... ],
     },
   },
   fk: {
     values: {
-      length: { stops: [ ... ] },
-      rotation: { stops: [ ... ] },
+      length: 62,
+      rotation: [ ... ],
     },
     requires: { base: "walk/pelvis" },
   },
 }
 ```
 
-A group name addresses a registered plugin and every leaf of its `values` section must be a key that plugin claims. The section is flattened to unprefixed leaves before interpolation and composition, and it is the only compiled value domain. Nesting is one level deep inside `values`.
+A leaf inside `values` is held to exactly the rules a flat property is held to, both forms included. A group name addresses a registered plugin and every leaf of its `values` section must be a key that plugin claims. The section is flattened to unprefixed leaves before interpolation and composition, and it is the only compiled value domain. Nesting is one level deep inside `values`.
 
-Because both section names are reserved, a group is recognised by the sections it names rather than by the shape of its leaves. That is what lets the registry-free contract layer tell a section from a property, report a typo'd section as `keyframes-unknown-section`, and refuse the pre-v5-final leaf form as `keyframes-missing-values-section` instead of as a property with no stops array. There is one authored group shape and no compatibility form. See ADR-049.
+Because both section names are reserved, a group is recognised by the sections it names rather than by the shape of its leaves. That is what lets the registry-free contract layer tell a section from a property, report a typo'd section as `keyframes-unknown-section`, and refuse the pre-v5-final leaf form as `keyframes-missing-values-section` instead of as a property of an unknown shape. There is one authored group shape and no compatibility form. See ADR-049.
+
+Group detection is unaffected by the leaf forms. A bare array and a bare scalar both fail the group predicate before its section check runs, so neither can be misread as a group.
 
 Two shapes are deliberately legal and worth knowing. A group may author `requires` with no `values`, which is how a plugin joins composition to receive an upstream value without animating anything itself. And a leaf named `values` inside the section is an ordinary property, because the reservation is on section position rather than on the string everywhere.
 
@@ -136,8 +155,8 @@ An author binds an optional slot in that plugin's group, beside its `values` sec
 keyframes: {
   fk: {
     values: {
-      length: { stops: [ ... ] },
-      rotation: { stops: [ ... ] },
+      length: 62,
+      rotation: [ ... ],
     },
     requires: {
       base: "walk/pelvis",
@@ -152,18 +171,21 @@ The graph derives one input edge per binding. Unknown sources, self-reference, d
 
 A binding is the only way a value enters composition. A source bound to `fk.requires.base` arrives at the FK plugin as `inputs.base`, retaining the source's natural keys such as `x`, `y`, and `rotation`. It cannot overwrite the track's authored `values.rotation`: the two are separated by object scope rather than by renamed keys, and there is no flat input bag beside the scope for either of them to land in. See ADR-044 and ADR-047.
 
+A prepare-stage plugin's `contribute` hook derives a contribution from a property's stops, so a static leaf on a key such a plugin owns is refused with `plugin-contribution-static-unsupported`. There are no stops to contribute from, and an empty list would be a field accepted and then ignored.
+
 The contract layer owns section and binding shape, the plugin registry owns plugin and slot resolution, and graph construction owns topology. This keeps validation registry-independent and avoids duplicate normalization owners. See ADR-044 and ADR-049.
 
 ### Keyframe namespace rules
 
 - A keyframe name may not contain `:` in a flat key, group name, or leaf name. The colon marks private internal keys and is rejected with `keyframes-reserved-separator`.
+- A leaf is an array of stops or a static scalar. Anything else is `stops-shape`, and the retired object wrapper is `property-stops-wrapper`.
 - A group holds only `values` and `requires`. Anything else is `keyframes-unknown-section`, and a group authoring its leaves at the top level is `keyframes-missing-values-section`.
 - A present `values` must be a non-empty object: `keyframes-values-shape` and `keyframes-values-empty`. Omitting it is how you author no properties.
 - Requirement slots may not be empty or contain `:`. Malformed sections use `keyframes-requires-shape`, `keyframes-requires-empty`, `keyframes-requires-slot`, and `keyframes-requires-source`.
 - A top-level `values` or `requires` is rejected with `keyframes-reserved-section` because it has no owning plugin.
 - An empty object is an accepted no-op property rather than a group, because it names no section.
 - One compiled key may be authored once. Collisions use `keyframes-duplicate-key`.
-- 3D content is detected by leaf name, including inside a `values` section, and missing perspective is a warning.
+- 3D content is detected by leaf name, including inside a `values` section and including a static leaf, and missing perspective is a warning.
 
 ## Observation edges
 
@@ -209,8 +231,8 @@ interface Diagnostic {
 
 Errors reject a candidate project before it replaces the active project. Warnings load and remain readable.
 
-A diagnostic about a grouped leaf cites the authored path, including the section: `keyframes.fk.values.length`.
+A diagnostic about a grouped leaf cites the authored path, including the section: `keyframes.fk.values.length`. A diagnostic about a stop cites its index on the property: `keyframes.x[0].p`.
 
 ## Rejected input
 
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, malformed group sections, malformed bindings and edges, unknown sources, duplicate edges, self-reference, cycles, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Flat keys with multiple plugin claimants are errors too. Missing perspective for detected 3D content and unused free tracks are warnings.
+Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, the retired stops wrapper, a leaf that is neither an array nor a static scalar, malformed group sections, malformed bindings and edges, unknown sources, duplicate edges, self-reference, cycles, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Flat keys with multiple plugin claimants are errors too. Missing perspective for detected 3D content and unused free tracks are warnings.
