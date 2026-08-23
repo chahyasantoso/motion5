@@ -6,6 +6,7 @@ import {
   type TriggerDefinition,
 } from "./v5";
 import { SUPPORTED_TRIGGER_TYPES } from "./v5";
+import { readAuthoredLeaf } from "./authored-leaf";
 import { describeDiagnostics, diagnostic as issue } from "./diagnostics";
 import {
   isKeyframeGroup,
@@ -108,17 +109,23 @@ export function validateKeyframes(
     if (positions.size > 0 && !positions.has(1))
       add("stop-missing-end", propertyPath, "Stop sequence does not define p=1.", "warning");
   };
+  /**
+   * The authoring-shape gate for one leaf.
+   *
+   * What shape a leaf has is `readAuthoredLeaf`, not a record test and an array test written here.
+   * Five other sites used to ask that question independently and two of them already disagreed, so
+   * this reads the answer instead of recomputing it. The empty record stays the accepted no-op
+   * property it has always been, which is a kind of its own rather than a shape refused by accident.
+   * See issue #192.
+   */
   const validateProperty = (property: unknown, propertyPath: string): void => {
-    if (!isObject(property)) {
+    const leaf = readAuthoredLeaf(property);
+    if (leaf.kind === "empty") return;
+    if (leaf.kind !== "animated") {
       add("stops-shape", `${propertyPath}.stops`, STOPS_REQUIRED);
       return;
     }
-    if (Object.keys(property).length === 0) return;
-    if (!Array.isArray(property.stops)) {
-      add("stops-shape", `${propertyPath}.stops`, STOPS_REQUIRED);
-      return;
-    }
-    validateStops(property.stops, propertyPath);
+    validateStops(leaf.stops, propertyPath);
   };
   /**
    * The registry-independent half of binding validation.
