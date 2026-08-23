@@ -35,12 +35,20 @@ function normalizeReport(report) {
   return files;
 }
 
+function readTechnicalRequirements(trd) {
+  const sections = trd.match(/^## (?:[3-9]|1[0-5])\\..*?(?=^## |\\Z)/gms) ?? [];
+  return new Set(sections.flatMap((section) => section.match(/TR-[A-Z]+(?:-[A-Z]+)?-\\d+/g) ?? []));
+}
+
 export async function scanAcceptance(scanRoot = root, reportPath) {
   const map = await readAcceptanceMap(scanRoot);
   if (!map || map.version !== 1 || !Array.isArray(map.items))
     throw new Error("Acceptance map must have version 1 and an items array.");
   const failures = [];
   const ids = new Set();
+  const mappedRequirements = new Set();
+  const trd = await readFile(join(scanRoot, "docs", "TRD.md"), "utf8");
+  const requirements = readTechnicalRequirements(trd);
   const reportFile = reportPath ?? process.env.VITEST_JSON;
   let results;
   if (reportFile) {
@@ -62,10 +70,16 @@ export async function scanAcceptance(scanRoot = root, reportPath) {
       failures.push(`${item.id}: missing ${item.test}`);
       continue;
     }
+    if (item.requirements !== undefined && !Array.isArray(item.requirements))
+      failures.push(`${item.id}: requirements must be an array`);
+    for (const requirement of item.requirements ?? []) {
+      if (typeof requirement !== "string") failures.push(`${item.id}: invalid requirement`);
+      else if (!requirements.has(requirement)) failures.push(`${item.id}: unknown ${requirement}`);
+      else mappedRequirements.add(requirement);
+    }
     if (!results) continue;
     const match = [...results].filter(
-      ([file]) =>
-        file === item.test || file.endsWith(`/${item.test}`) || file.startsWith(`${item.test}/`),
+      ([file]) => file === item.test || file.endsWith(`/${item.test}`) || file.startsWith(`${item.test}/`),
     );
     const summary = match.reduce(
       (total, [, value]) => ({
@@ -81,6 +95,8 @@ export async function scanAcceptance(scanRoot = root, reportPath) {
     if (summary.skipped > 0) failures.push(`${item.id}: skipped assertions`);
     if (summary.todo > 0) failures.push(`${item.id}: todo assertions`);
   }
+  for (const requirement of [...requirements].sort())
+    if (!mappedRequirements.has(requirement)) failures.push(`${requirement}: unmapped requirement`);
   return failures;
 }
 
