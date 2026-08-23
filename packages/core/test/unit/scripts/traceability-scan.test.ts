@@ -50,15 +50,17 @@ async function withPlantedDocs<T>(
 ): Promise<T> {
   const scanRoot = await mkdtemp(join(tmpdir(), "motion5-traceability-"));
   const docs = join(scanRoot, "docs");
+  const planned: Array<[string, string]> = [
+    ["TRD.md", planted.trd ?? cleanTrdFixture],
+    ["TRD-TRACEABILITY-AUDIT.md", planted.audit ?? cleanAuditFixture],
+    ["PRD.md", planted.prd ?? cleanPrdFixture],
+    ["ARCHITECTURE.md", planted.architecture ?? cleanArchitectureFixture],
+    ["DECISIONS.md", planted.decisions ?? cleanDecisionsFixture],
+  ];
   await mkdir(docs, { recursive: true });
-  await writeFile(join(docs, "TRD.md"), planted.trd ?? cleanTrdFixture);
-  await writeFile(join(docs, "TRD-TRACEABILITY-AUDIT.md"), planted.audit ?? cleanAuditFixture);
-  await writeFile(join(docs, "PRD.md"), planted.prd ?? cleanPrdFixture);
-  await writeFile(
-    join(docs, "ARCHITECTURE.md"),
-    planted.architecture ?? cleanArchitectureFixture,
-  );
-  await writeFile(join(docs, "DECISIONS.md"), planted.decisions ?? cleanDecisionsFixture);
+  for (const [name, content] of planned) {
+    await writeFile(join(docs, name), content);
+  }
   try {
     return await use(scanRoot);
   } finally {
