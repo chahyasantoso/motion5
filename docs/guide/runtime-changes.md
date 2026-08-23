@@ -8,7 +8,7 @@ A loaded project is not frozen. Motions and tracks can be added and removed whil
 const { id } = handle.addMotion({
   id: "outro",
   trigger: { type: "time", duration: 400 },
-  tracks: [{ id: "fade", duration: 1, keyframes: { x: { stops: [{ p: 0, v: 0 }] } } }],
+  tracks: [{ id: "fade", duration: 1, keyframes: { x: [{ p: 0, v: 0 }] } }],
 });
 
 handle.destroyMotion(id);
