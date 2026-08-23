@@ -116,12 +116,12 @@ describe("one observation-validation owner (P1-12)", () => {
     expect(Object.isFrozen(accepted)).toBe(true);
     expect(Object.isFrozen(accepted?.motions[0]?.tracks[0])).toBe(true);
 
-    const stop = project.motions[0]?.tracks[0]?.keyframes?.opacity[1];
+    // The leaf is indexed directly since ADR-050, and an index signature yields `T | undefined`,
+    // so the chain the wrapper's property access used to hide has to be written out.
+    const stop = project.motions[0]?.tracks[0]?.keyframes?.opacity?.[1];
     expect(stop).toBeDefined();
     stop!.v = 999;
 
-    // An authored leaf is the stops array itself since ADR-050, so the clone is one level shallower
-    // than it was and the assertion reads the stop straight off the property.
     const authored = accepted?.motions[0]?.tracks[0]?.keyframes as
       | Record<string, ReadonlyArray<{ p: number; v: unknown }>>
       | undefined;
