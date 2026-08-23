@@ -1,0 +1,15 @@
+quality (node 24)	Run npm run format:check	﻿2026-08-23T03:20:27.3575029Z ##[group]Run npm run format:check
+quality (node 24)	Run npm run format:check	2026-08-23T03:20:27.3575376Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Run npm run format:check	2026-08-23T03:20:27.3614205Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run format:check	2026-08-23T03:20:27.3614477Z env:
+quality (node 24)	Run npm run format:check	2026-08-23T03:20:27.3614675Z   NODE_VERSION: 24
+quality (node 24)	Run npm run format:check	2026-08-23T03:20:27.3614882Z ##[endgroup]
+quality (node 24)	Run npm run format:check	2026-08-23T03:20:27.4604007Z 
+quality (node 24)	Run npm run format:check	2026-08-23T03:20:27.4604986Z > motion5@0.0.0 format:check
+quality (node 24)	Run npm run format:check	2026-08-23T03:20:27.4605750Z > prettier . --check
+quality (node 24)	Run npm run format:check	2026-08-23T03:20:27.4606042Z 
+quality (node 24)	Run npm run format:check	2026-08-23T03:20:27.5660153Z Checking formatting...
+quality (node 24)	Run npm run format:check	2026-08-23T03:20:32.9457972Z [^[[33mwarn^[[39m] packages/core/test/unit/scripts/traceability-scan.test.ts
+quality (node 24)	Run npm run format:check	2026-08-23T03:20:33.1363492Z [^[[33mwarn^[[39m] scripts/traceability-scan-fixtures.ts
+quality (node 24)	Run npm run format:check	2026-08-23T03:20:33.1746656Z [^[[33mwarn^[[39m] Code style issues found in 2 files. Run Prettier with --write to fix.
+quality (node 24)	Run npm run format:check	2026-08-23T03:20:33.2180305Z ##[error]Process completed with exit code 1.
