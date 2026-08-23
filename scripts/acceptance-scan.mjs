@@ -9,7 +9,12 @@ export async function readAcceptanceMap(scanRoot = root) {
 }
 
 async function exists(path) {
-  try { await access(path); return true; } catch { return false; }
+  try {
+    await access(path);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function normalizeReport(report) {
@@ -50,8 +55,12 @@ export async function scanAcceptance(scanRoot = root, reportPath) {
   const reportFile = reportPath ?? process.env.VITEST_JSON;
   let results;
   if (reportFile) {
-    try { results = normalizeReport(JSON.parse(await readFile(join(scanRoot, reportFile), "utf8"))); }
-    catch { failures.push(`test report: missing ${reportFile}`); return failures; }
+    try {
+      results = normalizeReport(JSON.parse(await readFile(join(scanRoot, reportFile), "utf8")));
+    } catch {
+      failures.push(`test report: missing ${reportFile}`);
+      return failures;
+    }
   }
   for (const item of map.items) {
     if (!item || typeof item.id !== "string" || typeof item.test !== "string") {
@@ -72,13 +81,19 @@ export async function scanAcceptance(scanRoot = root, reportPath) {
       else mappedRequirements.add(requirement);
     }
     if (!results) continue;
-    const match = [...results].filter(([file]) => file === item.test || file.endsWith(`/${item.test}`) || file.startsWith(`${item.test}/`));
-    const summary = match.reduce((total, [, value]) => ({
-      passed: total.passed + value.passed,
-      failed: total.failed + value.failed,
-      skipped: total.skipped + value.skipped,
-      todo: total.todo + value.todo,
-    }), { passed: 0, failed: 0, skipped: 0, todo: 0 });
+    const match = [...results].filter(
+      ([file]) =>
+        file === item.test || file.endsWith(`/${item.test}`) || file.startsWith(`${item.test}/`),
+    );
+    const summary = match.reduce(
+      (total, [, value]) => ({
+        passed: total.passed + value.passed,
+        failed: total.failed + value.failed,
+        skipped: total.skipped + value.skipped,
+        todo: total.todo + value.todo,
+      }),
+      { passed: 0, failed: 0, skipped: 0, todo: 0 },
+    );
     if (summary.passed === 0) failures.push(`${item.id}: no passed assertions`);
     if (summary.failed > 0) failures.push(`${item.id}: failed assertions`);
     if (summary.skipped > 0) failures.push(`${item.id}: skipped assertions`);
@@ -91,9 +106,13 @@ export async function scanAcceptance(scanRoot = root, reportPath) {
 
 export async function main(scanRoot = root, reportPath) {
   const failures = await scanAcceptance(scanRoot, reportPath);
-  if (failures.length) { console.error(failures.join("\n")); return 1; }
+  if (failures.length) {
+    console.error(failures.join("\n"));
+    return 1;
+  }
   console.log("acceptance mapping passed");
   return 0;
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) process.exitCode = await main(root, process.argv[2]);
+if (process.argv[1] === fileURLToPath(import.meta.url))
+  process.exitCode = await main(root, process.argv[2]);
