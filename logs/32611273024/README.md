@@ -1,0 +1,3780 @@
+# CI log archive: 32611273024
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: feat/lf-bare-authored-leaf
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/32611273024
+- Captured: 2026-08-23T01:49:33Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm run typecheck	﻿2026-08-23T01:49:09.8798860Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:09.8799383Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:09.8856975Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:09.8857400Z env:
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:09.8857723Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:09.8858073Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:09.9931909Z 
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:09.9932478Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:09.9933373Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:09.9933765Z 
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6880444Z ##[error]packages/core/test/contract/graph-builder-incremental.test.ts(20,17): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6894740Z ##[error]packages/core/test/contract/graph-builder-incremental.test.ts(35,13): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6900049Z ##[error]packages/core/test/contract/graph-builder-incremental.test.ts(68,11): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6905094Z ##[error]packages/core/test/integration/adopt-destroy-readopt.test.ts(40,34): error TS2345: Argument of type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to parameter of type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6907898Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6909088Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6910182Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6911135Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6914394Z ##[error]packages/core/test/integration/adopt-destroy-readopt.test.ts(62,36): error TS2345: Argument of type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to parameter of type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6917180Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6918299Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6919355Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6920267Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6922719Z ##[error]packages/core/test/integration/adopted-track-immutability.test.ts(30,20): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6926197Z ##[error]packages/core/test/integration/adopted-track-immutability.test.ts(42,38): error TS2339: Property 'stops' does not exist on type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6928528Z   Property 'stops' does not exist on type 'string'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6930509Z ##[error]packages/core/test/integration/adopted-track-immutability.test.ts(43,38): error TS2339: Property 'stops' does not exist on type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6932739Z   Property 'stops' does not exist on type 'string'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6935031Z ##[error]packages/core/test/integration/adopted-track-immutability.test.ts(54,20): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6938996Z ##[error]packages/core/test/integration/adopted-track-immutability.test.ts(60,15): error TS2339: Property 'stops' does not exist on type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6941296Z   Property 'stops' does not exist on type 'string'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6943704Z ##[error]packages/core/test/integration/adopted-track-immutability.test.ts(79,60): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6948574Z ##[error]packages/core/test/integration/adopted-track-immutability.test.ts(87,63): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6953131Z ##[error]packages/core/test/integration/adoption.test.ts(78,52): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6957987Z ##[error]packages/core/test/integration/adoption.test.ts(91,15): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6963083Z ##[error]packages/core/test/integration/adoption.test.ts(112,15): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6968112Z ##[error]packages/core/test/integration/end-to-end.test.ts(21,15): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6973144Z ##[error]packages/core/test/integration/engine-headless.test.ts(19,15): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6978863Z ##[error]packages/core/test/integration/engine-x3-contribution.test.ts(34,70): error TS2322: Type 'Mock<() => { keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; tweenVars: { overwrite: string; }; }>' is not assignable to type 'PluginContributor | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6982485Z   Type 'Mock<() => { keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; tweenVars: { overwrite: string; }; }>' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6984750Z     Call signature return types '{ keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; tweenVars: { overwrite: string; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6986300Z       The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6987999Z         Type '{ derived: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6989259Z           Property 'derived' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6990313Z             Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6993568Z ##[error]packages/core/test/integration/engine-x3-contribution.test.ts(62,7): error TS2322: Type 'Mock<() => { keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; }>' is not assignable to type 'PluginContributor | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6996922Z   Type 'Mock<() => { keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; }>' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.6998711Z     Call signature return types '{ keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7000052Z       The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7001358Z         Type '{ derived: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7002579Z           Property 'derived' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7003596Z             Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7006947Z ##[error]packages/core/test/integration/engine-x3-contribution.test.ts(69,7): error TS2322: Type 'Mock<() => { keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; }>' is not assignable to type 'PluginContributor | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7010447Z   Type 'Mock<() => { keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; }>' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7012457Z     Call signature return types '{ keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7013809Z       The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7014950Z         Type '{ derived: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7015724Z           Property 'derived' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7016478Z             Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7018711Z ##[error]packages/core/test/integration/engine-x3-contribution.test.ts(89,7): error TS2322: Type '() => { keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7021514Z   Call signature return types '{ keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7022759Z     The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7023805Z       Type '{ derived: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7024823Z         Property 'derived' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7025797Z           Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7029649Z ##[error]packages/core/test/integration/engine-x3-contribution.test.ts(142,7): error TS2322: Type '() => { keyframes: { derived: { stops: ({ p: number; v: number; ease?: undefined; } | { p: number; v: number; ease: string; })[]; }; }; }' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7033437Z   Call signature return types '{ keyframes: { derived: { stops: ({ p: number; v: number; ease?: undefined; } | { p: number; v: number; ease: string; })[]; }; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7035054Z     The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7036935Z       Type '{ derived: { stops: ({ p: number; v: number; ease?: undefined; } | { p: number; v: number; ease: string; })[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7038479Z         Property 'derived' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7039777Z           Type '{ stops: ({ p: number; v: number; ease?: undefined; } | { p: number; v: number; ease: string; })[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7043165Z ##[error]packages/core/test/integration/handle-adoption.test.ts(57,31): error TS2345: Argument of type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to parameter of type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7045756Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7047112Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7048208Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7049167Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7052301Z ##[error]packages/core/test/integration/handle-adoption.test.ts(74,13): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7056397Z ##[error]packages/core/test/integration/internal-key-strip.test.ts(28,44): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7060917Z ##[error]packages/core/test/integration/issue-114-motion-track-regressions.test.ts(16,78): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7065995Z ##[error]packages/core/test/integration/keyframe-groups.test.ts(56,35): error TS2322: Type '{ values: { boneLength: { stops: { p: number; v: number; }[]; }; boneRotation: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7068837Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7070760Z     Type '{ boneLength: { stops: { p: number; v: number; }[]; }; boneRotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7073437Z       Type '{ boneLength: { stops: { p: number; v: number; }[]; }; boneRotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7074962Z         Property 'boneLength' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7075990Z           Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7078954Z ##[error]packages/core/test/integration/keyframe-groups.test.ts(70,35): error TS2322: Type '{ values: { boneLength: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7081246Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7082775Z     Type '{ boneLength: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7084204Z       Types of property 'boneLength' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7085200Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7087908Z ##[error]packages/core/test/integration/keyframe-groups.test.ts(81,33): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7091967Z ##[error]packages/core/test/integration/keyframe-groups.test.ts(83,36): error TS2322: Type '{ values: { boneLength: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7094287Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7095855Z     Type '{ boneLength: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7098026Z       Type '{ boneLength: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7099208Z         Property 'boneLength' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7100241Z           Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7103129Z ##[error]packages/core/test/integration/motion-trigger-types.test.ts(50,34): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7105475Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7106796Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7107920Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7108866Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7112616Z ##[error]packages/core/test/integration/mutation-transactionality.test.ts(49,5): error TS2322: Type '{ values: { x: { stops: { p: number; v: number; }[]; }; y: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7115708Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7117908Z     Type '{ x: { stops: { p: number; v: number; }[]; }; y: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7119675Z       Types of property 'x' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7120655Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7124491Z ##[error]packages/core/test/integration/mutation-transactionality.test.ts(61,5): error TS2322: Type '{ values: { length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; requires: { base: string; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7127514Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7129346Z     Type '{ length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7130962Z       Types of property 'length' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7131982Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7134551Z ##[error]packages/core/test/integration/mutation-transactionality.test.ts(114,20): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7138610Z ##[error]packages/core/test/integration/mutation-transactionality.test.ts(120,66): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7142427Z ##[error]packages/core/test/integration/mutation-transactionality.test.ts(136,20): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7146189Z ##[error]packages/core/test/integration/mutation-transactionality.test.ts(141,65): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7150838Z ##[error]packages/core/test/integration/observation-identity.test.ts(35,9): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7154867Z ##[error]packages/core/test/integration/option-c-track-resolution.test.ts(17,78): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7160060Z ##[error]packages/core/test/integration/per-plugin-key-ownership.test.ts(38,5): error TS2322: Type '{ values: { length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; requires: { base: string; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7162872Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7164704Z     Type '{ length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7166323Z       Types of property 'length' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7167546Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7171451Z ##[error]packages/core/test/integration/per-plugin-key-ownership.test.ts(53,15): error TS2322: Type '{ values: { x: { stops: { p: number; v: number; }[]; }; y: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7174566Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7176579Z     Type '{ x: { stops: { p: number; v: number; }[]; }; y: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7178549Z       Types of property 'x' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7179532Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7182714Z ##[error]packages/core/test/integration/per-plugin-key-ownership.test.ts(116,9): error TS2322: Type '{ values: { length: { stops: { p: number; v: number; }[]; }; }; requires: { base: string; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7185252Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7186933Z     Type '{ length: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7188370Z       Types of property 'length' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7189368Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7191877Z ##[error]packages/core/test/integration/per-plugin-key-ownership.test.ts(117,9): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7196299Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(24,19): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7201163Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(71,19): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7205919Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(82,19): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7210830Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(147,15): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7215531Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(183,19): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7220422Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(229,19): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7225172Z ##[error]packages/core/test/integration/phase2-motion-scheduling.test.ts(25,17): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7228990Z ##[error]packages/core/test/integration/phase3-trigger-port.test.ts(27,17): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7231670Z ##[error]packages/core/test/integration/phase4-dynamic-lifecycle.test.ts(164,11): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7234621Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(37,21): error TS2322: Type '{ values: { x: { stops: { p: number; v: number; }[]; }; y: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7236529Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7237959Z     Type '{ x: { stops: { p: number; v: number; }[]; }; y: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7238950Z       Types of property 'x' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7239584Z         Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[]'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7241772Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(64,21): error TS2322: Type '{ values: { length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; requires: { base: string; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7243348Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7244349Z     Type '{ length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7245258Z       Types of property 'length' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7245898Z         Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[]'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7248188Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(86,21): error TS2322: Type '{ values: { length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; requires: { base: string; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7249739Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7250739Z     Type '{ length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7251668Z       Types of property 'length' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7252311Z         Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[]'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7254473Z ##[error]packages/core/test/integration/plugin-owned-requirements.test.ts(60,5): error TS2322: Type '{ values: { length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; requires: { base: string; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7256028Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7257165Z     Type '{ length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7258095Z       Types of property 'length' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7258672Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7260776Z ##[error]packages/core/test/integration/plugin-owned-requirements.test.ts(75,15): error TS2322: Type '{ values: { x: { stops: { p: number; v: number; }[]; }; y: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7262330Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7263454Z     Type '{ x: { stops: { p: number; v: number; }[]; }; y: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7264706Z       Types of property 'x' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7265262Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7267327Z ##[error]packages/core/test/integration/plugin-owned-requirements.test.ts(123,20): error TS2322: Type '{ values: { length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7268837Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7269823Z     Type '{ length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7271174Z       Types of property 'length' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7271798Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7273997Z ##[error]packages/core/test/integration/plugin-owned-requirements.test.ts(140,9): error TS2322: Type '{ values: { length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; requires: { base: string; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7275609Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7276602Z     Type '{ length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7277831Z       Types of property 'length' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7278892Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7282496Z ##[error]packages/core/test/integration/plugin-owned-requirements.test.ts(153,9): error TS2322: Type '{ values: { weight: { stops: { p: number; v: number; }[]; }; }; requires: { base: string; destination: string; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7285263Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7286308Z     Type '{ weight: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7287267Z       Types of property 'weight' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7287937Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7291889Z ##[error]packages/core/test/integration/plugin-owned-requirements.test.ts(184,17): error TS2322: Type '{ values: { x: { stops: { p: number; v: number; }[]; }; y: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7294774Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7297016Z     Type '{ x: { stops: { p: number; v: number; }[]; }; y: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7298847Z       Types of property 'x' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7299860Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7303830Z ##[error]packages/core/test/integration/plugin-owned-requirements.test.ts(207,9): error TS2322: Type '{ values: { length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; requires: { debug: string; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7307324Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7309192Z     Type '{ length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7310840Z       Types of property 'length' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7311859Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7313983Z ##[error]packages/core/test/integration/replace-motion-track.test.ts(16,78): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7316297Z ##[error]packages/core/test/integration/replace-track-transactionality.test.ts(32,36): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7319110Z ##[error]packages/core/test/integration/replace-track-transactionality.test.ts(46,16): error TS2322: Type '{ values: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7320514Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7321338Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7322087Z       Types of property 'x' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7322655Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7324114Z ##[error]packages/core/test/integration/replace-track-transactionality.test.ts(52,16): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7326284Z ##[error]packages/core/test/integration/runtime-motion-lifecycle.test.ts(31,78): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7329414Z ##[error]packages/core/test/integration/single-input-channel.test.ts(23,16): error TS2322: Type '{ values: { x: { stops: { p: number; v: number; }[]; }; y: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7330956Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7332062Z     Type '{ x: { stops: { p: number; v: number; }[]; }; y: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7333051Z       Types of property 'x' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7333631Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7335696Z ##[error]packages/core/test/integration/single-input-channel.test.ts(28,5): error TS2322: Type '{ values: { length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }; requires: { base: string; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7337492Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7338527Z     Type '{ length: { stops: { p: number; v: number; }[]; }; rotation: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7339445Z       Types of property 'length' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7340019Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7342056Z ##[error]packages/core/test/integration/t4-runtime-motion-parity.test.ts(126,9): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7344729Z ##[error]packages/core/test/integration/trigger-scroll.test.ts(70,67): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7346063Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7346947Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7347585Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7348182Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7349809Z ##[error]packages/core/test/integration/trigger-time-loop.test.ts(104,48): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7351192Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7351841Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7352463Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7353008Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7354569Z ##[error]packages/core/test/integration/trigger-time-loop.test.ts(123,69): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7355894Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7356540Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7357485Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7358029Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7359817Z ##[error]packages/core/test/integration/trigger-time-loop.test.ts(127,29): error TS2345: Argument of type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to parameter of type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7361257Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7361902Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7362519Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7363067Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7364640Z ##[error]packages/core/test/integration/trigger-time-loop.test.ts(148,16): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7365968Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7366749Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7367376Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7392168Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7394373Z ##[error]packages/core/test/integration/trigger-time-loop.test.ts(148,30): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7395865Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7397020Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7397832Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7398385Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7400075Z ##[error]packages/core/test/integration/trigger-time-loop.test.ts(182,47): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7401498Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7402145Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7402759Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7403324Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7404947Z ##[error]packages/core/test/integration/trigger-time-loop.test.ts(196,68): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7406301Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7407191Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7407844Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7408414Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7410055Z ##[error]packages/core/test/integration/trigger-time-loop.test.ts(198,62): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7411425Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7412079Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7412690Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7413232Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7414782Z ##[error]packages/core/test/integration/trigger-time-loop.test.ts(214,48): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7416133Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7416998Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7417635Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7418188Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7419803Z ##[error]packages/core/test/integration/trigger-time-loop.test.ts(228,48): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7421226Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7421905Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7422528Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7423070Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7424681Z ##[error]packages/core/test/integration/trigger-time-loop.test.ts(229,48): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7426265Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7427321Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7427954Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7428557Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7430176Z ##[error]packages/core/test/integration/trigger-time.test.ts(31,79): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7431544Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7432184Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7432804Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7433356Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7435756Z ##[error]packages/core/test/integration/trigger-time.test.ts(115,77): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7437492Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7438158Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7438786Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7439330Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7440928Z ##[error]packages/core/test/integration/trigger-time.test.ts(156,75): error TS2322: Type '{ id: string; keyframes: { x: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'TrackDefinition'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7442264Z   Types of property 'keyframes' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7442898Z     Type '{ x: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredKeyframe>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7443511Z       Property 'x' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7444046Z         Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7445906Z ##[error]packages/core/test/integration/unified-mutation-surface.test.ts(21,29): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7449204Z ##[error]packages/core/test/unit/domain/plugin-contribution-completeness.test.ts(20,7): error TS2322: Type '() => { keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7450947Z   Call signature return types '{ keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7451690Z     The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7452405Z       Type '{ derived: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7453083Z         Property 'derived' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7453653Z           Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7455305Z ##[error]packages/core/test/unit/domain/plugin-contribution-completeness.test.ts(51,7): error TS2322: Type '() => { keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7457265Z   Call signature return types '{ keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7458307Z     The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7459509Z       Type '{ derived: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7460544Z         Property 'derived' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7461133Z           Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7462862Z ##[error]packages/core/test/unit/domain/plugin-contribution-completeness.test.ts(58,7): error TS2322: Type '() => { keyframes: { second: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7465611Z   Call signature return types '{ keyframes: { second: { stops: { p: number; v: number; }[]; }; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7466458Z     The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7467593Z       Type '{ second: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7468256Z         Property 'second' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7468832Z           Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7471866Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(105,7): error TS2322: Type '() => { keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7474694Z   Call signature return types '{ keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7475602Z     The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7476374Z       Type '{ derived: { readonly stops: readonly AuthoredStop[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7477376Z         Property 'derived' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7478024Z           Type '{ readonly stops: readonly AuthoredStop[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7480282Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(128,7): error TS2322: Type 'Mock<() => { keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }>' is not assignable to type 'PluginContributor | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7482364Z   Type 'Mock<() => { keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }>' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7483624Z     Call signature return types '{ keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7484499Z       The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7485256Z         Type '{ derived: { readonly stops: readonly AuthoredStop[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7485954Z           Property 'derived' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7486572Z             Type '{ readonly stops: readonly AuthoredStop[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7489134Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(135,7): error TS2322: Type 'Mock<() => { keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }>' is not assignable to type 'PluginContributor | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7491167Z   Type 'Mock<() => { keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }>' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7492703Z     Call signature return types '{ keyframes: { derived: { readonly stops: readonly AuthoredStop[]; }; }; tweenVars: { overwrite: string; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7493578Z       The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7494336Z         Type '{ derived: { readonly stops: readonly AuthoredStop[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7495035Z           Property 'derived' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7495660Z             Type '{ readonly stops: readonly AuthoredStop[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7497655Z ##[error]packages/core/test/unit/domain/plugin-contribution-contract.test.ts(154,7): error TS2322: Type '() => { keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; }' is not assignable to type 'PluginContributor'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7499471Z   Call signature return types '{ keyframes: { derived: { stops: { p: number; v: number; }[]; }; }; }' and 'Contribution | undefined' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7500196Z     The types of 'keyframes' are incompatible between these types.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7500905Z       Type '{ derived: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>>'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7501612Z         Property 'derived' is incompatible with index signature.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7502188Z           Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredProperty'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7503692Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(28,62): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7505770Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(52,60): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7508143Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(72,61): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7510242Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(92,61): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7512308Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(94,47): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7514331Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(95,46): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7516387Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(124,62): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7518764Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(137,61): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7520873Z ##[error]packages/core/test/unit/graph/incremental-cache.test.ts(138,60): error TS2322: Type '{ stops: { p: number; v: number; }[]; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7523318Z ##[error]packages/core/test/unit/graph/requirement-edge-construction.test.ts(53,37): error TS2322: Type '{ values: { length: { stops: { p: number; v: number; }[]; }; }; requires: { base: string; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7525841Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7527055Z     Type '{ length: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7528235Z       Types of property 'length' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7528898Z         Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[]'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7530775Z ##[error]packages/core/test/unit/graph/single-input-channel.test.ts(59,39): error TS2322: Type '{ values: { length: { stops: { p: number; v: number; }[]; }; }; requires: { base: string; }; }' is not assignable to type 'AuthoredKeyframe'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7532231Z   Types of property 'values' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7533070Z     Type '{ length: { stops: { p: number; v: number; }[]; }; }' is not assignable to type 'Readonly<Record<string, AuthoredProperty>> | (() => ArrayIterator<AuthoredStop>) | undefined'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7533847Z       Types of property 'length' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7534490Z         Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[]'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7536448Z ##[error]packages/core/test/unit/runtime/composition-output-shape.test.ts(58,19): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7539820Z ##[error]packages/react/test/public-hook-render.test.ts(69,19): error TS2353: Object literal may only specify known properties, and 'stops' does not exist in type 'readonly AuthoredStop[] | AuthoredPluginGroup'.
+quality (node 24)	Run npm run typecheck	2026-08-23T01:49:13.7544355Z ##[error]Process completed with exit code 2.
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	﻿2026-08-23T01:49:07.7775605Z ##[group]Run npx vitest run packages/core/test/integration/end-to-end.test.ts
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:07.7776390Z ^[[36;1mnpx vitest run packages/core/test/integration/end-to-end.test.ts^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:07.7807441Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:07.7807856Z env:
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:07.7808240Z   NODE_VERSION: 24
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:07.7808579Z ##[endgroup]
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.3619161Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.3622649Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.3623905Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8500811Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8502809Z ^[[31m     ^[[31m×^[[31m writes authored GSAP output through a patch into the DOM adapter^[[39m^[[32m 6^[[2mms^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8528057Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8529372Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8532571Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8534308Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m > ^[[22mreal end-to-end product path (E2)^[[2m > ^[[22mwrites authored GSAP output through a patch into the DOM adapter
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8540061Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8542215Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8622689Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8623169Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8623521Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[90m (1)^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8624284Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[90m (1)^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8624970Z ^[[2m   Start at ^[[22m 01:49:08
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8625859Z ^[[2m   Duration ^[[22m 471ms^[[2m (transform 278ms, setup 16ms, import 331ms, tests 7ms, environment 0ms)^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8626303Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8626879Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8627634Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8628177Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8628774Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8629631Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8630662Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8631817Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/end-to-end.test.ts:^[[2m45:8^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8632367Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8632810Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8633202Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8633226Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.8666129Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	 ❯ Engine.load packages/core/src/engine.ts:170:29
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	 ❯ packages/core/test/integration/end-to-end.test.ts:45:8
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-23T01:49:08.9032043Z ##[error]Process completed with exit code 1.
+integration (node 24)	Run npm run test:integration	﻿2026-08-23T01:49:11.9627234Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:11.9627608Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:11.9667060Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:11.9667337Z env:
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:11.9667546Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:11.9667757Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.0747333Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.0748434Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.0749388Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.0749779Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.3919872Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.3923992Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.3925241Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9156405Z  ^[[32m✓^[[39m packages/core/test/integration/engine-teardown-ownership.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9352466Z  ^[[31m❯^[[39m packages/core/test/integration/t4-runtime-motion-parity.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[32m 31^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9355615Z ^[[31m     ^[[31m×^[[31m T-1 emits one progress sequence for a runtime and an authored time Motion^[[39m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9358554Z      ^[[32m✓^[[39m T-2 rejects an invalid runtime trigger without committing anything^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9360530Z      ^[[32m✓^[[39m T-3 leaves nothing behind when the trigger driver cannot be built^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9362522Z      ^[[32m✓^[[39m T-4 disposes the driver exactly once when a runtime Motion is destroyed^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9364815Z      ^[[32m✓^[[39m T-5 leaves zero live driver subscriptions after the project is disposed^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9366947Z ^[[31m     ^[[31m×^[[31m T-6 rolls the Motion back when the candidate graph rejects it^[[39m^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9369016Z ^[[31m     ^[[31m×^[[31m T-7 keeps one clock subscription when a Motion is created at runtime^[[39m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9852308Z  ^[[31m❯^[[39m packages/core/test/integration/bare-authored-leaf.test.ts ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 72^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9876103Z      ^[[32m✓^[[39m LF-5 interpolates a bare array of stops^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9877805Z      ^[[32m✓^[[39m LF-6 publishes a bare static value and holds it at every progress^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9879582Z      ^[[32m✓^[[39m LF-7 keeps a static leaf out of the percent map and out of the compiled properties^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9881106Z      ^[[32m✓^[[39m LF-8 contributes no tween for a static leaf^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9882468Z      ^[[32m✓^[[39m LF-9 refuses the retired object wrapper by name^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9884077Z ^[[31m     ^[[31m×^[[31m LF-10 closes the static domain instead of leaving it open^[[39m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9885991Z      ^[[32m✓^[[39m LF-11 never reads either leaf form as a plugin group^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9898556Z      ^[[32m✓^[[39m LF-12 still refuses a migrated legacy group by name^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9900076Z      ^[[32m✓^[[39m LF-13 accepts both leaf forms inside a values section^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9901593Z      ^[[32m✓^[[39m LF-14 refuses a static leaf on a prepare-stage contributor's key^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9903178Z      ^[[32m✓^[[39m LF-15 declares the leaf as a union and deletes the wrapper interface^[[32m 0^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:12.9905191Z ^[[31m     ^[[31m×^[[31m LF-16 leaves no authored schema in the repository on the retired form^[[39m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2420651Z  ^[[31m❯^[[39m packages/core/test/integration/plugin-group-values-section.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m | ^[[22m^[[31m4 failed^[[39m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2436623Z ^[[31m     ^[[31m×^[[31m Y-1 compiles the values section to leaves and the requires section to nothing^[[39m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2466606Z      ^[[32m✓^[[39m Y-2 refuses the legacy leaf form by name rather than as a missing stops array^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2468939Z      ^[[32m✓^[[39m Y-3 reports an unknown section once and names both legal sections^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2471019Z      ^[[32m✓^[[39m Y-4 reserves a top-level values under the rule id a top-level requires gets^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2473019Z      ^[[32m✓^[[39m Y-5 refuses a malformed or an empty values section^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2475342Z      ^[[32m✓^[[39m Y-6 leaves an empty object an accepted no-op property rather than a group^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2477443Z ^[[31m     ^[[31m×^[[31m Y-7 cites the section in a diagnostic about a leaf inside it^[[39m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2479514Z ^[[31m     ^[[31m×^[[31m Y-8 keeps a leaf named values legal inside the section, and resolvable^[[39m^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2481589Z      ^[[32m✓^[[39m Y-9 keeps the perspective warning for 3D content inside the values section^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2483586Z      ^[[32m✓^[[39m Y-10 refuses one compiled key authored under two groups' values sections^[[32m 0^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2485842Z      ^[[32m✓^[[39m Y-11 joins a bindings-only group to the composer chain and scopes its input^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2487834Z      ^[[32m✓^[[39m Y-12 declares the group as two named sections and deletes the member union^[[32m 0^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2489975Z ^[[31m     ^[[31m×^[[31m Y-13 composes the walker rig's world frame through the values section^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2792132Z  ^[[31m❯^[[39m packages/core/test/integration/trigger-time-loop.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m | ^[[22m^[[31m8 failed^[[39m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2794878Z      ^[[32m✓^[[39m L-11 accepts the loop fields and names each loop rule by id^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2796709Z      ^[[32m✓^[[39m L-12 refuses a yoyo with no cycle to reverse, at either spelling^[[32m 0^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2805872Z ^[[31m     ^[[31m×^[[31m L-13 no longer rejects repeat and yoyo as unsupported^[[39m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2808040Z ^[[31m     ^[[31m×^[[31m L-14 yoyos an authored Motion through the runtime and stops at the start^[[39m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2810919Z ^[[31m     ^[[31m×^[[31m L-15 gives a runtime-created looping Motion the identical sequence^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2812971Z ^[[31m     ^[[31m×^[[31m L-16 applies stagger inside each cycle and carries nothing across one^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2815063Z ^[[31m     ^[[31m×^[[31m L-17 keeps one project clock subscription for looping Motions^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2816728Z ^[[31m     ^[[31m×^[[31m L-18 keeps publishing an infinite loop where a single pass latches^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2818193Z ^[[31m     ^[[31m×^[[31m L-19 lets the next loop emission overwrite a leaf seek^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2819127Z ^[[31m     ^[[31m×^[[31m L-20 releases a destroyed loop without disturbing the other one^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.2819921Z      ^[[32m✓^[[39m L-21 keeps loop time running while its Motion is paused^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.3701723Z  ^[[31m❯^[[39m packages/core/test/integration/phase7-walker-demo.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m | ^[[22m^[[31m10 failed^[[39m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.3704597Z ^[[31m     ^[[31m×^[[31m 1. Load valid walker project through Engine with plugin registry^[[39m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.3707746Z ^[[31m     ^[[31m×^[[31m 2. Render walker nodes through createDomPatchAdapter^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.3709818Z ^[[31m     ^[[31m×^[[31m 3. Demonstrate time playback using single injected browser clock^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.3714148Z ^[[31m     ^[[31m×^[[31m 4. Demonstrate progress through TriggerPort and manual signals^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.3716511Z ^[[31m     ^[[31m×^[[31m 5. Render multiple tracks from one Motion in one published batch^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.3718470Z ^[[31m     ^[[31m×^[[31m 6. Demonstrate FK graph observation dependency chain (pelvis -> thigh -> shin)^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.3720331Z ^[[31m     ^[[31m×^[[31m 7. Mount, unmount, remount, and dispose without duplicate subscriptions^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.3722107Z ^[[31m     ^[[31m×^[[31m 8. Show blocked/pending/error diagnostics without crashing the app^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.3723743Z ^[[31m     ^[[31m×^[[31m 9. Use React usePatch hook at the React boundary^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.3725990Z ^[[31m     ^[[31m×^[[31m 10. Automated end-to-end integration test passes clean^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.4853452Z  ^[[32m✓^[[39m packages/core/test/integration/authored-leaf-reader.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.5311517Z  ^[[32m✓^[[39m packages/core/test/integration/rollback-error-precedence.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.6411923Z  ^[[31m❯^[[39m packages/core/test/integration/phase0-red-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m5 failed^[[39m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.6443551Z ^[[31m     ^[[31m×^[[31m 1. Engine time playback: project clock tick advances time motion playhead^[[39m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.6486527Z ^[[31m     ^[[31m×^[[31m 2. Multi-track publication: driving a Motion with 2 tracks publishes both node patches in 1 batch^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.6488880Z ^[[31m     ^[[31m×^[[31m 3. Adopted-track Engine path: adopted free track compiles keyframes and publishes ready patch^[[39m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.6490997Z ^[[31m     ^[[31m×^[[31m 4. Stale scheduled write: paused Motion cancels pending write before scheduler flush^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.6493192Z ^[[31m     ^[[31m×^[[31m 5. Trigger burst behavior: multiple progress signals before flush coalesce to latest progress^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.7480773Z  ^[[31m❯^[[39m packages/core/test/integration/motion-trigger-types.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.7482774Z ^[[31m     ^[[31m×^[[31m T-11 gives each trigger type its own input path instead of the manual one^[[39m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.7484955Z ^[[31m     ^[[31m×^[[31m T-12 lets seek scrub a driver-backed node and lets the driver overwrite it^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.7486674Z      ^[[32m✓^[[39m advances from the one injected clock and rejects control after disposal^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.7488311Z      ^[[32m✓^[[39m cancels queued trigger work when paused and does not duplicate on remount^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.8499173Z  ^[[31m❯^[[39m packages/core/test/integration/plugin-owned-requirements.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m | ^[[22m^[[31m6 failed^[[39m^[[2m)^[[22m^[[32m 28^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.8524468Z ^[[31m     ^[[31m×^[[31m Q-7 derives the input edge from the binding and composes world space from it^[[39m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.8526431Z ^[[31m     ^[[31m×^[[31m Q-8 leaves an omitted binding with no edge and lets the plugin own the unbound case^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.8528269Z ^[[31m     ^[[31m×^[[31m Q-9 refuses a binding whose source is not a node in the graph^[[39m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.8529962Z ^[[31m     ^[[31m×^[[31m Q-10 treats two slots bound to one source as two edges rather than a duplicate^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.8531748Z ^[[31m     ^[[31m×^[[31m Q-11 keeps an upstream value out of the observer's authored value namespace^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.8533822Z ^[[31m     ^[[31m×^[[31m Q-12 refuses a binding to a slot the plugin never declared, at load^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.9230644Z  ^[[31m❯^[[39m packages/core/test/integration/replace-track-transactionality.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m4 failed^[[39m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.9249026Z ^[[31m     ^[[31m×^[[31m U-1 keeps the live compiled Track when the recompile is refused^[[39m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.9256481Z ^[[31m     ^[[31m×^[[31m U-2 leaves a refused recompile retryable rather than stranding the node^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.9258488Z ^[[31m     ^[[31m×^[[31m U-3 changes nothing when the owning Motion refuses the replacement^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:13.9260644Z ^[[31m     ^[[31m×^[[31m U-4 changes nothing when the candidate graph refuses a derived observation^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.0266732Z  ^[[31m❯^[[39m packages/core/test/integration/phase4-dynamic-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 35^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.0270800Z      ^[[32m✓^[[39m 1. Adoption produces ready patches and publishes through the ordinary graph path^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.0273036Z      ^[[32m✓^[[39m 2. Failed adoption (duplicate id) is observationally atomic — graph, membership, and patches are unchanged^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.0275164Z      ^[[32m✓^[[39m 3. Repeated adopt/destroy cycles do not retain dead GraphNode identities or stale compose closures^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.0276996Z      ^[[32m✓^[[39m 4. PatchRegistry.dispose() clears all retained patches and rejects future publication^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.0278721Z      ^[[32m✓^[[39m 5. Requirement-scoped replacement updates edge identity consistently with GraphIR^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.0280644Z ^[[31m     ^[[31m×^[[31m 6. Keyframe validation is shared: malformed adopted stops are rejected before graph commit^[[39m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.1147716Z  ^[[31m❯^[[39m packages/core/test/integration/adoption.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[32m 38^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.1149913Z      ^[[32m✓^[[39m adopts a free track under ~/id and publishes through the ordinary graph path^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.1151778Z      ^[[32m✓^[[39m rejects duplicate adopted ids instead of silently replacing membership^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.1153715Z      ^[[32m✓^[[39m lets a borrower unmount without destroying the adopted track, while only the owner can destroy it^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.1157317Z      ^[[32m✓^[[39m keeps every adopted track independently addressable across sequential adopt and destroy calls^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.1159030Z ^[[31m     ^[[31m×^[[31m rejects adopted tracks with non-finite stop positions^[[39m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.1160644Z ^[[31m     ^[[31m×^[[31m rejects adopted tracks with non-monotonic stop positions^[[39m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.1162234Z ^[[31m     ^[[31m×^[[31m rejects adopted tracks with duplicate stop positions^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.1163670Z      ^[[32m✓^[[39m adopts a track into an existing motion under motionId/trackId^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.1165194Z      ^[[32m✓^[[39m rejects adopting into a non-existent motion^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.1166459Z      ^[[32m✓^[[39m destroys a motion-adopted track and invokes removeMotionTrack^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.2491987Z  ^[[31m❯^[[39m packages/core/test/integration/trigger-time.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m | ^[[22m^[[31m6 failed^[[39m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.2493982Z ^[[31m     ^[[31m×^[[31m drives a time Motion once per project-clock tick^[[39m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.2496043Z ^[[31m     ^[[31m×^[[31m does not emit before the first tick^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.2503155Z ^[[31m     ^[[31m×^[[31m rejects external signals without changing progress^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.2515728Z ^[[31m     ^[[31m×^[[31m coalesces rapid driver ticks to the latest progress^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.2517289Z      ^[[32m✓^[[39m keeps exactly one project clock subscription for multiple Motions^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.2518982Z ^[[31m     ^[[31m×^[[31m keeps manual signals working and preserves range validation^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.2520715Z ^[[31m     ^[[31m×^[[31m isolates a throwing clock consumer while preserving other Motion progress^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.3195081Z  ^[[31m❯^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m5 failed^[[39m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.3197512Z ^[[31m     ^[[31m×^[[31m passes contribution context and creates the prepared timeline at load^[[39m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.3200804Z ^[[31m     ^[[31m×^[[31m selects one predicate contributor through Engine.load^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.3202484Z ^[[31m     ^[[31m×^[[31m rejects malformed contributions during Engine.load^[[39m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.3204531Z ^[[31m     ^[[31m×^[[31m rejects authored ease collisions before any timeline is created^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.3206487Z ^[[31m     ^[[31m×^[[31m merges contributed keyframes into compiler diagnostics before timeline creation^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.4015522Z  ^[[31m❯^[[39m packages/core/test/integration/trigger-scroll.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m | ^[[22m^[[31m5 failed^[[39m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.4017762Z ^[[31m     ^[[31m×^[[31m 3.1 drives progress from an injected source and clamps out-of-range emissions^[[39m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.4019664Z ^[[31m     ^[[31m×^[[31m 3.2 subscribes to the injected source once and unsubscribes exactly once^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.4022090Z      ^[[32m✓^[[39m 3.3 rejects a missing source with a trigger-driver-unavailable diagnostic^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.4023948Z ^[[31m     ^[[31m×^[[31m 3.4 unsubscribes an already resolved source when a later Motion cannot resolve^[[39m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.4026022Z ^[[31m     ^[[31m×^[[31m registers no clock consumer for a push-driven scroll Motion^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.4027478Z ^[[31m     ^[[31m×^[[31m rejects external signals for scroll Motions^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.4874784Z  ^[[31m❯^[[39m packages/core/test/integration/phase3-trigger-port.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.4898830Z      ^[[32m✓^[[39m 1. Port lifecycle: subscribe, emit, unsubscribe, and resubscribe cleanly^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.4901258Z      ^[[32m✓^[[39m 2. Core validation boundary: NaN, infinite, and out-of-bounds progress are rejected loudly^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.4903568Z ^[[31m     ^[[31m×^[[31m 3. Manual and custom trigger ports operate without DOM imports in core^[[39m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.4906278Z ^[[31m     ^[[31m×^[[31m 4. Single clock invariant: attaching TriggerPorts creates zero secondary clock subscriptions^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.4908523Z      ^[[32m✓^[[39m 5. Idempotent teardown: pause, unmount, and dispose cleanly detach ports without leaks^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.6101832Z  ^[[31m❯^[[39m packages/core/test/integration/per-plugin-key-ownership.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.6104724Z      ^[[32m✓^[[39m N-7 claims the natural bone key names and composes world space from them^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.6106751Z ^[[31m     ^[[31m×^[[31m N-8 composes a rig from two plugins that both claim rotation^[[39m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.6109215Z ^[[31m     ^[[31m×^[[31m N-9 refuses the flat spelling of a key both plugins claim^[[39m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.6110812Z ^[[31m     ^[[31m×^[[31m N-10 publishes grouped leaves under their unprefixed names^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.7179817Z  ^[[31m❯^[[39m packages/core/test/integration/mutation-transactionality.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[32m 36^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.7182457Z ^[[31m     ^[[31m×^[[31m rejects destroying a source without changing graph state or the observation wire^[[39m^[[32m 24^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.7184648Z ^[[31m     ^[[31m×^[[31m leaves a rejected unknown-source adoption retryable^[[39m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.7186488Z ^[[31m     ^[[31m×^[[31m leaves a rejected self-reference adoption retryable^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.7557026Z  ^[[31m❯^[[39m packages/core/test/integration/option-c-track-resolution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m5 failed^[[39m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.7559959Z ^[[31m     ^[[31m×^[[31m C-9 keeps a motion-owned track live through replacement^[[39m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.7586238Z ^[[31m     ^[[31m×^[[31m C-10 preserves the array index and stagger timing across a replacement^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.7603509Z ^[[31m     ^[[31m×^[[31m C-11 keeps the observation replacement path resolvable^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.7605733Z ^[[31m     ^[[31m×^[[31m C-12 disposes every compiled timeline exactly once^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.7607650Z ^[[31m     ^[[31m×^[[31m C-13 keeps runtime add and remove in step with the resolver^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:14.8316781Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.0089984Z  ^[[31m❯^[[39m packages/core/test/integration/phase2-motion-scheduling.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.0093108Z ^[[31m     ^[[31m×^[[31m 1. Ten signals before Scheduler flush produce exactly 1 Track write with latest progress^[[39m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.0095794Z ^[[31m     ^[[31m×^[[31m 2. Pause cancels pending scheduled write and prevents Track mutation on flush^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.0097678Z      ^[[32m✓^[[39m 3. Remount does not duplicate subscriptions or schedule parallel jobs^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.0099354Z      ^[[32m✓^[[39m 4. Clock and trigger paths both retain cancellation behavior on pause^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.0101110Z ^[[31m     ^[[31m×^[[31m 5. Burst signals produce exactly 1 published patch batch^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.0312713Z  ^[[31m❯^[[39m packages/core/test/integration/runtime-motion-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[32m 29^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.0335760Z ^[[31m     ^[[31m×^[[31m creates a motion, attaches a track, and signals progress from an empty project^[[39m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.0338143Z ^[[31m     ^[[31m×^[[31m rejects motion destruction while it still owns tracks, then allows empty destruction^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.0340159Z ^[[31m     ^[[31m×^[[31m keeps two runtime motions independently signalable^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.0341993Z      ^[[32m✓^[[39m rejects duplicate and malformed motion ids without poisoning retries^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.0343160Z      ^[[32m✓^[[39m rejects non-empty authored motions without deleting their schema tracks^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.0344557Z      ^[[32m✓^[[39m rejects addMotion with pre-populated tracks instead of dropping them^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.1310100Z  ^[[31m❯^[[39m packages/core/test/integration/observation-identity.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m5 failed^[[39m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.1313214Z ^[[31m     ^[[31m×^[[31m covers source spelling across an add and its matching remove^[[39m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.1315615Z ^[[31m     ^[[31m×^[[31m deduplicates equivalent observations and preserves no-op sequence^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.1316794Z ^[[31m     ^[[31m×^[[31m rejects an invalid free-track observation with stable diagnostics^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.1317762Z ^[[31m     ^[[31m×^[[31m V-7 refuses an authored target through addObserve on either role^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.1318692Z ^[[31m     ^[[31m×^[[31m J-7 refuses an authored role or projection through addObserve^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.2263963Z  ^[[32m✓^[[39m packages/core/test/integration/cross-motion.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.2853765Z  ^[[31m❯^[[39m packages/core/test/integration/issue-114-motion-track-regressions.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m5 failed^[[39m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.2879227Z ^[[31m     ^[[31m×^[[31m does not drive the disposed Track after direct replacement^[[39m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.2905600Z ^[[31m     ^[[31m×^[[31m preserves current progress when replacing^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.2925752Z ^[[31m     ^[[31m×^[[31m preserves the original array index and stagger timing^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.2930255Z ^[[31m     ^[[31m×^[[31m keeps sibling progress healthy after replacement^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.2931711Z ^[[31m     ^[[31m×^[[31m keeps the observation replacement path live^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.3856900Z  ^[[32m✓^[[39m packages/core/test/integration/diagnostics.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.5162902Z  ^[[31m❯^[[39m packages/core/test/integration/unified-mutation-surface.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m | ^[[22m^[[31m5 failed^[[39m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.5165949Z ^[[31m     ^[[31m×^[[31m ingests authored tracks into the removable store without auto-mounting^[[39m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.5167993Z ^[[31m     ^[[31m×^[[31m returns a capability handle and makes stale ABA handles inert^[[39m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.5170116Z ^[[31m     ^[[31m×^[[31m replaces a track non-destructively and preserves subscriber identity^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.5172123Z ^[[31m     ^[[31m×^[[31m reads dependants from the committed graph and rejects source removal^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.5173897Z ^[[31m     ^[[31m×^[[31m treats observation changes as replacement of the observer track^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.5498560Z  ^[[31m❯^[[39m packages/core/test/integration/replace-motion-track.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.5526410Z ^[[31m     ^[[31m×^[[31m re-registers the compiled Track without throwing on the next Motion update^[[39m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.5566911Z ^[[31m     ^[[31m×^[[31m preserves the replaced Track index and stagger timing^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.5586632Z ^[[31m     ^[[31m×^[[31m updates a Motion-owned Track through observation mutations^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.6725507Z  ^[[31m❯^[[39m packages/core/test/integration/adopted-track-immutability.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m4 failed^[[39m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.6727453Z ^[[31m     ^[[31m×^[[31m returns a deeply frozen runtime-owned definition^[[39m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.6729020Z ^[[31m     ^[[31m×^[[31m isolates caller mutation from the frozen graph definition^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.6730785Z ^[[31m     ^[[31m×^[[31m uses the authored validation owner for malformed runtime track structure^[[39m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.6733000Z ^[[31m     ^[[31m×^[[31m keeps the existing same-source destroy and readopt path working^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.7624597Z  ^[[31m❯^[[39m packages/core/test/integration/keyframe-groups.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.7656209Z ^[[31m     ^[[31m×^[[31m F-10 interpolates grouped leaves without renaming the owning plugin^[[39m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.7661133Z ^[[31m     ^[[31m×^[[31m F-11 interpolates a grouped track when the Engine has no plugin registry^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.7662148Z ^[[31m     ^[[31m×^[[31m F-12 publishes identical values for the flat and grouped spellings^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.8247386Z  ^[[31m❯^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m4 failed^[[39m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.8249767Z ^[[31m     ^[[31m×^[[31m publishes a progress change through the public project handle^[[39m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.8251734Z ^[[31m     ^[[31m×^[[31m keeps one clock owner while clock progress publishes once^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.8253692Z ^[[31m     ^[[31m×^[[31m still resolves authored-key plugins during progress updates^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.8256200Z ^[[31m     ^[[31m×^[[31m routes a manual trigger through the public handle into a published patch^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.9565903Z  ^[[31m❯^[[39m packages/core/test/integration/internal-key-strip.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.9567230Z ^[[31m     ^[[31m×^[[31m H-1 keeps a namespaced derived key out of every published surface^[[39m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.9568184Z ^[[31m     ^[[31m×^[[31m H-2 keeps a declared unprefixed internal key out of the patch^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:15.9569092Z ^[[31m     ^[[31m×^[[31m H-3 still rejects an underscore key returned from compose^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.0096892Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.0541311Z  ^[[32m✓^[[39m packages/core/test/integration/remount.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.2239201Z  ^[[31m❯^[[39m packages/core/test/integration/handle-adoption.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.2249171Z      ^[[32m✓^[[39m adopts a free track and publishes a ready patch via seek^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.2250584Z      ^[[32m✓^[[39m destroyAdopted removes the node from the graph^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.2252188Z ^[[31m     ^[[31m×^[[31m rejects adoption of a track with malformed keyframes^[[39m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.2253853Z ^[[31m     ^[[31m×^[[31m adopts a track into an existing motion and receives motion signals^[[39m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.2447171Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.3208804Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.4116777Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.4861010Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.6108041Z  ^[[31m❯^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m4 failed^[[39m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.6121049Z ^[[31m     ^[[31m×^[[31m rejects malformed authored stops before constructing a runtime^[[39m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.6124036Z ^[[31m     ^[[31m×^[[31m rejects malformed authored stops before any timeline is created^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.6126505Z ^[[31m     ^[[31m×^[[31m resolves authored plugin ownership during load, not on the first seek^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.6129464Z ^[[31m     ^[[31m×^[[31m accepts a valid project and creates its timelines during load^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.6169376Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.7581151Z  ^[[31m❯^[[39m packages/core/test/integration/single-input-channel.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.7583611Z ^[[31m     ^[[31m×^[[31m J-8 composes an upstream value without it ever becoming an authored one^[[39m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.8047351Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.8250008Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:16.9973761Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.0196254Z  ^[[31m❯^[[39m packages/core/test/integration/adopt-destroy-readopt.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.0198983Z ^[[31m     ^[[31m×^[[31m tells subscribers the node was destroyed and reaches them again after re-adoption^[[39m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.2393985Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.2462873Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.2465402Z ^[[31m     ^[[31m×^[[31m writes authored GSAP output through a patch into the DOM adapter^[[39m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.2887734Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.4413708Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.4941047Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.5214747Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7046597Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-trigger-validation.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7151229Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7264928Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7298840Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7299734Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 124 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7300221Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7311967Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adopt-destroy-readopt.test.ts^[[2m > ^[[22madopt -> destroy -> re-adopt lifecycle on the wire (D1)^[[2m > ^[[22mtells subscribers the node was destroyed and reaches them again after re-adoption
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7319541Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7322225Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7397318Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7399188Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7401203Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7402562Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7403739Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7405753Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7407699Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:^[[2m247:25^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7409296Z ^[[90m ^[[2m❯^[[22m Object.adopt packages/core/src/engine.ts:^[[2m86:47^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7410854Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/adopt-destroy-readopt.test.ts:^[[2m40:28^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7411911Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7412500Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7413041Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7415234Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adopted-track-immutability.test.ts^[[2m > ^[[22madopted track validation and immutability (W3)^[[2m > ^[[22mreturns a deeply frozen runtime-owned definition
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7418247Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7420444Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7422015Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7423655Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7425857Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7427212Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7428344Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7429845Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7431564Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:^[[2m247:25^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7433079Z ^[[90m ^[[2m❯^[[22m Object.adopt packages/core/src/engine.ts:^[[2m86:47^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7435027Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/adopted-track-immutability.test.ts:^[[2m33:28^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7435955Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7436645Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7437229Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7439362Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adopted-track-immutability.test.ts^[[2m > ^[[22madopted track validation and immutability (W3)^[[2m > ^[[22misolates caller mutation from the frozen graph definition
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7442404Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7445116Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7446783Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7448428Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7450971Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7452372Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7453518Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7455356Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7457245Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:^[[2m247:25^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7458823Z ^[[90m ^[[2m❯^[[22m Object.adopt packages/core/src/engine.ts:^[[2m86:47^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7460493Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/adopted-track-immutability.test.ts:^[[2m56:28^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7461430Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7462044Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7462612Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7465141Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adopted-track-immutability.test.ts^[[2m > ^[[22madopted track validation and immutability (W3)^[[2m > ^[[22muses the authored validation owner for malformed runtime track structure
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7468085Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to not throw an error but 'TypeError: property-stops-wrapper at …' was thrown^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7469138Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7469535Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7470084Z undefined
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7470438Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7470819Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7472397Z "TypeError: property-stops-wrapper at addTrack(broken).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7473616Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7474951Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/adopted-track-immutability.test.ts:^[[2m79:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7476168Z     ^[[90m 77|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7477212Z     ^[[90m 78|^[[39m     expect(() => handle.adopt(malformed, owner)).toThrow(/observes-sha…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7478593Z     ^[[90m 79|^[[39m     expect(() => handle.adopt({ id: "broken", keyframes: { x: ramp(0, …
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7479973Z     ^[[90m   |^[[39m                                                                                           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7480870Z     ^[[90m 80|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7481724Z     ^[[90m 81|^[[39m     handle^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7482389Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7482965Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7483494Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7485835Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adopted-track-immutability.test.ts^[[2m > ^[[22madopted track validation and immutability (W3)^[[2m > ^[[22mkeeps the existing same-source destroy and readopt path working
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7488936Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7491190Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7492776Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7494627Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7496747Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7498126Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7499263Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7501192Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7503315Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:^[[2m247:25^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7505238Z ^[[90m ^[[2m❯^[[22m Object.adopt packages/core/src/engine.ts:^[[2m86:47^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7506867Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/adopted-track-immutability.test.ts:^[[2m89:26^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7507767Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7508344Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7508887Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7510544Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adoption.test.ts^[[2m > ^[[22mP5-02 adopted free tracks^[[2m > ^[[22mrejects adopted tracks with non-finite stop positions
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7513209Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /stop-position/ but got 'property-stops-wrapper at addTrack(ba…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7514666Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7515137Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7515818Z /stop-position/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7516271Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7516774Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7518338Z "property-stops-wrapper at addTrack(bad).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7519556Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7520548Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/adoption.test.ts:^[[2m79:7^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7521848Z     ^[[90m 77|^[[39m     ^[[34mexpect^[[39m(() ^[[33m=>^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7523148Z     ^[[90m 78|^[[39m       runtime.adopt({ id: "bad", keyframes: { x: { stops: [{ p: Number…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7524873Z     ^[[90m 79|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/stop-position/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7526058Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7527119Z     ^[[90m 80|^[[39m     runtime^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7528137Z     ^[[90m 81|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7528645Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7529258Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7529852Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7531577Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adoption.test.ts^[[2m > ^[[22mP5-02 adopted free tracks^[[2m > ^[[22mrejects adopted tracks with non-monotonic stop positions
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7534483Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /stop-position/ but got 'property-stops-wrapper at addTrack(ba…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7535654Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7561769Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7562379Z /stop-position/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7562610Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7562953Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7564556Z "property-stops-wrapper at addTrack(bad).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7565513Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7566271Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/adoption.test.ts:^[[2m100:7^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7567190Z     ^[[90m 98|^[[39m         {}^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7567776Z     ^[[90m 99|^[[39m       )^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7568645Z     ^[[90m100|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/stop-position/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7569438Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7570195Z     ^[[90m101|^[[39m     runtime^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7570889Z     ^[[90m102|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7571168Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7571592Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7571938Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7573424Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adoption.test.ts^[[2m > ^[[22mP5-02 adopted free tracks^[[2m > ^[[22mrejects adopted tracks with duplicate stop positions
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7576129Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /stop-position/ but got 'property-stops-wrapper at addTrack(ba…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7577618Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7577875Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7578275Z /stop-position/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7578502Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7578742Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7580027Z "property-stops-wrapper at addTrack(bad).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7580957Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7581888Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/adoption.test.ts:^[[2m121:7^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7582823Z     ^[[90m119|^[[39m         {}^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7583421Z     ^[[90m120|^[[39m       )^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7584602Z     ^[[90m121|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/stop-position/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7585468Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7586246Z     ^[[90m122|^[[39m     runtime^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7586989Z     ^[[90m123|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7587304Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7587805Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7588159Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7589739Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/bare-authored-leaf.test.ts^[[2m > ^[[22mthe bare authored leaf^[[2m > ^[[22mLF-10 closes the static domain instead of leaving it open
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7591874Z ^[[31m^[[1mAssertionError^[[22m: expected [ 'keyframes-missing-values-section' ] to deeply equal [ 'stops-shape' ]^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7592666Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7592900Z ^[[32m- Expected^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7593347Z ^[[31m+ Received^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7593570Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7593757Z ^[[2m  [^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7594429Z ^[[32m-   "stops-shape",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7595149Z ^[[31m+   "keyframes-missing-values-section",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7595742Z ^[[2m  ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7595946Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7596737Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/bare-authored-leaf.test.ts:^[[2m260:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7598060Z     ^[[90m258|^[[39m     expect(ruleIds({ x: Number.POSITIVE_INFINITY })).toEqual(["stops-s…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7599733Z     ^[[90m259|^[[39m     ^[[34mexpect^[[39m(^[[34mruleIds^[[39m({ x^[[33m:^[[39m () ^[[33m=>^[[39m ^[[34m1^[[39m }))^[[33m.^[[39m^[[34mtoEqual^[[39m([^[[32m"stops-shape"^[[39m])^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7601741Z     ^[[90m260|^[[39m     ^[[34mexpect^[[39m(^[[34mruleIds^[[39m({ x^[[33m:^[[39m { hold^[[33m:^[[39m ^[[34m1^[[39m } }))^[[33m.^[[39m^[[34mtoEqual^[[39m([^[[32m"stops-shape"^[[39m])^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7603071Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7604066Z     ^[[90m261|^[[39m     // The shape error cites the property the author wrote, not a `.st…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7605354Z     ^[[90m262|^[[39m     ^[[90m// exists anywhere in the document.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7605803Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7606240Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7606621Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7608318Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/bare-authored-leaf.test.ts^[[2m > ^[[22mthe bare authored leaf^[[2m > ^[[22mLF-16 leaves no authored schema in the repository on the retired form
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7610144Z ^[[31m^[[1mAssertionError^[[22m: expected [ …(58) ] to deeply equal []^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7610680Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7610924Z ^[[32m- Expected^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7611378Z ^[[31m+ Received^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7611618Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7611801Z ^[[32m- []^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7612181Z ^[[31m+ [^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7612898Z ^[[31m+   "packages/core/src/contract/authored-leaf.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7613775Z ^[[31m+   "packages/core/src/contract/v5.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7615549Z ^[[31m+   "packages/core/src/contract/validate-v5.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7616466Z ^[[31m+   "packages/core/test/contract/adapters.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7617607Z ^[[31m+   "packages/core/test/contract/graph-builder-incremental.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7619122Z ^[[31m+   "packages/core/test/contract/gsap-absolute-stops.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7620608Z ^[[31m+   "packages/core/test/contract/gsap-authored-duration.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7621750Z ^[[31m+   "packages/core/test/contract/gsap-equivalence.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7622801Z ^[[31m+   "packages/core/test/contract/gsap-multi-stop.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7623813Z ^[[31m+   "packages/core/test/contract/gsap-one-tween.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7625253Z ^[[31m+   "packages/core/test/contract/gsap-paused-timeline.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7626435Z ^[[31m+   "packages/core/test/contract/gsap-sparse-percent-map.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7627448Z ^[[31m+   "packages/core/test/contract/ports.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7628495Z ^[[31m+   "packages/core/test/contract/s4-validation-owner.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7629560Z ^[[31m+   "packages/core/test/contract/v5-validator.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7630618Z ^[[31m+   "packages/core/test/contract/validation-owner.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7631801Z ^[[31m+   "packages/core/test/integration/adopt-destroy-readopt.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7633037Z ^[[31m+   "packages/core/test/integration/adopted-track-immutability.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7634142Z ^[[31m+   "packages/core/test/integration/adoption.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7635422Z ^[[31m+   "packages/core/test/integration/end-to-end.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7636504Z ^[[31m+   "packages/core/test/integration/engine-headless.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7637694Z ^[[31m+   "packages/core/test/integration/engine-load-validation.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7638910Z ^[[31m+   "packages/core/test/integration/engine-x3-contribution.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7640077Z ^[[31m+   "packages/core/test/integration/handle-adoption.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7641222Z ^[[31m+   "packages/core/test/integration/internal-key-strip.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7642549Z ^[[31m+   "packages/core/test/integration/issue-114-motion-track-regressions.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7643760Z ^[[31m+   "packages/core/test/integration/keyframe-groups.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7645321Z ^[[31m+   "packages/core/test/integration/motion-trigger-types.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7646611Z ^[[31m+   "packages/core/test/integration/mutation-transactionality.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7647851Z ^[[31m+   "packages/core/test/integration/observation-identity.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7649109Z ^[[31m+   "packages/core/test/integration/option-c-track-resolution.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7650388Z ^[[31m+   "packages/core/test/integration/per-plugin-key-ownership.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7651568Z ^[[31m+   "packages/core/test/integration/phase0-red-baseline.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7652780Z ^[[31m+   "packages/core/test/integration/phase2-motion-scheduling.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7653973Z ^[[31m+   "packages/core/test/integration/phase3-trigger-port.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7655439Z ^[[31m+   "packages/core/test/integration/phase4-dynamic-lifecycle.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7656623Z ^[[31m+   "packages/core/test/integration/phase7-walker-demo.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7657859Z ^[[31m+   "packages/core/test/integration/plugin-group-values-section.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7659136Z ^[[31m+   "packages/core/test/integration/plugin-owned-requirements.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7660425Z ^[[31m+   "packages/core/test/integration/replace-motion-track.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7661736Z ^[[31m+   "packages/core/test/integration/replace-track-transactionality.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7663042Z ^[[31m+   "packages/core/test/integration/runtime-motion-lifecycle.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7664459Z ^[[31m+   "packages/core/test/integration/single-input-channel.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7665745Z ^[[31m+   "packages/core/test/integration/t4-runtime-motion-parity.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7667177Z ^[[31m+   "packages/core/test/integration/trigger-scroll.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7668463Z ^[[31m+   "packages/core/test/integration/trigger-time-loop.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7669550Z ^[[31m+   "packages/core/test/integration/trigger-time.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7670740Z ^[[31m+   "packages/core/test/integration/unified-mutation-surface.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7672076Z ^[[31m+   "packages/core/test/unit/domain/plugin-contribution-completeness.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7673418Z ^[[31m+   "packages/core/test/unit/domain/plugin-contribution-contract.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7675072Z ^[[31m+   "packages/core/test/unit/domain/plugin-requirements.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7676142Z ^[[31m+   "packages/core/test/unit/domain/plugins.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7677207Z ^[[31m+   "packages/core/test/unit/domain/s7-plugin-evidence.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7678309Z ^[[31m+   "packages/core/test/unit/graph/incremental-cache.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7679574Z ^[[31m+   "packages/core/test/unit/graph/requirement-edge-construction.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7680822Z ^[[31m+   "packages/core/test/unit/graph/single-input-channel.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7682058Z ^[[31m+   "packages/core/test/unit/runtime/composition-output-shape.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7683127Z ^[[31m+   "packages/react/test/public-hook-render.test.ts",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7683652Z ^[[31m+ ]^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7683803Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7684663Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/bare-authored-leaf.test.ts:^[[2m344:30^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7685865Z     ^[[90m342|^[[39m     // be red for a fixture that authors the retired form, but a fixtu…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7686534Z     ^[[90m343|^[[39m     // and that is the one that reads as an accepted second shape late…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7687304Z     ^[[90m344|^[[39m     ^[[34mexpect^[[39m(offenders^[[33m.^[[39m^[[34msort^[[39m())^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7687918Z     ^[[90m   |^[[39m                              ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7688289Z     ^[[90m345|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7688596Z     ^[[90m346|^[[39m })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7688755Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7688995Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7689203Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7690422Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m > ^[[22mreal end-to-end product path (E2)^[[2m > ^[[22mwrites authored GSAP output through a patch into the DOM adapter
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7693004Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7695015Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7696118Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7697556Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7698904Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7699668Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7700591Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7701632Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7702580Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7703715Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/end-to-end.test.ts:^[[2m45:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7704460Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7704875Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7705222Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7706456Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-headless.test.ts^[[2m > ^[[22mEngine^[[2m > ^[[22mpublishes a progress change through the public project handle
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7709541Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7711172Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7712355Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7713615Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7715060Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7715769Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7716685Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7717530Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7718658Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7719933Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/engine-headless.test.ts:^[[2m38:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7720526Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7720915Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7721215Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7722623Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-headless.test.ts^[[2m > ^[[22mEngine^[[2m > ^[[22mkeeps one clock owner while clock progress publishes once
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7725083Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7726938Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7728130Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7729484Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7730681Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7731398Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7732150Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7733268Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7734492Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7735542Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/engine-headless.test.ts:^[[2m60:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7735897Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7736129Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7736347Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7737367Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-headless.test.ts^[[2m > ^[[22mEngine^[[2m > ^[[22mstill resolves authored-key plugins during progress updates
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7738812Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7739824Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7740495Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7741296Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7741978Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7742390Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7743359Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7744022Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7744910Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7745608Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/engine-headless.test.ts:^[[2m79:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7745966Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7746198Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7746403Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7747774Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-headless.test.ts^[[2m > ^[[22mEngine^[[2m > ^[[22mroutes a manual trigger through the public handle into a published patch
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7750402Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7752191Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7753359Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7754929Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7756116Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7756841Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7757742Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7758776Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7759835Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7761114Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/engine-headless.test.ts:^[[2m94:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7761723Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7762125Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7762469Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7764545Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-load-validation.test.ts^[[2m > ^[[22mEngine product-load validation (X-1 follow-up)^[[2m > ^[[22mrejects malformed authored stops before constructing a runtime
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7767144Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /stop-position/ but got 'property-stops-wrapper at motions[0].…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7768069Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7768304Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7768685Z /stop-position/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7768896Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7769124Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7770455Z "property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7771416Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7772494Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-load-validation.test.ts:^[[2m31:49^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7774386Z     ^[[90m 29|^[[39m     const invalid = projectWith({ opacity: { stops: [{ p: Number.NaN, …
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7775289Z     ^[[90m 30|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7776178Z     ^[[90m 31|^[[39m     expect(() => engine.load(invalid as never)).toThrow(/stop-position…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7777284Z     ^[[90m   |^[[39m                                                 ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7778504Z     ^[[90m 32|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7779499Z     ^[[90m 33|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7779827Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7780491Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7780865Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7782759Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-load-validation.test.ts^[[2m > ^[[22mEngine product-load validation (X-1 follow-up)^[[2m > ^[[22mrejects malformed authored stops before any timeline is created
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7785690Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /stop-position-order/ but got 'property-stops-wrapper at motions[0].…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7786685Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7786924Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7787346Z /stop-position-order/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7787588Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7787810Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7789155Z "property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7789794Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7790308Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-load-validation.test.ts:^[[2m48:49^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7790856Z     ^[[90m 46|^[[39m     })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7791145Z     ^[[90m 47|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7791624Z     ^[[90m 48|^[[39m     expect(() => engine.load(invalid as never)).toThrow(/stop-position…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7792215Z     ^[[90m   |^[[39m                                                 ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7792882Z     ^[[90m 49|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7793392Z     ^[[90m 50|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7793564Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7793790Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7793997Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7795570Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-load-validation.test.ts^[[2m > ^[[22mEngine product-load validation (X-1 follow-up)^[[2m > ^[[22mresolves authored plugin ownership during load, not on the first seek
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7797154Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-unknown-key/ but got 'property-stops-wrapper at motions[0].…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7797725Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7797863Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7798120Z /plugin-unknown-key/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7798263Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7798396Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7799157Z "property-stops-wrapper at motions[0].tracks[0].keyframes.unknown: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7799707Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7800169Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-load-validation.test.ts:^[[2m65:7^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7800752Z     ^[[90m 63|^[[39m     ^[[34mexpect^[[39m(() ^[[33m=>^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7801306Z     ^[[90m 64|^[[39m       engine.load(projectWith({ unknown: { stops: [{ p: 0, v: 0 }] } }…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7801955Z     ^[[90m 65|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/plugin-unknown-key/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7802421Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7802992Z     ^[[90m 66|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7803548Z     ^[[90m 67|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7804408Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7805108Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7805479Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7807339Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-load-validation.test.ts^[[2m > ^[[22mEngine product-load validation (X-1 follow-up)^[[2m > ^[[22maccepts a valid project and creates its timelines during load
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7810168Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7811944Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7813105Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7814680Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7815887Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7816608Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7817515Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7818560Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7819626Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7820933Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/engine-load-validation.test.ts:^[[2m74:28^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7821579Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7821981Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7822325Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7824422Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mpasses contribution context and creates the prepared timeline at load
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7827288Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7829029Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7830196Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7831594Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7832767Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7833475Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7834536Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7835592Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7836667Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7837974Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m38:83^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7838628Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7839027Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7839367Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7841137Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mselects one predicate contributor through Engine.load
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7843105Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7844118Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7845084Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7846218Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7846906Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7847325Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7847856Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7848454Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7849068Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7849811Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m75:83^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7850184Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7850416Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7850625Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7851602Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mrejects malformed contributions during Engine.load
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7853133Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-contribution-stop-order/ but got 'property-stops-wrapper at motions[0].…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7853744Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7853874Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7854426Z /plugin-contribution-stop-order/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7854775Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7855029Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7856328Z "property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7857281Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7858112Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m108:7^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7859607Z     ^[[90m106|^[[39m         ^[[34mprojectWith^[[39m({ x^[[33m:^[[39m ^[[34mproperty^[[39m(^[[34m1^[[39m) }) ^[[35mas^[[39m never^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7860684Z     ^[[90m107|^[[39m       )^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7861704Z     ^[[90m108|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/plugin-contribution-stop-order/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7862612Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7863658Z     ^[[90m109|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7864928Z     ^[[90m110|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7865229Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7865635Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7866015Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7867917Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mrejects authored ease collisions before any timeline is created
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7870714Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-contribution-ease-collision/ but got 'property-stops-wrapper at motions[0].…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7871841Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7872091Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7872635Z /plugin-contribution-ease-collision/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7872983Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7873232Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7875821Z "property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7877594Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7878452Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m133:7^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7879483Z     ^[[90m131|^[[39m         }) ^[[35mas^[[39m never^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7880127Z     ^[[90m132|^[[39m       )^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7881166Z     ^[[90m133|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/plugin-contribution-ease-collision/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7882564Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7883601Z     ^[[90m134|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7884608Z     ^[[90m135|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7884803Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7885042Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7885265Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7886410Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m > ^[[22mX-3 contribution through the product load path^[[2m > ^[[22mmerges contributed keyframes into compiler diagnostics before timeline creation
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7888053Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-contribution-ease-collision/ but got 'property-stops-wrapper at motions[0].…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7888681Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7888833Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7889139Z /plugin-contribution-ease-collision/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7889357Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7889484Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7890221Z "property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7890755Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7891228Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/engine-x3-contribution.test.ts:^[[2m170:7^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7891833Z     ^[[90m168|^[[39m         }) ^[[35mas^[[39m never^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7892359Z     ^[[90m169|^[[39m       )^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7893446Z     ^[[90m170|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/plugin-contribution-ease-collision/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7894576Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7895592Z     ^[[90m171|^[[39m     ^[[34mexpect^[[39m(create)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7896512Z     ^[[90m172|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7896830Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7897246Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7897606Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7899222Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/handle-adoption.test.ts^[[2m > ^[[22madoption through ProjectHandle (G2)^[[2m > ^[[22mrejects adoption of a track with malformed keyframes
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7901640Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /stop-position/ but got 'property-stops-wrapper at addTrack(ba…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7902592Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7902830Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7903211Z /stop-position/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7903429Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7903648Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7905080Z "property-stops-wrapper at addTrack(bad).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7905973Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7906771Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/handle-adoption.test.ts:^[[2m57:44^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7907674Z     ^[[90m 55|^[[39m       }^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7908229Z     ^[[90m 56|^[[39m     }^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7909652Z     ^[[90m 57|^[[39m     ^[[34mexpect^[[39m(() ^[[33m=>^[[39m handle^[[33m.^[[39m^[[34madopt^[[39m(bad^[[33m,^[[39m owner))^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/stop-position/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7910976Z     ^[[90m   |^[[39m                                            ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7911811Z     ^[[90m 58|^[[39m     handle^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7912478Z     ^[[90m 59|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7912759Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7913167Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7913515Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7915422Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/handle-adoption.test.ts^[[2m > ^[[22madoption through ProjectHandle (G2)^[[2m > ^[[22madopts a track into an existing motion and receives motion signals
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7918513Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(leg).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7920469Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7921814Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7923211Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7925141Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7926304Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7927256Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7928574Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7930102Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:^[[2m247:25^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7931392Z ^[[90m ^[[2m❯^[[22m Object.adopt packages/core/src/engine.ts:^[[2m86:47^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7932614Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/handle-adoption.test.ts:^[[2m69:28^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7933226Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7933646Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7934002Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7936128Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/internal-key-strip.test.ts^[[2m > ^[[22minternal keys are stripped once, before publication^[[2m > ^[[22mH-1 keeps a namespaced derived key out of every published surface
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7938971Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7940781Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7941979Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7943402Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7944813Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7945553Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7946470Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7947523Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7948631Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7949985Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/internal-key-strip.test.ts:^[[2m22:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7951403Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/internal-key-strip.test.ts:^[[2m42:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7952042Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7952449Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7952792Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7954817Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/internal-key-strip.test.ts^[[2m > ^[[22minternal keys are stripped once, before publication^[[2m > ^[[22mH-2 keeps a declared unprefixed internal key out of the patch
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7957038Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7958323Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7959025Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7960886Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7962155Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7962906Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7963848Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7965147Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7966227Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7967529Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/internal-key-strip.test.ts:^[[2m22:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7968957Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/internal-key-strip.test.ts:^[[2m66:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7969670Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7970035Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7970275Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7971301Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/internal-key-strip.test.ts^[[2m > ^[[22minternal keys are stripped once, before publication^[[2m > ^[[22mH-3 still rejects an underscore key returned from compose
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7972905Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7973905Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7975161Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7976650Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7977940Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7978769Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7979699Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7980750Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7981840Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7983172Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/internal-key-strip.test.ts:^[[2m22:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7984841Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/internal-key-strip.test.ts:^[[2m84:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7985479Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7985920Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7986276Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7988184Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/issue-114-motion-track-regressions.test.ts^[[2m > ^[[22missue 114: Motion-owned Track replacement^[[2m > ^[[22mdoes not drive the disposed Track after direct replacement
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7991038Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7992797Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7993984Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7995663Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7996954Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7997752Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7998696Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.7999743Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8001233Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8002749Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/issue-114-motion-track-regressions.test.ts:^[[2m21:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8004670Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/issue-114-motion-track-regressions.test.ts:^[[2m41:42^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8005435Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8005754Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8005968Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8006980Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/issue-114-motion-track-regressions.test.ts^[[2m > ^[[22missue 114: Motion-owned Track replacement^[[2m > ^[[22mpreserves current progress when replacing
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8008558Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8009574Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8010261Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8011071Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8011748Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8012165Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8012689Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8013280Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8014554Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8016093Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/issue-114-motion-track-regressions.test.ts:^[[2m21:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8017844Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/issue-114-motion-track-regressions.test.ts:^[[2m56:42^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8018615Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8019079Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8019455Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8021331Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/issue-114-motion-track-regressions.test.ts^[[2m > ^[[22missue 114: Motion-owned Track replacement^[[2m > ^[[22mpreserves the original array index and stagger timing
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8026816Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8030281Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8031529Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8032945Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8034329Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8035086Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8035994Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8037031Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8038105Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8039581Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/issue-114-motion-track-regressions.test.ts:^[[2m21:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8041772Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/issue-114-motion-track-regressions.test.ts:^[[2m72:42^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8042526Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8042935Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8043281Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8045281Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/issue-114-motion-track-regressions.test.ts^[[2m > ^[[22missue 114: Motion-owned Track replacement^[[2m > ^[[22mkeeps sibling progress healthy after replacement
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8049310Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8051868Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8053082Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8054665Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8055885Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8056612Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8057532Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8058574Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8059637Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8061192Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/issue-114-motion-track-regressions.test.ts:^[[2m21:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8062934Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/issue-114-motion-track-regressions.test.ts:^[[2m86:35^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8063702Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8064119Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8064637Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8066433Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/issue-114-motion-track-regressions.test.ts^[[2m > ^[[22missue 114: Motion-owned Track replacement^[[2m > ^[[22mkeeps the observation replacement path live
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8070447Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8073002Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8074331Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8076171Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8077354Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8078112Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8079041Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8080086Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8081158Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8082635Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/issue-114-motion-track-regressions.test.ts:^[[2m21:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8084541Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/issue-114-motion-track-regressions.test.ts:^[[2m103:35^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8085321Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8085745Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8086091Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8087995Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/keyframe-groups.test.ts^[[2m > ^[[22mplugin-named authored keyframe groups^[[2m > ^[[22mF-10 interpolates grouped leaves without renaming the owning plugin
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8092341Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.fk.values.boneLength: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.fk.values.boneRotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8095827Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8096647Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8097584Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8098862Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8099600Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8100521Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8101581Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8102658Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8103945Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/keyframe-groups.test.ts:^[[2m50:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8105555Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/keyframe-groups.test.ts:^[[2m56:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8106173Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8106582Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8106952Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8108790Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/keyframe-groups.test.ts^[[2m > ^[[22mplugin-named authored keyframe groups^[[2m > ^[[22mF-11 interpolates a grouped track when the Engine has no plugin registry
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8111853Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.fk.values.boneLength: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8114082Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8115742Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8117196Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8118391Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8119443Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8120537Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8121612Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8122709Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8126864Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/keyframe-groups.test.ts:^[[2m50:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8128381Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/keyframe-groups.test.ts:^[[2m70:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8129007Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8129450Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8129814Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8131621Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/keyframe-groups.test.ts^[[2m > ^[[22mplugin-named authored keyframe groups^[[2m > ^[[22mF-12 publishes identical values for the flat and grouped spellings
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8135026Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.boneLength: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8136949Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8138201Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8139582Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8140317Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8140751Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8141734Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8142816Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8143921Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8145428Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/keyframe-groups.test.ts:^[[2m50:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8146787Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/keyframe-groups.test.ts:^[[2m81:18^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8147389Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8147804Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8148154Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8150026Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/motion-trigger-types.test.ts^[[2m > ^[[22mMotion trigger types and clock ownership^[[2m > ^[[22mT-11 gives each trigger type its own input path instead of the manual one
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8153580Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8155571Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8156793Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8158209Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8159395Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8160114Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8161097Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8162160Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8163242Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8164778Z ^[[90m ^[[2m❯^[[22m loadOne packages/core/test/integration/motion-trigger-types.test.ts:^[[2m64:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8166263Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/motion-trigger-types.test.ts:^[[2m104:44^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8167393Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8167814Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8168163Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8170040Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/motion-trigger-types.test.ts^[[2m > ^[[22mMotion trigger types and clock ownership^[[2m > ^[[22mT-12 lets seek scrub a driver-backed node and lets the driver overwrite it
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8172858Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8174774Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8175954Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8177375Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8178594Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8179309Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8180229Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8181271Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8183201Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8184763Z ^[[90m ^[[2m❯^[[22m loadOne packages/core/test/integration/motion-trigger-types.test.ts:^[[2m64:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8186288Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/motion-trigger-types.test.ts:^[[2m123:42^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8186942Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8187578Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8187967Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8189973Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/mutation-transactionality.test.ts^[[2m > ^[[22mruntime mutation transactionality (W2)^[[2m > ^[[22mrejects destroying a source without changing graph state or the observation wire
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8196110Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(root).keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at addTrack(root).keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at addTrack(root).keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8200116Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8201471Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8202895Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8204809Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8205972Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8206902Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8208206Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8209719Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:^[[2m247:25^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8210998Z ^[[90m ^[[2m❯^[[22m Object.adopt packages/core/src/engine.ts:^[[2m86:47^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8212356Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/mutation-transactionality.test.ts:^[[2m79:25^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8213357Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8214019Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8214582Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8216354Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/mutation-transactionality.test.ts^[[2m > ^[[22mruntime mutation transactionality (W2)^[[2m > ^[[22mleaves a rejected unknown-source adoption retryable
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8219171Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /observation-unknown-source/ but got 'property-stops-wrapper at addTrack(ch…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8220207Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8220440Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8220889Z /observation-unknown-source/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8221183Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8221416Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8222668Z "property-stops-wrapper at addTrack(child).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8223573Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8224643Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/mutation-transactionality.test.ts:^[[2m118:48^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8225640Z     ^[[90m116|^[[39m     }^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8226112Z     ^[[90m117|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8226928Z     ^[[90m118|^[[39m     expect(() => handle.adopt(invalid, owner)).toThrow(/observation-un…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8227902Z     ^[[90m   |^[[39m                                                ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8228496Z     ^[[90m119|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8229306Z     ^[[90m120|^[[39m     const replacement = handle.adopt({ id: "child", keyframes: { x: ra…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8229874Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8230276Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8230627Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8232362Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/mutation-transactionality.test.ts^[[2m > ^[[22mruntime mutation transactionality (W2)^[[2m > ^[[22mleaves a rejected self-reference adoption retryable
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8235175Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /observation-self-reference/ but got 'property-stops-wrapper at addTrack(se…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8236411Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8236653Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8237106Z /observation-self-reference/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8237396Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8237629Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8238868Z "property-stops-wrapper at addTrack(self).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8239765Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8240640Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/mutation-transactionality.test.ts:^[[2m140:48^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8241589Z     ^[[90m138|^[[39m     }^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8242066Z     ^[[90m139|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8242866Z     ^[[90m140|^[[39m     expect(() => handle.adopt(invalid, owner)).toThrow(/observation-se…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8243842Z     ^[[90m   |^[[39m                                                ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8245042Z     ^[[90m141|^[[39m     const replacement = handle.adopt({ id: "self", keyframes: { x: ram…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8246059Z     ^[[90m142|^[[39m     ^[[34mexpect^[[39m(replacement^[[33m.^[[39mid)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"~/self"^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8246467Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8246703Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8247100Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8248631Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/observation-identity.test.ts^[[2m > ^[[22mobservation identity^[[2m > ^[[22mcovers source spelling across an add and its matching remove
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8252037Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8254058Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8255839Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8257320Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8258543Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8259270Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8260206Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8261163Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8261809Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8262615Z ^[[90m ^[[2m❯^[[22m makeHandle packages/core/test/integration/observation-identity.test.ts:^[[2m49:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8264479Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/observation-identity.test.ts:^[[2m66:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8265096Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8265465Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[43/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8265786Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8266834Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/observation-identity.test.ts^[[2m > ^[[22mobservation identity^[[2m > ^[[22mdeduplicates equivalent observations and preserves no-op sequence
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8269045Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8271254Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8272436Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8273889Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8275300Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8276018Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8276935Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8278005Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8279073Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8280460Z ^[[90m ^[[2m❯^[[22m makeHandle packages/core/test/integration/observation-identity.test.ts:^[[2m49:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8281978Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/observation-identity.test.ts:^[[2m75:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8282564Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8282814Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[44/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8283033Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8284400Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/observation-identity.test.ts^[[2m > ^[[22mobservation identity^[[2m > ^[[22mrejects an invalid free-track observation with stable diagnostics
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8289598Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at freeTracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8292973Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8294340Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8296351Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8297563Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8298283Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8299516Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8300721Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8302065Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8303750Z ^[[90m ^[[2m❯^[[22m makeHandle packages/core/test/integration/observation-identity.test.ts:^[[2m49:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8305835Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/observation-identity.test.ts:^[[2m89:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8306812Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8307401Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[45/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8307861Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8309642Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/observation-identity.test.ts^[[2m > ^[[22mobservation identity^[[2m > ^[[22mV-7 refuses an authored target through addObserve on either role
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8313969Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8316955Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8318428Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8336717Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8338185Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8339012Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8339971Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8341038Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8342156Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8343581Z ^[[90m ^[[2m❯^[[22m makeHandle packages/core/test/integration/observation-identity.test.ts:^[[2m49:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8345311Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/observation-identity.test.ts:^[[2m95:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8345959Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8346377Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[46/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8346727Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8348356Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/observation-identity.test.ts^[[2m > ^[[22mobservation identity^[[2m > ^[[22mJ-7 refuses an authored role or projection through addObserve
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8352274Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8355061Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8356253Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8357666Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8358838Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8359859Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8361070Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8362118Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8363193Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8364803Z ^[[90m ^[[2m❯^[[22m makeHandle packages/core/test/integration/observation-identity.test.ts:^[[2m49:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8366324Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/observation-identity.test.ts:^[[2m103:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8366979Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8367386Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[47/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8367737Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8369700Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/option-c-track-resolution.test.ts^[[2m > ^[[22moption C: compiled Track ownership through the public surface^[[2m > ^[[22mC-9 keeps a motion-owned track live through replacement
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8372585Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8374734Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8376106Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8377604Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8378796Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8379520Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8380442Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8381480Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8382593Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8383980Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/option-c-track-resolution.test.ts:^[[2m30:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8385743Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/option-c-track-resolution.test.ts:^[[2m60:42^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8386425Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8386835Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[48/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8387177Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8389274Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/option-c-track-resolution.test.ts^[[2m > ^[[22moption C: compiled Track ownership through the public surface^[[2m > ^[[22mC-10 preserves the array index and stagger timing across a replacement
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8394916Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8398349Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8399541Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8400951Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8402131Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8402853Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8403765Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8405250Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8406514Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8407891Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/option-c-track-resolution.test.ts:^[[2m30:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8409417Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/option-c-track-resolution.test.ts:^[[2m73:42^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8410093Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8410496Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[49/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8410834Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8412789Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/option-c-track-resolution.test.ts^[[2m > ^[[22moption C: compiled Track ownership through the public surface^[[2m > ^[[22mC-11 keeps the observation replacement path resolvable
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8417129Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8419717Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8420898Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8422322Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8423499Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8424427Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8425053Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8426047Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8427157Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8428545Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/option-c-track-resolution.test.ts:^[[2m30:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8430159Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/option-c-track-resolution.test.ts:^[[2m88:35^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8430904Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8431382Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[50/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8431761Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8433180Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/option-c-track-resolution.test.ts^[[2m > ^[[22moption C: compiled Track ownership through the public surface^[[2m > ^[[22mC-12 disposes every compiled timeline exactly once
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8435929Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8437469Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8438186Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8439054Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8439752Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8440180Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8440732Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8441354Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8441991Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8443044Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/option-c-track-resolution.test.ts:^[[2m30:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8444718Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/option-c-track-resolution.test.ts:^[[2m104:24^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8445153Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8445432Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[51/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8445640Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8446830Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/option-c-track-resolution.test.ts^[[2m > ^[[22moption C: compiled Track ownership through the public surface^[[2m > ^[[22mC-13 keeps runtime add and remove in step with the resolver
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8448511Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8449539Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8450342Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8451934Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8453294Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8453834Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8454695Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8455342Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8455988Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8456807Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/option-c-track-resolution.test.ts:^[[2m30:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8457697Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/option-c-track-resolution.test.ts:^[[2m113:35^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8458110Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8458360Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[52/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8458573Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8459832Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/per-plugin-key-ownership.test.ts^[[2m > ^[[22mper-plugin keyframe key ownership^[[2m > ^[[22mN-8 composes a rig from two plugins that both claim rotation
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8466447Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8472211Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8473637Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8475329Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8476597Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8477309Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8478306Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8479433Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8481026Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8482429Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/per-plugin-key-ownership.test.ts:^[[2m76:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8483997Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/per-plugin-key-ownership.test.ts:^[[2m95:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8484912Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8485363Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[53/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8485733Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8487519Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/per-plugin-key-ownership.test.ts^[[2m > ^[[22mper-plugin keyframe key ownership^[[2m > ^[[22mN-9 refuses the flat spelling of a key both plugins claim
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8490137Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-ambiguous-key/ but got 'property-stops-wrapper at motions[0].…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8491134Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8491417Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8491854Z /plugin-ambiguous-key/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8492147Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8492425Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8496792Z "property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8499557Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8500141Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/per-plugin-key-ownership.test.ts:^[[2m123:58^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8500933Z     ^[[90m121|^[[39m     // Not a winner decided by registration order, and not a silent ov…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8501612Z     ^[[90m122|^[[39m     // with both claimants named, so the author can see which group to…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8502271Z     ^[[90m123|^[[39m     expect(() => load(rig(flatRotation), rigRegistry())).toThrow(/plug…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8502853Z     ^[[90m   |^[[39m                                                          ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8503449Z     ^[[90m124|^[[39m     expect(() => load(rig(flatRotation), rigRegistry())).toThrow(/"fk"…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8503911Z     ^[[90m125|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8504087Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8504764Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[54/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8504996Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8506058Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/per-plugin-key-ownership.test.ts^[[2m > ^[[22mper-plugin keyframe key ownership^[[2m > ^[[22mN-10 publishes grouped leaves under their unprefixed names
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8512525Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8516436Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8517192Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8518092Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8518808Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8519244Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8519817Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8520489Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8521142Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8521945Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/per-plugin-key-ownership.test.ts:^[[2m76:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8522854Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/per-plugin-key-ownership.test.ts:^[[2m128:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8523287Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8523544Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[55/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8523769Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8525437Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase0-red-baseline.test.ts^[[2m > ^[[22mPhase 0 Red Baseline: Engine Path & Dynamic Correctness^[[2m > ^[[22m1. Engine time playback: project clock tick advances time motion playhead
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8527288Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.angle: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8528424Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8529233Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8530216Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8530983Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8531458Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8532059Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8532720Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8533397Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8534425Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase0-red-baseline.test.ts:^[[2m40:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8534847Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8535125Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[56/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8535356Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8536739Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase0-red-baseline.test.ts^[[2m > ^[[22mPhase 0 Red Baseline: Engine Path & Dynamic Correctness^[[2m > ^[[22m2. Multi-track publication: driving a Motion with 2 tracks publishes both node patches in 1 batch
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8539859Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8541445Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8542218Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8543133Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8543907Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8544762Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8545386Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8546081Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8546770Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8547592Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase0-red-baseline.test.ts:^[[2m98:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8548000Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8548272Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[57/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8548506Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8549924Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase0-red-baseline.test.ts^[[2m > ^[[22mPhase 0 Red Baseline: Engine Path & Dynamic Correctness^[[2m > ^[[22m3. Adopted-track Engine path: adopted free track compiles keyframes and publishes ready patch
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8551863Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(cursor).keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8553133Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8554000Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8555304Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8556419Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8557174Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8557782Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8558624Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8559632Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:^[[2m247:25^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8560615Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase0-red-baseline.test.ts:^[[2m142:31^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8561019Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8561296Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[58/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8561530Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8562871Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase0-red-baseline.test.ts^[[2m > ^[[22mPhase 0 Red Baseline: Engine Path & Dynamic Correctness^[[2m > ^[[22m4. Stale scheduled write: paused Motion cancels pending write before scheduler flush
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8564981Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8566133Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8567234Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8568172Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8568948Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8569414Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8570023Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8570721Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8571409Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8572230Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase0-red-baseline.test.ts:^[[2m199:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8572644Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8572911Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[59/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8573146Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8574745Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase0-red-baseline.test.ts^[[2m > ^[[22mPhase 0 Red Baseline: Engine Path & Dynamic Correctness^[[2m > ^[[22m5. Trigger burst behavior: multiple progress signals before flush coalesce to latest progress
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8576898Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8578002Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8578777Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8579704Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8580472Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8580960Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8581551Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8582216Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8582922Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8583720Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase0-red-baseline.test.ts:^[[2m245:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8584333Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8584680Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[60/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8584911Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8586228Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase2-motion-scheduling.test.ts^[[2m > ^[[22mPhase 2: Motion Scheduling & Coalescing^[[2m > ^[[22m1. Ten signals before Scheduler flush produce exactly 1 Track write with latest progress
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8588097Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8589229Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8589978Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8591078Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8591850Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8592322Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8592916Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8593586Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8594758Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8595795Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase2-motion-scheduling.test.ts:^[[2m45:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8596213Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8596483Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[61/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8596714Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8597950Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase2-motion-scheduling.test.ts^[[2m > ^[[22mPhase 2: Motion Scheduling & Coalescing^[[2m > ^[[22m2. Pause cancels pending scheduled write and prevents Track mutation on flush
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8599752Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8600829Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8601582Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8602529Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8603275Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8603751Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8604582Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8605276Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8605978Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8606819Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase2-motion-scheduling.test.ts:^[[2m78:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8607230Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8607490Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[62/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8607715Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8608854Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase2-motion-scheduling.test.ts^[[2m > ^[[22mPhase 2: Motion Scheduling & Coalescing^[[2m > ^[[22m5. Burst signals produce exactly 1 published patch batch
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8610563Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8611658Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8612395Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8613314Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8614062Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8614773Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8615380Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8616057Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8616732Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8617578Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase2-motion-scheduling.test.ts:^[[2m168:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8618012Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8618275Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[63/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8618496Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8619733Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase3-trigger-port.test.ts^[[2m > ^[[22mPhase 3: TriggerPort Migration & Boundary Neutrality^[[2m > ^[[22m3. Manual and custom trigger ports operate without DOM imports in core
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8621704Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8623141Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8624118Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8625384Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8626165Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8626615Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8627203Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8627895Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8628571Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8629388Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase3-trigger-port.test.ts:^[[2m109:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8629816Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8630093Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[64/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8630322Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8631694Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase3-trigger-port.test.ts^[[2m > ^[[22mPhase 3: TriggerPort Migration & Boundary Neutrality^[[2m > ^[[22m4. Single clock invariant: attaching TriggerPorts creates zero secondary clock subscriptions
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8633605Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8634958Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8635697Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8636617Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8637382Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8637856Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8638442Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8639103Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8639783Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8640598Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase3-trigger-port.test.ts:^[[2m136:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8641004Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8641263Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[65/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8641471Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8642799Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase4-dynamic-lifecycle.test.ts^[[2m > ^[[22mPhase 4: Dynamic Graph Lifecycle Hardening^[[2m > ^[[22m6. Keyframe validation is shared: malformed adopted stops are rejected before graph commit
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8644795Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /stop-position|monoton/ but got 'property-stops-wrapper at addTrack(ba…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8645467Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8645647Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8645948Z /stop-position|monoton/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8646101Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8646226Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8646980Z "property-stops-wrapper at addTrack(bad).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8647518Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8648032Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/phase4-dynamic-lifecycle.test.ts:^[[2m172:47^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8648613Z     ^[[90m170|^[[39m     }^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8648898Z     ^[[90m171|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8649543Z     ^[[90m172|^[[39m     expect(() => runtime.adopt(badTrack, {})).toThrow(/stop-position|m…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8651142Z     ^[[90m   |^[[39m                                               ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8651778Z     ^[[90m173|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8652494Z     ^[[90m174|^[[39m     ^[[90m// Graph state byte-identical after failed adoption^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8652877Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8653154Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[66/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8653389Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8654798Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m1. Load valid walker project through Engine with plugin registry
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8661721Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8666570Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8667295Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8668161Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8668871Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8669334Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8670165Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8671216Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8671933Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8672979Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m145:27^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8673606Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8674014Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[67/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8674625Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8676292Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m2. Render walker nodes through createDomPatchAdapter
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8687937Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8696220Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8697335Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8698673Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8699790Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8700467Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8701358Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8702388Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8703504Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8705008Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m164:27^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8705653Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8706059Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[68/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8706411Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8708175Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m3. Demonstrate time playback using single injected browser clock
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8719697Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8727920Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8729185Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8730458Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8731190Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8731623Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8732171Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8732794Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8733444Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8734498Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m199:27^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8735175Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8735609Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[69/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8735826Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8736885Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m4. Demonstrate progress through TriggerPort and manual signals
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8743966Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8749274Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8750059Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8750928Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8751639Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8752097Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8752647Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8753283Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8753922Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8754939Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m219:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8755321Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8755564Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[70/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8755776Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8756816Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m5. Render multiple tracks from one Motion in one published batch
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8763623Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8768829Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8769543Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8770724Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8771694Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8772123Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8772683Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8773300Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8773946Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8775513Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m243:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8776002Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8776269Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[71/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8776493Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8777970Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m6. Demonstrate FK graph observation dependency chain (pelvis -> thigh -> shin)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8789541Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8797978Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8799201Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8800644Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8801850Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8802574Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8803490Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8804747Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8805868Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8807196Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m269:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8807849Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8808258Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[72/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8808615Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8810328Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m7. Mount, unmount, remount, and dispose without duplicate subscriptions
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8822093Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8830175Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8831352Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8832708Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8833467Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8833903Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8834729Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8835551Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8836696Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8837829Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m305:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8838205Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8838460Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[73/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8838666Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8839720Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m8. Show blocked/pending/error diagnostics without crashing the app
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8846778Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8851659Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8852376Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8853230Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8853934Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8854613Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8855177Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8855807Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8856442Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8857189Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m330:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8857554Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8857800Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[74/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8858021Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8858981Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m9. Use React usePatch hook at the React boundary
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8865954Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8870497Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8871198Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8872055Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8872754Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8873177Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8873731Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8874362Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8875005Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8875776Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m351:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8875793Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8876100Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[75/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8876111Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8877122Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m10. Automated end-to-end integration test passes clean
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8883185Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8883628Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8884026Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8884815Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8885123Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8885300Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8885681Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8885977Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8886341Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8886801Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m387:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8886820Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8887060Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[76/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8887076Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8888285Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-group-values-section.test.ts^[[2m > ^[[22man explicit values section inside plugin groups^[[2m > ^[[22mY-1 compiles the values section to leaves and the requires section to nothing
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8889258Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8889664Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8890042Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8890569Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8891037Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8891330Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8891711Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8892012Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8892384Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8892938Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m133:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8893457Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m147:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8893467Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8893701Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[77/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8893709Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8895126Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-group-values-section.test.ts^[[2m > ^[[22man explicit values section inside plugin groups^[[2m > ^[[22mY-7 cites the section in a diagnostic about a leaf inside it
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8895682Z ^[[31m^[[1mAssertionError^[[22m: expected [ { …(4) } ] to deep equally contain ObjectContaining{…}^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8895698Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8895850Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8895961Z ObjectContaining {
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8896164Z   "path": "keyframes.fk.values.length.stops[0].p",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8896314Z   "ruleId": "stop-position-range",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8896403Z }
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8896410Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8896536Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8896621Z [
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8896706Z   {
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8897066Z     "message": "The { stops: [...] } wrapper is retired; author the stops array directly as the value.",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8897222Z     "path": "keyframes.fk.values.length",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8897374Z     "ruleId": "property-stops-wrapper",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8897487Z     "severity": "error",
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8897572Z   },
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8897655Z ]
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8897662Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8898205Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m214:32^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8898577Z     ^[[90m212|^[[39m   it("Y-7 cites the section in a diagnostic about a leaf inside it", (…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8898939Z     ^[[90m213|^[[39m     const authored = { fk: { values: { length: { stops: [{ p: 2, v: 1 …
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8899372Z     ^[[90m214|^[[39m     ^[[34mexpect^[[39m(^[[34mdiagnose^[[39m(authored))^[[33m.^[[39m^[[34mtoContainEqual^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8899601Z     ^[[90m   |^[[39m                                ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8899881Z     ^[[90m215|^[[39m       expect^[[33m.^[[39m^[[34mobjectContaining^[[39m({
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8900220Z     ^[[90m216|^[[39m         ruleId^[[33m:^[[39m ^[[32m"stop-position-range"^[[39m^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8900230Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8900479Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[78/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8900503Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8901695Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-group-values-section.test.ts^[[2m > ^[[22man explicit values section inside plugin groups^[[2m > ^[[22mY-8 keeps a leaf named values legal inside the section, and resolvable
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8902147Z ^[[31m^[[1mAssertionError^[[22m: expected [ 'property-stops-wrapper' ] to deeply equal []^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8902163Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8902288Z ^[[32m- Expected^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8902419Z ^[[31m+ Received^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8902426Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8902536Z ^[[32m- []^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8902639Z ^[[31m+ [^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8902848Z ^[[31m+   "property-stops-wrapper",^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8902962Z ^[[31m+ ]^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8902970Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8903501Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m228:31^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8903863Z     ^[[90m226|^[[39m     // a property called `values` that `fk` claims, and nothing about …
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8905157Z     ^[[90m227|^[[39m     ^[[35mconst^[[39m authored ^[[33m=^[[39m { fk^[[33m:^[[39m { values^[[33m:^[[39m { values^[[33m:^[[39m ^[[34mramp^[[39m(^[[34m0^[[39m^[[33m,^[[39m ^[[34m1^[[39m) } } }^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8905644Z     ^[[90m228|^[[39m     ^[[34mexpect^[[39m(^[[34mruleIds^[[39m(authored))^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8905881Z     ^[[90m   |^[[39m                               ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8905994Z     ^[[90m229|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8906389Z     ^[[90m230|^[[39m     const resolved = registry(passthrough).resolveForKeyframes(authore…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8906398Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8906656Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[79/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8906665Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8907848Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-group-values-section.test.ts^[[2m > ^[[22man explicit values section inside plugin groups^[[2m > ^[[22mY-13 composes the walker rig's world frame through the values section
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8913929Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8914619Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8915021Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8915563Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8915853Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8916030Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8916399Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8916712Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8917115Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8917667Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m133:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8918189Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m278:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8918199Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8918444Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[80/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8918453Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8919606Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-owned-requirements.test.ts^[[2m > ^[[22mplugin-owned requirements end to end^[[2m > ^[[22mQ-7 derives the input edge from the binding and composes world space from it
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8923980Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8924983Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8925375Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8925919Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8926220Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8926390Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8926758Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8927061Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8927430Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8927963Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m98:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8928463Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m103:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8928480Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8928715Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[81/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8928724Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8929909Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-owned-requirements.test.ts^[[2m > ^[[22mplugin-owned requirements end to end^[[2m > ^[[22mQ-8 leaves an omitted binding with no edge and lets the plugin own the unbound case
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8934575Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8935028Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8935419Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8935944Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8936232Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8936409Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8936778Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8937074Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8937441Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8937977Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m98:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8938823Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m125:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8938840Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8939087Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[82/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8939097Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8940157Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-owned-requirements.test.ts^[[2m > ^[[22mplugin-owned requirements end to end^[[2m > ^[[22mQ-9 refuses a binding whose source is not a node in the graph
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8940964Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /observation-unknown-source/ but got 'property-stops-wrapper at motions[0].…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8940975Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8941107Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8941234Z /observation-unknown-source/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8941242Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8941370Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8945405Z "property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8945430Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8945972Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m146:54^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8946156Z     ^[[90m144|^[[39m       }^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8946319Z     ^[[90m145|^[[39m     }^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8946685Z     ^[[90m146|^[[39m     expect(() => load(rig(dangling), rigRegistry())).toThrow(/observat…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8946969Z     ^[[90m   |^[[39m                                                      ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8947126Z     ^[[90m147|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8947238Z     ^[[90m148|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8947246Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8947485Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[83/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8947494Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8948645Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-owned-requirements.test.ts^[[2m > ^[[22mplugin-owned requirements end to end^[[2m > ^[[22mQ-10 treats two slots bound to one source as two edges rather than a duplicate
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8952194Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.reach.values.weight: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8952619Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8953001Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8953538Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8953823Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8954468Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8954878Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8955193Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8955567Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8956115Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m98:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8956619Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m162:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8956629Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8956876Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[84/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8956885Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8958017Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-owned-requirements.test.ts^[[2m > ^[[22mplugin-owned requirements end to end^[[2m > ^[[22mQ-11 keeps an upstream value out of the observer's authored value namespace
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8962470Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8962883Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8963266Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8963805Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8964089Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8964460Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8964861Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8965172Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8965549Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8966086Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m98:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8966595Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m192:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8966619Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8966855Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[85/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8966863Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8967954Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-owned-requirements.test.ts^[[2m > ^[[22mplugin-owned requirements end to end^[[2m > ^[[22mQ-12 refuses a binding to a slot the plugin never declared, at load
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8968759Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-unknown-requirement/ but got 'property-stops-wrapper at motions[0].…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8968768Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8968903Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8969027Z /plugin-unknown-requirement/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8969035Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8969188Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8972959Z "property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8973224Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8973755Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m213:49^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8973935Z     ^[[90m211|^[[39m       }^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8974091Z     ^[[90m212|^[[39m     }^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8974743Z     ^[[90m213|^[[39m     expect(() => load(rig(bad), rigRegistry())).toThrow(/plugin-unknow…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8975041Z     ^[[90m   |^[[39m                                                 ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8975202Z     ^[[90m214|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8975359Z     ^[[90m215|^[[39m })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8975368Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8975611Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[86/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8975619Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8976700Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/replace-motion-track.test.ts^[[2m > ^[[22mmotion-owned Track replacement^[[2m > ^[[22mre-registers the compiled Track without throwing on the next Motion update
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8977569Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8977981Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8978379Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8978911Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8979199Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8979363Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8979740Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8980050Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8980407Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8980873Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/replace-motion-track.test.ts:^[[2m27:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8980883Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8981129Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[87/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8981144Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8982117Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/replace-motion-track.test.ts^[[2m > ^[[22mmotion-owned Track replacement^[[2m > ^[[22mpreserves the replaced Track index and stagger timing
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8984708Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8985131Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8985514Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8986246Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8986671Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8986838Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8987213Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8987512Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8987871Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8988330Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/replace-motion-track.test.ts:^[[2m64:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8988339Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8988576Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[88/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8988587Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8989587Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/replace-motion-track.test.ts^[[2m > ^[[22mmotion-owned Track replacement^[[2m > ^[[22mupdates a Motion-owned Track through observation mutations
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8991231Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8991625Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8991999Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8992533Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8992818Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8992982Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8993359Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8993666Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8994017Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8994768Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/replace-motion-track.test.ts:^[[2m91:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8994786Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8995033Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[89/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8995041Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8996192Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/replace-track-transactionality.test.ts^[[2m > ^[[22ma refused Track replacement commits nothing^[[2m > ^[[22mU-1 keeps the live compiled Track when the recompile is refused
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8997072Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8997498Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8997876Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8998404Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8998689Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8998856Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8999221Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8999520Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.8999883Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9000591Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/replace-track-transactionality.test.ts:^[[2m68:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9001255Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/replace-track-transactionality.test.ts:^[[2m96:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9001265Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9001505Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[90/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9001513Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9002695Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/replace-track-transactionality.test.ts^[[2m > ^[[22ma refused Track replacement commits nothing^[[2m > ^[[22mU-2 leaves a refused recompile retryable rather than stranding the node
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9003574Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9003975Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9004593Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9005154Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9005442Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9005606Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9005980Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9006287Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9006652Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9007210Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/replace-track-transactionality.test.ts:^[[2m68:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9007748Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/replace-track-transactionality.test.ts:^[[2m113:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9007770Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9008011Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[91/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9008019Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9009182Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/replace-track-transactionality.test.ts^[[2m > ^[[22ma refused Track replacement commits nothing^[[2m > ^[[22mU-3 changes nothing when the owning Motion refuses the replacement
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9010057Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9010464Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9010848Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9011369Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9011663Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9011833Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9012207Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9012514Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9012871Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9013436Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/replace-track-transactionality.test.ts:^[[2m68:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9013971Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/replace-track-transactionality.test.ts:^[[2m125:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9013980Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9014462Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[92/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9014475Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9015678Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/replace-track-transactionality.test.ts^[[2m > ^[[22ma refused Track replacement commits nothing^[[2m > ^[[22mU-4 changes nothing when the candidate graph refuses a derived observation
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9016816Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9017226Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9017609Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9018149Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9018434Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9018603Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9018984Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9019291Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9019662Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9020229Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/replace-track-transactionality.test.ts:^[[2m68:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9020763Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/replace-track-transactionality.test.ts:^[[2m143:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9020772Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9021003Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[93/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9021011Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9022115Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/runtime-motion-lifecycle.test.ts^[[2m > ^[[22mruntime Motion lifecycle (W4)^[[2m > ^[[22mcreates a motion, attaches a track, and signals progress from an empty project
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9022969Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9023515Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9023891Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9024674Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9025350Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9025528Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9025913Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9026368Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9027141Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:^[[2m247:25^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9027511Z ^[[90m ^[[2m❯^[[22m Object.adopt packages/core/src/engine.ts:^[[2m86:47^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9028002Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/runtime-motion-lifecycle.test.ts:^[[2m42:28^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9028018Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9028248Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[94/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9028256Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9029395Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/runtime-motion-lifecycle.test.ts^[[2m > ^[[22mruntime Motion lifecycle (W4)^[[2m > ^[[22mrejects motion destruction while it still owns tracks, then allows empty destruction
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9030233Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9030771Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9031168Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9031673Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9032304Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9032479Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9032857Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9033303Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9033811Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:^[[2m247:25^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9034412Z ^[[90m ^[[2m❯^[[22m Object.adopt packages/core/src/engine.ts:^[[2m86:47^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9034955Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/runtime-motion-lifecycle.test.ts:^[[2m58:28^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9034969Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9035213Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[95/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9035222Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9036189Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/runtime-motion-lifecycle.test.ts^[[2m > ^[[22mruntime Motion lifecycle (W4)^[[2m > ^[[22mkeeps two runtime motions independently signalable
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9037036Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9037559Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9037944Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9038467Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9039096Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9039265Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9039648Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9040099Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9040606Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:^[[2m247:25^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9040964Z ^[[90m ^[[2m❯^[[22m Object.adopt packages/core/src/engine.ts:^[[2m86:47^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9041635Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/runtime-motion-lifecycle.test.ts:^[[2m74:25^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9041751Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9041997Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[96/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9042005Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9043146Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/single-input-channel.test.ts^[[2m > ^[[22ma plugin requirement is the only input channel^[[2m > ^[[22mJ-8 composes an upstream value without it ever becoming an authored one
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9047680Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9048143Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9048520Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9049054Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9049342Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9049515Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9049887Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9050207Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9050569Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9051056Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/single-input-channel.test.ts:^[[2m45:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9051526Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/single-input-channel.test.ts:^[[2m52:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9051535Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9051775Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[97/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9051783Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9052949Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/t4-runtime-motion-parity.test.ts^[[2m > ^[[22mT4 runtime Motion parity and creation ordering^[[2m > ^[[22mT-1 emits one progress sequence for a runtime and an authored time Motion
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9053829Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9054495Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9054905Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9055447Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9055736Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9055900Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9056274Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9056576Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9056937Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9057693Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/t4-runtime-motion-parity.test.ts:^[[2m153:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9058318Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/t4-runtime-motion-parity.test.ts:^[[2m175:22^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9058329Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9058568Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[98/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9058577Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9059676Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/t4-runtime-motion-parity.test.ts^[[2m > ^[[22mT4 runtime Motion parity and creation ordering^[[2m > ^[[22mT-6 rolls the Motion back when the candidate graph rejects it
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9060517Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9061095Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9061476Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9062003Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9062633Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9062807Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9063192Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9063636Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9064434Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:^[[2m234:17^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9064890Z ^[[90m ^[[2m❯^[[22m Object.addTrack packages/core/src/engine.ts:^[[2m80:43^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9065408Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/t4-runtime-motion-parity.test.ts:^[[2m360:12^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9065434Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9065675Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[99/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9065684Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9066815Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/t4-runtime-motion-parity.test.ts^[[2m > ^[[22mT4 runtime Motion parity and creation ordering^[[2m > ^[[22mT-7 keeps one clock subscription when a Motion is created at runtime
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9067670Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9068202Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9068585Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9069080Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9069726Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9069899Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9070278Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9070720Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9071247Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:^[[2m234:17^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9071628Z ^[[90m ^[[2m❯^[[22m Object.addTrack packages/core/src/engine.ts:^[[2m80:43^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9072126Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/t4-runtime-motion-parity.test.ts:^[[2m397:12^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9072278Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9072512Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[100/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9072633Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9073602Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-scroll.test.ts^[[2m > ^[[22mT3 scroll driver^[[2m > ^[[22m3.1 drives progress from an injected source and clamps out-of-range emissions
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9074738Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9075168Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9075551Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9076072Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9076358Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9076542Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9076918Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9077217Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9077582Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9078038Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/trigger-scroll.test.ts:^[[2m65:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9078458Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-scroll.test.ts:^[[2m76:35^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9078475Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9078707Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[101/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9078715Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9079657Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-scroll.test.ts^[[2m > ^[[22mT3 scroll driver^[[2m > ^[[22m3.2 subscribes to the injected source once and unsubscribes exactly once
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9080534Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9080944Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9081313Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9081838Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9082125Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9082297Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9082667Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9082967Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9083333Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9083782Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/trigger-scroll.test.ts:^[[2m65:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9084393Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-scroll.test.ts:^[[2m99:24^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9084406Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9084656Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[102/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9084665Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9085636Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-scroll.test.ts^[[2m > ^[[22mT3 scroll driver^[[2m > ^[[22m3.4 unsubscribes an already resolved source when a later Motion cannot resolve
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9086441Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /trigger-driver-unavailable/ but got 'property-stops-wrapper at motions[0].…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9086458Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9086587Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9086876Z /trigger-driver-unavailable/
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9086991Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9087133Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9088444Z "property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[1].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9088460Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9088896Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/trigger-scroll.test.ts:^[[2m133:7^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9089126Z     ^[[90m131|^[[39m     ^[[34mexpect^[[39m(() ^[[33m=>^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9089499Z     ^[[90m132|^[[39m       load(resolve, [scrollMotion("hero", "hero"), scrollMotion("orpha…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9089923Z     ^[[90m133|^[[39m     )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/trigger-driver-unavailable/^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9090081Z     ^[[90m   |^[[39m       ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9090208Z     ^[[90m134|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9090690Z     ^[[90m135|^[[39m     ^[[34mexpect^[[39m(hero^[[33m.^[[39msubscriptions)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m1^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9090707Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9090949Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[103/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9090957Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9091834Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-scroll.test.ts^[[2m > ^[[22mT3 scroll driver^[[2m > ^[[22mregisters no clock consumer for a push-driven scroll Motion
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9092700Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9093108Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9093492Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9094026Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9094556Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9094740Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9095111Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9095408Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9095892Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9096538Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/trigger-scroll.test.ts:^[[2m65:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9097065Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-scroll.test.ts:^[[2m141:42^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9097075Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9097384Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[104/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9097393Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9098309Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-scroll.test.ts^[[2m > ^[[22mT3 scroll driver^[[2m > ^[[22mrejects external signals for scroll Motions
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9099199Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9099755Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9100202Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9100798Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9101146Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9101424Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9101915Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9102601Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9103004Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9103510Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/trigger-scroll.test.ts:^[[2m65:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9104083Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-scroll.test.ts:^[[2m163:24^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9104094Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9104711Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[105/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9104725Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9105682Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time-loop.test.ts^[[2m > ^[[22mtime loop semantics^[[2m > ^[[22mL-13 no longer rejects repeat and yoyo as unsupported
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9106118Z ^[[31m^[[1mAssertionError^[[22m: expected false to be true // Object.is equality^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9106127Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9106390Z ^[[32m- Expected^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9106635Z ^[[31m+ Received^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9106651Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9106829Z ^[[32m- true^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9106977Z ^[[31m+ false^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9106986Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9107502Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/trigger-time-loop.test.ts:^[[2m98:26^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9107992Z     ^[[90m 96|^[[39m       motions: [{ id: "loop", trigger: LOOPING, tracks: [ramp("arm")] …
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9108193Z     ^[[90m 97|^[[39m     })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9108717Z     ^[[90m 98|^[[39m     ^[[34mexpect^[[39m(result^[[33m.^[[39mvalid)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9108998Z     ^[[90m   |^[[39m                          ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9109477Z     ^[[90m 99|^[[39m     expect(ruleIds(result.diagnostics)).not.toContain("trigger-time-re…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9109691Z     ^[[90m100|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9109772Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9110043Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[106/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9110067Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9111125Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time-loop.test.ts^[[2m > ^[[22mtime loop semantics^[[2m > ^[[22mL-14 yoyos an authored Motion through the runtime and stops at the start
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9112068Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9112616Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9113029Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9113628Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9113983Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9114515Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9115031Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9115415Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9115854Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9116382Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/trigger-time-loop.test.ts:^[[2m52:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9116912Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-time-loop.test.ts:^[[2m103:52^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9116924Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9131173Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[107/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9131197Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9132125Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time-loop.test.ts^[[2m > ^[[22mtime loop semantics^[[2m > ^[[22mL-15 gives a runtime-created looping Motion the identical sequence
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9133193Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9133738Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9134106Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9134992Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9135276Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9135436Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9135792Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9136077Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9136440Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9136908Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/trigger-time-loop.test.ts:^[[2m52:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9137336Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-time-loop.test.ts:^[[2m123:22^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9137348Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9137578Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[108/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9137587Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9138486Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time-loop.test.ts^[[2m > ^[[22mtime loop semantics^[[2m > ^[[22mL-16 applies stagger inside each cycle and carries nothing across one
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9139990Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9140383Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9140736Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9141228Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9141489Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9141642Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9141986Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9142264Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9142595Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9143037Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/trigger-time-loop.test.ts:^[[2m52:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9143473Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-time-loop.test.ts:^[[2m150:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9143482Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9143704Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[109/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9143712Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9144831Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time-loop.test.ts^[[2m > ^[[22mtime loop semantics^[[2m > ^[[22mL-17 keeps one project clock subscription for looping Motions
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9145660Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9146038Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9146384Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9146862Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9147391Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9147547Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9147884Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9148154Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9148489Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9148907Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-time-loop.test.ts:^[[2m179:93^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9148916Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9149135Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[110/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9149144Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9150025Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time-loop.test.ts^[[2m > ^[[22mtime loop semantics^[[2m > ^[[22mL-18 keeps publishing an infinite loop where a single pass latches
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9150866Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9151249Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9151594Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9152079Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9152334Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9152491Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9152827Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9153102Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9153443Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9153887Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/trigger-time-loop.test.ts:^[[2m52:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9154516Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-time-loop.test.ts:^[[2m196:21^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9154529Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9154757Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[111/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9154769Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9155581Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time-loop.test.ts^[[2m > ^[[22mtime loop semantics^[[2m > ^[[22mL-19 lets the next loop emission overwrite a leaf seek
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9156392Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9156778Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9157126Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9157609Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9157865Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9158020Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9158351Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9158622Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9158956Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9159394Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/trigger-time-loop.test.ts:^[[2m52:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9159952Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-time-loop.test.ts:^[[2m213:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9160087Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9160320Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[112/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9160329Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9161256Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time-loop.test.ts^[[2m > ^[[22mtime loop semantics^[[2m > ^[[22mL-20 releases a destroyed loop without disturbing the other one
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9162764Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[1].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9163140Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9163474Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9163974Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9164369Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9164536Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9164870Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9165145Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9165482Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9165915Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/trigger-time-loop.test.ts:^[[2m52:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9166337Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-time-loop.test.ts:^[[2m227:48^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9166346Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9166574Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[113/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9166589Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9167394Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time.test.ts^[[2m > ^[[22mtime trigger integration T2^[[2m > ^[[22mdrives a time Motion once per project-clock tick
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9168195Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9168564Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9168906Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9169386Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9169643Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9170034Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9170506Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9170782Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9171113Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9171592Z ^[[90m ^[[2m❯^[[22m loadTimeMotion packages/core/test/integration/trigger-time.test.ts:^[[2m28:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9171982Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-time.test.ts:^[[2m39:42^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9171991Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9172211Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[114/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9172220Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9172958Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time.test.ts^[[2m > ^[[22mtime trigger integration T2^[[2m > ^[[22mdoes not emit before the first tick
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9173782Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9174296Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9174665Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9175154Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9175407Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9175564Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9175901Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9176175Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9176520Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9177013Z ^[[90m ^[[2m❯^[[22m loadTimeMotion packages/core/test/integration/trigger-time.test.ts:^[[2m28:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9177413Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-time.test.ts:^[[2m59:35^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9177423Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9177642Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[115/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9177656Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9178462Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time.test.ts^[[2m > ^[[22mtime trigger integration T2^[[2m > ^[[22mrejects external signals without changing progress
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9179266Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9179641Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9180000Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9180491Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9180759Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9180919Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9181258Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9181537Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9181873Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9182348Z ^[[90m ^[[2m❯^[[22m loadTimeMotion packages/core/test/integration/trigger-time.test.ts:^[[2m28:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9182731Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-time.test.ts:^[[2m66:35^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9182930Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9183157Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[116/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9183275Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9184100Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time.test.ts^[[2m > ^[[22mtime trigger integration T2^[[2m > ^[[22mcoalesces rapid driver ticks to the latest progress
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9185043Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9185415Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9185766Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9186254Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9186512Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9186694Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9187030Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9187308Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9187643Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9188111Z ^[[90m ^[[2m❯^[[22m loadTimeMotion packages/core/test/integration/trigger-time.test.ts:^[[2m28:91^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9188502Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-time.test.ts:^[[2m78:42^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9188512Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9188732Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[117/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9188741Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9189596Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time.test.ts^[[2m > ^[[22mtime trigger integration T2^[[2m > ^[[22mkeeps manual signals working and preserves range validation
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9190406Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9190785Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9191128Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9191613Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9191873Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9192025Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9192363Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9192638Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9192972Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9193370Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-time.test.ts:^[[2m113:93^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9193380Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9193599Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[118/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9193607Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9194709Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time.test.ts^[[2m > ^[[22mtime trigger integration T2^[[2m > ^[[22misolates a throwing clock consumer while preserving other Motion progress
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9195518Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[1].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9195891Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9196238Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9196983Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9197247Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9197400Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9197745Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9198024Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9198353Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9198742Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/trigger-time.test.ts:^[[2m152:8^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9198751Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9198970Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[119/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9198978Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9200000Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/unified-mutation-surface.test.ts^[[2m > ^[[22munified runtime mutation surface (W5)^[[2m > ^[[22mingests authored tracks into the removable store without auto-mounting
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9201484Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at freeTracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9201851Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m101:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9202194Z     ^[[90m 99|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9202673Z     ^[[90m100|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9202932Z     ^[[90m101|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9203094Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9203432Z     ^[[90m102|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9203703Z     ^[[90m103|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9204031Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m170:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9204714Z ^[[90m ^[[2m❯^[[22m makeHandle packages/core/test/integration/unified-mutation-surface.test.ts:^[[2m28:6^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9205183Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/unified-mutation-surface.test.ts:^[[2m33:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9205193Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9205413Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[120/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9205422Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9206400Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/unified-mutation-surface.test.ts^[[2m > ^[[22munified runtime mutation surface (W5)^[[2m > ^[[22mreturns a capability handle and makes stale ABA handles inert
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9207193Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9207693Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9208054Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9208516Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9209091Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9209256Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9209609Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9210301Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9210796Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:^[[2m234:17^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9211152Z ^[[90m ^[[2m❯^[[22m Object.addTrack packages/core/src/engine.ts:^[[2m80:43^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9211612Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/unified-mutation-surface.test.ts:^[[2m53:26^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9211622Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9211844Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[121/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9211851Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9212865Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/unified-mutation-surface.test.ts^[[2m > ^[[22munified runtime mutation surface (W5)^[[2m > ^[[22mreplaces a track non-destructively and preserves subscriber identity
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9213645Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9214293Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9214672Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9215129Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9215711Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9215875Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9216240Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9216653Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9217156Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:^[[2m234:17^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9217505Z ^[[90m ^[[2m❯^[[22m Object.addTrack packages/core/src/engine.ts:^[[2m80:43^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9217961Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/unified-mutation-surface.test.ts:^[[2m64:35^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9217970Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9218192Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[122/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9218200Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9219207Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/unified-mutation-surface.test.ts^[[2m > ^[[22munified runtime mutation surface (W5)^[[2m > ^[[22mreads dependants from the committed graph and rejects source removal
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9219993Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(root).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9220492Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9220860Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9221313Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9221890Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9222054Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9222401Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9222801Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9223295Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:^[[2m234:17^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9223775Z ^[[90m ^[[2m❯^[[22m Object.addTrack packages/core/src/engine.ts:^[[2m80:43^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9224476Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/unified-mutation-surface.test.ts:^[[2m79:25^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9224488Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9224717Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[123/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9224726Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9225737Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/unified-mutation-surface.test.ts^[[2m > ^[[22munified runtime mutation surface (W5)^[[2m > ^[[22mtreats observation changes as replacement of the observer track
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9226542Z ^[[31m^[[1mTypeError^[[22m: property-stops-wrapper at addTrack(root).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9227043Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m281:13^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9227393Z     ^[[90m279|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9227873Z     ^[[90m280|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9228456Z     ^[[90m281|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9228618Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9228965Z     ^[[90m282|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9229373Z     ^[[90m283|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9229867Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:^[[2m234:17^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9230215Z ^[[90m ^[[2m❯^[[22m Object.addTrack packages/core/src/engine.ts:^[[2m80:43^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9230678Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/unified-mutation-surface.test.ts:^[[2m90:25^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9230700Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9230915Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[124/124]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9230923Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9230948Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9231400Z ^[[2m Test Files ^[[22m ^[[1m^[[31m33 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m24 passed^[[39m^[[22m^[[90m (57)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9231842Z ^[[2m      Tests ^[[22m ^[[1m^[[31m124 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m117 passed^[[39m^[[22m^[[90m (241)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9232022Z ^[[2m   Start at ^[[22m 01:49:12
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9232512Z ^[[2m   Duration ^[[22m 5.32s^[[2m (transform 1.42s, setup 441ms, import 4.22s, tests 1.09s, environment 9ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9232520Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9232526Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9255264Z ##[error]TypeError: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:247:25
+integration (node 24)	Run npm run test:integration	 ❯ Object.adopt packages/core/src/engine.ts:86:47
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/adopt-destroy-readopt.test.ts:40:28
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9262744Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9266824Z ##[error]TypeError: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:247:25
+integration (node 24)	Run npm run test:integration	 ❯ Object.adopt packages/core/src/engine.ts:86:47
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/adopted-track-immutability.test.ts:33:28
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9267403Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9270940Z ##[error]TypeError: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:247:25
+integration (node 24)	Run npm run test:integration	 ❯ Object.adopt packages/core/src/engine.ts:86:47
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/adopted-track-immutability.test.ts:56:28
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9271760Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9275144Z ##[error]AssertionError: expected [Function] to not throw an error but 'TypeError: property-stops-wrapper at …' was thrown
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	undefined
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"TypeError: property-stops-wrapper at addTrack(broken).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/adopted-track-immutability.test.ts:79:91
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9275618Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9279093Z ##[error]TypeError: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:247:25
+integration (node 24)	Run npm run test:integration	 ❯ Object.adopt packages/core/src/engine.ts:86:47
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/adopted-track-immutability.test.ts:89:26
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9279545Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9282483Z ##[error]AssertionError: expected [Function] to throw error matching /stop-position/ but got 'property-stops-wrapper at addTrack(ba…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/stop-position/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at addTrack(bad).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/adoption.test.ts:79:7
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9282953Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9286272Z ##[error]AssertionError: expected [Function] to throw error matching /stop-position/ but got 'property-stops-wrapper at addTrack(ba…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/stop-position/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at addTrack(bad).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/adoption.test.ts:100:7
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9286788Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9289800Z ##[error]AssertionError: expected [Function] to throw error matching /stop-position/ but got 'property-stops-wrapper at addTrack(ba…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/stop-position/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at addTrack(bad).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/adoption.test.ts:121:7
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9290330Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9292538Z ##[error]AssertionError: expected [ 'keyframes-missing-values-section' ] to deeply equal [ 'stops-shape' ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected
+integration (node 24)	Run npm run test:integration	+ Received
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	  [
+integration (node 24)	Run npm run test:integration	-   "stops-shape",
+integration (node 24)	Run npm run test:integration	+   "keyframes-missing-values-section",
+integration (node 24)	Run npm run test:integration	  ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/bare-authored-leaf.test.ts:260:41
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9293002Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9321374Z ##[error]AssertionError: expected [ …(58) ] to deeply equal []
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected
+integration (node 24)	Run npm run test:integration	+ Received
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- []
+integration (node 24)	Run npm run test:integration	+ [
+integration (node 24)	Run npm run test:integration	+   "packages/core/src/contract/authored-leaf.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/src/contract/v5.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/src/contract/validate-v5.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/contract/adapters.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/contract/graph-builder-incremental.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/contract/gsap-absolute-stops.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/contract/gsap-authored-duration.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/contract/gsap-equivalence.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/contract/gsap-multi-stop.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/contract/gsap-one-tween.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/contract/gsap-paused-timeline.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/contract/gsap-sparse-percent-map.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/contract/ports.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/contract/s4-validation-owner.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/contract/v5-validator.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/contract/validation-owner.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/adopt-destroy-readopt.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/adopted-track-immutability.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/adoption.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/end-to-end.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/engine-headless.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/engine-load-validation.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/engine-x3-contribution.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/handle-adoption.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/internal-key-strip.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/issue-114-motion-track-regressions.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/keyframe-groups.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/motion-trigger-types.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/mutation-transactionality.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/observation-identity.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/option-c-track-resolution.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/per-plugin-key-ownership.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/phase0-red-baseline.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/phase2-motion-scheduling.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/phase3-trigger-port.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/phase4-dynamic-lifecycle.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/phase7-walker-demo.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/plugin-group-values-section.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/plugin-owned-requirements.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/replace-motion-track.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/replace-track-transactionality.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/runtime-motion-lifecycle.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/single-input-channel.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/t4-runtime-motion-parity.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/trigger-scroll.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/trigger-time-loop.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/trigger-time.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/integration/unified-mutation-surface.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/unit/domain/plugin-contribution-completeness.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/unit/domain/plugin-contribution-contract.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/unit/domain/plugin-requirements.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/unit/domain/plugins.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/unit/domain/s7-plugin-evidence.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/unit/graph/incremental-cache.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/unit/graph/requirement-edge-construction.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/unit/graph/single-input-channel.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/core/test/unit/runtime/composition-output-shape.test.ts",
+integration (node 24)	Run npm run test:integration	+   "packages/react/test/public-hook-render.test.ts",
+integration (node 24)	Run npm run test:integration	+ ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/bare-authored-leaf.test.ts:344:30
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9322336Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9325263Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/end-to-end.test.ts:45:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9325798Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9328465Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-headless.test.ts:38:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9328958Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9331599Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-headless.test.ts:60:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9332072Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9334866Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-headless.test.ts:79:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9335662Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9338416Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-headless.test.ts:94:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9338903Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9341994Z ##[error]AssertionError: expected [Function] to throw error matching /stop-position/ but got 'property-stops-wrapper at motions[0].…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/stop-position/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-load-validation.test.ts:31:49
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9342502Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9345832Z ##[error]AssertionError: expected [Function] to throw error matching /stop-position-order/ but got 'property-stops-wrapper at motions[0].…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/stop-position-order/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-load-validation.test.ts:48:49
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9346345Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9349496Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-unknown-key/ but got 'property-stops-wrapper at motions[0].…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-unknown-key/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at motions[0].tracks[0].keyframes.unknown: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-load-validation.test.ts:65:7
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9349972Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9352673Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-load-validation.test.ts:74:28
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9353136Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9355930Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:38:83
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9356439Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9359102Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:75:83
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9359595Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9362966Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-contribution-stop-order/ but got 'property-stops-wrapper at motions[0].…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-contribution-stop-order/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:108:7
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9363559Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9368184Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-contribution-ease-collision/ but got 'property-stops-wrapper at motions[0].…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-contribution-ease-collision/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:133:7
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9369127Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9372606Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-contribution-ease-collision/ but got 'property-stops-wrapper at motions[0].…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-contribution-ease-collision/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/engine-x3-contribution.test.ts:170:7
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9373084Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9376247Z ##[error]AssertionError: expected [Function] to throw error matching /stop-position/ but got 'property-stops-wrapper at addTrack(ba…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/stop-position/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at addTrack(bad).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/handle-adoption.test.ts:57:44
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9376774Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9380168Z ##[error]TypeError: property-stops-wrapper at addTrack(leg).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:247:25
+integration (node 24)	Run npm run test:integration	 ❯ Object.adopt packages/core/src/engine.ts:86:47
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/handle-adoption.test.ts:69:28
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9380689Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9385021Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/internal-key-strip.test.ts:22:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/internal-key-strip.test.ts:42:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9385636Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9388872Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/internal-key-strip.test.ts:22:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/internal-key-strip.test.ts:66:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9389346Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9392493Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/internal-key-strip.test.ts:22:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/internal-key-strip.test.ts:84:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9392980Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9396661Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/issue-114-motion-track-regressions.test.ts:21:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/issue-114-motion-track-regressions.test.ts:41:42
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9397214Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9400663Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/issue-114-motion-track-regressions.test.ts:21:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/issue-114-motion-track-regressions.test.ts:56:42
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9401443Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9406985Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/issue-114-motion-track-regressions.test.ts:21:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/issue-114-motion-track-regressions.test.ts:72:42
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9407486Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9411894Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/issue-114-motion-track-regressions.test.ts:21:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/issue-114-motion-track-regressions.test.ts:86:35
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9412402Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9416894Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/issue-114-motion-track-regressions.test.ts:21:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/issue-114-motion-track-regressions.test.ts:103:35
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9417397Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9421776Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.fk.values.boneLength: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.fk.values.boneRotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/keyframe-groups.test.ts:50:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/keyframe-groups.test.ts:56:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9422239Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9425584Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.fk.values.boneLength: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/keyframe-groups.test.ts:50:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/keyframe-groups.test.ts:70:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9426083Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9429243Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.boneLength: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/keyframe-groups.test.ts:50:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/keyframe-groups.test.ts:81:18
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9429705Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9432875Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ loadOne packages/core/test/integration/motion-trigger-types.test.ts:64:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/motion-trigger-types.test.ts:104:44
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9433631Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9437021Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ loadOne packages/core/test/integration/motion-trigger-types.test.ts:64:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/motion-trigger-types.test.ts:123:42
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9437502Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9443296Z ##[error]TypeError: property-stops-wrapper at addTrack(root).keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at addTrack(root).keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at addTrack(root).keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:247:25
+integration (node 24)	Run npm run test:integration	 ❯ Object.adopt packages/core/src/engine.ts:86:47
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/mutation-transactionality.test.ts:79:25
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9443787Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9447257Z ##[error]AssertionError: expected [Function] to throw error matching /observation-unknown-source/ but got 'property-stops-wrapper at addTrack(ch…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/observation-unknown-source/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at addTrack(child).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/mutation-transactionality.test.ts:118:48
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9447738Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9451032Z ##[error]AssertionError: expected [Function] to throw error matching /observation-self-reference/ but got 'property-stops-wrapper at addTrack(se…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/observation-self-reference/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at addTrack(self).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/mutation-transactionality.test.ts:140:48
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9451525Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9455898Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ makeHandle packages/core/test/integration/observation-identity.test.ts:49:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/observation-identity.test.ts:66:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9456407Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9460579Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ makeHandle packages/core/test/integration/observation-identity.test.ts:49:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/observation-identity.test.ts:75:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9461088Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9466366Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at freeTracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ makeHandle packages/core/test/integration/observation-identity.test.ts:49:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/observation-identity.test.ts:89:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9467161Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9471385Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ makeHandle packages/core/test/integration/observation-identity.test.ts:49:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/observation-identity.test.ts:95:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9471876Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9476216Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ makeHandle packages/core/test/integration/observation-identity.test.ts:49:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/observation-identity.test.ts:103:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9476714Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9480040Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/option-c-track-resolution.test.ts:30:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/option-c-track-resolution.test.ts:60:42
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9480541Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9485894Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/option-c-track-resolution.test.ts:30:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/option-c-track-resolution.test.ts:73:42
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9486384Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9490626Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/option-c-track-resolution.test.ts:30:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/option-c-track-resolution.test.ts:88:35
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9491111Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9495472Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/option-c-track-resolution.test.ts:30:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/option-c-track-resolution.test.ts:104:24
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9496254Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9499562Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/option-c-track-resolution.test.ts:30:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/option-c-track-resolution.test.ts:113:35
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9500037Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9508061Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/per-plugin-key-ownership.test.ts:76:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/per-plugin-key-ownership.test.ts:95:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9508585Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9517055Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-ambiguous-key/ but got 'property-stops-wrapper at motions[0].…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-ambiguous-key/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/per-plugin-key-ownership.test.ts:123:58
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9521433Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9529727Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/per-plugin-key-ownership.test.ts:76:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/per-plugin-key-ownership.test.ts:128:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9534582Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9537417Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.angle: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase0-red-baseline.test.ts:40:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9539274Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9542886Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase0-red-baseline.test.ts:98:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9545215Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9548351Z ##[error]TypeError: property-stops-wrapper at addTrack(cursor).keyframes.opacity: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:247:25
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase0-red-baseline.test.ts:142:31
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9550217Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9552860Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase0-red-baseline.test.ts:199:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9554635Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9557284Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase0-red-baseline.test.ts:245:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9558933Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9561634Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase2-motion-scheduling.test.ts:45:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9563275Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9566090Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase2-motion-scheduling.test.ts:78:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9567740Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9570441Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase2-motion-scheduling.test.ts:168:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9572090Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9574825Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase3-trigger-port.test.ts:109:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9576461Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9579101Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase3-trigger-port.test.ts:136:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9581007Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9584387Z ##[error]AssertionError: expected [Function] to throw error matching /stop-position|monoton/ but got 'property-stops-wrapper at addTrack(ba…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/stop-position|monoton/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at addTrack(bad).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase4-dynamic-lifecycle.test.ts:172:47
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9586277Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9595859Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:145:27
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9601007Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9610595Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:164:27
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9615815Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9625402Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:199:27
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9630786Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9640374Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:219:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9645575Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9655159Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:243:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9660269Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9669874Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:269:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9675362Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9684962Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:305:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9690058Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9699629Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:330:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9705141Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9714910Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:351:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9720112Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9729779Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:387:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9734995Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9738517Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/plugin-group-values-section.test.ts:133:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-group-values-section.test.ts:147:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9740533Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9744432Z ##[error]AssertionError: expected [ { …(4) } ] to deep equally contain ObjectContaining{…}
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	ObjectContaining {
+integration (node 24)	Run npm run test:integration	  "path": "keyframes.fk.values.length.stops[0].p",
+integration (node 24)	Run npm run test:integration	  "ruleId": "stop-position-range",
+integration (node 24)	Run npm run test:integration	}
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	[
+integration (node 24)	Run npm run test:integration	  {
+integration (node 24)	Run npm run test:integration	    "message": "The { stops: [...] } wrapper is retired; author the stops array directly as the value.",
+integration (node 24)	Run npm run test:integration	    "path": "keyframes.fk.values.length",
+integration (node 24)	Run npm run test:integration	    "ruleId": "property-stops-wrapper",
+integration (node 24)	Run npm run test:integration	    "severity": "error",
+integration (node 24)	Run npm run test:integration	  },
+integration (node 24)	Run npm run test:integration	]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-group-values-section.test.ts:214:32
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9746892Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9748836Z ##[error]AssertionError: expected [ 'property-stops-wrapper' ] to deeply equal []
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected
+integration (node 24)	Run npm run test:integration	+ Received
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- []
+integration (node 24)	Run npm run test:integration	+ [
+integration (node 24)	Run npm run test:integration	+   "property-stops-wrapper",
+integration (node 24)	Run npm run test:integration	+ ]
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-group-values-section.test.ts:228:31
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9750091Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9760344Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/plugin-group-values-section.test.ts:133:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-group-values-section.test.ts:278:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9765973Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9773895Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/plugin-owned-requirements.test.ts:98:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-owned-requirements.test.ts:103:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9778413Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9786420Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/plugin-owned-requirements.test.ts:98:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-owned-requirements.test.ts:125:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9791068Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9799147Z ##[error]AssertionError: expected [Function] to throw error matching /observation-unknown-source/ but got 'property-stops-wrapper at motions[0].…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/observation-unknown-source/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-owned-requirements.test.ts:146:54
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9803527Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9810491Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.reach.values.weight: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/plugin-owned-requirements.test.ts:98:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-owned-requirements.test.ts:162:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9814273Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9822206Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/plugin-owned-requirements.test.ts:98:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-owned-requirements.test.ts:192:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9826700Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9834733Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-unknown-requirement/ but got 'property-stops-wrapper at motions[0].…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-unknown-requirement/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-owned-requirements.test.ts:213:49
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9839376Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9842065Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/replace-motion-track.test.ts:27:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9843714Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9848411Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[2].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/replace-motion-track.test.ts:64:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9850969Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9854883Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/replace-motion-track.test.ts:91:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9857151Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9860557Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/replace-track-transactionality.test.ts:68:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/replace-track-transactionality.test.ts:96:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9862574Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9866092Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/replace-track-transactionality.test.ts:68:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/replace-track-transactionality.test.ts:113:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9868111Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9871455Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/replace-track-transactionality.test.ts:68:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/replace-track-transactionality.test.ts:125:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9873410Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9876991Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/replace-track-transactionality.test.ts:68:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/replace-track-transactionality.test.ts:143:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9879288Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9882702Z ##[error]TypeError: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:247:25
+integration (node 24)	Run npm run test:integration	 ❯ Object.adopt packages/core/src/engine.ts:86:47
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/runtime-motion-lifecycle.test.ts:42:28
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9884847Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9888222Z ##[error]TypeError: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:247:25
+integration (node 24)	Run npm run test:integration	 ❯ Object.adopt packages/core/src/engine.ts:86:47
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/runtime-motion-lifecycle.test.ts:58:28
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9890231Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9893560Z ##[error]TypeError: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.adopt packages/core/src/runtime/project-runtime.ts:247:25
+integration (node 24)	Run npm run test:integration	 ❯ Object.adopt packages/core/src/engine.ts:86:47
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/runtime-motion-lifecycle.test.ts:74:25
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9895680Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9903473Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.y: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[0].keyframes.transform.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.length: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.fk.values.rotation: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/single-input-channel.test.ts:45:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/single-input-channel.test.ts:52:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9907954Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9911224Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/t4-runtime-motion-parity.test.ts:153:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/t4-runtime-motion-parity.test.ts:175:22
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9913139Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9916683Z ##[error]TypeError: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:234:17
+integration (node 24)	Run npm run test:integration	 ❯ Object.addTrack packages/core/src/engine.ts:80:43
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/t4-runtime-motion-parity.test.ts:360:12
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9918712Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9922132Z ##[error]TypeError: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:234:17
+integration (node 24)	Run npm run test:integration	 ❯ Object.addTrack packages/core/src/engine.ts:80:43
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/t4-runtime-motion-parity.test.ts:397:12
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9924598Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9927697Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/trigger-scroll.test.ts:65:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-scroll.test.ts:76:35
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9929511Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9932517Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/trigger-scroll.test.ts:65:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-scroll.test.ts:99:24
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9934509Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9938701Z ##[error]AssertionError: expected [Function] to throw error matching /trigger-driver-unavailable/ but got 'property-stops-wrapper at motions[0].…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/trigger-driver-unavailable/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[1].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value."
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-scroll.test.ts:133:7
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9941043Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9944075Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/trigger-scroll.test.ts:65:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-scroll.test.ts:141:42
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9946071Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9949130Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/trigger-scroll.test.ts:65:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-scroll.test.ts:163:24
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9950963Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9952495Z ##[error]AssertionError: expected false to be true // Object.is equality
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected
+integration (node 24)	Run npm run test:integration	+ Received
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- true
+integration (node 24)	Run npm run test:integration	+ false
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-time-loop.test.ts:98:26
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9953608Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9956862Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/trigger-time-loop.test.ts:52:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-time-loop.test.ts:103:52
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9958732Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9961865Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/trigger-time-loop.test.ts:52:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-time-loop.test.ts:123:22
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9963926Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9968464Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[0].tracks[1].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/trigger-time-loop.test.ts:52:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-time-loop.test.ts:150:41
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9970818Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9973412Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-time-loop.test.ts:179:93
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9975268Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9978402Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/trigger-time-loop.test.ts:52:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-time-loop.test.ts:196:21
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9980245Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9983312Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/trigger-time-loop.test.ts:52:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-time-loop.test.ts:213:41
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9985338Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9989429Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at motions[1].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/trigger-time-loop.test.ts:52:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-time-loop.test.ts:227:48
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9991755Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9994942Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ loadTimeMotion packages/core/test/integration/trigger-time.test.ts:28:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-time.test.ts:39:42
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9996817Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:17.9999911Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ loadTimeMotion packages/core/test/integration/trigger-time.test.ts:28:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-time.test.ts:59:35
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0001751Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0004946Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ loadTimeMotion packages/core/test/integration/trigger-time.test.ts:28:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-time.test.ts:66:35
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0006808Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0009982Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ loadTimeMotion packages/core/test/integration/trigger-time.test.ts:28:91
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-time.test.ts:78:42
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0012113Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0014845Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-time.test.ts:113:93
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0016452Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0019037Z ##[error]TypeError: property-stops-wrapper at motions[1].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/trigger-time.test.ts:152:8
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0020623Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0024936Z ##[error]TypeError: property-stops-wrapper at motions[0].tracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value. property-stops-wrapper at freeTracks[0].keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ assertValidProject packages/core/src/engine.ts:101:11
+integration (node 24)	Run npm run test:integration	 ❯ Engine.load packages/core/src/engine.ts:170:29
+integration (node 24)	Run npm run test:integration	 ❯ makeHandle packages/core/test/integration/unified-mutation-surface.test.ts:28:6
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/unified-mutation-surface.test.ts:33:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0027325Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0030744Z ##[error]TypeError: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:234:17
+integration (node 24)	Run npm run test:integration	 ❯ Object.addTrack packages/core/src/engine.ts:80:43
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/unified-mutation-surface.test.ts:53:26
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0032753Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0036265Z ##[error]TypeError: property-stops-wrapper at addTrack(arm).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:234:17
+integration (node 24)	Run npm run test:integration	 ❯ Object.addTrack packages/core/src/engine.ts:80:43
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/unified-mutation-surface.test.ts:64:35
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0038262Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0041681Z ##[error]TypeError: property-stops-wrapper at addTrack(root).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:234:17
+integration (node 24)	Run npm run test:integration	 ❯ Object.addTrack packages/core/src/engine.ts:80:43
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/unified-mutation-surface.test.ts:79:25
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0043682Z 
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0047214Z ##[error]TypeError: property-stops-wrapper at addTrack(root).keyframes.x: The { stops: [...] } wrapper is retired; author the stops array directly as the value.
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:281:13
+integration (node 24)	Run npm run test:integration	 ❯ ProjectRuntime.addTrack packages/core/src/runtime/project-runtime.ts:234:17
+integration (node 24)	Run npm run test:integration	 ❯ Object.addTrack packages/core/src/engine.ts:80:43
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/unified-mutation-surface.test.ts:90:25
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-23T01:49:18.0052817Z ##[error]Process completed with exit code 1.
+```
