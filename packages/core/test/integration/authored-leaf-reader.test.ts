@@ -52,8 +52,14 @@ const RAMP = [
   { p: 0, v: 0 },
   { p: 1, v: 10 },
 ];
-/** The retired wrapper, built rather than written, so `LF-16` never reads this file as a schema. */
-const WRAPPED = RAMP;
+/**
+ * The retired wrapper, and the subject of two cases here rather than a fixture to migrate.
+ *
+ * Written around a named array rather than around a literal one, so `LF-16`'s probe never reads this
+ * file as a schema and the file needs no exemption from the gate. The codemod skips it for the
+ * separate reason that an AST transform cannot see the difference.
+ */
+const WRAPPED = { stops: RAMP };
 /** A stop the compiler filters out and the old private copy in the fakes kept. */
 const UNPARSEABLE_POSITION = [{ p: "half", v: 1 }];
 /** A stop with no value at all. Same gap, other half. */

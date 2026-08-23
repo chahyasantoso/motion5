@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { AuthoredStop } from "../../../src/contract/v5";
 import type { ImmutableRecord } from "../../../src/domain/values";
 import { PluginRegistry } from "../../../src/domain/plugins";
-const stops = (value: number): { readonly stops: readonly AuthoredStop[] } => [
+const stops = (value: number): readonly AuthoredStop[] => [
   { p: 0, v: value },
   { p: 1, v: value + 1 },
 ];
@@ -54,7 +54,7 @@ describe("plugin contribution contract (X-3)", () => {
     const resolved = registry.resolveForKeyframes(authored, "track.keyframes");
     // Real stops, per leaf. A group handed to the hook whole reads as an empty stop list, so the
     // hook would be called with nothing to contribute from.
-    expect(calls).toEqual([["boneLength", stops(1).stops]]);
+    expect(calls).toEqual([["boneLength", stops(1)]]);
     expect(resolved.diagnostics[0]?.ruleId).toBe("plugin-contribution-failure");
     expect(resolved.diagnostics[0]?.path).toBe("track.keyframes.fk.values.boneLength");
   });

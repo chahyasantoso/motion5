@@ -9,7 +9,7 @@ interface AuthoredObservation {
 }
 interface AuthoredTrack {
   id: string;
-  keyframes?: Record<string, { stops: Array<{ p: number; v: unknown }> }>;
+  keyframes?: Record<string, Array<{ p: number; v: unknown }>>;
   observes?: AuthoredObservation[];
 }
 interface AuthoredProject {
@@ -120,9 +120,11 @@ describe("one observation-validation owner (P1-12)", () => {
     expect(stop).toBeDefined();
     stop!.v = 999;
 
+    // An authored leaf is the stops array itself since ADR-050, so the clone is one level shallower
+    // than it was and the assertion reads the stop straight off the property.
     const authored = accepted?.motions[0]?.tracks[0]?.keyframes as
-      | Record<string, { stops: ReadonlyArray<{ p: number; v: unknown }> }>
+      | Record<string, ReadonlyArray<{ p: number; v: unknown }>>
       | undefined;
-    expect(authored?.opacity?.stops[1]?.v).toBe(1);
+    expect(authored?.opacity?.[1]?.v).toBe(1);
   });
 });
