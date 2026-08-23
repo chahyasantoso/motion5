@@ -1,6 +1,4 @@
-# PR formatting now runs as the final job in CI, after behavioral checks pass.
-# This legacy entry point remains manual so it cannot rewrite a red-test commit.
-name: Format fallback (manual)
+name: Format manually
 
 on:
   workflow_dispatch:
@@ -12,25 +10,23 @@ on:
         type: string
 
 concurrency:
-  group: format-fallback-${{ inputs.branch }}
+  group: format-manual-${{ inputs.branch }}
   cancel-in-progress: false
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   format:
-    name: prettier --write (manual fallback)
+    name: prettier --write (manual)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      HAS_PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN != '' }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.branch }}
           fetch-depth: 1
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN || github.token }}
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
@@ -39,8 +35,7 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Apply Prettier
         run: npm run format
-      - name: Push formatting commit
-        if: env.HAS_PAT == 'true'
+      - name: Commit formatting with PAT
         env:
           TARGET_BRANCH: ${{ inputs.branch }}
         run: |
@@ -53,13 +48,3 @@ jobs:
           git add -A
           git commit -m "chore: apply prettier"
           git push origin "HEAD:${TARGET_BRANCH}"
-      - name: Report drift when PAT is unavailable
-        if: env.HAS_PAT != 'true'
-        run: |
-          if git diff --quiet; then
-            echo "Already formatted."
-            exit 0
-          fi
-          git --no-pager diff
-          echo "Formatting drift found, but PERSONAL_ACCESS_TOKEN is unavailable."
-          exit 1
