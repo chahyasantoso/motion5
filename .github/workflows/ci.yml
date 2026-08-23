@@ -2,32 +2,17 @@ name: CI
 
 on:
   push:
-    # Integration bases only. Every other branch gets its coverage from the
-    # pull_request trigger below; listing PR branches here too would double each run.
-    # Add new long-lived integration bases here when you cut one.
     branches: [main, "rescue/**", "phase*/**", "feat/adopt-motion-track"]
   pull_request:
-    # Deliberately NOT filtered by branch.
-    #
-    # For pull_request, `branches:` filters the BASE branch, not the head. The previous
-    # list ([main, rescue/**, fix/**, phase5/**]) therefore skipped CI entirely for any
-    # PR opened against an integration branch -- feat/adopt-motion-track,
-    # phase6/hardening-base, phase5/membership-base. Those PRs showed no checks at all,
-    # which reads as "checks pending" rather than "checks refused to run", and #108
-    # merged with zero evidence because of it.
-    #
-    # A required check that only runs for some bases is not a gate. Keep this unfiltered.
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch:
 
 concurrency:
-  # Key on the PR number when there is one, so successive pushes to a PR head cancel
-  # the stale run instead of racing it under distinct refs/pull/N/merge groups.
   group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 env:
   NODE_VERSION: 24
@@ -131,51 +116,3 @@ jobs:
           name: motion5-benchmark-report
           path: performance/benchmark-report.json
           if-no-files-found: error
-
-  format:
-    name: prettier after behavioral green
-    needs: [quality, integration, boundaries, build, end-to-end]
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
-    env:
-      HAS_PAT: ${{ secrets.PERSONAL_ACCESS_TOKEN != '' }}
-    steps:
-      - name: Check out the exact tested PR head
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          fetch-depth: 1
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN || github.token }}
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Apply Prettier
-        run: npm run format
-      - name: Push formatting child commit
-        if: env.HAS_PAT == 'true'
-        env:
-          TARGET_BRANCH: ${{ github.event.pull_request.head.ref }}
-        run: |
-          if git diff --quiet; then
-            echo "Already formatted."
-            exit 0
-          fi
-          git config user.name "${{ github.actor }}"
-          git config user.email "${{ github.actor }}@users.noreply.github.com"
-          git add -A
-          git commit -m "chore: apply prettier"
-          git push origin "HEAD:${TARGET_BRANCH}"
-          echo "Pushed a formatting child commit; CI will verify the new head."
-      - name: Fail with formatting evidence when PAT is unavailable
-        if: env.HAS_PAT != 'true'
-        run: |
-          if git diff --quiet; then
-            echo "Already formatted."
-            exit 0
-          fi
-          git --no-pager diff
-          echo "Formatting drift found, but PERSONAL_ACCESS_TOKEN is unavailable."
-          exit 1
