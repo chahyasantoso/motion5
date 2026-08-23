@@ -1,4 +1,4 @@
-import { readCompilableStops } from "../contract/authored-leaf";
+import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
 import type { AuthoredStop, Diagnostic } from "../contract/v5";
 
 export interface CompiledProperty {
@@ -83,6 +83,17 @@ export function compilePercentKeyframes(keyframes: unknown, path = "keyframes"):
   for (const [key, property] of Object.entries(keyframes).sort(([left], [right]) =>
     left.localeCompare(right),
   )) {
+    // A static leaf genuinely bypasses interpolation rather than being normalized into an
+    // equivalent two-stop hold: no percent-map entry, no compiled property, and therefore no tween
+    // var and no `gsap.to()` contribution. `initial` is its whole publication path, and both GSAP
+    // interpolators already seed their proxy from it and expose that proxy as `state`, so a value
+    // that lands here and nowhere else is published at every progress at zero cost. This is the
+    // point of ADR-050 rather than an implementation detail inside it, and `LF-7` and `LF-8` pin it.
+    const leaf = readAuthoredLeaf(property);
+    if (leaf.kind === "static") {
+      initial[key] = leaf.value;
+      continue;
+    }
     const stops = readCompilableStops(property);
     const first = stops[0];
     if (!first) continue;
