@@ -204,10 +204,12 @@ describe("an explicit values section inside plugin groups", () => {
 
   it("Y-7 cites the section in a diagnostic about a leaf inside it", () => {
     const authored = { fk: { values: { length: [{ p: 2, v: 1 }] } } };
+    // One segment shorter than it was: the leaf is the stops array, so the stop is addressed on the
+    // property the author wrote rather than through a `.stops` member no v5 document has.
     expect(diagnose(authored)).toContainEqual(
       expect.objectContaining({
         ruleId: "stop-position-range",
-        path: "keyframes.fk.values.length.stops[0].p",
+        path: "keyframes.fk.values.length[0].p",
       }),
     );
     const paths = flattenAuthoredKeyframes(authored).authoredPaths;

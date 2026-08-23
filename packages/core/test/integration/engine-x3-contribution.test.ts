@@ -36,7 +36,8 @@ describe("X-3 contribution through the product load path", () => {
     const runtime = new Engine({ ...options(), interpolator, plugins: registry }).load(
       projectWith({ x: property(1) }, 2) as never,
     );
-    expect(contribute).toHaveBeenCalledWith("x", property(1).stops, {
+    // The hook receives the authored leaf, and since ADR-050 the leaf is the stops array itself.
+    expect(contribute).toHaveBeenCalledWith("x", property(1), {
       id: "hero/arm",
       duration: 2,
     });
