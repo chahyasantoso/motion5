@@ -32,6 +32,11 @@ permissions:
   contents: write
   pull-requests: write
 
+env:
+  REPORT: ${{ runner.temp }}/migration-report.md
+  TYPECHECK_LOG: ${{ runner.temp }}/typecheck.log
+  TEST_LOG: ${{ runner.temp }}/test.log
+
 jobs:
   migrate:
     name: codemod (manual)
@@ -51,12 +56,14 @@ jobs:
 
       - name: Run the codemod
         run: |
+          set -euo pipefail
           flags=""
           if [ "${{ inputs.mode }}" != "report" ]; then flags="$flags --write"; fi
           if [ "${{ inputs.hold }}" != "true" ]; then flags="$flags --no-hold"; fi
           if [ "${{ inputs.paths }}" != "true" ]; then flags="$flags --no-paths"; fi
-          node scripts/migrate-authored-leaf.mjs $flags | tee /tmp/migration-report.md
-          cat /tmp/migration-report.md >> "$GITHUB_STEP_SUMMARY"
+          node scripts/migrate-authored-leaf.mjs $flags > "$REPORT"
+          cat "$REPORT"
+          cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Apply the formatter
         if: inputs.mode != 'report'
@@ -69,45 +76,82 @@ jobs:
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
+            git --no-pager diff --stat | tail -n 1
           fi
+
+      - name: Nothing to migrate
+        if: steps.drift.outputs.changed == 'false'
+        run: echo "No authored wrapper left to rewrite."
 
       - name: Wrapper gate (LF-16)
         if: inputs.mode != 'report'
-        run: node scripts/migrate-authored-leaf.mjs --check || true
+        run: |
+          if node scripts/migrate-authored-leaf.mjs --check; then
+            echo "### LF-16 gate: clean" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### LF-16 gate: wrappers remain, see the report above" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
+      # Reported, never gated. A red suite part-way through a migration is the expected state, and
+      # withholding the commit over it would throw the rewrite away with the runner. The exit status
+      # is captured rather than piped, because `npm ... | tee` reports the pipe's status and turned
+      # every previous run green regardless of what the checks actually said.
       - name: Typecheck
         if: inputs.run_checks && steps.drift.outputs.changed == 'true'
-        continue-on-error: true
-        run: npm run typecheck 2>&1 | tee /tmp/typecheck.log
+        run: |
+          status=0
+          npm run typecheck > "$TYPECHECK_LOG" 2>&1 || status=$?
+          tail -n 40 "$TYPECHECK_LOG"
+          {
+            echo "### typecheck (exit ${status})"
+            echo '```'
+            tail -n 40 "$TYPECHECK_LOG"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Suite
         if: inputs.run_checks && steps.drift.outputs.changed == 'true'
-        continue-on-error: true
-        run: npm test 2>&1 | tee /tmp/test.log
+        run: |
+          status=0
+          npm test > "$TEST_LOG" 2>&1 || status=$?
+          tail -n 60 "$TEST_LOG"
+          {
+            echo "### vitest (exit ${status})"
+            echo '```'
+            grep -E "Tests |Test Files |FAIL" "$TEST_LOG" | tail -n 40 || echo "no summary lines matched"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Archive the report and the logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: authored-leaf-migration-${{ github.run_id }}
-          path: /tmp/migration-report.md
+          path: |
+            ${{ runner.temp }}/migration-report.md
+            ${{ runner.temp }}/typecheck.log
+            ${{ runner.temp }}/test.log
           if-no-files-found: ignore
           retention-days: 30
 
       - name: Commit to this branch
         if: steps.drift.outputs.changed == 'true' && inputs.mode == 'direct-commit'
+        env:
+          TARGET_BRANCH: ${{ github.ref_name }}
         run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "refactor(test): migrate authored leaves off the stops wrapper" -m "Mechanical only, produced by scripts/migrate-authored-leaf.mjs and prettier."
-          git push origin "HEAD:${{ github.ref_name }}"
+          git commit -m "refactor(test): migrate authored leaves off the stops wrapper" -m "Mechanical only, produced by scripts/migrate-authored-leaf.mjs and prettier. No assertion was rewritten by hand in this commit."
+          git push origin "HEAD:${TARGET_BRANCH}"
 
       - name: Open a migration pull request
         if: steps.drift.outputs.changed == 'true' && inputs.mode == 'pull-request'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          set -euo pipefail
           branch="refactor/authored-leaf-migration-${{ github.run_id }}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -115,4 +159,4 @@ jobs:
           git add -A
           git commit -m "refactor(test): migrate authored leaves off the stops wrapper" -m "Mechanical only, produced by scripts/migrate-authored-leaf.mjs and prettier."
           git push origin "$branch"
-          gh pr create --base "${{ github.ref_name }}" --head "$branch" --title "refactor(test): migrate authored leaves off the stops wrapper" --body-file /tmp/migration-report.md
+          gh pr create --base "${{ github.ref_name }}" --head "$branch" --title "refactor(test): migrate authored leaves off the stops wrapper" --body-file "$REPORT"
