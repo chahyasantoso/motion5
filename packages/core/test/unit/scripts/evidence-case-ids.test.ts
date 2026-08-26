@@ -118,9 +118,16 @@ import { fileURLToPath } from "node:url";
 // `O`). The `P-` paragraph sets the policy this widening follows: the pattern is widened when a
 // series is actually opened. `Y-` owns what a plugin group may contain; `LF-` owns what a leaf may
 // be, which is the other half of the same authored record and a separate contract.
+//
+// `FO-` belongs to the `fk` pivot offset, slice A of issue #195: what an authored `x` and `y` on a
+// bone mean, in whose space they are read, and what a bone that authors neither composes. `N-` owns
+// how many plugins may claim a key and which one answers for an authored entry; `FO-` owns what the
+// two keys do once `fk` claims them, and what the second claim costs their flat spelling. It is the
+// second two-letter series, for the reason the `LF-` paragraph gives and under the policy the `P-`
+// paragraph sets: every single letter is claimed, excluded, or unusable beside a digit.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:LF|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:FO|LF|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
