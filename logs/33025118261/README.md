@@ -1,0 +1,26 @@
+# CI log archive: 33025118261
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: feat/fo-fk-pivot-offsets
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/33025118261
+- Captured: 2026-08-26T23:58:35Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm run typecheck	﻿2026-08-26T23:58:12.5959009Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-26T23:58:12.5959369Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-26T23:58:12.6003114Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-26T23:58:12.6003392Z env:
+quality (node 24)	Run npm run typecheck	2026-08-26T23:58:12.6003876Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-26T23:58:12.6004095Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-26T23:58:12.7086558Z 
+quality (node 24)	Run npm run typecheck	2026-08-26T23:58:12.7087254Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-26T23:58:12.7089807Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-26T23:58:12.7090602Z 
+quality (node 24)	Run npm run typecheck	2026-08-26T23:58:16.5924322Z ##[error]packages/core/test/unit/plugins/fk-pivot-offset.test.ts(43,48): error TS2322: Type 'Frame' is not assignable to type 'ImmutableValue'.
+quality (node 24)	Run npm run typecheck	2026-08-26T23:58:16.5933632Z   Type 'Frame' is not assignable to type 'ImmutableRecord'.
+quality (node 24)	Run npm run typecheck	2026-08-26T23:58:16.5934205Z     Index signature for type 'string' is missing in type 'Frame'.
+quality (node 24)	Run npm run typecheck	2026-08-26T23:58:16.6359811Z ##[error]Process completed with exit code 2.
+```
