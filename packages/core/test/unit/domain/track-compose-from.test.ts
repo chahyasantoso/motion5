@@ -4,22 +4,9 @@ import type {
   PluginDefinition,
   RequirementInputs,
 } from "../../../src/domain/plugins";
-import { Track, type TrackSnapshot } from "../../../src/domain/track";
+import { Track } from "../../../src/domain/track";
 import type { ImmutableRecord, ImmutableValue } from "../../../src/domain/values";
 import { createPlugin, resolvePlugins } from "../../helpers/resolved-plugins";
-
-/**
- * The two methods slice B of issue #195 adds, declared here so this file compiles against the
- * parent, where neither exists yet. Deleted by the commit that lands them.
- *
- * A red run has to fail its assertions rather than `typecheck`, because `quality` runs `typecheck`
- * before `npm test` and a job that stops there ran no test at all. Run 33025118261 is this
- * project's anchor for that being a real trap rather than a hypothetical one.
- */
-interface ComposeSeam {
-  interpolated(): ImmutableRecord;
-  composeFrom(seed: ImmutableRecord, requirementInputs?: RequirementInputs): TrackSnapshot;
-}
 
 function readNumber(value: unknown): number {
   return typeof value === "number" ? value : 0;
@@ -73,12 +60,10 @@ function createTrack(...plugins: readonly PluginDefinition[]) {
     },
     kill: vi.fn(),
   };
-  const track = new Track({
+  return new Track({
     interpolator: { create: () => timeline },
     plugins: resolvePlugins(...plugins),
   });
-  // The whole of this file's compile-time debt against the parent. See `ComposeSeam`.
-  return track as Track & ComposeSeam;
 }
 function createBoneTrack(compose: PluginComposer = bone) {
   return createTrack(createPlugin("fk", compose));
