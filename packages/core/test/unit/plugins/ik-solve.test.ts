@@ -1,49 +1,38 @@
 import { describe, expect, it } from "vitest";
-import type { PluginDefinition } from "../../../src/domain/plugins";
+import { ikPlugin, readMembers, solveTwoBone, type BaseFrame } from "../../../src/plugins/ik";
 
-// Slice C3 of issue #195: IK solver plugin and solveTwoBone math.
+// Slice C3 of issue #195: the `ik` solver plugin and the `solveTwoBone` math.
 //
-// The 2-bone analytic IK solve computes local rotations for root-most and tip members
-// using the law of cosines, with reach clamping [|l1 - l2|, l1 + l2] to prevent NaN
-// on unreachable targets.
+// The analytic two-bone solve computes local rotations for the root-most and the tip member through
+// the law of cosines, clamping reach into `[|l1 - l2|, l1 + l2]` so an unreachable target extends
+// the chain instead of producing `NaN` out of `acos`.
+//
+// The failing-first seam this file opened with is deleted, under the guardrail that created it: a
+// seam declared for a module that does not exist yet expires when the module lands. It declared
+// `ikPlugin`, `solveTwoBone` and `readMembers` as optional members of a local interface beside a
+// real import of all three, so every `expect(seam.x).toBeDefined()` asserted that an import
+// resolved and every call went through a `!`. `BaseFrame` and `MemberState` were re-declared here
+// as well, a second copy of a published type that no assignment would ever have caught drifting.
+// The fixtures are inferred now and type-checked against the module's own parameter types at each
+// call site.
 
-export interface BaseFrame {
-  readonly x: number;
-  readonly y: number;
-  readonly rotation: number;
+const ROOT = { x: 200, y: 300, rotation: 0 };
+const UPPER_ARM = "walker/upper-arm";
+const FOREARM = "walker/forearm";
+
+/** The worked rig of ADR-051: an 80-unit upper arm and a 60-unit forearm, root-most first. */
+function armMembers(l1 = 80, l2 = 60) {
+  return [
+    { id: UPPER_ARM, base: "walker/shoulder", values: { length: l1 }, progress: 0 },
+    { id: FOREARM, base: UPPER_ARM, values: { length: l2 }, progress: 0 },
+  ];
 }
-
-export interface MemberState {
-  readonly id: string;
-  readonly base: string;
-  readonly values: Readonly<Record<string, unknown>>;
-  readonly progress: number;
-}
-
-// Temporary seam for failing-first execution before src/plugins/ik.ts exists
-export interface IkPluginSeam {
-  readonly ikPlugin?: PluginDefinition;
-  readonly solveTwoBone?: (
-    root: BaseFrame,
-    target: BaseFrame,
-    members: readonly MemberState[],
-    flip?: boolean,
-  ) => Readonly<Record<string, number>>;
-  readonly readMembers?: (membersInput: unknown) => readonly MemberState[];
-}
-
-import { ikPlugin, readMembers, solveTwoBone } from "../../../src/plugins/ik";
-
-const seam: IkPluginSeam = {
-  ikPlugin,
-  solveTwoBone,
-  readMembers,
-};
 
 function degToRad(deg: number): number {
   return (deg * Math.PI) / 180;
 }
 
+/** `fk`'s own composition, inlined as an oracle: rotate then translate, twice. */
 function forwardTip(
   root: BaseFrame,
   l1: number,
@@ -55,104 +44,110 @@ function forwardTip(
   const jointX = root.x + l1 * Math.cos(degToRad(worldR1));
   const jointY = root.y + l1 * Math.sin(degToRad(worldR1));
   const worldR2 = worldR1 + r2;
-  const tipX = jointX + l2 * Math.cos(degToRad(worldR2));
-  const tipY = jointY + l2 * Math.sin(degToRad(worldR2));
-  return { x: tipX, y: tipY };
+  return {
+    x: jointX + l2 * Math.cos(degToRad(worldR2)),
+    y: jointY + l2 * Math.sin(degToRad(worldR2)),
+  };
 }
 
 describe("ikPlugin and solveTwoBone (Slice C3)", () => {
-  it("IK-1 solveTwoBone against worked numbers reaches the target tip", () => {
-    expect(seam.solveTwoBone).toBeDefined();
-    const root: BaseFrame = { x: 200, y: 300, rotation: 0 };
-    const target: BaseFrame = { x: 320, y: 340, rotation: 0 };
-    const members: MemberState[] = [
-      { id: "walker/upper-arm", base: "walker/shoulder", values: { length: 80 }, progress: 0 },
-      { id: "walker/forearm", base: "walker/upper-arm", values: { length: 60 }, progress: 0 },
-    ];
+  it("IK-1 solveTwoBone reaches the target tip and pins the default elbow branch", () => {
+    const target = { x: 320, y: 340, rotation: 0 };
+    const rotations = solveTwoBone(ROOT, target, armMembers(), false);
 
-    const rotations = seam.solveTwoBone!(root, target, members, false);
-    expect(rotations).toBeDefined();
-    const r1 = rotations["walker/upper-arm"];
-    const r2 = rotations["walker/forearm"];
-    expect(typeof r1).toBe("number");
-    expect(typeof r2).toBe("number");
-
-    const tip = forwardTip(root, 80, r1!, 60, r2!);
+    const r1 = rotations[UPPER_ARM]!;
+    const r2 = rotations[FOREARM]!;
+    const tip = forwardTip(ROOT, 80, r1, 60, r2);
     expect(tip.x).toBeCloseTo(320, 5);
     expect(tip.y).toBeCloseTo(340, 5);
+
+    // Reaching the target is not the convention. Both elbow branches put the tip exactly on it, so
+    // swapping the two arms of `flip` leaves every reachability assertion green: this case used to
+    // assert `typeof r1 === "number"` and the tip, and passed either way round. The default is the
+    // positive branch, `phi + alpha`, and these two numbers are the only thing that says so.
+    expect(r1).toBeCloseTo(40.168, 3);
+    expect(r2).toBeCloseTo(-51.3178, 4);
   });
 
-  it("IK-2 unreachable target produces finite output fully extended toward target without NaN", () => {
-    expect(seam.solveTwoBone).toBeDefined();
-    const root: BaseFrame = { x: 200, y: 300, rotation: 0 };
-    // Target is 200 units away; max reach is 80 + 60 = 140
-    const target: BaseFrame = { x: 400, y: 300, rotation: 0 };
-    const members: MemberState[] = [
-      { id: "walker/upper-arm", base: "walker/shoulder", values: { length: 80 }, progress: 0 },
-      { id: "walker/forearm", base: "walker/upper-arm", values: { length: 60 }, progress: 0 },
-    ];
+  it("IK-2 unreachable target produces finite angles fully extended toward it", () => {
+    // The target is 200 units away and the chain reaches 80 + 60 = 140.
+    const target = { x: 400, y: 300, rotation: 0 };
+    const rotations = solveTwoBone(ROOT, target, armMembers(), false);
 
-    const rotations = seam.solveTwoBone!(root, target, members, false);
-    expect(rotations).toBeDefined();
-    const r1 = rotations["walker/upper-arm"]!;
-    const r2 = rotations["walker/forearm"]!;
+    const r1 = rotations[UPPER_ARM]!;
+    const r2 = rotations[FOREARM]!;
     expect(Number.isFinite(r1)).toBe(true);
     expect(Number.isFinite(r2)).toBe(true);
-    // Fully extended means relative rotation r2 is 0
+    // Fully extended is a zero relative rotation, aimed straight along the horizontal.
     expect(r2).toBeCloseTo(0, 5);
-    // Aiming directly along horizontal (dx > 0, dy = 0)
     expect(r1).toBeCloseTo(0, 5);
   });
 
-  it("IK-3 flip: true mirrors the elbow solution and still reaches target", () => {
-    expect(seam.solveTwoBone).toBeDefined();
-    const root: BaseFrame = { x: 200, y: 300, rotation: 0 };
-    const target: BaseFrame = { x: 300, y: 350, rotation: 0 };
-    const members: MemberState[] = [
-      { id: "walker/upper-arm", base: "walker/shoulder", values: { length: 80 }, progress: 0 },
-      { id: "walker/forearm", base: "walker/upper-arm", values: { length: 60 }, progress: 0 },
-    ];
+  it("IK-3 flip mirrors the elbow across the root-to-target line, both branches pinned", () => {
+    const target = { x: 300, y: 350, rotation: 0 };
+    const members = armMembers();
+    const unflipped = solveTwoBone(ROOT, target, members, false);
+    const flipped = solveTwoBone(ROOT, target, members, true);
 
-    const unflipped = seam.solveTwoBone!(root, target, members, false);
-    const flipped = seam.solveTwoBone!(root, target, members, true);
+    // Exact on both sides. `not.toEqual` on one key, which is all this case asserted before, holds
+    // for any two distinct solutions: it would survive the branches being swapped, and it would
+    // survive them being replaced by different arithmetic entirely.
+    expect(unflipped[UPPER_ARM]).toBeCloseTo(57.7726, 4);
+    expect(unflipped[FOREARM]).toBeCloseTo(-74.9052, 4);
+    expect(flipped[UPPER_ARM]).toBeCloseTo(-4.6425, 4);
+    expect(flipped[FOREARM]).toBeCloseTo(74.9052, 4);
 
-    expect(unflipped["walker/forearm"]).not.toEqual(flipped["walker/forearm"]);
+    // And a mirror rather than two unrelated poses: the two root angles sit either side of the
+    // root-to-target direction by one alpha, and the two elbow angles are exact negations.
+    const targetAngle = (Math.atan2(50, 100) * 180) / Math.PI;
+    const above = unflipped[UPPER_ARM]! - targetAngle;
+    const below = targetAngle - flipped[UPPER_ARM]!;
+    expect(above).toBeCloseTo(below, 9);
+    expect(unflipped[FOREARM]).toBe(-flipped[FOREARM]!);
 
-    const tipFlipped = forwardTip(
-      root,
-      80,
-      flipped["walker/upper-arm"]!,
-      60,
-      flipped["walker/forearm"]!,
-    );
-    expect(tipFlipped.x).toBeCloseTo(300, 5);
-    expect(tipFlipped.y).toBeCloseTo(350, 5);
+    // Both configurations still put the tip on the target.
+    const tip = forwardTip(ROOT, 80, flipped[UPPER_ARM]!, 60, flipped[FOREARM]!);
+    expect(tip.x).toBeCloseTo(300, 5);
+    expect(tip.y).toBeCloseTo(350, 5);
   });
 
-  it("IK-4 degenerate target distance or zero-length member produces finite angles without NaN", () => {
-    expect(seam.solveTwoBone).toBeDefined();
-    const root: BaseFrame = { x: 200, y: 300, rotation: 0 };
-    const samePointTarget: BaseFrame = { x: 200, y: 300, rotation: 0 };
-    const zeroLenMembers: MemberState[] = [
-      { id: "walker/upper-arm", base: "walker/shoulder", values: { length: 0 }, progress: 0 },
-      { id: "walker/forearm", base: "walker/upper-arm", values: { length: 60 }, progress: 0 },
-    ];
+  it("IK-4 degenerate distance or a zero-length member produces finite angles", () => {
+    const samePoint = solveTwoBone(ROOT, { x: 200, y: 300, rotation: 0 }, armMembers());
+    expect(Number.isFinite(samePoint[UPPER_ARM])).toBe(true);
+    expect(Number.isFinite(samePoint[FOREARM])).toBe(true);
 
-    const res1 = seam.solveTwoBone!(root, samePointTarget, [
-      { id: "walker/upper-arm", base: "walker/shoulder", values: { length: 80 }, progress: 0 },
-      { id: "walker/forearm", base: "walker/upper-arm", values: { length: 60 }, progress: 0 },
-    ]);
-    expect(Number.isFinite(res1["walker/upper-arm"])).toBe(true);
-    expect(Number.isFinite(res1["walker/forearm"])).toBe(true);
-
-    const res2 = seam.solveTwoBone!(root, { x: 250, y: 300, rotation: 0 }, zeroLenMembers);
-    expect(Number.isFinite(res2["walker/upper-arm"])).toBe(true);
-    expect(Number.isFinite(res2["walker/forearm"])).toBe(true);
+    const zeroLength = solveTwoBone(ROOT, { x: 250, y: 300, rotation: 0 }, armMembers(0, 60));
+    expect(Number.isFinite(zeroLength[UPPER_ARM])).toBe(true);
+    expect(Number.isFinite(zeroLength[FOREARM])).toBe(true);
   });
 
   it("IK-5 readMembers throws when inputs.members is absent", () => {
-    expect(seam.readMembers).toBeDefined();
-    expect(() => seam.readMembers!(undefined)).toThrow();
-    expect(() => seam.readMembers!({})).toThrow();
+    expect(() => readMembers(undefined)).toThrow();
+    expect(() => readMembers({})).toThrow();
+  });
+
+  it("IK-18 compose returns the solver's own values beside rotations", () => {
+    const composed = ikPlugin.compose(
+      { flip: true },
+      0,
+      {
+        root: { x: 200, y: 300, rotation: 0 },
+        target: { x: 320, y: 340, rotation: 0 },
+        members: armMembers(),
+      },
+      "walker/arm-solve",
+    );
+
+    // `Track.composeFrom` chains by replacement, so a bare `{ rotations }` return deletes every key
+    // this track authored. `flip` is the one `ik` reads itself, so the solver's own configuration
+    // vanishes from its published patch with no error and no diagnostic, and so does anything a
+    // co-authored plugin contributed beside it on the same node. See ADR-051.
+    expect(composed.flip).toBe(true);
+    expect(composed.rotations).toBeDefined();
+
+    // And the record is the solve rather than an echo of the inputs: it is keyed by member id and
+    // answers for both members.
+    const rotations = composed.rotations as unknown as Readonly<Record<string, number>>;
+    expect(Object.keys(rotations).sort()).toEqual([FOREARM, UPPER_ARM]);
   });
 });

@@ -3,10 +3,12 @@ import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/inc
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import {
   buildGraphIR,
+  resolveSolvers,
   type GraphBuildResult,
   type GraphNode,
   type SolveMember,
 } from "../../../src/graph/ir";
+import { ObservationState } from "../../../src/graph/observation-state";
 
 function project(tracks: readonly TrackDefinition[]): ProjectDefinition {
   return {
@@ -66,6 +68,30 @@ const HAPPY_RIG: readonly TrackDefinition[] = [
   },
 ];
 
+/** The one answer for the happy rig, stated once so no case can pin a different one. */
+const EXPECTED_SOLVES: readonly SolveMember[] = [
+  { id: "walker/upper-arm", base: "walker/shoulder" },
+  { id: "walker/forearm", base: "walker/upper-arm" },
+];
+
+/** MINSTD. Twenty seeds give twenty different permutations, and the run is still fixed. */
+function nextState(state: number): number {
+  return (state * 16807) % 2147483647;
+}
+
+function shuffle(tracks: readonly TrackDefinition[], seed: number): TrackDefinition[] {
+  const result = [...tracks];
+  let state = nextState(seed);
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    state = nextState(state);
+    const swap = state % (index + 1);
+    const held = result[index]!;
+    result[index] = result[swap]!;
+    result[swap] = held;
+  }
+  return result;
+}
+
 describe("resolveSolvers (Slice C2)", () => {
   it("RS-1 derives solves on solver node root-most first and nowhere else", () => {
     const p = project(HAPPY_RIG);
@@ -76,10 +102,7 @@ describe("resolveSolvers (Slice C2)", () => {
     const graph = result.graph!;
     const solverNode = graph.nodeById["walker/arm-solve"] as GraphNode;
     expect(solverNode).toBeDefined();
-    expect(solverNode.solves).toEqual([
-      { id: "walker/upper-arm", base: "walker/shoulder" },
-      { id: "walker/forearm", base: "walker/upper-arm" },
-    ]);
+    expect(solverNode.solves).toEqual(EXPECTED_SOLVES);
 
     const upperArm = graph.nodeById["walker/upper-arm"] as GraphNode;
     const forearm = graph.nodeById["walker/forearm"] as GraphNode;
@@ -202,42 +225,117 @@ describe("resolveSolvers (Slice C2)", () => {
     expect(diag5?.severity).toBe("error");
   });
 
-  it("RS-3 solves derivation is deterministic under track permutation", () => {
-    const baseP = project(HAPPY_RIG);
-    const reference = buildGraphIR(baseP);
-    const expectedSolves = (reference.graph?.nodeById["walker/arm-solve"] as GraphNode)?.solves;
-    expect(expectedSolves).toBeDefined();
-    const expectedOrder = reference.graph?.order;
+  it("RS-7 a node bound as a solver with no root requirement is refused", () => {
+    // Two members bind `arm-solve`, and `arm-solve` binds no `root`. A solver is classified by its
+    // root edge, so the derivation used to skip this node entirely: no `solves`, no `rotations`,
+    // both bones falling back to their own authored rotation, and a rig holding a broken pose with
+    // no error and no diagnostic. It is also the one shape `GraphPublisher` cannot scope members
+    // for, so refusing it at load time is what keeps that throw unreachable. See ADR-051.
+    const noRootRig = project([
+      { id: "shoulder" },
+      { id: "arm-solve" },
+      {
+        id: "upper-arm",
+        keyframes: {
+          fk: { values: { length: 80 }, requires: { base: "shoulder", solver: "arm-solve" } },
+        },
+      },
+      {
+        id: "forearm",
+        keyframes: {
+          fk: { values: { length: 60 }, requires: { base: "upper-arm", solver: "arm-solve" } },
+        },
+      },
+    ]);
 
-    // Run 20 pseudo-random permutations of the authored tracks
-    for (let seed = 1; seed <= 20; seed++) {
-      const tracks = [...HAPPY_RIG];
-      // Deterministic Fisher-Yates shuffle with seed
-      for (let i = tracks.length - 1; i > 0; i--) {
-        const j = (seed * (i + 1) * 31) % (i + 1);
-        const temp = tracks[i]!;
-        tracks[i] = tracks[j]!;
-        tracks[j] = temp;
-      }
+    const result = buildGraphIR(noRootRig);
+    const noRoot = result.diagnostics.find((d) => d.ruleId === "ik-solver-no-root");
+    expect(noRoot).toBeDefined();
+    expect(noRoot?.path).toBe("walker/arm-solve");
+    expect(noRoot?.severity).toBe("error");
+    expect(noRoot?.ids).toEqual(["walker/arm-solve"]);
+    // The error stops the build, so no member reaches a graph that cannot solve it.
+    expect(result.graph).toBeUndefined();
+
+    // Both builders answer identically, because both finalize through `finalizeGraph`.
+    const [reference, incremental] = buildPair(noRootRig);
+    expect(incremental.diagnostics).toEqual(reference.diagnostics);
+
+    // A solver that does bind a root is untouched by the rule.
+    expect(buildGraphIR(project(HAPPY_RIG)).diagnostics).toEqual([]);
+  });
+
+  it("RS-3 solves derivation is deterministic under real track permutation", () => {
+    const reference = buildGraphIR(project(HAPPY_RIG));
+    expect(reference.diagnostics).toEqual([]);
+    const expectedSolves = (reference.graph?.nodeById["walker/arm-solve"] as GraphNode)?.solves;
+    const expectedOrder = reference.graph?.order;
+    expect(expectedSolves).toEqual(EXPECTED_SOLVES);
+
+    const permutations = new Set<string>();
+    for (let seed = 1; seed <= 20; seed += 1) {
+      const tracks = shuffle(HAPPY_RIG, seed);
+      permutations.add(tracks.map((track) => track.id).join(","));
       const permuted = buildGraphIR(project(tracks));
       expect(permuted.diagnostics).toEqual([]);
       expect(permuted.graph?.order).toEqual(expectedOrder);
       const solver = permuted.graph?.nodeById["walker/arm-solve"] as GraphNode;
       expect(solver?.solves).toEqual(expectedSolves);
     }
+
+    // Twenty iterations have to be twenty different rigs. The shuffle this case shipped with
+    // computed `(seed * (i + 1) * 31) % (i + 1)`, which is zero for every seed and every index, so
+    // it performed one fixed rotation twenty times over: a determinism assertion whose inputs were
+    // all one input. Asserting the input set is what makes the loop mean anything at all.
+    expect(permutations.size).toBe(20);
+    expect(permutations.has(HAPPY_RIG.map((track) => track.id).join(","))).toBe(false);
   });
 
-  it("RS-4 produces identical solves when reconstructed from a graph snapshot", () => {
-    const p = project(HAPPY_RIG);
-    const built = buildGraphIR(p);
-    expect(built.graph).toBeDefined();
+  it("RS-4 solves reconstructed from live state alone match the built graph", () => {
+    const built = buildGraphIR(project(HAPPY_RIG));
+    expect(built.diagnostics).toEqual([]);
+    const graph = built.graph!;
 
-    // Reconstructing through buildGraphIR from the same project definition matches
-    const rebuilt = buildGraphIR(p);
-    const solver1 = built.graph?.nodeById["walker/arm-solve"] as GraphNode;
-    const solver2 = rebuilt.graph?.nodeById["walker/arm-solve"] as GraphNode;
-    expect(solver1?.solves).toEqual(solver2?.solves);
-    expect(solver1?.solves).toBeDefined();
+    // Live state holds nodes and edges and nothing else: no authored index, and no derived
+    // `solves`. Round-tripping through it is therefore a real question about the derivation, where
+    // this case used to build the same project twice and compare it with itself. That would have
+    // passed against a derivation that read authored order, ignored `base`, or returned a cache.
+    const live = new ObservationState();
+    for (const node of graph.nodes) {
+      live.addNode(node.id);
+    }
+    for (const node of graph.nodes) {
+      for (const edge of node.edges) {
+        live.addEdge(edge);
+      }
+    }
+    const snapshot = live.snapshot();
+
+    // Every reconstructed node carries the same authored index, on purpose. `resolveSolvers` breaks
+    // depth ties by authored index, so inheriting the real one would let authored order answer for
+    // a rig whose two members sit at different depths, which is what has to decide.
+    const reconstructed: GraphNode[] = snapshot.nodes.map((id) => {
+      const edges = snapshot.edges.filter((edge) => edge.observerId === id);
+      return Object.freeze({
+        id,
+        owner: "motion" as const,
+        authoredIndex: 0,
+        track: graph.nodeById[id]!.track,
+        edges: Object.freeze(edges),
+      });
+    });
+
+    const diagnostics: Diagnostic[] = [];
+    const resolved = resolveSolvers(reconstructed, diagnostics);
+    expect(diagnostics).toEqual([]);
+
+    const fromLive = resolved.find((node) => node.id === "walker/arm-solve");
+    expect(fromLive?.solves).toEqual(EXPECTED_SOLVES);
+    expect(fromLive?.solves).toEqual((graph.nodeById["walker/arm-solve"] as GraphNode).solves);
+
+    // And nothing else gained a derivation, so the match is not a copy of the whole graph.
+    const derived = resolved.filter((node) => node.solves !== undefined).map((node) => node.id);
+    expect(derived).toEqual(["walker/arm-solve"]);
   });
 
   it("RS-5 rebuild after removing a solver binding updates solves without stale cache mutation", () => {
