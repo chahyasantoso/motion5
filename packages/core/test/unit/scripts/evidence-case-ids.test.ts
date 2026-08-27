@@ -125,9 +125,18 @@ import { fileURLToPath } from "node:url";
 // two keys do once `fk` claims them, and what the second claim costs their flat spelling. It is the
 // second two-letter series, for the reason the `LF-` paragraph gives and under the policy the `P-`
 // paragraph sets: every single letter is claimed, excluded, or unusable beside a digit.
+//
+// `CF-` belongs to the composition split inside `Track`, slice B of issue #195: that the
+// interpolated state is readable before any plugin runs, that the plugin chain can be run from a
+// given seed rather than only from the timeline, and that both entry points answer from one memo.
+// `S-` owns what a rejected timeline write leaves behind in `Track`'s progress bookkeeping; `CF-`
+// owns where the values a composition starts from come from, which is a different question about
+// the same object. It is the third two-letter series, under the policy the `P-` paragraph sets,
+// and `C-` alone is the option C plan. It sorts before `C` in the pattern below, because an
+// alternation that offered `C` first would match `C` and then fail on the `F`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:FO|LF|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:CF|FO|LF|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
