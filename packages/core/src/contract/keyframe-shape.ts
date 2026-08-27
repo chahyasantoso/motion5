@@ -1,4 +1,5 @@
 import { readAuthoredLeaf } from "./authored-leaf";
+import { goalSlot, PLUGIN_GOALS_SLOT } from "./solver-slots";
 import type { AuthoredPluginGroup, PluginRequiresBinding } from "./v5";
 
 /**
@@ -119,6 +120,12 @@ export function readPluginValues(group: unknown): Readonly<Record<string, unknow
  * what an author wrote. Deriving the edge is purely syntactic, which is what lets it run inside
  * `validateV5` without a plugin registry.
  *
+ * The reserved goals slot is the one binding whose authored value is a record rather than a source
+ * id, and it expands here into one binding per member id it names. That expansion is the whole of
+ * how multi-goal solving reaches the graph: one authored section, one derived binding per goal, and
+ * therefore one edge per goal, so `J-5` holds verbatim and nothing downstream learns a new shape.
+ * Members are sorted, so which goal is read first is never a property of authoring order.
+ *
  * Tolerant by design: a malformed binding is skipped here and reported by `validateKeyframes`,
  * which owns shape. Sorted, so derived edge order is never a property of authoring order.
  */
@@ -132,6 +139,23 @@ export function readPluginBindings(keyframes: unknown): readonly PluginRequiresB
     if (!isObject(requires)) continue;
     for (const slot of Object.keys(requires).sort()) {
       const source = requires[slot];
+      if (slot === PLUGIN_GOALS_SLOT) {
+        if (!isObject(source)) continue;
+        for (const member of Object.keys(source).sort()) {
+          const goalSource = source[member];
+          if (typeof goalSource !== "string" || goalSource.length === 0) continue;
+          const authoredPath = `${plugin}.${PLUGIN_REQUIRES_SECTION}.${PLUGIN_GOALS_SLOT}.${member}`;
+          bindings.push(
+            Object.freeze({
+              plugin,
+              slot: goalSlot(member),
+              source: goalSource,
+              authoredPath,
+            }),
+          );
+        }
+        continue;
+      }
       if (typeof source !== "string" || source.length === 0) continue;
       bindings.push(
         Object.freeze({
