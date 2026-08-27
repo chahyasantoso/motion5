@@ -35,8 +35,9 @@ function ramp(from: number, to: number) {
   ];
 }
 
-// Both plugins are registered, so `rotation` has two claimants and each track names the one it
-// means. `x` and `y` are claimed by `transform` alone and keep their flat spelling. See ADR-043.
+// Both plugins are registered, so `x`, `y` and `rotation` each have two claimants and every track
+// names the one it means. `fk` claims `x` and `y` as a bone's pivot offset since slice A of issue
+// #195, so no flat spelling survives here at all. See ADR-043.
 //
 // The dependent's edge is derived from `fk.requires.base`, which is now the only way a value enters
 // composition. A derived edge is held to the same topology rules, so destroying its source is still
@@ -65,6 +66,17 @@ const dependentTrack: TrackDefinition = {
     },
   },
 };
+
+/**
+ * The one-property track the two retry cases adopt, authored under the group that owns `x`.
+ *
+ * Each case is about an observation rule, so its fixture has to reach that rule: authored flat, `x`
+ * is now `plugin-ambiguous-key` and the load is refused a layer earlier for a reason the case is
+ * not testing. One helper rather than four copies of the shape.
+ */
+function adoptable(id: string): TrackDefinition {
+  return { id, keyframes: { transform: { values: { x: ramp(0, 10) } } } };
+}
 
 function snapshot(handle: ReturnType<typeof makeHandle>["handle"], ids: readonly string[]) {
   return ids.map((id) => ({ id, patch: handle.get(id) }));
@@ -108,14 +120,13 @@ describe("runtime mutation transactionality (W2)", () => {
     const { handle } = makeHandle();
     const owner = {};
     const invalid: TrackDefinition = {
-      id: "child",
-      keyframes: { x: ramp(0, 10) },
+      ...adoptable("child"),
       observes: [{ source: "~/missing" }],
     };
 
     expect(() => handle.adopt(invalid, owner)).toThrow(/observation-unknown-source/);
 
-    const replacement = handle.adopt({ id: "child", keyframes: { x: ramp(0, 10) } }, owner);
+    const replacement = handle.adopt(adoptable("child"), owner);
     expect(replacement.id).toBe("~/child");
     expect(handle.seek(replacement.id, 0.5).patches.some(({ status }) => status === "error")).toBe(
       false,
@@ -130,13 +141,12 @@ describe("runtime mutation transactionality (W2)", () => {
     const { handle } = makeHandle();
     const owner = {};
     const invalid: TrackDefinition = {
-      id: "self",
-      keyframes: { x: ramp(0, 10) },
+      ...adoptable("self"),
       observes: [{ source: "~/self" }],
     };
 
     expect(() => handle.adopt(invalid, owner)).toThrow(/observation-self-reference/);
-    const replacement = handle.adopt({ id: "self", keyframes: { x: ramp(0, 10) } }, owner);
+    const replacement = handle.adopt(adoptable("self"), owner);
     expect(replacement.id).toBe("~/self");
 
     handle.destroyAdopted(replacement.id, owner);
