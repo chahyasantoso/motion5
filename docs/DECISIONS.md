@@ -223,3 +223,13 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 **Status:** Accepted, 2026-08-17
 
 **Decision.** `dependantsOf` is a read-only query over committed GraphIR for editor preflight. It never replaces candidate graph validation, which remains the sole enforcement for rejecting source deletion with live dependants. No cascade deletion.
+
+## ADR-051: Derived Solver Membership and Pre-Composition State Delivery
+
+**Status:** Accepted, 2026-08-27
+
+**Context.** Inverse Kinematics (IK) requires end-effector joint angles calculated from member bone lengths and world targets without circular requirement edges or multi-pass execution.
+
+**Decision.** Graph finalization runs `resolveSolvers` to derive solver members root-most first (`GraphNode.solves`). Solvers bind `root` and `target`; member bones bind `base` and `solver`. Member timeline states are gathered pre-composition via `memberNode.interpolated()`, and `fkPlugin` uses `inputs.solver.rotations[nodeId]` as local rotation override. Solver results are memoized on deep value equality, and member invalidations trigger seed propagation to solvers.
+
+**Convariants.** `J-5` 1:1 edge binding preserved, single-pass pure composition preserved (`TR-R-03`/`TR-R-04`), deterministic ordering maintained. Load-time diagnostics enforce 6 structural constraints (`ik-solver-*`).

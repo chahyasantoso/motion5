@@ -211,6 +211,30 @@
     {
       "id": "l-time-loop-semantics",
       "test": "packages/core/test/integration/trigger-time-loop.test.ts"
+    },
+    {
+      "id": "track-node-id",
+      "test": "packages/core/test/unit/domain/track-node-id.test.ts"
+    },
+    {
+      "id": "resolve-solvers",
+      "test": "packages/core/test/unit/graph/resolve-solvers.test.ts"
+    },
+    {
+      "id": "ik-solve",
+      "test": "packages/core/test/unit/plugins/ik-solve.test.ts"
+    },
+    {
+      "id": "fk-solver-override",
+      "test": "packages/core/test/unit/plugins/fk-solver-override.test.ts"
+    },
+    {
+      "id": "publisher-solver-members",
+      "test": "packages/core/test/unit/runtime/publisher-solver-members.test.ts"
+    },
+    {
+      "id": "ik-two-bone-integration",
+      "test": "packages/core/test/integration/ik-two-bone.test.ts"
     }
   ]
 }
