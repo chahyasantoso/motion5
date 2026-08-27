@@ -355,16 +355,30 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
   return finalizeGraph(nodes, diagnostics);
 }
 
-function authorsRotation(keyframes: unknown): boolean {
+/**
+ * Whether the group that binds `solver` authors a `rotation` of its own.
+ *
+ * Read inside that group rather than across every group and the flat top level. The solved rotation
+ * replaces the authored one inside the plugin that reads `rotations` back, which is the plugin that
+ * bound the slot, so a `rotation` under any other group is that plugin's own live input and
+ * refusing it would be this rule answering for a plugin it knows nothing about. The diagnostics
+ * guide already states the rule this way; the narrowing is the code catching up to its own
+ * documentation.
+ *
+ * Two shapes it deliberately no longer reports, because each already has a more specific owner. A
+ * `rotation` directly under the plugin name is the pre-ADR-049 group form, refused as
+ * `keyframes-missing-values-section`. And a flat `rotation` names no group at all: attributing a
+ * flat key to a plugin is the registry's question, and this layer holds no registry by design, so a
+ * member authoring one meets `plugin-ambiguous-key` in any registry with two claimants and
+ * `plugin-unknown-key` in one with none. See ADR-043, ADR-044, ADR-049, and ADR-051.
+ */
+function authorsSolvedRotation(keyframes: unknown, binders: readonly string[]): boolean {
   if (!isRecord(keyframes)) return false;
-  if (keyframes.rotation !== undefined) return true;
-  for (const key of Object.keys(keyframes)) {
-    const group = keyframes[key];
-    if (isRecord(group)) {
-      if (group.rotation !== undefined) return true;
-      const values = group.values;
-      if (isRecord(values) && values.rotation !== undefined) return true;
-    }
+  for (const binder of binders) {
+    const group = keyframes[binder];
+    if (!isRecord(group)) continue;
+    const values = group.values;
+    if (isRecord(values) && values.rotation !== undefined) return true;
   }
   return false;
 }
@@ -380,15 +394,18 @@ export function resolveSolvers(
   // Diagnostic 4: ik-solved-rotation-dead
   for (const node of nodes) {
     let rootCount = 0;
-    let hasSolver = false;
     let hasTarget = false;
+    // The plugins under which this node bound a `solver` slot, which is what scopes the dead
+    // rotation read: the solve replaces the rotation of the plugin that asked for it.
+    const solverBinders: string[] = [];
     for (const edge of node.edges) {
       if (edge.role === "input" && edge.requirement) {
         if (edge.requirement.slot === "root") rootCount++;
-        if (edge.requirement.slot === "solver") hasSolver = true;
+        if (edge.requirement.slot === "solver") solverBinders.push(edge.requirement.plugin);
         if (edge.requirement.slot === "target") hasTarget = true;
       }
     }
+    const hasSolver = solverBinders.length > 0;
     if ((hasSolver && (rootCount > 0 || hasTarget)) || rootCount > 1) {
       diagnostics.push(
         diag(
@@ -399,7 +416,7 @@ export function resolveSolvers(
         ),
       );
     }
-    if (hasSolver && authorsRotation(node.track.keyframes)) {
+    if (hasSolver && authorsSolvedRotation(node.track.keyframes, solverBinders)) {
       diagnostics.push(
         diag(
           "ik-solved-rotation-dead",
@@ -610,6 +627,14 @@ export function finalizeGraph(
           ),
         );
     }
+  // The bail happens here rather than after the derivation. `resolveSolvers` walks `base` edges and
+  // reads the nodes they name, so over a graph whose sources may not resolve it answers about a
+  // chain that was never valid: an unknown `base` source yields `ik-solver-unreachable-root` beside
+  // `observation-unknown-source`, naming a member for a typo one node up. One cause, one
+  // diagnostic, and a derivation that only ever runs over resolved references. `RS-10` pins it.
+  diagnostics.sort(compareDiagnostics);
+  if (diagnostics.some(({ severity }) => severity === "error"))
+    return { diagnostics: Object.freeze(diagnostics) };
   const resolvedNodes = resolveSolvers(nodes, diagnostics);
   diagnostics.sort(compareDiagnostics);
   if (diagnostics.some(({ severity }) => severity === "error"))
