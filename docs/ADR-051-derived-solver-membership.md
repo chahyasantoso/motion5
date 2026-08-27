@@ -86,14 +86,14 @@ Graph finalization (`finalizeGraph`) runs a pure derivation pass, `resolveSolver
 
 The loader enforces structural integrity across 6 deterministic diagnostics (`severity: "error"`):
 
-| Diagnostic Rule ID            | Condition                                                                                        |
-| ----------------------------- | ------------------------------------------------------------------------------------------------ |
-| `ik-solver-no-root`           | A solver node lacks a bound `root` requirement edge.                                             |
-| `ik-solver-no-members`        | A solver node has no member nodes declaring `solver` pointing to it.                             |
-| `ik-solver-unreachable-root`  | A member's `base` walk leaves the member set without terminating at the solver's bound `root`.    |
-| `ik-mode-ambiguous`           | A single node binds `solver` alongside `root`/`target`, or binds `root` under multiple plugins.   |
-| `ik-solved-rotation-dead`     | A bone authors a `rotation` inside the same plugin group in which it bound its `solver` slot.     |
-| `ik-solver-unsupported-arity` | A solver's derived member count is not 2 (two-bone analytical solve).                            |
+| Diagnostic Rule ID            | Condition                                                                                       |
+| ----------------------------- | ----------------------------------------------------------------------------------------------- |
+| `ik-solver-no-root`           | A solver node lacks a bound `root` requirement edge.                                            |
+| `ik-solver-no-members`        | A solver node has no member nodes declaring `solver` pointing to it.                            |
+| `ik-solver-unreachable-root`  | A member's `base` walk leaves the member set without terminating at the solver's bound `root`.  |
+| `ik-mode-ambiguous`           | A single node binds `solver` alongside `root`/`target`, or binds `root` under multiple plugins. |
+| `ik-solved-rotation-dead`     | A bone authors a `rotation` inside the same plugin group in which it bound its `solver` slot.   |
+| `ik-solver-unsupported-arity` | A solver's derived member count is not 2 (two-bone analytical solve).                           |
 
 `ik-solved-rotation-dead` reads that group and no other. The solved rotation replaces the authored one inside the plugin that reads `rotations` back, which is the plugin that bound the slot, so a `rotation` under any other group is that plugin's own live input. A flat `rotation` is likewise not this rule's: attributing a flat key to a plugin is the registry's question, and this pass holds no registry by design, so a member authoring one meets `plugin-ambiguous-key` in any registry with two claimants and `plugin-unknown-key` in one with none. See ADR-043 and ADR-044.
 
