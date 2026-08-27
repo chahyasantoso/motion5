@@ -150,9 +150,15 @@ import { fileURLToPath } from "node:url";
 // It is the fifth two-letter series, under the policy the `P-` paragraph sets, and `R-` alone is
 // the progress range fix. It sorts before `R` in the pattern below, because an alternation that
 // offered `R` first would match `R` and then fail on the `S`.
+//
+// `IK-` belongs to the IK solver plugin and runtime wiring, slice C3 of issue #195: the analytic
+// two-bone inverse kinematics solve, FK solver override, upstream member delivery, dirty-check
+// memoization, seed propagation, and renderer shielding. It is the sixth two-letter series, under
+// the policy the `P-` paragraph sets.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:CF|CN|FO|LF|RS|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+const CASE_TITLE =
+  /it\(\s*"((?:CF|CN|FO|IK|LF|RS|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
