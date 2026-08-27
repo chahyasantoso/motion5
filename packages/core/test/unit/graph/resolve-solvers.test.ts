@@ -1,30 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
-import { buildGraphIR, type GraphBuildResult, type GraphNode } from "../../../src/graph/ir";
-
-// Slice C2 of issue #195: `resolveSolvers` and the five load-time IK diagnostics.
-//
-// Solvers are derived from requirement edges:
-// - Solvers: nodes with an edge where requirement.slot === "root".
-// - Members: nodes with an edge { sourceId: solver.id, requirement: { slot: "solver" } }.
-// - Solves: members ordered depth from root ascending, ties by authoredIndex, then qualified id.
-//
-// This red test file runs against the parent where resolveSolvers has not landed yet.
-
-export interface SolveMemberSeam {
-  readonly id: string;
-  readonly base: string;
-}
-
-export type GraphNodeSeam = GraphNode & {
-  readonly solves?: readonly SolveMemberSeam[];
-};
-
-export type ResolveSolversSeam = (
-  nodes: readonly GraphNode[],
-  diagnostics: Diagnostic[],
-) => readonly GraphNodeSeam[];
+import {
+  buildGraphIR,
+  type GraphBuildResult,
+  type GraphNode,
+  type SolveMember,
+} from "../../../src/graph/ir";
 
 function project(tracks: readonly TrackDefinition[]): ProjectDefinition {
   return {
@@ -92,16 +74,16 @@ describe("resolveSolvers (Slice C2)", () => {
     expect(result.graph).toBeDefined();
 
     const graph = result.graph!;
-    const solverNode = graph.nodeById["walker/arm-solve"] as GraphNodeSeam;
+    const solverNode = graph.nodeById["walker/arm-solve"] as GraphNode;
     expect(solverNode).toBeDefined();
     expect(solverNode.solves).toEqual([
       { id: "walker/upper-arm", base: "walker/shoulder" },
       { id: "walker/forearm", base: "walker/upper-arm" },
     ]);
 
-    const upperArm = graph.nodeById["walker/upper-arm"] as GraphNodeSeam;
-    const forearm = graph.nodeById["walker/forearm"] as GraphNodeSeam;
-    const hand = graph.nodeById["walker/hand"] as GraphNodeSeam;
+    const upperArm = graph.nodeById["walker/upper-arm"] as GraphNode;
+    const forearm = graph.nodeById["walker/forearm"] as GraphNode;
+    const hand = graph.nodeById["walker/hand"] as GraphNode;
     expect(upperArm.solves).toBeUndefined();
     expect(forearm.solves).toBeUndefined();
     expect(hand.solves).toBeUndefined();
@@ -223,7 +205,7 @@ describe("resolveSolvers (Slice C2)", () => {
   it("RS-3 solves derivation is deterministic under track permutation", () => {
     const baseP = project(HAPPY_RIG);
     const reference = buildGraphIR(baseP);
-    const expectedSolves = (reference.graph?.nodeById["walker/arm-solve"] as GraphNodeSeam)?.solves;
+    const expectedSolves = (reference.graph?.nodeById["walker/arm-solve"] as GraphNode)?.solves;
     expect(expectedSolves).toBeDefined();
     const expectedOrder = reference.graph?.order;
 
@@ -240,7 +222,7 @@ describe("resolveSolvers (Slice C2)", () => {
       const permuted = buildGraphIR(project(tracks));
       expect(permuted.diagnostics).toEqual([]);
       expect(permuted.graph?.order).toEqual(expectedOrder);
-      const solver = permuted.graph?.nodeById["walker/arm-solve"] as GraphNodeSeam;
+      const solver = permuted.graph?.nodeById["walker/arm-solve"] as GraphNode;
       expect(solver?.solves).toEqual(expectedSolves);
     }
   });
@@ -252,8 +234,8 @@ describe("resolveSolvers (Slice C2)", () => {
 
     // Reconstructing through buildGraphIR from the same project definition matches
     const rebuilt = buildGraphIR(p);
-    const solver1 = built.graph?.nodeById["walker/arm-solve"] as GraphNodeSeam;
-    const solver2 = rebuilt.graph?.nodeById["walker/arm-solve"] as GraphNodeSeam;
+    const solver1 = built.graph?.nodeById["walker/arm-solve"] as GraphNode;
+    const solver2 = rebuilt.graph?.nodeById["walker/arm-solve"] as GraphNode;
     expect(solver1?.solves).toEqual(solver2?.solves);
     expect(solver1?.solves).toBeDefined();
   });
@@ -263,7 +245,7 @@ describe("resolveSolvers (Slice C2)", () => {
     const p1 = project(HAPPY_RIG);
     const res1 = builder.build(p1);
     expect(res1.diagnostics).toEqual([]);
-    const solver1 = res1.graph?.nodeById["walker/arm-solve"] as GraphNodeSeam;
+    const solver1 = res1.graph?.nodeById["walker/arm-solve"] as GraphNode;
     expect(solver1?.solves).toHaveLength(2);
 
     // Replace forearm with a version that drops the solver binding -> now only 1 member -> arity error
@@ -282,8 +264,8 @@ describe("resolveSolvers (Slice C2)", () => {
   it("RS-6 both buildGraphIR and IncrementalGraphBuilder produce identical solves across corpus", () => {
     const [reference, incremental] = buildPair(project(HAPPY_RIG));
     expect(reference.diagnostics).toEqual(incremental.diagnostics);
-    const refSolver = reference.graph?.nodeById["walker/arm-solve"] as GraphNodeSeam;
-    const incSolver = incremental.graph?.nodeById["walker/arm-solve"] as GraphNodeSeam;
+    const refSolver = reference.graph?.nodeById["walker/arm-solve"] as GraphNode;
+    const incSolver = incremental.graph?.nodeById["walker/arm-solve"] as GraphNode;
     expect(refSolver?.solves).toEqual(incSolver?.solves);
     expect(refSolver?.solves).toBeDefined();
   });
