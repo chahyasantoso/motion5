@@ -58,6 +58,17 @@ function defaultWriter(target: DomTarget, values: Readonly<Record<string, unknow
   else if (hadTransform) removeStyleProperty(target, "transform");
   transformState.set(target, state);
 }
+/**
+ * A plain record, as opposed to an array, a class instance, or a primitive.
+ *
+ * The same predicate the publisher uses to decide what a composed value may be, for the opposite
+ * reason: there a record is legal to publish, here a record is not a property a renderer writes.
+ */
+function isPlainRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
 // No internal-key denylist here. `Track.compose` removes internal keys before publication, so this
 // adapter and every other renderer receive the same filtered values; consulting `internalKeys`
 // again here would be a second owner that only one of the two shipped renderers implements. What
@@ -72,7 +83,16 @@ function renderableValues(
   for (const [key, value] of Object.entries(values)) {
     if (key.startsWith("_") || key === "offset") continue;
     const serializer = outputSerializers[key];
-    result[key] = serializer ? serializer(value) : value;
+    const rendered = serializer ? serializer(value) : value;
+    // A composite output is a value other nodes read, not a property a renderer can write. `ik`
+    // publishes `rotations` as a record keyed by member id, and with the default `resolveTarget`
+    // every patch resolves to the stage, so `defaultWriter` would fall through to
+    // `target[key] = value` and set `stage.rotations` on every frame forever: this adapter's own
+    // suppression is `Object.is` against a freshly built object and can never match. Skipped after
+    // serialization, so a plugin that serializes a composite into something renderable still
+    // renders. See ADR-051.
+    if (isPlainRecord(rendered)) continue;
+    result[key] = rendered;
   }
   return result;
 }
