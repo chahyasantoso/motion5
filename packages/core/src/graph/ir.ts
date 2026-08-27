@@ -383,13 +383,22 @@ function authorsSolvedRotation(keyframes: unknown, binders: readonly string[]): 
   return false;
 }
 
+/** The node this one hangs from through its `base` slot, or `undefined` when it binds none. */
+function baseOf(node: GraphNode): string | undefined {
+  const edge = node.edges.find((e) => e.role === "input" && e.requirement?.slot === "base");
+  return edge?.sourceId;
+}
+
+interface MemberChain {
+  readonly node: GraphNode;
+  readonly base: string;
+  readonly depth: number;
+}
+
 export function resolveSolvers(
   nodes: readonly GraphNode[],
   diagnostics: Diagnostic[],
 ): readonly GraphNode[] {
-  const nodeMap = new Map<string, GraphNode>();
-  for (const node of nodes) nodeMap.set(node.id, node);
-
   // Diagnostic 3: ik-mode-ambiguous
   // Diagnostic 4: ik-solved-rotation-dead
   for (const node of nodes) {
@@ -499,68 +508,61 @@ export function resolveSolvers(
       );
     }
 
-    interface MemberWithDepth {
-      readonly node: GraphNode;
-      readonly base: string;
-      readonly depth: number;
+    // Diagnostic 6: ik-solver-unreachable-root
+    //
+    // One walk per member, confined to the member set. The `base` edge lookup that verified a
+    // member and the `while` loop that measured its depth were two traversals of one chain, and the
+    // second climbed through arbitrary nodes to count hops. Starting the walk at the member itself
+    // makes its own `base` edge the first step, and the only map the walk steps through holds this
+    // solver's members, so leaving that set is the break rather than something to check for after.
+    //
+    // A break is attributed to the member whose own `base` broke the chain rather than to the
+    // member the walk started from, and it is keyed by id, so a chain of descendants over one bad
+    // ancestor reports once rather than once per descendant. That is the attribution the two passes
+    // produced, which is what makes this a refactor rather than a rule change: `RS-8` pins it over
+    // the chain shapes both of them had to answer for. See ADR-051.
+    const memberById = new Map(members.map((member) => [member.id, member] as const));
+    const unreachable = new Map<string, Diagnostic>();
+    const chains: MemberChain[] = [];
+
+    for (const member of members) {
+      let base = "";
+      let depth = 0;
+      let cursor: GraphNode | undefined = member;
+      const walked = new Set<string>([member.id]);
+      while (cursor !== undefined) {
+        const next = baseOf(cursor);
+        if (next === undefined || (next !== rootId && !memberById.has(next))) {
+          unreachable.set(
+            cursor.id,
+            diag(
+              "ik-solver-unreachable-root",
+              cursor.id,
+              `Member "${cursor.id}" cannot reach solver root "${rootId}".`,
+              [cursor.id, rootId],
+            ),
+          );
+          break;
+        }
+        depth += 1;
+        if (depth === 1) base = next;
+        // The root ends the walk. A member already walked ends it too, and the cycle that shape is
+        // belongs to `orderGraph`, which refuses it over these same `base` edges.
+        if (next === rootId || walked.has(next)) break;
+        walked.add(next);
+        cursor = memberById.get(next);
+      }
+      // A member holding no `base` edge of its own contributes no chain, which is what the two
+      // passes did. Every break above is an error, so no `solves` derived beside one is reachable
+      // through `finalizeGraph`.
+      if (depth > 0) chains.push({ node: member, base, depth });
     }
 
-    const membersWithDepth: MemberWithDepth[] = [];
-
-    const memberIds = new Set(members.map((m) => m.id));
-
-    for (const m of members) {
-      const baseEdge = m.edges.find((e) => e.role === "input" && e.requirement?.slot === "base");
-      if (!baseEdge) {
-        diagnostics.push(
-          diag(
-            "ik-solver-unreachable-root",
-            m.id,
-            `Member "${m.id}" cannot reach solver root "${rootId}".`,
-            [m.id, rootId],
-          ),
-        );
-        continue;
-      }
-      const memberBase = baseEdge.sourceId;
-
-      // If base is not another member of this solver and not rootId, this member's root link is broken
-      if (memberBase !== rootId && !memberIds.has(memberBase)) {
-        diagnostics.push(
-          diag(
-            "ik-solver-unreachable-root",
-            m.id,
-            `Member "${m.id}" cannot reach solver root "${rootId}".`,
-            [m.id, rootId],
-          ),
-        );
-      }
-
-      let currId: string | undefined = memberBase;
-      let depth = 1;
-      const visited = new Set<string>();
-
-      while (currId !== undefined) {
-        if (currId === rootId) break;
-        if (visited.has(currId)) break;
-        visited.add(currId);
-        const parentNode = nodeMap.get(currId);
-        if (!parentNode) break;
-        const pBaseEdge = parentNode.edges.find(
-          (e) => e.role === "input" && e.requirement?.slot === "base",
-        );
-        currId = pBaseEdge?.sourceId;
-        depth++;
-      }
-
-      membersWithDepth.push({
-        node: m,
-        base: memberBase,
-        depth,
-      });
+    for (const entry of [...unreachable.values()].sort(compareDiagnostics)) {
+      diagnostics.push(entry);
     }
 
-    membersWithDepth.sort(
+    chains.sort(
       (a, b) =>
         a.depth - b.depth ||
         a.node.authoredIndex - b.node.authoredIndex ||
@@ -569,7 +571,7 @@ export function resolveSolvers(
 
     solvesMap.set(
       solver.id,
-      freeze(membersWithDepth.map((m) => freeze({ id: m.node.id, base: m.base }))),
+      freeze(chains.map((entry) => freeze({ id: entry.node.id, base: entry.base }))),
     );
   }
 
