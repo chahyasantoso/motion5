@@ -413,10 +413,42 @@ export function resolveSolvers(
 
   const solvesMap = new Map<string, readonly SolveMember[]>();
 
+  // Every node that at least one member points its `solver` slot at.
+  //
+  // A solver is classified by its `root` edge, so a node bound as one without holding a root is not
+  // a solver at all and the derivation below skips it. Skipping it silently is the one IK
+  // misconfiguration that had no symptom: no `solves` was derived, no `rotations` were published,
+  // every member fell back to its own authored rotation, and the rig held a broken pose with no
+  // error and no diagnostic. It is also the one shape `GraphPublisher` cannot read a member scope
+  // off, so refusing it here is what keeps that throw unreachable rather than merely unreached.
+  // Collected from the members rather than from the solver, because the absent edge is on the
+  // solver and only a member can say the node was meant to be one. See ADR-051.
+  const boundSolverIds = new Set<string>();
+  for (const node of nodes) {
+    for (const edge of node.edges) {
+      if (edge.role === "input" && edge.requirement?.slot === "solver") {
+        boundSolverIds.add(edge.sourceId);
+      }
+    }
+  }
+
   // Resolve solvers
   for (const solver of nodes) {
     const rootEdge = solver.edges.find((e) => e.role === "input" && e.requirement?.slot === "root");
-    if (!rootEdge) continue;
+    // Diagnostic 1: ik-solver-no-root
+    if (!rootEdge) {
+      if (boundSolverIds.has(solver.id)) {
+        diagnostics.push(
+          diag(
+            "ik-solver-no-root",
+            solver.id,
+            `Solver "${solver.id}" has no bound root requirement.`,
+            [solver.id],
+          ),
+        );
+      }
+      continue;
+    }
     const rootId = rootEdge.sourceId;
 
     const members = nodes.filter((n) =>
