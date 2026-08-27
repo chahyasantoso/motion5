@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { Track } from "../../../src/domain/track";
 import type { PluginComposer } from "../../../src/domain/plugins";
+import { createPlugin, resolvePlugins } from "../../helpers/resolved-plugins";
 
-const emptyPreparation = { keyframes: Object.freeze({}), tweenVars: Object.freeze({}) } as const;
 function createInterpolator() {
   const progressCalls: number[] = [];
   const timeline = {
@@ -40,22 +40,6 @@ function createRejectingInterpolator() {
     timelineProgress: () => timelineProgress,
   };
 }
-function createPlugin(name: string, compose: PluginComposer) {
-  return { name, compose };
-}
-function plugins(...items: ReturnType<typeof createPlugin>[]) {
-  return {
-    plugins: Object.freeze(items),
-    diagnostics: Object.freeze([]),
-    authoredKeyframes: Object.freeze({}),
-    // Required rather than optional on `ResolvedPlugins`: a resolver that computed bindings and
-    // then forgot to report them should not typecheck. See ADR-044.
-    requirements: Object.freeze([]),
-    internalKeys: Object.freeze([]),
-    outputSerializers: Object.freeze({}),
-    preparation: emptyPreparation,
-  };
-}
 
 describe("Track leaf", () => {
   it("clamps progress and marks the leaf dirty only when progress changes", () => {
@@ -79,7 +63,7 @@ describe("Track leaf", () => {
     const compose = vi.fn(composer);
     const track = new Track({
       interpolator: fake.interpolator,
-      plugins: plugins(createPlugin("opacity", compose)),
+      plugins: resolvePlugins(createPlugin("opacity", compose)),
     });
     expect(() => track.setProgress(Number.NaN)).toThrow(/finite/);
     const first = track.compose({ opacity: { level: 1 } });
@@ -97,7 +81,7 @@ describe("Track leaf", () => {
     const compose = vi.fn(composer);
     const track = new Track({
       interpolator: fake.interpolator,
-      plugins: plugins(createPlugin("passthrough", compose)),
+      plugins: resolvePlugins(createPlugin("passthrough", compose)),
     });
     const first = track.compose({ passthrough: { level: 1 } });
     const second = track.compose({ passthrough: { level: 2 } });

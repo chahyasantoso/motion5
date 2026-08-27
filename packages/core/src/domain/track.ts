@@ -55,6 +55,10 @@ function isNamespacedInternal(key: string): boolean {
  *
  * `internalKeys` stays for unprefixed derived keys, which no rule can recognize. It is the
  * declaration of last resort rather than the mechanism.
+ *
+ * It runs once per composition, after the chain and before the freeze, whichever entry point the
+ * composition arrived through. A seed is filtered by the same call that filters a derived key, so
+ * the split adds no second surface to keep in agreement with this one.
  */
 function publishableValues(values: ImmutableRecord, plugins: ResolvedPlugins): ImmutableRecord {
   const result: Record<string, unknown> = {};
@@ -87,6 +91,16 @@ function freezeComposition(values: unknown): ImmutableRecord {
     );
   }
 }
+/**
+ * Identity first, then structure.
+ *
+ * Both halves of the memo key are compared through this, so neither can drift into a cheaper or a
+ * stricter test than the other. Identity alone would never hold for a seed, because `compose`
+ * builds a fresh record on every tick.
+ */
+function unchanged(left: unknown, right: unknown): boolean {
+  return left === right || equalValues(left, right);
+}
 const NO_PLUGIN_INPUTS: PluginInputs = Object.freeze({});
 const NO_REQUIREMENT_INPUTS: RequirementInputs = Object.freeze({});
 const EMPTY_RESOLVED_PLUGINS: ResolvedPlugins = Object.freeze({
@@ -105,6 +119,7 @@ export class Track {
   #dirty = true;
   #disposed = false;
   #lastSnapshot: TrackSnapshot | undefined;
+  #lastSeed: ImmutableRecord | undefined;
   #lastRequirementInputs: RequirementInputs | undefined;
   constructor(options: TrackOptions) {
     this.#plugins = options.plugins ?? EMPTY_RESOLVED_PLUGINS;
@@ -129,6 +144,22 @@ export class Track {
     return true;
   }
   /**
+   * This track's interpolated, renderer-neutral state, before any plugin runs.
+   *
+   * Readable on its own because a value with no dependency on composition order should not have to
+   * be reached through one. `#timeline.state` is written by `setProgress`, which the owning `Motion`
+   * runs for every one of its tracks before a flush begins, so every track's interpolated state is
+   * already determined when the first node composes. Reading another track's state is therefore not
+   * reading a downstream node's output: it needs no edge and it can introduce no cycle.
+   *
+   * A read rather than a composition. No plugin runs, nothing is memoized, and the track is not
+   * marked clean, so a caller cannot make a track look composed by asking it what it interpolated.
+   */
+  interpolated(): ImmutableRecord {
+    this.assertActive();
+    return rendererNeutralState(this.#timeline.state);
+  }
+  /**
    * Composes this track's values, then runs the plugin chain over them.
    *
    * One parameter, and it is the plugin-owned scope: each plugin receives only the slots it
@@ -139,18 +170,35 @@ export class Track {
    * There is no flat bag beside it. The generic `observes` channel that used to fill one declares
    * output edges only, so nothing merges an upstream value into the authored namespace and no
    * parameter exists to merge one with. See ADR-044 and ADR-047.
+   *
+   * It is `composeFrom(this.interpolated(), …)` and nothing else: one line, no second short-circuit
+   * of its own, so the two entry points cannot answer differently or memoize separately.
    */
   compose(requirementInputs: RequirementInputs = NO_REQUIREMENT_INPUTS): TrackSnapshot {
+    return this.composeFrom(this.interpolated(), requirementInputs);
+  }
+  /**
+   * Runs the plugin chain from `seed` rather than from this track's own interpolated state.
+   *
+   * `seed` is this track's pre-plugin value domain, not a second input channel. No authored form
+   * populates it, nothing outside this class holds a value to put in it that did not come from
+   * `interpolated()`, and a value bound from another node still reaches a plugin only through its
+   * declared slot. ADR-047's invariant is about where an upstream value may land, and it holds
+   * unchanged: `requirementInputs` is still the only parameter one can arrive by.
+   *
+   * The seed is part of the memo key, for the same reason the requirement inputs are. `#dirty`
+   * reports whether the timeline moved, which says nothing about whether this is the seed the last
+   * snapshot was composed from, and answering one seed's question with another seed's snapshot is
+   * the one way this seam can be silently wrong.
+   */
+  composeFrom(
+    seed: ImmutableRecord,
+    requirementInputs: RequirementInputs = NO_REQUIREMENT_INPUTS,
+  ): TrackSnapshot {
     this.assertActive();
-    if (
-      !this.#dirty &&
-      this.#lastSnapshot &&
-      this.#lastRequirementInputs !== undefined &&
-      (this.#lastRequirementInputs === requirementInputs ||
-        equalValues(this.#lastRequirementInputs, requirementInputs))
-    )
-      return this.#lastSnapshot;
-    let values: ImmutableRecord = rendererNeutralState(this.#timeline.state);
+    const memoized = this.#memoized(seed, requirementInputs);
+    if (memoized !== undefined) return memoized;
+    let values: ImmutableRecord = seed;
     for (const plugin of this.#plugins.plugins) {
       const scoped = requirementInputs[plugin.name] ?? NO_PLUGIN_INPUTS;
       const composed = plugin.compose(values, this.#progress, scoped);
@@ -164,16 +212,34 @@ export class Track {
       progress: this.#progress,
       values: freezeComposition(publishableValues(values, this.#plugins)),
     });
+    this.#lastSeed = Object.freeze({ ...seed });
     this.#lastRequirementInputs = Object.freeze({ ...requirementInputs });
     this.#lastSnapshot = snapshot;
     this.#dirty = false;
     return snapshot;
+  }
+  /**
+   * The retained snapshot, when it is the answer for exactly this seed and these inputs.
+   *
+   * Copies of both keys are kept rather than the caller's own objects, so a seed mutated after the
+   * fact cannot turn a stale snapshot into a memo hit.
+   */
+  #memoized(
+    seed: ImmutableRecord,
+    requirementInputs: RequirementInputs,
+  ): TrackSnapshot | undefined {
+    if (this.#dirty || this.#lastSnapshot === undefined) return undefined;
+    if (this.#lastSeed === undefined || this.#lastRequirementInputs === undefined) return undefined;
+    if (!unchanged(this.#lastSeed, seed)) return undefined;
+    if (!unchanged(this.#lastRequirementInputs, requirementInputs)) return undefined;
+    return this.#lastSnapshot;
   }
   dispose(): void {
     if (this.#disposed) return;
     this.#disposed = true;
     this.#timeline.kill();
     this.#lastSnapshot = undefined;
+    this.#lastSeed = undefined;
     this.#lastRequirementInputs = undefined;
   }
   private assertActive(): void {
