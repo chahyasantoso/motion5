@@ -142,9 +142,17 @@ import { fileURLToPath } from "node:url";
 // It is the fourth two-letter series, under the policy the `P-` paragraph sets, and `C-` alone is
 // the option C plan. It sorts before `C` in the pattern below, because an alternation that offered
 // `C` first would match `C` and then fail on the `N`.
+//
+// `RS-` belongs to solver resolution in `graph/ir.ts`, slice C2 of issue #195: that solver nodes
+// derive their member list root-most first, that load-time validation enforces the five IK
+// diagnostics, that resolution is deterministic under permutation, and that the result is frozen
+// without mutating the input nodes. `Z-` owns edge-construction symmetry; `RS-` owns solver derivation.
+// It is the fifth two-letter series, under the policy the `P-` paragraph sets, and `R-` alone is
+// the progress range fix. It sorts before `R` in the pattern below, because an alternation that
+// offered `R` first would match `R` and then fail on the `S`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:CF|CN|FO|LF|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+const CASE_TITLE = /it\(\s*"((?:CF|CN|FO|LF|RS|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
