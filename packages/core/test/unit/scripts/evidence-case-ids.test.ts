@@ -144,9 +144,11 @@ import { fileURLToPath } from "node:url";
 // `C` first would match `C` and then fail on the `N`.
 //
 // `RS-` belongs to solver resolution in `graph/ir.ts`, slice C2 of issue #195: that solver nodes
-// derive their member list root-most first, that load-time validation enforces the five IK
-// diagnostics, that resolution is deterministic under permutation, and that the result is frozen
-// without mutating the input nodes. `Z-` owns edge-construction symmetry; `RS-` owns solver derivation.
+// derive their member list root-most first, that load-time validation enforces the six IK
+// diagnostics ADR-051's table declares, that resolution is deterministic under permutation, that
+// one confined walk answers for every chain shape, that a dead-rotation refusal reads the group
+// which bound the solver, and that a reference error is reported without a derived chain
+// diagnostic beside it. `Z-` owns edge-construction symmetry; `RS-` owns solver derivation.
 // It is the fifth two-letter series, under the policy the `P-` paragraph sets, and `R-` alone is
 // the progress range fix. It sorts before `R` in the pattern below, because an alternation that
 // offered `R` first would match `R` and then fail on the `S`.

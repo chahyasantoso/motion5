@@ -74,11 +74,11 @@ An IK setup is authored using standard plugin requirement bindings without intro
 
 ### 2. Derived Solver Membership (`resolveSolvers`)
 
-Graph finalization (`finalizeGraph`) runs a pure derivation pass, `resolveSolvers`, after reference validation and before topological ordering:
+Graph finalization (`finalizeGraph`) runs a pure derivation pass, `resolveSolvers`, only once reference validation has reported no error, and before topological ordering. That precondition is load-bearing rather than tidy: the derivation reads the nodes its `base` edges name, so over a graph whose sources may not resolve it answers about a chain that was never valid and reports `ik-solver-unreachable-root` against a member for a typo one node up. One cause, one diagnostic.
 
 1. **Solver Identification**: Any node with a `root` requirement slot edge is classified as a solver. A node that at least one member binds its `solver` slot to, and which holds no `root` edge, is therefore not a solver at all, and it is refused as `ik-solver-no-root` rather than skipped. Skipping it silently was the one IK misconfiguration with no symptom: no `solves` was derived, no `rotations` were published, every member fell back to its own authored rotation, and the rig held a broken pose with no error and no diagnostic.
 2. **Member Discovery**: Any node declaring a `solver` requirement slot edge pointing to solver `S` is collected into `S`'s member list.
-3. **Chain Verification**: Each member's `base` ancestor walk is traced. The chain must terminate cleanly at solver `S`'s bound `root` node without leaving the member set.
+3. **Chain Verification**: One walk per member, confined to the member set. It starts at the member, so the member's own `base` edge is its first step, and it follows `base` edges through `S`'s members until it arrives at `S`'s bound `root`. A step with no `base` edge to take, or one that would leave the member set without arriving at the root, is `ik-solver-unreachable-root` against the member whose own `base` broke the chain rather than against the member the walk started from, so one bad ancestor reports once and not once per descendant that inherited it. Verification and depth are one traversal: they cannot disagree, and the walk cannot leave the set it is confined to.
 4. **Deterministic Ordering**: Members are ordered root-most first (depth from root ascending, ties broken by `authoredIndex` and qualified ID).
 5. **Frozen Derivation**: Solver nodes are minted with `readonly solves: readonly SolveMember[]`. Non-solver nodes remain untouched.
 
@@ -90,10 +90,12 @@ The loader enforces structural integrity across 6 deterministic diagnostics (`se
 | ----------------------------- | ----------------------------------------------------------------------------------------------- |
 | `ik-solver-no-root`           | A solver node lacks a bound `root` requirement edge.                                            |
 | `ik-solver-no-members`        | A solver node has no member nodes declaring `solver` pointing to it.                            |
-| `ik-solver-unreachable-root`  | A member's `base` hierarchy walk fails to terminate at the solver's bound `root`.               |
+| `ik-solver-unreachable-root`  | A member's `base` walk leaves the member set without terminating at the solver's bound `root`.  |
 | `ik-mode-ambiguous`           | A single node binds `solver` alongside `root`/`target`, or binds `root` under multiple plugins. |
-| `ik-solved-rotation-dead`     | A bone bound to a `solver` authors a local `rotation` value.                                    |
+| `ik-solved-rotation-dead`     | A bone authors a `rotation` inside the same plugin group in which it bound its `solver` slot.   |
 | `ik-solver-unsupported-arity` | A solver's derived member count is not 2 (two-bone analytical solve).                           |
+
+`ik-solved-rotation-dead` reads that group and no other. The solved rotation replaces the authored one inside the plugin that reads `rotations` back, which is the plugin that bound the slot, so a `rotation` under any other group is that plugin's own live input. A flat `rotation` is likewise not this rule's: attributing a flat key to a plugin is the registry's question, and this pass holds no registry by design, so a member authoring one meets `plugin-ambiguous-key` in any registry with two claimants and `plugin-unknown-key` in one with none. See ADR-043 and ADR-044.
 
 ---
 
@@ -162,6 +164,9 @@ When `fkPlugin.compose` executes:
 4. **A Publisher-Side Solver Cache**:
    - _Proposal_: Keep `#solverCache`, widening its key until it covers the solver's own seed and progress.
    - _Rejected_: The widened key is `Track`'s key. Two caches with two invalidation rules are cheaper per tick and wrong the first time one of them drifts, which is exactly how the narrow key shipped.
+5. **Deriving Chains Over Unresolved References**:
+   - _Proposal_: Keep `resolveSolvers` ahead of the reference bail, so one build reports every rule a rig breaks.
+   - _Rejected_: A derivation over edges whose sources do not resolve reports about a chain that never existed. The second diagnostic names a member for a typo one node up, which is a worse first thing to read than the typo.
 
 ---
 
@@ -177,7 +182,7 @@ When `fkPlugin.compose` executes:
 - **Slice B (`CF-1`..`CF-7`)**: `packages/core/test/unit/domain/track-compose-from.test.ts` (Composition split).
 - **Slice C0**: `packages/core/test/unit/graph/finalize-graph.test.ts` (`finalizeGraph` deduplication).
 - **Slice C1 (`CN-1`..`CN-3`)**: `packages/core/test/unit/domain/track-node-id.test.ts` (`nodeId` in composer contract).
-- **Slice C2 (`RS-1`..`RS-7`)**: `packages/core/test/unit/graph/resolve-solvers.test.ts` (Load-time IK diagnostics, determinism under permutation, and derivation from live state alone).
+- **Slice C2 (`RS-1`..`RS-10`)**: `packages/core/test/unit/graph/resolve-solvers.test.ts` (Load-time IK diagnostics, determinism under permutation, derivation from live state alone, the one confined member walk, the scope of the dead-rotation read, and the reference bail).
 - **Slice C3 (`IK-1`..`IK-19`)**:
   - `packages/core/test/unit/plugins/ik-solve.test.ts` (Analytical 2-bone solve math, both elbow branches, and the composed-values spread).
   - `packages/core/test/unit/plugins/fk-solver-override.test.ts` (FK rotation override).

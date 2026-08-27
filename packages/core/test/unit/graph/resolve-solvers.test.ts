@@ -92,6 +92,121 @@ function shuffle(tracks: readonly TrackDefinition[], seed: number): TrackDefinit
   return result;
 }
 
+const OTHER_ROOT: TrackDefinition = { id: "other-root" };
+
+/** The happy rig with the named tracks replaced, plus any extra track a case needs to exist. */
+function rig(
+  replacements: readonly TrackDefinition[],
+  extra: readonly TrackDefinition[] = [],
+): ProjectDefinition {
+  const byId = new Map(replacements.map((track) => [track.id, track] as const));
+  return project([...HAPPY_RIG.map((track) => byId.get(track.id) ?? track), ...extra]);
+}
+
+/** Rule id and path together, so a case pins what was reported and where, in order. */
+function reported(result: GraphBuildResult): readonly string[] {
+  return result.diagnostics.map(({ ruleId, path }) => `${ruleId} at ${path}`);
+}
+
+function solvesOf(result: GraphBuildResult): readonly SolveMember[] | undefined {
+  return result.graph?.nodeById["walker/arm-solve"]?.solves;
+}
+
+/** The tip is authored before the member it hangs from, so depth has to decide the order. */
+const TIP_FIRST = project([
+  HAPPY_RIG[0]!, // shoulder
+  HAPPY_RIG[1]!, // hand-target
+  HAPPY_RIG[4]!, // forearm
+  HAPPY_RIG[3]!, // upper-arm
+  HAPPY_RIG[2]!, // arm-solve
+  HAPPY_RIG[5]!, // hand
+]);
+
+/** `upper-arm` binds no `base` at all, so its own walk cannot take a first step. */
+const NO_BASE = rig([
+  {
+    id: "upper-arm",
+    keyframes: { fk: { values: { length: 80 }, requires: { solver: "arm-solve" } } },
+  },
+]);
+
+/** `upper-arm` hangs from a node that is neither the solver's root nor one of its members. */
+const BASE_OUTSIDE = rig(
+  [
+    {
+      id: "upper-arm",
+      keyframes: {
+        fk: { values: { length: 80 }, requires: { base: "other-root", solver: "arm-solve" } },
+      },
+    },
+  ],
+  [OTHER_ROOT],
+);
+
+/** Both members leave the member set, so both are answerable for their own broken chain. */
+const BOTH_OUTSIDE = rig(
+  [
+    {
+      id: "upper-arm",
+      keyframes: {
+        fk: { values: { length: 80 }, requires: { base: "other-root", solver: "arm-solve" } },
+      },
+    },
+    {
+      id: "forearm",
+      keyframes: {
+        fk: { values: { length: 60 }, requires: { base: "other-root", solver: "arm-solve" } },
+      },
+    },
+  ],
+  [OTHER_ROOT],
+);
+
+/** The bone that binds `solver` authors the `rotation` the solve would replace. */
+const ROTATION_IN_BINDER = rig([
+  {
+    id: "upper-arm",
+    keyframes: {
+      fk: {
+        values: { length: 80, rotation: 45 },
+        requires: { base: "shoulder", solver: "arm-solve" },
+      },
+    },
+  },
+]);
+
+/** `spring` binds the solver, so `fk`'s authored rotation is `fk`'s own live input. */
+const ROTATION_IN_OTHER_GROUP = rig([
+  {
+    id: "upper-arm",
+    keyframes: {
+      fk: { values: { length: 80, rotation: 45 }, requires: { base: "shoulder" } },
+      spring: { requires: { solver: "arm-solve" } },
+    },
+  },
+]);
+
+/** A flat `rotation`, which names no group and therefore no owner this layer can read. */
+const FLAT_ROTATION = rig([
+  {
+    id: "upper-arm",
+    keyframes: {
+      rotation: 45,
+      fk: { values: { length: 80 }, requires: { base: "shoulder", solver: "arm-solve" } },
+    },
+  },
+]);
+
+/** A member hanging from a source that resolves to no node at all. */
+const UNKNOWN_BASE = rig([
+  {
+    id: "upper-arm",
+    keyframes: {
+      fk: { values: { length: 80 }, requires: { base: "nope", solver: "arm-solve" } },
+    },
+  },
+]);
+
 describe("resolveSolvers (Slice C2)", () => {
   it("RS-1 derives solves on solver node root-most first and nowhere else", () => {
     const p = project(HAPPY_RIG);
@@ -112,7 +227,8 @@ describe("resolveSolvers (Slice C2)", () => {
     expect(hand.solves).toBeUndefined();
   });
 
-  it("RS-2 reports all five IK diagnostics with correct ruleId, path, and participant ids", () => {
+  it("RS-2 reports the five IK diagnostics it owns with ruleId, path, and participant ids", () => {
+    // The sixth, `ik-solver-no-root`, is `RS-7`'s. This case owns the other five.
     // 1. ik-solver-unreachable-root: upper-arm base is wrong
     const unreachableRootRig = project([
       { id: "shoulder" },
@@ -366,5 +482,73 @@ describe("resolveSolvers (Slice C2)", () => {
     const incSolver = incremental.graph?.nodeById["walker/arm-solve"] as GraphNode;
     expect(refSolver?.solves).toEqual(incSolver?.solves);
     expect(refSolver?.solves).toBeDefined();
+  });
+
+  it("RS-8 one confined walk answers for every chain shape the two passes answered for", () => {
+    // The `base` lookup that verified a member and the `while` loop that measured its depth were
+    // two traversals of one chain, and they are one walk now. A refactor's subject is the answer
+    // rather than the shape, so this pins the derived chain and the diagnostic each broken chain
+    // reports, over the shapes where attribution or depth could differ between the two.
+    const clean = buildGraphIR(project(HAPPY_RIG));
+    expect(reported(clean)).toEqual([]);
+    expect(solvesOf(clean)).toEqual(EXPECTED_SOLVES);
+
+    // Depth decides the order rather than authored position, with the tip authored first.
+    const tipFirst = buildGraphIR(TIP_FIRST);
+    expect(reported(tipFirst)).toEqual([]);
+    expect(solvesOf(tipFirst)).toEqual(EXPECTED_SOLVES);
+
+    // A member holding no `base` edge stops its own walk on the first step. Its descendant reports
+    // nothing of its own, because the break belongs to the member whose chain broke.
+    expect(reported(buildGraphIR(NO_BASE))).toEqual([
+      "ik-solver-unreachable-root at walker/upper-arm",
+    ]);
+
+    // A member whose `base` leaves the member set without arriving at the root reports once, on
+    // the member that left it, not once per descendant that inherited the broken chain.
+    expect(reported(buildGraphIR(BASE_OUTSIDE))).toEqual([
+      "ik-solver-unreachable-root at walker/upper-arm",
+    ]);
+
+    // Both members leave it, so both are answerable and both report.
+    expect(reported(buildGraphIR(BOTH_OUTSIDE))).toEqual([
+      "ik-solver-unreachable-root at walker/forearm",
+      "ik-solver-unreachable-root at walker/upper-arm",
+    ]);
+  });
+
+  it("RS-9 ik-solved-rotation-dead reads the group that binds solver and no other", () => {
+    // Refused: the group binding `solver` is the group whose `rotation` the solved one replaces.
+    expect(reported(buildGraphIR(ROTATION_IN_BINDER))).toEqual([
+      "ik-solved-rotation-dead at walker/upper-arm",
+    ]);
+
+    // Accepted: `spring` binds the solver here, so `fk.values.rotation` is `fk`'s own live input
+    // and no solved rotation replaces it. Reading every group reported this identically to the
+    // case above, which is what made the wider read invisible on every current fixture.
+    expect(reported(buildGraphIR(ROTATION_IN_OTHER_GROUP))).toEqual([]);
+
+    // Accepted here and refused by the registry instead: a flat key names no group, and which
+    // plugin owns one is the question this layer holds no registry to answer. See ADR-043.
+    expect(reported(buildGraphIR(FLAT_ROTATION))).toEqual([]);
+  });
+
+  it("RS-10 a reference error is reported without a derived chain diagnostic beside it", () => {
+    // `resolveSolvers` walks `base` edges and reads the nodes they name, so over a graph whose
+    // sources do not resolve it answers about a chain that was never valid, naming a member for a
+    // typo one node up. `finalizeGraph` bails on reference errors before the derivation runs.
+    const unknownBase = buildGraphIR(UNKNOWN_BASE);
+    expect(reported(unknownBase)).toEqual(["observation-unknown-source at walker/upper-arm"]);
+    expect(unknownBase.graph).toBeUndefined();
+
+    // Both builders bail at the same point, because both finalize through `finalizeGraph`.
+    const [reference, incremental] = buildPair(UNKNOWN_BASE);
+    expect(incremental.diagnostics).toEqual(reference.diagnostics);
+
+    // The derivation still runs for a rig whose references all resolve, so this is an ordering
+    // change rather than a pass that stopped reporting.
+    expect(reported(buildGraphIR(BASE_OUTSIDE))).toEqual([
+      "ik-solver-unreachable-root at walker/upper-arm",
+    ]);
   });
 });
