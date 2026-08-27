@@ -17,7 +17,10 @@ import { createManualTriggerPort } from "../../src/ports/trigger";
  */
 function registerTrack(id: string) {
   const registry = createFakeTrackRegistry<Track>();
-  const track = registry.register(id, new Track({ interpolator: createFakeInterpolator() }));
+  const track = registry.register(
+    id,
+    new Track({ interpolator: createFakeInterpolator(), nodeId: `~/lifecycle-${id}` }),
+  );
   return {
     resolveTrack: registry.resolveTrack,
     setProgress: vi.spyOn(track, "setProgress"),

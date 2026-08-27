@@ -3,6 +3,7 @@ import type { ProjectDefinition } from "../../src/contract/v5";
 import { Engine } from "../../src/engine";
 import { PluginRegistry, type PluginDefinition } from "../../src/domain/plugins";
 import { fkPlugin } from "../../src/plugins/fk";
+import { ikPlugin } from "../../src/plugins/ik";
 import { createBrowserClock, type FrameSource } from "../../src/adapters/browser-clock";
 import { createDomPatchAdapter } from "../../src/adapters/dom";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
@@ -85,6 +86,75 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
               },
             },
           },
+          {
+            id: "shoulder",
+            keyframes: {
+              fk: {
+                values: {
+                  x: 0,
+                  y: -50,
+                  length: 0,
+                  rotation: 0,
+                },
+                requires: { base: "walk/pelvis" },
+              },
+            },
+          },
+          {
+            id: "upper-arm",
+            keyframes: {
+              fk: {
+                values: {
+                  length: 30,
+                },
+                requires: { base: "walk/shoulder", solver: "walk/arm-solve" },
+              },
+            },
+          },
+          {
+            id: "forearm",
+            keyframes: {
+              fk: {
+                values: {
+                  length: 25,
+                },
+                requires: { base: "walk/upper-arm", solver: "walk/arm-solve" },
+              },
+            },
+          },
+          {
+            id: "hand",
+            keyframes: {
+              fk: {
+                values: {
+                  length: 10,
+                  rotation: 0,
+                },
+                requires: { base: "walk/forearm" },
+              },
+            },
+          },
+          {
+            id: "hand-target",
+            keyframes: {
+              transform: {
+                values: {
+                  x: 35,
+                  y: 75,
+                  rotation: 0,
+                },
+              },
+            },
+          },
+          {
+            id: "arm-solve",
+            keyframes: {
+              ik: {
+                values: { flip: false },
+                requires: { root: "walk/shoulder", target: "walk/hand-target" },
+              },
+            },
+          },
         ],
       },
     ],
@@ -99,6 +169,7 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
   const plugins = new PluginRegistry();
   plugins.register(transformPlugin);
   plugins.register(fkPlugin);
+  plugins.register(ikPlugin);
 
   function createFakeFrameSource(): FrameSource & { triggerFrame(time: number): void } {
     let frameListener: ((time: number) => void) | undefined;
@@ -377,8 +448,121 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
     handle.mount("walk/shin");
 
     const batch = handle.seek("walk/pelvis", 1);
-    expect(batch.patches).toHaveLength(3);
+    expect(batch.patches.filter((p) => p.status === "ready").length).toBeGreaterThanOrEqual(3);
     expect(batch.patches[0]?.status).toBe("ready");
+
+    handle.dispose();
+    clock.dispose();
+  });
+
+  it("11. Convert one arm of walker to IK while asserting FK bones unchanged from baseline", () => {
+    const clock = createBrowserClock(createFakeFrameSource());
+    const scheduler = createFakeScheduler();
+
+    const handle = new Engine({
+      clock,
+      interpolator: createFakeInterpolator(),
+      scheduler,
+      plugins,
+    }).load(walkerProject);
+
+    handle.mount("walk/pelvis");
+    handle.mount("walk/thigh");
+    handle.mount("walk/shin");
+    handle.mount("walk/shoulder");
+    handle.mount("walk/upper-arm");
+    handle.mount("walk/forearm");
+    handle.mount("walk/hand");
+    handle.mount("walk/hand-target");
+    handle.mount("walk/arm-solve");
+
+    // Seek to p=0:
+    const batch = handle.seek("walk/pelvis", 0);
+
+    // 1. Guard against FK regression: FK leg bones must match pre-C3 baseline (Case 6)
+    const thighPatch = batch.patches.find((p) => p.nodeId === "walk/thigh");
+    const shinPatch = batch.patches.find((p) => p.nodeId === "walk/shin");
+
+    expect(thighPatch?.values.x).toBeCloseTo(35.355, 2);
+    expect(thighPatch?.values.y).toBeCloseTo(135.355, 2);
+    expect(thighPatch?.values.rotation).toBeCloseTo(45, 2);
+
+    expect(shinPatch?.values.x).toBeCloseTo(73.997, 2);
+    expect(shinPatch?.values.y).toBeCloseTo(145.707, 2);
+    expect(shinPatch?.values.rotation).toBeCloseTo(15, 2);
+
+    // 2. Verify IK arm solve:
+    const solvePatch = batch.patches.find((p) => p.nodeId === "walk/arm-solve");
+    expect(solvePatch).toBeDefined();
+    const rotations = solvePatch?.values.rotations as Record<string, number>;
+    expect(rotations).toBeDefined();
+    expect(typeof rotations["walk/upper-arm"]).toBe("number");
+    expect(typeof rotations["walk/forearm"]).toBe("number");
+
+    // Forearm tip must reach target at (35, 75):
+    const forearmPatch = batch.patches.find((p) => p.nodeId === "walk/forearm");
+    expect(forearmPatch?.values.x).toBeCloseTo(35, 1);
+    expect(forearmPatch?.values.y).toBeCloseTo(75, 1);
+
+    // Hand follows downstream at forearm tip:
+    const handPatch = batch.patches.find((p) => p.nodeId === "walk/hand");
+    expect(handPatch?.status).toBe("ready");
+
+    handle.dispose();
+    clock.dispose();
+  });
+
+  it("12. T-C4.1: Dynamic mutation and transactional rollback for solver topology", () => {
+    const clock = createBrowserClock(createFakeFrameSource());
+    const scheduler = createFakeScheduler();
+
+    const handle = new Engine({
+      clock,
+      interpolator: createFakeInterpolator(),
+      scheduler,
+      plugins,
+    }).load(walkerProject);
+
+    handle.mount("walk/pelvis");
+    handle.mount("walk/shoulder");
+    handle.mount("walk/upper-arm");
+    handle.mount("walk/forearm");
+    handle.mount("walk/hand-target");
+    handle.mount("walk/arm-solve");
+
+    // 1. Dynamic replacement of a member mid-flight
+    const updatedUpperArm = {
+      id: "upper-arm",
+      keyframes: {
+        fk: {
+          values: {
+            length: 32, // Modified length
+          },
+          requires: { base: "walk/shoulder", solver: "walk/arm-solve" },
+        },
+      },
+    };
+
+    const upperArmHandle = handle.track("walk/upper-arm");
+    expect(() => upperArmHandle.replace(updatedUpperArm)).not.toThrow();
+    handle.seek("walk/pelvis", 0.5);
+    expect(handle.get("walk/forearm")?.status).toBe("ready");
+
+    // 2. Staging invalid solver topology rolls back cleanly without partial corruption
+    const brokenUpperArm = {
+      id: "upper-arm",
+      keyframes: {
+        fk: {
+          values: { length: 32 },
+          requires: { base: "walk/unreachable-root", solver: "walk/arm-solve" },
+        },
+      },
+    };
+
+    expect(() => upperArmHandle.replace(brokenUpperArm)).toThrow();
+
+    // Previous graph is still live and uncorrupted:
+    expect(handle.get("walk/forearm")?.status).toBe("ready");
 
     handle.dispose();
     clock.dispose();

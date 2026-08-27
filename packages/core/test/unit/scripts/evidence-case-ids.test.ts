@@ -134,9 +134,33 @@ import { fileURLToPath } from "node:url";
 // the same object. It is the third two-letter series, under the policy the `P-` paragraph sets,
 // and `C-` alone is the option C plan. It sorts before `C` in the pattern below, because an
 // alternation that offered `C` first would match `C` and then fail on the `F`.
+//
+// `CN-` belongs to the composer node id contract, slice C1 of issue #195: that a Track carries its
+// qualified node id, hands it to every composed plugin as the fourth PluginComposer parameter,
+// refuses an empty node id at construction, and leaves a three-argument composer assignable. `CF-`
+// owns where the seed comes from; `CN-` owns how a plugin identifies which node it is composing.
+// It is the fourth two-letter series, under the policy the `P-` paragraph sets, and `C-` alone is
+// the option C plan. It sorts before `C` in the pattern below, because an alternation that offered
+// `C` first would match `C` and then fail on the `N`.
+//
+// `RS-` belongs to solver resolution in `graph/ir.ts`, slice C2 of issue #195: that solver nodes
+// derive their member list root-most first, that load-time validation enforces the six IK
+// diagnostics ADR-051's table declares, that resolution is deterministic under permutation, that
+// one confined walk answers for every chain shape, that a dead-rotation refusal reads the group
+// which bound the solver, and that a reference error is reported without a derived chain
+// diagnostic beside it. `Z-` owns edge-construction symmetry; `RS-` owns solver derivation.
+// It is the fifth two-letter series, under the policy the `P-` paragraph sets, and `R-` alone is
+// the progress range fix. It sorts before `R` in the pattern below, because an alternation that
+// offered `R` first would match `R` and then fail on the `S`.
+//
+// `IK-` belongs to the IK solver plugin and runtime wiring, slice C3 of issue #195: the analytic
+// two-bone inverse kinematics solve, FK solver override, upstream member delivery, dirty-check
+// memoization, seed propagation, and renderer shielding. It is the sixth two-letter series, under
+// the policy the `P-` paragraph sets.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const CASE_TITLE = /it\(\s*"((?:CF|FO|LF|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+const CASE_TITLE =
+  /it\(\s*"((?:CF|CN|FO|IK|LF|RS|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })

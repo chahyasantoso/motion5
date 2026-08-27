@@ -19,7 +19,7 @@ function createMotion(stagger = 0, duration?: number, disposeTracks = false) {
   // shaped like one defeats the grep gate that enforces it.
   const tracks = ids.map((id) => ({
     id,
-    instance: registry.register(id, new Track({ interpolator })),
+    instance: registry.register(id, new Track({ interpolator, nodeId: `~/motion-${id}` })),
     ...(duration === undefined ? {} : { duration }),
   }));
   const motion = new Motion({
@@ -114,7 +114,10 @@ describe("Motion composite", () => {
   it("addTrack adds a track, updates snapshot, and snaps to current progress", () => {
     const { motion, registry, interpolator } = createMotion();
     motion.seek(0.6);
-    const newTrack = registry.register("track-added", new Track({ interpolator }));
+    const newTrack = registry.register(
+      "track-added",
+      new Track({ interpolator, nodeId: "~/track-added" }),
+    );
     (motion as any).addTrack({ id: "track-added" });
     expect(motion.tracks.map(({ id }) => id)).toEqual([
       "track-0",
@@ -138,7 +141,7 @@ describe("Motion composite", () => {
     const { motion, registry, interpolator } = createMotion(0.1);
     const initialSchedule = motion.schedule();
     expect(initialSchedule).toEqual([0, 0.1, 0.2]);
-    registry.register("track-added", new Track({ interpolator }));
+    registry.register("track-added", new Track({ interpolator, nodeId: "~/track-added" }));
     (motion as any).addTrack({ id: "track-added" });
     // schedule() evaluates based on current tracks, but schedule offset formula is tracks.map
     // When reflow() is called, it returns the updated schedule

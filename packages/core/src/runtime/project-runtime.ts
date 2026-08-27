@@ -12,6 +12,8 @@ import { observationEdgeKey } from "../graph/ir";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
 import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
+import type { GraphNode } from "../graph/ir";
+import type { MemberState } from "./graph-publisher";
 import type { GraphBuilder } from "../ports/graph-builder";
 
 type TrackEntry = { track: TrackDefinition; owner: object; motionId?: string; token: number };
@@ -31,6 +33,7 @@ export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly scheduler?: Scheduler;
   readonly compose: ComposeResolver;
+  readonly interpolated?: (node: GraphNode) => (() => MemberState) | undefined;
   readonly setProgress?: (nodeId: string, progress: number) => void;
   readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
   readonly disposeTrack?: (nodeId: string) => void;
@@ -151,6 +154,7 @@ export class ProjectRuntime {
         scheduler: options.scheduler,
         onClockTick: options.onClockTick,
         graphBuilder: options.graphBuilder,
+        interpolated: options.interpolated,
         onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
       });
     } catch (error) {

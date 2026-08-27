@@ -1,18 +1,12 @@
 import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../contract/v5";
 import {
   collectTrack,
-  compareDiagnostics,
   diag,
-  edgeKey,
+  finalizeGraph,
   type GraphBuildResult,
   type GraphNode,
 } from "../../graph/ir";
 import { assertAuthoredMotionId } from "../../graph/ids";
-import { orderGraph } from "../../graph/order";
-
-function freeze<T>(value: T): T {
-  return Object.freeze(value);
-}
 
 export class IncrementalGraphBuilder {
   /**
@@ -140,62 +134,6 @@ export class IncrementalGraphBuilder {
       }
     }
 
-    const known = new Set(nodes.map((node) => node.id));
-    const edgeKeys = new Set<string>();
-    for (const node of nodes)
-      for (const edge of node.edges) {
-        const key = edgeKey(edge);
-        if (edgeKeys.has(key))
-          diagnostics.push(
-            diag("observation-duplicate", edge.observerId, `Duplicate observation edge "${key}".`, [
-              edge.observerId,
-              edge.sourceId,
-            ]),
-          );
-        edgeKeys.add(key);
-        if (!known.has(edge.sourceId))
-          diagnostics.push(
-            diag(
-              "observation-unknown-source",
-              edge.observerId,
-              `Unknown observation source "${edge.sourceId}".`,
-              [edge.sourceId],
-            ),
-          );
-        if (edge.sourceId === edge.observerId)
-          diagnostics.push(
-            diag(
-              "observation-self-reference",
-              edge.observerId,
-              "Observation cannot reference itself.",
-              [edge.observerId],
-            ),
-          );
-      }
-
-    diagnostics.sort(compareDiagnostics);
-    if (diagnostics.some(({ severity }) => severity === "error"))
-      return { diagnostics: Object.freeze(diagnostics) };
-
-    const ordering = orderGraph(nodes);
-    if (ordering.order === undefined)
-      return {
-        diagnostics: Object.freeze(
-          [...diagnostics, ...ordering.diagnostics].sort(compareDiagnostics),
-        ),
-      };
-
-    const nodeById: Record<string, GraphNode> = {};
-    for (const node of nodes) nodeById[node.id] = node;
-
-    return {
-      graph: freeze({
-        nodes: freeze(nodes),
-        nodeById: freeze(nodeById),
-        order: ordering.order,
-        diagnostics: freeze(diagnostics),
-      }),
-      diagnostics: freeze(diagnostics),
-    };
+    return finalizeGraph(nodes, diagnostics);
   }
 }

@@ -1,5 +1,5 @@
 import type { PluginDefinition } from "../domain/plugins";
-import type { ImmutableValue } from "../domain/values";
+import { readFrame, readNumber } from "./frame";
 
 export function composeWorld(
   parent: { x: number; y: number; rotation: number },
@@ -15,31 +15,22 @@ export function composeWorld(
   };
 }
 
-interface WorldFrame {
-  readonly x: number;
-  readonly y: number;
-  readonly rotation: number;
-}
-
-function readNumber(value: unknown): number {
-  return typeof value === "number" ? value : 0;
-}
-
 /**
- * Reads the `base` slot as a world-space frame, defaulting every component to zero.
+ * The rotation the bound solver solved for `nodeId`, or `undefined` when there is none.
  *
- * The unbound case belongs to the plugin rather than to the schema: `fk.requires.base` is optional,
- * so a root bone authored with no binding composes against the origin instead of failing to load.
+ * Named and hoisted rather than inlined. This is the plugin every bone in the rig composes through,
+ * and four levels of narrowing read as part of the kinematics when they sit inside the arithmetic.
+ * One answer covers an unbound slot, a source that publishes no `rotations`, a `rotations` record
+ * that does not name this node, and a non-finite angle, so the caller owns the authored fallback in
+ * exactly one place. See ADR-051.
  */
-function readBase(input: ImmutableValue | undefined): WorldFrame {
-  if (input === null || typeof input !== "object" || Array.isArray(input))
-    return { x: 0, y: 0, rotation: 0 };
-  const record = input as Readonly<Record<string, unknown>>;
-  return {
-    x: readNumber(record.x),
-    y: readNumber(record.y),
-    rotation: readNumber(record.rotation),
-  };
+function readSolvedRotation(solver: unknown, nodeId: string): number | undefined {
+  if (solver === null || typeof solver !== "object" || Array.isArray(solver)) return undefined;
+  const rotations = (solver as Readonly<Record<string, unknown>>).rotations;
+  if (rotations === null || typeof rotations !== "object" || Array.isArray(rotations))
+    return undefined;
+  const solved = (rotations as Readonly<Record<string, unknown>>)[nodeId];
+  return typeof solved === "number" && Number.isFinite(solved) ? solved : undefined;
 }
 
 /**
@@ -71,24 +62,31 @@ function readBase(input: ImmutableValue | undefined): WorldFrame {
  * Claiming them costs their flat spelling, which is stated rather than discovered: `transform`
  * claims `x` and `y` as well, so a flat `x` is `plugin-ambiguous-key` and an author names the owner
  * by authoring inside a group, exactly as a flat `rotation` already required. See ADR-043.
+ *
+ * A bound `solver` replaces the authored local `rotation` with the one the solver solved for this
+ * node, and nothing else about the composition changes. An unbound slot, or a solver that does not
+ * name this node, falls back to the authored value, so every existing FK bone is byte-identical.
+ * See ADR-051.
  */
 export const fkPlugin: PluginDefinition = {
   name: "fk",
   keys: ["x", "y", "length", "rotation"],
   requirements: {
     base: { description: "the parent bone or root this bone hangs from" },
+    solver: { description: "the IK solver providing solved rotation override" },
   },
   stage: "compose",
   outputs: ["x", "y", "rotation"],
-  compose: (values, progress, inputs) => {
+  compose: (values, _progress, inputs, nodeId) => {
+    const rotation = readSolvedRotation(inputs.solver, nodeId) ?? readNumber(values.rotation);
     // The pivot, then the extension. Two rotate-then-translates, and `composeWorld` owns both, so
     // the trigonometry lives in one place instead of being copied here beside an export nothing
     // called. The extension is purely along the bone's own direction, which is why its local frame
     // carries `length` on `x` and nothing on `y` or `rotation`.
-    const pivot = composeWorld(readBase(inputs.base), {
+    const pivot = composeWorld(readFrame(inputs.base), {
       x: readNumber(values.x),
       y: readNumber(values.y),
-      rotation: readNumber(values.rotation),
+      rotation,
     });
     return composeWorld(pivot, { x: readNumber(values.length), y: 0, rotation: 0 });
   },
