@@ -62,28 +62,34 @@ function readBase(input: ImmutableValue | undefined): WorldFrame {
  * parent, and the composed one is its rotation in world space, which is what a child observes and
  * what a renderer writes. Nothing downstream reads the local value, so it is replaced rather than
  * published beside its own result.
+ *
+ * An authored `x` and `y` offset this bone's pivot from its parent's frame. Both default to zero,
+ * so a bone authored before slice A of issue #195 composes exactly the frame it always composed.
+ * The offset is read in the parent's rotated space rather than in world space, because a pivot that
+ * stopped following its parent when the parent turned would not be a pivot.
+ *
+ * Claiming them costs their flat spelling, which is stated rather than discovered: `transform`
+ * claims `x` and `y` as well, so a flat `x` is `plugin-ambiguous-key` and an author names the owner
+ * by authoring inside a group, exactly as a flat `rotation` already required. See ADR-043.
  */
 export const fkPlugin: PluginDefinition = {
   name: "fk",
-  keys: ["length", "rotation"],
+  keys: ["x", "y", "length", "rotation"],
   requirements: {
     base: { description: "the parent bone or root this bone hangs from" },
   },
   stage: "compose",
   outputs: ["x", "y", "rotation"],
   compose: (values, progress, inputs) => {
-    const base = readBase(inputs.base);
-    const length = readNumber(values.length);
-    const localRotation = readNumber(values.rotation);
-
-    // Rotate-then-translate: the authored rotation controls THIS bone's direction from its parent.
-    const worldRotation = base.rotation + localRotation;
-    const rad = (worldRotation * Math.PI) / 180;
-
-    return {
-      x: base.x + length * Math.cos(rad),
-      y: base.y + length * Math.sin(rad),
-      rotation: worldRotation,
-    };
+    // The pivot, then the extension. Two rotate-then-translates, and `composeWorld` owns both, so
+    // the trigonometry lives in one place instead of being copied here beside an export nothing
+    // called. The extension is purely along the bone's own direction, which is why its local frame
+    // carries `length` on `x` and nothing on `y` or `rotation`.
+    const pivot = composeWorld(readBase(inputs.base), {
+      x: readNumber(values.x),
+      y: readNumber(values.y),
+      rotation: readNumber(values.rotation),
+    });
+    return composeWorld(pivot, { x: readNumber(values.length), y: 0, rotation: 0 });
   },
 };

@@ -18,8 +18,8 @@ function ramp(from: number, to: number) {
   ];
 }
 
-// The rig case: `transform` claims `x`, `y`, `rotation` and `fk` claims `length`, `rotation`, so
-// `rotation` has two claimants and each track names the one it means. Registration used to refuse
+// The rig case: `transform` claims `x`, `y`, `rotation` and `fk` claims all four, so each of those
+// three keys has two claimants and every track names the one it means. Registration used to refuse
 // this registry outright, which is the whole reason `fkPlugin` mangled its own key names.
 //
 // The parent is now bound through `fk.requires.base` rather than through a track-level input
@@ -71,7 +71,9 @@ function load(project: ProjectDefinition, plugins: PluginRegistry) {
 
 describe("per-plugin keyframe key ownership", () => {
   it("N-7 claims the natural bone key names and composes world space from them", () => {
-    expect(fkPlugin.keys).toEqual(["length", "rotation"]);
+    // `x` and `y` are the pivot offset from slice A of issue #195. What they mean is `FO-2`'s and
+    // `FO-4`'s subject; this case owns the claimed list, so it is the one that moves when it grows.
+    expect(fkPlugin.keys).toEqual(["x", "y", "length", "rotation"]);
 
     // `rotation` is claimed and produced. The authored value is this bone's rotation relative to
     // its parent; the composed one is its rotation in world space, which is what a child observes
