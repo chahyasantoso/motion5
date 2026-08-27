@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { PluginRegistry } from "../../../src/domain/plugins";
+import type { ImmutableRecord } from "../../../src/domain/values";
 import { composeWorld, fkPlugin } from "../../../src/plugins/fk";
 import { transformPlugin } from "../../../src/plugins/transform";
 
@@ -16,7 +17,14 @@ import { transformPlugin } from "../../../src/plugins/transform";
 // slice deletes: a bone is its parent's frame moved to its own pivot, then extended along its own
 // direction by `length`, and each of those is one rotate-then-translate.
 
-interface Frame {
+/**
+ * A world frame as the `base` slot actually delivers one.
+ *
+ * It extends `ImmutableRecord` rather than restating three loose keys, because that is what a
+ * requirement slot carries and what `PluginInputs` accepts. Declared as a bare interface it is not
+ * assignable to `ImmutableValue` at all, which is the typecheck this file first failed on.
+ */
+interface Frame extends ImmutableRecord {
   readonly x: number;
   readonly y: number;
   readonly rotation: number;
