@@ -175,6 +175,42 @@ A prepare-stage plugin's `contribute` hook derives a contribution from a propert
 
 The contract layer owns section and binding shape, the plugin registry owns plugin and slot resolution, and graph construction owns topology. This keeps validation registry-independent and avoids duplicate normalization owners. See ADR-044 and ADR-049.
 
+### Inverse Kinematics (`ik` and `fk.requires.solver`)
+
+Inverse Kinematics computes joint rotations so an end-effector bone chain reaches toward a world target:
+
+- **`ik` Plugin Group**: Declares configuration under `values` and topological targets under `requires`:
+  - `values.flip`: boolean (optional, default `false`) to mirror the joint bend angle (e.g. elbow/knee orientation).
+  - `requires.root`: qualified ID of the world frame the chain hangs from.
+  - `requires.target`: qualified ID of the world-space coordinate the tip reaches toward.
+- **`fk` Solver Binding**: A member bone binds `keyframes.fk.requires.solver` naming the solver node. The bone authors `values.length` and optional pivot offsets (`x`, `y`), but may **not** author `values.rotation` (enforced by `ik-solved-rotation-dead`).
+
+```text
+// Solver node:
+{
+  id: "arm-solve",
+  keyframes: {
+    ik: {
+      values: { flip: false },
+      requires: { root: "walk/shoulder", target: "walk/hand-target" },
+    },
+  },
+}
+
+// Member bones:
+{
+  id: "upper-arm",
+  keyframes: {
+    fk: {
+      values: { length: 30 },
+      requires: { base: "walk/shoulder", solver: "walk/arm-solve" },
+    },
+  },
+}
+```
+
+See ADR-051.
+
 ### Keyframe namespace rules
 
 - A keyframe name may not contain `:` in a flat key, group name, or leaf name. The colon marks private internal keys and is rejected with `keyframes-reserved-separator`.
@@ -233,6 +269,15 @@ Errors reject a candidate project before it replaces the active project. Warning
 
 A diagnostic about a grouped leaf cites the authored path, including the section: `keyframes.fk.values.length`. A diagnostic about a stop cites its index on the property: `keyframes.x[0].p`.
 
+Load-time solver diagnostics include:
+
+- `ik-solver-no-root`: A solver node does not bind a `root` requirement edge.
+- `ik-solver-no-members`: A solver node has no member nodes binding `solver` to it.
+- `ik-solver-unreachable-root`: A member's `base` hierarchy walk fails to terminate at the solver's bound `root`.
+- `ik-mode-ambiguous`: A single node binds `solver` alongside `root`/`target`, or binds `root` under multiple plugins.
+- `ik-solved-rotation-dead`: A bone bound to a `solver` authors a local `rotation` value.
+- `ik-solver-unsupported-arity`: Derived solver member count is not 2 (two-bone analytical solve).
+
 ## Rejected input
 
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, the retired stops wrapper, a leaf that is neither an array nor a static scalar, malformed group sections, malformed bindings and edges, unknown sources, duplicate edges, self-reference, cycles, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Flat keys with multiple plugin claimants are errors too. Missing perspective for detected 3D content and unused free tracks are warnings.
+Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, the retired stops wrapper, a leaf that is neither an array nor a static scalar, malformed group sections, malformed bindings and edges, unknown sources, duplicate edges, self-reference, cycles, invalid solver topologies, dead rotations on solved bones, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Flat keys with multiple plugin claimants are errors too. Missing perspective for detected 3D content and unused free tracks are warnings.

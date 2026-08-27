@@ -77,7 +77,18 @@ Two shapes deliberately stay legal. A group may author `requires` with no `value
 
 Malformed or duplicate ids, reserved namespace characters, malformed edges, unknown sources, duplicate edges, self-reference, and cycles are all errors too. Track ids may not contain `/`, and motion ids may not contain `/` or equal `~`, because those characters carry the qualified namespace.
 
-A diagnostic about a grouped keyframe cites the path you typed, `keyframes.fk.values.length`, not the flattened key the compiler works with. A diagnostic about a stop cites its index on the property, `keyframes.x[0].p`. Every path a leaf diagnostic carries is a path you wrote. See ADR-041, ADR-049, and ADR-050.
+### Inverse Kinematics and solver rules
+
+Solvers (`ikPlugin`) and solved bones (`fkPlugin`) enforce topological and keyframe constraints at load time before execution begins. See ADR-051.
+
+- `ik-solver-no-root`, when a solver node does not bind the `root` requirement slot. The root frame is the static or parent anchor from which the chain hangs.
+- `ik-solver-no-members`, when a solver node declares a `root` slot but no downstream bones bind `solver` to it. The solver would compute in a vacuum without controlling any joints.
+- `ik-solver-unreachable-root`, when tracing a member bone's `base` parent walk upward fails to terminate at the solver's bound `root`. The member chain must form a contiguous ancestor hierarchy rooted at `root`.
+- `ik-mode-ambiguous`, when a single node binds `solver` alongside `root` or `target`, or binds `root` under multiple plugins. A track is either a solver or a member, never both.
+- `ik-solved-rotation-dead`, when a bone that binds `keyframes.fk.requires.solver` authors `values.rotation`. The solver overrides local rotation dynamically, so authoring a static or keyframed rotation is dead input and refused. Author only `length` (and optional pivot offsets `x`/`y`).
+- `ik-solver-unsupported-arity`, when the derived member chain contains a count other than 2. The analytical closed-form law-of-cosines solve requires exactly a two-bone chain.
+
+A diagnostic about a grouped keyframe cites the path you typed, `keyframes.fk.values.length`, not the flattened key the compiler works with. A diagnostic about a stop cites its index on the property, `keyframes.x[0].p`. Every path a leaf diagnostic carries is a path you wrote. See ADR-041, ADR-049, ADR-050, and ADR-051.
 
 ## A frame has two failure owners
 

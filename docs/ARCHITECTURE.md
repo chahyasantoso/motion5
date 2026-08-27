@@ -102,6 +102,7 @@ All topology changes take the same path.
 command
   -> build candidate graph
   -> normalize and validate candidate
+  -> resolveSolvers (derive solver members root-most first)
   -> apply observation state changes, recording an undo journal
   -> apply publisher schedule changes
   -> commit immutable graph snapshot
@@ -118,14 +119,15 @@ Commit swaps an immutable IR snapshot. It does not recreate live state, and it d
 One tick produces one batch.
 
 1. A clock tick or an explicit flush opens a batch.
-2. Dirty seeds are collected from playhead invalidation and from mutations since the last flush.
+2. Dirty seeds are collected from playhead invalidation and from mutations since the last flush. Solver members register their solver as dependent, so invalidating a member's length schedules its solver in the affected BFS.
 3. The publisher walks the canonical topological order, restricted to the downstream closure of the seeds.
-4. Each dirty node composes at most once. Memoization is per batch, so a diamond composes its shared ancestor once.
-5. Input-role edges contribute to the source object before local composition. Output-role edges merge over the resulting patch after it.
-6. If a node's composition throws, the node publishes an error status, its downstream closure publishes a blocked status, and traversal continues for unrelated branches.
-7. Publication is deduplicated: unchanged values, progress, source revisions, and status mean no new revision.
-8. Retry metadata is retained only for nodes whose publication failed.
-9. The batch closes and subscribers are notified, node subscribers first, then batch subscribers.
+4. Each dirty node composes at most once. For solver nodes (`node.solves`), member timeline states are gathered pre-composition via `memberNode.interpolated()` and supplied under `inputs[plugin].members`. Solver composition is memoized using deep value equality (`equalValues`) over inputs and member states.
+5. Input-role edges contribute to the source object before local composition. `fkPlugin` inspects `inputs.solver?.rotations[nodeId]` to override local rotation before computing parent frame extension.
+6. Output-role edges merge over the resulting patch after composition.
+7. If a node's composition throws, the node publishes an error status, its downstream closure publishes a blocked status, and traversal continues for unrelated branches.
+8. Publication is deduplicated: unchanged values, progress, source revisions, and status mean no new revision.
+9. Retry metadata is retained only for nodes whose publication failed.
+10. The batch closes and subscribers are notified, node subscribers first, then batch subscribers.
 
 Reentrancy is refused, not queued: a flush triggered during a flush returns immediately. A subscriber that mutates the graph schedules work for the next tick.
 
