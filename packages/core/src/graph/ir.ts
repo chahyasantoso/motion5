@@ -34,12 +34,18 @@ export interface GraphEdge {
   readonly role: "input" | "output";
   readonly requirement?: EdgeRequirement;
 }
+export interface SolveMember {
+  readonly id: string;
+  readonly base: string;
+}
+
 export interface GraphNode {
   readonly id: string;
   readonly owner: "motion" | "free";
   readonly authoredIndex: number;
   readonly track: TrackDefinition;
   readonly edges: readonly GraphEdge[];
+  readonly solves?: readonly SolveMember[];
 }
 export interface GraphIR {
   readonly nodes: readonly GraphNode[];
@@ -349,6 +355,183 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
   return finalizeGraph(nodes, diagnostics);
 }
 
+function authorsRotation(keyframes: unknown): boolean {
+  if (!isRecord(keyframes)) return false;
+  if (keyframes.rotation !== undefined) return true;
+  for (const key of Object.keys(keyframes)) {
+    const group = keyframes[key];
+    if (isRecord(group)) {
+      if (group.rotation !== undefined) return true;
+      const values = group.values;
+      if (isRecord(values) && values.rotation !== undefined) return true;
+    }
+  }
+  return false;
+}
+
+export function resolveSolvers(
+  nodes: readonly GraphNode[],
+  diagnostics: Diagnostic[],
+): readonly GraphNode[] {
+  const nodeMap = new Map<string, GraphNode>();
+  for (const node of nodes) nodeMap.set(node.id, node);
+
+  // Diagnostic 3: ik-mode-ambiguous
+  // Diagnostic 4: ik-solved-rotation-dead
+  for (const node of nodes) {
+    let rootCount = 0;
+    let hasSolver = false;
+    let hasTarget = false;
+    for (const edge of node.edges) {
+      if (edge.role === "input" && edge.requirement) {
+        if (edge.requirement.slot === "root") rootCount++;
+        if (edge.requirement.slot === "solver") hasSolver = true;
+        if (edge.requirement.slot === "target") hasTarget = true;
+      }
+    }
+    if ((hasSolver && (rootCount > 0 || hasTarget)) || rootCount > 1) {
+      diagnostics.push(
+        diag(
+          "ik-mode-ambiguous",
+          node.id,
+          `Node "${node.id}" has ambiguous IK mode configuration.`,
+          [node.id],
+        ),
+      );
+    }
+    if (hasSolver && authorsRotation(node.track.keyframes)) {
+      diagnostics.push(
+        diag(
+          "ik-solved-rotation-dead",
+          node.id,
+          `Member "${node.id}" bound to solver cannot author rotation.`,
+          [node.id],
+        ),
+      );
+    }
+  }
+
+  const solvesMap = new Map<string, readonly SolveMember[]>();
+
+  // Resolve solvers
+  for (const solver of nodes) {
+    const rootEdge = solver.edges.find((e) => e.role === "input" && e.requirement?.slot === "root");
+    if (!rootEdge) continue;
+    const rootId = rootEdge.sourceId;
+
+    const members = nodes.filter((n) =>
+      n.edges.some(
+        (e) => e.role === "input" && e.requirement?.slot === "solver" && e.sourceId === solver.id,
+      ),
+    );
+
+    // Diagnostic 2: ik-solver-no-members
+    if (members.length === 0) {
+      diagnostics.push(
+        diag(
+          "ik-solver-no-members",
+          solver.id,
+          `Solver "${solver.id}" has no member nodes bound to it.`,
+          [solver.id],
+        ),
+      );
+      continue;
+    }
+
+    // Diagnostic 5: ik-solver-unsupported-arity
+    if (members.length !== 2) {
+      diagnostics.push(
+        diag(
+          "ik-solver-unsupported-arity",
+          solver.id,
+          `Solver "${solver.id}" has unsupported arity (${members.length}); only 2-bone solvers are supported.`,
+          [solver.id],
+        ),
+      );
+    }
+
+    interface MemberWithDepth {
+      readonly node: GraphNode;
+      readonly base: string;
+      readonly depth: number;
+    }
+
+    const membersWithDepth: MemberWithDepth[] = [];
+
+    const memberIds = new Set(members.map((m) => m.id));
+
+    for (const m of members) {
+      const baseEdge = m.edges.find((e) => e.role === "input" && e.requirement?.slot === "base");
+      if (!baseEdge) {
+        diagnostics.push(
+          diag(
+            "ik-solver-unreachable-root",
+            m.id,
+            `Member "${m.id}" cannot reach solver root "${rootId}".`,
+            [m.id, rootId],
+          ),
+        );
+        continue;
+      }
+      const memberBase = baseEdge.sourceId;
+
+      // If base is not another member of this solver and not rootId, this member's root link is broken
+      if (memberBase !== rootId && !memberIds.has(memberBase)) {
+        diagnostics.push(
+          diag(
+            "ik-solver-unreachable-root",
+            m.id,
+            `Member "${m.id}" cannot reach solver root "${rootId}".`,
+            [m.id, rootId],
+          ),
+        );
+      }
+
+      let currId: string | undefined = memberBase;
+      let depth = 1;
+      const visited = new Set<string>();
+
+      while (currId !== undefined) {
+        if (currId === rootId) break;
+        if (visited.has(currId)) break;
+        visited.add(currId);
+        const parentNode = nodeMap.get(currId);
+        if (!parentNode) break;
+        const pBaseEdge = parentNode.edges.find(
+          (e) => e.role === "input" && e.requirement?.slot === "base",
+        );
+        currId = pBaseEdge?.sourceId;
+        depth++;
+      }
+
+      membersWithDepth.push({
+        node: m,
+        base: memberBase,
+        depth,
+      });
+    }
+
+    membersWithDepth.sort(
+      (a, b) =>
+        a.depth - b.depth ||
+        a.node.authoredIndex - b.node.authoredIndex ||
+        compareCodeUnits(a.node.id, b.node.id),
+    );
+
+    solvesMap.set(
+      solver.id,
+      freeze(membersWithDepth.map((m) => freeze({ id: m.node.id, base: m.base }))),
+    );
+  }
+
+  return freeze(
+    nodes.map((node) => {
+      const solves = solvesMap.get(node.id);
+      return solves ? freeze({ ...node, solves }) : node;
+    }),
+  );
+}
+
 /**
  * Validates collected nodes and diagnostics, linearizes them, and freezes the result.
  *
@@ -395,10 +578,11 @@ export function finalizeGraph(
           ),
         );
     }
+  const resolvedNodes = resolveSolvers(nodes, diagnostics);
   diagnostics.sort(compareDiagnostics);
   if (diagnostics.some(({ severity }) => severity === "error"))
     return { diagnostics: Object.freeze(diagnostics) };
-  const ordering = orderGraph(nodes);
+  const ordering = orderGraph(resolvedNodes);
   if (ordering.order === undefined)
     return {
       diagnostics: Object.freeze(
@@ -406,10 +590,10 @@ export function finalizeGraph(
       ),
     };
   const nodeById: Record<string, GraphNode> = {};
-  for (const node of nodes) nodeById[node.id] = node;
+  for (const node of resolvedNodes) nodeById[node.id] = node;
   return {
     graph: freeze({
-      nodes: freeze(nodes),
+      nodes: freeze(resolvedNodes),
       nodeById: freeze(nodeById),
       order: ordering.order,
       diagnostics: freeze(diagnostics),
