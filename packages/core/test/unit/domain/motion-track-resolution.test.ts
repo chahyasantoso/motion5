@@ -30,7 +30,8 @@ function setup(ids: readonly string[], options: SetupOptions = {}) {
   const interpolator = createFakeInterpolator();
   const registry = createFakeTrackRegistry<Track>();
   const created = new Map<string, Track>();
-  for (const id of ids) created.set(id, registry.register(id, new Track({ interpolator })));
+  for (const id of ids)
+    created.set(id, registry.register(id, new Track({ interpolator, nodeId: `~/res-${id}` })));
   const motion = new Motion({
     clock,
     scheduler,
@@ -90,7 +91,7 @@ describe("Motion resolves Tracks by id", () => {
       resolveTrack: registry.resolveTrack,
     });
     // Nothing was registered at construction time, so a captured reference could not exist.
-    const track = registry.register("late", new Track({ interpolator }));
+    const track = registry.register("late", new Track({ interpolator, nodeId: "~/res-late" }));
     motion.seek(0.5);
     expect(track.progress).toBe(0.5);
   });
@@ -102,7 +103,7 @@ describe("Motion resolves Tracks by id", () => {
     const first = created.get("arm")!;
     motion.seek(0.5);
     expect(first.progress).toBe(0.5);
-    const second = registry.register("arm", new Track({ interpolator }));
+    const second = registry.register("arm", new Track({ interpolator, nodeId: "~/res-arm" }));
     motion.seek(0.75);
     expect(second.progress).toBe(0.75);
     // Nobody told the Motion about the swap, and it never touched the retired Track again.
@@ -137,7 +138,7 @@ describe("Motion resolves Tracks by id", () => {
     // Option A's job minus the reference swap. ADR-029's index guarantee still holds.
     const { motion, registry, interpolator } = setup(["a", "b"]);
     motion.seek(0.5);
-    const replacement = registry.register("a", new Track({ interpolator }));
+    const replacement = registry.register("a", new Track({ interpolator, nodeId: "~/res-a" }));
     motion.replaceTrack({ id: "a", duration: 200 });
     expect(motion.tracks.map(({ id }) => id)).toEqual(["a", "b"]);
     expect(replacement.progress).toBe(0.5);
@@ -168,7 +169,7 @@ describe("Motion resolves Tracks by id", () => {
       'Motion track "arm" has no compiled Track.',
     );
     expect(motion.tracks[0]).toBe(before);
-    registry.register("arm", new Track({ interpolator }));
+    registry.register("arm", new Track({ interpolator, nodeId: "~/res-arm" }));
     expect(() => motion.replaceTrack({ id: "arm", duration: 200 })).not.toThrow();
     expect(motion.tracks[0]?.duration).toBe(200);
   });

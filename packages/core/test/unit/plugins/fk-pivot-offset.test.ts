@@ -48,7 +48,7 @@ function toFrame(values: Readonly<Record<string, unknown>>): Frame {
 }
 
 function bone(values: Readonly<Record<string, number>>, base: Frame = ORIGIN): Frame {
-  return toFrame(fkPlugin.compose(values, 1, { base }));
+  return toFrame(fkPlugin.compose(values, 1, { base }, "~/bone"));
 }
 
 /** The pivot, then the extension: the whole of `fk` stated as two calls to its own primitive. */

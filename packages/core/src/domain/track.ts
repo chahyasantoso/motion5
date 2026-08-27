@@ -11,6 +11,7 @@ export interface TrackOptions {
   readonly interpolator: Interpolator;
   readonly interpolationConfig?: unknown;
   readonly plugins?: ResolvedPlugins;
+  readonly nodeId: string;
 }
 export class CompositionOutputError extends TypeError {
   readonly ruleId = "composition-output-shape" as const;
@@ -115,6 +116,7 @@ const EMPTY_RESOLVED_PLUGINS: ResolvedPlugins = Object.freeze({
 export class Track {
   readonly #timeline: InterpolationTimeline;
   readonly #plugins: ResolvedPlugins;
+  readonly #nodeId: string;
   #progress = 0;
   #dirty = true;
   #disposed = false;
@@ -122,13 +124,18 @@ export class Track {
   #lastSeed: ImmutableRecord | undefined;
   #lastRequirementInputs: RequirementInputs | undefined;
   constructor(options: TrackOptions) {
+    if (options.nodeId.length === 0) throw new TypeError("Track node id must be non-empty.");
     this.#plugins = options.plugins ?? EMPTY_RESOLVED_PLUGINS;
+    this.#nodeId = options.nodeId;
     this.#timeline = options.interpolator.create(
       preparedConfig(options.interpolationConfig, this.#plugins),
     );
   }
   get progress(): number {
     return this.#progress;
+  }
+  get nodeId(): string {
+    return this.#nodeId;
   }
   get dirty(): boolean {
     return this.#dirty;
@@ -201,7 +208,7 @@ export class Track {
     let values: ImmutableRecord = seed;
     for (const plugin of this.#plugins.plugins) {
       const scoped = requirementInputs[plugin.name] ?? NO_PLUGIN_INPUTS;
-      const composed = plugin.compose(values, this.#progress, scoped);
+      const composed = plugin.compose(values, this.#progress, scoped, this.#nodeId);
       if (!isRecord(composed))
         throw new CompositionOutputError(
           `Plugin "${plugin.name}" must return a renderer-neutral record.`,

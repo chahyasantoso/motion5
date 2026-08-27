@@ -24,7 +24,7 @@ function mounted({ playing = true }: MountOptions = {}) {
   const scheduler = createFakeScheduler();
   const registry = createFakeTrackRegistry<Track>();
   const interpolator = createFakeInterpolator();
-  const track = registry.register("track", new Track({ interpolator }));
+  const track = registry.register("track", new Track({ interpolator, nodeId: "~/range-track" }));
   const trigger = createManualTriggerPort();
   const motion = new Motion({
     clock: createManualClock(),
@@ -79,7 +79,7 @@ describe("Motion owns the trigger progress range once", () => {
     const trigger = createFakeTriggerPort();
     const registry = createFakeTrackRegistry<Track>();
     const interpolator = createFakeInterpolator();
-    registry.register("track", new Track({ interpolator }));
+    registry.register("track", new Track({ interpolator, nodeId: "~/range-track" }));
     const motion = new Motion({
       clock: createManualClock(),
       scheduler: createFakeScheduler(),

@@ -80,7 +80,7 @@ describe("per-plugin keyframe key ownership", () => {
     // and what a renderer writes. The parent's own `rotation` arrives inside the `base` slot, so
     // the two never share a namespace and neither has to be renamed.
     const parent = { base: { rotation: 90 } };
-    const composed = fkPlugin.compose({ length: 10, rotation: -90 }, 1, parent);
+    const composed = fkPlugin.compose({ length: 10, rotation: -90 }, 1, parent, "walk/thigh");
     expect(composed.x).toBeCloseTo(10, 12);
     expect(composed.y).toBeCloseTo(0, 12);
     expect(composed.rotation).toBe(0);

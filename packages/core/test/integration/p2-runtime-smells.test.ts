@@ -102,12 +102,12 @@ describe("P2 runtime smell hardening", () => {
   });
   it("rejects host objects from interpolator state at the renderer edge", () => {
     const { interpolator } = fakeInterpolator({ host: new Date(0) });
-    const track = new Track({ interpolator });
+    const track = new Track({ interpolator, nodeId: "~/smell-test" });
     expect(() => track.compose()).toThrow(/renderer-neutral/);
   });
   it("kills a timeline exactly once when a Track is disposed repeatedly", () => {
     const { interpolator, kill } = fakeInterpolator();
-    const track = new Track({ interpolator });
+    const track = new Track({ interpolator, nodeId: "~/smell-test" });
     track.dispose();
     track.dispose();
     expect(kill).toHaveBeenCalledOnce();
