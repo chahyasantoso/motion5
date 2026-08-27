@@ -346,6 +346,21 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
       }
     }
   }
+  return finalizeGraph(nodes, diagnostics);
+}
+
+/**
+ * Validates collected nodes and diagnostics, linearizes them, and freezes the result.
+ *
+ * The one owner of the graph-building tail, so `buildGraphIR` and the incremental builder cannot
+ * drift about duplicate/unknown/self-reference edges, diagnostic ordering, cycle rejection, or the
+ * frozen result shape. Any solver derivation (issue #195, slice C2) lands here and is therefore
+ * reached by both load-time validation and the runtime through one call site.
+ */
+export function finalizeGraph(
+  nodes: readonly GraphNode[],
+  diagnostics: Diagnostic[],
+): GraphBuildResult {
   const known = new Set(nodes.map((node) => node.id));
   const edgeKeys = new Set<string>();
   for (const node of nodes)
