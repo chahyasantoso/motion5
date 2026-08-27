@@ -16,6 +16,7 @@ import {
   PLUGIN_VALUES_SECTION,
   readPluginValues,
 } from "./keyframe-shape";
+import { PLUGIN_GOALS_SLOT } from "./solver-slots";
 import { buildGraphIR } from "../graph/ir";
 
 export interface ValidationResult {
@@ -149,6 +150,46 @@ export function validateKeyframes(
     validateStops(leaf.stops, propertyPath);
   };
   /**
+   * The reserved goals slot: one binding per chain member, keyed by the member's authored id.
+   *
+   * Four rules of its own rather than an exception inside `validateRequires`, because this is the
+   * one binding whose authored value is a record and `keyframes-requires-source` answers only for a
+   * source id. Left to that rule the dict is refused outright, and deleting the rule instead would
+   * make a malformed dict derive no binding at all: no edge, no ordering, no pending classification,
+   * and a solver that reaches for nothing with no diagnostic.
+   *
+   * Shape only, and deliberately not membership. Whether a key names a real member of this solver's
+   * chain is derived from `solver` edges in `resolveSolvers`, which is the only owner that knows the
+   * member set; asking it here would need a graph this layer must not hold. Brackets are refused in
+   * a member id so the derived `targets[<memberId>]` slot identity cannot be forged by an authored
+   * name, which is the same reservation argument the colon rule above makes. See issue #195.
+   */
+  const validateGoals = (goals: unknown, goalsPath: string): void => {
+    if (!isObject(goals)) {
+      const detail = "must be an object mapping member ids to source ids";
+      add("keyframes-targets-shape", goalsPath, `Plugin '${PLUGIN_GOALS_SLOT}' ${detail}.`);
+      return;
+    }
+    const entries = Object.entries(goals);
+    if (entries.length === 0) {
+      const detail = "must declare at least one goal, or be omitted entirely";
+      add("keyframes-targets-empty", goalsPath, `Plugin '${PLUGIN_GOALS_SLOT}' ${detail}.`);
+      return;
+    }
+    for (const [member, source] of entries) {
+      const memberPath = `${goalsPath}.${member}`;
+      const forged = member.includes("[") || member.includes("]");
+      if (member.length === 0 || member.includes(":") || forged) {
+        const detail = "must be non-empty and must not contain ':', '[' or ']'";
+        add("keyframes-targets-member", memberPath, `Goal member id '${member}' ${detail}.`);
+      }
+      if (typeof source !== "string" || source.length === 0) {
+        const detail = "must name a non-empty source id";
+        add("keyframes-targets-source", memberPath, `Goal for member '${member}' ${detail}.`);
+      }
+    }
+  };
+  /**
    * The registry-independent half of binding validation.
    *
    * Shape only: an object mapping non-empty slot names to non-empty source ids. Whether the group
@@ -175,6 +216,10 @@ export function validateKeyframes(
     }
     for (const [slot, source] of slots) {
       const slotPath = `${requiresPath}.${slot}`;
+      if (slot === PLUGIN_GOALS_SLOT) {
+        validateGoals(source, slotPath);
+        continue;
+      }
       if (slot.length === 0 || slot.includes(":")) {
         const detail = "must be non-empty and must not contain ':'";
         add("keyframes-requires-slot", slotPath, `Requirement slot '${slot}' ${detail}.`);
