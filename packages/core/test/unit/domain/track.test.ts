@@ -44,7 +44,7 @@ function createRejectingInterpolator() {
 describe("Track leaf", () => {
   it("clamps progress and marks the leaf dirty only when progress changes", () => {
     const fake = createInterpolator();
-    const track = new Track({ interpolator: fake.interpolator });
+    const track = new Track({ interpolator: fake.interpolator, nodeId: "~/test" });
     expect(track.setProgress(2)).toBe(true);
     expect(track.progress).toBe(1);
     expect(track.setProgress(1)).toBe(false);
@@ -64,6 +64,7 @@ describe("Track leaf", () => {
     const track = new Track({
       interpolator: fake.interpolator,
       plugins: resolvePlugins(createPlugin("opacity", compose)),
+      nodeId: "~/test",
     });
     expect(() => track.setProgress(Number.NaN)).toThrow(/finite/);
     const first = track.compose({ opacity: { level: 1 } });
@@ -82,6 +83,7 @@ describe("Track leaf", () => {
     const track = new Track({
       interpolator: fake.interpolator,
       plugins: resolvePlugins(createPlugin("passthrough", compose)),
+      nodeId: "~/test",
     });
     const first = track.compose({ passthrough: { level: 1 } });
     const second = track.compose({ passthrough: { level: 2 } });
@@ -90,7 +92,7 @@ describe("Track leaf", () => {
     expect(compose).toHaveBeenCalledTimes(2);
   });
   it("is a leaf with no composite or graph API", () => {
-    const track = new Track({ interpolator: createInterpolator().interpolator });
+    const track = new Track({ interpolator: createInterpolator().interpolator, nodeId: "~/test" });
     expect("children" in track).toBe(false);
     expect("parent" in track).toBe(false);
     expect("play" in track).toBe(false);
@@ -99,7 +101,7 @@ describe("Track leaf", () => {
   });
   it("disposes once and rejects future work", () => {
     const fake = createInterpolator();
-    const track = new Track({ interpolator: fake.interpolator });
+    const track = new Track({ interpolator: fake.interpolator, nodeId: "~/test" });
     track.dispose();
     track.dispose();
     expect(fake.interpolator.create().kill).toBeDefined();
@@ -108,7 +110,7 @@ describe("Track leaf", () => {
   });
   it("S-1 keeps clean Track bookkeeping at the accepted value after rejection", () => {
     const fake = createRejectingInterpolator();
-    const track = new Track({ interpolator: fake.interpolator });
+    const track = new Track({ interpolator: fake.interpolator, nodeId: "~/test" });
     track.setProgress(0.25);
     track.compose();
 
@@ -120,7 +122,7 @@ describe("Track leaf", () => {
   });
   it("S-2 retries the same value after a timeline rejection", () => {
     const fake = createRejectingInterpolator();
-    const track = new Track({ interpolator: fake.interpolator });
+    const track = new Track({ interpolator: fake.interpolator, nodeId: "~/test" });
 
     expect(() => track.setProgress(0.5)).toThrow("timeline rejected progress");
     fake.acceptRejectedValue();
@@ -132,7 +134,7 @@ describe("Track leaf", () => {
   });
   it("S-3 leaves an already-dirty Track unchanged after rejection", () => {
     const fake = createRejectingInterpolator();
-    const track = new Track({ interpolator: fake.interpolator });
+    const track = new Track({ interpolator: fake.interpolator, nodeId: "~/test" });
 
     expect(track.dirty).toBe(true);
     expect(() => track.setProgress(0.5)).toThrow("timeline rejected progress");
@@ -142,7 +144,7 @@ describe("Track leaf", () => {
   });
   it("S-4 commits progress and dirtiness after the timeline accepts", () => {
     const fake = createRejectingInterpolator();
-    const track = new Track({ interpolator: fake.interpolator });
+    const track = new Track({ interpolator: fake.interpolator, nodeId: "~/test" });
     track.compose();
     fake.acceptRejectedValue();
 

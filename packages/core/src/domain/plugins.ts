@@ -23,13 +23,15 @@ export type PluginInputs = Readonly<ImmutableRecord>;
 export type RequirementInputs = Readonly<Record<string, PluginInputs>>;
 
 /**
- * `inputs` is appended rather than inserted, so every composer written against the two-argument
- * form stays assignable and a plugin that needs no upstream value simply does not declare it.
+ * `inputs` and `nodeId` are appended rather than inserted, so every composer written against the
+ * two- or three-argument form stays assignable, a plugin that needs no upstream value simply does
+ * not declare it, and a plugin that does not need to identify itself never asks for it.
  */
 export type PluginComposer = (
   values: Readonly<ImmutableRecord>,
   progress: number,
   inputs: PluginInputs,
+  nodeId: string,
 ) => ImmutableRecord;
 export interface TrackConfigView {
   readonly id?: string;

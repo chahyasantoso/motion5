@@ -63,6 +63,7 @@ describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
     const track = new Track({
       interpolator: createFakeInterpolator(),
       interpolationConfig: { id: "t1" },
+      nodeId: "~/phase3-t1",
     });
     const registry = createFakeTrackRegistry<Track>();
     registry.register("t1", track);
@@ -153,6 +154,7 @@ describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
     const track = new Track({
       interpolator: createFakeInterpolator(),
       interpolationConfig: { id: "t1" },
+      nodeId: "~/phase3-t1",
     });
     const registry = createFakeTrackRegistry<Track>();
     registry.register("t1", track);

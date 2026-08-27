@@ -24,7 +24,10 @@ const DRIVER_BACKED =
  */
 function registerTrack(id: string) {
   const registry = createFakeTrackRegistry<Track>();
-  const track = registry.register(id, new Track({ interpolator: createFakeInterpolator() }));
+  const track = registry.register(
+    id,
+    new Track({ interpolator: createFakeInterpolator(), nodeId: `~/trigger-${id}` }),
+  );
   return {
     resolveTrack: registry.resolveTrack,
     setProgress: vi.spyOn(track, "setProgress"),

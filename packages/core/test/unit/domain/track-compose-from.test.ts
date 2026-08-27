@@ -63,6 +63,7 @@ function createTrack(...plugins: readonly PluginDefinition[]) {
   return new Track({
     interpolator: { create: () => timeline },
     plugins: resolvePlugins(...plugins),
+    nodeId: "~/compose-from",
   });
 }
 function createBoneTrack(compose: PluginComposer = bone) {

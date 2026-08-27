@@ -46,7 +46,7 @@ function fixture(entries: readonly MotionTrackEntry[], stagger?: number) {
   // Registers under an id the registry may already know, because a rotated instance is a normal
   // state under ADR-031 and is how these cases reach a resolvable-but-dead Track.
   const register = (id: string, interpolator: Interpolator = createFakeInterpolator()) =>
-    registry.register(id, new Track({ interpolator }));
+    registry.register(id, new Track({ interpolator, nodeId: `~/mut-${id}` }));
   return { motion, register };
 }
 

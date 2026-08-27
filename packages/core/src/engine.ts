@@ -208,6 +208,7 @@ export class Engine {
         interpolator: this.#options.interpolator,
         interpolationConfig: { ...trackDef, keyframes: authoredKeyframes },
         ...(resolved ? { plugins: resolved } : {}),
+        nodeId,
       });
       tracks.set(nodeId, track);
       return track;

@@ -96,6 +96,7 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
     const track = new Track({
       interpolator: createFakeInterpolator(),
       interpolationConfig: { id: "t1" },
+      nodeId: "~/phase2-t1",
     });
     const registry = createFakeTrackRegistry<Track>();
     registry.register("t1", track);
@@ -129,6 +130,7 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
     const track = new Track({
       interpolator: createFakeInterpolator(),
       interpolationConfig: { id: "t1", duration: 1000 },
+      nodeId: "~/phase2-t1",
     });
     const registry = createFakeTrackRegistry<Track>();
     registry.register("t1", track);
