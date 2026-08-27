@@ -77,10 +77,28 @@ export const fkPlugin: PluginDefinition = {
   keys: ["x", "y", "length", "rotation"],
   requirements: {
     base: { description: "the parent bone or root this bone hangs from" },
+    solver: { description: "the IK solver providing solved rotation override" },
   },
   stage: "compose",
   outputs: ["x", "y", "rotation"],
-  compose: (values, progress, inputs) => {
+  compose: (values, _progress, inputs, nodeId) => {
+    let rotation = readNumber(values.rotation);
+    if (
+      inputs.solver !== null &&
+      typeof inputs.solver === "object" &&
+      !Array.isArray(inputs.solver)
+    ) {
+      const solverRecord = inputs.solver as Readonly<Record<string, unknown>>;
+      const rotations = solverRecord.rotations;
+      if (
+        rotations !== null &&
+        typeof rotations === "object" &&
+        !Array.isArray(rotations) &&
+        typeof (rotations as Record<string, unknown>)[nodeId] === "number"
+      ) {
+        rotation = (rotations as Record<string, unknown>)[nodeId] as number;
+      }
+    }
     // The pivot, then the extension. Two rotate-then-translates, and `composeWorld` owns both, so
     // the trigonometry lives in one place instead of being copied here beside an export nothing
     // called. The extension is purely along the bone's own direction, which is why its local frame
@@ -88,7 +106,7 @@ export const fkPlugin: PluginDefinition = {
     const pivot = composeWorld(readBase(inputs.base), {
       x: readNumber(values.x),
       y: readNumber(values.y),
-      rotation: readNumber(values.rotation),
+      rotation,
     });
     return composeWorld(pivot, { x: readNumber(values.length), y: 0, rotation: 0 });
   },

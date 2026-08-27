@@ -29,6 +29,10 @@
       "types": "./dist/plugins/fk.d.ts",
       "default": "./dist/plugins/fk.js"
     },
+    "./plugins/ik": {
+      "types": "./dist/plugins/ik.d.ts",
+      "default": "./dist/plugins/ik.js"
+    },
     "./testing": {
       "types": "./dist/testing/fakes.d.ts",
       "default": "./dist/testing/fakes.js"

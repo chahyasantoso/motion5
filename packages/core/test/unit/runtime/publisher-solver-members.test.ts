@@ -252,6 +252,7 @@ describe("Publisher solver member inputs (Slice C3)", () => {
     const registry = new PatchRegistry();
     const publisher = new GraphPublisher(registry);
     let solverComposed = false;
+    let length = 80;
 
     const shoulder = shoulderNode();
     const rootEdge: GraphEdge = {
@@ -268,7 +269,7 @@ describe("Publisher solver member inputs (Slice C3)", () => {
       () => ({
         id: "walker/upper-arm",
         base: "walker/shoulder",
-        values: { length: 80 },
+        values: { length },
         progress: 0,
       }),
     );
@@ -291,7 +292,8 @@ describe("Publisher solver member inputs (Slice C3)", () => {
     publisher.flush(snap, snap.order, 1);
     solverComposed = false;
 
-    // Invalidate ONLY upper-arm
+    // Invalidate ONLY upper-arm with new length
+    length = 85;
     publisher.flush(snap, ["walker/upper-arm"], 2);
     expect(solverComposed).toBe(true);
   });

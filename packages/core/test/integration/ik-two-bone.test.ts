@@ -72,12 +72,22 @@ const SIX_NODE_IK_PROJECT: ProjectDefinition = {
   ],
 };
 
+import { PluginRegistry } from "../../src/domain/plugins";
+import { transformPlugin } from "../../src/plugins/transform";
+import { fkPlugin } from "../../src/plugins/fk";
+import { ikPlugin } from "../../src/plugins/ik";
+
 function createEngine(project: ProjectDefinition) {
   const seam = createRealGsapSeam();
+  const plugins = new PluginRegistry();
+  plugins.register(transformPlugin);
+  plugins.register(fkPlugin);
+  plugins.register(ikPlugin);
   return new Engine({
     clock: createManualClock(),
     interpolator: seam.interpolator,
     scheduler: createFakeScheduler(),
+    plugins,
   }).load(project);
 }
 
@@ -218,7 +228,15 @@ describe("Two-bone IK Integration (Slice C3)", () => {
 
     const runtime = createEngine(animatedProject);
     let forearmPatch: Patch | undefined;
-    runtime.mount("walker/forearm");
+    for (const id of [
+      "walker/shoulder",
+      "walker/hand-target",
+      "walker/arm-solve",
+      "walker/upper-arm",
+      "walker/forearm",
+    ]) {
+      runtime.mount(id);
+    }
     runtime.subscribe("walker/forearm", (p) => {
       forearmPatch = p;
     });
@@ -258,7 +276,16 @@ describe("Two-bone IK Integration (Slice C3)", () => {
 
   it("IK-17 handle.get for solver node returns solved rotations record", () => {
     const runtime = createEngine(SIX_NODE_IK_PROJECT);
-    runtime.mount("walker/arm-solve");
+    for (const id of [
+      "walker/shoulder",
+      "walker/hand-target",
+      "walker/arm-solve",
+      "walker/upper-arm",
+      "walker/forearm",
+      "walker/hand",
+    ]) {
+      runtime.mount(id);
+    }
     runtime.seek("walker/shoulder", 0);
 
     const solverHandle = runtime.get("walker/arm-solve");

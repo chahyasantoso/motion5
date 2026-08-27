@@ -8,8 +8,16 @@ import {
 } from "../graph/ir";
 import { firstPendingEdge } from "../graph/references";
 import { CompositionOutputError } from "../domain/track";
+import { equalValues } from "../domain/values";
 import type { RequirementInputs } from "../domain/plugins";
 import { PatchRegistry, REENTRANT_BATCH_MESSAGE, type PatchBatch } from "./patch-registry";
+
+export interface MemberState {
+  readonly id: string;
+  readonly base: string;
+  readonly values: Readonly<Record<string, unknown>>;
+  readonly progress: number;
+}
 
 export interface PublisherComposition {
   readonly values: Readonly<Record<string, unknown>>;
@@ -27,9 +35,11 @@ export interface PublisherNode extends GraphNode {
    * See ADR-044 and ADR-047.
    */
   readonly compose: (requirementInputs: RequirementInputs) => PublisherComposition;
+  readonly interpolated?: () => MemberState;
 }
 export interface PublisherSnapshot extends GraphIR {
   readonly nodes: readonly PublisherNode[];
+  readonly members?: ReadonlySet<string>;
 }
 export interface PublisherFailure {
   readonly nodeId: string;
@@ -124,16 +134,30 @@ function freezeRequirementInputs(
 
 export class GraphPublisher {
   readonly #registry: PatchRegistry;
+  readonly #solverCache = new Map<
+    string,
+    {
+      readonly inputs: unknown;
+      readonly members: unknown;
+      readonly composition: PublisherComposition;
+    }
+  >();
+
   constructor(registry: PatchRegistry) {
     this.#registry = registry;
   }
+
   flush(snapshot: PublisherSnapshot, seeds: readonly string[], tick: number): PatchBatch {
     if (this.#registry.notifying) throw new Error(REENTRANT_BATCH_MESSAGE);
     const byId = new Map(snapshot.nodes.map((node) => [node.id, node]));
     const dependents = new Map<string, string[]>();
     for (const node of snapshot.nodes) dependents.set(node.id, []);
-    for (const node of snapshot.nodes)
+    for (const node of snapshot.nodes) {
       for (const edge of node.edges) dependents.get(edge.sourceId)?.push(node.id);
+      if (node.solves) {
+        for (const member of node.solves) dependents.get(member.id)?.push(node.id);
+      }
+    }
     const affected = new Set<string>();
     const queue = [...seeds];
     for (let index = 0; index < queue.length; index += 1) {
@@ -141,6 +165,22 @@ export class GraphPublisher {
       if (id === undefined || affected.has(id)) continue;
       affected.add(id);
       queue.push(...(dependents.get(id) ?? []));
+    }
+    const isMember = (nodeId: string) =>
+      snapshot.members ? snapshot.members.has(nodeId) : byId.has(nodeId);
+    const upstreamQueue = [...affected];
+    for (let index = 0; index < upstreamQueue.length; index += 1) {
+      const id = upstreamQueue[index]!;
+      const node = byId.get(id);
+      if (!node) continue;
+      for (const edge of node.edges) {
+        if (this.#registry.get(edge.sourceId) === undefined && isMember(edge.sourceId)) {
+          if (!affected.has(edge.sourceId)) {
+            affected.add(edge.sourceId);
+            upstreamQueue.push(edge.sourceId);
+          }
+        }
+      }
     }
     const failed = new Map<string, Diagnostic>();
     const blocked = new Set<string>();
@@ -196,6 +236,21 @@ export class GraphPublisher {
         try {
           const collected: Record<string, Record<string, unknown>> = {};
           const sourceRevisions: Record<string, number> = {};
+          let frozenMembers: readonly MemberState[] | undefined;
+          if (node.solves && node.solves.length > 0) {
+            const membersList: MemberState[] = [];
+            for (const memberRef of node.solves) {
+              const memberNode = byId.get(memberRef.id);
+              if (typeof memberNode?.interpolated !== "function") {
+                throw new Error(
+                  `Solver member "${memberRef.id}" exposes no interpolated function.`,
+                );
+              }
+              membersList.push(memberNode.interpolated());
+            }
+            frozenMembers = Object.freeze(membersList);
+            (collected.ik ??= {}).members = frozenMembers;
+          }
           for (const edge of edgesByRole(node, "input")) {
             const sourcePatch = this.#registry.get(edge.sourceId);
             const sourceValues = memo.get(edge.sourceId)?.values ?? sourcePatch?.values;
@@ -228,8 +283,29 @@ export class GraphPublisher {
             // with and no collision guard left to reach. See ADR-044.
             (collected[requirement.plugin] ??= {})[requirement.slot] = sourceValues;
           }
-          const composed = node.compose(freezeRequirementInputs(collected));
-          validateComposition(composed.values);
+          const requirementInputs = freezeRequirementInputs(collected);
+          let composed: PublisherComposition;
+          if (frozenMembers !== undefined) {
+            const cached = this.#solverCache.get(id);
+            if (
+              cached !== undefined &&
+              equalValues(cached.inputs, requirementInputs) &&
+              equalValues(cached.members, frozenMembers)
+            ) {
+              composed = cached.composition;
+            } else {
+              composed = node.compose(requirementInputs);
+              validateComposition(composed.values);
+              this.#solverCache.set(id, {
+                inputs: requirementInputs,
+                members: frozenMembers,
+                composition: composed,
+              });
+            }
+          } else {
+            composed = node.compose(requirementInputs);
+            validateComposition(composed.values);
+          }
           let values = composed.values;
           for (const edge of edgesByRole(node, "output")) {
             const sourcePatch = this.#registry.get(edge.sourceId);

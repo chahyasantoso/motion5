@@ -32,7 +32,13 @@ export interface IkPluginSeam {
   readonly readMembers?: (membersInput: unknown) => readonly MemberState[];
 }
 
-const seam: IkPluginSeam = {};
+import { ikPlugin, readMembers, solveTwoBone } from "../../../src/plugins/ik";
+
+const seam: IkPluginSeam = {
+  ikPlugin,
+  solveTwoBone,
+  readMembers,
+};
 
 function degToRad(deg: number): number {
   return (deg * Math.PI) / 180;
