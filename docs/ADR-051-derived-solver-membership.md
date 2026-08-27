@@ -76,7 +76,7 @@ An IK setup is authored using standard plugin requirement bindings without intro
 
 Graph finalization (`finalizeGraph`) runs a pure derivation pass, `resolveSolvers`, after reference validation and before topological ordering:
 
-1. **Solver Identification**: Any node with a `root` requirement slot edge is classified as a solver.
+1. **Solver Identification**: Any node with a `root` requirement slot edge is classified as a solver. A node that at least one member binds its `solver` slot to, and which holds no `root` edge, is therefore not a solver at all, and it is refused as `ik-solver-no-root` rather than skipped. Skipping it silently was the one IK misconfiguration with no symptom: no `solves` was derived, no `rotations` were published, every member fell back to its own authored rotation, and the rig held a broken pose with no error and no diagnostic.
 2. **Member Discovery**: Any node declaring a `solver` requirement slot edge pointing to solver `S` is collected into `S`'s member list.
 3. **Chain Verification**: Each member's `base` ancestor walk is traced. The chain must terminate cleanly at solver `S`'s bound `root` node without leaving the member set.
 4. **Deterministic Ordering**: Members are ordered root-most first (depth from root ascending, ties broken by `authoredIndex` and qualified ID).
@@ -101,8 +101,8 @@ The loader enforces structural integrity across 6 deterministic diagnostics (`se
 
 To supply member lengths to solvers without requirement cycle edges, `Track` separates timeline evaluation from plugin execution (ADR-047 amendment, Slice B):
 
-- `Track.prototype.interpolated()`: Returns renderer-neutral timeline state (`values`, `progress`) prior to plugin composition.
-- In `GraphPublisher.flush()`, solver nodes look up their derived `node.solves` members, invoke `memberNode.interpolated()`, and inject the frozen array into `inputs[solvingPlugin].members`.
+- `Track.prototype.interpolated()`: Returns renderer-neutral timeline state (`values`, `progress`) prior to plugin composition. It reports what the timeline holds and nothing about topology, so it carries no `base`.
+- In `GraphPublisher.flush()`, solver nodes look up their derived `node.solves` members, invoke `memberNode.interpolated()`, join the derived `SolveMember.base` onto each reported state, and inject the frozen array into `inputs[solvingPlugin].members`.
 - Because timeline interpolation runs during `Motion.setProgress` before graph flush begins, member timeline states are already immutable and available when the solver composes.
 
 ---
@@ -126,13 +126,16 @@ When `fkPlugin.compose` executes:
 2. If present as a finite number, the solved rotation overrides the local rotation before computing parent frame extension and tip coordinates via `composeWorld`.
 3. If absent or unbound, it falls back cleanly to authored `values.rotation`.
 
+`ikPlugin.compose` returns the values it was given with `rotations` added, not `rotations` alone. `Track.composeFrom` chains by replacement, so a bare return deletes every key the solver track authored, starting with the `flip` the solver reads itself. `IK-18` pins the spread.
+
 ---
 
 ### 5. Dirty-Check Memoization and Invalidation Propagation
 
-- **Memoization**: `GraphPublisher` caches solver outputs in `#solverCache` using deep equality (`equalValues`) over both `inputs` and member timeline states (`inputs.ik.members`). If neither the target, root, nor member lengths changed, re-solving is skipped.
+- **Memoization**: there is one memo and `Track.composeFrom` owns it. Its key is the composing track's own seed as well as the requirement inputs, and a solver's members travel inside those inputs, so the comparison that covers `root` and `target` covers every member length, the solver's own interpolated values, and its progress. `GraphPublisher` holds no solver cache. A `#solverCache` existed, keyed on the requirement inputs and the member states alone, and it was not a fixable optimisation but a strictly weaker copy of the memo it sat in front of: an animated value on a solver track changed nothing in that key, so the solver answered from tick one forever with no error and no diagnostic. Widening its key would have reproduced `Track`'s key beside `Track`, so it is deleted instead. `IK-11` runs against a real `Track` for that reason; a fake composer only pins whichever cache the publisher happens to hold.
 - **Seed Propagation**: In the publisher's affected BFS pass, solver members register their solver as a dependent. Invalidating an animated bone's length automatically schedules the solver for re-evaluation.
-- **Renderer Shielding**: `createDomPatchAdapter` ignores nested object values (such as `rotations`), ensuring solver nodes contribute zero CSS style mutations to DOM elements.
+- **Member Scope**: the publisher delivers members under the plugin that owns the solver's `root` edge, read off that edge rather than named in the publisher. A hardcoded `ik` would deliver a spring integrator's or a spline sampler's members under the name of the plugin that happened to be IK's, which would make the first non-kinematic solver an edit to `graph-publisher.ts` instead of a plugin. `IK-19` pins it, and a solver reaching the publisher with no root edge throws, which `ik-solver-no-root` is what keeps unreachable.
+- **Renderer Shielding**: `renderableValues` skips a value that is still a plain record after serialization, so a composite output such as `rotations` reaches the nodes that read it and never a renderer. Skipping it after serialization is deliberate: a plugin that serializes a composite into something renderable still renders. Without the guard, the default `resolveTarget` sends a solver's patch to the stage, `defaultWriter` falls through to `target[key] = value`, and `stage.rotations` is assigned on every frame forever, because the adapter's own suppression is `Object.is` against a freshly built object and can never match. `IK-16` asserts the object property rather than `style`, which is what the property is set on.
 
 ---
 
@@ -156,6 +159,9 @@ When `fkPlugin.compose` executes:
 3. **Context Injection / Runtime Handles in Plugins**:
    - _Proposal_: Inject `ProjectRuntime` or engine track stores directly into plugin composers.
    - _Rejected_: Gives plugins arbitrary side-effect capability and bypasses the explicit requirement inputs boundary.
+4. **A Publisher-Side Solver Cache**:
+   - _Proposal_: Keep `#solverCache`, widening its key until it covers the solver's own seed and progress.
+   - _Rejected_: The widened key is `Track`'s key. Two caches with two invalidation rules are cheaper per tick and wrong the first time one of them drifts, which is exactly how the narrow key shipped.
 
 ---
 
@@ -171,10 +177,10 @@ When `fkPlugin.compose` executes:
 - **Slice B (`CF-1`..`CF-7`)**: `packages/core/test/unit/domain/track-compose-from.test.ts` (Composition split).
 - **Slice C0**: `packages/core/test/unit/graph/finalize-graph.test.ts` (`finalizeGraph` deduplication).
 - **Slice C1 (`CN-1`..`CN-3`)**: `packages/core/test/unit/domain/track-node-id.test.ts` (`nodeId` in composer contract).
-- **Slice C2 (`RS-1`..`RS-6`)**: `packages/core/test/unit/graph/resolve-solvers.test.ts` (Load-time IK diagnostics).
-- **Slice C3 (`IK-1`..`IK-17`)**:
-  - `packages/core/test/unit/plugins/ik-solve.test.ts` (Analytical 2-bone solve math).
+- **Slice C2 (`RS-1`..`RS-7`)**: `packages/core/test/unit/graph/resolve-solvers.test.ts` (Load-time IK diagnostics, determinism under permutation, and derivation from live state alone).
+- **Slice C3 (`IK-1`..`IK-19`)**:
+  - `packages/core/test/unit/plugins/ik-solve.test.ts` (Analytical 2-bone solve math, both elbow branches, and the composed-values spread).
   - `packages/core/test/unit/plugins/fk-solver-override.test.ts` (FK rotation override).
-  - `packages/core/test/unit/runtime/publisher-solver-members.test.ts` (Publisher member gathering & memoization).
-  - `packages/core/test/integration/ik-two-bone.test.ts` (Full 6-node rig integration).
+  - `packages/core/test/unit/runtime/publisher-solver-members.test.ts` (Publisher member gathering, member scope, failure semantics, and the one memo).
+  - `packages/core/test/integration/ik-two-bone.test.ts` (Full 6-node rig integration and renderer shielding).
 - **Slice C4**: `packages/core/test/integration/phase7-walker-demo.test.ts` (Hybrid FK/IK walker demo & `T-C4.1` dynamic mutation rollback).
