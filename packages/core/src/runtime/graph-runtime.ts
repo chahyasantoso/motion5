@@ -12,12 +12,14 @@ export const CLOCK_REGRESSION_RULE = "clock-tick-regression";
 export const CLOCK_CONSUMER_FAILURE_RULE = "clock-consumer-failure";
 export const FLUSH_FAILURE_RULE = "flush-failure";
 export const SCHEDULER_FAILURE_RULE = "scheduler-failure";
+import type { MemberState } from "./graph-publisher";
 import type { GraphBuilder } from "../ports/graph-builder";
 export interface GraphRuntimeOptions {
   readonly scheduler?: Scheduler;
   readonly onFlushError?: (diagnostic: Diagnostic) => void;
   readonly onClockTick?: (event: ClockTick) => void;
   readonly graphBuilder?: GraphBuilder;
+  readonly interpolated?: (node: GraphNode) => (() => MemberState) | undefined;
 }
 function deferredBatch(sequence: number, seeds: readonly string[]): PatchBatch {
   const ids = Object.freeze([...seeds]);
@@ -58,6 +60,7 @@ export class GraphRuntime {
   readonly #publisher: GraphPublisher;
   readonly #clock: Clock;
   readonly #compose: ComposeResolver;
+  readonly #interpolated: ((node: GraphNode) => (() => MemberState) | undefined) | undefined;
   readonly #scheduler: Scheduler | undefined;
   readonly #onFlushError: ((diagnostic: Diagnostic) => void) | undefined;
   readonly #onClockTick: ((event: ClockTick) => void) | undefined;
@@ -82,6 +85,7 @@ export class GraphRuntime {
     this.#publisher = new GraphPublisher(this.#registry);
     this.#clock = clock;
     this.#compose = compose;
+    this.#interpolated = options.interpolated;
     this.#scheduler = options.scheduler;
     this.#onFlushError = options.onFlushError;
     this.#onClockTick = options.onClockTick;
@@ -114,7 +118,7 @@ export class GraphRuntime {
   attach(nodeId: string): void {
     this.#assertLive();
     if (!this.#binding.graph.nodeById[nodeId])
-      throw new TypeError(`Unknown graph node \"${nodeId}\".`);
+      throw new TypeError(`Unknown graph node "${nodeId}".`);
     this.#members.add(nodeId);
   }
   detach(nodeId: string): void {
@@ -160,7 +164,12 @@ export class GraphRuntime {
     const nodes = graph.nodes.map((node) => {
       const cached = this.#publisherNodes.get(node);
       if (cached) return cached;
-      const publisherNode = Object.freeze({ ...node, compose: this.#compose(node) });
+      const interpolatedFn = this.#interpolated?.(node);
+      const publisherNode: PublisherNode = Object.freeze({
+        ...node,
+        compose: this.#compose(node),
+        ...(interpolatedFn ? { interpolated: interpolatedFn } : {}),
+      });
       this.#publisherNodes.set(node, publisherNode);
       return publisherNode;
     });
@@ -169,7 +178,7 @@ export class GraphRuntime {
     this.#flushing = true;
     try {
       return this.#publisher.flush(
-        Object.freeze({ ...graph, nodes: Object.freeze(nodes), nodeById }),
+        Object.freeze({ ...graph, nodes: Object.freeze(nodes), nodeById, members: this.#members }),
         effectiveSeeds,
         this.#sequence,
       );

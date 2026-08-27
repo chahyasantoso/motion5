@@ -397,6 +397,20 @@ export class Engine {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
         compose,
+        interpolated: (node) => {
+          const track = tracks.get(node.id);
+          if (!track) return undefined;
+          const baseEdge = node.edges.find(
+            (e) => e.role === "input" && e.requirement?.slot === "base",
+          );
+          const base = baseEdge?.sourceId ?? "";
+          return () => ({
+            id: node.id,
+            base,
+            values: track.interpolated(),
+            progress: track.progress,
+          });
+        },
         graphBuilder: new IncrementalGraphBuilder(),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
         compileTrack: compileTrackDefinition,
