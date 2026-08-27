@@ -355,40 +355,66 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
   return finalizeGraph(nodes, diagnostics);
 }
 
-function authorsRotation(keyframes: unknown): boolean {
+/**
+ * Whether the group that binds `solver` authors a `rotation` of its own.
+ *
+ * Read inside that group rather than across every group and the flat top level. The solved rotation
+ * replaces the authored one inside the plugin that reads `rotations` back, which is the plugin that
+ * bound the slot, so a `rotation` under any other group is that plugin's own live input and
+ * refusing it would be this rule answering for a plugin it knows nothing about. The diagnostics
+ * guide already states the rule this way; the narrowing is the code catching up to its own
+ * documentation.
+ *
+ * Two shapes it deliberately no longer reports, because each already has a more specific owner. A
+ * `rotation` directly under the plugin name is the pre-ADR-049 group form, refused as
+ * `keyframes-missing-values-section`. And a flat `rotation` names no group at all: attributing a
+ * flat key to a plugin is the registry's question, and this layer holds no registry by design, so a
+ * member authoring one meets `plugin-ambiguous-key` in any registry with two claimants and
+ * `plugin-unknown-key` in one with none. See ADR-043, ADR-044, ADR-049, and ADR-051.
+ */
+function authorsSolvedRotation(keyframes: unknown, binders: readonly string[]): boolean {
   if (!isRecord(keyframes)) return false;
-  if (keyframes.rotation !== undefined) return true;
-  for (const key of Object.keys(keyframes)) {
-    const group = keyframes[key];
-    if (isRecord(group)) {
-      if (group.rotation !== undefined) return true;
-      const values = group.values;
-      if (isRecord(values) && values.rotation !== undefined) return true;
-    }
+  for (const binder of binders) {
+    const group = keyframes[binder];
+    if (!isRecord(group)) continue;
+    const values = group.values;
+    if (isRecord(values) && values.rotation !== undefined) return true;
   }
   return false;
+}
+
+/** The node this one hangs from through its `base` slot, or `undefined` when it binds none. */
+function baseOf(node: GraphNode): string | undefined {
+  const edge = node.edges.find((e) => e.role === "input" && e.requirement?.slot === "base");
+  return edge?.sourceId;
+}
+
+interface MemberChain {
+  readonly node: GraphNode;
+  readonly base: string;
+  readonly depth: number;
 }
 
 export function resolveSolvers(
   nodes: readonly GraphNode[],
   diagnostics: Diagnostic[],
 ): readonly GraphNode[] {
-  const nodeMap = new Map<string, GraphNode>();
-  for (const node of nodes) nodeMap.set(node.id, node);
-
   // Diagnostic 3: ik-mode-ambiguous
   // Diagnostic 4: ik-solved-rotation-dead
   for (const node of nodes) {
     let rootCount = 0;
-    let hasSolver = false;
     let hasTarget = false;
+    // The plugins under which this node bound a `solver` slot, which is what scopes the dead
+    // rotation read: the solve replaces the rotation of the plugin that asked for it.
+    const solverBinders: string[] = [];
     for (const edge of node.edges) {
       if (edge.role === "input" && edge.requirement) {
         if (edge.requirement.slot === "root") rootCount++;
-        if (edge.requirement.slot === "solver") hasSolver = true;
+        if (edge.requirement.slot === "solver") solverBinders.push(edge.requirement.plugin);
         if (edge.requirement.slot === "target") hasTarget = true;
       }
     }
+    const hasSolver = solverBinders.length > 0;
     if ((hasSolver && (rootCount > 0 || hasTarget)) || rootCount > 1) {
       diagnostics.push(
         diag(
@@ -399,7 +425,7 @@ export function resolveSolvers(
         ),
       );
     }
-    if (hasSolver && authorsRotation(node.track.keyframes)) {
+    if (hasSolver && authorsSolvedRotation(node.track.keyframes, solverBinders)) {
       diagnostics.push(
         diag(
           "ik-solved-rotation-dead",
@@ -413,10 +439,42 @@ export function resolveSolvers(
 
   const solvesMap = new Map<string, readonly SolveMember[]>();
 
+  // Every node that at least one member points its `solver` slot at.
+  //
+  // A solver is classified by its `root` edge, so a node bound as one without holding a root is not
+  // a solver at all and the derivation below skips it. Skipping it silently is the one IK
+  // misconfiguration that had no symptom: no `solves` was derived, no `rotations` were published,
+  // every member fell back to its own authored rotation, and the rig held a broken pose with no
+  // error and no diagnostic. It is also the one shape `GraphPublisher` cannot read a member scope
+  // off, so refusing it here is what keeps that throw unreachable rather than merely unreached.
+  // Collected from the members rather than from the solver, because the absent edge is on the
+  // solver and only a member can say the node was meant to be one. See ADR-051.
+  const boundSolverIds = new Set<string>();
+  for (const node of nodes) {
+    for (const edge of node.edges) {
+      if (edge.role === "input" && edge.requirement?.slot === "solver") {
+        boundSolverIds.add(edge.sourceId);
+      }
+    }
+  }
+
   // Resolve solvers
   for (const solver of nodes) {
     const rootEdge = solver.edges.find((e) => e.role === "input" && e.requirement?.slot === "root");
-    if (!rootEdge) continue;
+    // Diagnostic 1: ik-solver-no-root
+    if (!rootEdge) {
+      if (boundSolverIds.has(solver.id)) {
+        diagnostics.push(
+          diag(
+            "ik-solver-no-root",
+            solver.id,
+            `Solver "${solver.id}" has no bound root requirement.`,
+            [solver.id],
+          ),
+        );
+      }
+      continue;
+    }
     const rootId = rootEdge.sourceId;
 
     const members = nodes.filter((n) =>
@@ -450,68 +508,61 @@ export function resolveSolvers(
       );
     }
 
-    interface MemberWithDepth {
-      readonly node: GraphNode;
-      readonly base: string;
-      readonly depth: number;
+    // Diagnostic 6: ik-solver-unreachable-root
+    //
+    // One walk per member, confined to the member set. The `base` edge lookup that verified a
+    // member and the `while` loop that measured its depth were two traversals of one chain, and the
+    // second climbed through arbitrary nodes to count hops. Starting the walk at the member itself
+    // makes its own `base` edge the first step, and the only map the walk steps through holds this
+    // solver's members, so leaving that set is the break rather than something to check for after.
+    //
+    // A break is attributed to the member whose own `base` broke the chain rather than to the
+    // member the walk started from, and it is keyed by id, so a chain of descendants over one bad
+    // ancestor reports once rather than once per descendant. That is the attribution the two passes
+    // produced, which is what makes this a refactor rather than a rule change: `RS-8` pins it over
+    // the chain shapes both of them had to answer for. See ADR-051.
+    const memberById = new Map(members.map((member) => [member.id, member] as const));
+    const unreachable = new Map<string, Diagnostic>();
+    const chains: MemberChain[] = [];
+
+    for (const member of members) {
+      let base = "";
+      let depth = 0;
+      let cursor: GraphNode | undefined = member;
+      const walked = new Set<string>([member.id]);
+      while (cursor !== undefined) {
+        const next = baseOf(cursor);
+        if (next === undefined || (next !== rootId && !memberById.has(next))) {
+          unreachable.set(
+            cursor.id,
+            diag(
+              "ik-solver-unreachable-root",
+              cursor.id,
+              `Member "${cursor.id}" cannot reach solver root "${rootId}".`,
+              [cursor.id, rootId],
+            ),
+          );
+          break;
+        }
+        depth += 1;
+        if (depth === 1) base = next;
+        // The root ends the walk. A member already walked ends it too, and the cycle that shape is
+        // belongs to `orderGraph`, which refuses it over these same `base` edges.
+        if (next === rootId || walked.has(next)) break;
+        walked.add(next);
+        cursor = memberById.get(next);
+      }
+      // A member holding no `base` edge of its own contributes no chain, which is what the two
+      // passes did. Every break above is an error, so no `solves` derived beside one is reachable
+      // through `finalizeGraph`.
+      if (depth > 0) chains.push({ node: member, base, depth });
     }
 
-    const membersWithDepth: MemberWithDepth[] = [];
-
-    const memberIds = new Set(members.map((m) => m.id));
-
-    for (const m of members) {
-      const baseEdge = m.edges.find((e) => e.role === "input" && e.requirement?.slot === "base");
-      if (!baseEdge) {
-        diagnostics.push(
-          diag(
-            "ik-solver-unreachable-root",
-            m.id,
-            `Member "${m.id}" cannot reach solver root "${rootId}".`,
-            [m.id, rootId],
-          ),
-        );
-        continue;
-      }
-      const memberBase = baseEdge.sourceId;
-
-      // If base is not another member of this solver and not rootId, this member's root link is broken
-      if (memberBase !== rootId && !memberIds.has(memberBase)) {
-        diagnostics.push(
-          diag(
-            "ik-solver-unreachable-root",
-            m.id,
-            `Member "${m.id}" cannot reach solver root "${rootId}".`,
-            [m.id, rootId],
-          ),
-        );
-      }
-
-      let currId: string | undefined = memberBase;
-      let depth = 1;
-      const visited = new Set<string>();
-
-      while (currId !== undefined) {
-        if (currId === rootId) break;
-        if (visited.has(currId)) break;
-        visited.add(currId);
-        const parentNode = nodeMap.get(currId);
-        if (!parentNode) break;
-        const pBaseEdge = parentNode.edges.find(
-          (e) => e.role === "input" && e.requirement?.slot === "base",
-        );
-        currId = pBaseEdge?.sourceId;
-        depth++;
-      }
-
-      membersWithDepth.push({
-        node: m,
-        base: memberBase,
-        depth,
-      });
+    for (const entry of [...unreachable.values()].sort(compareDiagnostics)) {
+      diagnostics.push(entry);
     }
 
-    membersWithDepth.sort(
+    chains.sort(
       (a, b) =>
         a.depth - b.depth ||
         a.node.authoredIndex - b.node.authoredIndex ||
@@ -520,7 +571,7 @@ export function resolveSolvers(
 
     solvesMap.set(
       solver.id,
-      freeze(membersWithDepth.map((m) => freeze({ id: m.node.id, base: m.base }))),
+      freeze(chains.map((entry) => freeze({ id: entry.node.id, base: entry.base }))),
     );
   }
 
@@ -578,6 +629,14 @@ export function finalizeGraph(
           ),
         );
     }
+  // The bail happens here rather than after the derivation. `resolveSolvers` walks `base` edges and
+  // reads the nodes they name, so over a graph whose sources may not resolve it answers about a
+  // chain that was never valid: an unknown `base` source yields `ik-solver-unreachable-root` beside
+  // `observation-unknown-source`, naming a member for a typo one node up. One cause, one
+  // diagnostic, and a derivation that only ever runs over resolved references. `RS-10` pins it.
+  diagnostics.sort(compareDiagnostics);
+  if (diagnostics.some(({ severity }) => severity === "error"))
+    return { diagnostics: Object.freeze(diagnostics) };
   const resolvedNodes = resolveSolvers(nodes, diagnostics);
   diagnostics.sort(compareDiagnostics);
   if (diagnostics.some(({ severity }) => severity === "error"))

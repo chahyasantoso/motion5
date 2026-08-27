@@ -8,15 +8,28 @@ import {
 } from "../graph/ir";
 import { firstPendingEdge } from "../graph/references";
 import { CompositionOutputError } from "../domain/track";
-import { equalValues } from "../domain/values";
 import type { RequirementInputs } from "../domain/plugins";
 import { PatchRegistry, REENTRANT_BATCH_MESSAGE, type PatchBatch } from "./patch-registry";
 
+/**
+ * One node's timeline state before any plugin runs, as the node itself reports it.
+ *
+ * It carries no `base`, deliberately. Which node a member hangs from is topology; `resolveSolvers`
+ * already derived it into `SolveMember.base`. Having the supplier of `interpolated` re-derive it
+ * from the member's edges made one fact answerable in two places, and taught `engine.ts` a
+ * requirement slot name it had no reason to know. See ADR-051.
+ */
 export interface MemberState {
   readonly id: string;
-  readonly base: string;
   readonly values: Readonly<Record<string, unknown>>;
   readonly progress: number;
+}
+/**
+ * One chain member as its solver receives it: what the member reported, plus where the derivation
+ * says it sits. The publisher joins the two, so neither side has to know the other's half.
+ */
+export interface SolverMember extends MemberState {
+  readonly base: string;
 }
 
 export interface PublisherComposition {
@@ -89,6 +102,20 @@ function diagnostic(nodeId: string, error: unknown): Diagnostic {
 function edgesByRole(node: PublisherNode, role: GraphEdge["role"]): readonly GraphEdge[] {
   return node.edges.filter((edge) => edge.role === role).sort(compareEdges);
 }
+/**
+ * The plugin whose slots a solver's members belong under, read off the edge that made it a solver.
+ *
+ * The publisher holds no plugin knowledge, and this is where that stays true. A hardcoded `ik` here
+ * would deliver a spring integrator's or a spline sampler's members under the name of the plugin
+ * that happened to be IK's, which would make the first non-kinematic solver an edit to this file
+ * rather than a plugin. `resolveSolvers` classifies a solver by its `root` edge, so the same edge
+ * names the scope. See ADR-051.
+ */
+function solvingPluginOf(node: PublisherNode): string | undefined {
+  return node.edges
+    .filter((edge) => edge.role === "input" && edge.requirement?.slot === "root")
+    .sort(compareEdges)[0]?.requirement?.plugin;
+}
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
@@ -134,14 +161,6 @@ function freezeRequirementInputs(
 
 export class GraphPublisher {
   readonly #registry: PatchRegistry;
-  readonly #solverCache = new Map<
-    string,
-    {
-      readonly inputs: unknown;
-      readonly members: unknown;
-      readonly composition: PublisherComposition;
-    }
-  >();
 
   constructor(registry: PatchRegistry) {
     this.#registry = registry;
@@ -236,9 +255,15 @@ export class GraphPublisher {
         try {
           const collected: Record<string, Record<string, unknown>> = {};
           const sourceRevisions: Record<string, number> = {};
-          let frozenMembers: readonly MemberState[] | undefined;
           if (node.solves && node.solves.length > 0) {
-            const membersList: MemberState[] = [];
+            const solvingPlugin = solvingPluginOf(node);
+            // Unreachable through `resolveSolvers`, which derives `solves` only for a node holding
+            // a `root` edge. Thrown rather than defaulted to a plugin name, because a publisher
+            // that guesses one is the thing this lookup exists to delete.
+            if (solvingPlugin === undefined) {
+              throw new Error(`Solver "${node.id}" has no root requirement to scope its members.`);
+            }
+            const membersList: SolverMember[] = [];
             for (const memberRef of node.solves) {
               const memberNode = byId.get(memberRef.id);
               if (typeof memberNode?.interpolated !== "function") {
@@ -246,10 +271,12 @@ export class GraphPublisher {
                   `Solver member "${memberRef.id}" exposes no interpolated function.`,
                 );
               }
-              membersList.push(memberNode.interpolated());
+              // `base` comes off `solves`, where `resolveSolvers` already derived it, rather than
+              // from a second walk over the member's edges by whoever supplies `interpolated`.
+              const state = memberNode.interpolated();
+              membersList.push(Object.freeze({ ...state, base: memberRef.base }));
             }
-            frozenMembers = Object.freeze(membersList);
-            (collected.ik ??= {}).members = frozenMembers;
+            (collected[solvingPlugin] ??= {}).members = Object.freeze(membersList);
           }
           for (const edge of edgesByRole(node, "input")) {
             const sourcePatch = this.#registry.get(edge.sourceId);
@@ -284,28 +311,15 @@ export class GraphPublisher {
             (collected[requirement.plugin] ??= {})[requirement.slot] = sourceValues;
           }
           const requirementInputs = freezeRequirementInputs(collected);
-          let composed: PublisherComposition;
-          if (frozenMembers !== undefined) {
-            const cached = this.#solverCache.get(id);
-            if (
-              cached !== undefined &&
-              equalValues(cached.inputs, requirementInputs) &&
-              equalValues(cached.members, frozenMembers)
-            ) {
-              composed = cached.composition;
-            } else {
-              composed = node.compose(requirementInputs);
-              validateComposition(composed.values);
-              this.#solverCache.set(id, {
-                inputs: requirementInputs,
-                members: frozenMembers,
-                composition: composed,
-              });
-            }
-          } else {
-            composed = node.compose(requirementInputs);
-            validateComposition(composed.values);
-          }
+          // One memo, and it is `Track`'s. Its key is the seed as well as the requirement inputs,
+          // and the members travel inside those inputs, so member lengths are covered by the same
+          // comparison that covers the root and the target, together with the solver's own
+          // interpolated state and progress. A second cache keyed on inputs and members alone
+          // looked like an optimisation and was strictly weaker: an animated value on a solver
+          // track changed nothing in that key, so the solver held still after tick one with no
+          // error and no diagnostic. See ADR-051.
+          const composed = node.compose(requirementInputs);
+          validateComposition(composed.values);
           let values = composed.values;
           for (const edge of edgesByRole(node, "output")) {
             const sourcePatch = this.#registry.get(edge.sourceId);

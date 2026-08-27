@@ -397,19 +397,14 @@ export class Engine {
         clock: this.#options.clock,
         scheduler: this.#options.scheduler,
         compose,
+        // What the track interpolated, and nothing about the graph. Where the member sits in its
+        // chain is `SolveMember.base`, derived once by `resolveSolvers` and joined in by the
+        // publisher, so this closure needs no opinion about a requirement slot named `base` and
+        // there is no second answer for it to disagree with. See ADR-051.
         interpolated: (node) => {
           const track = tracks.get(node.id);
           if (!track) return undefined;
-          const baseEdge = node.edges.find(
-            (e) => e.role === "input" && e.requirement?.slot === "base",
-          );
-          const base = baseEdge?.sourceId ?? "";
-          return () => ({
-            id: node.id,
-            base,
-            values: track.interpolated(),
-            progress: track.progress,
-          });
+          return () => ({ id: node.id, values: track.interpolated(), progress: track.progress });
         },
         graphBuilder: new IncrementalGraphBuilder(),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
