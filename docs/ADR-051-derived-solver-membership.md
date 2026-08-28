@@ -90,10 +90,10 @@ The loader enforces structural integrity across these deterministic diagnostics 
 | ---------------------------- | ----------------------------------------------------------------------------------------------- |
 | `ik-solver-no-root`          | A solver node lacks a bound `root` requirement edge.                                            |
 | `ik-solver-no-members`       | A solver node has no member nodes declaring `solver` pointing to it.                            |
-| `ik-solver-unreachable-root` | A member's `base` walk leaves the member set without terminating at the solver's bound `root`.   |
-| `ik-mode-ambiguous`          | A single node binds `solver` alongside `root`/`target`, or binds `root` under multiple plugins.  |
-| `ik-solved-rotation-dead`    | A bone authors a `rotation` inside the same plugin group in which it bound its `solver` slot.    |
-| `ik-target-not-single-leaf`  | A solver binds the bare `target` slot over a chain with more than one leaf.                      |
+| `ik-solver-unreachable-root` | A member's `base` walk leaves the member set without terminating at the solver's bound `root`.  |
+| `ik-mode-ambiguous`          | A single node binds `solver` alongside `root`/`target`, or binds `root` under multiple plugins. |
+| `ik-solved-rotation-dead`    | A bone authors a `rotation` inside the same plugin group in which it bound its `solver` slot.   |
+| `ik-target-not-single-leaf`  | A solver binds the bare `target` slot over a chain with more than one leaf.                     |
 
 `ik-solver-unsupported-arity` was here and is deleted. It refused every derived member count other than two, which was honest while the closed form was the only solve a rig could reach and false the moment `solveChain` dispatches on derived shape. A rule that refuses a shape the code solves is worse than no rule. What the cap was guaranteeing silently is that a chain had exactly one leaf, which is the only thing the bare `target` slot can address, and `ik-target-not-single-leaf` is that guarantee stated rather than implied: the slot names no member, so a branching chain gives it two candidates and the rig is refused instead of solved with the goal applied to whichever leaf the derivation ordered first. `FB-14` pins it, and the throw in `readGoals` is the invariant guard behind it. The goal-addressing rules slices D0 and D1 introduced belong to ADR-052.
 

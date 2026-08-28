@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  ikPlugin,
-  readGoals,
-  solveChain,
-  solveTwoBone,
-  type MemberState,
-} from "../../../src/plugins/ik";
-import type { WorldFrame } from "../../../src/plugins/frame";
+import { ikPlugin, readGoals, solveChain, solveTwoBone } from "../../../src/plugins/ik";
 
 // Slice D3 of issue #195: the dispatcher, and what it is not allowed to change.
 //
@@ -14,27 +7,34 @@ import type { WorldFrame } from "../../../src/plugins/frame";
 // else takes FABRIK. Nothing new is authorable, so no rig picks its own solver, and the two paths
 // publish one convention by assertion rather than by construction. `FB-2` holds FABRIK to the
 // analytic numbers; the cases here hold the analytic path to itself.
+//
+// The fixtures are structural rather than annotated with `WorldFrame` and `MemberState`, and that is
+// a requirement rather than a shortcut. `PluginInputs` values are `ImmutableValue`, an interface has
+// no implicit index signature, and so an interface-annotated fixture cannot be handed to
+// `ikPlugin.compose` at all. `bone` and `tip` are the same pair `fabrik-solve.test.ts` uses.
 
-const ROOT: WorldFrame = { x: 200, y: 300, rotation: 0 };
+type Frame = { x: number; y: number; rotation: number };
+
+const ROOT = { x: 200, y: 300, rotation: 0 };
 const UPPER = "walker/upper-arm";
 const FOREARM = "walker/forearm";
 const SHOULDER = "walker/shoulder";
-const HAND: WorldFrame = { x: 320, y: 340, rotation: 0 };
+const HAND = { x: 320, y: 340, rotation: 0 };
 
-function member(id: string, base: string, length: number, goal?: WorldFrame): MemberState {
-  return goal === undefined
-    ? { id, base, values: { length }, progress: 0 }
-    : { id, base, values: { length }, progress: 0, goal };
+function bone(id: string, base: string, length: number) {
+  return { id, base, values: { length }, progress: 0 };
+}
+
+/** A chain leaf: the same member, plus the goal that makes it addressed. */
+function tip(id: string, base: string, length: number, goal: Frame) {
+  return { id, base, values: { length }, progress: 0, goal };
 }
 
 /** ADR-051's worked rig, addressed through the bare `target` slot. */
-const ARM: readonly MemberState[] = [member(UPPER, SHOULDER, 80), member(FOREARM, UPPER, 60)];
+const ARM = [bone(UPPER, SHOULDER, 80), bone(FOREARM, UPPER, 60)];
 
 /** The same rig with the goal on the leaf, which is what the dict derives. */
-const ADDRESSED_ARM: readonly MemberState[] = [
-  member(UPPER, SHOULDER, 80),
-  member(FOREARM, UPPER, 60, HAND),
-];
+const ADDRESSED_ARM = [bone(UPPER, SHOULDER, 80), tip(FOREARM, UPPER, 60, HAND)];
 
 describe("the solve dispatches on derived shape (Slice D3)", () => {
   it("FB-9 two members and one goal are byte-identical to the closed form", () => {
@@ -56,7 +56,7 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     expect(solved[FOREARM]).toBeCloseTo(-51.3178, 4);
 
     // An unreachable target is the analytic clamp rather than a stalled iteration, on the same path.
-    const far: WorldFrame = { x: 400, y: 300, rotation: 0 };
+    const far = { x: 400, y: 300, rotation: 0 };
     expect(solveChain(ROOT, ARM, readGoals(far, ARM), false)).toEqual(
       solveTwoBone(ROOT, far, ARM, false),
     );
@@ -64,15 +64,8 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     // Dispatch reads shape, not spelling. The goal dict and the bare slot are one map by the time
     // `solveChain` sees them, so a rig re-expressed with `targets` takes the same path and lands on
     // the same doubles.
-    const addressed = solveChain(
-      ROOT,
-      ADDRESSED_ARM,
-      readGoals(undefined, ADDRESSED_ARM),
-      false,
-    );
-    expect(JSON.stringify(addressed)).toEqual(
-      JSON.stringify(solveTwoBone(ROOT, HAND, ARM, false)),
-    );
+    const addressed = solveChain(ROOT, ADDRESSED_ARM, readGoals(undefined, ADDRESSED_ARM), false);
+    expect(JSON.stringify(addressed)).toEqual(JSON.stringify(solveTwoBone(ROOT, HAND, ARM, false)));
   });
 
   it("FB-13 a solve that does not converge publishes rotations and nothing else", () => {
@@ -85,10 +78,10 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     // rigs miss tolerance before the cap, so a per-tick report would fire on rigs nobody would call
     // broken. A bare `converged` boolean is also the C review's Blocker 1 waiting to happen again:
     // `renderableValues` skips a plain record and a scalar falls through to `target[key] = value`.
-    const tail: readonly MemberState[] = [
-      member("rig/t1", "rig/hip", 30),
-      member("rig/t2", "rig/t1", 30),
-      member("rig/t3", "rig/t2", 30, { x: 900, y: 300, rotation: 0 }),
+    const tail = [
+      bone("rig/t1", "rig/hip", 30),
+      bone("rig/t2", "rig/t1", 30),
+      tip("rig/t3", "rig/t2", 30, { x: 900, y: 300, rotation: 0 }),
     ];
 
     const composed = ikPlugin.compose(
@@ -129,14 +122,13 @@ describe("the solve dispatches on derived shape (Slice D3)", () => {
     // at load, so this is the invariant guard behind that rule rather than a validation step. It
     // throws instead of picking a leaf, because a binding applied to an arbitrary member is the
     // shape ADR-033 rule 6 forbids.
-    const branched: readonly MemberState[] = [
-      member("rig/left", "rig/hip", 40),
-      member("rig/right", "rig/hip", 40),
-    ];
+    const branched = [bone("rig/left", "rig/hip", 40), bone("rig/right", "rig/hip", 40)];
     expect(() => readGoals(HAND, branched)).toThrow(/2 leaves/);
 
     // A solve with no goal at all is thrown rather than answered with the seed pose, which would
     // publish a rig reaching for nothing with status `ready`.
-    expect(() => solveChain(ROOT, ARM, new Map(), false)).toThrow(/at least one goal/);
+    expect(() => solveChain(ROOT, ARM, new Map<string, Frame>(), false)).toThrow(
+      /at least one goal/,
+    );
   });
 });
