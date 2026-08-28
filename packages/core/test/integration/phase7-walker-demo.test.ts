@@ -23,10 +23,10 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
   // A group's animated properties live under its `values` section and its bindings beside them,
   // which is the only authored shape a group has. See ADR-049.
   //
-  // The rig carries two solvers on purpose. `arm-solve` is two bones and one goal, so it takes the
-  // analytic closed form; `tail-solve` is three bones, so it takes the iterative one. Cases 11 and
-  // 13 read the same numbers for the arm and the legs, which is what makes a second solver in one
-  // project a checked claim rather than an assumed one. See ADR-051 and ADR-052.
+  // The rig carries two solvers on purpose. `arm-solve` is two bones and one goal, so it takes
+  // the analytic closed form; `tail-solve` is three bones, so it takes the iterative one. Cases
+  // 11 and 13 read the same numbers for the arm and the legs, which is what makes a second solver
+  // in one project a checked claim rather than an assumed one. See ADR-051 and ADR-052.
   const walkerProject: ProjectDefinition = {
     schemaVersion: 5,
     motions: [
@@ -161,9 +161,9 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
             },
           },
           // The tail. Three bones off one anchor, so its derived member count is not two and the
-          // solve dispatches to the iterative path. Nothing in the runtime knows that: the anchor is
-          // an ordinary `fk` node, the members are an ordinary path of ordinary `base` edges, and the
-          // goal is an ordinary input edge of the solver.
+          // solve dispatches to the iterative path. Nothing in the runtime knows that: the
+          // anchor is an ordinary `fk` node, the members are an ordinary path of ordinary `base`
+          // edges, and the goal is an ordinary input edge of the solver.
           {
             id: "tail-base",
             keyframes: {
@@ -217,15 +217,18 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
               },
             },
           },
-          // Addressed by member id rather than through the bare `target` slot, which is the spelling
-          // a chain of any shape uses. A linear tail has one leaf, so `target` would also work here;
-          // the dict is authored on purpose, so the rig exercises the grammar rather than only the
-          // degenerate case of it. See ADR-052.
+          // Addressed by member id rather than through the bare `target` slot, which is the
+          // spelling a chain of any shape uses. A linear tail has one leaf, so `target` would
+          // also work here; the dict is authored on purpose, so the rig exercises the grammar
+          // rather than only the degenerate case of it. See ADR-052.
           {
             id: "tail-solve",
             keyframes: {
               ik: {
-                requires: { root: "walk/tail-base", targets: { "walk/tail-3": "walk/tail-target" } },
+                requires: {
+                  root: "walk/tail-base",
+                  targets: { "walk/tail-3": "walk/tail-target" },
+                },
               },
             },
           },
@@ -642,11 +645,11 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
     clock.dispose();
   });
 
-  it("13. A three-bone tail solves iteratively while every other bone stays where it was", () => {
-    // Slice D4 of issue #195. The unit fixtures prove the iterative solve is right and the
+  it("13. A three-bone tail solves iteratively while every other bone stays put", () => {
+    // Slice D4 of issue #195. The unit fixtures prove the iterative solve is right and that the
     // dispatcher picks it; they cannot prove that adding a second solver to a real rig leaves the
     // first one alone. That is what this case is for, and it is why the arm and the legs are
-    // asserted here against the numbers cases 6 and 11 already pin rather than against fresh ones.
+    // asserted against the numbers cases 6 and 11 already pin rather than against fresh ones.
     const clock = createBrowserClock(createFakeFrameSource());
     const scheduler = createFakeScheduler();
 
@@ -690,22 +693,26 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
       expect(at(id)?.status).toBe("ready");
     }
 
-    // 2. One solve for the whole tail, keyed by member id, and never a per-member re-solve. Three
-    //    members is exactly the count `ik-solver-unsupported-arity` used to refuse.
+    // 2. One solve for the whole tail, keyed by member id, and never a per-member re-solve.
+    //    Three members is exactly the count `ik-solver-unsupported-arity` used to refuse.
     const tailRotations = at("walk/tail-solve")?.values.rotations as Record<string, number>;
-    expect(Object.keys(tailRotations).sort()).toEqual(["walk/tail-1", "walk/tail-2", "walk/tail-3"]);
+    expect(Object.keys(tailRotations).sort()).toEqual([
+      "walk/tail-1",
+      "walk/tail-2",
+      "walk/tail-3",
+    ]);
     for (const value of Object.values(tailRotations)) expect(Number.isFinite(value)).toBe(true);
 
-    // 3. The tip reaches the goal the dict addressed. Anchor is the pelvis at (0, 100), the goal is
-    //    (24, 132), so the chain spends 40 of its 60 units of reach.
+    // 3. The tip reaches the goal the dict addressed. The anchor is the pelvis at (0, 100) and
+    //    the goal is (24, 132), so the chain spends 40 of its 60 units of reach.
     expect(at("walk/tail-base")?.values.x).toBeCloseTo(0, 6);
     expect(at("walk/tail-base")?.values.y).toBeCloseTo(100, 6);
     expect(at("walk/tail-3")?.values.x).toBeCloseTo(24, 1);
     expect(at("walk/tail-3")?.values.y).toBeCloseTo(132, 1);
 
-    // 4. Segment lengths are the invariant a tolerance does not cover: an iteration that reached the
-    //    goal by stretching a segment would converge and be wrong. Measured on published frames,
-    //    because that is what a renderer sees.
+    // 4. Segment lengths are the invariant a tolerance does not cover: an iteration that reached
+    //    the goal by stretching a segment would converge and be wrong. Measured on the published
+    //    frames, because that is what a renderer sees.
     expect(between("walk/tail-base", "walk/tail-1")).toBeCloseTo(20, 6);
     expect(between("walk/tail-1", "walk/tail-2")).toBeCloseTo(20, 6);
     expect(between("walk/tail-2", "walk/tail-3")).toBeCloseTo(20, 6);
@@ -719,8 +726,8 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
     expect(at("walk/shin")?.values.rotation).toBeCloseTo(15, 2);
 
     // 6. And the two-bone arm still takes the analytic path, at case 11's numbers, with its own
-    //    solver publishing only its own two members. A dispatcher that routed the arm to the
-    //    iterative solve would still reach (35, 75), so the key set is asserted beside the position.
+    //    solver publishing only its own two members. A dispatcher that wrongly routed the arm to
+    //    the iterative solve would still reach (35, 75), so the key set is asserted beside it.
     const armRotations = at("walk/arm-solve")?.values.rotations as Record<string, number>;
     expect(Object.keys(armRotations).sort()).toEqual(["walk/forearm", "walk/upper-arm"]);
     expect(at("walk/forearm")?.values.x).toBeCloseTo(35, 1);
