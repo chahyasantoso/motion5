@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition } from "../../src/contract/v5";
+import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
 import { PluginRegistry } from "../../src/domain/plugins";
 import { Engine } from "../../src/engine";
 import { fkPlugin } from "../../src/plugins/fk";
@@ -18,7 +18,7 @@ import { createRealGsapSeam } from "../support/real-gsap";
 // same two numbers is what says the dict changed the addressing and nothing else; a fresh fixture
 // with fresh expectations would have proved only that the new path computes something.
 
-function goalRig(handTarget: ProjectDefinition["motions"][number]["tracks"][number]) {
+function goalRig(handTarget: TrackDefinition): ProjectDefinition {
   return {
     schemaVersion: 5,
     motions: [
@@ -34,7 +34,7 @@ function goalRig(handTarget: ProjectDefinition["motions"][number]["tracks"][numb
           {
             id: "arm-solve",
             // One authored section, keyed by the member id the goal belongs to. No bracket is ever
-            // typed: `targets[walker/forearm]` is derived identity and lives only in the IR.
+            // typed: `targets[forearm]` is derived identity and lives only in the IR.
             keyframes: {
               ik: { requires: { root: "shoulder", targets: { forearm: "hand-target" } } },
             },
@@ -58,7 +58,7 @@ function goalRig(handTarget: ProjectDefinition["motions"][number]["tracks"][numb
         ],
       },
     ],
-  } as ProjectDefinition;
+  };
 }
 
 const STATIC_GOAL = goalRig({

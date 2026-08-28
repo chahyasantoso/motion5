@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
-import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+import type {
+  AuthoredPluginRequires,
+  Diagnostic,
+  ProjectDefinition,
+  TrackDefinition,
+} from "../../../src/contract/v5";
 import {
   buildGraphIR,
   resolveSolvers,
@@ -39,8 +44,14 @@ function solvesOf(result: GraphBuildResult): readonly SolveMember[] | undefined 
   return result.graph?.nodeById["walker/arm-solve"]?.solves;
 }
 
-/** The worked rig, with the solver's goals addressed by member id rather than by one bare slot. */
-function rig(requires: Readonly<Record<string, unknown>>): ProjectDefinition {
+/**
+ * The worked rig, with only the solver's bindings varying.
+ *
+ * Typed as `AuthoredPluginRequires` rather than as a loose record, so every fixture below is checked
+ * against the authored contract D0 widened. A dict at a slot that may not carry one would be a type
+ * error here, which is the fixture doing the job a fixture for an authored shape exists to do.
+ */
+function rig(requires: AuthoredPluginRequires): ProjectDefinition {
   return project([
     { id: "shoulder" },
     { id: "hand-target" },
@@ -167,10 +178,8 @@ describe("goal-addressed solving (Slice D1)", () => {
     // The goal is a qualified node id rather than the authored key, because the publisher reads it
     // straight off the registry and holds no owner to qualify against.
     const solver = built.graph?.nodeById["walker/arm-solve"];
-    const goalEdge = solver?.edges.find(
-      (edge) => edge.requirement?.slot === "targets[forearm]",
-    );
-    expect(goalEdge?.sourceId).toBe("walker/hand-target");
+    const goal = solver?.edges.find((edge) => edge.requirement?.slot === "targets[forearm]");
+    expect(goal?.sourceId).toBe("walker/hand-target");
 
     // Both builders answer identically, because both finalize through `finalizeGraph`.
     const incremental = new IncrementalGraphBuilder().build(GOAL_DICT);
