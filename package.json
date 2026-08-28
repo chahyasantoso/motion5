@@ -25,7 +25,8 @@
     "test:boundaries": "node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts",
     "benchmark": "node performance/graph-benchmark.mjs",
     "test:watch": "vitest",
-    "dev": "npm run dev --workspace=@motion5/react-demo"
+    "dev": "npm run dev --workspace=@motion5/react-demo",
+    "dev:ik": "npm run dev --workspace=@motion5/ik-playground"
   },
   "devDependencies": {
     "@stryker-mutator/core": "^9.6.1",
