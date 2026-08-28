@@ -568,17 +568,11 @@ export function resolveSolvers(
       continue;
     }
 
-    // Diagnostic 5: ik-solver-unsupported-arity
-    if (members.length !== 2) {
-      diagnostics.push(
-        diag(
-          "ik-solver-unsupported-arity",
-          solver.id,
-          `Solver "${solver.id}" has unsupported arity (${members.length}); only 2-bone solvers are supported.`,
-          [solver.id],
-        ),
-      );
-    }
+    // Arity is not refused here any more. `ik-solver-unsupported-arity` reported every derived
+    // member count other than two, which was honest while the closed form was the only solve a rig
+    // could reach and false the moment `solveChain` dispatches on derived shape. A rule that
+    // refuses a shape the code solves is worse than no rule, so it is deleted rather than widened.
+    // What the cap was silently guaranteeing is refused by name below instead. See issue #195.
 
     // Diagnostic 6: ik-solver-unreachable-root
     //
@@ -642,7 +636,7 @@ export function resolveSolvers(
     );
 
     // Diagnostics 8 through 11: ik-goal-unknown-member, ik-goal-duplicate, ik-goal-not-leaf and
-    // ik-leaf-without-goal.
+    // ik-leaf-without-goal, plus ik-target-not-single-leaf.
     //
     // Here because this is the only owner that can answer any of them. The authored key is a member
     // id, so "does it name a member of this chain" and "is that member a leaf" are both questions
@@ -663,6 +657,27 @@ export function resolveSolvers(
         .filter((entry) => !based.has(entry.node.id))
         .map((entry) => entry.node.id);
       const leafIds = new Set(leaves);
+      // Diagnostic 12: ik-target-not-single-leaf
+      //
+      // The bare `target` slot names no member, so it addresses a chain leaf only while there is
+      // exactly one leaf to address. The arity cap guaranteed that for free, and lifting the cap is
+      // what makes the shape reachable, so it is refused by name here rather than left to the plugin
+      // quietly choosing one of the leaves it was handed: a binding accepted and then applied to an
+      // arbitrary member is the shape ADR-033 rule 6 forbids. The dict is the general spelling, and
+      // a branching chain addresses its goals by member id.
+      const bindsBareTarget = solver.edges.some(
+        (edge) => edge.role === "input" && edge.requirement?.slot === "target",
+      );
+      if (bindsBareTarget && leaves.length > 1) {
+        diagnostics.push(
+          diag(
+            "ik-target-not-single-leaf",
+            solver.id,
+            `Solver "${solver.id}" binds "target" over a chain with ${leaves.length} leaves; address goals by member id instead.`,
+            [solver.id, ...leaves],
+          ),
+        );
+      }
       // One entry per member a goal resolved to, carrying every authored key that named it. The dict
       // cannot repeat a key, so a duplicate is always two spellings of one id (`forearm` and
       // `walker/forearm`), which is the narrow rule qualification leaves behind.

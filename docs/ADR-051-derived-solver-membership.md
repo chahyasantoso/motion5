@@ -84,16 +84,18 @@ Graph finalization (`finalizeGraph`) runs a pure derivation pass, `resolveSolver
 
 #### Load-Time IK Diagnostics
 
-The loader enforces structural integrity across 6 deterministic diagnostics (`severity: "error"`):
+The loader enforces structural integrity across these deterministic diagnostics (`severity: "error"`):
 
-| Diagnostic Rule ID            | Condition                                                                                       |
-| ----------------------------- | ----------------------------------------------------------------------------------------------- |
-| `ik-solver-no-root`           | A solver node lacks a bound `root` requirement edge.                                            |
-| `ik-solver-no-members`        | A solver node has no member nodes declaring `solver` pointing to it.                            |
-| `ik-solver-unreachable-root`  | A member's `base` walk leaves the member set without terminating at the solver's bound `root`.  |
-| `ik-mode-ambiguous`           | A single node binds `solver` alongside `root`/`target`, or binds `root` under multiple plugins. |
-| `ik-solved-rotation-dead`     | A bone authors a `rotation` inside the same plugin group in which it bound its `solver` slot.   |
-| `ik-solver-unsupported-arity` | A solver's derived member count is not 2 (two-bone analytical solve).                           |
+| Diagnostic Rule ID           | Condition                                                                                       |
+| ---------------------------- | ----------------------------------------------------------------------------------------------- |
+| `ik-solver-no-root`          | A solver node lacks a bound `root` requirement edge.                                            |
+| `ik-solver-no-members`       | A solver node has no member nodes declaring `solver` pointing to it.                            |
+| `ik-solver-unreachable-root` | A member's `base` walk leaves the member set without terminating at the solver's bound `root`.  |
+| `ik-mode-ambiguous`          | A single node binds `solver` alongside `root`/`target`, or binds `root` under multiple plugins. |
+| `ik-solved-rotation-dead`    | A bone authors a `rotation` inside the same plugin group in which it bound its `solver` slot.   |
+| `ik-target-not-single-leaf`  | A solver binds the bare `target` slot over a chain with more than one leaf.                     |
+
+`ik-solver-unsupported-arity` was here and is deleted. It refused every derived member count other than two, which was honest while the closed form was the only solve a rig could reach and false the moment `solveChain` dispatches on derived shape. A rule that refuses a shape the code solves is worse than no rule. What the cap was guaranteeing silently is that a chain had exactly one leaf, which is the only thing the bare `target` slot can address, and `ik-target-not-single-leaf` is that guarantee stated rather than implied: the slot names no member, so a branching chain gives it two candidates and the rig is refused instead of solved with the goal applied to whichever leaf the derivation ordered first. `FB-14` pins it, and the throw in `readGoals` is the invariant guard behind it. The goal-addressing rules slices D0 and D1 introduced belong to ADR-052.
 
 `ik-solved-rotation-dead` reads that group and no other. The solved rotation replaces the authored one inside the plugin that reads `rotations` back, which is the plugin that bound the slot, so a `rotation` under any other group is that plugin's own live input. A flat `rotation` is likewise not this rule's: attributing a flat key to a plugin is the registry's question, and this pass holds no registry by design, so a member authoring one meets `plugin-ambiguous-key` in any registry with two claimants and `plugin-unknown-key` in one with none. See ADR-043 and ADR-044.
 
@@ -129,6 +131,8 @@ When `fkPlugin.compose` executes:
 3. If absent or unbound, it falls back cleanly to authored `values.rotation`.
 
 `ikPlugin.compose` returns the values it was given with `rotations` added, not `rotations` alone. `Track.composeFrom` chains by replacement, so a bare return deletes every key the solver track authored, starting with the `flip` the solver reads itself. `IK-18` pins the spread.
+
+**Amended by slice D3.** `ikPlugin.compose` no longer calls `solveTwoBone` directly. `solveChain` owns the choice: two members and one goal take the closed form, and everything else takes the iterative solve in `plugins/fabrik.ts`. Dispatch is on derived shape rather than on an authored mode, so nothing new is authorable and no rig selects its own solver. The two paths cannot be one: `IK-1` and `IK-3` pin exact numbers an iterative solve reaches only within a tolerance, and `flip` at arity two selects an exact branch rather than a basin, so the DRY guarantee is an equivalence assertion (`FB-2`) rather than a shared code path, and `FB-9` pins the analytic path as byte-identical with the dispatcher in front of it. Neither `tips` nor `convergence` reaches a patch. `FB-13` pins that, and the reasoning is recorded in [DECISIONS.md](./DECISIONS.md) under ADR-051.
 
 ---
 
@@ -167,6 +171,9 @@ When `fkPlugin.compose` executes:
 5. **Deriving Chains Over Unresolved References**:
    - _Proposal_: Keep `resolveSolvers` ahead of the reference bail, so one build reports every rule a rig breaks.
    - _Rejected_: A derivation over edges whose sources do not resolve reports about a chain that never existed. The second diagnostic names a member for a typo one node up, which is a worse first thing to read than the typo.
+6. **Replacing the Closed Form With FABRIK (slice D3)**:
+   - _Proposal_: Delete `solveTwoBone` and let one iterative solve answer for every arity.
+   - _Rejected_: `IK-1` and `IK-3` pin exact rotations an iterative solve reaches only within a tolerance, and `flip` at arity two is an exact branch rather than a basin, so one solver would move published values for every rig that already solves.
 
 ---
 
@@ -189,3 +196,8 @@ When `fkPlugin.compose` executes:
   - `packages/core/test/unit/runtime/publisher-solver-members.test.ts` (Publisher member gathering, member scope, failure semantics, and the one memo).
   - `packages/core/test/integration/ik-two-bone.test.ts` (Full 6-node rig integration and renderer shielding).
 - **Slice C4**: `packages/core/test/integration/phase7-walker-demo.test.ts` (Hybrid FK/IK walker demo & `T-C4.1` dynamic mutation rollback).
+- **Slice D2 (`FB-1`..`FB-8`)**: `packages/core/test/unit/plugins/fabrik-solve.test.ts` (The iterative solve as arithmetic, unwired: the derived seed, the closed-form equivalence, sub-base averaging, permutation determinism, and the two non-convergent exits).
+- **Slice D3 (`FB-9`..`FB-15`)**:
+  - `packages/core/test/unit/plugins/fabrik-dispatch.test.ts` (The analytic path byte-identical behind the dispatcher, the unpublished convergence record, and the bare-target join).
+  - `packages/core/test/unit/graph/arity-lift.test.ts` (Chains past and short of arity two loading, and `ik-target-not-single-leaf`).
+  - `packages/core/test/integration/ik-fabrik-chain.test.ts` (A five-bone chain tracking an animated goal, and a two-arm tree solved once).

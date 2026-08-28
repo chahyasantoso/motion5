@@ -1,6 +1,7 @@
 import { readGoalSlot } from "../contract/solver-slots";
 import type { PluginDefinition } from "../domain/plugins";
 import type { ImmutableRecord } from "../domain/values";
+import { solveFabrik, type FabrikMember } from "./fabrik";
 import { readFrame, readNumber, type WorldFrame } from "./frame";
 
 /** The frame a solver hangs from and the frame it reaches for are both world frames. */
@@ -40,22 +41,49 @@ export function readMembers(membersInput: unknown): readonly MemberState[] {
 }
 
 /**
- * The frame this solve reaches toward: the bare `target` binding when the author used one, and the
- * single chain leaf's goal when they addressed goals by member id.
+ * The chain's leaves: the members no member of the same chain hangs from.
  *
- * Both spellings survive on purpose. `target` is exactly the degenerate case of the goal dict, so
- * retiring it would re-author every existing rig to buy one spelling, and `ik-goal-conflict` already
- * refuses a solver that authored both. Arity is still two here, so a goal-addressed chain has exactly
- * one leaf and therefore exactly one goal; any other count is a dispatch question that belongs to the
- * FABRIK slice rather than to a fallback here quietly picking one of them. See issue #195.
+ * Derived from the `base` fields the publisher joined on rather than from a second walk of the
+ * graph. `resolveSolvers` derives the same set at load time and refuses the shapes that make a
+ * goal unanswerable, so this read never disagrees with it; it exists because the bare `target`
+ * slot names no member and something has to say which member it is a goal for.
  */
-export function readSolveTarget(target: unknown, members: readonly MemberState[]): unknown {
-  if (target !== undefined) return target;
-  const goals = members.filter((member) => member.goal !== undefined);
-  if (goals.length === 1) return goals[0]?.goal;
-  throw new Error(
-    `ikPlugin requires exactly one goal at arity ${members.length}; received ${goals.length}.`,
-  );
+function chainLeaves(members: readonly MemberState[]): readonly string[] {
+  const based = new Set(members.map((member) => member.base));
+  return members.filter((member) => !based.has(member.id)).map((member) => member.id);
+}
+
+/**
+ * Every goal this solve reaches toward, keyed by the member it belongs to.
+ *
+ * One normalised map, whichever way the author addressed their goals, so the dispatch below reads a
+ * count rather than two spellings and the solvers read a frame rather than a keyframe. Both
+ * spellings survive on purpose: `target` is exactly the degenerate case of the goal dict, so
+ * retiring it would re-author every existing rig to buy one spelling, and `ik-goal-conflict`
+ * already refuses a solver that authored both.
+ *
+ * A bare `target` names no member, so it is joined onto the chain's one leaf. That is a guarantee
+ * while a chain has exactly one leaf and nothing more, which is why a branching chain binding the
+ * bare slot is `ik-target-not-single-leaf` at load: the throw here is the invariant guard behind
+ * that rule rather than a validation step, in the same spirit as `readMembers`. See issue #195.
+ */
+export function readGoals(
+  target: unknown,
+  members: readonly MemberState[],
+): ReadonlyMap<string, WorldFrame> {
+  const goals = new Map<string, WorldFrame>();
+  for (const member of members) {
+    if (member.goal !== undefined) goals.set(member.id, readFrame(member.goal));
+  }
+  if (target === undefined) return goals;
+  const leaves = chainLeaves(members);
+  if (leaves.length !== 1) {
+    throw new Error(
+      `ikPlugin cannot address the bare target slot over a chain with ${leaves.length} leaves.`,
+    );
+  }
+  goals.set(leaves[0]!, readFrame(target));
+  return goals;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -78,6 +106,10 @@ function clamp(value: number, min: number, max: number): number {
  *
  * An unreachable target is clamped into `[|l1 - l2|, l1 + l2]` rather than refused, so the chain
  * extends toward it instead of producing `NaN` out of `acos`.
+ *
+ * Exactly two members, and `solveChain` is the one caller that decides so. A `members.length < 2`
+ * branch used to answer a one-member chain with zeros; it is deleted rather than kept, because the
+ * dispatcher owns arity now and a one-member chain is a real solve that points at its goal.
  */
 export function solveTwoBone(
   root: BaseFrame,
@@ -85,12 +117,6 @@ export function solveTwoBone(
   members: readonly MemberState[],
   flip = false,
 ): Readonly<Record<string, number>> {
-  if (members.length < 2) {
-    const result: Record<string, number> = {};
-    for (const m of members) result[m.id] = 0;
-    return Object.freeze(result);
-  }
-
   const m1 = members[0]!;
   const m2 = members[1]!;
   const l1 = Math.max(0, readNumber(m1.values.length));
@@ -157,7 +183,71 @@ export function solveTwoBone(
 }
 
 /**
- * The two-bone solver node.
+ * The member states as the iterative solve reads them.
+ *
+ * `readNumber` rather than a second guard, because `fk` reads the same authored `length` through the
+ * same reader: a value one half of a composition refuses and the other accepts is one authored
+ * number meaning two things inside one tick, which is how the two private copies of this reader
+ * drifted before `plugins/frame.ts` existed.
+ */
+function fabrikMembers(
+  members: readonly MemberState[],
+  goals: ReadonlyMap<string, WorldFrame>,
+): readonly FabrikMember[] {
+  return members.map((member) => {
+    const length = readNumber(member.values.length);
+    const goal = goals.get(member.id);
+    return goal === undefined
+      ? { id: member.id, base: member.base, length }
+      : { id: member.id, base: member.base, length, goal };
+  });
+}
+
+/**
+ * The dispatcher: which solve answers for this chain.
+ *
+ * Two members and one goal take the closed form, and everything else takes FABRIK. Dispatch is on
+ * derived shape rather than on an authored mode, so nothing new is authorable and no rig chooses its
+ * own solver.
+ *
+ * FABRIK cannot simply replace the analytic path. `IK-1` and `IK-3` pin `40.168` and `-51.318` for
+ * the worked rig, an iterative solve reaches a goal within a tolerance rather than exactly, and
+ * `flip` at arity two selects an exact branch rather than a basin, so replacing it would move
+ * published values for every rig that already solves. The two paths therefore publish one
+ * convention by assertion rather than by construction: `FB-2` holds FABRIK to the closed form's own
+ * numbers on ADR-051's worked rig, for both elbow branches.
+ *
+ * A solve with no goal at all is thrown rather than answered with the seed pose. Every load-time
+ * shape that could produce one is refused (`ik-solver-no-members`, `ik-leaf-without-goal`), so
+ * reaching here is a publisher invariant violation, and returning a pose would publish a rig that
+ * reaches for nothing with status `ready`. See issue #195.
+ */
+export function solveChain(
+  root: BaseFrame,
+  members: readonly MemberState[],
+  goals: ReadonlyMap<string, WorldFrame>,
+  flip = false,
+): Readonly<Record<string, number>> {
+  if (goals.size === 0) {
+    throw new Error(
+      `ikPlugin requires at least one goal; ${members.length} members received none.`,
+    );
+  }
+  if (members.length === 2 && goals.size === 1) {
+    const [target] = goals.values();
+    return solveTwoBone(root, target!, members, flip);
+  }
+  // `tips` and `convergence` are deliberately dropped rather than published. The analytic path
+  // carries neither, so publishing them here would make a solver's patch shape a function of its
+  // arity and would move every existing solver's published keys, which `FB-9` pins as unchanged.
+  // Roughly four percent of ordinary reachable rigs do not reach tolerance before the cap, so a
+  // per-tick report would be noise on rigs nobody would call broken. `FB-13` pins the shape and
+  // `docs/DECISIONS.md` records the decision under ADR-051.
+  return solveFabrik(root, fabrikMembers(members, goals), flip).rotations;
+}
+
+/**
+ * The solver node.
  *
  * `compose` returns the values it was given with `rotations` added, rather than `rotations` alone.
  * `Track.composeFrom` chains by replacement, so a bare return wipes this track's own authored keys:
@@ -184,9 +274,9 @@ export const ikPlugin: PluginDefinition = {
   compose: (values, _progress, inputs) => {
     const root = readFrame(inputs.root);
     const members = readMembers(inputs.members);
-    const target = readFrame(readSolveTarget(inputs.target, members));
+    const goals = readGoals(inputs.target, members);
     const flip = Boolean(values.flip);
-    const rotations = solveTwoBone(root, target, members, flip);
+    const rotations = solveChain(root, members, goals, flip);
     return Object.freeze({
       ...values,
       rotations: Object.freeze(rotations as unknown as ImmutableRecord),
