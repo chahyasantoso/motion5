@@ -108,15 +108,42 @@ export type AuthoredStaticValue = number | string | boolean;
  */
 export type AuthoredProperty = readonly AuthoredStop[] | AuthoredStaticValue;
 /**
+ * The authored goals of one solver: the source id each chain member reaches toward, keyed by that
+ * member's own id.
+ *
+ * Keyed by member id rather than by position, because an index can never be wrong: it silently
+ * means whatever the rig currently makes it mean, so inserting a bone or reordering two tracks
+ * would keep loading and pull the wrong limb. A member id can be wrong, so it can be checked. That
+ * is the argument that retired `reach` in favour of a named `root`, and object keys being unique
+ * makes two goals for one member unrepresentable rather than merely diagnosed. See issue #195.
+ *
+ * One authored section, but one binding per entry. `readPluginBindings` expands each into its own
+ * derived slot identity, because the publisher delivers a source's values as
+ * `collected[plugin][slot]` and two goals under one slot name would overwrite each other silently,
+ * while a goal deriving no edge would be invisible to ordering and to pending classification.
+ *
+ * Not re-exported from the package entry, so this adds no entry to the export map or to the
+ * boundary allow-list. Same finding ADR-049 recorded for `AuthoredPluginRequires`.
+ */
+export type AuthoredPluginGoals = Readonly<Record<string, string>>;
+/**
  * The optional bindings section of a plugin-named group: one graph source id per requirement slot
- * the named plugin declares.
+ * the named plugin declares, or the goals dict for the reserved goals slot.
  *
  * The slot name is the destination, so there is no author-facing projection map and no naming
  * convention such as `parentX` for the author to keep synchronized with the plugin. Omitting the
  * section, or a slot within it, derives no edge and leaves the unbound case to the plugin.
  * See ADR-044.
+ *
+ * The index signature stays open across both value shapes rather than pinning the dict to the
+ * reserved slot name, on the precedent `MotionDefinition.trigger` sets below: the type is
+ * deliberately structurally permissive and validation is the exact owner. A dict authored at any
+ * other slot derives no binding and is refused as `keyframes-requires-source`, so the looseness
+ * costs no silence: nothing is accepted and then ignored, which is what rule 6 of ADR-033 forbids.
+ * Pinning it in the type instead would need an index signature widened with `undefined` for every
+ * reader of a slot value, to describe one reserved name the validator already owns. See issue #195.
  */
-export type AuthoredPluginRequires = Readonly<Record<string, string>>;
+export type AuthoredPluginRequires = Readonly<Record<string, string | AuthoredPluginGoals>>;
 /**
  * A plugin-named group: the properties that plugin claims, under `values`, plus its optional
  * `requires` section.
