@@ -176,10 +176,20 @@ import { fileURLToPath } from "node:url";
 // the `P-` paragraph sets, and `M-` alone is the Motion mutation series. It sorts before `M` in the
 // pattern below, because an alternation that offered `M` first would match `M` and then fail on the
 // `G`.
+//
+// `FB-` belongs to the FABRIK solve, slice D2 of issue #195: that a chain past arity two reaches
+// its goal and keeps its segment lengths, that both elbow branches agree with the closed form at
+// arity two, that the derived seed bends except at full extension, that two goals sharing one
+// sub-base are averaged in a derived order rather than an authored one, and that a solve which does
+// not converge says whether it stalled or ran out of iterations. `IK-` owns the analytic two-bone
+// solve and its runtime wiring; `FB-` owns the iterative one, which nothing wires yet. It is the
+// ninth two-letter series, under the policy the `P-` paragraph sets, and `F-` alone is the authored
+// keyframe group series. It sorts before `F` in the pattern below, because an alternation that
+// offered `F` first would match `F` and then fail on the `B`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE =
-  /it\(\s*"((?:CF|CN|FO|IK|LF|MG|RS|SL|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:CF|CN|FB|FO|IK|LF|MG|RS|SL|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
