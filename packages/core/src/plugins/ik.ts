@@ -229,7 +229,9 @@ export function solveChain(
   flip = false,
 ): Readonly<Record<string, number>> {
   if (goals.size === 0) {
-    throw new Error(`ikPlugin requires at least one goal; ${members.length} members received none.`);
+    throw new Error(
+      `ikPlugin requires at least one goal; ${members.length} members received none.`,
+    );
   }
   if (members.length === 2 && goals.size === 1) {
     const [target] = goals.values();
