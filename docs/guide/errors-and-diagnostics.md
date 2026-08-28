@@ -77,18 +77,39 @@ Two shapes deliberately stay legal. A group may author `requires` with no `value
 
 Malformed or duplicate ids, reserved namespace characters, malformed edges, unknown sources, duplicate edges, self-reference, and cycles are all errors too. Track ids may not contain `/`, and motion ids may not contain `/` or equal `~`, because those characters carry the qualified namespace.
 
+### The one binding whose value is not a source id
+
+Every slot inside `requires` names one source id, with exactly one exception. `targets` holds a record instead: the goal each chain member of a solver reaches toward, keyed by that member's own id. It is the only reserved slot name in the section, and these four rule ids are the whole surface of its shape. See ADR-052.
+
+- `keyframes-targets-shape`, when `targets` is present but is not an object mapping member ids to source ids. An array lands here too. `keyframes-requires-source` cannot answer for this slot, because it refuses a record outright, which is what made the dict unauthorable before the goal grammar existed.
+- `keyframes-targets-empty`, when `targets` is an empty object. Omitting the slot is already how a solver authors no goals through the dict.
+- `keyframes-targets-member`, when a member key is empty, or contains `:`, `[`, or `]`. Each goal expands into its own binding at a derived slot identity of `targets[<memberId>]`, so a bracket in an authored name could forge that identity. Same reservation argument as the colon.
+- `keyframes-targets-source`, when the goal a member is mapped to is not a non-empty source id.
+
+These four are shape only, and deliberately not membership. Whether a key names a real member of that solver's chain is derived from `solver` edges during graph construction, which is the only owner that knows the member set.
+
 ### Inverse Kinematics and solver rules
 
-Solvers (`ikPlugin`) and solved bones (`fkPlugin`) enforce topological and keyframe constraints at load time before execution begins. See ADR-051.
+Solvers (`ikPlugin`) and solved bones (`fkPlugin`) enforce topological and keyframe constraints at load time before execution begins. See ADR-051 and ADR-052.
 
 - `ik-solver-no-root`, when a solver node does not bind the `root` requirement slot. The root frame is the static or parent anchor from which the chain hangs.
 - `ik-solver-no-members`, when a solver node declares a `root` slot but no downstream bones bind `solver` to it. The solver would compute in a vacuum without controlling any joints.
 - `ik-solver-unreachable-root`, when tracing a member bone's `base` parent walk upward fails to terminate at the solver's bound `root`. The member chain must form a contiguous ancestor hierarchy rooted at `root`.
-- `ik-mode-ambiguous`, when a single node binds `solver` alongside `root` or `target`, or binds `root` under multiple plugins. A track is either a solver or a member, never both.
+- `ik-mode-ambiguous`, when a single node binds `solver` alongside `root` or a goal, or binds `root` under multiple plugins. A track is either a solver or a member, never both. It reads the goal grammar rather than the literal slot name `target`, because a member binding `solver` beside a goal dict of its own would otherwise load clean with one real input edge per goal and have every one of them ignored.
 - `ik-solved-rotation-dead`, when a bone that binds `keyframes.fk.requires.solver` authors `values.rotation`. The solver overrides local rotation dynamically, so authoring a static or keyframed rotation is dead input and refused. Author only `length` (and optional pivot offsets `x`/`y`).
-- `ik-solver-unsupported-arity`, when the derived member chain contains a count other than 2. The analytical closed-form law-of-cosines solve requires exactly a two-bone chain.
 
-A diagnostic about a grouped keyframe cites the path you typed, `keyframes.fk.values.length`, not the flattened key the compiler works with. A diagnostic about a stop cites its index on the property, `keyframes.x[0].p`. Every path a leaf diagnostic carries is a path you wrote. See ADR-041, ADR-049, ADR-050, and ADR-051.
+Goal addressing has five of its own, and all five need the member set, so all five are answered during graph construction rather than by the contract layer:
+
+- `ik-goal-unknown-member`, when a key inside `targets` qualifies to no member of that solver's chain.
+- `ik-goal-not-leaf`, when a goal is authored on a member that another member hangs from. A goal is what a chain tip reaches for; an interior joint has no separate destination.
+- `ik-leaf-without-goal`, when the dict was used at all and a leaf it never named is left with nothing to reach for. It does not fire for a solver that bound the bare `target` slot, which has no goal to be missing.
+- `ik-goal-duplicate`, when two authored keys qualify to one member id. The dict itself cannot repeat a key, so this is always two spellings of one id, such as `forearm` and `walker/forearm`.
+- `ik-goal-conflict`, when one solver authors both `target` and `targets`. Both spellings are supported and neither is deprecated, but a solver picks one.
+- `ik-target-not-single-leaf`, when a solver binds the bare `target` slot over a chain with more than one leaf. `target` names no member, so it can only address a leaf while there is one leaf to address; over two it has no answer, and the diagnostic names both so the choice is yours to make. A linear chain has one leaf however long it is, so the bare slot keeps working past two bones. Address goals by member id instead.
+
+There is no rule about chain length. A solver's derived member count is free, and the solve dispatches on it: two members and one goal take the analytic closed form, and everything else takes the iterative one. `ik-solver-unsupported-arity` refused every count other than two and is deleted rather than widened, because a rule that refuses a shape the runtime solves is worse than no rule.
+
+A diagnostic about a grouped keyframe cites the path you typed, `keyframes.fk.values.length`, not the flattened key the compiler works with. A diagnostic about a stop cites its index on the property, `keyframes.x[0].p`. A diagnostic about a goal cites the member key you typed, `keyframes.ik.requires.targets.forearm`, rather than the slot identity it derives. Every path a leaf diagnostic carries is a path you wrote. See ADR-041, ADR-049, ADR-050, ADR-051, and ADR-052.
 
 ## A frame has two failure owners
 
@@ -105,6 +126,8 @@ A node that exists but cannot produce a value publishes with status `blocked` or
 
 That means a rendering consumer should branch on `patch.status` rather than assume every patch is renderable, and an inspector can read `patch.diagnostics` without any extra wiring.
 
+A solve that does not reach its goal is not one of these. An iterative solve converges to within a tolerance, and an unreachable goal leaves the chain fully extended toward it, so both publish ordinary `ready` patches carrying only `rotations`. No convergence record reaches a patch, deliberately: roughly four percent of ordinary reachable chains do not reach tolerance before the iteration cap, so a per-tick diagnostic would fire on rigs nobody would call broken. See ADR-052.
+
 ## Contract violations throw at the call site
 
 These are your bugs, and they are loud on purpose rather than clamped or deferred:
@@ -116,6 +139,7 @@ These are your bugs, and they are loud on purpose rather than clamped or deferre
 - destroying a motion that still owns tracks throws `TypeError`. Remove its tracks first; a motion is destroyed empty.
 - a disposed clock or trigger port throws when subscribed to.
 - registering a plugin whose `keys`, `inputs`, or `outputs` contain `:` throws `TypeError`. That separator belongs to the internal-key rule.
+- registering a plugin that declares `targets`, or a requirement slot matching the derived goal spelling, throws `TypeError`. Those names belong to the goal grammar, and a plugin reaches a goal through its slot-claim predicate instead.
 - registering two plugins that declare the same `input` throws `TypeError`. Two plugins claiming the same `key` does not: that is legal, and a group names the owner.
 
 ## When several things fail at once
