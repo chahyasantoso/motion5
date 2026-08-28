@@ -1,0 +1,32 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-28T03:05:59.6519959Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-28T03:05:59.6520320Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-28T03:05:59.6558668Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-28T03:05:59.6558949Z env:
+quality (node 24)	Run npm run typecheck	2026-08-28T03:05:59.6559147Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-28T03:05:59.6559365Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-28T03:05:59.7632098Z 
+quality (node 24)	Run npm run typecheck	2026-08-28T03:05:59.7632803Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-28T03:05:59.7633462Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1556654Z 
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1587753Z ##[error]packages/core/test/unit/plugins/fabrik-dispatch.test.ts(27,52): error TS2322: Type 'WorldFrame' is not assignable to type 'Readonly<Record<string, unknown>>'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1598145Z   Index signature for type 'string' is missing in type 'WorldFrame'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1600517Z ##[error]packages/core/test/unit/plugins/fabrik-dispatch.test.ts(97,9): error TS2322: Type 'WorldFrame' is not assignable to type 'ImmutableValue'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1602610Z   Type 'WorldFrame' is not assignable to type 'ImmutableRecord'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1603547Z     Index signature for type 'string' is missing in type 'WorldFrame'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1606016Z ##[error]packages/core/test/unit/plugins/fabrik-dispatch.test.ts(97,21): error TS2322: Type 'readonly MemberState[]' is not assignable to type 'ImmutableValue'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1608216Z   Type 'readonly MemberState[]' is not assignable to type 'ImmutableArray'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1609196Z     Type 'MemberState' is not assignable to type 'ImmutableValue'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1610052Z       Type 'MemberState' is not assignable to type 'ImmutableRecord'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1610932Z         Index signature for type 'string' is missing in type 'MemberState'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1612991Z ##[error]packages/core/test/unit/plugins/fabrik-dispatch.test.ts(110,9): error TS2322: Type 'WorldFrame' is not assignable to type 'ImmutableValue'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1615035Z   Type 'WorldFrame' is not assignable to type 'ImmutableRecord'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1616133Z     Index signature for type 'string' is missing in type 'WorldFrame'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1618157Z ##[error]packages/core/test/unit/plugins/fabrik-dispatch.test.ts(110,21): error TS2322: Type 'WorldFrame' is not assignable to type 'ImmutableValue'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1620241Z   Type 'WorldFrame' is not assignable to type 'ImmutableRecord'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1621128Z     Index signature for type 'string' is missing in type 'WorldFrame'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1623257Z ##[error]packages/core/test/unit/plugins/fabrik-dispatch.test.ts(110,35): error TS2322: Type 'readonly MemberState[]' is not assignable to type 'ImmutableValue'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1625486Z   Type 'readonly MemberState[]' is not assignable to type 'ImmutableArray'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1626602Z     Type 'MemberState' is not assignable to type 'ImmutableValue'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1627467Z       Type 'MemberState' is not assignable to type 'ImmutableRecord'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1628366Z         Index signature for type 'string' is missing in type 'MemberState'.
+quality (node 24)	Run npm run typecheck	2026-08-28T03:06:03.1966803Z ##[error]Process completed with exit code 2.
