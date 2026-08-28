@@ -6,6 +6,7 @@ import type {
   TrackDefinition,
 } from "../contract/v5";
 import { readPluginBindings } from "../contract/keyframe-shape";
+import { readGoalSlot } from "../contract/solver-slots";
 import { compareCodeUnits } from "./compare";
 import {
   assertAuthoredMotionId,
@@ -37,6 +38,16 @@ export interface GraphEdge {
 export interface SolveMember {
   readonly id: string;
   readonly base: string;
+  /**
+   * The node whose frame this member reaches toward, present only on a chain leaf the author gave a
+   * goal.
+   *
+   * Qualified here, in the one layer that knows the member set, so the publisher joins a node id it
+   * can read straight off the registry rather than an authored key it would have to qualify a second
+   * time against an owner it does not hold. A solver that authored the bare `target` slot carries no
+   * goal on any member, which is what keeps that spelling working with no migration. See issue #195.
+   */
+  readonly goal?: string;
 }
 
 export interface GraphNode {
@@ -389,10 +400,49 @@ function baseOf(node: GraphNode): string | undefined {
   return edge?.sourceId;
 }
 
+/**
+ * The owner a node's authored sources were qualified against, recovered from its own qualified id.
+ *
+ * `collectTrack` qualifies against the motion id, or `~` for a free track, and both spellings put
+ * that owner before the first `/` of the node id. Recovering it here is what lets a goal key be
+ * qualified in the one layer that knows the member set, without adding a field to `GraphNode` that
+ * two owners would then have to keep in step with the id it is derived from. An authored goal key
+ * therefore qualifies exactly as an authored `base` source does, including a free-track solver
+ * having to spell its members out, which is a requirement its own bindings already carry.
+ */
+function ownerOf(node: GraphNode): string {
+  return node.id.slice(0, node.id.indexOf("/"));
+}
+
 interface MemberChain {
   readonly node: GraphNode;
   readonly base: string;
   readonly depth: number;
+}
+
+/** One authored goal of a solver: the key as written, and the node it names as a source. */
+interface AuthoredGoal {
+  readonly slot: string;
+  readonly authored: string;
+  readonly sourceId: string;
+}
+
+/**
+ * The goals one solver authored, in derived slot order.
+ *
+ * Sorted by the derived slot rather than by `compareEdges`, whose first key is the source id: two
+ * goals pointing at one node would otherwise be ordered by nothing, and the authored key is what a
+ * duplicate diagnostic has to list. Order is a pure function of authored ids either way.
+ */
+function authoredGoalsOf(solver: GraphNode): readonly AuthoredGoal[] {
+  const goals: AuthoredGoal[] = [];
+  for (const edge of solver.edges) {
+    if (edge.role !== "input" || edge.requirement === undefined) continue;
+    const authored = readGoalSlot(edge.requirement.slot);
+    if (authored === undefined) continue;
+    goals.push({ slot: edge.requirement.slot, authored, sourceId: edge.sourceId });
+  }
+  return goals.sort((a, b) => compareCodeUnits(a.slot, b.slot));
 }
 
 export function resolveSolvers(
@@ -401,26 +451,48 @@ export function resolveSolvers(
 ): readonly GraphNode[] {
   // Diagnostic 3: ik-mode-ambiguous
   // Diagnostic 4: ik-solved-rotation-dead
+  // Diagnostic 7: ik-goal-conflict
   for (const node of nodes) {
     let rootCount = 0;
-    let hasTarget = false;
+    let bareTarget = false;
+    let goalCount = 0;
     // The plugins under which this node bound a `solver` slot, which is what scopes the dead
     // rotation read: the solve replaces the rotation of the plugin that asked for it.
     const solverBinders: string[] = [];
     for (const edge of node.edges) {
       if (edge.role === "input" && edge.requirement) {
-        if (edge.requirement.slot === "root") rootCount++;
-        if (edge.requirement.slot === "solver") solverBinders.push(edge.requirement.plugin);
-        if (edge.requirement.slot === "target") hasTarget = true;
+        const slot = edge.requirement.slot;
+        if (slot === "root") rootCount++;
+        if (slot === "solver") solverBinders.push(edge.requirement.plugin);
+        if (slot === "target") bareTarget = true;
+        if (readGoalSlot(slot) !== undefined) goalCount += 1;
       }
     }
     const hasSolver = solverBinders.length > 0;
-    if ((hasSolver && (rootCount > 0 || hasTarget)) || rootCount > 1) {
+    // Read through the grammar rather than off the literal `"target"`. A member binding `solver`
+    // beside a goal dict would otherwise load clean, with one real input edge per goal, and have
+    // every one of them ignored: a field accepted and then ignored, which is what ADR-033 rule 6
+    // forbids. See issue #195.
+    const hasGoal = bareTarget || goalCount > 0;
+    if ((hasSolver && (rootCount > 0 || hasGoal)) || rootCount > 1) {
       diagnostics.push(
         diag(
           "ik-mode-ambiguous",
           node.id,
           `Node "${node.id}" has ambiguous IK mode configuration.`,
+          [node.id],
+        ),
+      );
+    }
+    // Both spellings on one solver are two names for one dependency. The dict is the general case
+    // and the bare slot is its degenerate one, so they are refused together rather than merged:
+    // merging would make which goal a leaf reaches for a property of the reader.
+    if (bareTarget && goalCount > 0) {
+      diagnostics.push(
+        diag(
+          "ik-goal-conflict",
+          node.id,
+          `Solver "${node.id}" binds both "target" and the goals dict; goals are addressed one way or the other.`,
           [node.id],
         ),
       );
@@ -569,9 +641,113 @@ export function resolveSolvers(
         compareCodeUnits(a.node.id, b.node.id),
     );
 
+    // Diagnostics 8 through 11: ik-goal-unknown-member, ik-goal-duplicate, ik-goal-not-leaf and
+    // ik-leaf-without-goal.
+    //
+    // Here because this is the only owner that can answer any of them. The authored key is a member
+    // id, so "does it name a member of this chain" and "is that member a leaf" are both questions
+    // about the `solver` edges this loop has already collected. `contract/` holds no registry and a
+    // plugin holds no graph, which is the same split ADR-044 draws for keys: the contract layer owns
+    // the spelling, the registry owns whether the slot is declared, and this owns whether it
+    // resolves. See issue #195.
+    //
+    // Skipped when a chain broke above, for the reason `finalizeGraph` bails before this whole
+    // derivation runs: over a chain that was never valid, leafhood answers about a shape the author
+    // did not author, and one cause would be reported twice.
+    const goalByMember = new Map<string, string>();
+    const authoredGoals = authoredGoalsOf(solver);
+    if (unreachable.size === 0) {
+      const ownerId = ownerOf(solver);
+      const based = new Set(chains.map((entry) => entry.base));
+      const leaves = chains
+        .filter((entry) => !based.has(entry.node.id))
+        .map((entry) => entry.node.id);
+      const leafIds = new Set(leaves);
+      // One entry per member a goal resolved to, carrying every authored key that named it. The dict
+      // cannot repeat a key, so a duplicate is always two spellings of one id (`forearm` and
+      // `walker/forearm`), which is the narrow rule qualification leaves behind.
+      const authoredFor = new Map<string, string[]>();
+      const sourceFor = new Map<string, string>();
+      for (const goal of authoredGoals) {
+        let memberId: string | undefined;
+        try {
+          memberId = qualifySource(goal.authored, ownerId);
+        } catch {
+          memberId = undefined;
+        }
+        if (memberId === undefined || !memberById.has(memberId)) {
+          diagnostics.push(
+            diag(
+              "ik-goal-unknown-member",
+              solver.id,
+              `Goal "${goal.authored}" of solver "${solver.id}" names no member of its chain.`,
+              [solver.id, goal.authored],
+            ),
+          );
+          continue;
+        }
+        const spellings = authoredFor.get(memberId);
+        if (spellings === undefined) authoredFor.set(memberId, [goal.authored]);
+        else spellings.push(goal.authored);
+        sourceFor.set(memberId, goal.sourceId);
+      }
+      for (const memberId of [...authoredFor.keys()].sort(compareCodeUnits)) {
+        const spellings = authoredFor.get(memberId) ?? [];
+        if (spellings.length > 1) {
+          diagnostics.push(
+            diag(
+              "ik-goal-duplicate",
+              solver.id,
+              `Member "${memberId}" of solver "${solver.id}" is named by more than one goal: ${spellings.join(", ")}.`,
+              [solver.id, memberId],
+            ),
+          );
+          continue;
+        }
+        if (!leafIds.has(memberId)) {
+          diagnostics.push(
+            diag(
+              "ik-goal-not-leaf",
+              solver.id,
+              `Member "${memberId}" of solver "${solver.id}" carries a goal but is not a chain leaf.`,
+              [solver.id, memberId],
+            ),
+          );
+          continue;
+        }
+        const sourceId = sourceFor.get(memberId);
+        if (sourceId !== undefined) goalByMember.set(memberId, sourceId);
+      }
+      // A leaf with no goal is a refusal only once this solver addressed its goals by member id.
+      // Bare `target` is kept and is exactly the degenerate case of the dict, so a solver that
+      // authored one has no goal to be missing and no existing rig has to be re-authored.
+      if (authoredGoals.length > 0) {
+        for (const leaf of leaves) {
+          if (authoredFor.has(leaf)) continue;
+          diagnostics.push(
+            diag(
+              "ik-leaf-without-goal",
+              solver.id,
+              `Chain leaf "${leaf}" of solver "${solver.id}" has no goal.`,
+              [solver.id, leaf],
+            ),
+          );
+        }
+      }
+    }
+
     solvesMap.set(
       solver.id,
-      freeze(chains.map((entry) => freeze({ id: entry.node.id, base: entry.base }))),
+      freeze(
+        chains.map((entry) => {
+          const goal = goalByMember.get(entry.node.id);
+          return freeze(
+            goal === undefined
+              ? { id: entry.node.id, base: entry.base }
+              : { id: entry.node.id, base: entry.base, goal },
+          );
+        }),
+      ),
     );
   }
 

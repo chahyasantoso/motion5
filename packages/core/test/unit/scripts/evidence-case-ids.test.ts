@@ -23,7 +23,7 @@ import { fileURLToPath } from "node:url";
 // ProjectRuntime a failed `load()` created, and running every remaining cleanup step when one of
 // them throws. It is a separate series from `P-` on purpose. `P-` owns which error a caller sees
 // when a rollback fails, in `ProjectRuntime`; `D-` owns whether the cleanup ran at all, in
-// `Engine`.  One citation, one owner, per the paragraph above.
+// `Engine`. One citation, one owner, per the paragraph above.
 //
 // `M-` belongs to single-track mutation atomicity inside `Motion` (issue #147): what a refused
 // `addTrack` or `replaceTrack` leaves behind. It is separate from `C-` even though both live in
@@ -166,10 +166,20 @@ import { fileURLToPath } from "node:url";
 // seventh two-letter series, under the policy the `P-` paragraph sets, and `S-` alone is the
 // progress state commit series. It sorts before `S` in the pattern below, because an alternation
 // that offered `S` first would match `S` and then fail on the `L`.
+//
+// `MG-` belongs to goal-addressed solving, slice D1 of issue #195: that an authored goal dict
+// resolves to a chain leaf, that the bare `target` slot keeps working beside it, and that the six
+// load-time rules naming an unknown member, a non-leaf, an unaddressed leaf, a duplicate spelling,
+// a conflicting pair of spellings and an ambiguous mode all report from the one owner that knows
+// the member set. `SL-` owns whether a slot may be claimed at all; `MG-` owns whether the member it
+// names exists and what the solve does with it. It is the eighth two-letter series, under the policy
+// the `P-` paragraph sets, and `M-` alone is the Motion mutation series. It sorts before `M` in the
+// pattern below, because an alternation that offered `M` first would match `M` and then fail on the
+// `G`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE =
-  /it\(\s*"((?:CF|CN|FO|IK|LF|RS|SL|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:CF|CN|FO|IK|LF|MG|RS|SL|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })

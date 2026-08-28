@@ -1,3 +1,4 @@
+import { readGoalSlot } from "../contract/solver-slots";
 import type { PluginDefinition } from "../domain/plugins";
 import type { ImmutableRecord } from "../domain/values";
 import { readFrame, readNumber, type WorldFrame } from "./frame";
@@ -10,6 +11,16 @@ export interface MemberState {
   readonly base: string;
   readonly values: Readonly<Record<string, unknown>>;
   readonly progress: number;
+  /**
+   * The frame this member reaches toward, present only on a chain leaf the author gave a goal.
+   *
+   * Delivered per member rather than through one slot, because the publisher writes a source's
+   * values as `collected[plugin][slot]`: two goals sharing one slot name would overwrite each other
+   * and the last one authored would be the only one that arrived, with no diagnostic. The join is
+   * `GraphPublisher`'s, off `SolveMember.goal`, so the plugin never sees a keyframe or an authored
+   * id. See issue #195.
+   */
+  readonly goal?: Readonly<Record<string, unknown>>;
 }
 
 /**
@@ -26,6 +37,25 @@ export function readMembers(membersInput: unknown): readonly MemberState[] {
     throw new Error("ikPlugin requires non-empty members array in inputs.");
   }
   return membersInput as readonly MemberState[];
+}
+
+/**
+ * The frame this solve reaches toward: the bare `target` binding when the author used one, and the
+ * single chain leaf's goal when they addressed goals by member id.
+ *
+ * Both spellings survive on purpose. `target` is exactly the degenerate case of the goal dict, so
+ * retiring it would re-author every existing rig to buy one spelling, and `ik-goal-conflict` already
+ * refuses a solver that authored both. Arity is still two here, so a goal-addressed chain has exactly
+ * one leaf and therefore exactly one goal; any other count is a dispatch question that belongs to the
+ * FABRIK slice rather than to a fallback here quietly picking one of them. See issue #195.
+ */
+export function readSolveTarget(target: unknown, members: readonly MemberState[]): unknown {
+  if (target !== undefined) return target;
+  const goals = members.filter((member) => member.goal !== undefined);
+  if (goals.length === 1) return goals[0]?.goal;
+  throw new Error(
+    `ikPlugin requires exactly one goal at arity ${members.length}; received ${goals.length}.`,
+  );
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -134,6 +164,12 @@ export function solveTwoBone(
  * the solver's `flip` disappears from its published patch, and so does anything co-authored beside
  * `ik` on the same node. The spread is a correctness requirement of the chaining rule, not a style
  * choice, and `IK-18` pins it.
+ *
+ * `claimsSlot` is how the goal family reaches this plugin at all. The slot set stops being
+ * enumerable once a goal is addressed by member id, because the member ids belong to the rig rather
+ * than to the plugin; `requirements` keeps sole ownership of `root` and `target`, and only the
+ * predicate answers for the open family. It reads the shared grammar rather than a private copy of
+ * the syntax, which is how `readNumber` drifted between `fk` and `ik`. See issue #195.
  */
 export const ikPlugin: PluginDefinition = {
   name: "ik",
@@ -142,12 +178,13 @@ export const ikPlugin: PluginDefinition = {
     root: { description: "base frame of the solver chain" },
     target: { description: "target position to reach" },
   },
+  claimsSlot: (slot) => readGoalSlot(slot) !== undefined,
   stage: "compose",
   outputs: ["rotations"],
   compose: (values, _progress, inputs) => {
     const root = readFrame(inputs.root);
-    const target = readFrame(inputs.target);
     const members = readMembers(inputs.members);
+    const target = readFrame(readSolveTarget(inputs.target, members));
     const flip = Boolean(values.flip);
     const rotations = solveTwoBone(root, target, members, flip);
     return Object.freeze({
