@@ -235,6 +235,42 @@
     {
       "id": "ik-two-bone-integration",
       "test": "packages/core/test/integration/ik-two-bone.test.ts"
+    },
+    {
+      "id": "solver-slot-claim",
+      "test": "packages/core/test/unit/domain/plugin-slot-claim.test.ts"
+    },
+    {
+      "id": "solver-goals",
+      "test": "packages/core/test/unit/graph/solver-goals.test.ts"
+    },
+    {
+      "id": "ik-multi-goal-integration",
+      "test": "packages/core/test/integration/ik-multi-goal.test.ts"
+    },
+    {
+      "id": "fabrik-solve",
+      "test": "packages/core/test/unit/plugins/fabrik-solve.test.ts"
+    },
+    {
+      "id": "fabrik-dispatch",
+      "test": "packages/core/test/unit/plugins/fabrik-dispatch.test.ts"
+    },
+    {
+      "id": "fabrik-arity-one",
+      "test": "packages/core/test/unit/plugins/fabrik-arity-one.test.ts"
+    },
+    {
+      "id": "solver-arity-lift",
+      "test": "packages/core/test/unit/graph/arity-lift.test.ts"
+    },
+    {
+      "id": "ik-fabrik-chain-integration",
+      "test": "packages/core/test/integration/ik-fabrik-chain.test.ts"
+    },
+    {
+      "id": "walker-demo",
+      "test": "packages/core/test/integration/phase7-walker-demo.test.ts"
     }
   ]
 }
