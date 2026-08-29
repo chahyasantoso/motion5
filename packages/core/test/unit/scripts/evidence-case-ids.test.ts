@@ -157,10 +157,50 @@ import { fileURLToPath } from "node:url";
 // two-bone inverse kinematics solve, FK solver override, upstream member delivery, dirty-check
 // memoization, seed propagation, and renderer shielding. It is the sixth two-letter series, under
 // the policy the `P-` paragraph sets.
+//
+// `SL-` belongs to solver slot arity, slice D0 of issue #195: that a plugin may claim a slot family
+// it could not enumerate, that the goal-addressing grammar has one owner, that the authored goal
+// dict derives one binding and one edge per member, and that the reserved spellings are refused as
+// declared slot names. `Q-` owns what a declared requirement does and `J-` owns that it is the only
+// input channel; `SL-` owns how many slots a plugin is allowed to accept and who decides. It is the
+// seventh two-letter series, under the policy the `P-` paragraph sets, and `S-` alone is the
+// progress state commit series. It sorts before `S` in the pattern below, because an alternation
+// that offered `S` first would match `S` and then fail on the `L`.
+//
+// `MG-` belongs to goal-addressed solving, slice D1 of issue #195: that an authored goal dict
+// resolves to a chain leaf, that the bare `target` slot keeps working beside it, and that the six
+// load-time rules naming an unknown member, a non-leaf, an unaddressed leaf, a duplicate spelling,
+// a conflicting pair of spellings and an ambiguous mode all report from the one owner that knows
+// the member set. `SL-` owns whether a slot may be claimed at all; `MG-` owns whether the member it
+// names exists and what the solve does with it. It is the eighth two-letter series, under the policy
+// the `P-` paragraph sets, and `M-` alone is the Motion mutation series. It sorts before `M` in the
+// pattern below, because an alternation that offered `M` first would match `M` and then fail on the
+// `G`.
+//
+// `FB-` belongs to the FABRIK solve, slice D2 of issue #195: that a chain past arity two reaches
+// its goal and keeps its segment lengths, that both elbow branches agree with the closed form at
+// arity two, that the derived seed bends except at full extension, that two goals sharing one
+// sub-base are averaged in a derived order rather than an authored one, and that a solve which does
+// not converge says whether it stalled or ran out of iterations. `IK-` owns the analytic two-bone
+// solve and its runtime wiring; `FB-` owns the iterative one, which nothing wires yet. It is the
+// ninth two-letter series, under the policy the `P-` paragraph sets, and `F-` alone is the authored
+// keyframe group series. It sorts before `F` in the pattern below, because an alternation that
+// offered `F` first would match `F` and then fail on the `B`.
+//
+// `PV-` belongs to offset-aware solving, issue #214 and ADR-054: that both solves account for the
+// pivot offset `fk` applies, that the closed form survives it as a fixed base point and a rigid
+// link with a twist, that the iterative one carries pivots beside tips, that a shared sub-base
+// averages tips and never twists, and that every zero-offset rig keeps the doubles it published.
+// `FO-` owns what an authored `x` and `y` mean on a bone and in whose space `fk` reads them, which
+// is unchanged; `IK-` owns the analytic solve and `FB-` owns the iterative one, and both keep every
+// number they pinned. This is the one contract that spans all three, which is why it extends none
+// of them. It is the tenth two-letter series, under the policy the `P-` paragraph sets, and `P-`
+// alone is the rollback error precedence series. It sorts before `P` in the pattern below, because
+// an alternation that offered `P` first would match `P` and then fail on the `V`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE =
-  /it\(\s*"((?:CF|CN|FO|IK|LF|RS|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:CF|CN|FB|FO|IK|LF|MG|PV|RS|SL|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })

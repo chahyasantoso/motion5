@@ -1,4 +1,5 @@
 import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
+import { PLUGIN_GOALS_SLOT, readGoalSlot } from "../contract/solver-slots";
 import { validateKeyframes } from "../contract/validate-v5";
 import type {
   AuthoredProperty,
@@ -54,6 +55,20 @@ export type PluginContributor = (
   track: TrackConfigView,
 ) => Contribution | undefined;
 export type PluginKeyClaim = (key: string) => boolean;
+/**
+ * The slot-side counterpart to `claimsKey`: whether this plugin accepts a slot it never named.
+ *
+ * A record of declared slots cannot express a family whose members are named by the rig rather than
+ * by the plugin, which is what a goal per chain member is. The predicate is the only way to accept
+ * one without inventing a second owner of "is this slot declared": `requirements` still answers for
+ * named slots, and only this answers for the open ones.
+ *
+ * Boolean, deliberately. A predicate returning a shape descriptor would make the registry a
+ * validation engine for a type system it does not have, and the interesting question about a goal
+ * slot is not its shape but whether the member it names exists, which is derived from `solver` edges
+ * in `graph/ir.ts` and is unanswerable from here. See issue #195.
+ */
+export type PluginSlotClaim = (slot: string) => boolean;
 export type OutputSerializer = (value: unknown) => unknown;
 /**
  * One input slot a plugin declares and an author may bind through `keyframes.<plugin>.requires`.
@@ -103,6 +118,7 @@ export interface PluginDefinition {
   readonly claimsKey?: PluginKeyClaim;
   readonly inputs?: readonly string[];
   readonly requirements?: Readonly<Record<string, PluginRequirement>>;
+  readonly claimsSlot?: PluginSlotClaim;
   readonly stage?: string;
   readonly priority?: number;
   readonly outputs?: readonly string[];
@@ -429,6 +445,8 @@ export class PluginRegistry {
       throw new TypeError("Plugin keys must be an array when provided.");
     if (plugin.claimsKey !== undefined && typeof plugin.claimsKey !== "function")
       throw new TypeError("Plugin claimsKey must be a function when provided.");
+    if (plugin.claimsSlot !== undefined && typeof plugin.claimsSlot !== "function")
+      throw new TypeError("Plugin claimsSlot must be a function when provided.");
     if (plugin.inputs !== undefined && !Array.isArray(plugin.inputs))
       throw new TypeError("Plugin inputs must be an array when provided.");
     if (plugin.outputs !== undefined && !Array.isArray(plugin.outputs))
@@ -453,6 +471,16 @@ export class PluginRegistry {
     for (const slot of slots)
       if (!slot.trim())
         throw new TypeError(`Plugin "${plugin.name}" requirement slot must be non-empty.`);
+    // The goals section and the goal identity it derives are reserved as declared slot names, for
+    // the reason the colon rule below states about internal keys. A goal reaches a plugin through
+    // `claimsSlot`, because the member ids are the rig's rather than the plugin's; a named slot
+    // spelled either way would be a second, unreachable spelling of the same binding, and the
+    // authored dict would still expand past it. See issue #195.
+    for (const slot of slots) {
+      if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefined) continue;
+      const detail = `requirement slot "${slot}" is reserved for authored goals`;
+      throw new TypeError(`Plugin "${plugin.name}" ${detail}.`);
+    }
     // The colon belongs to the internal-key rule, and this is where that reservation becomes real
     // rather than a convention. A plugin free to declare an output named `fk:world` would have its
     // public output treated as private and silently dropped before publication. A requirement slot
@@ -575,6 +603,11 @@ export class PluginRegistry {
    * source resolves to a node belongs to graph construction, which runs on the authored form and
    * needs no registry at all. See ADR-044.
    *
+   * "Declares" now has two sources: the `requirements` record for a slot the plugin named, and
+   * `claimsSlot` for a family it could not name because the rig names the members. `requirements`
+   * keeps sole ownership of the first and only the predicate answers for the second, so there is
+   * still one answer per slot rather than two owners that can disagree. See issue #195.
+   *
    * `reportedGroups` is shared with `#ownerForEntry` so a group naming no registered plugin is one
    * diagnostic whether the author got there through a leaf, a binding, or both.
    *
@@ -600,7 +633,9 @@ export class PluginRegistry {
         diagnostics.push(diagnostic("plugin-unknown-key", groupPath, message, [binding.plugin]));
         continue;
       }
-      if (!(binding.slot in (named.requirements ?? {}))) {
+      const declared =
+        binding.slot in (named.requirements ?? {}) || Boolean(named.claimsSlot?.(binding.slot));
+      if (!declared) {
         const detail = `does not declare requirement "${binding.slot}"`;
         diagnostics.push(
           diagnostic(

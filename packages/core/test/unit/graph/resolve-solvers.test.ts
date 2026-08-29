@@ -227,8 +227,10 @@ describe("resolveSolvers (Slice C2)", () => {
     expect(hand.solves).toBeUndefined();
   });
 
-  it("RS-2 reports the five IK diagnostics it owns with ruleId, path, and participant ids", () => {
-    // The sixth, `ik-solver-no-root`, is `RS-7`'s. This case owns the other five.
+  it("RS-2 reports the four IK diagnostics it owns with ruleId, path, and participant ids", () => {
+    // The fifth, `ik-solver-no-root`, is `RS-7`'s. This case owns the other four. It owned a fifth
+    // of its own, `ik-solver-unsupported-arity`, until slice D3 lifted the cap: a rule that refuses
+    // a shape the dispatcher solves is worse than no rule, so it is deleted rather than asserted.
     // 1. ik-solver-unreachable-root: upper-arm base is wrong
     const unreachableRootRig = project([
       { id: "shoulder" },
@@ -318,27 +320,6 @@ describe("resolveSolvers (Slice C2)", () => {
     expect(diag4).toBeDefined();
     expect(diag4?.path).toBe("walker/upper-arm");
     expect(diag4?.severity).toBe("error");
-
-    // 5. ik-solver-unsupported-arity: only 1 member instead of 2
-    const unsupportedArityRig = project([
-      { id: "shoulder" },
-      { id: "hand-target" },
-      {
-        id: "arm-solve",
-        keyframes: { ik: { requires: { root: "shoulder", target: "hand-target" } } },
-      },
-      {
-        id: "upper-arm",
-        keyframes: {
-          fk: { values: { length: 80 }, requires: { base: "shoulder", solver: "arm-solve" } },
-        },
-      },
-    ]);
-    const res5 = buildGraphIR(unsupportedArityRig);
-    const diag5 = res5.diagnostics.find((d) => d.ruleId === "ik-solver-unsupported-arity");
-    expect(diag5).toBeDefined();
-    expect(diag5?.path).toBe("walker/arm-solve");
-    expect(diag5?.severity).toBe("error");
   });
 
   it("RS-7 a node bound as a solver with no root requirement is refused", () => {
@@ -462,7 +443,11 @@ describe("resolveSolvers (Slice C2)", () => {
     const solver1 = res1.graph?.nodeById["walker/arm-solve"] as GraphNode;
     expect(solver1?.solves).toHaveLength(2);
 
-    // Replace forearm with a version that drops the solver binding -> now only 1 member -> arity error
+    // Replace forearm with a version that drops the solver binding, so one member is left. That was
+    // `ik-solver-unsupported-arity` while the cap existed, and this case asserted the rule as its
+    // observable effect, which made a cache test depend on a rule with nothing to do with caching.
+    // A one-member chain is an ordinary solve now, so the rebuild is observed through the derivation
+    // itself: the stale cache this case exists to refuse would have returned the two-member answer.
     const modifiedTracks = HAPPY_RIG.map((t) =>
       t.id === "forearm"
         ? {
@@ -472,7 +457,9 @@ describe("resolveSolvers (Slice C2)", () => {
         : t,
     );
     const res2 = builder.build(project(modifiedTracks));
-    expect(res2.diagnostics.some((d) => d.ruleId === "ik-solver-unsupported-arity")).toBe(true);
+    expect(res2.diagnostics).toEqual([]);
+    const solver2 = res2.graph?.nodeById["walker/arm-solve"] as GraphNode;
+    expect(solver2?.solves).toEqual([{ id: "walker/upper-arm", base: "walker/shoulder" }]);
   });
 
   it("RS-6 both buildGraphIR and IncrementalGraphBuilder produce identical solves across corpus", () => {

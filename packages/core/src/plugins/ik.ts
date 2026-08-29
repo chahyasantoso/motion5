@@ -1,6 +1,15 @@
+import { readGoalSlot } from "../contract/solver-slots";
 import type { PluginDefinition } from "../domain/plugins";
 import type { ImmutableRecord } from "../domain/values";
-import { readFrame, readNumber, type WorldFrame } from "./frame";
+import { solveFabrik, type FabrikMember } from "./fabrik";
+import {
+  effectiveLink,
+  pivotFromBaseTip,
+  readFrame,
+  readNumber,
+  readPivotOffset,
+  type WorldFrame,
+} from "./frame";
 
 /** The frame a solver hangs from and the frame it reaches for are both world frames. */
 export type BaseFrame = WorldFrame;
@@ -10,6 +19,16 @@ export interface MemberState {
   readonly base: string;
   readonly values: Readonly<Record<string, unknown>>;
   readonly progress: number;
+  /**
+   * The frame this member reaches toward, present only on a chain leaf the author gave a goal.
+   *
+   * Delivered per member rather than through one slot, because the publisher writes a source's
+   * values as `collected[plugin][slot]`: two goals sharing one slot name would overwrite each other
+   * and the last one authored would be the only one that arrived, with no diagnostic. The join is
+   * `GraphPublisher`'s, off `SolveMember.goal`, so the plugin never sees a keyframe or an authored
+   * id. See issue #195.
+   */
+  readonly goal?: Readonly<Record<string, unknown>>;
 }
 
 /**
@@ -26,6 +45,52 @@ export function readMembers(membersInput: unknown): readonly MemberState[] {
     throw new Error("ikPlugin requires non-empty members array in inputs.");
   }
   return membersInput as readonly MemberState[];
+}
+
+/**
+ * The chain's leaves: the members no member of the same chain hangs from.
+ *
+ * Derived from the `base` fields the publisher joined on rather than from a second walk of the
+ * graph. `resolveSolvers` derives the same set at load time and refuses the shapes that make a
+ * goal unanswerable, so this read never disagrees with it; it exists because the bare `target`
+ * slot names no member and something has to say which member it is a goal for.
+ */
+function chainLeaves(members: readonly MemberState[]): readonly string[] {
+  const based = new Set(members.map((member) => member.base));
+  return members.filter((member) => !based.has(member.id)).map((member) => member.id);
+}
+
+/**
+ * Every goal this solve reaches toward, keyed by the member it belongs to.
+ *
+ * One normalised map, whichever way the author addressed their goals, so the dispatch below reads a
+ * count rather than two spellings and the solvers read a frame rather than a keyframe. Both
+ * spellings survive on purpose: `target` is exactly the degenerate case of the goal dict, so
+ * retiring it would re-author every existing rig to buy one spelling, and `ik-goal-conflict`
+ * already refuses a solver that authored both.
+ *
+ * A bare `target` names no member, so it is joined onto the chain's one leaf. That is a guarantee
+ * while a chain has exactly one leaf and nothing more, which is why a branching chain binding the
+ * bare slot is `ik-target-not-single-leaf` at load: the throw here is the invariant guard behind
+ * that rule rather than a validation step, in the same spirit as `readMembers`. See issue #195.
+ */
+export function readGoals(
+  target: unknown,
+  members: readonly MemberState[],
+): ReadonlyMap<string, WorldFrame> {
+  const goals = new Map<string, WorldFrame>();
+  for (const member of members) {
+    if (member.goal !== undefined) goals.set(member.id, readFrame(member.goal));
+  }
+  if (target === undefined) return goals;
+  const leaves = chainLeaves(members);
+  if (leaves.length !== 1) {
+    throw new Error(
+      `ikPlugin cannot address the bare target slot over a chain with ${leaves.length} leaves.`,
+    );
+  }
+  goals.set(leaves[0]!, readFrame(target));
+  return goals;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -46,8 +111,33 @@ function clamp(value: number, min: number, max: number): number {
  * reachability assertion that either branch satisfies. `IK-1` owns the default and `IK-3` owns the
  * mirror.
  *
- * An unreachable target is clamped into `[|l1 - l2|, l1 + l2]` rather than refused, so the chain
- * extends toward it instead of producing `NaN` out of `acos`.
+ * **Pivot offsets are solved rather than ignored, and the closed form survives them.** Two authored
+ * offsets enter the geometry in two different places, and neither is an approximation:
+ *
+ * The first member's offset moves the point the whole chain pivots about. It is read in the root's
+ * own rotated frame, so it is fixed the moment the root frame is known and no rotation this solve
+ * publishes can move it. The triangle is therefore solved from that pivot rather than from the
+ * root's own position.
+ *
+ * The second member's offset fuses with the first member's extension into one rigid link, because
+ * both are read in the first member's frame and turn with it: a length of `hypot(l1 + x2, y2)` at a
+ * fixed twist of `atan2(y2, l1 + x2)` off the first bone's own direction. The law of cosines then
+ * runs on that link and `l2` unchanged, and the twist is subtracted from the first angle and added
+ * to the second, which is exactly the accounting that leaves the composed tip on the target. See
+ * ADR-054 and `PV-1` through `PV-4`.
+ *
+ * A member that authors no offset contributes an effective link of exactly `l1` at exactly zero
+ * twist, and `frame.ts` guarantees both by short-circuit rather than by arithmetic that happens to
+ * round that way. Every zero-offset rig therefore publishes the doubles it always published, which
+ * `PV-4` pins as byte identity against every branch of this function.
+ *
+ * An unreachable target is clamped into `[|a - l2|, a + l2]` rather than refused, so the chain
+ * extends toward it instead of producing `NaN` out of `acos`. The bound is stated on the effective
+ * link rather than on `l1`, because the reach an offset chain actually has is the link's.
+ *
+ * Exactly two members, and `solveChain` is the one caller that decides so. A `members.length < 2`
+ * branch used to answer a one-member chain with zeros; it is deleted rather than kept, because the
+ * dispatcher owns arity now and a one-member chain is a real solve that points at its goal.
  */
 export function solveTwoBone(
   root: BaseFrame,
@@ -55,30 +145,32 @@ export function solveTwoBone(
   members: readonly MemberState[],
   flip = false,
 ): Readonly<Record<string, number>> {
-  if (members.length < 2) {
-    const result: Record<string, number> = {};
-    for (const m of members) result[m.id] = 0;
-    return Object.freeze(result);
-  }
-
   const m1 = members[0]!;
   const m2 = members[1]!;
   const l1 = Math.max(0, readNumber(m1.values.length));
   const l2 = Math.max(0, readNumber(m2.values.length));
+  // The chain's own base, and the rigid link that leaves it. Both are pure functions of the root
+  // frame and the two authored offsets, so neither depends on the angles solved below.
+  const base = pivotFromBaseTip(root, root.rotation, readPivotOffset(m1.values));
+  const link = effectiveLink(l1, readPivotOffset(m2.values));
+  const reach = link.length;
+  const twist = link.twist;
 
-  const dx = target.x - root.x;
-  const dy = target.y - root.y;
+  const dx = target.x - base.x;
+  const dy = target.y - base.y;
   const d = Math.hypot(dx, dy);
   const targetAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
 
-  if (l1 <= 0 && l2 <= 0) {
+  // A link with no extent has no twist either, which `effectiveLink` guarantees, so the degenerate
+  // branches below aim whichever segment is left and subtract a twist that is exactly zero.
+  if (reach <= 0 && l2 <= 0) {
     return Object.freeze({
-      [m1.id]: targetAngle - root.rotation,
+      [m1.id]: targetAngle - twist - root.rotation,
       [m2.id]: 0,
     });
   }
 
-  if (l1 <= 0) {
+  if (reach <= 0) {
     return Object.freeze({
       [m1.id]: 0,
       [m2.id]: targetAngle - root.rotation,
@@ -87,13 +179,13 @@ export function solveTwoBone(
 
   if (l2 <= 0) {
     return Object.freeze({
-      [m1.id]: targetAngle - root.rotation,
+      [m1.id]: targetAngle - twist - root.rotation,
       [m2.id]: 0,
     });
   }
 
-  const minReach = Math.abs(l1 - l2);
-  const maxReach = l1 + l2;
+  const minReach = Math.abs(reach - l2);
+  const maxReach = reach + l2;
   const clampedD = clamp(d, minReach, maxReach);
 
   if (clampedD <= 0) {
@@ -103,21 +195,25 @@ export function solveTwoBone(
     });
   }
 
-  const cosAlpha = clamp((l1 * l1 + clampedD * clampedD - l2 * l2) / (2 * l1 * clampedD), -1, 1);
+  const cosAlpha = clamp(
+    (reach * reach + clampedD * clampedD - l2 * l2) / (2 * reach * clampedD),
+    -1,
+    1,
+  );
   const alpha = (Math.acos(cosAlpha) * 180) / Math.PI;
 
-  const cosBeta = clamp((l1 * l1 + l2 * l2 - clampedD * clampedD) / (2 * l1 * l2), -1, 1);
+  const cosBeta = clamp((reach * reach + l2 * l2 - clampedD * clampedD) / (2 * reach * l2), -1, 1);
   const beta = (Math.acos(cosBeta) * 180) / Math.PI;
 
   let r1: number;
   let r2: number;
 
   if (!flip) {
-    r1 = targetAngle + alpha - root.rotation;
-    r2 = beta - 180;
+    r1 = targetAngle + alpha - twist - root.rotation;
+    r2 = beta - 180 + twist;
   } else {
-    r1 = targetAngle - alpha - root.rotation;
-    r2 = 180 - beta;
+    r1 = targetAngle - alpha - twist - root.rotation;
+    r2 = 180 - beta + twist;
   }
 
   return Object.freeze({
@@ -127,13 +223,100 @@ export function solveTwoBone(
 }
 
 /**
- * The two-bone solver node.
+ * The member states as the iterative solve reads them.
+ *
+ * `readNumber` rather than a second guard, because `fk` reads the same authored `length` through the
+ * same reader: a value one half of a composition refuses and the other accepts is one authored
+ * number meaning two things inside one tick, which is how the two private copies of this reader
+ * drifted before `plugins/frame.ts` existed.
+ *
+ * A member's authored `x` and `y` are read through that same shared reader and handed on as the
+ * member's pivot offset. Reading them here rather than deriving anything from them is the whole of
+ * this function's part in offset-aware solving: what the offset means geometrically belongs to
+ * `solveFabrik`, and what it means as a composition belongs to `fk`. See ADR-054.
+ */
+function fabrikMembers(
+  members: readonly MemberState[],
+  goals: ReadonlyMap<string, WorldFrame>,
+): readonly FabrikMember[] {
+  return members.map((member) => {
+    const length = readNumber(member.values.length);
+    const pivot = readPivotOffset(member.values);
+    const goal = goals.get(member.id);
+    return goal === undefined
+      ? { id: member.id, base: member.base, length, pivot }
+      : { id: member.id, base: member.base, length, pivot, goal };
+  });
+}
+
+/**
+ * The dispatcher: which solve answers for this chain.
+ *
+ * Two members and one goal take the closed form, and everything else takes FABRIK. Dispatch is on
+ * derived shape rather than on an authored mode, so nothing new is authorable and no rig chooses its
+ * own solver.
+ *
+ * FABRIK cannot simply replace the analytic path. `IK-1` and `IK-3` pin `40.168` and `-51.318` for
+ * the worked rig, an iterative solve reaches a goal within a tolerance rather than exactly, and
+ * `flip` at arity two selects an exact branch rather than a basin, so replacing it would move
+ * published values for every rig that already solves. The two paths therefore publish one
+ * convention by assertion rather than by construction: `FB-2` holds FABRIK to the closed form's own
+ * numbers on ADR-051's worked rig, for both elbow branches, and `PV-7` holds it to them again on a
+ * rig where both members carry an offset, which is the assertion that says the two paths share one
+ * offset convention rather than one each.
+ *
+ * Both paths account for a member's pivot offset, and they share the convention rather than holding
+ * one each. `fk` places a bone's pivot at `x`, `y` in its base's rotated space and then extends by
+ * `length`; the closed form folds the same two offsets into a fixed base point and a rigid link
+ * with a twist, and the iterative one carries pivots beside tips and composes each from its base's
+ * tip exactly as `fk` does. `ik-solved-pivot-unsupported` refused the shape outright while neither
+ * path accounted for it, and it is deleted rather than widened now that both do: a rule that
+ * refuses a shape the runtime solves is worse than no rule. See ADR-053, ADR-054, and issue #214.
+ *
+ * A solve with no goal at all is thrown rather than answered with the seed pose. Every load-time
+ * shape that could produce one is refused (`ik-solver-no-members`, `ik-solver-no-goal`,
+ * `ik-leaf-without-goal`), so reaching here is a publisher invariant violation, and returning a
+ * pose would publish a rig that reaches for nothing with status `ready`. See issue #195 and
+ * ADR-053.
+ */
+export function solveChain(
+  root: BaseFrame,
+  members: readonly MemberState[],
+  goals: ReadonlyMap<string, WorldFrame>,
+  flip = false,
+): Readonly<Record<string, number>> {
+  if (goals.size === 0) {
+    throw new Error(
+      `ikPlugin requires at least one goal; ${members.length} members received none.`,
+    );
+  }
+  if (members.length === 2 && goals.size === 1) {
+    const [target] = goals.values();
+    return solveTwoBone(root, target!, members, flip);
+  }
+  // `pivots`, `tips` and `convergence` are deliberately dropped rather than published. The analytic
+  // path carries none of them, so publishing them here would make a solver's patch shape a function
+  // of its arity and would move every existing solver's published keys, which `FB-9` pins as
+  // unchanged. Roughly four percent of ordinary reachable rigs do not reach tolerance before the
+  // cap, so a per-tick report would be noise on rigs nobody would call broken. `FB-13` pins the
+  // shape and `docs/DECISIONS.md` records the decision under ADR-051.
+  return solveFabrik(root, fabrikMembers(members, goals), flip).rotations;
+}
+
+/**
+ * The solver node.
  *
  * `compose` returns the values it was given with `rotations` added, rather than `rotations` alone.
  * `Track.composeFrom` chains by replacement, so a bare return wipes this track's own authored keys:
  * the solver's `flip` disappears from its published patch, and so does anything co-authored beside
  * `ik` on the same node. The spread is a correctness requirement of the chaining rule, not a style
  * choice, and `IK-18` pins it.
+ *
+ * `claimsSlot` is how the goal family reaches this plugin at all. The slot set stops being
+ * enumerable once a goal is addressed by member id, because the member ids belong to the rig rather
+ * than to the plugin; `requirements` keeps sole ownership of `root` and `target`, and only the
+ * predicate answers for the open family. It reads the shared grammar rather than a private copy of
+ * the syntax, which is how `readNumber` drifted between `fk` and `ik`. See issue #195.
  */
 export const ikPlugin: PluginDefinition = {
   name: "ik",
@@ -142,14 +325,15 @@ export const ikPlugin: PluginDefinition = {
     root: { description: "base frame of the solver chain" },
     target: { description: "target position to reach" },
   },
+  claimsSlot: (slot) => readGoalSlot(slot) !== undefined,
   stage: "compose",
   outputs: ["rotations"],
   compose: (values, _progress, inputs) => {
     const root = readFrame(inputs.root);
-    const target = readFrame(inputs.target);
     const members = readMembers(inputs.members);
+    const goals = readGoals(inputs.target, members);
     const flip = Boolean(values.flip);
-    const rotations = solveTwoBone(root, target, members, flip);
+    const rotations = solveChain(root, members, goals, flip);
     return Object.freeze({
       ...values,
       rotations: Object.freeze(rotations as unknown as ImmutableRecord),

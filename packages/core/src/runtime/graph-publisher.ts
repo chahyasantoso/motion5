@@ -27,9 +27,14 @@ export interface MemberState {
 /**
  * One chain member as its solver receives it: what the member reported, plus where the derivation
  * says it sits. The publisher joins the two, so neither side has to know the other's half.
+ *
+ * `goal` is the third part of that join and it is present only on a chain leaf the author addressed.
+ * It carries the goal node's published values rather than its id, because a plugin holds no registry
+ * and reading one would make the solver a graph consumer. See issue #195.
  */
 export interface SolverMember extends MemberState {
   readonly base: string;
+  readonly goal?: Readonly<Record<string, unknown>>;
 }
 
 export interface PublisherComposition {
@@ -207,6 +212,17 @@ export class GraphPublisher {
     const memo = new Map<string, PublisherComposition>();
     const hasValue = (sourceId: string) =>
       memo.has(sourceId) || this.#registry.get(sourceId) !== undefined;
+    /**
+     * The values a source contributes to this flush: its composition when it already has one, and
+     * its retained patch otherwise.
+     *
+     * One function rather than three copies of one precedence rule. The input collection, the output
+     * merge, and the goal a solver joins onto a chain leaf all have to agree about which of the two
+     * wins, and a solver reading the retained patch where the other two read the memo would solve
+     * against last tick's goal with no error and no diagnostic. See issue #195.
+     */
+    const readSourceValues = (sourceId: string): unknown =>
+      memo.get(sourceId)?.values ?? this.#registry.get(sourceId)?.values;
     this.#registry.beginBatch(tick, seeds);
     try {
       for (const id of snapshot.order) {
@@ -274,13 +290,33 @@ export class GraphPublisher {
               // `base` comes off `solves`, where `resolveSolvers` already derived it, rather than
               // from a second walk over the member's edges by whoever supplies `interpolated`.
               const state = memberNode.interpolated();
-              membersList.push(Object.freeze({ ...state, base: memberRef.base }));
+              // And so does `goal`, for the same reason: a goal is one authored dict entry that
+              // `readPluginBindings` expanded into one binding per member, so the node it names is
+              // an ordinary input edge of this solver and is already resolved by the pending check
+              // above. The guard is the same defensive invariant the input loop carries.
+              let goal: Readonly<Record<string, unknown>> | undefined;
+              if (memberRef.goal !== undefined) {
+                const goalValues = readSourceValues(memberRef.goal);
+                if (!isRecord(goalValues)) {
+                  throw new Error(
+                    `Solver "${node.id}" member "${memberRef.id}" goal "${memberRef.goal}" published no record.`,
+                  );
+                }
+                goal = goalValues;
+              }
+              membersList.push(
+                Object.freeze(
+                  goal === undefined
+                    ? { ...state, base: memberRef.base }
+                    : { ...state, base: memberRef.base, goal },
+                ),
+              );
             }
             (collected[solvingPlugin] ??= {}).members = Object.freeze(membersList);
           }
           for (const edge of edgesByRole(node, "input")) {
             const sourcePatch = this.#registry.get(edge.sourceId);
-            const sourceValues = memo.get(edge.sourceId)?.values ?? sourcePatch?.values;
+            const sourceValues = readSourceValues(edge.sourceId);
             // Unreachable in normal flow: the pending pre-check above already classified every
             // edge as resolved before this loop runs. Kept as a defensive invariant guard only.
             if (sourceValues === undefined)
@@ -323,7 +359,7 @@ export class GraphPublisher {
           let values = composed.values;
           for (const edge of edgesByRole(node, "output")) {
             const sourcePatch = this.#registry.get(edge.sourceId);
-            const sourceValues = memo.get(edge.sourceId)?.values ?? sourcePatch?.values;
+            const sourceValues = readSourceValues(edge.sourceId);
             // Unreachable in normal flow, same reasoning as the input-side guard above.
             if (sourceValues === undefined)
               throw new InputObservationError(
