@@ -1,0 +1,14 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-29T04:26:22.2711480Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-29T04:26:22.2711777Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-29T04:26:22.2748029Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-29T04:26:22.2748442Z env:
+quality (node 24)	Run npm run typecheck	2026-08-29T04:26:22.2748622Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-29T04:26:22.2748810Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-29T04:26:22.3519323Z 
+quality (node 24)	Run npm run typecheck	2026-08-29T04:26:22.3519886Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-29T04:26:22.3520381Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-29T04:26:22.3520627Z 
+quality (node 24)	Run npm run typecheck	2026-08-29T04:26:25.0157795Z ##[error]packages/core/test/unit/plugins/pivot-offset-solve.test.ts(72,7): error TS2345: Argument of type 'Readonly<Record<string, unknown>>' is not assignable to parameter of type 'Readonly<ImmutableRecord>'.
+quality (node 24)	Run npm run typecheck	2026-08-29T04:26:25.0164946Z   'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-29T04:26:25.0165374Z     Type 'unknown' is not assignable to type 'ImmutableValue'.
+quality (node 24)	Run npm run typecheck	2026-08-29T04:26:25.0505007Z ##[error]Process completed with exit code 2.
