@@ -42,7 +42,17 @@ export type { ValidationResult, TrackValidationResult } from "./contract/validat
 export { parseGolden, serializeGolden } from "./contract/golden";
 export type { GoldenFixture, GoldenValidationFixture } from "./contract/golden";
 export { Engine } from "./engine";
-export type { EngineOptions, ProjectHandle, TrackHandle } from "./engine";
+export type { EngineOptions, ProjectHandle } from "./engine";
+/**
+ * The track mutation capability and the one failure it reports.
+ *
+ * `StaleTrackHandleError` is a runtime export rather than a type, because a caller cannot
+ * `instanceof` a type it cannot name, and branching on its `ruleId` is the whole point of giving
+ * the failure a name instead of a message to match. Named from its owner rather than re-exported
+ * through `./engine`, so there is one declaration and one export path. See ADR-056.
+ */
+export { StaleTrackHandleError } from "./contract/track-handle";
+export type { TrackHandle } from "./contract/track-handle";
 export { PluginRegistry } from "./domain/plugins";
 export type { PluginDefinition, ResolvedPlugins } from "./domain/plugins";
 export { assertClock, createManualClock } from "./ports/clock";

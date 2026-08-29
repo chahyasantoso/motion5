@@ -6,8 +6,9 @@ import type {
   ProjectDefinition,
   TrackDefinition,
 } from "../../../src/contract/v5";
+import { StaleTrackHandleError, type TrackHandle } from "../../../src/contract/track-handle";
 import { createManualClock } from "../../../src/ports/clock";
-import { ProjectRuntime, type TrackHandle } from "../../../src/runtime/project-runtime";
+import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 
 /**
  * Issue #217, split from #212.
@@ -16,20 +17,11 @@ import { ProjectRuntime, type TrackHandle } from "../../../src/runtime/project-r
  * non-throwing way to ask. `ProjectRuntime` is driven directly rather than through `Engine`,
  * because what these cases pin is the token policy of the object that owns the tokens.
  *
- * Failing-first scaffolding, with a stated expiry. `live` does not exist on `TrackHandle` yet and
- * `StaleTrackHandleError` does not exist at all, so naming either directly would fail `typecheck`
- * and stop `quality` before `npm test` ran: a test file that does not compile is not evidence. The
- * member is declared locally and cast, exactly as `ComposeSeam` did for the composition split, and
- * the error is named by the two stable strings a caller is meant to branch on. The declaration and
- * the string constants are deleted by the commit that lands the source. See ADR-056.
+ * The failing-first run named `live` through a local `StaleSeam` interface and the error through
+ * two string constants, because a test file that does not compile is not evidence. Both are deleted
+ * here, by the commit that landed the source, so the shipped cases name the class and the member
+ * directly. See ADR-056.
  */
-interface StaleSeam {
-  readonly live: boolean;
-}
-type Handle = TrackHandle & StaleSeam;
-
-const RULE_ID = "stale-track-handle";
-const ERROR_NAME = "StaleTrackHandleError";
 const NODE_ID = "hero/arm";
 const OTHER_ID = "hero/leg";
 const RUNTIME_SOURCE = fileURLToPath(
@@ -65,11 +57,11 @@ const NON_REFUSING = ["id", "live"] as const;
 function runtime(): ProjectRuntime {
   return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
 }
-function handleFor(project: ProjectRuntime, id: string = NODE_ID): Handle {
-  return project.track(id) as Handle;
+function handleFor(project: ProjectRuntime, id: string = NODE_ID): TrackHandle {
+  return project.track(id);
 }
 /** Removes the node the handle captured, which is the plainest way to make the token stale. */
-function staleHandle(project: ProjectRuntime): Handle {
+function staleHandle(project: ProjectRuntime): TrackHandle {
   const handle = handleFor(project);
   handle.remove();
   return handle;
@@ -88,7 +80,7 @@ function thrownBy(operation: () => unknown): unknown {
  * method as a call. `typeof handle.track` cannot be asked here: on a stale handle that read is
  * itself the refusal being measured.
  */
-function touch(handle: Handle, member: string): () => unknown {
+function touch(handle: TrackHandle, member: string): () => unknown {
   const descriptor = Object.getOwnPropertyDescriptor(handle, member);
   if (descriptor === undefined) throw new Error(`No handle member named "${member}".`);
   const read = descriptor.get;
@@ -133,7 +125,7 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
         touch(handle, member)();
         return true;
       } catch (error) {
-        return (error as { ruleId?: unknown }).ruleId !== RULE_ID;
+        return !(error instanceof StaleTrackHandleError);
       }
     });
     expect(escaped).toEqual([]);
@@ -150,8 +142,10 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
     // Two claims, deliberately separate: compatibility with what the getter already said, and the
     // identity a caller branches on instead of matching that string.
     expect((thrown as Error).message).toBe(`Track "${NODE_ID}" is no longer live.`);
-    expect((thrown as { ruleId?: unknown }).ruleId).toBe(RULE_ID);
-    expect((thrown as Error).name).toBe(ERROR_NAME);
+    expect((thrown as StaleTrackHandleError).ruleId).toBe("stale-track-handle");
+    expect(StaleTrackHandleError.ruleId).toBe("stale-track-handle");
+    expect((thrown as Error).name).toBe("StaleTrackHandleError");
+    expect((thrown as StaleTrackHandleError).nodeId).toBe(NODE_ID);
 
     project.dispose();
   });
@@ -162,6 +156,7 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
 
     expect(thrownBy(() => handle.track)).toBeInstanceOf(TypeError);
     expect(thrownBy(() => handle.remove())).toBeInstanceOf(TypeError);
+    expect(thrownBy(() => handle.remove())).toBeInstanceOf(StaleTrackHandleError);
 
     project.dispose();
   });
@@ -181,7 +176,7 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
 
     // The id comes back under a fresh token. The old handle stays refused, which is the guarantee
     // ADR-026 made and this slice keeps.
-    const readded = project.addTrack({ id: "arm" }, { motionId: "hero" }) as Handle;
+    const readded = project.addTrack({ id: "arm" }, { motionId: "hero" });
     expect(handle.live).toBe(false);
     expect(readded.live).toBe(true);
 

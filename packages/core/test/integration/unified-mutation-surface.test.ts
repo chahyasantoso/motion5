@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Engine } from "../../src/engine";
+import { StaleTrackHandleError } from "../../src/contract/track-handle";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
@@ -46,14 +47,21 @@ describe("unified runtime mutation surface (W5)", () => {
     expect(() => handle.destroyMotion("scene")).not.toThrow();
     handle.dispose();
   });
-  it("returns a capability handle and makes stale ABA handles inert", () => {
+  it("returns a capability handle and refuses stale ABA handles", () => {
     const handle = makeHandle();
     const first = handle.addTrack(track("arm", 0, 100));
     first.remove();
     const second = handle.addTrack(track("arm", 0, 200));
-    first.remove();
+    // Migrated with ADR-056. This case used to call `first.remove()` a second time and rely on the
+    // silent no-op, which is the one caller in the repository that did: the audit in issue #217
+    // looked for callers of the getter's throw and found none, and this is what it missed. The
+    // guarantee it was really about is unchanged and still asserted -- a stale handle cannot reach
+    // the node that reused its id -- but the handle now says so instead of pretending it worked.
+    expect(first.live).toBe(false);
+    expect(() => first.remove()).toThrow(StaleTrackHandleError);
     handle.seek(second.id, 1);
     expect(handle.get(second.id)?.values).toEqual({ x: 200 });
+    expect(second.live).toBe(true);
     second.remove();
     handle.dispose();
   });
