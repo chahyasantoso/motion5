@@ -52,11 +52,11 @@ const rotation = solved === undefined ? authored : lerpAngle(authored, solved, w
 
 `ik-solved-rotation-dead` is **narrowed, not deleted**:
 
-| Authored in the group that bound `solver` | Result                                     |
-| ----------------------------------------- | ------------------------------------------ |
-| `rotation`, no `weight`                   | `ik-solved-rotation-dead`, error           |
-| `rotation` and `weight`, in any form      | accepted                                   |
-| `weight` in a group that bound no solver  | `ik-weight-without-solver`, error          |
+| Authored in the group that bound `solver` | Result                            |
+| ----------------------------------------- | --------------------------------- |
+| `rotation`, no `weight`                   | `ik-solved-rotation-dead`, error  |
+| `rotation` and `weight`, in any form      | accepted                          |
+| `weight` in a group that bound no solver  | `ik-weight-without-solver`, error |
 
 The first row is byte-identically the old rule and the old behavior, so no existing rig is re-authored. With no weight in reach there is no runtime state in which the authored rotation influences the output, which is what the rule has always meant.
 
