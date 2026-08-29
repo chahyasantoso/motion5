@@ -1,12 +1,5 @@
 import type { PluginDefinition } from "../domain/plugins";
-import {
-  clamp,
-  composeWorld,
-  lerpAngle,
-  readFrame,
-  readNumber,
-  readPivotOffset,
-} from "./frame";
+import { clamp, composeWorld, lerpAngle, readFrame, readNumber, readPivotOffset } from "./frame";
 
 /**
  * Re-exported rather than declared here.

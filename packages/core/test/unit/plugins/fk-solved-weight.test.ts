@@ -89,37 +89,30 @@ describe("fkPlugin solved rotation weight (issue #211)", () => {
 
   it("WT-9 a weight outside [0, 1] is clamped and a non-finite one is fully solved", () => {
     const values = { length: 80, rotation: 45, x: 0, y: 0 };
+
+    function at(weight: number) {
+      return frameOf(fkPlugin.compose({ ...values, weight }, 0, solver(SOLVED), NODE));
+    }
+
     const fullySolved = frameOf(fkPlugin.compose(values, 0, solver(SOLVED), NODE));
-    const fullyAuthored = frameOf(
-      fkPlugin.compose({ ...values, weight: 0 }, 0, solver(SOLVED), NODE),
-    );
+    const fullyAuthored = at(0);
 
-    // An eased `stops` curve that overshoots is clamped, not extrapolated: extrapolating an angle
-    // blend past its only two defined anchors is undefined behavior rather than a designed one.
-    for (const weight of [1, 1.25, 2, 1000]) {
-      expect(frameOf(fkPlugin.compose({ ...values, weight }, 0, solver(SOLVED), NODE))).toEqual(
-        fullySolved,
-      );
-    }
-    for (const weight of [0, -0.25, -1]) {
-      expect(frameOf(fkPlugin.compose({ ...values, weight }, 0, solver(SOLVED), NODE))).toEqual(
-        fullyAuthored,
-      );
-    }
+    // An eased `stops` curve that overshoots is clamped rather than extrapolated: extrapolating an
+    // angle blend past its only two defined anchors is undefined behavior, not a designed one.
+    for (const weight of [1, 1.25, 2, 1000]) expect(at(weight)).toEqual(fullySolved);
+    for (const weight of [0, -0.25, -1]) expect(at(weight)).toEqual(fullyAuthored);
 
-    // Non-finite and non-numeric both resolve to `1`, identically to an omitted key, because
-    // `readNumber` keeps the damage inside the value that was wrong.
-    for (const weight of [Number.NaN, Number.POSITIVE_INFINITY]) {
-      expect(frameOf(fkPlugin.compose({ ...values, weight }, 0, solver(SOLVED), NODE))).toEqual(
-        fullySolved,
-      );
-    }
-    expect(
-      frameOf(fkPlugin.compose({ ...values, weight: "half" }, 0, solver(SOLVED), NODE)),
-    ).toEqual(fullySolved);
+    // A non-finite weight resolves to `1`, identically to an omitted key, because `readNumber`
+    // keeps the damage inside the value that was wrong. Say it, or it gets filed as a bug.
+    expect(at(Number.NaN)).toEqual(fullySolved);
+    expect(at(Number.POSITIVE_INFINITY)).toEqual(fullySolved);
+
+    // And so does a value that is not a number at all.
+    const worded = fkPlugin.compose({ ...values, weight: "half" }, 0, solver(SOLVED), NODE);
+    expect(frameOf(worded)).toEqual(fullySolved);
   });
 
-  it("WT-10 an unbound solver ignores the weight entirely rather than blending toward nothing", () => {
+  it("WT-10 an unbound solver ignores its weight rather than blending toward nothing", () => {
     const values = { length: 80, rotation: 45, x: 0, y: 0, weight: 0.3 };
 
     // No slot bound at all.
