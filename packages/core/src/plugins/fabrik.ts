@@ -1,4 +1,11 @@
-import type { WorldFrame } from "./frame";
+import {
+  baseTipFromPivot,
+  pivotFromBaseTip,
+  ZERO_PIVOT_OFFSET,
+  type PivotOffset,
+  type WorldFrame,
+  type WorldPoint,
+} from "./frame";
 
 /**
  * FABRIK over a solver chain: pure, unwired, and reviewed as arithmetic.
@@ -15,6 +22,13 @@ import type { WorldFrame } from "./frame";
  * direction, or from the root's own rotation when its base is not a member, which is exactly what
  * `fk` substitutes for an authored `rotation`. An `ik` node that solved this way therefore
  * substitutes for one that solved analytically, and nothing downstream can tell the difference.
+ *
+ * The working state is a pivot and a tip per member rather than a tip alone. A member's segment is
+ * the pair, its length is the distance between them, and its pivot is its base's tip moved by the
+ * authored offset in the base's own rotated frame: `fk`'s composition, as positions. A solve that
+ * held tips alone was assuming every pivot sits on the previous tip, which is true only of a member
+ * that authored no offset, and it missed such a member's goal by exactly the offset vector with a
+ * `ready` patch and no diagnostic. See ADR-054 and issue #214.
  *
  * Tolerance and iteration cap are module constants rather than authored values. An interpolatable
  * tolerance would make the operation count a function of the timeline, and then a determinism case
@@ -49,26 +63,37 @@ export const FABRIK_MAX_ITERATIONS = 64;
 export const FABRIK_ARC_BISECTIONS = 60;
 
 /**
- * One member as the solve reads it: its id, the node it hangs from, its segment length, and the
- * frame it reaches toward when it is a chain leaf the author addressed.
+ * One member as the solve reads it: its id, the node it hangs from, its segment length, its
+ * authored pivot offset, and the frame it reaches toward when it is a chain leaf the author
+ * addressed.
  *
  * `base` may name another member or a node outside the member set. The one outside is the chain's
  * root, and it is read from the root frame rather than looked up, which is the same split
  * `SolveMember.base` already carries: membership is derived once, in `resolveSolvers`, and this
  * function re-derives nothing about the graph.
+ *
+ * `pivot` is optional and absent means zero, which is what `fk` composes for a bone that authored
+ * neither key. Optional rather than required because zero is the overwhelming majority and a
+ * required field would put `{ x: 0, y: 0 }` on every fixture in the suite to say nothing; the
+ * default is a documented value here rather than a field accepted and ignored, and `PV-6` pins that
+ * an explicit zero and an absent offset solve to the same doubles.
  */
 export interface FabrikMember {
   readonly id: string;
   readonly base: string;
   readonly length: number;
+  readonly pivot?: PivotOffset;
   readonly goal?: WorldFrame;
 }
 
-/** A point in world space. The solve's working state is one tip position per member. */
-export interface FabrikPoint {
-  readonly x: number;
-  readonly y: number;
-}
+/**
+ * A point in the solve's working state.
+ *
+ * An alias rather than a second declaration, because it is the same thing `frame.ts` means by a
+ * world position and the offset functions this solve composes through take and return that type.
+ * The name stays exported: it is what `tips` and `pivots` are keyed to and what the cases read.
+ */
+export type FabrikPoint = WorldPoint;
 
 /**
  * What the solve did, so a caller can diagnose it without re-deriving it.
@@ -87,16 +112,19 @@ export interface FabrikConvergence {
 }
 
 /**
- * The solved chain: one local rotation per member id, the tips those rotations describe, and what
- * the iteration did.
+ * The solved chain: one local rotation per member id, the pivots and tips those rotations describe,
+ * and what the iteration did.
  *
- * `tips` is returned because length preservation is a statement about positions rather than angles,
- * and a case that re-derived them from the rotations would re-derive the thing under test. A
- * publisher carries `rotations` and `convergence`; the positions are `fk`'s to recompute, which is
- * the point of returning rotations rather than a pose.
+ * `tips` and `pivots` are returned because length preservation is a statement about positions rather
+ * than angles, and a case that re-derived them from the rotations would re-derive the thing under
+ * test. Both halves are needed once a member may carry an offset: its length is the distance from
+ * its own pivot to its own tip, and the distance between two consecutive tips is that length only
+ * when the offset is zero. A publisher carries `rotations` and nothing else; the positions are
+ * `fk`'s to recompute, which is the point of returning rotations rather than a pose.
  */
 export interface FabrikSolution {
   readonly rotations: Readonly<Record<string, number>>;
+  readonly pivots: Readonly<Record<string, FabrikPoint>>;
   readonly tips: Readonly<Record<string, FabrikPoint>>;
   readonly convergence: FabrikConvergence;
 }
@@ -155,7 +183,10 @@ export function arcHalfAngle(ratio: number): number {
  * the closed form's `flip` selects and both branches can be held to the analytic numbers.
  *
  * The points honour the arc, not the lengths: `solveFabrik` enforces lengths outward immediately,
- * so a seed's only job is to say which way the chain bends.
+ * so a seed's only job is to say which way the chain bends. That is also why it is handed segment
+ * lengths and no offsets. A seed that modelled the offsets would be a better guess and a second
+ * geometry to keep in step with the composition, and the first outward pass overwrites every point
+ * it produces.
  */
 export function seedArc(
   root: WorldFrame,
@@ -205,6 +236,17 @@ export function seedArc(
  * branch. Averaging those in canonical order is the whole of tree FABRIK, and the order is what
  * makes the average a value at all: floating-point addition is not associative, so "average the
  * branches" means nothing until the sequence is fixed.
+ *
+ * **The sub-base convention, stated because offsets are what make it a question.** Each branch
+ * converts its own pivot proposal into a proposal about its base's *tip* before contributing it,
+ * using the base's current direction, and the average is taken over those tips. Positions are
+ * averaged and twists never are. A sub-base carries one direction and each of its children hangs
+ * off that one direction at its own offset, so the children's pivots are not independent quantities
+ * to average: the tip is the single quantity they all have an opinion about, and un-offsetting first
+ * is what makes the average a statement about one thing. Averaging the pivots instead would average
+ * geometry that is incompatible by construction, which ADR-053 named as the reason this was left
+ * for its own slice. The forward pass then re-derives every child's pivot from that one tip and
+ * direction, so no branch can hold a pose the composition would not compose. See ADR-054.
  */
 export function solveFabrik(
   root: WorldFrame,
@@ -215,6 +257,7 @@ export function solveFabrik(
   const isMember = (id: string): boolean => byId.has(id);
   const baseOf = (id: string): string => byId.get(id)!.base;
   const lengthOf = (id: string): number => Math.max(0, byId.get(id)!.length);
+  const offsetOf = (id: string): PivotOffset => byId.get(id)!.pivot ?? ZERO_PIVOT_OFFSET;
   const goalOf = (id: string): WorldFrame | undefined => byId.get(id)!.goal;
   /**
    * Depth from the root, and a refusal if the bases cycle.
@@ -247,9 +290,31 @@ export function solveFabrik(
   }
   const leaves = ids.filter((id) => (childCount.get(id) ?? 0) === 0);
   const tips = new Map<string, FabrikPoint>();
-  const startOf = (id: string): FabrikPoint => {
+  const pivots = new Map<string, FabrikPoint>();
+  /** The tip a member hangs off: its base member's, or the root's own point. */
+  const originOf = (id: string): FabrikPoint => {
     const base = baseOf(id);
     return isMember(base) ? tips.get(base)! : rootPoint;
+  };
+  /**
+   * A member's world direction, and its base's when its own segment has no extent.
+   *
+   * Measured from its own pivot rather than from its base's tip, which is the same point only for a
+   * member that authored no offset. A zero-length member has no direction, and inheriting its
+   * base's is the only answer that leaves its children where the solve put them: `fk` measures a
+   * child's rotation from its parent's world direction, so answering zero here would swing every
+   * descendant by the parent's own angle.
+   */
+  const worldDirection = (id: string): number => {
+    const pivot = pivots.get(id)!;
+    const tip = tips.get(id)!;
+    if (tip.x === pivot.x && tip.y === pivot.y) return baseDirection(id);
+    return Math.atan2(tip.y - pivot.y, tip.x - pivot.x) * DEGREES;
+  };
+  /** The direction the node a member hangs off is pointing, which is the frame its offset is in. */
+  const baseDirection = (id: string): number => {
+    const base = baseOf(id);
+    return isMember(base) ? worldDirection(base) : root.rotation;
   };
 
   // Seeded one root-to-leaf path at a time, in canonical leaf order. A member two branches share is
@@ -273,7 +338,7 @@ export function solveFabrik(
   // rotation, because a member with nothing to reach for has no direction of its own to prefer.
   for (const id of ids) {
     if (tips.has(id)) continue;
-    const start = startOf(id);
+    const start = originOf(id);
     const along = lengthOf(id);
     tips.set(
       id,
@@ -303,9 +368,20 @@ export function solveFabrik(
       y: from.y + (to.y - from.y) * scale,
     });
   };
-  /** The outward pass. Lengths are law, and this is the only place that enforces them. */
+  /**
+   * The outward pass. Lengths are law, and this is the only place that enforces them.
+   *
+   * It is also the only place that composes a pivot, and it does so in canonical depth order, so a
+   * member's base already holds its final pivot and tip by the time the member reads its direction.
+   * That makes the pass exactly `fk`'s own forward composition over the current tip guesses, which
+   * is what makes an offset chain's pose one the runtime can actually compose.
+   */
   const outward = (): void => {
-    for (const id of ids) tips.set(id, place(startOf(id), tips.get(id)!, lengthOf(id)));
+    for (const id of ids) {
+      const pivot = Object.freeze(pivotFromBaseTip(originOf(id), baseDirection(id), offsetOf(id)));
+      pivots.set(id, pivot);
+      tips.set(id, place(pivot, tips.get(id)!, lengthOf(id)));
+    }
   };
   /** The worst goal shortfall over addressed leaves: the worst, so no branch hides behind a mean. */
   const residualNow = (): number => {
@@ -327,8 +403,8 @@ export function solveFabrik(
     iterations += 1;
     const before = new Map(tips);
     // The inward pass. Every addressed leaf starts at its goal, and each member proposes where its
-    // base would have to sit for its own length to hold. A sub-base takes the average of the
-    // proposals its branches left it.
+    // own pivot would have to sit for its length to hold, then un-offsets that pivot into a
+    // proposal about its base's tip. A sub-base takes the average of the tips its branches left it.
     const proposals = new Map<string, FabrikPoint[]>();
     for (const leaf of leaves) {
       const goal = goalOf(leaf);
@@ -351,8 +427,9 @@ export function solveFabrik(
       // solve may not move: it is the frame the chain hangs from, published by a node this solve
       // does not own.
       if (!isMember(base)) continue;
+      const pivot = place(tips.get(id)!, pivots.get(id)!, lengthOf(id));
       const list = proposals.get(base) ?? [];
-      list.push(place(tips.get(id)!, tips.get(base)!, lengthOf(id)));
+      list.push(Object.freeze(baseTipFromPivot(pivot, baseDirection(id), offsetOf(id))));
       proposals.set(base, list);
     }
     outward();
@@ -372,33 +449,18 @@ export function solveFabrik(
     }
   }
 
-  /**
-   * A member's world direction, and its base's when its own segment has no extent.
-   *
-   * A zero-length member has no direction, and inheriting its base's is the only answer that leaves
-   * its children where the solve put them: `fk` measures a child's rotation from its parent's world
-   * direction, so answering zero here would swing every descendant by the parent's own angle.
-   */
-  const worldDirection = (id: string): number => {
-    const start = startOf(id);
-    const tip = tips.get(id)!;
-    if (tip.x === start.x && tip.y === start.y) {
-      const base = baseOf(id);
-      return isMember(base) ? worldDirection(base) : root.rotation;
-    }
-    return Math.atan2(tip.y - start.y, tip.x - start.x) * DEGREES;
-  };
   const rotations: Record<string, number> = {};
-  const solved: Record<string, FabrikPoint> = {};
+  const solvedPivots: Record<string, FabrikPoint> = {};
+  const solvedTips: Record<string, FabrikPoint> = {};
   for (const id of ids) {
-    const base = baseOf(id);
-    const parent = isMember(base) ? worldDirection(base) : root.rotation;
-    rotations[id] = worldDirection(id) - parent;
-    solved[id] = tips.get(id)!;
+    rotations[id] = worldDirection(id) - baseDirection(id);
+    solvedPivots[id] = pivots.get(id)!;
+    solvedTips[id] = tips.get(id)!;
   }
   return Object.freeze({
     rotations: Object.freeze(rotations),
-    tips: Object.freeze(solved),
+    pivots: Object.freeze(solvedPivots),
+    tips: Object.freeze(solvedTips),
     convergence: Object.freeze({
       converged: residual <= FABRIK_TOLERANCE,
       iterations,
