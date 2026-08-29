@@ -5,7 +5,6 @@ import type {
   ProjectDefinition,
   TrackDefinition,
 } from "../contract/v5";
-import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { readGoalSlot } from "../contract/solver-slots";
 import { compareCodeUnits } from "./compare";
@@ -368,22 +367,12 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
 }
 
 /**
- * The pivot offset keys `fk` claims, in the order a diagnostic lists them.
- *
- * Named here for the reason `rotation` is named below: this layer holds no plugin registry, so the
- * keys a kinematic plugin owns are literals in the rules that read them rather than something
- * derived. The list is short and closed, and a plugin claiming a third offset key would add it here
- * in the pull request that claimed it.
- */
-const PIVOT_KEYS: readonly string[] = Object.freeze(["x", "y"]);
-
-/**
  * Every value the groups that bound `solver` authored for `key`.
  *
  * Read inside those groups rather than across every group and the flat top level. A solve answers
  * for the plugin that asked for it, which is the plugin that bound the slot, so a key under any
  * other group is that plugin's own live input and reporting it would be this rule answering for a
- * plugin it knows nothing about. The diagnostics guide states both rules that use this reader that
+ * plugin it knows nothing about. The diagnostics guide states the rule that uses this reader that
  * way; the narrowing is the code agreeing with its own documentation.
  *
  * Two shapes it deliberately does not report, because each already has a more specific owner. A
@@ -393,9 +382,12 @@ const PIVOT_KEYS: readonly string[] = Object.freeze(["x", "y"]);
  * authoring one meets `plugin-ambiguous-key` in any registry with two claimants and
  * `plugin-unknown-key` in one with none.
  *
- * One reader for both rules that need it rather than one predicate per key, and `readPluginValues`
- * stays the only answer to what a group's `values` section is.
- * See ADR-043, ADR-044, ADR-049, ADR-051, and ADR-053.
+ * Keyed by name rather than specialised to `rotation`, and kept that way now that the dead rotation
+ * is its only caller. It was generalised from `authorsSolvedRotation` because two readers of one
+ * question had already drifted, and re-specialising it on the way out of a change that widened what
+ * this layer accepts is exactly how that drift comes back. `readPluginValues` stays the only answer
+ * to what a group's `values` section is.
+ * See ADR-043, ADR-044, ADR-049, ADR-051, ADR-053, and ADR-054.
  */
 function authoredByBinders(
   keyframes: unknown,
@@ -409,26 +401,6 @@ function authoredByBinders(
     if (values[key] !== undefined) authored.push(values[key]);
   }
   return authored;
-}
-
-/**
- * Whether every value an authored leaf can take is exactly zero.
- *
- * By value rather than by presence, which is the one difference between the pivot rule and the dead
- * rotation beside it. An authored zero composes exactly the frame an unauthored pivot composes, so
- * refusing it would refuse a rig that is already right, while a solved rotation replaces whatever
- * was authored and authoring one at all is therefore dead input.
- *
- * A leaf that is neither canonical form answers true, so this rule stays quiet about a shape that
- * already has an owner: the retired wrapper is `property-stops-wrapper`, a non-finite number is
- * `stops-shape`, and `readNumber` composes both as zero anyway. One mistake, one diagnostic.
- */
-function isZeroOffset(value: unknown): boolean {
-  const leaf = readAuthoredLeaf(value);
-  if (leaf.kind === "static") return typeof leaf.value === "number" && leaf.value === 0;
-  if (leaf.kind !== "animated") return true;
-  const stops = readCompilableStops(value);
-  return stops.every((stop) => typeof stop.v === "number" && stop.v === 0);
 }
 
 /** The node this one hangs from through its `base` slot, or `undefined` when it binds none. */
@@ -508,12 +480,11 @@ export function resolveSolvers(
   // Diagnostic 3: ik-mode-ambiguous
   // Diagnostic 4: ik-solved-rotation-dead
   // Diagnostic 7: ik-goal-conflict
-  // Diagnostic 13: ik-solved-pivot-unsupported
   for (const node of nodes) {
     let rootCount = 0;
-    // The plugins under which this node bound a `solver` slot, which is what scopes both reads of
-    // its authored values: the solve replaces the rotation of the plugin that asked for it, and it
-    // is that same plugin which composes the pivot the solve does not account for.
+    // The plugins under which this node bound a `solver` slot, which is what scopes the read of its
+    // authored rotation: the solve replaces the rotation of the plugin that asked for it, so a
+    // rotation under any other group is that plugin's own live input.
     const solverBinders: string[] = [];
     for (const edge of node.edges) {
       if (edge.role === "input" && edge.requirement) {
@@ -563,32 +534,15 @@ export function resolveSolvers(
         ),
       );
     }
-    // Neither solve accounts for a member's pivot offset. `fk` places a bone's pivot at `x`, `y` in
-    // its base's rotated space and then extends by `length`, while the analytic path reads `length`
-    // alone and the iterative one is handed lengths and a topology, so a non-zero offset moves the
-    // tip the solve placed and the chain misses its goal by exactly that vector, with a `ready`
-    // patch and no diagnostic anywhere. Refused rather than silently mis-solved, and refused for
-    // both paths rather than for one, because an offset that meant something at arity two and
-    // nothing above it would be the arity-dependent meaning that killed reviving a member's
-    // authored `rotation` as a seed. Incorporating the offsets is a geometry change to both solves
-    // and its own slice. See ADR-053.
-    //
-    // An empty binder list makes the loop a no-op, so a node that bound no solver reads nothing.
-    const offsets: string[] = [];
-    for (const key of PIVOT_KEYS) {
-      const authored = authoredByBinders(keyframes, solverBinders, key);
-      if (authored.some((value) => !isZeroOffset(value))) offsets.push(key);
-    }
-    if (offsets.length > 0) {
-      diagnostics.push(
-        diag(
-          "ik-solved-pivot-unsupported",
-          node.id,
-          `Member "${node.id}" bound to solver cannot author a non-zero pivot offset: ${offsets.join(", ")}.`,
-          [node.id],
-        ),
-      );
-    }
+    // No pivot rule sits beside the dead rotation any more. `ik-solved-pivot-unsupported` refused a
+    // non-zero authored `x` or `y` on a solved member while neither solve accounted for one, so a
+    // bone composed its pivot at that offset, extended by `length`, and missed its goal by exactly
+    // that vector with a `ready` patch and no diagnostic. Both solves account for it now: the closed
+    // form folds the two offsets into a fixed base point and a rigid link with a twist, and the
+    // iterative one carries pivots beside tips. A rule that refuses a shape the runtime solves is
+    // worse than no rule, so it is deleted rather than widened, and nothing replaces it: an offset
+    // that shortens a chain's reach past its goal is an unreachable target, which was never a
+    // diagnostic. `RS-11` and `RS-12` pin the acceptance. See ADR-053 and ADR-054.
   }
 
   const solvesMap = new Map<string, readonly SolveMember[]>();
