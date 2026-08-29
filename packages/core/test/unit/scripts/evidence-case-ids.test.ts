@@ -186,10 +186,21 @@ import { fileURLToPath } from "node:url";
 // ninth two-letter series, under the policy the `P-` paragraph sets, and `F-` alone is the authored
 // keyframe group series. It sorts before `F` in the pattern below, because an alternation that
 // offered `F` first would match `F` and then fail on the `B`.
+//
+// `PV-` belongs to offset-aware solving, issue #214 and ADR-054: that both solves account for the
+// pivot offset `fk` applies, that the closed form survives it as a fixed base point and a rigid
+// link with a twist, that the iterative one carries pivots beside tips, that a shared sub-base
+// averages tips and never twists, and that every zero-offset rig keeps the doubles it published.
+// `FO-` owns what an authored `x` and `y` mean on a bone and in whose space `fk` reads them, which
+// is unchanged; `IK-` owns the analytic solve and `FB-` owns the iterative one, and both keep every
+// number they pinned. This is the one contract that spans all three, which is why it extends none
+// of them. It is the tenth two-letter series, under the policy the `P-` paragraph sets, and `P-`
+// alone is the rollback error precedence series. It sorts before `P` in the pattern below, because
+// an alternation that offered `P` first would match `P` and then fail on the `V`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE =
-  /it\(\s*"((?:CF|CN|FB|FO|IK|LF|MG|RS|SL|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:CF|CN|FB|FO|IK|LF|MG|PV|RS|SL|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })

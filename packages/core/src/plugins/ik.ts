@@ -2,7 +2,14 @@ import { readGoalSlot } from "../contract/solver-slots";
 import type { PluginDefinition } from "../domain/plugins";
 import type { ImmutableRecord } from "../domain/values";
 import { solveFabrik, type FabrikMember } from "./fabrik";
-import { readFrame, readNumber, type WorldFrame } from "./frame";
+import {
+  effectiveLink,
+  pivotFromBaseTip,
+  readFrame,
+  readNumber,
+  readPivotOffset,
+  type WorldFrame,
+} from "./frame";
 
 /** The frame a solver hangs from and the frame it reaches for are both world frames. */
 export type BaseFrame = WorldFrame;
@@ -104,8 +111,29 @@ function clamp(value: number, min: number, max: number): number {
  * reachability assertion that either branch satisfies. `IK-1` owns the default and `IK-3` owns the
  * mirror.
  *
- * An unreachable target is clamped into `[|l1 - l2|, l1 + l2]` rather than refused, so the chain
- * extends toward it instead of producing `NaN` out of `acos`.
+ * **Pivot offsets are solved rather than ignored, and the closed form survives them.** Two authored
+ * offsets enter the geometry in two different places, and neither is an approximation:
+ *
+ * The first member's offset moves the point the whole chain pivots about. It is read in the root's
+ * own rotated frame, so it is fixed the moment the root frame is known and no rotation this solve
+ * publishes can move it. The triangle is therefore solved from that pivot rather than from the
+ * root's own position.
+ *
+ * The second member's offset fuses with the first member's extension into one rigid link, because
+ * both are read in the first member's frame and turn with it: a length of `hypot(l1 + x2, y2)` at a
+ * fixed twist of `atan2(y2, l1 + x2)` off the first bone's own direction. The law of cosines then
+ * runs on that link and `l2` unchanged, and the twist is subtracted from the first angle and added
+ * to the second, which is exactly the accounting that leaves the composed tip on the target. See
+ * ADR-054 and `PV-1` through `PV-4`.
+ *
+ * A member that authors no offset contributes an effective link of exactly `l1` at exactly zero
+ * twist, and `frame.ts` guarantees both by short-circuit rather than by arithmetic that happens to
+ * round that way. Every zero-offset rig therefore publishes the doubles it always published, which
+ * `PV-4` pins as byte identity against every branch of this function.
+ *
+ * An unreachable target is clamped into `[|a - l2|, a + l2]` rather than refused, so the chain
+ * extends toward it instead of producing `NaN` out of `acos`. The bound is stated on the effective
+ * link rather than on `l1`, because the reach an offset chain actually has is the link's.
  *
  * Exactly two members, and `solveChain` is the one caller that decides so. A `members.length < 2`
  * branch used to answer a one-member chain with zeros; it is deleted rather than kept, because the
@@ -121,20 +149,28 @@ export function solveTwoBone(
   const m2 = members[1]!;
   const l1 = Math.max(0, readNumber(m1.values.length));
   const l2 = Math.max(0, readNumber(m2.values.length));
+  // The chain's own base, and the rigid link that leaves it. Both are pure functions of the root
+  // frame and the two authored offsets, so neither depends on the angles solved below.
+  const base = pivotFromBaseTip(root, root.rotation, readPivotOffset(m1.values));
+  const link = effectiveLink(l1, readPivotOffset(m2.values));
+  const reach = link.length;
+  const twist = link.twist;
 
-  const dx = target.x - root.x;
-  const dy = target.y - root.y;
+  const dx = target.x - base.x;
+  const dy = target.y - base.y;
   const d = Math.hypot(dx, dy);
   const targetAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
 
-  if (l1 <= 0 && l2 <= 0) {
+  // A link with no extent has no twist either, which `effectiveLink` guarantees, so the degenerate
+  // branches below aim whichever segment is left and subtract a twist that is exactly zero.
+  if (reach <= 0 && l2 <= 0) {
     return Object.freeze({
-      [m1.id]: targetAngle - root.rotation,
+      [m1.id]: targetAngle - twist - root.rotation,
       [m2.id]: 0,
     });
   }
 
-  if (l1 <= 0) {
+  if (reach <= 0) {
     return Object.freeze({
       [m1.id]: 0,
       [m2.id]: targetAngle - root.rotation,
@@ -143,13 +179,13 @@ export function solveTwoBone(
 
   if (l2 <= 0) {
     return Object.freeze({
-      [m1.id]: targetAngle - root.rotation,
+      [m1.id]: targetAngle - twist - root.rotation,
       [m2.id]: 0,
     });
   }
 
-  const minReach = Math.abs(l1 - l2);
-  const maxReach = l1 + l2;
+  const minReach = Math.abs(reach - l2);
+  const maxReach = reach + l2;
   const clampedD = clamp(d, minReach, maxReach);
 
   if (clampedD <= 0) {
@@ -159,21 +195,25 @@ export function solveTwoBone(
     });
   }
 
-  const cosAlpha = clamp((l1 * l1 + clampedD * clampedD - l2 * l2) / (2 * l1 * clampedD), -1, 1);
+  const cosAlpha = clamp(
+    (reach * reach + clampedD * clampedD - l2 * l2) / (2 * reach * clampedD),
+    -1,
+    1,
+  );
   const alpha = (Math.acos(cosAlpha) * 180) / Math.PI;
 
-  const cosBeta = clamp((l1 * l1 + l2 * l2 - clampedD * clampedD) / (2 * l1 * l2), -1, 1);
+  const cosBeta = clamp((reach * reach + l2 * l2 - clampedD * clampedD) / (2 * reach * l2), -1, 1);
   const beta = (Math.acos(cosBeta) * 180) / Math.PI;
 
   let r1: number;
   let r2: number;
 
   if (!flip) {
-    r1 = targetAngle + alpha - root.rotation;
-    r2 = beta - 180;
+    r1 = targetAngle + alpha - twist - root.rotation;
+    r2 = beta - 180 + twist;
   } else {
-    r1 = targetAngle - alpha - root.rotation;
-    r2 = 180 - beta;
+    r1 = targetAngle - alpha - twist - root.rotation;
+    r2 = 180 - beta + twist;
   }
 
   return Object.freeze({
@@ -190,8 +230,10 @@ export function solveTwoBone(
  * number meaning two things inside one tick, which is how the two private copies of this reader
  * drifted before `plugins/frame.ts` existed.
  *
- * A member's authored `x` and `y` are deliberately not read, here or in the closed form. See the
- * pivot paragraph on `solveChain`: the offset is refused at load rather than approximated here.
+ * A member's authored `x` and `y` are read through that same shared reader and handed on as the
+ * member's pivot offset. Reading them here rather than deriving anything from them is the whole of
+ * this function's part in offset-aware solving: what the offset means geometrically belongs to
+ * `solveFabrik`, and what it means as a composition belongs to `fk`. See ADR-054.
  */
 function fabrikMembers(
   members: readonly MemberState[],
@@ -199,10 +241,11 @@ function fabrikMembers(
 ): readonly FabrikMember[] {
   return members.map((member) => {
     const length = readNumber(member.values.length);
+    const pivot = readPivotOffset(member.values);
     const goal = goals.get(member.id);
     return goal === undefined
-      ? { id: member.id, base: member.base, length }
-      : { id: member.id, base: member.base, length, goal };
+      ? { id: member.id, base: member.base, length, pivot }
+      : { id: member.id, base: member.base, length, pivot, goal };
   });
 }
 
@@ -218,16 +261,17 @@ function fabrikMembers(
  * `flip` at arity two selects an exact branch rather than a basin, so replacing it would move
  * published values for every rig that already solves. The two paths therefore publish one
  * convention by assertion rather than by construction: `FB-2` holds FABRIK to the closed form's own
- * numbers on ADR-051's worked rig, for both elbow branches.
+ * numbers on ADR-051's worked rig, for both elbow branches, and `PV-7` holds it to them again on a
+ * rig where both members carry an offset, which is the assertion that says the two paths share one
+ * offset convention rather than one each.
  *
- * Neither path accounts for a member's pivot offset, and they share that convention rather than
- * holding one each. `fk` places a bone's pivot at `x`, `y` in its base's rotated space and then
- * extends by `length`, so a non-zero offset moves the tip a solve placed and the chain misses its
- * goal by exactly that vector: the closed form reads `length` alone, and `fabrikMembers` above hands
- * the iterative one a length and a topology. `ik-solved-pivot-unsupported` refuses an authored
- * offset on a member at load, so a solved member's pivot sits on its base's tip and both paths are
- * answering the same geometry. Incorporating the offsets is a change to both solves and its own
- * slice rather than a default, and the geometry it would need is sketched in ADR-053.
+ * Both paths account for a member's pivot offset, and they share the convention rather than holding
+ * one each. `fk` places a bone's pivot at `x`, `y` in its base's rotated space and then extends by
+ * `length`; the closed form folds the same two offsets into a fixed base point and a rigid link
+ * with a twist, and the iterative one carries pivots beside tips and composes each from its base's
+ * tip exactly as `fk` does. `ik-solved-pivot-unsupported` refused the shape outright while neither
+ * path accounted for it, and it is deleted rather than widened now that both do: a rule that
+ * refuses a shape the runtime solves is worse than no rule. See ADR-053, ADR-054, and issue #214.
  *
  * A solve with no goal at all is thrown rather than answered with the seed pose. Every load-time
  * shape that could produce one is refused (`ik-solver-no-members`, `ik-solver-no-goal`,
@@ -250,12 +294,12 @@ export function solveChain(
     const [target] = goals.values();
     return solveTwoBone(root, target!, members, flip);
   }
-  // `tips` and `convergence` are deliberately dropped rather than published. The analytic path
-  // carries neither, so publishing them here would make a solver's patch shape a function of its
-  // arity and would move every existing solver's published keys, which `FB-9` pins as unchanged.
-  // Roughly four percent of ordinary reachable rigs do not reach tolerance before the cap, so a
-  // per-tick report would be noise on rigs nobody would call broken. `FB-13` pins the shape and
-  // `docs/DECISIONS.md` records the decision under ADR-051.
+  // `pivots`, `tips` and `convergence` are deliberately dropped rather than published. The analytic
+  // path carries none of them, so publishing them here would make a solver's patch shape a function
+  // of its arity and would move every existing solver's published keys, which `FB-9` pins as
+  // unchanged. Roughly four percent of ordinary reachable rigs do not reach tolerance before the
+  // cap, so a per-tick report would be noise on rigs nobody would call broken. `FB-13` pins the
+  // shape and `docs/DECISIONS.md` records the decision under ADR-051.
   return solveFabrik(root, fabrikMembers(members, goals), flip).rotations;
 }
 

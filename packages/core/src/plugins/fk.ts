@@ -1,19 +1,16 @@
 import type { PluginDefinition } from "../domain/plugins";
-import { readFrame, readNumber } from "./frame";
+import { composeWorld, readFrame, readNumber, readPivotOffset } from "./frame";
 
-export function composeWorld(
-  parent: { x: number; y: number; rotation: number },
-  local: { x: number; y: number; rotation: number },
-): { x: number; y: number; rotation: number } {
-  const rad = (parent.rotation * Math.PI) / 180;
-  const cos = Math.cos(rad);
-  const sin = Math.sin(rad);
-  return {
-    x: parent.x + (local.x * cos - local.y * sin),
-    y: parent.y + (local.x * sin + local.y * cos),
-    rotation: parent.rotation + local.rotation,
-  };
-}
+/**
+ * Re-exported rather than declared here.
+ *
+ * `frame.ts` owns the one rotate-then-translate in the package, because `ik` has to predict the
+ * frame this plugin composes and a second copy of the trigonometry is the drift that would make
+ * every solved offset wrong by a rotation. The name stays reachable from `fk` because a bone's
+ * composition is what it describes, and `FO-4` is written against it as this plugin's own oracle.
+ * See ADR-054.
+ */
+export { composeWorld };
 
 /**
  * The rotation the bound solver solved for `nodeId`, or `undefined` when there is none.
@@ -63,6 +60,12 @@ function readSolvedRotation(solver: unknown, nodeId: string): number | undefined
  * claims `x` and `y` as well, so a flat `x` is `plugin-ambiguous-key` and an author names the owner
  * by authoring inside a group, exactly as a flat `rotation` already required. See ADR-043.
  *
+ * This plugin stays the sole owner of applying the offset, and that ownership is unchanged now that
+ * a solved member may carry one. `ik` accounts for the offset in the geometry it solves and
+ * publishes a rotation; the composition below is what puts the pivot where the solve predicted it
+ * would be. Nothing here reads the solver's chain and nothing there applies an offset twice.
+ * See ADR-054.
+ *
  * A bound `solver` replaces the authored local `rotation` with the one the solver solved for this
  * node, and nothing else about the composition changes. An unbound slot, or a solver that does not
  * name this node, falls back to the authored value, so every existing FK bone is byte-identical.
@@ -83,11 +86,7 @@ export const fkPlugin: PluginDefinition = {
     // the trigonometry lives in one place instead of being copied here beside an export nothing
     // called. The extension is purely along the bone's own direction, which is why its local frame
     // carries `length` on `x` and nothing on `y` or `rotation`.
-    const pivot = composeWorld(readFrame(inputs.base), {
-      x: readNumber(values.x),
-      y: readNumber(values.y),
-      rotation,
-    });
+    const pivot = composeWorld(readFrame(inputs.base), { ...readPivotOffset(values), rotation });
     return composeWorld(pivot, { x: readNumber(values.length), y: 0, rotation: 0 });
   },
 };
