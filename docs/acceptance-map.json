@@ -265,6 +265,14 @@
       "test": "packages/core/test/unit/graph/arity-lift.test.ts"
     },
     {
+      "id": "solver-goal-required",
+      "test": "packages/core/test/unit/graph/solver-goal-required.test.ts"
+    },
+    {
+      "id": "solved-pivot-offset",
+      "test": "packages/core/test/unit/graph/solved-pivot-offset.test.ts"
+    },
+    {
       "id": "ik-fabrik-chain-integration",
       "test": "packages/core/test/integration/ik-fabrik-chain.test.ts"
     },
