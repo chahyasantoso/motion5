@@ -5,7 +5,8 @@ import type {
   ProjectDefinition,
   TrackDefinition,
 } from "../contract/v5";
-import { readPluginBindings } from "../contract/keyframe-shape";
+import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
+import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { readGoalSlot } from "../contract/solver-slots";
 import { compareCodeUnits } from "./compare";
 import {
@@ -367,31 +368,67 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
 }
 
 /**
- * Whether the group that binds `solver` authors a `rotation` of its own.
+ * The pivot offset keys `fk` claims, in the order a diagnostic lists them.
  *
- * Read inside that group rather than across every group and the flat top level. The solved rotation
- * replaces the authored one inside the plugin that reads `rotations` back, which is the plugin that
- * bound the slot, so a `rotation` under any other group is that plugin's own live input and
- * refusing it would be this rule answering for a plugin it knows nothing about. The diagnostics
- * guide already states the rule this way; the narrowing is the code catching up to its own
- * documentation.
- *
- * Two shapes it deliberately no longer reports, because each already has a more specific owner. A
- * `rotation` directly under the plugin name is the pre-ADR-049 group form, refused as
- * `keyframes-missing-values-section`. And a flat `rotation` names no group at all: attributing a
- * flat key to a plugin is the registry's question, and this layer holds no registry by design, so a
- * member authoring one meets `plugin-ambiguous-key` in any registry with two claimants and
- * `plugin-unknown-key` in one with none. See ADR-043, ADR-044, ADR-049, and ADR-051.
+ * Named here for the reason `rotation` is named below: this layer holds no plugin registry, so the
+ * keys a kinematic plugin owns are literals in the rules that read them rather than something
+ * derived. The list is short and closed, and a plugin claiming a third offset key would add it here
+ * in the pull request that claimed it.
  */
-function authorsSolvedRotation(keyframes: unknown, binders: readonly string[]): boolean {
-  if (!isRecord(keyframes)) return false;
+const PIVOT_KEYS: readonly string[] = Object.freeze(["x", "y"]);
+
+/**
+ * Every value the groups that bound `solver` authored for `key`.
+ *
+ * Read inside those groups rather than across every group and the flat top level. A solve answers
+ * for the plugin that asked for it, which is the plugin that bound the slot, so a key under any
+ * other group is that plugin's own live input and reporting it would be this rule answering for a
+ * plugin it knows nothing about. The diagnostics guide states both rules that use this reader that
+ * way; the narrowing is the code agreeing with its own documentation.
+ *
+ * Two shapes it deliberately does not report, because each already has a more specific owner. A
+ * value directly under the plugin name is the pre-ADR-049 group form, refused as
+ * `keyframes-missing-values-section`. And a flat key names no group at all: attributing one to a
+ * plugin is the registry's question, and this layer holds no registry by design, so a member
+ * authoring one meets `plugin-ambiguous-key` in any registry with two claimants and
+ * `plugin-unknown-key` in one with none.
+ *
+ * One reader for both rules that need it rather than one predicate per key, and `readPluginValues`
+ * stays the only answer to what a group's `values` section is.
+ * See ADR-043, ADR-044, ADR-049, ADR-051, and ADR-053.
+ */
+function authoredByBinders(
+  keyframes: unknown,
+  binders: readonly string[],
+  key: string,
+): readonly unknown[] {
+  if (!isRecord(keyframes)) return [];
+  const authored: unknown[] = [];
   for (const binder of binders) {
-    const group = keyframes[binder];
-    if (!isRecord(group)) continue;
-    const values = group.values;
-    if (isRecord(values) && values.rotation !== undefined) return true;
+    const values = readPluginValues(keyframes[binder]);
+    if (values[key] !== undefined) authored.push(values[key]);
   }
-  return false;
+  return authored;
+}
+
+/**
+ * Whether every value an authored leaf can take is exactly zero.
+ *
+ * By value rather than by presence, which is the one difference between the pivot rule and the dead
+ * rotation beside it. An authored zero composes exactly the frame an unauthored pivot composes, so
+ * refusing it would refuse a rig that is already right, while a solved rotation replaces whatever
+ * was authored and authoring one at all is therefore dead input.
+ *
+ * A leaf that is neither canonical form answers true, so this rule stays quiet about a shape that
+ * already has an owner: the retired wrapper is `property-stops-wrapper`, a non-finite number is
+ * `stops-shape`, and `readNumber` composes both as zero anyway. One mistake, one diagnostic.
+ */
+function isZeroOffset(value: unknown): boolean {
+  const leaf = readAuthoredLeaf(value);
+  if (leaf.kind === "static") return typeof leaf.value === "number" && leaf.value === 0;
+  if (leaf.kind !== "animated") return true;
+  const stops = readCompilableStops(value);
+  return stops.every((stop) => typeof stop.v === "number" && stop.v === 0);
 }
 
 /** The node this one hangs from through its `base` slot, or `undefined` when it binds none. */
@@ -428,21 +465,40 @@ interface AuthoredGoal {
 }
 
 /**
- * The goals one solver authored, in derived slot order.
+ * Every goal binding one node authored: the bare slot, and the dict entries in derived slot order.
  *
- * Sorted by the derived slot rather than by `compareEdges`, whose first key is the source id: two
- * goals pointing at one node would otherwise be ordered by nothing, and the authored key is what a
- * duplicate diagnostic has to list. Order is a pure function of authored ids either way.
+ * One reader, because four rules and the derivation all ask the same question of the same edges.
+ * `ik-mode-ambiguous` needs to know whether a node bound a goal at all, `ik-goal-conflict` needs
+ * both spellings, `ik-solver-no-goal` needs neither of them, and the derivation needs every dict
+ * entry with its authored key. Two of those used to read the literal `"target"` in one loop while
+ * the grammar was read in another, which is how a member binding `solver` beside a goal dict loaded
+ * clean with every one of its goals ignored.
+ *
+ * The dict is sorted by the derived slot rather than by `compareEdges`, whose first key is the
+ * source id: two goals pointing at one node would otherwise be ordered by nothing, and the authored
+ * key is what a duplicate diagnostic has to list. Order is a pure function of authored ids either
+ * way.
  */
-function authoredGoalsOf(solver: GraphNode): readonly AuthoredGoal[] {
-  const goals: AuthoredGoal[] = [];
-  for (const edge of solver.edges) {
+interface GoalBindings {
+  readonly bare: boolean;
+  readonly dict: readonly AuthoredGoal[];
+}
+
+function goalBindingsOf(node: GraphNode): GoalBindings {
+  const dict: AuthoredGoal[] = [];
+  let bare = false;
+  for (const edge of node.edges) {
     if (edge.role !== "input" || edge.requirement === undefined) continue;
-    const authored = readGoalSlot(edge.requirement.slot);
-    if (authored === undefined) continue;
-    goals.push({ slot: edge.requirement.slot, authored, sourceId: edge.sourceId });
+    const slot = edge.requirement.slot;
+    if (slot === "target") {
+      bare = true;
+      continue;
+    }
+    const authored = readGoalSlot(slot);
+    if (authored !== undefined) dict.push({ slot, authored, sourceId: edge.sourceId });
   }
-  return goals.sort((a, b) => compareCodeUnits(a.slot, b.slot));
+  dict.sort((a, b) => compareCodeUnits(a.slot, b.slot));
+  return { bare, dict };
 }
 
 export function resolveSolvers(
@@ -452,28 +508,28 @@ export function resolveSolvers(
   // Diagnostic 3: ik-mode-ambiguous
   // Diagnostic 4: ik-solved-rotation-dead
   // Diagnostic 7: ik-goal-conflict
+  // Diagnostic 13: ik-solved-pivot-unsupported
   for (const node of nodes) {
     let rootCount = 0;
-    let bareTarget = false;
-    let goalCount = 0;
-    // The plugins under which this node bound a `solver` slot, which is what scopes the dead
-    // rotation read: the solve replaces the rotation of the plugin that asked for it.
+    // The plugins under which this node bound a `solver` slot, which is what scopes both reads of
+    // its authored values: the solve replaces the rotation of the plugin that asked for it, and it
+    // is that same plugin which composes the pivot the solve does not account for.
     const solverBinders: string[] = [];
     for (const edge of node.edges) {
       if (edge.role === "input" && edge.requirement) {
         const slot = edge.requirement.slot;
         if (slot === "root") rootCount++;
         if (slot === "solver") solverBinders.push(edge.requirement.plugin);
-        if (slot === "target") bareTarget = true;
-        if (readGoalSlot(slot) !== undefined) goalCount += 1;
       }
     }
+    const keyframes = node.track.keyframes;
+    const authoredGoals = goalBindingsOf(node);
     const hasSolver = solverBinders.length > 0;
     // Read through the grammar rather than off the literal `"target"`. A member binding `solver`
     // beside a goal dict would otherwise load clean, with one real input edge per goal, and have
     // every one of them ignored: a field accepted and then ignored, which is what ADR-033 rule 6
     // forbids. See issue #195.
-    const hasGoal = bareTarget || goalCount > 0;
+    const hasGoal = authoredGoals.bare || authoredGoals.dict.length > 0;
     if ((hasSolver && (rootCount > 0 || hasGoal)) || rootCount > 1) {
       diagnostics.push(
         diag(
@@ -487,7 +543,7 @@ export function resolveSolvers(
     // Both spellings on one solver are two names for one dependency. The dict is the general case
     // and the bare slot is its degenerate one, so they are refused together rather than merged:
     // merging would make which goal a leaf reaches for a property of the reader.
-    if (bareTarget && goalCount > 0) {
+    if (authoredGoals.bare && authoredGoals.dict.length > 0) {
       diagnostics.push(
         diag(
           "ik-goal-conflict",
@@ -497,12 +553,38 @@ export function resolveSolvers(
         ),
       );
     }
-    if (hasSolver && authorsSolvedRotation(node.track.keyframes, solverBinders)) {
+    if (hasSolver && authoredByBinders(keyframes, solverBinders, "rotation").length > 0) {
       diagnostics.push(
         diag(
           "ik-solved-rotation-dead",
           node.id,
           `Member "${node.id}" bound to solver cannot author rotation.`,
+          [node.id],
+        ),
+      );
+    }
+    // Neither solve accounts for a member's pivot offset. `fk` places a bone's pivot at `x`, `y` in
+    // its base's rotated space and then extends by `length`, while the analytic path reads `length`
+    // alone and the iterative one is handed lengths and a topology, so a non-zero offset moves the
+    // tip the solve placed and the chain misses its goal by exactly that vector, with a `ready`
+    // patch and no diagnostic anywhere. Refused rather than silently mis-solved, and refused for
+    // both paths rather than for one, because an offset that meant something at arity two and
+    // nothing above it would be the arity-dependent meaning that killed reviving a member's
+    // authored `rotation` as a seed. Incorporating the offsets is a geometry change to both solves
+    // and its own slice. See ADR-053.
+    //
+    // An empty binder list makes the loop a no-op, so a node that bound no solver reads nothing.
+    const offsets: string[] = [];
+    for (const key of PIVOT_KEYS) {
+      const authored = authoredByBinders(keyframes, solverBinders, key);
+      if (authored.some((value) => !isZeroOffset(value))) offsets.push(key);
+    }
+    if (offsets.length > 0) {
+      diagnostics.push(
+        diag(
+          "ik-solved-pivot-unsupported",
+          node.id,
+          `Member "${node.id}" bound to solver cannot author a non-zero pivot offset: ${offsets.join(", ")}.`,
           [node.id],
         ),
       );
@@ -566,6 +648,30 @@ export function resolveSolvers(
         ),
       );
       continue;
+    }
+
+    // Diagnostic 14: ik-solver-no-goal
+    //
+    // A solver with a root and members and nothing to reach for, refused here rather than at
+    // composition. `solveChain` throws on an empty goal map, which was the documented contract and
+    // the wrong owner for it: `ik-leaf-without-goal` is guarded by the dict having been used at all
+    // and the bare slot is a separate read, so the one shape that bound neither loaded clean and
+    // then errored its solver and blocked every member of it on every tick, for a shape the loader
+    // can name. The throw stays as the invariant guard behind this rule, exactly as `readMembers`
+    // guards `ik-solver-no-members`. See ADR-053.
+    //
+    // Reported without a `continue`, unlike the two refusals above: the chain is still derivable
+    // here, and a broken one is worth naming in the same pass rather than one run later.
+    const authoredGoals = goalBindingsOf(solver);
+    if (!authoredGoals.bare && authoredGoals.dict.length === 0) {
+      diagnostics.push(
+        diag(
+          "ik-solver-no-goal",
+          solver.id,
+          `Solver "${solver.id}" has no goal; bind "target", or address a goal per chain leaf under "targets".`,
+          [solver.id],
+        ),
+      );
     }
 
     // Arity is not refused here any more. `ik-solver-unsupported-arity` reported every derived
@@ -649,7 +755,6 @@ export function resolveSolvers(
     // derivation runs: over a chain that was never valid, leafhood answers about a shape the author
     // did not author, and one cause would be reported twice.
     const goalByMember = new Map<string, string>();
-    const authoredGoals = authoredGoalsOf(solver);
     if (unreachable.size === 0) {
       const ownerId = ownerOf(solver);
       const based = new Set(chains.map((entry) => entry.base));
@@ -665,10 +770,7 @@ export function resolveSolvers(
       // quietly choosing one of the leaves it was handed: a binding accepted and then applied to an
       // arbitrary member is the shape ADR-033 rule 6 forbids. The dict is the general spelling, and
       // a branching chain addresses its goals by member id.
-      const bindsBareTarget = solver.edges.some(
-        (edge) => edge.role === "input" && edge.requirement?.slot === "target",
-      );
-      if (bindsBareTarget && leaves.length > 1) {
+      if (authoredGoals.bare && leaves.length > 1) {
         diagnostics.push(
           diag(
             "ik-target-not-single-leaf",
@@ -683,7 +785,7 @@ export function resolveSolvers(
       // `walker/forearm`), which is the narrow rule qualification leaves behind.
       const authoredFor = new Map<string, string[]>();
       const sourceFor = new Map<string, string>();
-      for (const goal of authoredGoals) {
+      for (const goal of authoredGoals.dict) {
         let memberId: string | undefined;
         try {
           memberId = qualifySource(goal.authored, ownerId);
@@ -735,8 +837,10 @@ export function resolveSolvers(
       }
       // A leaf with no goal is a refusal only once this solver addressed its goals by member id.
       // Bare `target` is kept and is exactly the degenerate case of the dict, so a solver that
-      // authored one has no goal to be missing and no existing rig has to be re-authored.
-      if (authoredGoals.length > 0) {
+      // authored one has no goal to be missing and no existing rig has to be re-authored. A solver
+      // that addressed no goals at all is `ik-solver-no-goal` above, so the two never report
+      // together and one absence is never two diagnostics.
+      if (authoredGoals.dict.length > 0) {
         for (const leaf of leaves) {
           if (authoredFor.has(leaf)) continue;
           diagnostics.push(
