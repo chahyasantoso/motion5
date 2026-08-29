@@ -197,10 +197,21 @@ import { fileURLToPath } from "node:url";
 // of them. It is the tenth two-letter series, under the policy the `P-` paragraph sets, and `P-`
 // alone is the rollback error precedence series. It sorts before `P` in the pattern below, because
 // an alternation that offered `P` first would match `P` and then fail on the `V`.
+//
+// `WT-` belongs to the per-member solved-rotation blend, issue #211 and ADR-055: that one `clamp`
+// and one wrap-aware `lerpAngle` answer for both halves of the kinematic composition, that both
+// ends of the blend are byte-exact rather than computed, that the tie at half a turn is pinned,
+// that an omitted weight composes the unconditional override it replaces, and which authored
+// shapes the narrowed dead-rotation rule and its new mirror refuse. `IK-` owns the solve and the
+// override it publishes, which is unchanged; `FO-` and `PV-` own the offset; `WT-` owns how much of
+// a solved angle a bone actually composes with, which is a question none of them ask. It is the
+// eleventh two-letter series, under the policy the `P-` paragraph sets, and `W-` alone is the
+// entrypoint tier series. It sorts before `W` in the pattern below, because an alternation that
+// offered `W` first would match `W` and then fail on the `T`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE =
-  /it\(\s*"((?:CF|CN|FB|FO|IK|LF|MG|PV|RS|SL|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:CF|CN|FB|FO|IK|LF|MG|PV|RS|SL|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })

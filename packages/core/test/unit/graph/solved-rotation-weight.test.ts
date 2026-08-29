@@ -159,8 +159,9 @@ describe("solved rotation weight (issue #211)", () => {
       "ik-weight-without-solver at walker/upper-arm",
     ]);
 
-    // The mirror of `RS-9`, one rule later: a weight under the binder group licenses a rotation
-    // under that same group, and does not license one under a group that bound no solver.
+    // Accepted, and it takes both rules staying narrow to get there. `spring` bound the solver and
+    // authors the weight, so that weight is a live input; `fk` bound none, so its rotation is
+    // `fk`'s own live input and no solve replaces it. `RS-9`'s pairing, with a weight added to it.
     const splitAcrossGroups: TrackDefinition = {
       id: "upper-arm",
       keyframes: {
