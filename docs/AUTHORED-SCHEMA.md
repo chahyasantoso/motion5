@@ -190,7 +190,8 @@ Inverse Kinematics computes joint rotations so a bone chain reaches toward one o
   - `requires.root`: qualified ID of the world frame the chain hangs from. The root is never moved by the solve.
   - `requires.target`: qualified ID of the world-space coordinate the chain's single leaf reaches toward.
   - `requires.targets`: a record of goals keyed by member id, for a chain with more than one leaf. Every leaf must be named once the record is used at all.
-- **`fk` Solver Binding**: A member bone binds `keyframes.fk.requires.solver` naming the solver node. The bone authors `values.length` and optional pivot offsets (`x`, `y`), but may **not** author `values.rotation` (enforced by `ik-solved-rotation-dead`).
+  - One of the two goal spellings is required. A solver with a root and members and no goal at all is `ik-solver-no-goal`, refused at load rather than left to a composition that has nothing to solve.
+- **`fk` Solver Binding**: A member bone binds `keyframes.fk.requires.solver` naming the solver node. The bone authors `values.length` and nothing else. It may not author `values.rotation`, which the solve replaces (`ik-solved-rotation-dead`), and it may not author a non-zero pivot offset `x` or `y`, which neither solve accounts for (`ik-solved-pivot-unsupported`): a solved member's pivot sits on its base's tip. Pivot offsets stay available on the chain's root and on every bone below the chain, which is where a rig usually wants them. See ADR-053.
 
 ```text
 // Solver node, single goal:
@@ -303,9 +304,11 @@ Load-time solver diagnostics include:
 
 - `ik-solver-no-root`: A solver node does not bind a `root` requirement edge.
 - `ik-solver-no-members`: A solver node has no member nodes binding `solver` to it.
+- `ik-solver-no-goal`: A solver node binds neither `target` nor `targets`, so it has nothing to reach for.
 - `ik-solver-unreachable-root`: A member's `base` hierarchy walk fails to terminate at the solver's bound `root`.
 - `ik-mode-ambiguous`: A single node binds `solver` alongside `root` or a goal, or binds `root` under multiple plugins.
 - `ik-solved-rotation-dead`: A bone bound to a `solver` authors a local `rotation` value.
+- `ik-solved-pivot-unsupported`: A bone bound to a `solver` authors a non-zero pivot offset `x` or `y`, which neither solve accounts for. An authored zero is accepted.
 - `ik-goal-unknown-member`: A goal key qualifies to no member of that solver's chain.
 - `ik-goal-not-leaf`: A goal is authored on a member another member hangs from.
 - `ik-goal-duplicate`: Two goal keys qualify to one member id.
@@ -317,4 +320,4 @@ There is no diagnostic about a solver's derived member count. `ik-solver-unsuppo
 
 ## Rejected input
 
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, the retired stops wrapper, a leaf that is neither an array nor a static scalar, malformed group sections, malformed bindings and edges, a malformed goal record, unknown sources, duplicate edges, self-reference, cycles, invalid solver topologies, unaddressable or unaddressed solver goals, dead rotations on solved bones, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Flat keys with multiple plugin claimants are errors too. Missing perspective for detected 3D content and unused free tracks are warnings.
+Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, the retired stops wrapper, a leaf that is neither an array nor a static scalar, malformed group sections, malformed bindings and edges, a malformed goal record, unknown sources, duplicate edges, self-reference, cycles, invalid solver topologies, solvers with no goal, unaddressable or unaddressed solver goals, dead rotations and pivot offsets on solved bones, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Flat keys with multiple plugin claimants are errors too. Missing perspective for detected 3D content and unused free tracks are warnings.
