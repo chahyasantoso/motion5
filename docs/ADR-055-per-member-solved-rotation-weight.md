@@ -50,19 +50,17 @@ const rotation = solved === undefined ? authored : lerpAngle(authored, solved, w
 
 ### 3. Validation is presence-only, in two tiers
 
-`ik-solved-rotation-dead` is **narrowed, not deleted**:
+`ik-solved-rotation-dead` is **narrowed, not deleted**. A group that bound the `solver` slot and authors `rotation` with no `weight` beside it is refused exactly as before, which is byte-identically the old rule and the old behavior, so no existing rig is re-authored: with no weight in reach there is no runtime state in which the authored rotation influences the output, which is what the rule has always meant. A `rotation` with a `weight` beside it in that same group, in any authored form, is accepted.
 
-| Authored in the group that bound `solver` | Result                            |
-| ----------------------------------------- | --------------------------------- |
-| `rotation`, no `weight`                   | `ik-solved-rotation-dead`, error  |
-| `rotation` and `weight`, in any form      | accepted                          |
-| `weight` in a group that bound no solver  | `ik-weight-without-solver`, error |
+`ik-weight-without-solver` is the symmetric refusal, and the footgun is the same shape: with no solved rotation to blend toward, `fk` short-circuits to the authored value and never reads the weight, so an inert weight is a key accepted and then ignored. It fires on a node that bound a `solver` slot somewhere and authored `weight` in a group that bound none there.
 
-The first row is byte-identically the old rule and the old behavior, so no existing rig is re-authored. With no weight in reach there is no runtime state in which the authored rotation influences the output, which is what the rule has always meant.
+**Both rules are scoped to the plugin group that bound the slot**, exactly as `RS-9` already pins for the dead rotation. A node can bind `solver` under one plugin and author `weight` under another, and "does this node hold a solver anywhere" would pass that shape while the solve cannot reach the key.
 
-`ik-weight-without-solver` is the symmetric refusal, and the footgun is the same shape: with no solved rotation to blend toward, `fk` short-circuits to the authored value and never reads the weight, so an unbound weight is silently inert. Both rules are scoped to the plugin group that bound the slot, exactly as `RS-9` already pins for the dead rotation: a node can bind `solver` under one plugin and author `weight` under another, and "does this node hold a solver anywhere" would pass that shape.
+**And both speak only about a node that bound a solver.** That guard is the other half of the same rule, and it is not a convenience. `weight` is claimed by `fkPlugin`, ADR-043 lets any other plugin claim it too, and `resolveSolvers` holds no plugin registry by design, so on a node with no solver binding at all it cannot tell a blend weight from another plugin's own live input. `Q-10`'s `reach` plugin claims `weight`, binds no solver slot, and refusing that rig would be this rule answering for a plugin it knows nothing about, which is the wider read `RS-9` already closed once on the dead rotation.
 
-Both read one walker, `groupsAuthoring`, and are set operations against the binder groups. Two near-identical group walkers is how two rules drift apart, and this read has drifted once already, when it was wider than the rule that used it.
+**The residual is stated rather than hidden.** An `fk` weight on a bone that bound no solver anywhere is inert too, and no load-time rule names it. That is the cost of not holding the registry, exactly as a member's flat `rotation` not being `ik-solved-rotation-dead` is, and `WT-10` is what pins the composition that makes it harmless: an unbound slot short-circuits to the authored rotation and never reads the weight at all. If the catch is ever wanted it belongs where key ownership already lives, with a registry in reach.
+
+Both rules read one walker, `groupsAuthoring`, and are set operations against the binder groups. Two near-identical group walkers is how two rules drift apart, and this read has drifted once already, when it was wider than the rule that used it.
 
 ---
 
@@ -82,15 +80,17 @@ Both read one walker, `groupsAuthoring`, and are set operations against the bind
    _Rejected._ There are two anchors and no defined behavior beyond them. Clamping is a stated bound; extrapolating is an accident that happens to have a formula.
 7. **An `internalKeys` entry or a serializer for `weight`.**
    _Rejected as redundant._ `fkPlugin.compose` returns `composeWorld(...)`, three keys, with no `...values` spread, unlike `ikPlugin` which spreads deliberately (`IK-18`). The chain-by-replacement rule already drops the authored weight, so neither addition would do anything.
+8. **Refuse an inert `weight` on any node, with no solver binding required in reach.**
+   _Rejected, and it shipped once before it was._ It reads as the tighter rule and is actually a wider one: it reserves the spelling `weight` across every plugin in the registry, which contradicts the per-plugin key ownership ADR-043 states and the graph layer's own standing refusal to attribute a key to a plugin it cannot see. `Q-10` is the measurement rather than the argument: its `reach` plugin claims `weight`, binds `base` and `destination` and no solver, and the wide rule refused a fixture that predates this key entirely. The narrower read is the fix; a documented exception for one fixture would not have been.
 
 ---
 
 ## Consequences
 
-- `fkPlugin.keys` gains `weight`. That is the whole public surface change: no export map entry, entrypoint, or boundary allow-list entry moves, and `weight` is claimed by no other plugin, so it acquires no ambiguous flat spelling the way `x`, `y` and `rotation` have.
+- `fkPlugin.keys` gains `weight`. That is the whole public surface change: no export map entry, entrypoint, or boundary allow-list entry moves, and `weight` is claimed by no other plugin in this package, so it acquires no ambiguous flat spelling the way `x`, `y` and `rotation` have.
 - `ik-weight-without-solver` is a new rule id. `ik-solved-rotation-dead` fires on a strictly narrower set of authored shapes than before and on no new ones.
-- ADR-051's load-time diagnostic table gains a row and narrows one condition. This record is the amendment; nothing about derived membership, member delivery, dispatch, memoization or renderer shielding changes.
-- A weight authored on a member whose group bound no solver is now a load error. No fixture, demo or playground rig authors one, because the key did not exist.
+- ADR-051's load-time diagnostic table gains a rule and narrows one condition, and this record is the amendment. The table itself is left as written and the change is stated in prose beside it, under the standing guardrail that hand-padded Markdown tables are avoided where formatting is a hard CI gate. Nothing about derived membership, member delivery, dispatch, memoization or renderer shielding changes.
+- No fixture, demo or playground rig has to be re-authored. No rig authored a `weight` under `fk` before the key existed, and a rig that authors one under another plugin's group is not this rule's to refuse.
 
 ---
 
@@ -98,5 +98,6 @@ Both read one walker, `groupsAuthoring`, and are set operations against the bind
 
 - `packages/core/test/unit/plugins/angle-blend.test.ts` (`WT-1`..`WT-4`): one shared `clamp`, the two endpoint identities, the short arc through the wrap, and the positive tie-break at exactly half a turn.
 - `packages/core/test/unit/plugins/fk-solved-weight.test.ts` (`WT-5`..`WT-11`): the omitted-weight default composed against the unconditional override as its oracle, `0` and `1` as exact authored and exact solved, a blend across the `180`/`0` wrap, clamping and the non-finite fallback, an unbound slot ignoring the weight entirely, and the key never reaching a patch.
-- `packages/core/test/unit/graph/solved-rotation-weight.test.ts` (`WT-12`..`WT-16`): the narrowed refusal, acceptance whatever the weight is, the symmetric refusal, group scope on both rules, and the two builders agreeing.
+- `packages/core/test/unit/graph/solved-rotation-weight.test.ts` (`WT-12`..`WT-16`): the narrowed refusal, acceptance whatever the weight is, the boundary a registry-free layer cannot cross, group scope on both rules, and the two builders agreeing.
 - `packages/core/test/integration/per-plugin-key-ownership.test.ts` (`N-7`): the claimed key list, which is the one existing case this change moves.
+- `packages/core/test/integration/plugin-owned-requirements.test.ts` (`Q-10`): the pre-existing plugin that claims `weight` and binds no solver, which is why the mirror rule is guarded rather than universal. It needed no edit.
