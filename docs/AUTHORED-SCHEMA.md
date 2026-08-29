@@ -134,7 +134,7 @@ Group detection is unaffected by the leaf forms. A bare array and a bare scalar 
 
 Two shapes are deliberately legal and worth knowing. A group may author `requires` with no `values`, which is how a plugin joins composition to receive an upstream value without animating anything itself. And a leaf named `values` inside the section is an ordinary property, because the reservation is on section position rather than on the string everywhere.
 
-More than one plugin may claim the same key. `transformPlugin` claims `x`, `y`, and `rotation`, while `fkPlugin` claims `length` and `rotation`. With both registered, flat `rotation` is `plugin-ambiguous-key`; author a bone under `fk` and a root under `transform`.
+More than one plugin may claim the same key. `transformPlugin` claims `x`, `y`, and `rotation`, while `fkPlugin` claims `x`, `y`, `length`, `rotation`, and `weight`. With both registered, flat `x`, `y` and `rotation` are each `plugin-ambiguous-key`; author a bone under `fk` and a root under `transform`. `length` and `weight` have one claimant each in this package, so their flat spelling stays unambiguous, and an application plugin is free to claim either of them as well.
 
 ### Plugin-owned requirements
 
@@ -191,7 +191,8 @@ Inverse Kinematics computes joint rotations so a bone chain reaches toward one o
   - `requires.target`: qualified ID of the world-space coordinate the chain's single leaf reaches toward.
   - `requires.targets`: a record of goals keyed by member id, for a chain with more than one leaf. Every leaf must be named once the record is used at all.
   - One of the two goal spellings is required. A solver with a root and members and no goal at all is `ik-solver-no-goal`, refused at load rather than left to a composition that has nothing to solve.
-- **`fk` Solver Binding**: A member bone binds `keyframes.fk.requires.solver` naming the solver node. The bone authors `values.length` and nothing else. It may not author `values.rotation`, which the solve replaces (`ik-solved-rotation-dead`), and it may not author a non-zero pivot offset `x` or `y`, which neither solve accounts for (`ik-solved-pivot-unsupported`): a solved member's pivot sits on its base's tip. Pivot offsets stay available on the chain's root and on every bone below the chain, which is where a rig usually wants them. See ADR-053.
+- **`fk` Solver Binding**: A member bone binds `keyframes.fk.requires.solver` naming the solver node. It authors `values.length`, a pivot offset `x` and `y` if the rig wants one, and optionally `values.weight`. Both solves account for the pivot offset, so it is an ordinary authored value on a member exactly as it is on any other bone. See ADR-054.
+- **`fk.values.weight`**: how much of the solved rotation this bone composes with, per member rather than per solver, so a chain can stagger its reach: a shoulder that commits early while a wrist lags is two weights on two bones. It defaults to `1`, which is the unconditional override every rig had before the key existed, `0` is exactly the authored `rotation` with the solve discarded, and anything between blends along the shorter of the two arcs between them. Values outside `[0, 1]` are clamped rather than extrapolated, and a non-finite weight reads as `1`. Authoring `rotation` on a solver-bound member is legal exactly when a `weight` sits beside it in the same group, and refused as `ik-solved-rotation-dead` when it does not. A member that bound its solver under one plugin group and authored its `weight` under another is `ik-weight-without-solver`, because the solve cannot reach a key outside the group that asked for it. See ADR-055.
 
 ```text
 // Solver node, single goal:
@@ -212,6 +213,21 @@ Inverse Kinematics computes joint rotations so a bone chain reaches toward one o
     fk: {
       values: { length: 30 },
       requires: { base: "walk/shoulder", solver: "walk/arm-solve" },
+    },
+  },
+}
+
+// A member that reaches gradually, holding its authored rest pose at progress 0:
+{
+  id: "forearm",
+  keyframes: {
+    fk: {
+      values: {
+        length: 25,
+        rotation: -15,
+        weight: [ { p: 0, v: 0 }, { p: 1, v: 1 } ],
+      },
+      requires: { base: "walk/upper-arm", solver: "walk/arm-solve" },
     },
   },
 }
@@ -239,7 +255,7 @@ Keyed by member id rather than by position, because an index cannot be wrong: it
 
 Both spellings are supported and neither is deprecated. `target` is exactly the degenerate case of the record, so a solver picks one and `ik-goal-conflict` refuses both together. Because `target` names no member, it addresses a leaf only while there is one leaf to address, and a solver that binds it over a branching chain is `ik-target-not-single-leaf`. A linear chain has one leaf however long it is, so the bare slot keeps working past two bones.
 
-A solve publishes `rotations`, a record of one local rotation per member id, and nothing else. Convergence is not reported on the patch: an iterative solve reaches a goal within a tolerance, an unreachable goal leaves the chain fully extended toward it, and both are ordinary results rather than failures. See ADR-051 and ADR-052.
+A solve publishes `rotations`, a record of one local rotation per member id, and nothing else. Convergence is not reported on the patch: an iterative solve reaches a goal within a tolerance, an unreachable goal leaves the chain fully extended toward it, and both are ordinary results rather than failures. A member's `weight` never reaches a patch either: `fk` publishes a composed frame, so the blend is applied and the key is dropped. See ADR-051, ADR-052, and ADR-055.
 
 ### Keyframe namespace rules
 
@@ -307,8 +323,8 @@ Load-time solver diagnostics include:
 - `ik-solver-no-goal`: A solver node binds neither `target` nor `targets`, so it has nothing to reach for.
 - `ik-solver-unreachable-root`: A member's `base` hierarchy walk fails to terminate at the solver's bound `root`.
 - `ik-mode-ambiguous`: A single node binds `solver` alongside `root` or a goal, or binds `root` under multiple plugins.
-- `ik-solved-rotation-dead`: A bone bound to a `solver` authors a local `rotation` value.
-- `ik-solved-pivot-unsupported`: A bone bound to a `solver` authors a non-zero pivot offset `x` or `y`, which neither solve accounts for. An authored zero is accepted.
+- `ik-solved-rotation-dead`: A bone bound to a `solver` authors a local `rotation` with no `weight` beside it in the same group, so nothing could read the authored value.
+- `ik-weight-without-solver`: A node that bound a `solver` slot under one plugin group authors a `weight` under another, where no solved rotation reaches it.
 - `ik-goal-unknown-member`: A goal key qualifies to no member of that solver's chain.
 - `ik-goal-not-leaf`: A goal is authored on a member another member hangs from.
 - `ik-goal-duplicate`: Two goal keys qualify to one member id.
@@ -318,6 +334,10 @@ Load-time solver diagnostics include:
 
 There is no diagnostic about a solver's derived member count. `ik-solver-unsupported-arity` refused every count other than two and is deleted rather than widened, because a rule that refuses a shape the runtime solves is worse than no rule. See ADR-052.
 
+There is no diagnostic about a solved member's pivot offset either, for the same reason. `ik-solved-pivot-unsupported` refused a non-zero authored `x` or `y` on a solved member while neither solve accounted for one, and it is deleted rather than widened now that both do. See ADR-054.
+
+And there is no diagnostic about a `weight` on a bone that bound no solver anywhere. Such a weight is inert, exactly as an unbound one inside a chain would be, but `weight` may have more than one claimant and the load-time rule holds no plugin registry, so on a node with no solve in reach it cannot tell a blend weight from another plugin's own live input and does not guess. It is the same boundary that keeps a member's flat `rotation` out of `ik-solved-rotation-dead`. See ADR-043 and ADR-055.
+
 ## Rejected input
 
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, the retired stops wrapper, a leaf that is neither an array nor a static scalar, malformed group sections, malformed bindings and edges, a malformed goal record, unknown sources, duplicate edges, self-reference, cycles, invalid solver topologies, solvers with no goal, unaddressable or unaddressed solver goals, dead rotations and pivot offsets on solved bones, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Flat keys with multiple plugin claimants are errors too. Missing perspective for detected 3D content and unused free tracks are warnings.
+Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, the retired stops wrapper, a leaf that is neither an array nor a static scalar, malformed group sections, malformed bindings and edges, a malformed goal record, unknown sources, duplicate edges, self-reference, cycles, invalid solver topologies, solvers with no goal, unaddressable or unaddressed solver goals, dead rotations and unreachable blend weights on solved bones, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Flat keys with multiple plugin claimants are errors too. Missing perspective for detected 3D content and unused free tracks are warnings.

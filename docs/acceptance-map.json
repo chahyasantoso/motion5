@@ -273,6 +273,18 @@
       "test": "packages/core/test/unit/graph/solved-pivot-offset.test.ts"
     },
     {
+      "id": "angle-blend",
+      "test": "packages/core/test/unit/plugins/angle-blend.test.ts"
+    },
+    {
+      "id": "fk-solved-weight",
+      "test": "packages/core/test/unit/plugins/fk-solved-weight.test.ts"
+    },
+    {
+      "id": "solved-rotation-weight",
+      "test": "packages/core/test/unit/graph/solved-rotation-weight.test.ts"
+    },
+    {
       "id": "ik-fabrik-chain-integration",
       "test": "packages/core/test/integration/ik-fabrik-chain.test.ts"
     },
