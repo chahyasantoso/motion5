@@ -3,6 +3,7 @@ import type { PluginDefinition } from "../domain/plugins";
 import type { ImmutableRecord } from "../domain/values";
 import { solveFabrik, type FabrikMember } from "./fabrik";
 import {
+  clamp,
   effectiveLink,
   pivotFromBaseTip,
   readFrame,
@@ -93,10 +94,6 @@ export function readGoals(
   return goals;
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
 /**
  * The analytic two-bone solve, in `fk`'s own degrees and rotate-then-translate convention.
  *
@@ -133,7 +130,9 @@ function clamp(value: number, min: number, max: number): number {
  *
  * An unreachable target is clamped into `[|a - l2|, a + l2]` rather than refused, so the chain
  * extends toward it instead of producing `NaN` out of `acos`. The bound is stated on the effective
- * link rather than on `l1`, because the reach an offset chain actually has is the link's.
+ * link rather than on `l1`, because the reach an offset chain actually has is the link's. The
+ * `clamp` it is stated with is `frame.ts`', shared with the bone's blend weight rather than held
+ * privately here. See ADR-055.
  *
  * Exactly two members, and `solveChain` is the one caller that decides so. A `members.length < 2`
  * branch used to answer a one-member chain with zeros; it is deleted rather than kept, because the
@@ -278,6 +277,10 @@ function fabrikMembers(
  * `ik-leaf-without-goal`), so reaching here is a publisher invariant violation, and returning a
  * pose would publish a rig that reaches for nothing with status `ready`. See issue #195 and
  * ADR-053.
+ *
+ * Nothing here knows about a member's blend `weight`, and that is the ownership split rather than an
+ * omission. The solve publishes the exact angle that puts the tip on the goal, at every arity, and
+ * how much of that angle a bone actually composes with is the bone's question. See ADR-055.
  */
 export function solveChain(
   root: BaseFrame,

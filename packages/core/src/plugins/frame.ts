@@ -17,6 +17,12 @@
  * base's would miss every goal by roughly twice the offset, with a `ready` patch and no diagnostic.
  * There is one rotate-then-translate in this package and every kinematic caller reaches it through
  * here. See ADR-054.
+ *
+ * `clamp` and `lerpAngle` are here under the same rule. The bound the closed form needs for
+ * reachability and for the `acos` domain is the bound the bone needs for its blend weight, and the
+ * angle the bone blends toward is an angle the solve published unwrapped. Neither is an `fk`
+ * private detail, and a second copy of either is the drift this module exists to refuse.
+ * See ADR-055.
  */
 
 /** A pivot and a direction in world space: the three keys every kinematic plugin publishes. */
@@ -76,6 +82,54 @@ export const ZERO_PIVOT_OFFSET: PivotOffset = Object.freeze({ x: 0, y: 0 });
  */
 export function readNumber(value: unknown, fallback = 0): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+/**
+ * `value` held inside `[min, max]`.
+ *
+ * Promoted out of `plugins/ik.ts`, where it was module-private, rather than copied into `fk.ts`.
+ * The closed form reaches for it five times, to hold a target inside the chain's reachable band and
+ * to hold the law of cosines inside the `acos` domain, and the bone reaches for it once, to hold a
+ * blend weight inside `[0, 1]`. That is one bound with two callers, which is what this module owns.
+ *
+ * It does not launder a `NaN`, and it is not asked to: `Math.min` and `Math.max` propagate one, so
+ * every caller reads its number through `readNumber` above first. See ADR-055.
+ */
+export function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+/**
+ * `from` blended toward `to` by `weight`, along the shorter of the two arcs between them.
+ *
+ * Exported and pure rather than inlined into `fk.compose`, for two reasons. `solveTwoBone` returns
+ * unwrapped degrees by construction (`beta - 180`, `targetAngle - root.rotation`, `180 - beta`), so
+ * an authored and a solved angle can sit more than a turn apart and a naive linear blend swings the
+ * long way round; that is shared-domain between the two halves of this composition rather than an
+ * `fk` private detail. And a pure function makes the wrap a unit assertion, where the same claim
+ * through a whole composition is a slow test that also fails for eleven unrelated reasons.
+ *
+ * **Both endpoints are returned untouched rather than computed, and that is a byte guarantee.** The
+ * wrap sends a separation past half a turn to its short-arc complement, so the arithmetic at
+ * `weight` of `1` would land a whole turn away from `to`: the same pose, and a different published
+ * number, for every rig whose solved rotation is more than 180 degrees from its authored one. At
+ * `weight` of `0` it would also lose a negative zero. `weight` defaults to `1` on every
+ * solver-bound member that authors none, so every existing rig's published rotation rides on these
+ * two identities holding exactly, and they hold by short-circuit rather than by arithmetic that
+ * happens to round that way. `pivotFromBaseTip` short-circuits a zero offset under the same rule.
+ *
+ * The tie at exactly half a turn resolves in the positive direction. Both arcs are equally short
+ * there, so the choice is arbitrary and is therefore pinned rather than left to the arithmetic:
+ * `WT-4` owns it, because a rewrite reaching for `floor` instead of `ceil` would silently flip a
+ * pose with every other case still green. See ADR-055.
+ */
+export function lerpAngle(from: number, to: number, weight: number): number {
+  if (weight <= 0) return from;
+  if (weight >= 1) return to;
+  const delta = to - from;
+  // Wrapped into `(-180, 180]`. `ceil` is what puts the tie at exactly half a turn on the positive
+  // side from either direction of approach, where `floor` would put it on the negative side.
+  return from + (delta - 360 * Math.ceil((delta - 180) / 360)) * weight;
 }
 
 /**
