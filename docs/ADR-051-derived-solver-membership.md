@@ -47,7 +47,7 @@ An IK setup is authored using standard plugin requirement bindings without intro
 - **Member Nodes (`fkPlugin`)**:
   - Bound hierarchically via `keyframes.fk.requires.base`.
   - Declare an optional `solver` slot: `keyframes.fk.requires.solver: "walk/arm-solve"`.
-  - Author bone dimensions (`length`, optional pivot offsets `x`, `y`) under `values`. Authored `rotation` is prohibited when bound to a solver and refused at load time.
+  - Author bone dimensions (`length`, optional pivot offsets `x`, `y`) under `values`. Authored `rotation` is prohibited when bound to a solver with no blend `weight` beside it, and refused at load time. See ADR-055.
 
 ```text
 {
@@ -99,6 +99,8 @@ The loader enforces structural integrity across these deterministic diagnostics 
 
 `ik-solved-rotation-dead` reads that group and no other. The solved rotation replaces the authored one inside the plugin that reads `rotations` back, which is the plugin that bound the slot, so a `rotation` under any other group is that plugin's own live input. A flat `rotation` is likewise not this rule's: attributing a flat key to a plugin is the registry's question, and this pass holds no registry by design, so a member authoring one meets `plugin-ambiguous-key` in any registry with two claimants and `plugin-unknown-key` in one with none. See ADR-043 and ADR-044.
 
+**Amended by ADR-055**, and stated here rather than inside the table above, because a hand-padded Markdown table is what this project's formatting gate fails on rather than a fact it records. The dead-rotation row now carries one condition more: a bone bound to a `solver` is refused for an authored `rotation` only while no `weight` sits beside it in that same group, which is byte-identically the old rule for every rig authored before the key existed. And there is a seventh rule, `ik-weight-without-solver`, its mirror: a node that bound a `solver` slot under one plugin and authored `weight` under another, where the solve cannot reach it. Both rules keep the group scope this section already describes, and both speak only about a node that bound a solver at all, for the reason the flat-key sentence above gives: `weight` may have claimants this pass cannot see, so a weight with no solve in reach is not its to attribute.
+
 ---
 
 ### 3. Pre-Composition Member State Delivery
@@ -133,6 +135,8 @@ When `fkPlugin.compose` executes:
 `ikPlugin.compose` returns the values it was given with `rotations` added, not `rotations` alone. `Track.composeFrom` chains by replacement, so a bare return deletes every key the solver track authored, starting with the `flip` the solver reads itself. `IK-18` pins the spread.
 
 **Amended by slice D3.** `ikPlugin.compose` no longer calls `solveTwoBone` directly. `solveChain` owns the choice: two members and one goal take the closed form, and everything else takes the iterative solve in `plugins/fabrik.ts`. Dispatch is on derived shape rather than on an authored mode, so nothing new is authorable and no rig selects its own solver. The two paths cannot be one: `IK-1` and `IK-3` pin exact numbers an iterative solve reaches only within a tolerance, and `flip` at arity two selects an exact branch rather than a basin, so the DRY guarantee is an equivalence assertion (`FB-2`) rather than a shared code path, and `FB-9` pins the analytic path as byte-identical with the dispatcher in front of it. Neither `tips` nor `convergence` reaches a patch. `FB-13` pins that, and the reasoning is recorded in [DECISIONS.md](./DECISIONS.md) under ADR-051.
+
+**Amended by ADR-055.** The override is a blend. A bound `solver` composes the authored rotation blended toward the solved one by the member's own `weight`, which defaults to `1`, so step 2 above is exactly the case that default describes and every rig authored before the key composes byte-identically. Step 3 is unchanged and is what keeps "no solve" and "a solve this bone weights to zero" two distinguishable things: an unbound slot short-circuits to the authored value and never reads the weight at all.
 
 ---
 
@@ -201,3 +205,4 @@ When `fkPlugin.compose` executes:
   - `packages/core/test/unit/plugins/fabrik-dispatch.test.ts` (The analytic path byte-identical behind the dispatcher, the unpublished convergence record, and the bare-target join).
   - `packages/core/test/unit/graph/arity-lift.test.ts` (Chains past and short of arity two loading, and `ik-target-not-single-leaf`).
   - `packages/core/test/integration/ik-fabrik-chain.test.ts` (A five-bone chain tracking an animated goal, and a two-arm tree solved once).
+- **Blend weight (`WT-1`..`WT-16`)**: ADR-055 and the three files it names, which own the seam between an authored rest pose and the solve this record derives.
