@@ -373,9 +373,9 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
  * `solver` slot. It used to answer a single question, "what did the binder groups author for this
  * key", which is one of the two predicates that question splits into the moment a second rule needs
  * its complement: the dead rotation asks whether a binder group authored `rotation` and no `weight`,
- * and the inert weight asks whether a group authored `weight` and bound no solver there. Two
- * near-identical group walkers is how those two drift apart, and this read has drifted once already,
- * when it was wider than the rule that used it. See ADR-055.
+ * and the inert weight asks whether a solver-bound node authored `weight` in a group that bound
+ * none. Two near-identical group walkers is how those two drift apart, and this read has drifted
+ * once already, when it was wider than the rule that used it. See ADR-055.
  *
  * Presence, never value. Whether an authored `weight` is provably always `1` is a leaf-shape and
  * value-semantics question, `contract/authored-leaf` already owns leaf shape, and hand-walking a
@@ -546,13 +546,24 @@ export function resolveSolvers(
         ),
       );
     }
-    // The symmetric footgun, group-scoped for the reason the rule above is: a node can bind `solver`
-    // under one plugin and author `weight` under another, and "does this node hold a solver
-    // anywhere" would pass that shape. With no solved rotation to blend toward, `fk` short-circuits
-    // to the authored rotation and never reads the weight at all, so an unbound one is silently
-    // inert, which is the same footgun shape the dead rotation is and what ADR-033 rule 6 forbids.
+    // The symmetric footgun, and it speaks only about a node that bound a solver somewhere.
+    //
+    // The group scope is what one half of that buys: a node can bind `solver` under one plugin and
+    // author `weight` under another, and "does this node hold a solver anywhere" would pass that
+    // shape, while `fk` short-circuits to the authored rotation and never reads a weight outside the
+    // group that bound the slot, so that one is silently inert, which is what ADR-033 rule 6
+    // forbids.
+    //
+    // The `hasSolver` guard is the other half, and it is the same narrowing `RS-9` already made on
+    // the dead rotation. `weight` is claimed by `fkPlugin` and ADR-043 lets any other plugin claim
+    // it too, and this pass holds no registry, so on a node with no solver binding at all it cannot
+    // tell a blend weight from another plugin's own live input: `Q-10`'s `reach` claims `weight`,
+    // binds no solver slot, and refusing that rig would be this rule answering for a plugin it
+    // knows nothing about. An `fk` weight on a bone that bound no solver anywhere is inert too and
+    // is not refused here; that is the stated cost of holding no registry, exactly as a flat
+    // `rotation` is, and `WT-10` is what pins the composition making it harmless. See ADR-055.
     const inertWeight = weightGroups.filter((group) => !solverBinders.includes(group));
-    if (inertWeight.length > 0) {
+    if (hasSolver && inertWeight.length > 0) {
       diagnostics.push(
         diag(
           "ik-weight-without-solver",
