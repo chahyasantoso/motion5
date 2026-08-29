@@ -189,6 +189,9 @@ export function solveTwoBone(
  * same reader: a value one half of a composition refuses and the other accepts is one authored
  * number meaning two things inside one tick, which is how the two private copies of this reader
  * drifted before `plugins/frame.ts` existed.
+ *
+ * A member's authored `x` and `y` are deliberately not read, here or in the closed form. See the
+ * pivot paragraph on `solveChain`: the offset is refused at load rather than approximated here.
  */
 function fabrikMembers(
   members: readonly MemberState[],
@@ -217,10 +220,20 @@ function fabrikMembers(
  * convention by assertion rather than by construction: `FB-2` holds FABRIK to the closed form's own
  * numbers on ADR-051's worked rig, for both elbow branches.
  *
+ * Neither path accounts for a member's pivot offset, and they share that convention rather than
+ * holding one each. `fk` places a bone's pivot at `x`, `y` in its base's rotated space and then
+ * extends by `length`, so a non-zero offset moves the tip a solve placed and the chain misses its
+ * goal by exactly that vector: the closed form reads `length` alone, and `fabrikMembers` above hands
+ * the iterative one a length and a topology. `ik-solved-pivot-unsupported` refuses an authored
+ * offset on a member at load, so a solved member's pivot sits on its base's tip and both paths are
+ * answering the same geometry. Incorporating the offsets is a change to both solves and its own
+ * slice rather than a default, and the geometry it would need is sketched in ADR-053.
+ *
  * A solve with no goal at all is thrown rather than answered with the seed pose. Every load-time
- * shape that could produce one is refused (`ik-solver-no-members`, `ik-leaf-without-goal`), so
- * reaching here is a publisher invariant violation, and returning a pose would publish a rig that
- * reaches for nothing with status `ready`. See issue #195.
+ * shape that could produce one is refused (`ik-solver-no-members`, `ik-solver-no-goal`,
+ * `ik-leaf-without-goal`), so reaching here is a publisher invariant violation, and returning a
+ * pose would publish a rig that reaches for nothing with status `ready`. See issue #195 and
+ * ADR-053.
  */
 export function solveChain(
   root: BaseFrame,

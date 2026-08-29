@@ -90,19 +90,21 @@ These four are shape only, and deliberately not membership. Whether a key names 
 
 ### Inverse Kinematics and solver rules
 
-Solvers (`ikPlugin`) and solved bones (`fkPlugin`) enforce topological and keyframe constraints at load time before execution begins. See ADR-051 and ADR-052.
+Solvers (`ikPlugin`) and solved bones (`fkPlugin`) enforce topological and keyframe constraints at load time before execution begins. See ADR-051, ADR-052, and ADR-053.
 
 - `ik-solver-no-root`, when a solver node does not bind the `root` requirement slot. The root frame is the static or parent anchor from which the chain hangs.
 - `ik-solver-no-members`, when a solver node declares a `root` slot but no downstream bones bind `solver` to it. The solver would compute in a vacuum without controlling any joints.
+- `ik-solver-no-goal`, when a solver has a root and members and binds neither the bare `target` slot nor a goal through `targets`. A solve with nothing to reach for has no answer, and this is refused at load rather than left to the composition, which used to throw on it every tick and block every member of the chain behind an `error`.
 - `ik-solver-unreachable-root`, when tracing a member bone's `base` parent walk upward fails to terminate at the solver's bound `root`. The member chain must form a contiguous ancestor hierarchy rooted at `root`.
 - `ik-mode-ambiguous`, when a single node binds `solver` alongside `root` or a goal, or binds `root` under multiple plugins. A track is either a solver or a member, never both. It reads the goal grammar rather than the literal slot name `target`, because a member binding `solver` beside a goal dict of its own would otherwise load clean with one real input edge per goal and have every one of them ignored.
-- `ik-solved-rotation-dead`, when a bone that binds `keyframes.fk.requires.solver` authors `values.rotation`. The solver overrides local rotation dynamically, so authoring a static or keyframed rotation is dead input and refused. Author only `length` (and optional pivot offsets `x`/`y`).
+- `ik-solved-rotation-dead`, when a bone that binds `keyframes.fk.requires.solver` authors `values.rotation`. The solver overrides local rotation dynamically, so authoring a static or keyframed rotation is dead input and refused. Author only `length`.
+- `ik-solved-pivot-unsupported`, when such a bone authors a non-zero pivot offset, `x` or `y`. Neither solve accounts for one: a bone composes its pivot at that offset and then extends by `length`, so the tip lands away from where the solve placed it and the chain misses its goal by exactly that vector, silently. The rule reads the value rather than the key, so an authored zero and a ramp that never leaves zero are both fine, and it is scoped to the group that bound `solver` exactly as the dead rotation is. Offsets stay available on the chain's root and on every bone below the chain, which is where a rig usually wants them. See ADR-053.
 
-Goal addressing has five of its own, and all five need the member set, so all five are answered during graph construction rather than by the contract layer:
+Goal addressing has six rules of its own, and they are answered during graph construction rather than by the contract layer, because membership is derived from `solver` edges and the contract layer holds no graph:
 
 - `ik-goal-unknown-member`, when a key inside `targets` qualifies to no member of that solver's chain.
 - `ik-goal-not-leaf`, when a goal is authored on a member that another member hangs from. A goal is what a chain tip reaches for; an interior joint has no separate destination.
-- `ik-leaf-without-goal`, when the dict was used at all and a leaf it never named is left with nothing to reach for. It does not fire for a solver that bound the bare `target` slot, which has no goal to be missing.
+- `ik-leaf-without-goal`, when the dict was used at all and a leaf it never named is left with nothing to reach for. It does not fire for a solver that bound the bare `target` slot, which has no goal to be missing, and it never fires beside `ik-solver-no-goal`, which answers for a solver that addressed nothing at all.
 - `ik-goal-duplicate`, when two authored keys qualify to one member id. The dict itself cannot repeat a key, so this is always two spellings of one id, such as `forearm` and `walker/forearm`.
 - `ik-goal-conflict`, when one solver authors both `target` and `targets`. Both spellings are supported and neither is deprecated, but a solver picks one.
 - `ik-target-not-single-leaf`, when a solver binds the bare `target` slot over a chain with more than one leaf. `target` names no member, so it can only address a leaf while there is one leaf to address; over two it has no answer, and the diagnostic names both so the choice is yours to make. A linear chain has one leaf however long it is, so the bare slot keeps working past two bones. Address goals by member id instead.
@@ -127,6 +129,8 @@ A node that exists but cannot produce a value publishes with status `blocked` or
 That means a rendering consumer should branch on `patch.status` rather than assume every patch is renderable, and an inspector can read `patch.diagnostics` without any extra wiring.
 
 A solve that does not reach its goal is not one of these. An iterative solve converges to within a tolerance, and an unreachable goal leaves the chain fully extended toward it, so both publish ordinary `ready` patches carrying only `rotations`. No convergence record reaches a patch, deliberately: roughly four percent of ordinary reachable chains do not reach tolerance before the iteration cap, so a per-tick diagnostic would fire on rigs nobody would call broken. See ADR-052.
+
+A solver that cannot solve at all is not one of these either, and that is the point of the load-time rules above. Every shape that would make a composition throw is refused before the graph is built, so `composition-failure` on a solver node means a bug in the plugin or the publisher rather than a rig you can fix by editing it. See ADR-053.
 
 ## Contract violations throw at the call site
 
