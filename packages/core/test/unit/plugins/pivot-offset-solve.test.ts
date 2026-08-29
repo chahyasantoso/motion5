@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { ImmutableRecord } from "../../../src/domain/values";
 import { fkPlugin } from "../../../src/plugins/fk";
 import { FABRIK_TOLERANCE, solveFabrik, type FabrikMember } from "../../../src/plugins/fabrik";
 import { solveChain, solveTwoBone, type MemberState } from "../../../src/plugins/ik";
@@ -54,6 +55,23 @@ function leaf(
 }
 
 /**
+ * A member state narrowed to values a composition can be handed.
+ *
+ * `MemberState.values` is `unknown`-valued, and correctly so: `ik` reads every authored number
+ * through the shared reader and holds no opinion about what else a member carries. `fk`'s composer
+ * takes a `Readonly<ImmutableRecord>`, because that is what a published patch is made of, so
+ * composing a member through the real plugin needs the narrower fact stated somewhere.
+ *
+ * Stated by extending the published type rather than by restating it or by asserting it. A local
+ * copy of a type the module exports is what `ik-solve.test.ts` deleted, and a cast would claim this
+ * narrowing with nothing checking it, on the one argument the oracle below depends on the shape of.
+ * As an extension, every fixture in this file is held to it at its own literal.
+ */
+interface SolvedMember extends MemberState {
+  readonly values: Readonly<ImmutableRecord>;
+}
+
+/**
  * Where the rig actually ends up, composed through `fk` with the solved rotations injected.
  *
  * The chain is walked root-most first and each bone's composed frame becomes the next one's `base`,
@@ -63,7 +81,7 @@ function leaf(
  */
 function composeChain(
   root: { x: number; y: number; rotation: number },
-  members: readonly MemberState[],
+  members: readonly SolvedMember[],
   rotations: Readonly<Record<string, number>>,
 ): { x: number; y: number; rotation: number } {
   let base = root;
