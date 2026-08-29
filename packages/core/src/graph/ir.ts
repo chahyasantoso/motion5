@@ -367,13 +367,20 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
 }
 
 /**
- * Every value the groups that bound `solver` authored for `key`.
+ * The plugin-named groups whose `values` section authors `key`, sorted by name.
  *
- * Read inside those groups rather than across every group and the flat top level. A solve answers
- * for the plugin that asked for it, which is the plugin that bound the slot, so a key under any
- * other group is that plugin's own live input and reporting it would be this rule answering for a
- * plugin it knows nothing about. The diagnostics guide states the rule that uses this reader that
- * way; the narrowing is the code agreeing with its own documentation.
+ * One walker, and the two rules that read it are set operations against the groups that bound a
+ * `solver` slot. It used to answer a single question, "what did the binder groups author for this
+ * key", which is one of the two predicates that question splits into the moment a second rule needs
+ * its complement: the dead rotation asks whether a binder group authored `rotation` and no `weight`,
+ * and the inert weight asks whether a group authored `weight` and bound no solver there. Two
+ * near-identical group walkers is how those two drift apart, and this read has drifted once already,
+ * when it was wider than the rule that used it. See ADR-055.
+ *
+ * Presence, never value. Whether an authored `weight` is provably always `1` is a leaf-shape and
+ * value-semantics question, `contract/authored-leaf` already owns leaf shape, and hand-walking a
+ * `stops` array here would make this layer a second owner of it: the same break issue #192 closed
+ * once. This layer answers which group authored a key, and nothing about what it authored.
  *
  * Two shapes it deliberately does not report, because each already has a more specific owner. A
  * value directly under the plugin name is the pre-ADR-049 group form, refused as
@@ -382,25 +389,15 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
  * authoring one meets `plugin-ambiguous-key` in any registry with two claimants and
  * `plugin-unknown-key` in one with none.
  *
- * Keyed by name rather than specialised to `rotation`, and kept that way now that the dead rotation
- * is its only caller. It was generalised from `authorsSolvedRotation` because two readers of one
- * question had already drifted, and re-specialising it on the way out of a change that widened what
- * this layer accepts is exactly how that drift comes back. `readPluginValues` stays the only answer
- * to what a group's `values` section is.
- * See ADR-043, ADR-044, ADR-049, ADR-051, ADR-053, and ADR-054.
+ * Sorted, so a diagnostic that lists the groups it fired on never depends on authoring order.
+ * `readPluginValues` stays the only answer to what a group's `values` section is.
+ * See ADR-043, ADR-044, ADR-049, ADR-051, ADR-053, ADR-054, and ADR-055.
  */
-function authoredByBinders(
-  keyframes: unknown,
-  binders: readonly string[],
-  key: string,
-): readonly unknown[] {
+function groupsAuthoring(keyframes: unknown, key: string): readonly string[] {
   if (!isRecord(keyframes)) return [];
-  const authored: unknown[] = [];
-  for (const binder of binders) {
-    const values = readPluginValues(keyframes[binder]);
-    if (values[key] !== undefined) authored.push(values[key]);
-  }
-  return authored;
+  return Object.keys(keyframes)
+    .filter((group) => readPluginValues(keyframes[group])[key] !== undefined)
+    .sort(compareCodeUnits);
 }
 
 /** The node this one hangs from through its `base` slot, or `undefined` when it binds none. */
@@ -480,6 +477,7 @@ export function resolveSolvers(
   // Diagnostic 3: ik-mode-ambiguous
   // Diagnostic 4: ik-solved-rotation-dead
   // Diagnostic 7: ik-goal-conflict
+  // Diagnostic 15: ik-weight-without-solver
   for (const node of nodes) {
     let rootCount = 0;
     // The plugins under which this node bound a `solver` slot, which is what scopes the read of its
@@ -494,6 +492,8 @@ export function resolveSolvers(
       }
     }
     const keyframes = node.track.keyframes;
+    const rotationGroups = groupsAuthoring(keyframes, "rotation");
+    const weightGroups = groupsAuthoring(keyframes, "weight");
     const authoredGoals = goalBindingsOf(node);
     const hasSolver = solverBinders.length > 0;
     // Read through the grammar rather than off the literal `"target"`. A member binding `solver`
@@ -524,12 +524,40 @@ export function resolveSolvers(
         ),
       );
     }
-    if (hasSolver && authoredByBinders(keyframes, solverBinders, "rotation").length > 0) {
+    // Presence-only, two tiers. A binder group that authors `rotation` and no `weight` is the
+    // pre-#211 shape and is refused byte-identically to before: with no weight in reach there is no
+    // runtime state in which the authored value influences the output. A `weight` beside it, in any
+    // form, passes.
+    //
+    // Not "present but provably always `1`". That reading needs leaf shape and value semantics,
+    // which have an owner one layer down, and it would refuse "fully solved for now, I will animate
+    // the weight next" while still passing a weight that arrives through an edge: a rule that
+    // catches the careful author and misses the dynamic case is inverted. See ADR-055.
+    const rotationIsDead = solverBinders.some(
+      (binder) => rotationGroups.includes(binder) && !weightGroups.includes(binder),
+    );
+    if (rotationIsDead) {
       diagnostics.push(
         diag(
           "ik-solved-rotation-dead",
           node.id,
-          `Member "${node.id}" bound to solver cannot author rotation.`,
+          `Member "${node.id}" bound to solver cannot author rotation with no weight to blend it by.`,
+          [node.id],
+        ),
+      );
+    }
+    // The symmetric footgun, group-scoped for the reason the rule above is: a node can bind `solver`
+    // under one plugin and author `weight` under another, and "does this node hold a solver
+    // anywhere" would pass that shape. With no solved rotation to blend toward, `fk` short-circuits
+    // to the authored rotation and never reads the weight at all, so an unbound one is silently
+    // inert, which is the same footgun shape the dead rotation is and what ADR-033 rule 6 forbids.
+    const inertWeight = weightGroups.filter((group) => !solverBinders.includes(group));
+    if (inertWeight.length > 0) {
+      diagnostics.push(
+        diag(
+          "ik-weight-without-solver",
+          node.id,
+          `Node "${node.id}" authors weight under ${inertWeight.join(", ")} without binding a solver there; there is no solved rotation to blend.`,
           [node.id],
         ),
       );
