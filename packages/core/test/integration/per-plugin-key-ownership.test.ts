@@ -71,9 +71,10 @@ function load(project: ProjectDefinition, plugins: PluginRegistry) {
 
 describe("per-plugin keyframe key ownership", () => {
   it("N-7 claims the natural bone key names and composes world space from them", () => {
-    // `x` and `y` are the pivot offset from slice A of issue #195. What they mean is `FO-2`'s and
-    // `FO-4`'s subject; this case owns the claimed list, so it is the one that moves when it grows.
-    expect(fkPlugin.keys).toEqual(["x", "y", "length", "rotation"]);
+    // `x` and `y` are the pivot offset from slice A of issue #195, and `weight` is the solved-rotation
+    // blend from issue #211. What each of them means is `FO-2`'s, `FO-4`'s and `WT-5`'s subject; this
+    // case owns the claimed list, so it is the one that moves when it grows.
+    expect(fkPlugin.keys).toEqual(["x", "y", "length", "rotation", "weight"]);
 
     // `rotation` is claimed and produced. The authored value is this bone's rotation relative to
     // its parent; the composed one is its rotation in world space, which is what a child observes
