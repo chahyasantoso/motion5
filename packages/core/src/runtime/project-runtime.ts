@@ -5,6 +5,7 @@ import type {
   TrackDefinition,
   MotionDefinition,
 } from "../contract/v5";
+import { StaleTrackHandleError, type TrackHandle } from "../contract/track-handle";
 import { validateMotionTrigger, validateTrackDefinition } from "../contract/validate-v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
@@ -17,14 +18,6 @@ import type { MemberState } from "./graph-publisher";
 import type { GraphBuilder } from "../ports/graph-builder";
 
 type TrackEntry = { track: TrackDefinition; owner: object; motionId?: string; token: number };
-export interface TrackHandle {
-  readonly id: string;
-  readonly track: TrackDefinition;
-  remove(): void;
-  replace(next: TrackDefinition): void;
-  addObserve(observation: ObservationDefinition): void;
-  removeObserve(observation: ObservationDefinition): void;
-}
 export interface StagedTrack {
   commit(): void;
   rollback(): void;
@@ -303,35 +296,52 @@ export class ProjectRuntime {
     this.mount(id);
     return this.#handle(id, token);
   }
+  /**
+   * The one place that compares a captured token against the live one.
+   *
+   * `#liveEntry` below is the refusal and this is the probe, so `TrackHandle.live` and every
+   * throwing member read the same answer and cannot disagree about the same handle. The `track`
+   * getter and the three private mutators each carried their own copy of this comparison, which is
+   * how one condition ended up with two public failure contracts; the copies are deleted rather
+   * than joined by a fifth. See ADR-056.
+   */
+  #entryIfLive(id: string, token: number): TrackEntry | undefined {
+    const entry = this.#tracks.get(id);
+    return entry !== undefined && entry.token === token ? entry : undefined;
+  }
+  /**
+   * The resolver every handle member and every private mutation path goes through.
+   *
+   * A stale mutator used to report success by doing nothing while the getter failed loudly. Both
+   * now arrive here, so the contract is uniform by construction rather than by four call sites
+   * agreeing. See ADR-056.
+   */
+  #liveEntry(id: string, token: number): TrackEntry {
+    const entry = this.#entryIfLive(id, token);
+    if (entry === undefined) throw new StaleTrackHandleError(id);
+    return entry;
+  }
   #handle(id: string, token: number): TrackHandle {
     const runtime = this;
-    const active = () => runtime.#tracks.get(id)?.token === token;
     return Object.freeze({
       id,
+      get live(): boolean {
+        return runtime.#entryIfLive(id, token) !== undefined;
+      },
       get track(): TrackDefinition {
-        const entry = runtime.#tracks.get(id);
-        if (!entry || entry.token !== token)
-          throw new TypeError(`Track "${id}" is no longer live.`);
-        return entry.track;
+        return runtime.#liveEntry(id, token).track;
       },
-      remove: () => {
-        if (active()) runtime.#removeTrack(id, token);
-      },
-      replace: (next: TrackDefinition) => {
-        if (active()) runtime.#replaceTrack(id, token, next);
-      },
-      addObserve: (observation: ObservationDefinition) => {
-        if (active()) runtime.#replaceWithObservation(id, token, observation, true);
-      },
-      removeObserve: (observation: ObservationDefinition) => {
-        if (active()) runtime.#replaceWithObservation(id, token, observation, false);
-      },
+      remove: () => runtime.#removeTrack(id, token),
+      replace: (next: TrackDefinition) => runtime.#replaceTrack(id, token, next),
+      addObserve: (observation: ObservationDefinition) =>
+        runtime.#replaceWithObservation(id, token, observation, true),
+      removeObserve: (observation: ObservationDefinition) =>
+        runtime.#replaceWithObservation(id, token, observation, false),
     });
   }
   #removeTrack(id: string, token: number): void {
     this.#assertLive();
-    const entry = this.#tracks.get(id);
-    if (!entry || entry.token !== token) return;
+    const entry = this.#liveEntry(id, token);
     const next = new Map(this.#tracks);
     next.delete(id);
     this.#graph.replaceGraph(this.#snapshot(next, this.#motions));
@@ -342,8 +352,7 @@ export class ProjectRuntime {
     if (entry.motionId !== undefined) this.#removeMotionTrack?.(entry.motionId, id);
   }
   #replaceTrack(id: string, token: number, next: TrackDefinition): void {
-    const entry = this.#tracks.get(id);
-    if (!entry || entry.token !== token) return;
+    const entry = this.#liveEntry(id, token);
     const expected =
       entry.motionId !== undefined
         ? qualifyMotionTrack(entry.motionId, next.id).value
@@ -386,13 +395,15 @@ export class ProjectRuntime {
     observation: ObservationDefinition,
     add: boolean,
   ): void {
-    const entry = this.#tracks.get(id);
-    if (!entry || entry.token !== token) return;
+    const entry = this.#liveEntry(id, token);
     const observations = [...(entry.track.observes ?? [])];
     const key = observationEdgeKey(observation, id, entry.motionId ?? "~");
     const index = observations.findIndex(
       (candidate) => observationEdgeKey(candidate, id, entry.motionId ?? "~") === key,
     );
+    // Idempotent observation semantics, not a stale guard. Adding an edge that is already declared
+    // and removing one that is not are both no-ops on a live handle, which is a different question
+    // from whether the handle is the live one at all: that was answered above.
     if (add) {
       if (index >= 0) return;
       observations.push(observation);
