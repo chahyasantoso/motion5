@@ -1,6 +1,5 @@
 import type {
   MotionDefinition,
-  ObservationDefinition,
   Patch,
   PatchBatch,
   PatchListener,
@@ -8,6 +7,7 @@ import type {
   TrackDefinition,
   TriggerSignal,
 } from "./contract/v5";
+import type { TrackHandle } from "./contract/track-handle";
 import { describeDiagnostics } from "./contract/diagnostics";
 import { resolveTriggerDefinition, validateV5 } from "./contract/validate-v5";
 import { IncrementalGraphBuilder } from "./adapters/graph-builder/incremental";
@@ -30,14 +30,6 @@ export interface EngineOptions {
   readonly scheduler: Scheduler;
   readonly plugins?: PluginRegistry;
   readonly triggerFactory?: TriggerFactory;
-}
-export interface TrackHandle {
-  readonly id: string;
-  readonly track: TrackDefinition;
-  remove(): void;
-  replace(next: TrackDefinition): void;
-  addObserve(observation: ObservationDefinition): void;
-  removeObserve(observation: ObservationDefinition): void;
 }
 export interface ProjectHandle {
   mount(nodeId: string, instance?: object): object;

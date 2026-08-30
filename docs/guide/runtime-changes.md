@@ -30,9 +30,23 @@ track.remove();
 
 An observation carries `source` and nothing else, and the edge it declares is always an output edge: the source's contribution merges over this track's composed patch. `addObserve` throws for each of the three removed fields, `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`. There is no way to declare an input edge by hand: bind the dependency under the plugin group's `requires` section, which is the only way a value enters composition. See ADR-046 and ADR-047.
 
-A handle carries a private token, so `remove` and `replace` are inert once the track is gone and cannot affect a later track that reuses the same id. `replace` preserves node identity and publishes through the normal ready path, so a React consumer does not see the node disappear and come back. Renaming is not a replace: it is a remove plus an add.
-
 Omit `motionId` to add a free track, which lands at `~/trackId` with no motion scheduling it.
+
+## A stale handle refuses, and `live` asks without throwing
+
+A handle carries a private token, so it can never affect a later track that reuses the same id. Once that token is no longer current the handle is stale, and every member of it fails the same way: `track`, `remove()`, `replace()`, `addObserve()`, and `removeObserve()` all throw `StaleTrackHandleError`. Four of them used to return silently, which reported success for doing nothing. See ADR-056.
+
+The error extends `TypeError` and keeps the message `Track "<id>" is no longer live.` verbatim, so an existing `instanceof TypeError` narrowing keeps matching. Branch on `ruleId`, which is `stale-track-handle`, rather than on the message; `nodeId` carries the node the refused handle was captured against.
+
+`readonly live: boolean` is the non-throwing way to ask, so cleanup whose second call is expected rather than mistaken guards instead of catching:
+
+```ts
+if (track.live) track.remove();
+```
+
+`live` never throws, on either side of any invalidation and on a disposed project. On a disposed project `remove()` reports the disposal rather than the staleness, because the project's own lifecycle outranks one handle's, and the guard above is correct either way.
+
+A handle survives its own `replace()`. Replacement preserves node identity and therefore the token, and it publishes through the normal ready path, so a React consumer does not see the node disappear and come back and the same handle stays usable afterward. Renaming is not a replace: it is a remove plus an add, and the handle you held for the removed node is stale.
 
 ## Ordering and preflight
 

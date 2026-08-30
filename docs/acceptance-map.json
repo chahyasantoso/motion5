@@ -291,6 +291,10 @@
     {
       "id": "walker-demo",
       "test": "packages/core/test/integration/phase7-walker-demo.test.ts"
+    },
+    {
+      "id": "stale-track-handle",
+      "test": "packages/core/test/unit/runtime/stale-track-handle.test.ts"
     }
   ]
 }

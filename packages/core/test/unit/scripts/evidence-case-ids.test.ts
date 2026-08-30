@@ -208,10 +208,22 @@ import { fileURLToPath } from "node:url";
 // eleventh two-letter series, under the policy the `P-` paragraph sets, and `W-` alone is the
 // entrypoint tier series. It sorts before `W` in the pattern below, because an alternation that
 // offered `W` first would match `W` and then fail on the `T`.
+//
+// `SH-` belongs to the stale `TrackHandle` contract, issue #217 and ADR-056: that every member of
+// a handle whose token is no longer current refuses with one named error rather than half of them
+// refusing and half returning silently, that the error keeps the message the getter already threw
+// and carries a stable rule id beside it, that `live` answers the same question without throwing,
+// and that one resolver owns the comparison all of them read. `U-` owns whether the graph, the
+// compiled map and the Motion entry may disagree during a replacement, and `P-` owns which error
+// a caller sees once a rollback can fail; `SH-` owns what a caller is told when the thing it holds
+// is no longer the live one. It is the twelfth two-letter series, under the policy the `P-`
+// paragraph sets, and `S-` alone is the progress state commit series. It sorts before `S` in the
+// pattern below, because an alternation that offered `S` first would match `S` and then fail on
+// the `H`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE =
-  /it\(\s*"((?:CF|CN|FB|FO|IK|LF|MG|PV|RS|SL|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:CF|CN|FB|FO|IK|LF|MG|PV|RS|SH|SL|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })

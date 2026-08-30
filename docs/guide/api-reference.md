@@ -16,7 +16,7 @@ A declared subpath is not automatically production API. The tier says who may im
 
 ## @motion5/core
 
-**Engine and handles.** `Engine`, and the types `EngineOptions`, `ProjectHandle`, and `TrackHandle`.
+**Engine and handles.** `Engine` and `StaleTrackHandleError`, and the types `EngineOptions`, `ProjectHandle`, and `TrackHandle`.
 
 `new Engine({ clock, interpolator, scheduler, plugins?, triggerFactory? })` validates all three ports. `engine.load(project)` returns a `ProjectHandle`:
 
@@ -31,7 +31,9 @@ A declared subpath is not automatically production API. The tier says who may im
 - `adopt(track, owner, options?)` and `destroyAdopted(nodeId, owner)` are the superseded owner-based API.
 - `dispose()` releases the project, motions, triggers, and compiled tracks.
 
-A `TrackHandle` carries `id`, `track`, `remove()`, `replace(next)`, `addObserve(observation)`, and `removeObserve(observation)`. A generic observation declares an output edge, which merges the source's contribution over the observer's composed patch. A dependency that feeds a track's own composition is bound under the plugin group's `requires` section, which is the only way a value enters composition.
+A `TrackHandle` carries `id`, `live`, `track`, `remove()`, `replace(next)`, `addObserve(observation)`, and `removeObserve(observation)`. A generic observation declares an output edge, which merges the source's contribution over the observer's composed patch. A dependency that feeds a track's own composition is bound under the plugin group's `requires` section, which is the only way a value enters composition.
+
+`live` is a boolean that never throws. Every other member throws `StaleTrackHandleError` once the token the handle captured is no longer current, so one condition has one failure contract across the whole surface. That error is a runtime export rather than a type, because a caller cannot `instanceof` a type it cannot name: it extends `TypeError`, keeps the message the `track` getter already threw, and carries a stable `ruleId` of `stale-track-handle` beside the `nodeId` it refused. Both it and `TrackHandle` are declared once, in the contract layer, and named from there by the runtime and by the package entry. See ADR-056.
 
 **Schema and validation.** `AUTHORED_SCHEMA_VERSION`, `SUPPORTED_TRIGGER_TYPES`, `DIAGNOSTIC_SEVERITIES`, `validateV5`, `validateTrackDefinition`, `validateMotionTrigger`, `resolveTriggerDefinition`, `migrateV4ToV5`, `parseGolden`, and `serializeGolden`.
 
