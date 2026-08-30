@@ -6,7 +6,7 @@ import type {
   TrackDefinition,
 } from "../contract/v5";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
-import { readGoalSlot } from "../contract/solver-slots";
+import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { compareCodeUnits } from "./compare";
 import {
   assertAuthoredMotionId,
@@ -19,6 +19,15 @@ import { orderGraph } from "./order";
 export interface EdgeRequirement {
   readonly plugin: string;
   readonly slot: string;
+  /**
+   * The key this binding was authored under inside a dict-valued slot, absent for a scalar slot.
+   *
+   * Part of edge identity rather than a label. Two entries of one slot are two dependencies, and the
+   * slot alone cannot tell them apart once the key stopped being formatted into it, so an edge per
+   * entry survives only because this field is length-prefixed into `requirementIdentity` alongside
+   * the plugin and the slot. See ADR-057.
+   */
+  readonly memberKey?: string;
 }
 /**
  * One edge of the observation graph.
@@ -76,7 +85,8 @@ function field(value: string): string {
 function requirementIdentity(edge: GraphEdge): string {
   const requirement = edge.requirement;
   if (requirement === undefined) return "-";
-  return `${field(requirement.plugin)}${field(requirement.slot)}`;
+  const member = field(requirement.memberKey ?? "");
+  return `${field(requirement.plugin)}${field(requirement.slot)}${member}`;
 }
 
 function requirementOrder(edge: GraphEdge): string {
@@ -87,8 +97,15 @@ function requirementOrder(edge: GraphEdge): string {
  * The injective identity encoding for an edge.
  *
  * Every part is length-prefixed, so no authored string can forge a field boundary. The requirement
- * plugin and slot are the only authored string pair left inside it, now that the canonical
- * projection is gone with the primitive it encoded. See ADR-034, ADR-046, and ADR-047.
+ * plugin, slot and member key are the only authored strings left inside it, now that the canonical
+ * projection is gone with the primitive it encoded.
+ *
+ * The member key is prefixed like the others rather than joined into the slot, and that is what
+ * keeps two entries of one dict-valued slot distinct. They were distinguished by the encoded slot
+ * while a goal's identity was `targets[<memberId>]`; with the slot carrying the authored name, two
+ * goals reaching for one node encode identically without this field and `finalizeGraph` reports
+ * `observation-duplicate` on a rig that loads clean. `DV-4` pins it. See ADR-034, ADR-046, ADR-047,
+ * and ADR-057.
  */
 export function edgeKey(edge: GraphEdge): string {
   return [
@@ -105,13 +122,16 @@ export function compareEdges(a: GraphEdge, b: GraphEdge): number {
     compareCodeUnits(a.sourceId, b.sourceId) ||
     compareCodeUnits(a.role, b.role) ||
     compareCodeUnits(requirementOrder(a), requirementOrder(b)) ||
-    compareCodeUnits(a.requirement?.slot ?? "", b.requirement?.slot ?? "")
+    compareCodeUnits(a.requirement?.slot ?? "", b.requirement?.slot ?? "") ||
+    compareCodeUnits(a.requirement?.memberKey ?? "", b.requirement?.memberKey ?? "")
   );
 }
 
 export function describeEdge(edge: GraphEdge): string {
   const requirement = edge.requirement;
-  const scope = requirement === undefined ? "" : ` [${requirement.plugin}.${requirement.slot}]`;
+  const member = requirement?.memberKey === undefined ? "" : `.${requirement.memberKey}`;
+  const scope =
+    requirement === undefined ? "" : ` [${requirement.plugin}.${requirement.slot}${member}]`;
   return `${edge.observerId} <- ${edge.sourceId} (${edge.role})${scope}`;
 }
 
@@ -229,11 +249,19 @@ export function resolveRequirementEdge(
       diagnostics: Object.freeze([diag("requirement-source", path, message, [binding.source])]),
     };
   }
+  // The member key is copied when the binding carries one and omitted when it does not, rather than
+  // written as an explicit `undefined`. An absent field and a field holding `undefined` encode the
+  // same identity, but only the first says "this slot takes one source" to a reader of the IR.
+  const requirement: EdgeRequirement = Object.freeze({
+    plugin: binding.plugin,
+    slot: binding.slot,
+    ...(binding.memberKey === undefined ? {} : { memberKey: binding.memberKey }),
+  });
   const edge: GraphEdge = Object.freeze({
     observerId: observerNodeId,
     sourceId,
     role: "input",
-    requirement: Object.freeze({ plugin: binding.plugin, slot: binding.slot }),
+    requirement,
   });
   return { edge, diagnostics: Object.freeze([]) };
 }
@@ -426,15 +454,14 @@ interface MemberChain {
   readonly depth: number;
 }
 
-/** One authored goal of a solver: the key as written, and the node it names as a source. */
+/** One authored goal of a solver: the member key as written, and the node it names as a source. */
 interface AuthoredGoal {
-  readonly slot: string;
   readonly authored: string;
   readonly sourceId: string;
 }
 
 /**
- * Every goal binding one node authored: the bare slot, and the dict entries in derived slot order.
+ * Every goal binding one node authored: the bare slot, and the dict entries in authored key order.
  *
  * One reader, because four rules and the derivation all ask the same question of the same edges.
  * `ik-mode-ambiguous` needs to know whether a node bound a goal at all, `ik-goal-conflict` needs
@@ -443,10 +470,17 @@ interface AuthoredGoal {
  * the grammar was read in another, which is how a member binding `solver` beside a goal dict loaded
  * clean with every one of its goals ignored.
  *
- * The dict is sorted by the derived slot rather than by `compareEdges`, whose first key is the
+ * Gated on the base slot as well as on the field, and both halves are load-bearing. The field alone
+ * would classify any dict-valued binding as a goal, so a spring's or a spline's tension dict would
+ * have six IK rules run over it by a layer that holds no registry and cannot know better; the slot
+ * alone is what `"target"` already was. That puts `targets` in the same set as the `root`, `solver`,
+ * `base` and `target` literals this layer already hardcodes. `DV-8` pins it. See ADR-057.
+ *
+ * The dict is sorted by the authored key rather than by `compareEdges`, whose first key is the
  * source id: two goals pointing at one node would otherwise be ordered by nothing, and the authored
- * key is what a duplicate diagnostic has to list. Order is a pure function of authored ids either
- * way.
+ * key is what a duplicate diagnostic has to list. That is the ordering the derived slot produced,
+ * because the slot was this key under a fixed prefix. Order is a pure function of authored ids
+ * either way.
  */
 interface GoalBindings {
   readonly bare: boolean;
@@ -458,15 +492,15 @@ function goalBindingsOf(node: GraphNode): GoalBindings {
   let bare = false;
   for (const edge of node.edges) {
     if (edge.role !== "input" || edge.requirement === undefined) continue;
-    const slot = edge.requirement.slot;
+    const { slot, memberKey } = edge.requirement;
     if (slot === "target") {
       bare = true;
       continue;
     }
-    const authored = readGoalSlot(slot);
-    if (authored !== undefined) dict.push({ slot, authored, sourceId: edge.sourceId });
+    if (slot === PLUGIN_GOALS_SLOT && memberKey !== undefined)
+      dict.push({ authored: memberKey, sourceId: edge.sourceId });
   }
-  dict.sort((a, b) => compareCodeUnits(a.slot, b.slot));
+  dict.sort((a, b) => compareCodeUnits(a.authored, b.authored));
   return { bare, dict };
 }
 
@@ -496,10 +530,10 @@ export function resolveSolvers(
     const weightGroups = groupsAuthoring(keyframes, "weight");
     const authoredGoals = goalBindingsOf(node);
     const hasSolver = solverBinders.length > 0;
-    // Read through the grammar rather than off the literal `"target"`. A member binding `solver`
-    // beside a goal dict would otherwise load clean, with one real input edge per goal, and have
-    // every one of them ignored: a field accepted and then ignored, which is what ADR-033 rule 6
-    // forbids. See issue #195.
+    // Read through the goal classification rather than off the literal `"target"`. A member binding
+    // `solver` beside a goal dict would otherwise load clean, with one real input edge per goal, and
+    // have every one of them ignored: a field accepted and then ignored, which is what ADR-033 rule
+    // 6 forbids. See issue #195.
     const hasGoal = authoredGoals.bare || authoredGoals.dict.length > 0;
     if ((hasSolver && (rootCount > 0 || hasGoal)) || rootCount > 1) {
       diagnostics.push(
