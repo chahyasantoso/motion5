@@ -67,6 +67,17 @@ const CORPUS: ReadonlyArray<{
   },
 ];
 
+/**
+ * Failing-first scaffolding with a stated expiry, deleted by the commit that lands the getter.
+ * `cachedNodeCount` does not exist on the parent, and a test file naming a member that does not
+ * compile stops `quality` before `npm test`, which is a broken test file rather than evidence. Same
+ * shape as the `StaleSeam` and `ComposeSeam` casts before it.
+ */
+type CountSeam = { readonly cachedNodeCount: number };
+function cachedCount(builder: IncrementalGraphBuilder): number {
+  return (builder as unknown as CountSeam).cachedNodeCount;
+}
+
 describe("finalizeGraph", () => {
   it("T-C0.1 produces correct order and diagnostics for every corpus case", () => {
     for (const { label, project, expectOrder, expectRuleIds } of CORPUS) {
@@ -91,6 +102,38 @@ describe("finalizeGraph", () => {
           `${tag}: rule ids`,
         ).toEqual(expectRuleIds);
       }
+    }
+  });
+
+  it("EV-8 keeps that agreement when every rebuild is an evicting one", () => {
+    // `buildPair` constructs a fresh builder per call, so nothing above this line ever asks the
+    // incremental builder a second question. One builder walks the whole corpus here, which means
+    // every entry after the first is answered by a builder whose cache holds the previous entry's
+    // tracks and sweeps them on the way through. Eviction must not change one diagnostic. Issue
+    // #225.
+    const incremental = new IncrementalGraphBuilder();
+    for (const { label, project, expectOrder, expectRuleIds } of CORPUS) {
+      const reference = buildGraphIR(project);
+      const swept = incremental.build(project);
+
+      expect(swept.diagnostics, `${label}: diagnostics agree after a sweep`).toEqual(
+        reference.diagnostics,
+      );
+      expect(
+        swept.diagnostics.map((d) => d.ruleId),
+        `${label}: rule ids after a sweep`,
+      ).toEqual(expectRuleIds);
+      if (expectOrder === null) {
+        expect(swept.graph, `${label}: graph should be absent after a sweep`).toBeUndefined();
+      } else {
+        expect(swept.graph?.order, `${label}: order after a sweep`).toEqual(expectOrder);
+      }
+      // Residency is bounded by the entry just built, so no track of any earlier corpus entry is
+      // still resident. The corpus reuses ids across entries with fresh objects, which makes every
+      // rebuild a miss rather than a stale hit.
+      expect(cachedCount(incremental), `${label}: residency`).toBeLessThanOrEqual(
+        project.freeTracks?.length ?? 0,
+      );
     }
   });
 
