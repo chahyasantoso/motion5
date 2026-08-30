@@ -1,4 +1,3 @@
-import { readGoalSlot } from "../contract/solver-slots";
 import type { PluginDefinition } from "../domain/plugins";
 import type { ImmutableRecord } from "../domain/values";
 import { solveFabrik, type FabrikMember } from "./fabrik";
@@ -23,11 +22,11 @@ export interface MemberState {
   /**
    * The frame this member reaches toward, present only on a chain leaf the author gave a goal.
    *
-   * Delivered per member rather than through one slot, because the publisher writes a source's
-   * values as `collected[plugin][slot]`: two goals sharing one slot name would overwrite each other
-   * and the last one authored would be the only one that arrived, with no diagnostic. The join is
-   * `GraphPublisher`'s, off `SolveMember.goal`, so the plugin never sees a keyframe or an authored
-   * id. See issue #195.
+   * Delivered per member rather than read out of the goals slot, because the join is the publisher's:
+   * it holds the qualified member id `resolveSolvers` derived and this plugin holds no graph, so a
+   * goal arriving under its authored key would have to be qualified a second time by whoever read
+   * it. The slot still delivers its entries, keyed by the author's own keys, and nothing here reads
+   * them for that reason. See issue #195 and ADR-057.
    */
   readonly goal?: Readonly<Record<string, unknown>>;
 }
@@ -315,11 +314,11 @@ export function solveChain(
  * `ik` on the same node. The spread is a correctness requirement of the chaining rule, not a style
  * choice, and `IK-18` pins it.
  *
- * `claimsSlot` is how the goal family reaches this plugin at all. The slot set stops being
- * enumerable once a goal is addressed by member id, because the member ids belong to the rig rather
- * than to the plugin; `requirements` keeps sole ownership of `root` and `target`, and only the
- * predicate answers for the open family. It reads the shared grammar rather than a private copy of
- * the syntax, which is how `readNumber` drifted between `fk` and `ik`. See issue #195.
+ * `targets` is an ordinary declared slot carrying `dict: true`, which is how the goal family reaches
+ * this plugin now. The slot set is enumerable again: the member ids belong to the rig, but they are
+ * keys inside one declared slot rather than slot names of their own, so `requirements` answers for
+ * every slot and there is no predicate and no grammar. `claimsSlot` is deleted with the derived
+ * `targets[<memberId>]` identity it read. See ADR-052 and ADR-057.
  */
 export const ikPlugin: PluginDefinition = {
   name: "ik",
@@ -327,8 +326,8 @@ export const ikPlugin: PluginDefinition = {
   requirements: {
     root: { description: "base frame of the solver chain" },
     target: { description: "target position to reach" },
+    targets: { description: "one goal per chain leaf, keyed by member id", dict: true },
   },
-  claimsSlot: (slot) => readGoalSlot(slot) !== undefined,
   stage: "compose",
   outputs: ["rotations"],
   compose: (values, _progress, inputs) => {

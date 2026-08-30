@@ -1,5 +1,4 @@
 import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
-import { PLUGIN_GOALS_SLOT, readGoalSlot } from "../contract/solver-slots";
 import { validateKeyframes } from "../contract/validate-v5";
 import type {
   AuthoredProperty,
@@ -18,6 +17,9 @@ import type { ImmutableRecord } from "./values";
  * observer's authored `rotation` are distinguished by where they live rather than by being spelled
  * differently. That is what makes an upstream value structurally unable to overwrite an authored
  * one, and it is why `fkPlugin` needs no `parentRotation`. See ADR-044.
+ *
+ * A dict-valued slot holds one entry per authored key, keyed by that key, so the nesting mirrors the
+ * authored section exactly: `inputs.spring.tensions["seg-a"]`. See ADR-057.
  */
 export type PluginInputs = Readonly<ImmutableRecord>;
 /** Every plugin's scoped inputs for one composition, keyed by plugin name. */
@@ -55,20 +57,6 @@ export type PluginContributor = (
   track: TrackConfigView,
 ) => Contribution | undefined;
 export type PluginKeyClaim = (key: string) => boolean;
-/**
- * The slot-side counterpart to `claimsKey`: whether this plugin accepts a slot it never named.
- *
- * A record of declared slots cannot express a family whose members are named by the rig rather than
- * by the plugin, which is what a goal per chain member is. The predicate is the only way to accept
- * one without inventing a second owner of "is this slot declared": `requirements` still answers for
- * named slots, and only this answers for the open ones.
- *
- * Boolean, deliberately. A predicate returning a shape descriptor would make the registry a
- * validation engine for a type system it does not have, and the interesting question about a goal
- * slot is not its shape but whether the member it names exists, which is derived from `solver` edges
- * in `graph/ir.ts` and is unanswerable from here. See issue #195.
- */
-export type PluginSlotClaim = (slot: string) => boolean;
 export type OutputSerializer = (value: unknown) => unknown;
 /**
  * One input slot a plugin declares and an author may bind through `keyframes.<plugin>.requires`.
@@ -80,12 +68,34 @@ export type OutputSerializer = (value: unknown) => unknown;
 export interface PluginRequirement {
   /** What the slot is for. Documentation for the plugin's author; carries no behavior. */
   readonly description?: string;
+  /**
+   * Whether an author binds this slot to a dict of keys rather than to one source id.
+   *
+   * Data rather than a predicate, and that is the whole of what replaced `claimsSlot`. A record of
+   * declared slots could not express a family whose members are named by the rig rather than by the
+   * plugin, which is what a goal per chain member is, so the family arrived through a predicate the
+   * plugin answered with code. How many entries there are is still the rig's property; that the slot
+   * takes entries at all is the plugin's, and a field on the shape that already owns declared slots
+   * says so without giving any plugin a second way to declare one.
+   *
+   * One owner reads it, `#resolveRequirements`, and it answers in both directions: a dict at a slot
+   * without it is `plugin-requirement-dict-unsupported`, and one source at a slot with it is
+   * `plugin-requirement-dict-required`. The second half is worth as much as the first, because a
+   * plugin that reads this slot as a keyed record would otherwise be handed one source's values
+   * under the slot itself and have no way to say the author meant something else. See ADR-057.
+   *
+   * `true` rather than `boolean`. `dict: false` would be a second spelling of an absent field, which
+   * is the shape `TimeTriggerDefinition.autoplay` reserves for the same reason.
+   */
+  readonly dict?: true;
 }
 /** One authored binding that resolved against a declared slot of a registered plugin. */
 export interface ResolvedRequirement {
   readonly plugin: string;
   readonly slot: string;
   readonly source: string;
+  /** The key a dict entry was authored under, absent for a slot that takes one source. */
+  readonly memberKey?: string;
 }
 export interface PreparedContribution {
   readonly keyframes: Readonly<Record<string, AuthoredProperty>>;
@@ -101,11 +111,15 @@ export interface ResolvedPlugins {
    */
   readonly authoredKeyframes: Readonly<Record<string, unknown>>;
   /**
-   * The bindings that resolved against a declared slot, ordered by plugin then slot.
+   * The bindings that resolved against a declared slot, ordered by plugin, then slot, then key.
    *
    * Reporting rather than wiring. The graph derives its edges from the authored form directly, so
    * this exists to tell a compiled-track owner which slots a track actually bound, and a second
    * derivation from it would be a second owner of the same dependency. See ADR-044.
+   *
+   * It carries `memberKey` for the same reason the edge does: without it, two entries of one
+   * dict-valued slot are two identical rows here, and a report that cannot distinguish two real
+   * dependencies is a report that quietly loses one. See ADR-057.
    */
   readonly requirements: readonly ResolvedRequirement[];
   readonly internalKeys: readonly string[];
@@ -118,7 +132,6 @@ export interface PluginDefinition {
   readonly claimsKey?: PluginKeyClaim;
   readonly inputs?: readonly string[];
   readonly requirements?: Readonly<Record<string, PluginRequirement>>;
-  readonly claimsSlot?: PluginSlotClaim;
   readonly stage?: string;
   readonly priority?: number;
   readonly outputs?: readonly string[];
@@ -445,8 +458,6 @@ export class PluginRegistry {
       throw new TypeError("Plugin keys must be an array when provided.");
     if (plugin.claimsKey !== undefined && typeof plugin.claimsKey !== "function")
       throw new TypeError("Plugin claimsKey must be a function when provided.");
-    if (plugin.claimsSlot !== undefined && typeof plugin.claimsSlot !== "function")
-      throw new TypeError("Plugin claimsSlot must be a function when provided.");
     if (plugin.inputs !== undefined && !Array.isArray(plugin.inputs))
       throw new TypeError("Plugin inputs must be an array when provided.");
     if (plugin.outputs !== undefined && !Array.isArray(plugin.outputs))
@@ -471,16 +482,12 @@ export class PluginRegistry {
     for (const slot of slots)
       if (!slot.trim())
         throw new TypeError(`Plugin "${plugin.name}" requirement slot must be non-empty.`);
-    // The goals section and the goal identity it derives are reserved as declared slot names, for
-    // the reason the colon rule below states about internal keys. A goal reaches a plugin through
-    // `claimsSlot`, because the member ids are the rig's rather than the plugin's; a named slot
-    // spelled either way would be a second, unreachable spelling of the same binding, and the
-    // authored dict would still expand past it. See issue #195.
-    for (const slot of slots) {
-      if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefined) continue;
-      const detail = `requirement slot "${slot}" is reserved for authored goals`;
-      throw new TypeError(`Plugin "${plugin.name}" ${detail}.`);
-    }
+    // No reservation for the goals slot any more. It was reserved as a declared slot name because a
+    // goal reached its plugin through `claimsSlot`, so a named `targets` would have been a second,
+    // unreachable spelling of the same binding while the authored dict expanded straight past it.
+    // Declaring it is now how the capability is declared at all, and `ikPlugin` does exactly that.
+    // See ADR-057.
+    //
     // The colon belongs to the internal-key rule, and this is where that reservation becomes real
     // rather than a convention. A plugin free to declare an output named `fk:world` would have its
     // public output treated as private and silently dropped before publication. A requirement slot
@@ -598,22 +605,31 @@ export class PluginRegistry {
   /**
    * The registry-dependent half of binding validation.
    *
-   * Two questions only: does the group name a registered plugin, and does that plugin declare the
-   * bound slot. The shape of the section is already proven by `validateKeyframes`, and whether the
-   * source resolves to a node belongs to graph construction, which runs on the authored form and
-   * needs no registry at all. See ADR-044.
+   * Three questions only: does the group name a registered plugin, does that plugin declare the
+   * bound slot, and does the declaration agree with the shape the author bound it to. The shape of
+   * the section is already proven by `validateKeyframes`, and whether the source resolves to a node
+   * belongs to graph construction, which runs on the authored form and needs no registry at all.
+   * See ADR-044.
    *
-   * "Declares" now has two sources: the `requirements` record for a slot the plugin named, and
-   * `claimsSlot` for a family it could not name because the rig names the members. `requirements`
-   * keeps sole ownership of the first and only the predicate answers for the second, so there is
-   * still one answer per slot rather than two owners that can disagree. See issue #195.
+   * "Declares" has one source again. It was the `requirements` record for a slot the plugin named
+   * plus `claimsSlot` for a family it could not name, which is two owners of one question kept
+   * consistent by hand; the record answers alone now, and the third question above is what the
+   * predicate was really for. `PluginRequirement.dict` is that answer, and it is data, so no plugin
+   * gets to answer with code. See ADR-057.
+   *
+   * Both directions are refused, because a mismatch is silent in both. A dict at a slot that takes
+   * one source is a binding accepted and then ignored, which is what ADR-033 rule 6 forbids, and
+   * nothing below this layer can catch it: the parser holds no registry, and the slot name is
+   * legitimately declared. One source at a slot that takes a dict hands a plugin one node's values
+   * where it reads a keyed record, which is the same silence with the shapes swapped.
    *
    * `reportedGroups` is shared with `#ownerForEntry` so a group naming no registered plugin is one
    * diagnostic whether the author got there through a leaf, a binding, or both.
    *
    * The owning plugin joins `plugins` here, because a group may author nothing but bindings. Left
    * out, such a track would derive its edge, receive its scoped input, and then run no composer at
-   * all: an edge with no consumer, which reads as a held value rather than as an error.
+   * all: an edge with no consumer, which reads as a held value rather than as an error. It joins
+   * after the refusals, so a plugin reached only through a refused binding does not compose.
    */
   #resolveRequirements(
     bindings: readonly PluginRequiresBinding[],
@@ -633,14 +649,40 @@ export class PluginRegistry {
         diagnostics.push(diagnostic("plugin-unknown-key", groupPath, message, [binding.plugin]));
         continue;
       }
-      const declared =
-        binding.slot in (named.requirements ?? {}) || Boolean(named.claimsSlot?.(binding.slot));
-      if (!declared) {
+      const bindingPath = `${path}.${binding.authoredPath}`;
+      const declared = named.requirements ?? {};
+      if (!(binding.slot in declared)) {
         const detail = `does not declare requirement "${binding.slot}"`;
         diagnostics.push(
           diagnostic(
             "plugin-unknown-requirement",
-            `${path}.${binding.authoredPath}`,
+            bindingPath,
+            `Plugin "${binding.plugin}" ${detail}.`,
+            [binding.plugin, binding.slot],
+          ),
+        );
+        continue;
+      }
+      const acceptsDict = declared[binding.slot]?.dict === true;
+      const boundDict = binding.memberKey !== undefined;
+      if (boundDict && !acceptsDict) {
+        const detail = `does not accept a dict of keys at requirement "${binding.slot}"`;
+        diagnostics.push(
+          diagnostic(
+            "plugin-requirement-dict-unsupported",
+            bindingPath,
+            `Plugin "${binding.plugin}" ${detail}.`,
+            [binding.plugin, binding.slot],
+          ),
+        );
+        continue;
+      }
+      if (!boundDict && acceptsDict) {
+        const detail = `requires a dict of keys at requirement "${binding.slot}"`;
+        diagnostics.push(
+          diagnostic(
+            "plugin-requirement-dict-required",
+            bindingPath,
             `Plugin "${binding.plugin}" ${detail}.`,
             [binding.plugin, binding.slot],
           ),
@@ -649,7 +691,12 @@ export class PluginRegistry {
       }
       if (!plugins.includes(named)) plugins.push(named);
       resolved.push(
-        Object.freeze({ plugin: binding.plugin, slot: binding.slot, source: binding.source }),
+        Object.freeze({
+          plugin: binding.plugin,
+          slot: binding.slot,
+          source: binding.source,
+          ...(binding.memberKey === undefined ? {} : { memberKey: binding.memberKey }),
+        }),
       );
     }
     return Object.freeze(resolved);
