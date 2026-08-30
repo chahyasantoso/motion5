@@ -1,5 +1,4 @@
 import { readAuthoredLeaf } from "./authored-leaf";
-import { goalSlot, PLUGIN_GOALS_SLOT } from "./solver-slots";
 import type { AuthoredPluginGroup, PluginRequiresBinding } from "./v5";
 
 /**
@@ -113,21 +112,33 @@ export function readPluginValues(group: unknown): Readonly<Record<string, unknow
 }
 
 /**
- * Every plugin binding a keyframes record declares, ordered by plugin then slot.
+ * Every plugin binding a keyframes record declares, ordered by plugin, then slot, then member key.
  *
  * The single owner of reading the authored bindings, so `graph/ir.ts` derives its edges and
  * `PluginRegistry` resolves its slots from one reader rather than from two that can disagree about
  * what an author wrote. Deriving the edge is purely syntactic, which is what lets it run inside
  * `validateV5` without a plugin registry.
  *
- * The reserved goals slot is the one binding whose authored value is a record rather than a source
- * id, and it expands here into one binding per member id it names. That expansion is the whole of
- * how multi-goal solving reaches the graph: one authored section, one derived binding per goal, and
- * therefore one edge per goal, so `J-5` holds verbatim and nothing downstream learns a new shape.
- * Members are sorted, so which goal is read first is never a property of authoring order.
+ * A slot whose authored value is a record binds one source per key rather than one source, and it
+ * expands here into one binding per key it names. That expansion is the whole of how multi-goal
+ * solving reaches the graph: one authored section, one derived binding per entry, and therefore one
+ * edge per entry, so `J-5` holds verbatim and nothing downstream learns a new shape.
+ *
+ * Detection is by shape and says nothing about whether the slot was allowed to carry a dict, because
+ * it cannot: this reader holds no registry, so it cannot know which slots declared the capability,
+ * and a slot name proves nothing either way. `PluginRequirement.dict` is the declaration and
+ * `PluginRegistry` is its one reader. Reading the name here instead is what made the capability
+ * `ik`'s alone and made a second dict-accepting plugin an edit to this function. See ADR-057.
+ *
+ * The key is carried as `memberKey` beside the slot rather than formatted into it. A derived
+ * `targets[<memberId>]` identity had a builder in one module and a parser in another, which is one
+ * fact with two owners by construction, and it made the goals slot a reserved parser constant. As a
+ * field it has no owner at all, and it is what keeps two entries of one slot distinct all the way
+ * through `edgeKey`.
  *
  * Tolerant by design: a malformed binding is skipped here and reported by `validateKeyframes`,
- * which owns shape. Sorted, so derived edge order is never a property of authoring order.
+ * which owns shape. Sorted at both levels, so derived edge order is never a property of authoring
+ * order.
  */
 export function readPluginBindings(keyframes: unknown): readonly PluginRequiresBinding[] {
   if (!isObject(keyframes)) return Object.freeze([]);
@@ -139,32 +150,25 @@ export function readPluginBindings(keyframes: unknown): readonly PluginRequiresB
     if (!isObject(requires)) continue;
     for (const slot of Object.keys(requires).sort()) {
       const source = requires[slot];
-      if (slot === PLUGIN_GOALS_SLOT) {
-        if (!isObject(source)) continue;
-        for (const member of Object.keys(source).sort()) {
-          const goalSource = source[member];
-          if (typeof goalSource !== "string" || goalSource.length === 0) continue;
-          const authoredPath = `${plugin}.${PLUGIN_REQUIRES_SECTION}.${PLUGIN_GOALS_SLOT}.${member}`;
+      const slotPath = `${plugin}.${PLUGIN_REQUIRES_SECTION}.${slot}`;
+      if (isObject(source)) {
+        for (const memberKey of Object.keys(source).sort()) {
+          const memberSource = source[memberKey];
+          if (typeof memberSource !== "string" || memberSource.length === 0) continue;
           bindings.push(
             Object.freeze({
               plugin,
-              slot: goalSlot(member),
-              source: goalSource,
-              authoredPath,
+              slot,
+              source: memberSource,
+              memberKey,
+              authoredPath: `${slotPath}.${memberKey}`,
             }),
           );
         }
         continue;
       }
       if (typeof source !== "string" || source.length === 0) continue;
-      bindings.push(
-        Object.freeze({
-          plugin,
-          slot,
-          source,
-          authoredPath: `${plugin}.${PLUGIN_REQUIRES_SECTION}.${slot}`,
-        }),
-      );
+      bindings.push(Object.freeze({ plugin, slot, source, authoredPath: slotPath }));
     }
   }
   return Object.freeze(bindings);
