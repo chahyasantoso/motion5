@@ -1,9 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import type { AuthoredStaticValue } from "../../../src/contract/v5";
 import type { PluginComposer } from "../../../src/domain/plugins";
-import { Track } from "../../../src/domain/track";
+import { LiveValueKeyError, Track } from "../../../src/domain/track";
 import { createPlugin, resolveAuthored } from "../../helpers/resolved-plugins";
 
 /**
@@ -14,10 +13,14 @@ import { createPlugin, resolveAuthored } from "../../helpers/resolved-plugins";
  * This file owns the overlay itself: one layer inside `Track`, one refusal, and no registry. The
  * two runtime entry points are `unit/runtime/live-value-updates.test.ts` and the two surfaces one
  * call has to reach are `integration/live-value-composition.test.ts`.
+ *
+ * The failing-first run declared `overrideValues` in a local `LiveTrack` interface and cast to it,
+ * because a test naming a method that does not exist fails `typecheck` and stops `quality` before
+ * `npm test`. That declaration is deleted by the commit that landed the source, exactly as #217's
+ * `StaleSeam` was. See ADR-059.
  */
 const PORT_SOURCE = fileURLToPath(new URL("../../../src/ports/interpolator.ts", import.meta.url));
 const TRACK_SOURCE = fileURLToPath(new URL("../../../src/domain/track.ts", import.meta.url));
-const RULE_ID = "live-value-key";
 /** Two static leaves this suite may mask, and one animated leaf it may not. */
 const AUTHORED = Object.freeze({
   length: 60,
@@ -27,25 +30,6 @@ const AUTHORED = Object.freeze({
     { p: 1, v: 30 },
   ],
 });
-
-/**
- * The seam this file's failing-first run declares, deleted by the commit that lands the source.
- *
- * A test naming a method that does not exist fails `typecheck` and stops `quality` before
- * `npm test`, so the red run would prove nothing. Same shape as #217's `StaleSeam`.
- */
-interface LiveTrack {
-  overrideValues(next: Readonly<Record<string, AuthoredStaticValue>>): void;
-}
-interface LiveRefusal extends TypeError {
-  readonly ruleId: string;
-  readonly nodeId: string;
-  readonly key: string;
-  readonly reason: string;
-}
-function live(track: Track): LiveTrack {
-  return track as unknown as LiveTrack;
-}
 
 /** Keeps every key it is handed, so a masked value is visible in the published record. */
 const identity: PluginComposer = (values) => ({ ...values });
@@ -78,12 +62,12 @@ function createTrack(compose: PluginComposer = identity) {
   });
 }
 /** The thrown value for one refused key, because each case asserts on more than one facet of it. */
-function refusalFor(key: string): LiveRefusal {
+function refusalFor(key: string): LiveValueKeyError {
   const track = createTrack();
   try {
-    live(track).overrideValues({ [key]: 1 });
+    track.overrideValues({ [key]: 1 });
   } catch (error) {
-    if (error instanceof TypeError) return error as LiveRefusal;
+    if (error instanceof LiveValueKeyError) return error;
     throw error;
   }
   throw new Error(`Expected "${key}" to be refused.`);
@@ -109,7 +93,7 @@ describe("a live value masks the interpolated state, and nothing else", () => {
     track.setProgress(0.5);
     expect(track.interpolated()).toEqual({ length: 60, width: 20, rotation: 20 });
 
-    live(track).overrideValues({ length: 100 });
+    track.overrideValues({ length: 100 });
 
     // The mask, the untouched sibling, and the animated key the timeline still owns.
     expect(track.interpolated()).toEqual({ length: 100, width: 20, rotation: 20 });
@@ -120,19 +104,19 @@ describe("a live value masks the interpolated state, and nothing else", () => {
 
   it("LV-6 is sticky, is replaced wholesale, and an empty record is the clear", () => {
     const track = createTrack();
-    live(track).overrideValues({ length: 100 });
+    track.overrideValues({ length: 100 });
     track.setProgress(0.5);
     // Sticky across a progress write and across any number of reads.
     expect(track.interpolated().length).toBe(100);
     expect(track.compose().values.length).toBe(100);
 
     // Wholesale rather than accumulated: the previous key is gone, not merged with.
-    live(track).overrideValues({ width: 5 });
+    track.overrideValues({ width: 5 });
     expect(track.interpolated()).toEqual({ length: 60, width: 5, rotation: 20 });
 
     // The clear, as contract rather than as an accident of the merge. One question, one mechanism:
     // an empty record is no mask, so no `clearOverrides()` and no null overload exists.
-    live(track).overrideValues({});
+    track.overrideValues({});
     expect(track.interpolated()).toEqual({ length: 60, width: 20, rotation: 20 });
   });
 
@@ -147,13 +131,14 @@ describe("a live value masks the interpolated state, and nothing else", () => {
 
     const refused = refusalFor("rotation");
     expect(refused).toBeInstanceOf(TypeError);
-    expect(refused.ruleId).toBe(RULE_ID);
+    expect(refused.ruleId).toBe("live-value-key");
+    expect(LiveValueKeyError.ruleId).toBe("live-value-key");
     expect(refused.key).toBe("rotation");
     expect(refused.nodeId).toBe("~/live");
 
     const track = createTrack();
     const before = track.compose().values;
-    expect(() => live(track).overrideValues({ length: 100, rotation: 1 })).toThrow(TypeError);
+    expect(() => track.overrideValues({ length: 100, rotation: 1 })).toThrow(LiveValueKeyError);
     // Nothing, not even the accepted key in the same call: that is what no mutation means.
     expect(track.compose().values).toEqual(before);
     expect(track.interpolated().length).toBe(60);
@@ -176,7 +161,7 @@ describe("a live value masks the interpolated state, and nothing else", () => {
     const track = createTrack();
     const before = track.compose().values;
 
-    live(track).overrideValues({ length: 100 });
+    track.overrideValues({ length: 100 });
 
     // A `#dirty` mutation is not evidence: `#memoized` compares the retained seed to the incoming
     // one, and a changed overlay is a changed seed whether or not a flag was set. What is

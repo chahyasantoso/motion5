@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AuthoredStaticValue, PatchBatch, ProjectDefinition } from "../../src/contract/v5";
-import type { TrackHandle } from "../../src/contract/track-handle";
+import type { ProjectDefinition } from "../../src/contract/v5";
 import { PluginRegistry } from "../../src/domain/plugins";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { fkPlugin } from "../../src/plugins/fk";
@@ -57,15 +56,6 @@ const PROJECT: ProjectDefinition = {
   ],
 };
 
-/** The seam this run declares, deleted by the commit that lands the source. */
-interface LiveHandle {
-  overrideValues(next: Readonly<Record<string, AuthoredStaticValue>>): PatchBatch;
-  setValues(next: Readonly<Record<string, AuthoredStaticValue>>): PatchBatch;
-}
-function liveTrack(handle: ProjectHandle, id: string): TrackHandle & LiveHandle {
-  return handle.track(id) as TrackHandle & LiveHandle;
-}
-
 function load(): ProjectHandle {
   const plugins = new PluginRegistry();
   plugins.register(transformPlugin);
@@ -96,7 +86,7 @@ describe("a masked value reaches composition and the publisher's MemberState", (
     const before = values(handle, UPPER);
     expect(solved(handle)[UPPER]).toBeCloseTo(40.168, 3);
 
-    liveTrack(handle, UPPER).overrideValues({ length: 100 });
+    handle.track(UPPER).overrideValues({ length: 100 });
     // The solver's own flush. One seam is the whole claim, and `LV-5` owns invalidate-once.
     handle.seek(SHOULDER, 0);
 
@@ -116,7 +106,7 @@ describe("a masked value reaches composition and the publisher's MemberState", (
     expect(rotations[UPPER]).toBeCloseTo(40.168, 3);
     expect(rotations[FOREARM]).toBeCloseTo(-51.318, 3);
 
-    liveTrack(handle, FOREARM).overrideValues({ length: 100 });
+    handle.track(FOREARM).overrideValues({ length: 100 });
     handle.seek(SHOULDER, 0);
 
     // A member's length is an input to the solve, so both published rotations move.

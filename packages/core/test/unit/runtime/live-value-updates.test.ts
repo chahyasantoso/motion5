@@ -1,14 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import type {
-  AuthoredStaticValue,
-  PatchBatch,
-  ProjectDefinition,
-  TrackDefinition,
-} from "../../../src/contract/v5";
+import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { StaleTrackHandleError, type TrackHandle } from "../../../src/contract/track-handle";
 import { PluginRegistry } from "../../../src/domain/plugins";
+import { LiveValueKeyError } from "../../../src/domain/track";
 import { Engine, type ProjectHandle } from "../../../src/engine";
 import { transformPlugin } from "../../../src/plugins/transform";
 import { createManualClock } from "../../../src/ports/clock";
@@ -27,7 +23,6 @@ import { createFakeInterpolator, createFakeScheduler } from "../../../src/testin
 const RUNTIME_SOURCE = fileURLToPath(
   new URL("../../../src/runtime/project-runtime.ts", import.meta.url),
 );
-const RULE_ID = "live-value-key";
 const ARM = "hero/arm";
 const LEG = "hero/leg";
 const ARM_TRACK: TrackDefinition = {
@@ -63,18 +58,6 @@ const PROJECT: ProjectDefinition = {
     },
   ],
 };
-
-/**
- * The seam this file's failing-first run declares, deleted by the commit that lands the source.
- * The reason is `typecheck`, exactly as in the domain suite beside it.
- */
-interface LiveHandle {
-  overrideValues(next: Readonly<Record<string, AuthoredStaticValue>>): PatchBatch;
-  setValues(next: Readonly<Record<string, AuthoredStaticValue>>): PatchBatch;
-}
-function liveTrack(handle: ProjectHandle, id: string): TrackHandle & LiveHandle {
-  return handle.track(id) as TrackHandle & LiveHandle;
-}
 
 function load(): ProjectHandle {
   const plugins = new PluginRegistry();
@@ -125,7 +108,7 @@ function retained(handle: TrackHandle): unknown {
 describe("live values reach the graph without replacing it", () => {
   it("LV-4 never reaches replace(), and a real replace() drops the mask", () => {
     const handle = load();
-    const track = liveTrack(handle, ARM);
+    const track = handle.track(ARM);
     handle.seek(ARM, 0.5);
     const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
 
@@ -148,7 +131,7 @@ describe("live values reach the graph without replacing it", () => {
 
   it("LV-5 invalidates exactly once and returns that batch", () => {
     const handle = load();
-    const track = liveTrack(handle, ARM);
+    const track = handle.track(ARM);
     const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
 
     const batch = track.overrideValues({ x: 260 });
@@ -168,7 +151,7 @@ describe("live values reach the graph without replacing it", () => {
 
   it("LV-8 rewrites the retained definition and keeps topology and progress", () => {
     const handle = load();
-    const track = liveTrack(handle, ARM);
+    const track = handle.track(ARM);
     handle.seek(ARM, 0.5);
     const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
 
@@ -197,8 +180,8 @@ describe("live values reach the graph without replacing it", () => {
 
   it("LV-9 merges partially and preserves the observation the track declared", () => {
     const handle = load();
-    const arm = liveTrack(handle, ARM);
-    const leg = liveTrack(handle, LEG);
+    const arm = handle.track(ARM);
+    const leg = handle.track(LEG);
     handle.seek(ARM, 0.5);
 
     arm.setValues({ x: 260 });
@@ -224,7 +207,7 @@ describe("live values reach the graph without replacing it", () => {
 
   it("LV-10 invalidates the dependent, asserted on its patch rather than on a flag", () => {
     const handle = load();
-    const arm = liveTrack(handle, ARM);
+    const arm = handle.track(ARM);
     handle.seek(ARM, 0.5);
 
     const batch = arm.setValues({ x: 260 });
@@ -236,7 +219,7 @@ describe("live values reach the graph without replacing it", () => {
 
   it("LV-11 refuses an animated key by name and commits nothing", () => {
     const handle = load();
-    const arm = liveTrack(handle, ARM);
+    const arm = handle.track(ARM);
     handle.seek(ARM, 0.5);
     const before = arm.track;
     const published = values(handle, ARM);
@@ -244,22 +227,8 @@ describe("live values reach the graph without replacing it", () => {
 
     // Refused until the port grows a per-key capability, which `LV-12` pins as not having happened.
     // A partial implementation that froze an authored animation is the failure this slice avoids.
-    const refusals = [
-      () => arm.setValues({ rotation: 45 }),
-      () => arm.overrideValues({ rotation: 45 }),
-    ];
-    for (const refuse of refusals) {
-      let thrown: unknown;
-      expect(() => {
-        try {
-          refuse();
-        } catch (error) {
-          thrown = error;
-          throw error;
-        }
-      }).toThrow(TypeError);
-      expect((thrown as { ruleId?: string }).ruleId).toBe(RULE_ID);
-    }
+    expect(() => arm.setValues({ rotation: 45 })).toThrow(LiveValueKeyError);
+    expect(() => arm.overrideValues({ rotation: 45 })).toThrow(LiveValueKeyError);
 
     expect(arm.track).toBe(before);
     expect(values(handle, ARM)).toEqual(published);
@@ -269,7 +238,7 @@ describe("live values reach the graph without replacing it", () => {
 
   it("LV-13 refuses both new members on a stale handle", () => {
     const handle = load();
-    const leg = liveTrack(handle, LEG);
+    const leg = handle.track(LEG);
     leg.remove();
 
     expect(() => leg.overrideValues({ x: 40 })).toThrow(StaleTrackHandleError);
