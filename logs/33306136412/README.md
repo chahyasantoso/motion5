@@ -1,0 +1,772 @@
+# CI log archive: 33306136412
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: 220-dict-valued-requirement-slots
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/33306136412
+- Captured: 2026-08-30T10:18:28Z
+
+## Failed job output
+
+```text
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-08-30T10:18:11.2948952Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-30T10:18:11.2949426Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-30T10:18:11.2998504Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-30T10:18:11.2998801Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-30T10:18:11.2999032Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-30T10:18:11.2999262Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-30T10:18:13.6829645Z ##[error]packages/core/src/domain/plugins.ts(2,29): error TS2305: Module '"../contract/solver-slots"' has no exported member 'readGoalSlot'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-30T10:18:13.6838061Z ##[error]packages/core/src/plugins/ik.ts(1,10): error TS2305: Module '"../contract/solver-slots"' has no exported member 'readGoalSlot'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-30T10:18:13.7221455Z ##[error]Process completed with exit code 2.
+integration (node 24)	Run npm run test:integration	﻿2026-08-30T10:18:09.9715155Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:09.9715538Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:09.9755650Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:09.9756161Z env:
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:09.9756382Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:09.9756600Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:10.0800199Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:10.0801006Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:10.0801837Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:10.0802284Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:10.4253997Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:10.4283993Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:10.4297917Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.0845510Z  ^[[32m✓^[[39m packages/core/test/integration/t4-runtime-motion-parity.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 32^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.1328501Z  ^[[31m❯^[[39m packages/core/test/integration/bare-authored-leaf.test.ts ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 71^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.1354737Z ^[[31m     ^[[31m×^[[31m LF-5 interpolates a bare array of stops^[[39m^[[32m 19^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.1356735Z ^[[31m     ^[[31m×^[[31m LF-6 publishes a bare static value and holds it at every progress^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.1358591Z      ^[[32m✓^[[39m LF-7 keeps a static leaf out of the percent map and out of the compiled properties^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.1360327Z      ^[[32m✓^[[39m LF-8 contributes no tween for a static leaf^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.1361656Z      ^[[32m✓^[[39m LF-9 refuses the retired object wrapper by name^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.1362981Z      ^[[32m✓^[[39m LF-10 closes the static domain instead of leaving it open^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.1364599Z      ^[[32m✓^[[39m LF-11 never reads either leaf form as a plugin group^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.1365972Z      ^[[32m✓^[[39m LF-12 still refuses a migrated legacy group by name^[[32m 0^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.1367378Z      ^[[32m✓^[[39m LF-13 accepts both leaf forms inside a values section^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.1368844Z      ^[[32m✓^[[39m LF-14 refuses a static leaf on a prepare-stage contributor's key^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.1370404Z      ^[[32m✓^[[39m LF-15 declares the leaf as a union and deletes the wrapper interface^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.1371985Z      ^[[32m✓^[[39m LF-16 leaves no authored schema in the repository on the retired form^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.1918584Z  ^[[31m❯^[[39m packages/core/test/integration/phase7-walker-demo.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.3956736Z  ^[[32m✓^[[39m packages/core/test/integration/engine-teardown-ownership.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.4612205Z  ^[[31m❯^[[39m packages/core/test/integration/plugin-group-values-section.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m | ^[[22m^[[31m4 failed^[[39m^[[2m)^[[22m^[[32m 39^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.4632327Z ^[[31m     ^[[31m×^[[31m Y-1 compiles the values section to leaves and the requires section to nothing^[[39m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.4675678Z      ^[[32m✓^[[39m Y-2 refuses the legacy leaf form by name rather than as a missing stops array^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.4685388Z      ^[[32m✓^[[39m Y-3 reports an unknown section once and names both legal sections^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.4687132Z      ^[[32m✓^[[39m Y-4 reserves a top-level values under the rule id a top-level requires gets^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.4688655Z      ^[[32m✓^[[39m Y-5 refuses a malformed or an empty values section^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.4690241Z      ^[[32m✓^[[39m Y-6 leaves an empty object an accepted no-op property rather than a group^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.4691804Z      ^[[32m✓^[[39m Y-7 cites the section in a diagnostic about a leaf inside it^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.4693892Z ^[[31m     ^[[31m×^[[31m Y-8 keeps a leaf named values legal inside the section, and resolvable^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.4696210Z      ^[[32m✓^[[39m Y-9 keeps the perspective warning for 3D content inside the values section^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.4698257Z      ^[[32m✓^[[39m Y-10 refuses one compiled key authored under two groups' values sections^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.4700187Z ^[[31m     ^[[31m×^[[31m Y-11 joins a bindings-only group to the composer chain and scopes its input^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.4702030Z      ^[[32m✓^[[39m Y-12 declares the group as two named sections and deletes the member union^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.4704142Z ^[[31m     ^[[31m×^[[31m Y-13 composes the walker rig's world frame through the values section^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.5215447Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-time-loop.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 45^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.6222898Z  ^[[32m✓^[[39m packages/core/test/integration/authored-leaf-reader.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.9446052Z  ^[[31m❯^[[39m packages/core/test/integration/ik-fabrik-chain.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.9471848Z ^[[31m     ^[[31m×^[[31m FB-11 a five-bone chain tracks an animated goal with every length intact^[[39m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.9495094Z ^[[31m     ^[[31m×^[[31m FB-12 two goals off one spine are both reached, and the spine is solved once^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.9497318Z  ^[[32m✓^[[39m packages/core/test/integration/rollback-error-precedence.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.9689914Z  ^[[31m❯^[[39m packages/core/test/integration/ik-two-bone.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.9724700Z ^[[31m     ^[[31m×^[[31m IK-13 full flush over six-node rig: forearm tip reaches target and hand follows^[[39m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.9726726Z ^[[31m     ^[[31m×^[[31m IK-15 animating target across ticks moves solved bones smoothly with correct revisions^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.9756622Z      ^[[32m✓^[[39m IK-16 DOM adapter skips a nested composite and writes nothing for a solver node^[[32m 3^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:11.9784517Z ^[[31m     ^[[31m×^[[31m IK-17 handle.get for solver node returns solved rotations record^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.2550762Z  ^[[31m❯^[[39m packages/core/test/integration/plugin-owned-requirements.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m | ^[[22m^[[31m6 failed^[[39m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.2553242Z ^[[31m     ^[[31m×^[[31m Q-7 derives the input edge from the binding and composes world space from it^[[39m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.2555297Z ^[[31m     ^[[31m×^[[31m Q-8 leaves an omitted binding with no edge and lets the plugin own the unbound case^[[39m^[[32m 2^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.2557366Z ^[[31m     ^[[31m×^[[31m Q-9 refuses a binding whose source is not a node in the graph^[[39m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.2559281Z ^[[31m     ^[[31m×^[[31m Q-10 treats two slots bound to one source as two edges rather than a duplicate^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.2561220Z ^[[31m     ^[[31m×^[[31m Q-11 keeps an upstream value out of the observer's authored value namespace^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.2563320Z ^[[31m     ^[[31m×^[[31m Q-12 refuses a binding to a slot the plugin never declared, at load^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.2614578Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-types.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.2846356Z  ^[[32m✓^[[39m packages/core/test/integration/phase0-red-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.5354850Z  ^[[32m✓^[[39m packages/core/test/integration/phase4-dynamic-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.5420179Z  ^[[32m✓^[[39m packages/core/test/integration/adoption.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.5679138Z  ^[[32m✓^[[39m packages/core/test/integration/replace-track-transactionality.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.8603462Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-scroll.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 29^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.8653720Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-time.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 38^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.8713793Z  ^[[31m❯^[[39m packages/core/test/integration/ik-multi-goal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.8716265Z ^[[31m     ^[[31m×^[[31m MG-12 the worked rig re-expressed with a goal dict solves to the same two numbers^[[39m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:12.8744710Z ^[[31m     ^[[31m×^[[31m MG-13 seeding the goal node alone re-solves the whole chain^[[39m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.1501394Z  ^[[31m❯^[[39m packages/core/test/integration/mutation-transactionality.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.1535322Z ^[[31m     ^[[31m×^[[31m rejects destroying a source without changing graph state or the observation wire^[[39m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.1537765Z ^[[31m     ^[[31m×^[[31m leaves a rejected unknown-source adoption retryable^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.1580964Z ^[[31m     ^[[31m×^[[31m leaves a rejected self-reference adoption retryable^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.1696531Z  ^[[31m❯^[[39m packages/core/test/integration/per-plugin-key-ownership.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.1734366Z      ^[[32m✓^[[39m N-7 claims the natural bone key names and composes world space from them^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.1750258Z ^[[31m     ^[[31m×^[[31m N-8 composes a rig from two plugins that both claim rotation^[[39m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.1796292Z ^[[31m     ^[[31m×^[[31m N-9 refuses the flat spelling of a key both plugins claim^[[39m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.1820107Z ^[[31m     ^[[31m×^[[31m N-10 publishes grouped leaves under their unprefixed names^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.1985005Z  ^[[32m✓^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 60^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.4194938Z  ^[[32m✓^[[39m packages/core/test/integration/phase3-trigger-port.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.4314904Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.5099373Z  ^[[32m✓^[[39m packages/core/test/integration/option-c-track-resolution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 32^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.6530453Z  ^[[32m✓^[[39m packages/core/test/integration/phase2-motion-scheduling.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.6975983Z  ^[[32m✓^[[39m packages/core/test/integration/unified-mutation-surface.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.7873552Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.8991207Z  ^[[32m✓^[[39m packages/core/test/integration/observation-identity.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:13.9195533Z  ^[[32m✓^[[39m packages/core/test/integration/cross-motion.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:14.0708609Z  ^[[32m✓^[[39m packages/core/test/integration/issue-114-motion-track-regressions.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 34^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:14.1050297Z  ^[[32m✓^[[39m packages/core/test/integration/diagnostics.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:14.1837660Z  ^[[32m✓^[[39m packages/core/test/integration/adopted-track-immutability.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:14.3082823Z  ^[[32m✓^[[39m packages/core/test/integration/replace-motion-track.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:14.3683851Z  ^[[32m✓^[[39m packages/core/test/integration/keyframe-groups.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 36^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:14.3919964Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:14.5263002Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:14.6469759Z  ^[[32m✓^[[39m packages/core/test/integration/remount.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:14.6545990Z  ^[[32m✓^[[39m packages/core/test/integration/internal-key-strip.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:14.7529547Z  ^[[32m✓^[[39m packages/core/test/integration/handle-adoption.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:14.8578960Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:14.8990629Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:14.9491545Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:15.0605257Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:15.1327523Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:15.1917302Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:15.2536142Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:15.3780909Z  ^[[31m❯^[[39m packages/core/test/integration/single-input-channel.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:15.3814675Z ^[[31m     ^[[31m×^[[31m J-8 composes an upstream value without it ever becoming an authored one^[[39m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:15.3965634Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:15.4975553Z  ^[[32m✓^[[39m packages/core/test/integration/adopt-destroy-readopt.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:15.5682027Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:15.6166011Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:15.7554555Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:15.8051864Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:15.8282622Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:15.9960325Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.0311716Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.0435374Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-trigger-validation.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.1902402Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.1909723Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.1947958Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.1948561Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Suites 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.1949086Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.1952629Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m [ packages/core/test/integration/phase7-walker-demo.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.1959269Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.1960844Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2054919Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2056381Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2057751Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2059000Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2060265Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2062444Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2064827Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m248:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2083633Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2093744Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2113622Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2113647Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2114333Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 26 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2114805Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2116399Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/bare-authored-leaf.test.ts^[[2m > ^[[22mthe bare authored leaf^[[2m > ^[[22mLF-5 interpolates a bare array of stops
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2118149Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2119556Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2121013Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2122184Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2123542Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2124570Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2125605Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2127593Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2129736Z ^[[90m ^[[2m❯^[[22m registry packages/core/test/integration/bare-authored-leaf.test.ts:^[[2m133:40^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2131855Z ^[[90m ^[[2m❯^[[22m valuesAt packages/core/test/integration/bare-authored-leaf.test.ts:^[[2m163:43^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2133886Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/bare-authored-leaf.test.ts:^[[2m226:12^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2134616Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2135078Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2135502Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2137270Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/bare-authored-leaf.test.ts^[[2m > ^[[22mthe bare authored leaf^[[2m > ^[[22mLF-6 publishes a bare static value and holds it at every progress
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2139170Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2140471Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2141952Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2143668Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2144829Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2145893Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2147030Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2149096Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2151308Z ^[[90m ^[[2m❯^[[22m registry packages/core/test/integration/bare-authored-leaf.test.ts:^[[2m133:40^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2153000Z ^[[90m ^[[2m❯^[[22m valuesAt packages/core/test/integration/bare-authored-leaf.test.ts:^[[2m163:43^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2154845Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/bare-authored-leaf.test.ts:^[[2m231:12^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2155596Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2156104Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2156494Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2158369Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/ik-fabrik-chain.test.ts^[[2m > ^[[22miterative IK over a real rig (Slice D3)^[[2m > ^[[22mFB-11 a five-bone chain tracks an animated goal with every length intact
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2160332Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2161696Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2163300Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2164530Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2165701Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2166666Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2167748Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2169857Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2171998Z ^[[90m ^[[2m❯^[[22m createEngine packages/core/test/integration/ik-fabrik-chain.test.ts:^[[2m24:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2173866Z ^[[90m ^[[2m❯^[[22m mountAll packages/core/test/integration/ik-fabrik-chain.test.ts:^[[2m154:19^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2175438Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/ik-fabrik-chain.test.ts:^[[2m165:34^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2176098Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2176534Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2176901Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2178812Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/ik-fabrik-chain.test.ts^[[2m > ^[[22miterative IK over a real rig (Slice D3)^[[2m > ^[[22mFB-12 two goals off one spine are both reached, and the spine is solved once
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2181136Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2182449Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2183998Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2185148Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2186256Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2187248Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2188310Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2190279Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2192449Z ^[[90m ^[[2m❯^[[22m createEngine packages/core/test/integration/ik-fabrik-chain.test.ts:^[[2m24:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2194395Z ^[[90m ^[[2m❯^[[22m mountAll packages/core/test/integration/ik-fabrik-chain.test.ts:^[[2m154:19^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2196025Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/ik-fabrik-chain.test.ts:^[[2m210:34^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2196730Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2197243Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2197627Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2199577Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/ik-multi-goal.test.ts^[[2m > ^[[22mgoal-addressed IK integration (Slice D1)^[[2m > ^[[22mMG-12 the worked rig re-expressed with a goal dict solves to the same two numbers
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2201625Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2202979Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2204657Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2205863Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2206938Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2207951Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2209056Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2211083Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2213345Z ^[[90m ^[[2m❯^[[22m createEngine packages/core/test/integration/ik-multi-goal.test.ts:^[[2m100:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2214845Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/ik-multi-goal.test.ts:^[[2m112:21^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2215459Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2215879Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2216289Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2218083Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/ik-multi-goal.test.ts^[[2m > ^[[22mgoal-addressed IK integration (Slice D1)^[[2m > ^[[22mMG-13 seeding the goal node alone re-solves the whole chain
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2219913Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2221212Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2222514Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2223966Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2225131Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2226488Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2227772Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2229826Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2231975Z ^[[90m ^[[2m❯^[[22m createEngine packages/core/test/integration/ik-multi-goal.test.ts:^[[2m100:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2233852Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/ik-multi-goal.test.ts:^[[2m143:21^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2234520Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2234999Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2235384Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2237242Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/ik-two-bone.test.ts^[[2m > ^[[22mTwo-bone IK Integration (Slice C3)^[[2m > ^[[22mIK-13 full flush over six-node rig: forearm tip reaches target and hand follows
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2239151Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2240578Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2241972Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2243363Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2244549Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2245623Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2246748Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2248833Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2251007Z ^[[90m ^[[2m❯^[[22m createEngine packages/core/test/integration/ik-two-bone.test.ts:^[[2m88:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2252581Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/ik-two-bone.test.ts:^[[2m100:21^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2253523Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2254018Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2254427Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2256451Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/ik-two-bone.test.ts^[[2m > ^[[22mTwo-bone IK Integration (Slice C3)^[[2m > ^[[22mIK-15 animating target across ticks moves solved bones smoothly with correct revisions
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2258529Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2259943Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2261392Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2262661Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2264118Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2265199Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2266330Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2268434Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2270578Z ^[[90m ^[[2m❯^[[22m createEngine packages/core/test/integration/ik-two-bone.test.ts:^[[2m88:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2272159Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/ik-two-bone.test.ts:^[[2m189:21^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2273362Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2273889Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2274293Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2276088Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/ik-two-bone.test.ts^[[2m > ^[[22mTwo-bone IK Integration (Slice C3)^[[2m > ^[[22mIK-17 handle.get for solver node returns solved rotations record
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2278361Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2279780Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2281247Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2282472Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2283944Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2285018Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2286166Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2288250Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2290408Z ^[[90m ^[[2m❯^[[22m createEngine packages/core/test/integration/ik-two-bone.test.ts:^[[2m88:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2291988Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/ik-two-bone.test.ts:^[[2m255:21^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2292662Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2293384Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2293803Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2296020Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/mutation-transactionality.test.ts^[[2m > ^[[22mruntime mutation transactionality (W2)^[[2m > ^[[22mrejects destroying a source without changing graph state or the observation wire
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2298518Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2299925Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2301400Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2302621Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2304081Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2305163Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2306273Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2308363Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2310645Z ^[[90m ^[[2m❯^[[22m makeHandle packages/core/test/integration/mutation-transactionality.test.ts:^[[2m20:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2312486Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/mutation-transactionality.test.ts:^[[2m87:24^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2313548Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2314048Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2314464Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2316381Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/mutation-transactionality.test.ts^[[2m > ^[[22mruntime mutation transactionality (W2)^[[2m > ^[[22mleaves a rejected unknown-source adoption retryable
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2318386Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2319781Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2321265Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2322472Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2324229Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2325552Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2326665Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2328776Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2331058Z ^[[90m ^[[2m❯^[[22m makeHandle packages/core/test/integration/mutation-transactionality.test.ts:^[[2m20:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2332885Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/mutation-transactionality.test.ts:^[[2m120:24^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2333924Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2334424Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2334818Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2336704Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/mutation-transactionality.test.ts^[[2m > ^[[22mruntime mutation transactionality (W2)^[[2m > ^[[22mleaves a rejected self-reference adoption retryable
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2338531Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2339858Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2341164Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2342335Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2343730Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2344785Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2345869Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2347888Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2350129Z ^[[90m ^[[2m❯^[[22m makeHandle packages/core/test/integration/mutation-transactionality.test.ts:^[[2m20:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2351946Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/mutation-transactionality.test.ts:^[[2m141:24^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2352728Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2353489Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2353902Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2355798Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/per-plugin-key-ownership.test.ts^[[2m > ^[[22mper-plugin keyframe key ownership^[[2m > ^[[22mN-8 composes a rig from two plugins that both claim rotation
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2357758Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2359134Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2360660Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2361759Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2362787Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2363948Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2364893Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2366803Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2368821Z ^[[90m ^[[2m❯^[[22m rigRegistry packages/core/test/integration/per-plugin-key-ownership.test.ts:^[[2m59:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2370662Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/per-plugin-key-ownership.test.ts:^[[2m91:37^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2371511Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2371887Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2372230Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2374130Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/per-plugin-key-ownership.test.ts^[[2m > ^[[22mper-plugin keyframe key ownership^[[2m > ^[[22mN-9 refuses the flat spelling of a key both plugins claim
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2376804Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-ambiguous-key/ but got '(0 , __vite_ssr_import_1__.readGoalSl…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2377837Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2378093Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2378535Z /plugin-ambiguous-key/
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2378735Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2378979Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2379627Z "(0 , __vite_ssr_import_1__.readGoalSlot) is not a function"
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2380062Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2380993Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/per-plugin-key-ownership.test.ts:^[[2m119:58^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2382338Z     ^[[90m117|^[[39m     // Not a winner decided by registration order, and not a silent ov…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2383779Z     ^[[90m118|^[[39m     // with both claimants named, so the author can see which group to…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2384964Z     ^[[90m119|^[[39m     expect(() => load(rig(flatRotation), rigRegistry())).toThrow(/plug…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2385964Z     ^[[90m   |^[[39m                                                          ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2386918Z     ^[[90m120|^[[39m     expect(() => load(rig(flatRotation), rigRegistry())).toThrow(/"fk"…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2387672Z     ^[[90m121|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2387947Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2388365Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2388742Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2390566Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/per-plugin-key-ownership.test.ts^[[2m > ^[[22mper-plugin keyframe key ownership^[[2m > ^[[22mN-10 publishes grouped leaves under their unprefixed names
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2392480Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2394151Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2395565Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2396706Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2397905Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2398979Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2400015Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2402030Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2404938Z ^[[90m ^[[2m❯^[[22m rigRegistry packages/core/test/integration/per-plugin-key-ownership.test.ts:^[[2m59:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2406047Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/per-plugin-key-ownership.test.ts:^[[2m124:37^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2406628Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2407083Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2407464Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2409696Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-group-values-section.test.ts^[[2m > ^[[22man explicit values section inside plugin groups^[[2m > ^[[22mY-1 compiles the values section to leaves and the requires section to nothing
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2411927Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2413519Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2415005Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2416198Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2417352Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2418473Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2419549Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2450548Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2452251Z ^[[90m ^[[2m❯^[[22m registry packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m131:40^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2453497Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m140:40^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2453960Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2454220Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2454469Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2455630Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-group-values-section.test.ts^[[2m > ^[[22man explicit values section inside plugin groups^[[2m > ^[[22mY-8 keeps a leaf named values legal inside the section, and resolvable
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2456759Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2457514Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2458266Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2458911Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2459562Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2460122Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2460686Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2461776Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2463002Z ^[[90m ^[[2m❯^[[22m registry packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m131:40^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2464154Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m225:22^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2464571Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2464807Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2465010Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2466227Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-group-values-section.test.ts^[[2m > ^[[22man explicit values section inside plugin groups^[[2m > ^[[22mY-11 joins a bindings-only group to the composer chain and scopes its input
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2467877Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2468638Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2469432Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2470114Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2470735Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2471308Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2471912Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2473276Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2474617Z ^[[90m ^[[2m❯^[[22m registry packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m131:40^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2475641Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m254:22^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2476070Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2476324Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2476555Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2477737Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-group-values-section.test.ts^[[2m > ^[[22man explicit values section inside plugin groups^[[2m > ^[[22mY-13 composes the walker rig's world frame through the values section
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2478898Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2479616Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2480498Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2481206Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2481874Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2482460Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2483304Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2484504Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2485762Z ^[[90m ^[[2m❯^[[22m registry packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m131:40^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2486772Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/plugin-group-values-section.test.ts:^[[2m273:36^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2487243Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2487507Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2487744Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2488899Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-owned-requirements.test.ts^[[2m > ^[[22mplugin-owned requirements end to end^[[2m > ^[[22mQ-7 derives the input edge from the binding and composes world space from it
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2490054Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2490795Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2491577Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2492233Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2492894Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2493923Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2494559Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2495857Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2497097Z ^[[90m ^[[2m❯^[[22m rigRegistry packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m81:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2498072Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m96:36^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2498497Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2498753Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2498988Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2500164Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-owned-requirements.test.ts^[[2m > ^[[22mplugin-owned requirements end to end^[[2m > ^[[22mQ-8 leaves an omitted binding with no edge and lets the plugin own the unbound case
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2501367Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2502134Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2502908Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2503805Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2504460Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2505039Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2505638Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2506783Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2508031Z ^[[90m ^[[2m❯^[[22m rigRegistry packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m81:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2509012Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m118:39^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2509440Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2509700Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2509930Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2510978Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-owned-requirements.test.ts^[[2m > ^[[22mplugin-owned requirements end to end^[[2m > ^[[22mQ-9 refuses a binding whose source is not a node in the graph
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2512584Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /observation-unknown-source/ but got '(0 , __vite_ssr_import_1__.readGoalSl…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2513499Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2513769Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2514272Z /observation-unknown-source/
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2514545Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2514703Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2515116Z "(0 , __vite_ssr_import_1__.readGoalSlot) is not a function"
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2515367Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2515905Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m139:54^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2516603Z     ^[[90m137|^[[39m       }^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2517023Z     ^[[90m138|^[[39m     }^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2517624Z     ^[[90m139|^[[39m     expect(() => load(rig(dangling), rigRegistry())).toThrow(/observat…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2518251Z     ^[[90m   |^[[39m                                                      ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2518695Z     ^[[90m140|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2518999Z     ^[[90m141|^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2519130Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2519385Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2519608Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2520998Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-owned-requirements.test.ts^[[2m > ^[[22mplugin-owned requirements end to end^[[2m > ^[[22mQ-10 treats two slots bound to one source as two edges rather than a duplicate
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2522300Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2523296Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2524140Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2524846Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2525513Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2526093Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2526706Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2527855Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2529104Z ^[[90m ^[[2m❯^[[22m rigRegistry packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m81:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2530082Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m152:21^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2530524Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2530774Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2530992Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2532134Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-owned-requirements.test.ts^[[2m > ^[[22mplugin-owned requirements end to end^[[2m > ^[[22mQ-11 keeps an upstream value out of the observer's authored value namespace
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2533476Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2534266Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2535061Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2535723Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2536368Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2536949Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2537573Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2538717Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2539948Z ^[[90m ^[[2m❯^[[22m rigRegistry packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m81:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2540945Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m185:34^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2541370Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2541628Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2541857Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2542943Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-owned-requirements.test.ts^[[2m > ^[[22mplugin-owned requirements end to end^[[2m > ^[[22mQ-12 refuses a binding to a slot the plugin never declared, at load
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2544760Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error matching /plugin-unknown-requirement/ but got '(0 , __vite_ssr_import_1__.readGoalSl…'^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2545407Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2545549Z ^[[32m- Expected:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2545842Z /plugin-unknown-requirement/
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2546043Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2546182Z ^[[31m+ Received:^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2546548Z "(0 , __vite_ssr_import_1__.readGoalSlot) is not a function"
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2547002Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2547542Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/plugin-owned-requirements.test.ts:^[[2m206:49^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2548268Z     ^[[90m204|^[[39m       }^[[33m,^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2548639Z     ^[[90m205|^[[39m     }^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2549172Z     ^[[90m206|^[[39m     expect(() => load(rig(bad), rigRegistry())).toThrow(/plugin-unknow…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2549769Z     ^[[90m   |^[[39m                                                 ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2550201Z     ^[[90m207|^[[39m   })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2550537Z     ^[[90m208|^[[39m })^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2550712Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2550950Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2551179Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2552310Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/single-input-channel.test.ts^[[2m > ^[[22ma plugin requirement is the only input channel^[[2m > ^[[22mJ-8 composes an upstream value without it ever becoming an authored one
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2553668Z ^[[31m^[[1mTypeError^[[22m: readGoalSlot is not a function^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2554436Z ^[[36m ^[[2m❯^[[22m PluginRegistry.register packages/core/src/domain/plugins.ts:^[[2m480:41^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2555225Z     ^[[90m478|^[[39m     ^[[90m// authored dict would still expand past it. See issue #195.^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2555880Z     ^[[90m479|^[[39m     ^[[35mfor^[[39m (^[[35mconst^[[39m slot ^[[35mof^[[39m slots) {
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2556517Z     ^[[90m480|^[[39m       if (slot !== PLUGIN_GOALS_SLOT && readGoalSlot(slot) === undefin…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2557093Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2557693Z     ^[[90m481|^[[39m       const detail = `requirement slot "${slot}" is reserved for autho…
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2558824Z     ^[[90m482|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[32m`Plugin "^[[39m^[[36m${^[[39mplugin^[[33m.^[[39mname^[[36m}^[[39m^[[32m" ^[[39m^[[36m${^[[39mdetail^[[36m}^[[39m^[[32m.`^[[39m)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2559984Z ^[[90m ^[[2m❯^[[22m load packages/core/test/integration/single-input-channel.test.ts:^[[2m34:11^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2560886Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/single-input-channel.test.ts:^[[2m47:20^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2561282Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2561534Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/27]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2561766Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2561790Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2562290Z ^[[2m Test Files ^[[22m ^[[1m^[[31m10 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m50 passed^[[39m^[[22m^[[90m (60)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2563349Z ^[[2m      Tests ^[[22m ^[[1m^[[31m26 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m213 passed^[[39m^[[22m^[[90m (239)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2563948Z ^[[2m   Start at ^[[22m 10:18:10
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2564671Z ^[[2m   Duration ^[[22m 5.74s^[[2m (transform 1.62s, setup 402ms, import 4.43s, tests 1.24s, environment 9ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2565092Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2565100Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2591035Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ registry packages/core/test/integration/bare-authored-leaf.test.ts:133:40
+integration (node 24)	Run npm run test:integration	 ❯ valuesAt packages/core/test/integration/bare-authored-leaf.test.ts:163:43
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/bare-authored-leaf.test.ts:226:12
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2600238Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2603940Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ registry packages/core/test/integration/bare-authored-leaf.test.ts:133:40
+integration (node 24)	Run npm run test:integration	 ❯ valuesAt packages/core/test/integration/bare-authored-leaf.test.ts:163:43
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/bare-authored-leaf.test.ts:231:12
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2605766Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2609779Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ createEngine packages/core/test/integration/ik-fabrik-chain.test.ts:24:11
+integration (node 24)	Run npm run test:integration	 ❯ mountAll packages/core/test/integration/ik-fabrik-chain.test.ts:154:19
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/ik-fabrik-chain.test.ts:165:34
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2612010Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2615354Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ createEngine packages/core/test/integration/ik-fabrik-chain.test.ts:24:11
+integration (node 24)	Run npm run test:integration	 ❯ mountAll packages/core/test/integration/ik-fabrik-chain.test.ts:154:19
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/ik-fabrik-chain.test.ts:210:34
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2617026Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2619288Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ createEngine packages/core/test/integration/ik-multi-goal.test.ts:100:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/ik-multi-goal.test.ts:112:21
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2620663Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2622825Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ createEngine packages/core/test/integration/ik-multi-goal.test.ts:100:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/ik-multi-goal.test.ts:143:21
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2624509Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2626690Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ createEngine packages/core/test/integration/ik-two-bone.test.ts:88:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/ik-two-bone.test.ts:100:21
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2628019Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2630130Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ createEngine packages/core/test/integration/ik-two-bone.test.ts:88:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/ik-two-bone.test.ts:189:21
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2631509Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2633898Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ createEngine packages/core/test/integration/ik-two-bone.test.ts:88:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/ik-two-bone.test.ts:255:21
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2635354Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2637787Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ makeHandle packages/core/test/integration/mutation-transactionality.test.ts:20:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/mutation-transactionality.test.ts:87:24
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2639285Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2641624Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ makeHandle packages/core/test/integration/mutation-transactionality.test.ts:20:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/mutation-transactionality.test.ts:120:24
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2643330Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2645770Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ makeHandle packages/core/test/integration/mutation-transactionality.test.ts:20:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/mutation-transactionality.test.ts:141:24
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2647329Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2649717Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ rigRegistry packages/core/test/integration/per-plugin-key-ownership.test.ts:59:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/per-plugin-key-ownership.test.ts:91:37
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2652141Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2655397Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-ambiguous-key/ but got '(0 , __vite_ssr_import_1__.readGoalSl…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-ambiguous-key/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"(0 , __vite_ssr_import_1__.readGoalSlot) is not a function"
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/per-plugin-key-ownership.test.ts:119:58
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2657089Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2659500Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ rigRegistry packages/core/test/integration/per-plugin-key-ownership.test.ts:59:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/per-plugin-key-ownership.test.ts:124:37
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2661681Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2664578Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/phase7-walker-demo.test.ts:248:11
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2665898Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2668383Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ registry packages/core/test/integration/plugin-group-values-section.test.ts:131:40
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-group-values-section.test.ts:140:40
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2669884Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2672262Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ registry packages/core/test/integration/plugin-group-values-section.test.ts:131:40
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-group-values-section.test.ts:225:22
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2674067Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2676494Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ registry packages/core/test/integration/plugin-group-values-section.test.ts:131:40
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-group-values-section.test.ts:254:22
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2678133Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2681051Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ registry packages/core/test/integration/plugin-group-values-section.test.ts:131:40
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-group-values-section.test.ts:273:36
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2683353Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2686770Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ rigRegistry packages/core/test/integration/plugin-owned-requirements.test.ts:81:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-owned-requirements.test.ts:96:36
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2688445Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2690909Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ rigRegistry packages/core/test/integration/plugin-owned-requirements.test.ts:81:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-owned-requirements.test.ts:118:39
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2693459Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2698575Z ##[error]AssertionError: expected [Function] to throw error matching /observation-unknown-source/ but got '(0 , __vite_ssr_import_1__.readGoalSl…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/observation-unknown-source/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"(0 , __vite_ssr_import_1__.readGoalSlot) is not a function"
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-owned-requirements.test.ts:139:54
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2701702Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2706262Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ rigRegistry packages/core/test/integration/plugin-owned-requirements.test.ts:81:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-owned-requirements.test.ts:152:21
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2709074Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2713532Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ rigRegistry packages/core/test/integration/plugin-owned-requirements.test.ts:81:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-owned-requirements.test.ts:185:34
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2716074Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2720916Z ##[error]AssertionError: expected [Function] to throw error matching /plugin-unknown-requirement/ but got '(0 , __vite_ssr_import_1__.readGoalSl…'
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	- Expected:
+integration (node 24)	Run npm run test:integration	/plugin-unknown-requirement/
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	+ Received:
+integration (node 24)	Run npm run test:integration	"(0 , __vite_ssr_import_1__.readGoalSlot) is not a function"
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/plugin-owned-requirements.test.ts:206:49
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2724139Z 
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2728182Z ##[error]TypeError: readGoalSlot is not a function
+integration (node 24)	Run npm run test:integration	 ❯ PluginRegistry.register packages/core/src/domain/plugins.ts:480:41
+integration (node 24)	Run npm run test:integration	 ❯ load packages/core/test/integration/single-input-channel.test.ts:34:11
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/single-input-channel.test.ts:47:20
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-30T10:18:16.2738762Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run npm run typecheck	﻿2026-08-30T10:18:11.7587254Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-30T10:18:11.7587613Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-30T10:18:11.7626171Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-30T10:18:11.7626648Z env:
+quality (node 24)	Run npm run typecheck	2026-08-30T10:18:11.7626859Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-30T10:18:11.7627075Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-30T10:18:11.8669883Z 
+quality (node 24)	Run npm run typecheck	2026-08-30T10:18:11.8670747Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-30T10:18:11.8671684Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-30T10:18:11.8672222Z 
+quality (node 24)	Run npm run typecheck	2026-08-30T10:18:15.8467455Z ##[error]packages/core/src/domain/plugins.ts(2,29): error TS2305: Module '"../contract/solver-slots"' has no exported member 'readGoalSlot'.
+quality (node 24)	Run npm run typecheck	2026-08-30T10:18:15.8477349Z ##[error]packages/core/src/plugins/ik.ts(1,10): error TS2305: Module '"../contract/solver-slots"' has no exported member 'readGoalSlot'.
+quality (node 24)	Run npm run typecheck	2026-08-30T10:18:15.8480520Z ##[error]packages/core/test/unit/domain/dict-valued-requirements.test.ts(76,76): error TS2353: Object literal may only specify known properties, and 'dict' does not exist in type 'PluginRequirement'.
+quality (node 24)	Run npm run typecheck	2026-08-30T10:18:15.8483065Z ##[error]packages/core/test/unit/domain/dict-valued-requirements.test.ts(89,64): error TS2353: Object literal may only specify known properties, and 'dict' does not exist in type 'PluginRequirement'.
+quality (node 24)	Run npm run typecheck	2026-08-30T10:18:15.8962205Z ##[error]Process completed with exit code 2.
+```
