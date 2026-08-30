@@ -28,6 +28,9 @@ describe("GSAP interpolator clock ownership (P0-2)", () => {
       duration,
       progress,
       to: () => timeline,
+      // This fixture authors no stops, so nothing reads a child back. The member is declared
+      // because a real `gsap.timeline()` has it and the adapter now names it.
+      recent: () => undefined,
       kill() {},
     };
     const interpolator = createGsapInterpolator({
