@@ -32,9 +32,42 @@ An observation carries `source` and nothing else, and the edge it declares is al
 
 Omit `motionId` to add a free track, which lands at `~/trackId` with no motion scheduling it.
 
+## Changing values without rebuilding the graph
+
+`replace()` is for topology. To move a value, use the two cheap members, which validate no definition, stage no Track, and rebuild no graph:
+
+```ts
+// A read-time mask. The authored definition is untouched.
+track.overrideValues({ length: 100 });
+
+// An authored change. `track.track` moves with it.
+track.setValues({ length: 100 });
+```
+
+Both return the `PatchBatch` of the one invalidation they cause, exactly as `seek()` does, so a dependent recomputes in the same call: masking a bone's `length` moves what an IK solver publishes for it, because a member's values reach a solve through the same read.
+
+The difference is the retained definition. `track.track` answers from it, so `setValues` is the one that keeps `handle.track` and the live composition in agreement, and `overrideValues` deliberately does not: it is a mask you expect to take back.
+
+A mask is replaced wholesale by the next live write rather than accumulated, so an empty record is the clear:
+
+```ts
+track.overrideValues({});
+```
+
+That restores the authored values and nothing else. A real `replace()` also drops the mask, because it compiles a fresh Track. Omitted keys always keep their authored values, and topology, progress, and observations are untouched by either member.
+
+The refusal set is contract, not a limitation. Each of these throws `LiveValueKeyError`, whose `ruleId` is `live-value-key`, with no mutation and no publish:
+
+- a key the track does not author;
+- a key another plugin owns, which is the same thing: the group form is how you name the owner;
+- a namespaced `key:like:this` or an interpolator scratch `_key`, neither of which is authorable;
+- a key the interpolator animates.
+
+The last one is the interesting one. An animated key is refused rather than frozen at the value you passed, because a mask over an authored animation would silently hold that property still forever. Change the animation with `replace()`. See ADR-059.
+
 ## A stale handle refuses, and `live` asks without throwing
 
-A handle carries a private token, so it can never affect a later track that reuses the same id. Once that token is no longer current the handle is stale, and every member of it fails the same way: `track`, `remove()`, `replace()`, `addObserve()`, and `removeObserve()` all throw `StaleTrackHandleError`. Four of them used to return silently, which reported success for doing nothing. See ADR-056.
+A handle carries a private token, so it can never affect a later track that reuses the same id. Once that token is no longer current the handle is stale, and every member of it fails the same way: `track`, `remove()`, `replace()`, `addObserve()`, `removeObserve()`, `overrideValues()`, and `setValues()` all throw `StaleTrackHandleError`. Four of them used to return silently, which reported success for doing nothing. See ADR-056.
 
 The error extends `TypeError` and keeps the message `Track "<id>" is no longer live.` verbatim, so an existing `instanceof TypeError` narrowing keeps matching. Branch on `ruleId`, which is `stale-track-handle`, rather than on the message; `nodeId` carries the node the refused handle was captured against.
 
@@ -60,7 +93,7 @@ for (const track of [...handles].reverse()) track.remove();
 
 ## What atomicity guarantees you get
 
-A refused single-track mutation costs nothing. `addTrack` and `replaceTrack` resolve the compiled track and seed its progress against the entry list they are about to commit, then commit, so a rejection leaves no partial state and the seeded values are identical to what a successful commit would have produced.
+A refused single-track mutation costs nothing. `addTrack` and `replaceTrack` resolve the compiled track and seed its progress against the entry list they are about to commit, then commit, so a rejection leaves no partial state and the seeded values are identical to what a successful commit would have produced. A refused live value write is the same: the key check runs before anything is written, so the retained definition, the mask, and the published patch are all exactly as they were.
 
 A rejected motion mutation reports the rejection that caused it. If the rollback itself also fails, for example because your own scroll-source unsubscribe throws, you get one `AggregateError` whose message opens with the original rejection verbatim and whose `errors` are `[rejection, rollbackFailure]`. The reason the operation was refused always outranks the noise from cleaning up.
 
