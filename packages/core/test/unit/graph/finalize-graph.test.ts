@@ -94,6 +94,38 @@ describe("finalizeGraph", () => {
     }
   });
 
+  it("EV-8 keeps that agreement when every rebuild is an evicting one", () => {
+    // `buildPair` constructs a fresh builder per call, so nothing above this line ever asks the
+    // incremental builder a second question. One builder walks the whole corpus here, which means
+    // every entry after the first is answered by a builder whose cache holds the previous entry's
+    // tracks and sweeps them on the way through. Eviction must not change one diagnostic. Issue
+    // #225.
+    const incremental = new IncrementalGraphBuilder();
+    for (const { label, project, expectOrder, expectRuleIds } of CORPUS) {
+      const reference = buildGraphIR(project);
+      const swept = incremental.build(project);
+
+      expect(swept.diagnostics, `${label}: diagnostics agree after a sweep`).toEqual(
+        reference.diagnostics,
+      );
+      expect(
+        swept.diagnostics.map((d) => d.ruleId),
+        `${label}: rule ids after a sweep`,
+      ).toEqual(expectRuleIds);
+      if (expectOrder === null) {
+        expect(swept.graph, `${label}: graph should be absent after a sweep`).toBeUndefined();
+      } else {
+        expect(swept.graph?.order, `${label}: order after a sweep`).toEqual(expectOrder);
+      }
+      // Residency is bounded by the entry just built, so no track of any earlier corpus entry is
+      // still resident. The corpus reuses ids across entries with fresh objects, which makes every
+      // rebuild a miss rather than a stale hit.
+      expect(incremental.cachedNodeCount, `${label}: residency`).toBeLessThanOrEqual(
+        project.freeTracks?.length ?? 0,
+      );
+    }
+  });
+
   it("T-C0.3 observation-duplicate message uses describeEdge format in both builders", () => {
     // Focused pin for the specific pre-C0 divergence: one builder used `describeEdge`
     // ("~/arm <- ~/root (output)"), the other used the raw `edgeKey` (a length-prefixed blob).
