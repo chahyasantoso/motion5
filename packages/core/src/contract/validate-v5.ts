@@ -150,53 +150,60 @@ export function validateKeyframes(
     validateStops(leaf.stops, propertyPath);
   };
   /**
-   * The reserved goals slot: one binding per chain member, keyed by the member's authored id.
+   * A dict-valued requirement slot: one source id per key the author names.
    *
-   * Four rules of its own rather than an exception inside `validateRequires`, because this is the
-   * one binding whose authored value is a record and `keyframes-requires-source` answers only for a
-   * source id. Left to that rule the dict is refused outright, and deleting the rule instead would
-   * make a malformed dict derive no binding at all: no edge, no ordering, no pending classification,
-   * and a solver that reaches for nothing with no diagnostic.
+   * Rules of its own rather than an exception inside the slot loop, because
+   * `keyframes-requires-source` answers only for a source id. Left to that rule a dict is refused
+   * outright, which is what made the shape unauthorable before the goals slot was special-cased.
+   * Deleting that rule instead would make a malformed dict derive no binding at all: no edge, no
+   * ordering, no pending classification, and a solver that reaches for nothing with no diagnostic.
    *
-   * Shape only, and deliberately not membership. Whether a key names a real member of this solver's
-   * chain is derived from `solver` edges in `resolveSolvers`, which is the only owner that knows the
-   * member set; asking it here would need a graph this layer must not hold. Brackets are refused in
-   * a member id so the derived `targets[<memberId>]` slot identity cannot be forged by an authored
-   * name, which is the same reservation argument the colon rule above makes. See issue #195.
+   * Keyed on the value's shape rather than on the slot's name, which is the whole of what generalizes
+   * here. Keyed on the name, a second plugin declaring a dict-accepting slot is refused one layer
+   * before its own declaration can be read, so `PluginRequirement.dict` would be unreachable for
+   * every slot but one and the capability would still be `ik`'s alone. See ADR-057.
+   *
+   * Shape only, and deliberately not membership. Whether a key names a real member of a solver's
+   * chain is derived from `solver` edges in `resolveSolvers`, the only owner that knows the member
+   * set; asking it here would need a graph this layer must not hold. Whether the slot was allowed to
+   * carry a dict at all is `PluginRegistry`'s question, for the same reason in the other direction.
+   *
+   * The brackets stay refused, with a corrected rationale rather than a corrected rule. They were
+   * refused because an authored key containing one could forge the derived `targets[<memberId>]` slot
+   * identity, and that identity no longer exists. What is left is that a dict key is an authored
+   * name, authored names reserve `:` for internal keys, and this slice's accepted-behavior line is
+   * that no rig gains an authored spelling it did not have. Widening the legal key set is a separate
+   * decision, and no rig is asking for it.
    */
-  const validateGoals = (goals: unknown, goalsPath: string): void => {
-    if (!isObject(goals)) {
-      const detail = "must be an object mapping member ids to source ids";
-      add("keyframes-targets-shape", goalsPath, `Plugin '${PLUGIN_GOALS_SLOT}' ${detail}.`);
-      return;
-    }
-    const entries = Object.entries(goals);
+  const validateRequirementDict = (dict: RawObject, dictPath: string): void => {
+    const entries = Object.entries(dict);
     if (entries.length === 0) {
-      const detail = "must declare at least one goal, or be omitted entirely";
-      add("keyframes-targets-empty", goalsPath, `Plugin '${PLUGIN_GOALS_SLOT}' ${detail}.`);
+      const detail = "must declare at least one entry, or be omitted entirely";
+      add("keyframes-requires-dict-empty", dictPath, `A dict-valued slot ${detail}.`);
       return;
     }
-    for (const [member, source] of entries) {
-      const memberPath = `${goalsPath}.${member}`;
-      const forged = member.includes("[") || member.includes("]");
-      if (member.length === 0 || member.includes(":") || forged) {
+    for (const [key, source] of entries) {
+      const keyPath = `${dictPath}.${key}`;
+      const forged = key.includes("[") || key.includes("]");
+      if (key.length === 0 || key.includes(":") || forged) {
         const detail = "must be non-empty and must not contain ':', '[' or ']'";
-        add("keyframes-targets-member", memberPath, `Goal member id '${member}' ${detail}.`);
+        add("keyframes-requires-dict-key", keyPath, `Requirement dict key '${key}' ${detail}.`);
       }
       if (typeof source !== "string" || source.length === 0) {
         const detail = "must name a non-empty source id";
-        add("keyframes-targets-source", memberPath, `Goal for member '${member}' ${detail}.`);
+        add("keyframes-requires-dict-source", keyPath, `Dict entry '${key}' ${detail}.`);
       }
     }
   };
   /**
    * The registry-independent half of binding validation.
    *
-   * Shape only: an object mapping non-empty slot names to non-empty source ids. Whether the group
-   * names a registered plugin, and whether that plugin declares the slot, belongs to
+   * Shape only: an object mapping non-empty slot names to non-empty source ids, or to a dict of
+   * them. Whether the group names a registered plugin, whether that plugin declares the slot, and
+   * whether it declared that the slot accepts a dict all belong to
    * `PluginRegistry.resolveForKeyframes`; whether the source resolves to a node, and whether the
-   * derived edge is acyclic, belongs to graph construction. Three owners, because a single one
-   * would have to hold a plugin registry inside the contract layer to answer all three.
+   * derived edge is acyclic, belongs to graph construction. Three owners, because a single one would
+   * have to hold a plugin registry inside the contract layer to answer all three.
    *
    * An empty section is refused rather than ignored. Omitting `requires` is already the way to bind
    * nothing, so an empty one is a field accepted and then ignored, which ADR-033 forbids.
@@ -216,13 +223,22 @@ export function validateKeyframes(
     }
     for (const [slot, source] of slots) {
       const slotPath = `${requiresPath}.${slot}`;
-      if (slot === PLUGIN_GOALS_SLOT) {
-        validateGoals(source, slotPath);
-        continue;
-      }
       if (slot.length === 0 || slot.includes(":")) {
         const detail = "must be non-empty and must not contain ':'";
         add("keyframes-requires-slot", slotPath, `Requirement slot '${slot}' ${detail}.`);
+      }
+      // The one rule still keyed on a slot name, because only the name can answer it: this slot
+      // carries a solver's goal dict, so a scalar at it is malformed rather than the ordinary scalar
+      // binding it would be anywhere else. Every rule below is about the dict rather than about
+      // which slot is allowed to hold one, which is the registry's question. See ADR-057.
+      if (slot === PLUGIN_GOALS_SLOT && !isObject(source)) {
+        const detail = "must be an object mapping member ids to source ids";
+        add("keyframes-targets-shape", slotPath, `Plugin '${PLUGIN_GOALS_SLOT}' ${detail}.`);
+        continue;
+      }
+      if (isObject(source)) {
+        validateRequirementDict(source, slotPath);
+        continue;
       }
       if (typeof source !== "string" || source.length === 0) {
         const detail = "must name a non-empty source id";
