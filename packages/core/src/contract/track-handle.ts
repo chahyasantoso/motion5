@@ -1,4 +1,4 @@
-import type { ObservationDefinition, TrackDefinition } from "./v5";
+import type { AuthoredStaticValue, ObservationDefinition, PatchBatch, TrackDefinition } from "./v5";
 
 /**
  * The one failure a stale `TrackHandle` reports, from every member it has.
@@ -24,6 +24,21 @@ export class StaleTrackHandleError extends TypeError {
     this.nodeId = nodeId;
   }
 }
+
+/**
+ * The values a live write carries: one authored static value per key.
+ *
+ * Closed to `AuthoredStaticValue` rather than open to any renderer-neutral value, which is this
+ * capability's refusal set stated as a type instead of as a check. An animated key is refused by
+ * name, so every key a live write may name is a static authored leaf, and a static leaf is a finite
+ * number, a string, or a boolean by ADR-050. Nothing here can therefore carry a stop list, a nested
+ * record, or a shape the interpolator would have to be asked about.
+ *
+ * Declared beside the handle that takes it rather than in three places. `Track` and `ProjectRuntime`
+ * name this type instead of respelling the record, for the same reason `TrackHandle` itself is
+ * declared once here. See ADR-059.
+ */
+export type LiveValues = Readonly<Record<string, AuthoredStaticValue>>;
 
 /**
  * A capability handle for one graph node, valid while the token it captured is current.
@@ -53,4 +68,28 @@ export interface TrackHandle {
   replace(next: TrackDefinition): void;
   addObserve(observation: ObservationDefinition): void;
   removeObserve(observation: ObservationDefinition): void;
+  /**
+   * Masks this node's interpolated values until the next live write or a real `replace()`.
+   *
+   * Cheap by construction: no definition is validated, no Track is staged, and the graph is not
+   * rebuilt. The mask is replaced wholesale rather than accumulated, so an empty record is the
+   * clear, and it is dropped by `replace()` because that compiles a fresh Track. Returns the
+   * `PatchBatch` of the one invalidate it causes, exactly as `seek()` does.
+   *
+   * Refuses an unknown key, a key another plugin owns, a namespaced key, an interpolator scratch
+   * key, and an animated key, with `LiveValueKeyError` and no mutation. An animated key is refused
+   * rather than frozen: the `Interpolator` port has no per-key write, and a partial implementation
+   * that masked an authored animation forever is the failure this refusal exists to prevent.
+   * See ADR-059.
+   */
+  overrideValues(next: LiveValues): PatchBatch;
+  /**
+   * Rewrites authored static values, leaving topology, progress, and observations alone.
+   *
+   * `track` above answers from the retained definition, and this is the member that moves it, so
+   * the definition and the live composition cannot disagree. Omitted keys keep their authored
+   * values. Same refusal set as `overrideValues`, same single invalidate, and no `replaceGraph`.
+   * See ADR-059.
+   */
+  setValues(next: LiveValues): PatchBatch;
 }

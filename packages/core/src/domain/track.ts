@@ -1,5 +1,7 @@
 import type { ImmutableRecord } from "./values";
 import { equalValues, freezeValue } from "./values";
+import { readAuthoredLeaf } from "../contract/authored-leaf";
+import type { LiveValues } from "../contract/track-handle";
 import type { InterpolationTimeline, Interpolator } from "../ports/interpolator";
 import type { PluginInputs, RequirementInputs, ResolvedPlugins } from "./plugins";
 
@@ -18,6 +20,43 @@ export class CompositionOutputError extends TypeError {
   constructor(message: string) {
     super(message);
     this.name = this.ruleId;
+  }
+}
+/** Why one key of a live value write was refused. One reason per key, never a list. */
+export type LiveValueRefusal = "unknown" | "animated";
+/**
+ * The one refusal a live value write reports.
+ *
+ * `TypeError` is the parent for the reason `StaleTrackHandleError` gives: every existing narrowing
+ * of a bad argument keeps matching, and the named type is a narrowing rather than a break. `ruleId`
+ * is what a caller branches on, carried on the instance as well as the constructor so a caught
+ * value answers without the class in scope.
+ *
+ * Two reasons, and they are the whole set. `unknown` is a key the authored record does not have,
+ * which is one answer for an unknown name, a key another plugin owns, a namespaced `:` key, and an
+ * interpolator scratch `_` key: ownership was settled at resolve time and neither reserved spelling
+ * can be authored, so a key that reached `authoredKeyframes` has an owner by construction.
+ * `animated` is a key the interpolator drives, refused so a live write cannot silently freeze an
+ * authored animation. See ADR-059.
+ */
+export class LiveValueKeyError extends TypeError {
+  static readonly ruleId = "live-value-key";
+  readonly ruleId: string = LiveValueKeyError.ruleId;
+  /** The qualified node id whose values were being written. */
+  readonly nodeId: string;
+  /** The one key that was refused. */
+  readonly key: string;
+  readonly reason: LiveValueRefusal;
+  constructor(nodeId: string, key: string, reason: LiveValueRefusal) {
+    super(
+      reason === "animated"
+        ? `Key "${key}" of track "${nodeId}" is animated and cannot carry a live value.`
+        : `Key "${key}" is not an authored value of track "${nodeId}".`,
+    );
+    this.name = "LiveValueKeyError";
+    this.nodeId = nodeId;
+    this.key = key;
+    this.reason = reason;
   }
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -104,6 +143,8 @@ function unchanged(left: unknown, right: unknown): boolean {
 }
 const NO_PLUGIN_INPUTS: PluginInputs = Object.freeze({});
 const NO_REQUIREMENT_INPUTS: RequirementInputs = Object.freeze({});
+/** No mask. One frozen value, so "no live values" allocates nothing and compares by identity. */
+const NO_VALUES: ImmutableRecord = Object.freeze({});
 const EMPTY_RESOLVED_PLUGINS: ResolvedPlugins = Object.freeze({
   plugins: Object.freeze([]),
   diagnostics: Object.freeze([]),
@@ -120,6 +161,7 @@ export class Track {
   #progress = 0;
   #dirty = true;
   #disposed = false;
+  #values: ImmutableRecord = NO_VALUES;
   #lastSnapshot: TrackSnapshot | undefined;
   #lastSeed: ImmutableRecord | undefined;
   #lastRequirementInputs: RequirementInputs | undefined;
@@ -151,6 +193,49 @@ export class Track {
     return true;
   }
   /**
+   * Masks this track's interpolated values with `next`, from the next read onward.
+   *
+   * One layer and one semantics. This method does not know whether it is applying a caller's
+   * override or a rewritten authored value, because at this layer there is no difference: the
+   * difference is whether the retained `TrackDefinition` changed, and `ProjectRuntime` is the only
+   * owner of that. Two layers here would make this class the owner of a distinction it cannot
+   * enforce and would put the same merge in two places.
+   *
+   * Replaced wholesale rather than accumulated, so an empty record is no mask at all, and frozen
+   * rather than retained by reference, so a caller that keeps mutating its own object cannot move
+   * this track's values behind the memo's back. See ADR-059.
+   */
+  overrideValues(next: LiveValues): void {
+    this.assertActive();
+    this.#values = this.#acceptedValues(next);
+    this.#dirty = true;
+  }
+  /**
+   * Every incoming key, answered by the two owners that already exist.
+   *
+   * `authoredKeyframes` is the flattened authored record the resolver produced, so presence in it is
+   * the whole of the unknown-key question: a key another plugin owns, a namespaced key, and an
+   * interpolator scratch key are all absent from it, and ownership was settled at resolve time.
+   * `readAuthoredLeaf` is the one function allowed to say what shape a leaf has, which is the whole
+   * of the animated-key question. This class therefore holds no registry and reimplements no
+   * ownership predicate.
+   *
+   * Every key is checked before anything is assigned, so a refused key in a call that also named a
+   * legal one leaves the mask exactly as it was.
+   */
+  #acceptedValues(next: LiveValues): ImmutableRecord {
+    const authored = this.#plugins.authoredKeyframes;
+    const accepted: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(next)) {
+      if (!Object.hasOwn(authored, key)) throw new LiveValueKeyError(this.#nodeId, key, "unknown");
+      if (readAuthoredLeaf(authored[key]).kind === "animated")
+        throw new LiveValueKeyError(this.#nodeId, key, "animated");
+      accepted[key] = value;
+    }
+    if (Object.keys(accepted).length === 0) return NO_VALUES;
+    return freezeValue(accepted as ImmutableRecord);
+  }
+  /**
    * This track's interpolated, renderer-neutral state, before any plugin runs.
    *
    * Readable on its own because a value with no dependency on composition order should not have to
@@ -161,10 +246,17 @@ export class Track {
    *
    * A read rather than a composition. No plugin runs, nothing is memoized, and the track is not
    * marked clean, so a caller cannot make a track look composed by asking it what it interpolated.
+   *
+   * The live value mask is applied here, after renderer-neutral filtering and before any caller
+   * sees the record. That placement is the whole of the slice: this one read is what ordinary
+   * composition, `composeFrom`, and the publisher's `MemberState` all go through, so a masked value
+   * cannot reach one of them and miss another. See ADR-059.
    */
   interpolated(): ImmutableRecord {
     this.assertActive();
-    return rendererNeutralState(this.#timeline.state);
+    const interpolated = rendererNeutralState(this.#timeline.state);
+    if (this.#values === NO_VALUES) return interpolated;
+    return { ...interpolated, ...this.#values };
   }
   /**
    * Composes this track's values, then runs the plugin chain over them.
@@ -196,7 +288,8 @@ export class Track {
    * The seed is part of the memo key, for the same reason the requirement inputs are. `#dirty`
    * reports whether the timeline moved, which says nothing about whether this is the seed the last
    * snapshot was composed from, and answering one seed's question with another seed's snapshot is
-   * the one way this seam can be silently wrong.
+   * the one way this seam can be silently wrong. It is also why a changed mask needs no flag of its
+   * own to be seen: a different mask is a different seed.
    */
   composeFrom(
     seed: ImmutableRecord,

@@ -1,14 +1,19 @@
 import type {
+  AuthoredKeyframe,
+  AuthoredPluginGroup,
+  AuthoredStaticValue,
   Diagnostic,
   ObservationDefinition,
   ProjectDefinition,
   TrackDefinition,
   MotionDefinition,
 } from "../contract/v5";
-import { StaleTrackHandleError, type TrackHandle } from "../contract/track-handle";
+import { readAuthoredLeaf } from "../contract/authored-leaf";
+import { StaleTrackHandleError, type LiveValues, type TrackHandle } from "../contract/track-handle";
 import { validateMotionTrigger, validateTrackDefinition } from "../contract/validate-v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
+import { flattenAuthoredKeyframes } from "../domain/keyframe-groups";
 import { observationEdgeKey } from "../graph/ir";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
@@ -28,6 +33,15 @@ export interface ProjectRuntimeOptions {
   readonly compose: ComposeResolver;
   readonly interpolated?: (node: GraphNode) => (() => MemberState) | undefined;
   readonly setProgress?: (nodeId: string, progress: number) => void;
+  /**
+   * The one seam by which a live value reaches the compiled Track this runtime does not own.
+   *
+   * One hook rather than one per entry point, and that is the ownership statement: `Track` holds one
+   * mask, so a second hook pointing at the same method would be two owners of one question. What
+   * separates `setValues` from `overrideValues` is the retained definition, which is this runtime's
+   * own. See ADR-059.
+   */
+  readonly overrideValues?: (nodeId: string, values: LiveValues) => void;
   readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
   readonly disposeTrack?: (nodeId: string) => void;
   readonly stageTrack?: (track: TrackDefinition, nodeId: string) => StagedTrack;
@@ -61,6 +75,58 @@ function runRollbackSteps(steps: readonly (() => void)[]): void {
   if (failures.length === 0) return;
   if (failures.length === 1) throw failures[0];
   throw new AggregateError(failures, "Track replacement rollback failed.");
+}
+/**
+ * The authored static values of `track`, flattened, and nothing else.
+ *
+ * The mask a live write applies is derived from the retained definition rather than accumulated
+ * across calls, and that is what makes `handle.track` and the composition unable to disagree: every
+ * static leaf is masked with exactly what the definition says it is, so the key a caller named is
+ * the only one that differs, an override cannot outlive the authored value it masked, and an empty
+ * record is a clear back to authored truth rather than a hole.
+ *
+ * An animated leaf is absent by construction. `Track` refuses one, and the interpolator owns it.
+ *
+ * `flattenAuthoredKeyframes` and `readAuthoredLeaf` answer both halves, so nothing here re-derives
+ * what a group is or what shape a leaf has. See ADR-049, ADR-050, and ADR-059.
+ */
+function authoredValues(track: TrackDefinition): Record<string, AuthoredStaticValue> {
+  const flattened = flattenAuthoredKeyframes(track.keyframes ?? {});
+  const values: Record<string, AuthoredStaticValue> = {};
+  for (const [key, property] of Object.entries(flattened.keyframes)) {
+    const leaf = readAuthoredLeaf(property);
+    if (leaf.kind === "static") values[key] = leaf.value;
+  }
+  return values;
+}
+/**
+ * `track` with `values` written back into the authored record each key came from.
+ *
+ * The flattened entry carries the group that claimed a leaf, so a grouped value is rewritten inside
+ * that group's `values` section and a flat one at the top level. There is no second answer about
+ * where an authored key lives: the function that flattened it says so.
+ *
+ * A key with no flattened entry is skipped rather than invented. It cannot be reached in practice,
+ * because `Track` refuses a key that is absent from the resolved authored record before this runs,
+ * and inventing a leaf here would make this layer the author.
+ */
+function withAuthoredValues(track: TrackDefinition, values: LiveValues): TrackDefinition {
+  const flattened = flattenAuthoredKeyframes(track.keyframes ?? {});
+  const keyframes: Record<string, AuthoredKeyframe> = { ...track.keyframes };
+  for (const [key, value] of Object.entries(values)) {
+    const entry = flattened.entries.find((candidate) => candidate.key === key);
+    if (entry === undefined) continue;
+    if (entry.group === undefined) {
+      keyframes[key] = value;
+      continue;
+    }
+    const group = keyframes[entry.group] as AuthoredPluginGroup;
+    keyframes[entry.group] = Object.freeze({
+      ...group,
+      values: Object.freeze({ ...group.values, [key]: value }),
+    });
+  }
+  return Object.freeze({ ...track, keyframes: Object.freeze(keyframes) });
 }
 /**
  * Rejects an operation whose rollback can fail on its own.
@@ -99,6 +165,7 @@ export class ProjectRuntime {
   #nextToken = 1;
   readonly #diagnostics: Diagnostics;
   readonly #setProgress: (nodeId: string, progress: number) => void;
+  readonly #overrideValues: (nodeId: string, values: LiveValues) => void;
   readonly #compileTrack: ((track: TrackDefinition, nodeId?: string) => void) | undefined;
   readonly #disposeTrack: ((nodeId: string) => void) | undefined;
   readonly #stageTrack: ((track: TrackDefinition, nodeId: string) => StagedTrack) | undefined;
@@ -132,6 +199,7 @@ export class ProjectRuntime {
         token: this.#nextToken++,
       });
     this.#setProgress = options.setProgress ?? (() => undefined);
+    this.#overrideValues = options.overrideValues ?? (() => undefined);
     this.#compileTrack = options.compileTrack;
     this.#disposeTrack = options.disposeTrack;
     this.#stageTrack = options.stageTrack;
@@ -232,8 +300,7 @@ export class ProjectRuntime {
   }
   track(nodeId: string): TrackHandle {
     this.#assertLive();
-    const entry = this.#tracks.get(nodeId);
-    if (!entry) throw new TypeError(`Unknown graph node "${nodeId}".`);
+    const entry = this.#entryOf(nodeId);
     return this.#handle(nodeId, entry.token);
   }
   adopt(
@@ -297,6 +364,18 @@ export class ProjectRuntime {
     return this.#handle(id, token);
   }
   /**
+   * The entry for a node id, or the refusal for an id this project never had.
+   *
+   * Separate from `#liveEntry` below on purpose: this answers about an id, which is what the public
+   * members that take one ask, and that one answers about a captured token. Both are one lookup
+   * with one message rather than a copy per caller.
+   */
+  #entryOf(nodeId: string): TrackEntry {
+    const entry = this.#tracks.get(nodeId);
+    if (!entry) throw new TypeError(`Unknown graph node "${nodeId}".`);
+    return entry;
+  }
+  /**
    * The one place that compares a captured token against the live one.
    *
    * `#liveEntry` below is the refusal and this is the probe, so `TrackHandle.live` and every
@@ -337,6 +416,12 @@ export class ProjectRuntime {
         runtime.#replaceWithObservation(id, token, observation, true),
       removeObserve: (observation: ObservationDefinition) =>
         runtime.#replaceWithObservation(id, token, observation, false),
+      overrideValues: (next: LiveValues) =>
+        runtime.#writeValues(id, runtime.#liveEntry(id, token), next, (track) => track),
+      setValues: (next: LiveValues) =>
+        runtime.#writeValues(id, runtime.#liveEntry(id, token), next, (track) =>
+          withAuthoredValues(track, next),
+        ),
     });
   }
   #removeTrack(id: string, token: number): void {
@@ -389,6 +474,35 @@ export class ProjectRuntime {
     this.#tracks.set(id, { ...entry, track: accepted });
     staged?.commit();
   }
+  /**
+   * The one live-value write path.
+   *
+   * `retained` is the only difference between the two entry points: an override leaves the retained
+   * definition alone and a `setValues` rewrites it. Which keys are legal, what the live Track is
+   * masked with, when the graph is invalidated, and where the diagnostics go are all shared, so the
+   * two cannot answer differently, invalidate twice, or record in two places.
+   *
+   * The mask is applied before the definition is committed, and that order is the atomicity: the
+   * layer holding the resolved plugins is the one that owns key validation, so a refused key throws
+   * from there with nothing written here, which is what leaves `handle.track` and the composition
+   * both untouched by a refusal. Nothing can observe the gap between the two writes, because no
+   * flush happens until the invalidate below.
+   *
+   * No `stageTrack`, no `replaceGraph`, and no whole-definition validation. Those are what
+   * `replace()` is for, and they are the entire cost this exists to avoid. See ADR-059.
+   */
+  #writeValues(
+    nodeId: string,
+    entry: TrackEntry,
+    values: LiveValues,
+    retained: (track: TrackDefinition) => TrackDefinition,
+  ) {
+    this.#overrideValues(nodeId, { ...authoredValues(entry.track), ...values });
+    this.#tracks.set(nodeId, { ...entry, track: retained(entry.track) });
+    const batch = this.#graph.invalidate([nodeId]);
+    this.#diagnostics.recordAll(batch.diagnostics);
+    return batch;
+  }
   #replaceWithObservation(
     id: string,
     token: number,
@@ -436,6 +550,29 @@ export class ProjectRuntime {
     const batch = this.#graph.invalidate([nodeId]);
     this.#diagnostics.recordAll(batch.diagnostics);
     return batch;
+  }
+  /**
+   * Masks `nodeId`'s interpolated values, leaving the authored definition exactly as it was.
+   *
+   * The cheap half of the pair: read-time only, sticky until the next live write or a real
+   * `replace()`, and gone if the node is recompiled. See ADR-059.
+   */
+  overrideValues(nodeId: string, values: LiveValues) {
+    this.#assertLive();
+    return this.#writeValues(nodeId, this.#entryOf(nodeId), values, (track) => track);
+  }
+  /**
+   * Rewrites `nodeId`'s authored static values, topology untouched.
+   *
+   * The authored half: the retained `TrackDefinition` moves with the live values, so `handle.track`
+   * and the composition cannot disagree, and it still costs one invalidate rather than a validation,
+   * a staged Track, and a graph rebuild. See ADR-059.
+   */
+  setValues(nodeId: string, values: LiveValues) {
+    this.#assertLive();
+    return this.#writeValues(nodeId, this.#entryOf(nodeId), values, (track) =>
+      withAuthoredValues(track, values),
+    );
   }
   invalidate(nodeIds: readonly string[]) {
     this.#assertLive();

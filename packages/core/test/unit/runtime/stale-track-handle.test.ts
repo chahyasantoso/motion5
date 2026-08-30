@@ -43,6 +43,9 @@ const compose = (node: { id: string }) => () => ({
  * The resolver refuses before it reads an argument, so the values matter far less than the keys
  * do: this record is the declared half of `SH-1`'s coverage check, and a member added to the
  * handle later with no entry here fails that check rather than escaping the stale contract.
+ *
+ * `overrideValues` and `setValues` are that mechanism working as intended: both arrived with
+ * ADR-059 and both are covered here rather than through a private copy of the stale contract.
  */
 const MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   track: [],
@@ -50,6 +53,8 @@ const MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   replace: [{ id: "arm" } satisfies TrackDefinition],
   addObserve: [{ source: OTHER_ID } satisfies ObservationDefinition],
   removeObserve: [{ source: OTHER_ID } satisfies ObservationDefinition],
+  overrideValues: [{ x: 1 }],
+  setValues: [{ x: 1 }],
 };
 /** The two members that answer on a stale handle rather than refusing. */
 const NON_REFUSING = ["id", "live"] as const;

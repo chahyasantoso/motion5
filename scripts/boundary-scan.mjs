@@ -45,6 +45,8 @@ const allowedPublicExports = new Set([
   "ProjectHandle",
   "TrackHandle",
   "StaleTrackHandleError",
+  "LiveValues",
+  "LiveValueKeyError",
   "PluginRegistry",
   "PluginDefinition",
   "ResolvedPlugins",
