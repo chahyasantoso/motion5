@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type {
-  AuthoredStaticValue,
-  PatchBatch,
-  ProjectDefinition,
-} from "../../src/contract/v5";
+import type { AuthoredStaticValue, PatchBatch, ProjectDefinition } from "../../src/contract/v5";
 import type { TrackHandle } from "../../src/contract/track-handle";
 import { PluginRegistry } from "../../src/domain/plugins";
 import { Engine, type ProjectHandle } from "../../src/engine";

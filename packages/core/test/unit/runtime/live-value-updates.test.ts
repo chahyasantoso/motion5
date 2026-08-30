@@ -244,16 +244,20 @@ describe("live values reach the graph without replacing it", () => {
 
     // Refused until the port grows a per-key capability, which `LV-12` pins as not having happened.
     // A partial implementation that froze an authored animation is the failure this slice avoids.
-    for (const refuse of [() => arm.setValues({ rotation: 45 }), () => arm.overrideValues({ rotation: 45 })]) {
-      const thrown = (() => {
+    const refusals = [
+      () => arm.setValues({ rotation: 45 }),
+      () => arm.overrideValues({ rotation: 45 }),
+    ];
+    for (const refuse of refusals) {
+      let thrown: unknown;
+      expect(() => {
         try {
           refuse();
         } catch (error) {
-          return error;
+          thrown = error;
+          throw error;
         }
-        throw new Error("Expected the animated key to be refused.");
-      })();
-      expect(thrown).toBeInstanceOf(TypeError);
+      }).toThrow(TypeError);
       expect((thrown as { ruleId?: string }).ruleId).toBe(RULE_ID);
     }
 
