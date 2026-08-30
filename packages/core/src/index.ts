@@ -50,9 +50,13 @@ export type { EngineOptions, ProjectHandle } from "./engine";
  * `instanceof` a type it cannot name, and branching on its `ruleId` is the whole point of giving
  * the failure a name instead of a message to match. Named from its owner rather than re-exported
  * through `./engine`, so there is one declaration and one export path. See ADR-056.
+ *
+ * `AuthoredValues` is the parameter type of both live write members, so a caller that writes one
+ * has to be able to name it. `LiveValues` stays beside it as the narrower mask type, which is what
+ * a caller names when it only ever writes static values. See ADR-060.
  */
 export { StaleTrackHandleError } from "./contract/track-handle";
-export type { LiveValues, TrackHandle } from "./contract/track-handle";
+export type { AuthoredValues, LiveValues, TrackHandle } from "./contract/track-handle";
 /**
  * The refusal a live value write reports, exported on exactly the rule above: a caller cannot
  * `instanceof` a type it cannot name, and `ruleId` is what it branches on. `Track` is not exported
