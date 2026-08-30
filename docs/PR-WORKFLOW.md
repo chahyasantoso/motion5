@@ -52,7 +52,7 @@ For fork PRs, the write-enabled repair job cannot push to your branch. Fix forma
 
 Failed `CI` and `Recovery audit` runs are archived by `.github/workflows/archive-ci-logs.yml` on the separate `ci-logs` branch at `logs/<run-id>/`. The archive contains `README.md`, `run.json`, and `failed-jobs.log`. Link the original Actions run in the PR/status note; consult the archive for durable diagnostics. Never treat `ci-logs` as a development branch.
 
-Archiving is driven by `workflow_run`, which filters on the head branch, so a branch prefix that is not listed in that filter produces no archive at all. If a run you need is missing, dispatch `Archive CI logs` manually with the run id.
+Archiving is deliberately not branch-filtered. `workflow_run` filters on the head branch when a filter is declared, and for a pull-request-triggered run that head branch is the PR head ref, so the earlier list skipped archival for every `feat/**`, `phase*/**`, `chore/**` and `docs/**` pull request. The filter was removed rather than extended, because an archive that only covers some branches is not an archive. A `feat/**` head ref therefore needs nothing dispatched by hand, and `workflow_dispatch` with a run id stays available for a run the `if:` gate skipped. Because `workflow_run` workflows are read from the default branch, a change to that gate only takes effect once it lands on `main`.
 
 ## Evidence case ids
 
