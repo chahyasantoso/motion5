@@ -52,7 +52,14 @@ export type { EngineOptions, ProjectHandle } from "./engine";
  * through `./engine`, so there is one declaration and one export path. See ADR-056.
  */
 export { StaleTrackHandleError } from "./contract/track-handle";
-export type { TrackHandle } from "./contract/track-handle";
+export type { LiveValues, TrackHandle } from "./contract/track-handle";
+/**
+ * The refusal a live value write reports, exported on exactly the rule above: a caller cannot
+ * `instanceof` a type it cannot name, and `ruleId` is what it branches on. `Track` is not exported
+ * beside it and never has been, so the only thing crossing the entry from the domain layer is the
+ * error a caller has to catch. See ADR-059.
+ */
+export { LiveValueKeyError } from "./domain/track";
 export { PluginRegistry } from "./domain/plugins";
 export type { PluginDefinition, ResolvedPlugins } from "./domain/plugins";
 export { assertClock, createManualClock } from "./ports/clock";

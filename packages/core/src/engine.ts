@@ -400,6 +400,10 @@ export class Engine {
         },
         graphBuilder: new IncrementalGraphBuilder(),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
+        // One hook for one mechanism. `Track` holds a single mask, and whether the retained
+        // definition moved with it is `ProjectRuntime`'s question, so there is nothing here for a
+        // second hook to do. See ADR-059.
+        overrideValues: (nodeId, values) => tracks.get(nodeId)?.overrideValues(values),
         compileTrack: compileTrackDefinition,
         disposeTrack,
         stageTrack: stageTrackDefinition,
