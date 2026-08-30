@@ -1,0 +1,140 @@
+quality (node 24)	Run npm run format:check	﻿2026-08-30T12:24:04.5426153Z ##[group]Run npm run format:check
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.5426523Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.5447835Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.5448131Z env:
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.5448344Z   NODE_VERSION: 24
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.5448602Z ##[endgroup]
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.6131043Z 
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.6132001Z > motion5@0.0.0 format:check
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.6132739Z > prettier . --check
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.6133016Z 
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.6769979Z Checking formatting...
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8028428Z [^[[31merror^[[39m] .github/workflows/update-lv-session-status.yml: SyntaxError: A collection cannot be both a mapping and a sequence (1:1)
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8029668Z [^[[31merror^[[39m] ^[[0m^[[31m^[[1m>^[[22m^[[39m^[[90m  1 |^[[39m name^[[33m:^[[39m ^[[33mUpdate^[[39m ^[[33mLV^[[39m session status
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8031974Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8033843Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  2 |^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8034399Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8034800Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  3 |^[[39m on^[[33m:^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8035468Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8036087Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  4 |^[[39m   push^[[33m:^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8036615Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8037356Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  5 |^[[39m     branches^[[33m:^[[39m [feat^[[33m/^[[39mlv^[[33m-^[[39mlive^[[33m-^[[39mvalue^[[33m-^[[39mupdates]
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8038084Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8039109Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  6 |^[[39m     paths^[[33m:^[[39m [^[[33m.^[[39mgithub^[[33m/^[[39mworkflows^[[33m/^[[39mupdate^[[33m-^[[39mlv^[[33m-^[[39msession^[[33m-^[[39mstatus^[[33m.^[[39myml]
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8039967Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8040523Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  7 |^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8040993Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8041597Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  8 |^[[39m permissions^[[33m:^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8042161Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8042859Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m  9 |^[[39m   contents^[[33m:^[[39m write
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8043506Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8043983Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 10 |^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8044534Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8045316Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 11 |^[[39m jobs^[[33m:^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8045880Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8046461Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 12 |^[[39m   update^[[33m:^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8047050Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8047824Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 13 |^[[39m     runs^[[33m-^[[39mon^[[33m:^[[39m ubuntu^[[33m-^[[39mlatest
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8048784Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8049391Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 14 |^[[39m     steps^[[33m:^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8049935Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8050909Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 15 |^[[39m       ^[[33m-^[[39m uses^[[33m:^[[39m actions^[[33m/^[[39mcheckout^[[33m@^[[39mv4
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8051692Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8052309Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 16 |^[[39m         ^[[36mwith^[[39m^[[33m:^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8052912Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8053812Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 17 |^[[39m           ref^[[33m:^[[39m feat^[[33m/^[[39mlv^[[33m-^[[39mlive^[[33m-^[[39mvalue^[[33m-^[[39mupdates
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8054540Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8055648Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 18 |^[[39m           fetch^[[33m-^[[39mdepth^[[33m:^[[39m ^[[35m0^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8056258Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8057010Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 19 |^[[39m       ^[[33m-^[[39m name^[[33m:^[[39m ^[[33mAppend^[[39m the ^[[33mLV^[[39m status entry
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8057650Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8058321Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 20 |^[[39m         run^[[33m:^[[39m ^[[33m|^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8058861Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8059544Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 21 |^[[39m           python3 ^[[33m-^[[39m ^[[33m<<^[[39m^[[32m'PY'^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8060177Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8060926Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 22 |^[[39m           ^[[36mfrom^[[39m pathlib ^[[36mimport^[[39m ^[[33mPath^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8061733Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8062243Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 23 |^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8062761Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8063588Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 24 |^[[39m           path ^[[33m=^[[39m ^[[33mPath^[[39m(^[[32m"docs/SESSION-STATUS.md"^[[39m)
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8064344Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8065081Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 25 |^[[39m           text ^[[33m=^[[39m path^[[33m.^[[39mread_text()
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8065909Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8066722Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 26 |^[[39m           marker ^[[33m=^[[39m ^[[32m"**Live value updates ([issue #218]"^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8067371Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8068147Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 27 |^[[39m           ^[[36mif^[[39m marker ^[[36min^[[39m text^[[33m:^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8068759Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8069544Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 28 |^[[39m               raise ^[[33mSystemExit^[[39m(^[[32m"LV status entry already present"^[[39m)
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8070217Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8070705Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 29 |^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8071190Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8071821Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 30 |^[[39m           text ^[[33m=^[[39m text^[[33m.^[[39mreplace(
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8072352Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8073203Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 31 |^[[39m               ^[[32m"**Branch verified:** `fix/sh-stale-track-handle`  "^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8074203Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8075060Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 32 |^[[39m               ^[[32m"**Branch verified:** `feat/lv-live-value-updates`  "^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8075969Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8076865Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 33 |^[[39m               ^[[35m1^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8077542Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8078084Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 34 |^[[39m           )
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8078650Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8079346Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 35 |^[[39m           text ^[[33m=^[[39m text^[[33m.^[[39mreplace(
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8079995Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8080793Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 36 |^[[39m               ^[[32m"and the uniform refusal of a stale `TrackHandle`."^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8081962Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8082989Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 37 |^[[39m               ^[[32m"the uniform refusal of a stale `TrackHandle`, and live value updates without Track replacement."^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8083808Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8084518Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 38 |^[[39m               ^[[35m1^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8085120Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8085881Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 39 |^[[39m           )
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8086456Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8086927Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 40 |^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8087489Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8088231Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 41 |^[[39m           in_flight ^[[33m=^[[39m ^[[32m""^[[39m^[[32m"## In flight^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8088849Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8089326Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 42 |^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8089895Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8093219Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 43 |^[[39m ^[[33m-^[[39m ^[[33m**^[[39m^[[33mLive^[[39m value updates ([issue ^[[33m#^[[39m^[[35m218^[[39m](https^[[33m:^[[39m^[[90m//github.com/chahyasantoso/motion5/issues/218))** are **complete and green** on `feat/lv-live-value-updates` in [PR #228](https://github.com/chahyasantoso/motion5/pull/228), with ADR-059 and cases `LV-1` through `LV-14`. `TrackHandle.overrideValues()` installs a read-time mask and `TrackHandle.setValues()` rewrites authored static values; both invalidate once, return that `PatchBatch`, preserve topology and progress, and never validate a whole definition, stage a Track, or call `replaceGraph`.^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8095931Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8098653Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 44 |^[[39m ^[[33m-^[[39m ^[[32m`Track`^[[39m owns one immutable ^[[32m`#values`^[[39m overlay inside ^[[32m`interpolated()`^[[39m^[[33m,^[[39m after renderer^[[33m-^[[39mneutral filtering and before plugin composition^[[33m.^[[39m ^[[33mThat^[[39m one seam reaches ordinary composition and the publisher^[[33m-^[[39mdelivered ^[[32m`MemberState`^[[39m^[[33m,^[[39m so a masked bone length recomputes its dependent ^[[33mIK^[[39m solver^[[33m.^[[39m ^[[32m`ProjectRuntime`^[[39m alone owns whether the retained ^[[32m`TrackDefinition`^[[39m moves ^[[36mwith^[[39m the mask^[[33m,^[[39m and ^[[32m`GraphRuntime`^[[39m keeps invalidation unchanged^[[33m.^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8100153Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8102356Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 45 |^[[39m ^[[33m-^[[39m ^[[33mThe^[[39m mask is replaced wholesale by the next live write rather than accumulated^[[33m.^[[39m ^[[32m`overrideValues({})`^[[39m is the explicit clear back to authored truth^[[33m,^[[39m and a real ^[[32m`replace()`^[[39m drops the mask by constructing a fresh ^[[33mTrack^[[39m^[[33m.^[[39m ^[[33mUnknown^[[39m keys^[[33m,^[[39m keys another plugin owns^[[33m,^[[39m namespaced keys^[[33m,^[[39m interpolator scratch keys^[[33m,^[[39m and animated keys are refused by ^[[32m`LiveValueKeyError`^[[39m ^[[36mwith^[[39m no mutation and no publish^[[33m;^[[39m animated keys stay refused until the ^[[32m`Interpolator`^[[39m port gains a real per^[[33m-^[[39mkey capability^[[33m.^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8104105Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8106183Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 46 |^[[39m ^[[33m-^[[39m ^[[33mThe^[[39m stale^[[33m-^[[39mhandle contract ^[[36mfrom^[[39m ^[[33mADR^[[39m^[[33m-^[[39m^[[35m056^[[39m ^[[36mextends^[[39m rather than forks^[[33m:^[[39m both ^[[36mnew^[[39m members route through ^[[32m`#liveEntry`^[[39m^[[33m,^[[39m ^[[36mthrow^[[39m ^[[32m`StaleTrackHandleError`^[[39m once stale^[[33m,^[[39m and are covered by ^[[32m`SH-1`^[[39m ^[[36mfrom^[[39m the handle^[[32m's own enumerated surface. The public surface gains those two members, `LiveValues`, and `LiveValueKeyError`; `Track` itself remains private and the emitted declaration closure still reaches no `runtime/` or `graph/` module.^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8107794Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8109667Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 47 |^[[39m ^[[33m-^[[39m ^[[33mThe^[[39m plan^[[32m's proposed ownership predicate export, registry read inside `Track`, second value layer, and second runtime hook are deleted from the design rather than implemented. One overlay needs one hook; the two public semantics differ only in the definition rewrite that `ProjectRuntime` already owns.^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8110692Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8111127Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 48 |^[[39m ^[[32m""^[[39m^[[32m"^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8111543Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8112208Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 49 |^[[39m           text ^[[33m=^[[39m text^[[33m.^[[39mreplace(^[[32m"## In flight\n"^[[39m^[[33m,^[[39m in_flight^[[33m,^[[39m ^[[35m1^[[39m)
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8112783Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8113134Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 50 |^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8113469Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8114215Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 51 |^[[39m           anchor ^[[33m=^[[39m ^[[32m"## Evidence anchors\n\n"^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8114830Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8118608Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 52 |^[[39m           evidence ^[[33m=^[[39m ^[[32m"- Live value updates red run: [33310177625](https://github.com/chahyasantoso/motion5/actions/runs/33310177625), archived at `logs/33310177625/` on `ci-logs`. `typecheck` and `format:check` both passed first, then `quality` reported `14 failed | 752 passed`: every behavioral `LV-` case failed except the `LV-12` port guard, and `SH-1` failed because the handle did not yet expose the two declared members. Integration failed the two IK surface cases, while boundaries, build, end-to-end, and performance were green. Final green run: [33311047804](https://github.com/chahyasantoso/motion5/actions/runs/33311047804), all six checks green.\n"^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8121273Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8122302Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 53 |^[[39m           text ^[[33m=^[[39m text^[[33m.^[[39mreplace(anchor^[[33m,^[[39m anchor ^[[33m+^[[39m evidence^[[33m,^[[39m ^[[35m1^[[39m)
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8122903Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8123812Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 54 |^[[39m           path^[[33m.^[[39mwrite_text(text)
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8124315Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8124722Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 55 |^[[39m           ^[[33mPY^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8125415Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8126244Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 56 |^[[39m       ^[[33m-^[[39m name^[[33m:^[[39m ^[[33mCommit^[[39m the status update
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8126869Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8127461Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 57 |^[[39m         run^[[33m:^[[39m ^[[33m|^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8128024Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8128908Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 58 |^[[39m           git config user^[[33m.^[[39mname ^[[32m"github-actions[bot]"^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8129592Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8130602Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 59 |^[[39m           git config user^[[33m.^[[39memail ^[[32m"41898282+github-actions[bot]@users.noreply.github.com"^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8131415Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8132328Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 60 |^[[39m           git add docs^[[33m/^[[39m^[[33mSESSION^[[39m^[[33m-^[[39m^[[33mSTATUS^[[39m^[[33m.^[[39mmd
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8133071Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8133910Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 61 |^[[39m           git commit ^[[33m-^[[39mm ^[[32m"docs(status): record live value updates"^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8134676Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8135799Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 62 |^[[39m           git push origin ^[[33mHEAD^[[39m^[[33m:^[[39mfeat^[[33m/^[[39mlv^[[33m-^[[39mlive^[[33m-^[[39mvalue^[[33m-^[[39mupdates
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8136684Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8137240Z [^[[31merror^[[39m] ^[[31m^[[1m>^[[22m^[[39m^[[90m 63 |^[[39m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:04.8137755Z [^[[31merror^[[39m]  ^[[90m    |^[[39m ^[[31m^[[1m^^[[22m^[[39m^[[0m
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:08.6125834Z Error occurred when checking code style in the above file.
+quality (node 24)	Run npm run format:check	2026-08-30T12:24:08.6404354Z ##[error]Process completed with exit code 2.
