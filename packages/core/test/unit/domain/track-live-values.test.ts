@@ -29,7 +29,7 @@ const AUTHORED = Object.freeze({
     { p: 1, v: 30 },
   ],
 });
-/** A legal animated overlay entry for `rotation`, which this file's timeline always declines. */
+/** A legal animated overlay entry, which this file's timeline always declines. */
 const STOPS = Object.freeze([
   { p: 0, v: 0 },
   { p: 1, v: 90 },
@@ -191,12 +191,13 @@ describe("a live value masks the interpolated state, and nothing else", () => {
     expect(track.interpolated().length).toBe(60);
   });
 
-  it("PK-16 reports a decline rather than a refusal when the backend has no capability", () => {
+  it("reports a decline rather than a refusal when the backend declares no capability", () => {
     const track = createTrack();
     track.setProgress(0.5);
 
-    // This file's timeline declares no `patchKeys`, so the honest answer is escalate. The static
-    // half is still applied, and the progress the caller needs in order to re-seek is reported.
+    // The unit-level half of `PK-16`, which owns the end-to-end claim. This file's timeline
+    // declares no `patchKeys`, so the honest answer is escalate: the static half is still applied,
+    // and the progress the caller needs in order to re-seek a fresh Track is reported beside it.
     const written = track.writeValues({ length: 100 }, { rotation: STOPS }, false);
 
     expect(written).toEqual({ patched: false, progress: 0.5 });
