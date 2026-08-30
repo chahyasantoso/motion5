@@ -95,8 +95,9 @@ function touch(handle: TrackHandle, member: string): () => unknown {
   return () => call.apply(handle, args);
 }
 /**
- * Strips whole-line comments before a source assertion. A gate reads code, never prose. Line-wise
- * is enough because every comment in that module occupies its own line.
+ * Strips whole-line comments before a source assertion. A gate reads code, never prose, and the
+ * resolver's own doc comment necessarily describes the comparison it owns. Line-wise is enough
+ * because every comment in that module occupies its own line.
  */
 function code(path: string): string {
   return readFileSync(path, "utf8")
