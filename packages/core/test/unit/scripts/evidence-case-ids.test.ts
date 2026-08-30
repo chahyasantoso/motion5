@@ -240,10 +240,22 @@ import { fileURLToPath } from "node:url";
 // It is the fourteenth two-letter series, under the policy the `P-` paragraph sets, and `E-` alone
 // is the edge identity series. It sorts before `E` in the pattern below, because an alternation
 // that offered `E` first would match `E` and then fail on the `V`.
+//
+// `LV-` belongs to live value updates, issue #218 and ADR-059: that one immutable overlay inside
+// `Track` reaches ordinary composition and the publisher-delivered `MemberState` through the same
+// read, that a mask is replaced wholesale so an empty record is the clear, that the two runtime
+// entry points differ only in whether the retained definition moved with the mask, that neither
+// validates a definition or rebuilds the graph, and that an animated key is refused by name until
+// the `Interpolator` port grows a per-key write. `CF-` owns where the values a composition starts
+// from come from and `SH-` owns what a caller is told when its handle is stale; `LV-` owns what may
+// mask those values at all, which is a question neither asks. It is the fifteenth two-letter
+// series, under the policy the `P-` paragraph sets, and `L-` alone is the time loop series. It
+// sorts before `L` in the pattern below, because an alternation that offered `L` first would match
+// `L` and then fail on the `V`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE =
-  /it\(\s*"((?:CF|CN|DV|EV|FB|FO|IK|LF|MG|PV|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PV|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
