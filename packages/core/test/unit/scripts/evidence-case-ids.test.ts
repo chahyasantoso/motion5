@@ -252,10 +252,23 @@ import { fileURLToPath } from "node:url";
 // series, under the policy the `P-` paragraph sets, and `L-` alone is the time loop series. It
 // sorts before `L` in the pattern below, because an alternation that offered `L` first would match
 // `L` and then fail on the `V`.
+//
+// `PK-` belongs to the record-shaped per-key timeline write, issue #231 and ADR-060: that an
+// animated key's tweens are replaced on the still-live timeline against a retained base record,
+// that a key dropped from the overlay is restored by the same code that patched a changed one, that
+// a rebase is sticky, that the sibling tweens and the terminal padding tween are untouched, that a
+// decline is escalation rather than refusal so a patching and a declining backend are
+// indistinguishable on success and on failure, and which two leaf-kind refusals replace the one
+// this series deletes. `LV-` owns what may mask a track's values at all and retires `LV-11` and
+// `LV-12` to this series; `PK-` owns whether a value the interpolator drives can be written live,
+// which is the question `LV-` answered with a refusal. It is the sixteenth two-letter series, under
+// the policy the `P-` paragraph sets, and `P-` alone is the rollback error precedence series. It
+// sorts before `P` in the pattern below, because an alternation that offered `P` first would match
+// `P` and then fail on the `K`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE =
-  /it\(\s*"((?:CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PV|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PK|PV|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
