@@ -21,280 +21,48 @@
       "id": "end-to-end",
       "test": "packages/core/test/integration/end-to-end.test.ts",
       "requirement": [
-        "TR-C-01",
-        "TR-C-02",
-        "TR-C-03",
-        "TR-C-04",
-        "TR-C-05",
-        "TR-A-01",
-        "TR-A-02",
-        "TR-A-03",
-        "TR-A-04",
-        "TR-A-05",
-        "TR-A-06",
-        "TR-A-07",
-        "TR-A-08",
-        "TR-D-01",
-        "TR-D-02",
-        "TR-D-03",
-        "TR-D-04",
-        "TR-D-05",
-        "TR-D-06",
-        "TR-D-07",
-        "TR-D-08",
-        "TR-D-09",
-        "TR-D-10",
-        "TR-D-11",
-        "TR-G-01",
-        "TR-G-02",
-        "TR-G-03",
-        "TR-G-04",
-        "TR-G-05",
-        "TR-G-06",
-        "TR-G-07",
-        "TR-G-08",
-        "TR-G-09",
-        "TR-G-10",
-        "TR-G-11",
-        "TR-G-12",
-        "TR-G-13",
-        "TR-R-01",
-        "TR-R-02",
-        "TR-R-03",
-        "TR-R-04",
-        "TR-R-05",
-        "TR-R-06",
-        "TR-R-07",
-        "TR-R-08",
-        "TR-R-09",
-        "TR-R-10",
-        "TR-R-11",
-        "TR-R-12",
-        "TR-R-13",
-        "TR-R-14",
-        "TR-R-15",
-        "TR-M-01",
-        "TR-M-02",
-        "TR-M-03",
-        "TR-M-04",
-        "TR-M-05",
-        "TR-M-06",
-        "TR-M-07",
-        "TR-P-01",
-        "TR-P-02",
-        "TR-P-03",
-        "TR-P-04",
-        "TR-P-05",
-        "TR-P-06",
-        "TR-P-07",
-        "TR-P-08",
-        "TR-P-09",
-        "TR-L-01",
-        "TR-L-02",
-        "TR-L-03",
-        "TR-L-04",
-        "TR-L-05",
-        "TR-L-06",
-        "TR-L-07",
-        "TR-L-08",
-        "TR-E-01",
-        "TR-E-02",
-        "TR-E-03",
-        "TR-E-04",
-        "TR-E-05",
-        "TR-E-06",
-        "TR-E-07",
-        "TR-E-08",
-        "TR-E-09",
-        "TR-S-01",
-        "TR-S-02",
-        "TR-S-03",
-        "TR-S-04",
-        "TR-S-05",
-        "TR-S-06",
-        "TR-S-07",
-        "TR-PF-01",
-        "TR-PF-02",
-        "TR-PF-03",
-        "TR-PF-04",
-        "TR-PF-05",
-        "TR-PF-06",
-        "TR-SC-01",
-        "TR-SC-02",
-        "TR-SC-03",
-        "TR-SC-04",
-        "TR-T-01",
-        "TR-T-02",
-        "TR-T-03",
-        "TR-T-04",
-        "TR-T-05",
-        "TR-T-06",
-        "TR-T-07",
-        "TR-T-08",
-        "TR-T-09",
-        "TR-T-10"
+        "TR-C-01", "TR-C-02", "TR-C-03", "TR-C-04", "TR-C-05", "TR-A-01", "TR-A-02", "TR-A-03", "TR-A-04", "TR-A-05", "TR-A-06", "TR-A-07", "TR-A-08", "TR-D-01", "TR-D-02", "TR-D-03", "TR-D-04", "TR-D-05", "TR-D-06", "TR-D-07", "TR-D-08", "TR-D-09", "TR-D-10", "TR-D-11", "TR-G-01", "TR-G-02", "TR-G-03", "TR-G-04", "TR-G-05", "TR-G-06", "TR-G-07", "TR-G-08", "TR-G-09", "TR-G-10", "TR-G-11", "TR-G-12", "TR-G-13", "TR-R-01", "TR-R-02", "TR-R-03", "TR-R-04", "TR-R-05", "TR-R-06", "TR-R-07", "TR-R-08", "TR-R-09", "TR-R-10", "TR-R-11", "TR-R-12", "TR-R-13", "TR-R-14", "TR-R-15", "TR-M-01", "TR-M-02", "TR-M-03", "TR-M-04", "TR-M-05", "TR-M-06", "TR-M-07", "TR-P-01", "TR-P-02", "TR-P-03", "TR-P-04", "TR-P-05", "TR-P-06", "TR-P-07", "TR-P-08", "TR-P-09", "TR-L-01", "TR-L-02", "TR-L-03", "TR-L-04", "TR-L-05", "TR-L-06", "TR-L-07", "TR-L-08", "TR-E-01", "TR-E-02", "TR-E-03", "TR-E-04", "TR-E-05", "TR-E-06", "TR-E-07", "TR-E-08", "TR-E-09", "TR-S-01", "TR-S-02", "TR-S-03", "TR-S-04", "TR-S-05", "TR-S-06", "TR-S-07", "TR-PF-01", "TR-PF-02", "TR-PF-03", "TR-PF-04", "TR-PF-05", "TR-PF-06", "TR-SC-01", "TR-SC-02", "TR-SC-03", "TR-SC-04", "TR-T-01", "TR-T-02", "TR-T-03", "TR-T-04", "TR-T-05", "TR-T-06", "TR-T-07", "TR-T-08", "TR-T-09", "TR-T-10"
       ]
     },
-    {
-      "id": "clock-identity",
-      "test": "packages/core/test/unit/runtime/clock-tick-identity.test.ts"
-    },
-    {
-      "id": "requirement-scoped-inputs",
-      "test": "packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts"
-    },
-    {
-      "id": "registry-change-detection",
-      "test": "packages/core/test/unit/runtime/patch-registry-structural-change.test.ts"
-    },
-    {
-      "id": "registry-listener-snapshots",
-      "test": "packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts"
-    },
-    {
-      "id": "s5-contribution-completeness",
-      "test": "packages/core/test/unit/domain/plugin-contribution-completeness.test.ts"
-    },
-    {
-      "id": "s5-product-path",
-      "test": "packages/core/test/integration/engine-x3-contribution.test.ts"
-    },
-    {
-      "id": "s6-unsupported-use",
-      "test": "packages/core/test/integration/plugin-use-contract.test.ts"
-    },
+    { "id": "clock-identity", "test": "packages/core/test/unit/runtime/clock-tick-identity.test.ts" },
+    { "id": "requirement-scoped-inputs", "test": "packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts" },
+    { "id": "registry-change-detection", "test": "packages/core/test/unit/runtime/patch-registry-structural-change.test.ts" },
+    { "id": "registry-listener-snapshots", "test": "packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts" },
+    { "id": "s5-contribution-completeness", "test": "packages/core/test/unit/domain/plugin-contribution-completeness.test.ts" },
+    { "id": "s5-product-path", "test": "packages/core/test/integration/engine-x3-contribution.test.ts" },
+    { "id": "s6-unsupported-use", "test": "packages/core/test/integration/plugin-use-contract.test.ts" },
     { "id": "x3-key-ownership", "test": "packages/core/test/unit/domain/plugins.test.ts" },
-    {
-      "id": "x3-contribution-cascade",
-      "test": "packages/core/test/unit/domain/plugin-contribution-completeness.test.ts"
-    },
-    {
-      "id": "x3-order-independence",
-      "test": "packages/core/test/unit/domain/s7-plugin-evidence.test.ts"
-    },
-    {
-      "id": "p0-3-sparse-percent-map",
-      "test": "packages/core/test/contract/gsap-sparse-percent-map.test.ts"
-    },
-    {
-      "id": "p0-3-ease-collision",
-      "test": "packages/core/test/contract/gsap-sparse-percent-map.test.ts"
-    },
-    {
-      "id": "s7-plugin-evidence",
-      "test": "packages/core/test/unit/domain/s7-plugin-evidence.test.ts"
-    },
-    {
-      "id": "s7-audit-workflow",
-      "test": "packages/core/test/unit/scripts/s7-recovery-audit.test.ts"
-    },
-    {
-      "id": "p2-runtime-smells",
-      "test": "packages/core/test/integration/p2-runtime-smells.test.ts"
-    },
-    {
-      "id": "k-production-scheduler",
-      "test": "packages/core/test/contract/microtask-scheduler.test.ts"
-    },
-    {
-      "id": "k-public-port-types",
-      "test": "packages/core/test/unit/scripts/public-port-types.test.ts"
-    },
-    {
-      "id": "b-clock-tick-error-boundaries",
-      "test": "packages/core/test/unit/runtime/clock-consumer-error-boundary.test.ts"
-    },
-    {
-      "id": "l-time-loop-cycle",
-      "test": "packages/core/test/unit/adapters/time-loop-cycle.test.ts"
-    },
-    {
-      "id": "l-time-loop-semantics",
-      "test": "packages/core/test/integration/trigger-time-loop.test.ts"
-    },
-    {
-      "id": "track-node-id",
-      "test": "packages/core/test/unit/domain/track-node-id.test.ts"
-    },
-    {
-      "id": "resolve-solvers",
-      "test": "packages/core/test/unit/graph/resolve-solvers.test.ts"
-    },
-    {
-      "id": "ik-solve",
-      "test": "packages/core/test/unit/plugins/ik-solve.test.ts"
-    },
-    {
-      "id": "fk-solver-override",
-      "test": "packages/core/test/unit/plugins/fk-solver-override.test.ts"
-    },
-    {
-      "id": "publisher-solver-members",
-      "test": "packages/core/test/unit/runtime/publisher-solver-members.test.ts"
-    },
-    {
-      "id": "ik-two-bone-integration",
-      "test": "packages/core/test/integration/ik-two-bone.test.ts"
-    },
-    {
-      "id": "solver-slot-claim",
-      "test": "packages/core/test/unit/domain/plugin-slot-claim.test.ts"
-    },
-    {
-      "id": "solver-goals",
-      "test": "packages/core/test/unit/graph/solver-goals.test.ts"
-    },
-    {
-      "id": "ik-multi-goal-integration",
-      "test": "packages/core/test/integration/ik-multi-goal.test.ts"
-    },
-    {
-      "id": "fabrik-solve",
-      "test": "packages/core/test/unit/plugins/fabrik-solve.test.ts"
-    },
-    {
-      "id": "fabrik-dispatch",
-      "test": "packages/core/test/unit/plugins/fabrik-dispatch.test.ts"
-    },
-    {
-      "id": "fabrik-arity-one",
-      "test": "packages/core/test/unit/plugins/fabrik-arity-one.test.ts"
-    },
-    {
-      "id": "solver-arity-lift",
-      "test": "packages/core/test/unit/graph/arity-lift.test.ts"
-    },
-    {
-      "id": "solver-goal-required",
-      "test": "packages/core/test/unit/graph/solver-goal-required.test.ts"
-    },
-    {
-      "id": "solved-pivot-offset",
-      "test": "packages/core/test/unit/graph/solved-pivot-offset.test.ts"
-    },
-    {
-      "id": "angle-blend",
-      "test": "packages/core/test/unit/plugins/angle-blend.test.ts"
-    },
-    {
-      "id": "fk-solved-weight",
-      "test": "packages/core/test/unit/plugins/fk-solved-weight.test.ts"
-    },
-    {
-      "id": "solved-rotation-weight",
-      "test": "packages/core/test/unit/graph/solved-rotation-weight.test.ts"
-    },
-    {
-      "id": "ik-fabrik-chain-integration",
-      "test": "packages/core/test/integration/ik-fabrik-chain.test.ts"
-    },
-    {
-      "id": "walker-demo",
-      "test": "packages/core/test/integration/phase7-walker-demo.test.ts"
-    },
-    {
-      "id": "stale-track-handle",
-      "test": "packages/core/test/unit/runtime/stale-track-handle.test.ts"
-    }
+    { "id": "x3-contribution-cascade", "test": "packages/core/test/unit/domain/plugin-contribution-completeness.test.ts" },
+    { "id": "x3-order-independence", "test": "packages/core/test/unit/domain/s7-plugin-evidence.test.ts" },
+    { "id": "p0-3-sparse-percent-map", "test": "packages/core/test/contract/gsap-sparse-percent-map.test.ts" },
+    { "id": "p0-3-ease-collision", "test": "packages/core/test/contract/gsap-sparse-percent-map.test.ts" },
+    { "id": "s7-plugin-evidence", "test": "packages/core/test/unit/domain/s7-plugin-evidence.test.ts" },
+    { "id": "s7-audit-workflow", "test": "packages/core/test/unit/scripts/s7-recovery-audit.test.ts" },
+    { "id": "p2-runtime-smells", "test": "packages/core/test/integration/p2-runtime-smells.test.ts" },
+    { "id": "k-production-scheduler", "test": "packages/core/test/contract/microtask-scheduler.test.ts" },
+    { "id": "k-public-port-types", "test": "packages/core/test/unit/scripts/public-port-types.test.ts" },
+    { "id": "b-clock-tick-error-boundaries", "test": "packages/core/test/unit/runtime/clock-consumer-error-boundary.test.ts" },
+    { "id": "l-time-loop-cycle", "test": "packages/core/test/unit/adapters/time-loop-cycle.test.ts" },
+    { "id": "l-time-loop-semantics", "test": "packages/core/test/integration/trigger-time-loop.test.ts" },
+    { "id": "track-node-id", "test": "packages/core/test/unit/domain/track-node-id.test.ts" },
+    { "id": "resolve-solvers", "test": "packages/core/test/unit/graph/resolve-solvers.test.ts" },
+    { "id": "ik-solve", "test": "packages/core/test/unit/plugins/ik-solve.test.ts" },
+    { "id": "fk-solver-override", "test": "packages/core/test/unit/plugins/fk-solver-override.test.ts" },
+    { "id": "publisher-solver-members", "test": "packages/core/test/unit/runtime/publisher-solver-members.test.ts" },
+    { "id": "ik-two-bone-integration", "test": "packages/core/test/integration/ik-two-bone.test.ts" },
+    { "id": "solver-goals", "test": "packages/core/test/unit/graph/solver-goals.test.ts" },
+    { "id": "ik-multi-goal-integration", "test": "packages/core/test/integration/ik-multi-goal.test.ts" },
+    { "id": "fabrik-solve", "test": "packages/core/test/unit/plugins/fabrik-solve.test.ts" },
+    { "id": "fabrik-dispatch", "test": "packages/core/test/unit/plugins/fabrik-dispatch.test.ts" },
+    { "id": "fabrik-arity-one", "test": "packages/core/test/unit/plugins/fabrik-arity-one.test.ts" },
+    { "id": "solver-arity-lift", "test": "packages/core/test/unit/graph/arity-lift.test.ts" },
+    { "id": "solver-goal-required", "test": "packages/core/test/unit/graph/solver-goal-required.test.ts" },
+    { "id": "solved-pivot-offset", "test": "packages/core/test/unit/graph/solved-pivot-offset.test.ts" },
+    { "id": "angle-blend", "test": "packages/core/test/unit/plugins/angle-blend.test.ts" },
+    { "id": "fk-solved-weight", "test": "packages/core/test/unit/plugins/fk-solved-weight.test.ts" },
+    { "id": "solved-rotation-weight", "test": "packages/core/test/unit/graph/solved-rotation-weight.test.ts" },
+    { "id": "ik-fabrik-chain-integration", "test": "packages/core/test/integration/ik-fabrik-chain.test.ts" },
+    { "id": "walker-demo", "test": "packages/core/test/integration/phase7-walker-demo.test.ts" },
+    { "id": "stale-track-handle", "test": "packages/core/test/unit/runtime/stale-track-handle.test.ts" }
   ]
 }
