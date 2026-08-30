@@ -1,10 +1,10 @@
 # CI log archive: 33305383668
 
-- Workflow: CI
-- Conclusion: failure
-- Head branch: 220-dict-valued-requirement-slots
+- Workflow: manual
+- Conclusion: manual
+- Head branch: manual
 - Source run: https://github.com/chahyasantoso/motion5/actions/runs/33305383668
-- Captured: 2026-08-30T10:00:31Z
+- Captured: 2026-08-30T10:41:27Z
 
 ## Failed job output
 
