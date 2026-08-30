@@ -16,7 +16,7 @@ A declared subpath is not automatically production API. The tier says who may im
 
 ## @motion5/core
 
-**Engine and handles.** `Engine` and `StaleTrackHandleError`, and the types `EngineOptions`, `ProjectHandle`, and `TrackHandle`.
+**Engine and handles.** `Engine`, `StaleTrackHandleError`, and `LiveValueKeyError`, and the types `EngineOptions`, `ProjectHandle`, `TrackHandle`, and `LiveValues`.
 
 `new Engine({ clock, interpolator, scheduler, plugins?, triggerFactory? })` validates all three ports. `engine.load(project)` returns a `ProjectHandle`:
 
@@ -31,9 +31,11 @@ A declared subpath is not automatically production API. The tier says who may im
 - `adopt(track, owner, options?)` and `destroyAdopted(nodeId, owner)` are the superseded owner-based API.
 - `dispose()` releases the project, motions, triggers, and compiled tracks.
 
-A `TrackHandle` carries `id`, `live`, `track`, `remove()`, `replace(next)`, `addObserve(observation)`, and `removeObserve(observation)`. A generic observation declares an output edge, which merges the source's contribution over the observer's composed patch. A dependency that feeds a track's own composition is bound under the plugin group's `requires` section, which is the only way a value enters composition.
+A `TrackHandle` carries `id`, `live`, `track`, `remove()`, `replace(next)`, `addObserve(observation)`, `removeObserve(observation)`, `overrideValues(next)`, and `setValues(next)`. A generic observation declares an output edge, which merges the source's contribution over the observer's composed patch. A dependency that feeds a track's own composition is bound under the plugin group's `requires` section, which is the only way a value enters composition.
 
-`live` is a boolean that never throws. Every other member throws `StaleTrackHandleError` once the token the handle captured is no longer current, so one condition has one failure contract across the whole surface. That error is a runtime export rather than a type, because a caller cannot `instanceof` a type it cannot name: it extends `TypeError`, keeps the message the `track` getter already threw, and carries a stable `ruleId` of `stale-track-handle` beside the `nodeId` it refused. Both it and `TrackHandle` are declared once, in the contract layer, and named from there by the runtime and by the package entry. See ADR-056.
+`overrideValues` and `setValues` are the cheap pair, and they take a `LiveValues`: one static authored value per key, which is this capability's refusal set stated as a type rather than as a check. Both return the `PatchBatch` of the single invalidation they cause, exactly as `seek()` does. Neither validates a `TrackDefinition`, stages a Track, or rebuilds the graph, which is what separates them from `replace(next)`. The difference between the two is the retained definition: `setValues` rewrites it, so `handle.track` and the live composition cannot disagree, and `overrideValues` deliberately leaves it alone, because it is a mask you expect to take back. A mask is replaced wholesale rather than accumulated, so an empty record is the clear, and a real `replace()` drops it by construction. `LiveValueKeyError` is the refusal, with `ruleId` of `live-value-key`; an animated key is refused rather than frozen. See ADR-059.
+
+`live` is a boolean that never throws. Every other member throws `StaleTrackHandleError` once the token the handle captured is no longer current, so one condition has one failure contract across the whole surface. That error is a runtime export rather than a type, because a caller cannot `instanceof` a type it cannot name: it extends `TypeError`, keeps the message the `track` getter already threw, and carries a stable `ruleId` of `stale-track-handle` beside the `nodeId` it refused. Both it and `TrackHandle` are declared once, in the contract layer, and named from there by the runtime and by the package entry. `LiveValueKeyError` is public on that same rule, and it is declared in the domain layer that owns the refusal while `Track` itself stays private. See ADR-056 and ADR-059.
 
 **Schema and validation.** `AUTHORED_SCHEMA_VERSION`, `SUPPORTED_TRIGGER_TYPES`, `DIAGNOSTIC_SEVERITIES`, `validateV5`, `validateTrackDefinition`, `validateMotionTrigger`, `resolveTriggerDefinition`, `migrateV4ToV5`, `parseGolden`, and `serializeGolden`.
 
