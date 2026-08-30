@@ -41,23 +41,12 @@ function runtimeOn(project: ProjectDefinition, builder: IncrementalGraphBuilder)
   });
 }
 
-/**
- * Failing-first scaffolding with a stated expiry, deleted by the commit that lands the getter.
- * `cachedNodeCount` does not exist on the parent, and a test file naming a member that does not
- * compile stops `quality` before `npm test`, which is a broken test file rather than evidence. Same
- * shape as the `StaleSeam` and `ComposeSeam` casts before it.
- */
-type CountSeam = { readonly cachedNodeCount: number };
-function cachedCount(builder: IncrementalGraphBuilder): number {
-  return (builder as unknown as CountSeam).cachedNodeCount;
-}
-
 describe("IncrementalGraphBuilder evicts what the last build did not walk", () => {
   it("EV-1 holds an entry for exactly the tracks the last build walked", () => {
     const builder = new IncrementalGraphBuilder();
 
     expect(builder.build(HERO_AND_DUST).graph).toBeDefined();
-    expect(cachedCount(builder)).toBe(3);
+    expect(builder.cachedNodeCount).toBe(3);
 
     // One motion track dropped, everything else identical. The retained entry is what leaked.
     const withoutLeg: ProjectDefinition = {
@@ -65,23 +54,23 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
       motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
     };
     expect(builder.build(withoutLeg).graph).toBeDefined();
-    expect(cachedCount(builder)).toBe(2);
+    expect(builder.cachedNodeCount).toBe(2);
 
     // And down to nothing, so the sweep is not merely off by the last entry.
     expect(builder.build(freeProject([])).graph).toBeDefined();
-    expect(cachedCount(builder)).toBe(0);
+    expect(builder.cachedNodeCount).toBe(0);
   });
 
   it("EV-2 evicts through the removal path the runtime already has", () => {
     const builder = new IncrementalGraphBuilder();
     const project = runtimeOn(HERO, builder);
-    expect(cachedCount(builder)).toBe(2);
+    expect(builder.cachedNodeCount).toBe(2);
 
     // `remove()` reaches `replaceGraph` -> `GraphBinding.replace` -> `builder.build(project)`, and
     // that build is the only thing that has to happen. No `evict(nodeId)` on the port, nothing new
     // in `ProjectRuntime`, and no third call site to keep in step.
     project.track("hero/arm").remove();
-    expect(cachedCount(builder)).toBe(1);
+    expect(builder.cachedNodeCount).toBe(1);
 
     project.dispose();
   });
@@ -92,15 +81,15 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
 
     project.addMotion({ id: "cameo", trigger: { type: "manual" }, tracks: [] });
     const pan = project.addTrack({ id: "pan" }, { motionId: "cameo" });
-    expect(cachedCount(builder)).toBe(3);
+    expect(builder.cachedNodeCount).toBe(3);
 
     // The second teardown the issue names. `destroyMotion` owns no builder state and does not learn
     // any here; it replaces the graph, and the count it leaves behind is the residency rule holding
     // across a path that never mentions the cache.
     pan.remove();
-    expect(cachedCount(builder)).toBe(2);
+    expect(builder.cachedNodeCount).toBe(2);
     project.destroyMotion("cameo");
-    expect(cachedCount(builder)).toBe(2);
+    expect(builder.cachedNodeCount).toBe(2);
 
     project.dispose();
   });
@@ -115,7 +104,7 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
     // eviction assertion above passes against a builder that caches nothing at all.
     expect(first?.nodeById["hero/arm"]).toBe(second?.nodeById["hero/arm"]);
     expect(first?.nodeById["hero/leg"]).toBe(second?.nodeById["hero/leg"]);
-    expect(cachedCount(builder)).toBe(2);
+    expect(builder.cachedNodeCount).toBe(2);
   });
 
   it("EV-5 rebuilds a re-authored node rather than answering from an evicted entry", () => {
@@ -124,7 +113,7 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
     expect(builder.build(freeProject([original])).graph?.nodeById["~/dust"]?.track).toBe(original);
 
     expect(builder.build(freeProject([])).graph).toBeDefined();
-    expect(cachedCount(builder)).toBe(0);
+    expect(builder.cachedNodeCount).toBe(0);
 
     // Same node id, new object. Eviction must not have opened a stale-hit path, and the freshness
     // check that makes this a miss is object identity rather than the key.
@@ -132,13 +121,13 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
     const node = builder.build(freeProject([reauthored])).graph?.nodeById["~/dust"];
     expect(node?.track).toBe(reauthored);
     expect(node?.track.duration).toBe(250);
-    expect(cachedCount(builder)).toBe(1);
+    expect(builder.cachedNodeCount).toBe(1);
   });
 
   it("EV-6 leaves the cache untouched when a build throws part way through", () => {
     const builder = new IncrementalGraphBuilder();
     expect(builder.build(HERO_AND_DUST).graph).toBeDefined();
-    expect(cachedCount(builder)).toBe(3);
+    expect(builder.cachedNodeCount).toBe(3);
 
     // The motion loop walks both hero tracks, then the free-track loop throws before reaching
     // `~/dust`. A sweep in a `finally` would read that partial `visited` as residency and evict a
@@ -153,14 +142,14 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
     } as unknown as ProjectDefinition;
 
     expect(() => builder.build(unwalkable)).toThrow(/free tracks cannot be walked/);
-    expect(cachedCount(builder)).toBe(3);
+    expect(builder.cachedNodeCount).toBe(3);
 
     // A build that completes and is rejected is a different thing from a build that throws: it
     // walked every track it was given, so it sweeps, and the entries it walked survive.
     const duplicate = builder.build(freeProject([{ id: "dust" }, { id: "dust" }]));
     expect(duplicate.graph).toBeUndefined();
     expect(duplicate.diagnostics.map(({ ruleId }) => ruleId)).toEqual(["node-duplicate"]);
-    expect(cachedCount(builder)).toBe(1);
+    expect(builder.cachedNodeCount).toBe(1);
   });
 
   it("EV-7 makes one builder shared by two projects thrash to a permanent miss", () => {
@@ -176,6 +165,6 @@ describe("IncrementalGraphBuilder evicts what the last build did not walk", () =
     // Correctness is unaffected and throughput is not: the node is rebuilt, and equal.
     expect(after).not.toBe(before);
     expect(after).toEqual(before);
-    expect(cachedCount(builder)).toBe(1);
+    expect(builder.cachedNodeCount).toBe(1);
   });
 });

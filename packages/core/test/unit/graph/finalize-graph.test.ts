@@ -67,17 +67,6 @@ const CORPUS: ReadonlyArray<{
   },
 ];
 
-/**
- * Failing-first scaffolding with a stated expiry, deleted by the commit that lands the getter.
- * `cachedNodeCount` does not exist on the parent, and a test file naming a member that does not
- * compile stops `quality` before `npm test`, which is a broken test file rather than evidence. Same
- * shape as the `StaleSeam` and `ComposeSeam` casts before it.
- */
-type CountSeam = { readonly cachedNodeCount: number };
-function cachedCount(builder: IncrementalGraphBuilder): number {
-  return (builder as unknown as CountSeam).cachedNodeCount;
-}
-
 describe("finalizeGraph", () => {
   it("T-C0.1 produces correct order and diagnostics for every corpus case", () => {
     for (const { label, project, expectOrder, expectRuleIds } of CORPUS) {
@@ -131,7 +120,7 @@ describe("finalizeGraph", () => {
       // Residency is bounded by the entry just built, so no track of any earlier corpus entry is
       // still resident. The corpus reuses ids across entries with fresh objects, which makes every
       // rebuild a miss rather than a stale hit.
-      expect(cachedCount(incremental), `${label}: residency`).toBeLessThanOrEqual(
+      expect(incremental.cachedNodeCount, `${label}: residency`).toBeLessThanOrEqual(
         project.freeTracks?.length ?? 0,
       );
     }
