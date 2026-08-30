@@ -252,10 +252,23 @@ import { fileURLToPath } from "node:url";
 // series, under the policy the `P-` paragraph sets, and `L-` alone is the time loop series. It
 // sorts before `L` in the pattern below, because an alternation that offered `L` first would match
 // `L` and then fail on the `V`.
+//
+// `PK-` belongs to the optional per-key timeline write, issue #222: that one animated key's tweens
+// are replaced on the still-live timeline with the whole retained record recompiled and every
+// reader of `state` seeing only the new stops, that a key which is unknown, static, filtered to
+// nothing, or colliding with a sibling's ease is refused without mutation, that an implementation
+// which cannot honour the capability declines it and the caller answers by recompiling instead, and
+// that an animated authored value is therefore writable through `setValues` while a read-time mask
+// still refuses one. `LV-` owns what may mask an interpolated value; `PK-` owns whether an
+// interpolated value can be rewritten at all, which is why it extends that series rather than
+// joining it, and why it retires `LV-12` and half of `LV-11`. It is the sixteenth two-letter
+// series, under the policy the `P-` paragraph sets, and `P-` alone is the rollback error precedence
+// series. It sorts before `P` in the pattern below, because an alternation that offered `P` first
+// would match `P` and then fail on the `K`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE =
-  /it\(\s*"((?:CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PV|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PK|PV|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
