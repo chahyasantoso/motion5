@@ -264,6 +264,18 @@
     {
       "id": "stale-track-handle",
       "test": "packages/core/test/unit/runtime/stale-track-handle.test.ts"
+    },
+    {
+      "id": "live-value-overlay",
+      "test": "packages/core/test/unit/domain/track-live-values.test.ts"
+    },
+    {
+      "id": "live-value-key",
+      "test": "packages/core/test/unit/runtime/live-value-updates.test.ts"
+    },
+    {
+      "id": "live-value-composition",
+      "test": "packages/core/test/integration/live-value-composition.test.ts"
     }
   ]
 }
