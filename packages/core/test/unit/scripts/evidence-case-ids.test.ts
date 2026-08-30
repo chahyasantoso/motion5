@@ -230,10 +230,20 @@ import { fileURLToPath } from "node:url";
 // retires above. It is the thirteenth two-letter series, under the policy the `P-` paragraph sets,
 // and `D-` alone is the teardown ownership series. It sorts before `D` in the pattern below,
 // because an alternation that offered `D` first would match `D` and then fail on the `V`.
+//
+// `EV-` belongs to cache residency in `IncrementalGraphBuilder`, issue #225 and ADR-058: that a
+// completed build leaves an entry for exactly the tracks it walked, that removal, `destroyMotion`
+// and project disposal need no eviction hook to make that true, that the hit path and the freshness
+// check survive the sweep, that a build which throws evicts nothing, and what one builder shared by
+// two projects costs. Every series above owns something an author writes or a caller is told; `EV-`
+// owns what an adapter retains after nobody is looking at it, which is why it extends none of them.
+// It is the fourteenth two-letter series, under the policy the `P-` paragraph sets, and `E-` alone
+// is the edge identity series. It sorts before `E` in the pattern below, because an alternation
+// that offered `E` first would match `E` and then fail on the `V`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE =
-  /it\(\s*"((?:CF|CN|DV|FB|FO|IK|LF|MG|PV|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:CF|CN|DV|EV|FB|FO|IK|LF|MG|PV|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
