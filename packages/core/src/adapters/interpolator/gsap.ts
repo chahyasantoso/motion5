@@ -90,9 +90,7 @@ function sameStops(left: readonly AuthoredStop[], right: readonly AuthoredStop[]
     const other = right[index];
     if (other === undefined) return false;
     return (
-      Object.is(stop.p, other.p) &&
-      Object.is(stop.v, other.v) &&
-      Object.is(stop.ease, other.ease)
+      Object.is(stop.p, other.p) && Object.is(stop.v, other.v) && Object.is(stop.ease, other.ease)
     );
   });
 }
