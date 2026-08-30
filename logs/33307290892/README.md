@@ -1,0 +1,26 @@
+# CI log archive: 33307290892
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: 220-dict-valued-requirement-slots
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/33307290892
+- Captured: 2026-08-30T10:47:10Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm run format:check	﻿2026-08-30T10:46:51.4769658Z ##[group]Run npm run format:check
+quality (node 24)	Run npm run format:check	2026-08-30T10:46:51.4770031Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Run npm run format:check	2026-08-30T10:46:51.4789769Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run format:check	2026-08-30T10:46:51.4790077Z env:
+quality (node 24)	Run npm run format:check	2026-08-30T10:46:51.4790353Z   NODE_VERSION: 24
+quality (node 24)	Run npm run format:check	2026-08-30T10:46:51.4790630Z ##[endgroup]
+quality (node 24)	Run npm run format:check	2026-08-30T10:46:51.5454082Z 
+quality (node 24)	Run npm run format:check	2026-08-30T10:46:51.5454987Z > motion5@0.0.0 format:check
+quality (node 24)	Run npm run format:check	2026-08-30T10:46:51.5455456Z > prettier . --check
+quality (node 24)	Run npm run format:check	2026-08-30T10:46:51.5455614Z 
+quality (node 24)	Run npm run format:check	2026-08-30T10:46:51.6069315Z Checking formatting...
+quality (node 24)	Run npm run format:check	2026-08-30T10:46:52.0555165Z [^[[33mwarn^[[39m] docs/acceptance-map.json
+quality (node 24)	Run npm run format:check	2026-08-30T10:46:55.7659759Z [^[[33mwarn^[[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+quality (node 24)	Run npm run format:check	2026-08-30T10:46:55.7951604Z ##[error]Process completed with exit code 1.
+```
