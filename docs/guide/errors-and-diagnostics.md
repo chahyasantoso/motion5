@@ -41,6 +41,7 @@ Warnings load and stay readable. Missing `perspective` alongside 3D content, and
 - `trigger-driver-unavailable`, at `load()` or `addMotion`, when a declared `scroll` trigger resolves no source. This one is a construction failure, not a validation failure.
 - `plugin-unknown-key`, when no registered plugin claims an authored keyframe key. This is the error you hit first if you forget to register a plugin. For a plugin-named group it also covers a group that names no registered plugin, and a leaf the named plugin does not claim.
 - `plugin-ambiguous-key`, when a flat keyframe key is claimed by more than one registered plugin. The message names every claimant in sorted order; author the key inside the group of the plugin you meant. Registering both `transformPlugin` and `fkPlugin` is the case you will meet, because both claim `rotation`. See ADR-043.
+- `plugin-unknown-requirement`, when a group binds a slot the named plugin does not declare. The path is the binding you wrote, including the key when you bound a dict entry.
 - `plugin-contribution-unsupported-entry`, for the legacy `use` field, which is not part of schema v5.
 - `observation-target-unsupported`, for a `target` on an `observes` entry. The field is removed rather than kept and ignored: it never decided which values arrived or under which keys. See ADR-046.
 - `observation-role-unsupported`, for a `role` on an `observes` entry, at either value. Every edge an `observes` entry declares is an output edge, so `"output"` is refused for the same reason `"input"` is: writing the only legal value would be a field accepted and then ignored. See ADR-047.
@@ -77,16 +78,25 @@ Two shapes deliberately stay legal. A group may author `requires` with no `value
 
 Malformed or duplicate ids, reserved namespace characters, malformed edges, unknown sources, duplicate edges, self-reference, and cycles are all errors too. Track ids may not contain `/`, and motion ids may not contain `/` or equal `~`, because those characters carry the qualified namespace.
 
-### The one binding whose value is not a source id
+### Slots whose value is a dict of sources
 
-Every slot inside `requires` names one source id, with exactly one exception. `targets` holds a record instead: the goal each chain member of a solver reaches toward, keyed by that member's own id. It is the only reserved slot name in the section, and these four rule ids are the whole surface of its shape. See ADR-052.
+Most slots inside `requires` name one source id. A slot may take a dict instead: one source id per key you name, which is how a solver addresses one goal per chain leaf under `targets`, keyed by each leaf's own member id. Which of the two a slot takes is declared by the plugin that owns it, and is never derived from the slot's name, so any plugin may declare one. See ADR-052 and ADR-057.
 
-- `keyframes-targets-shape`, when `targets` is present but is not an object mapping member ids to source ids. An array lands here too. `keyframes-requires-source` cannot answer for this slot, because it refuses a record outright, which is what made the dict unauthorable before the goal grammar existed.
-- `keyframes-targets-empty`, when `targets` is an empty object. Omitting the slot is already how a solver authors no goals through the dict.
-- `keyframes-targets-member`, when a member key is empty, or contains `:`, `[`, or `]`. Each goal expands into its own binding at a derived slot identity of `targets[<memberId>]`, so a bracket in an authored name could forge that identity. Same reservation argument as the colon.
-- `keyframes-targets-source`, when the goal a member is mapped to is not a non-empty source id.
+Shape first, with no plugin registry in reach:
 
-These four are shape only, and deliberately not membership. Whether a key names a real member of that solver's chain is derived from `solver` edges during graph construction, which is the only owner that knows the member set.
+- `keyframes-targets-shape`, when `targets` is present but is not an object mapping member ids to source ids. An array lands here too. This is the one rule still keyed on a slot name, because only the name can answer it: this slot carries a solver's goal dict, so a scalar at it is malformed rather than the ordinary scalar binding it would be anywhere else.
+- `keyframes-requires-dict-empty`, when a dict-valued slot is an empty object. Omitting the slot is already how you bind nothing through it.
+- `keyframes-requires-dict-key`, when a key is empty, or contains `:`, `[`, or `]`. A dict key is an authored name, and authored names reserve the colon for internal keys. The brackets go with it because they were refused before and no authored spelling gains legality in a change that moves none.
+- `keyframes-requires-dict-source`, when the source a key is mapped to is not a non-empty source id.
+
+Then the declaration, which only the plugin registry can answer, and which answers in both directions:
+
+- `plugin-requirement-dict-unsupported`, when you author a dict at a slot that takes one source. The parser expands a dict under any slot, because it holds no registry and a slot name proves nothing either way, so this is the rule that keeps a dict at `fk`'s `root` from being accepted and then ignored.
+- `plugin-requirement-dict-required`, when you author one source at a slot that takes a dict. Its mirror: a plugin reading that slot as a keyed record would otherwise be handed one node's values under the slot itself, with nothing to say you meant something else.
+
+`keyframes-targets-empty`, `keyframes-targets-member` and `keyframes-targets-source` were the earlier names of the three dict shape rules, from when a dict was one reserved slot's private shape. They are renamed rather than kept, because a diagnostic has to name what you wrote and `keyframes-targets-member` firing at `spring.requires.tensions.seg-a` names something else.
+
+The shape rules are shape only, and deliberately not membership. Whether a key names a real member of that solver's chain is derived from `solver` edges during graph construction, which is the only owner that knows the member set.
 
 ### Inverse Kinematics and solver rules
 
@@ -96,7 +106,7 @@ Solvers (`ikPlugin`) and solved bones (`fkPlugin`) enforce topological and keyfr
 - `ik-solver-no-members`, when a solver node declares a `root` slot but no downstream bones bind `solver` to it. The solver would compute in a vacuum without controlling any joints.
 - `ik-solver-no-goal`, when a solver has a root and members and binds neither the bare `target` slot nor a goal through `targets`. A solve with nothing to reach for has no answer, and this is refused at load rather than left to the composition, which used to throw on it every tick and block every member of the chain behind an `error`.
 - `ik-solver-unreachable-root`, when tracing a member bone's `base` parent walk upward fails to terminate at the solver's bound `root`. The member chain must form a contiguous ancestor hierarchy rooted at `root`.
-- `ik-mode-ambiguous`, when a single node binds `solver` alongside `root` or a goal, or binds `root` under multiple plugins. A track is either a solver or a member, never both. It reads the goal grammar rather than the literal slot name `target`, because a member binding `solver` beside a goal dict of its own would otherwise load clean with one real input edge per goal and have every one of them ignored.
+- `ik-mode-ambiguous`, when a single node binds `solver` alongside `root` or a goal, or binds `root` under multiple plugins. A track is either a solver or a member, never both. It reads the goal classification rather than the literal slot name `target`, because a member binding `solver` beside a goal dict of its own would otherwise load clean with one real input edge per goal and have every one of them ignored.
 - `ik-solved-rotation-dead`, when a bone that binds `keyframes.fk.requires.solver` authors `values.rotation` and no `values.weight` beside it. With no weight there is no runtime state in which the authored rotation is read, so it is dead input and refused. Either drop it, or author the `weight` that gives it something to mean.
 - `ik-weight-without-solver`, when a node that bound a `solver` slot under one plugin authors `values.weight` under another. It is the mirror of the rule above: the solve cannot reach a key outside the group that asked for it, so `fk` short-circuits to the authored rotation, never reads that weight, and the key is silently inert. Both rules read the group that bound the slot and no other, which is why binding `solver` under `spring` and authoring `weight` under `fk` is refused rather than passed.
 
@@ -113,11 +123,13 @@ Goal addressing has six rules of its own, and they are answered during graph con
 - `ik-goal-conflict`, when one solver authors both `target` and `targets`. Both spellings are supported and neither is deprecated, but a solver picks one.
 - `ik-target-not-single-leaf`, when a solver binds the bare `target` slot over a chain with more than one leaf. `target` names no member, so it can only address a leaf while there is one leaf to address; over two it has no answer, and the diagnostic names both so the choice is yours to make. A linear chain has one leaf however long it is, so the bare slot keeps working past two bones. Address goals by member id instead.
 
+Those six answer about the member a key names. Whether the slot was allowed to carry keys at all is a separate question with a separate owner, in the dict section above, and the two never report together: a solver whose `targets` binding was refused by the registry derives no goal for these rules to resolve.
+
 There is no rule about chain length. A solver's derived member count is free, and the solve dispatches on it: two members and one goal take the analytic closed form, and everything else takes the iterative one. `ik-solver-unsupported-arity` refused every derived member count other than two and is deleted rather than widened, because a rule that refuses a shape the runtime solves is worse than no rule.
 
 There is no rule about a solved bone's pivot offset either, for the same reason. A solved member may author `x` and `y` exactly as any other bone does, and `ik-solved-pivot-unsupported` is deleted. `fk` still owns applying the offset, in its parent's rotated space; `ik` accounts for it in the geometry it solves, so the rotations it publishes are the ones that put the composed tip on the goal. Both solves share one convention: the analytic path folds the two offsets into a fixed base point and a rigid link with a twist, and the iterative one solves pivot positions and averages a shared sub-base's tip rather than its children's twists. An offset that shortens a chain's reach past its goal is an unreachable target, which extends the chain toward it and has never been a diagnostic. See ADR-054.
 
-A diagnostic about a grouped keyframe cites the path you typed, `keyframes.fk.values.length`, not the flattened key the compiler works with. A diagnostic about a stop cites its index on the property, `keyframes.x[0].p`. A diagnostic about a goal cites the member key you typed, `keyframes.ik.requires.targets.forearm`, rather than the slot identity it derives. Every path a leaf diagnostic carries is a path you wrote. See ADR-041, ADR-049, ADR-050, ADR-051, and ADR-052.
+A diagnostic about a grouped keyframe cites the path you typed, `keyframes.fk.values.length`, not the flattened key the compiler works with. A diagnostic about a stop cites its index on the property, `keyframes.x[0].p`. A diagnostic about a dict entry cites the key you typed, `keyframes.ik.requires.targets.forearm`, and there is no derived slot spelling for it to cite instead: the key is carried beside the slot as data rather than formatted into it. Every path a leaf diagnostic carries is a path you wrote. See ADR-041, ADR-049, ADR-050, ADR-051, ADR-052, and ADR-057.
 
 ## A frame has two failure owners
 
@@ -149,9 +161,10 @@ These are your bugs, and they are loud on purpose rather than clamped or deferre
 - destroying a motion that still owns tracks throws `TypeError`. Remove its tracks first; a motion is destroyed empty.
 - every member of a stale `TrackHandle` throws `StaleTrackHandleError`, which is exported from the package entry: the `track` getter, `remove()`, `replace()`, `addObserve()`, and `removeObserve()`. Four of them used to return silently, so one condition had two public failure contracts; the silence is withdrawn rather than documented. The error extends `TypeError` and keeps the message `Track "<id>" is no longer live.` verbatim, so an existing `instanceof TypeError` narrowing keeps matching, and it carries a stable `ruleId` of `stale-track-handle` beside the `nodeId` it refused, which is what to branch on instead of the message. `handle.live` is the non-throwing way to ask the same question, so cleanup whose second call is expected rather than mistaken guards instead of catching. On a disposed project `live` is `false` and `remove()` reports the disposal rather than the staleness, because the project's own lifecycle outranks one handle's. A handle survives its own `replace()`, because replacement preserves node identity and therefore the token. See ADR-056.
 - a disposed clock or trigger port throws when subscribed to.
-- registering a plugin whose `keys`, `inputs`, or `outputs` contain `:` throws `TypeError`. That separator belongs to the internal-key rule.
-- registering a plugin that declares `targets`, or a requirement slot matching the derived goal spelling, throws `TypeError`. Those names belong to the goal grammar, and a plugin reaches a goal through its slot-claim predicate instead.
-- registering two plugins that declare the same `input` throws `TypeError`. Two plugins claiming the same `key` does not: that is legal, and a group names the owner.
+- registering a plugin whose `keys`, `inputs`, or `outputs` contain `:` throws `TypeError`. That separator belongs to the internal-key rule, and a requirement slot is held to it too.
+- registering two plugins that declare the same `input` throws `TypeError`. Two plugins claiming the same `key` does not: that is legal, and a group names the owner. Two plugins declaring the same requirement slot is legal as well, because a slot is addressed through its owning plugin's group and delivered scoped to it, so there is no namespace to share.
+
+Declaring `targets`, or any other dict-valued slot, is ordinary rather than refused. It used to throw, because a goal reached its plugin through a slot-claim predicate and a declared slot would have been a second, unreachable spelling of the same binding. Declaring the slot with `dict: true` is now the only way the capability exists at all. See ADR-057.
 
 ## When several things fail at once
 
