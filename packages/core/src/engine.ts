@@ -400,10 +400,13 @@ export class Engine {
         },
         graphBuilder: new IncrementalGraphBuilder(),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
-        // One hook for one mechanism. `Track` holds a single mask, and whether the retained
-        // definition moved with it is `ProjectRuntime`'s question, so there is nothing here for a
-        // second hook to do. See ADR-059.
-        overrideValues: (nodeId, values) => tracks.get(nodeId)?.overrideValues(values),
+        // One hook for one mechanism, and the compiled Track is the one owner of the split inside
+        // it. Whether the retained definition moved with the write is `ProjectRuntime`'s question,
+        // so there is nothing here for a second hook to do. An absent Track answers `undefined`,
+        // which is the one thing that is not a decline: there is no timeline to escalate for.
+        // See ADR-059 and ADR-060.
+        writeValues: (nodeId, values, overlay, rebase) =>
+          tracks.get(nodeId)?.writeValues(values, overlay, rebase),
         compileTrack: compileTrackDefinition,
         disposeTrack,
         stageTrack: stageTrackDefinition,
