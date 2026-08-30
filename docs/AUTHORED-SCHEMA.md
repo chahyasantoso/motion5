@@ -175,11 +175,26 @@ A prepare-stage plugin's `contribute` hook derives a contribution from a propert
 
 The contract layer owns section and binding shape, the plugin registry owns plugin and slot resolution, and graph construction owns topology. This keeps validation registry-independent and avoids duplicate normalization owners. See ADR-044 and ADR-049.
 
-#### One reserved slot whose value is a record
+#### A slot whose value is a dict of sources
 
-Every slot inside `requires` names one source id, with exactly one exception. `targets` is reserved, and its value is a record mapping a solver chain member's id to the node that member reaches toward. It exists because a plugin cannot enumerate a slot family whose members the rig names rather than the plugin, and it is the only slot in the section that is not a plain source id.
+Most slots inside `requires` name one source id. A slot may take a dict instead: one source id per key you name. `ik`'s `targets` is the case that forced it, mapping a solver chain member's id to the node that member reaches toward, because a plugin cannot enumerate a slot family whose members the rig names rather than the plugin.
 
-One authored record, but one binding per entry. Each goal is expanded into its own binding at a derived slot identity of `targets[<memberId>]`, so it derives exactly one input edge and every downstream owner sees an ordinary edge. That identity is never authored: `targets` and anything matching the derived spelling are refused as declared requirement slot names at plugin registration, so there is no second, unreachable way to reach the same binding. See ADR-052.
+The capability is declared rather than detected from the slot's name. A plugin marks the slot in its own definition:
+
+```ts
+const ikPlugin = {
+  name: "ik",
+  requirements: {
+    root: {},
+    target: {},
+    targets: { dict: true },
+  },
+};
+```
+
+So any plugin may declare one, and `targets` is an ordinary slot name with nothing reserved about it. A dict authored at a slot that declared none is `plugin-requirement-dict-unsupported`, and one source authored at a slot that declared one is `plugin-requirement-dict-required`. Both are refused, because a mismatch is silent in both directions: the first is a binding accepted and then ignored, and the second hands a plugin one node's values where it reads a keyed record. See ADR-052 and ADR-057.
+
+One authored dict, but one binding per entry. Each entry derives exactly one input edge, and the key it was authored under travels beside the slot as data rather than inside a formatted slot name, so every downstream owner sees an ordinary edge and two entries of one slot stay two distinct edges even when they name the same source. The values arrive at the plugin under the keys you wrote, as `inputs.<plugin>.<slot>.<key>`.
 
 ### Inverse Kinematics (`ik` and `fk.requires.solver`)
 
@@ -189,7 +204,7 @@ Inverse Kinematics computes joint rotations so a bone chain reaches toward one o
   - `values.flip`: boolean (optional, default `false`) to mirror the joint bend angle (e.g. elbow/knee orientation). One `flip` serves the whole solve, including every limb of a branching chain.
   - `requires.root`: qualified ID of the world frame the chain hangs from. The root is never moved by the solve.
   - `requires.target`: qualified ID of the world-space coordinate the chain's single leaf reaches toward.
-  - `requires.targets`: a record of goals keyed by member id, for a chain with more than one leaf. Every leaf must be named once the record is used at all.
+  - `requires.targets`: a dict of goals keyed by member id, for a chain with more than one leaf. Every leaf must be named once the dict is used at all.
   - One of the two goal spellings is required. A solver with a root and members and no goal at all is `ik-solver-no-goal`, refused at load rather than left to a composition that has nothing to solve.
 - **`fk` Solver Binding**: A member bone binds `keyframes.fk.requires.solver` naming the solver node. It authors `values.length`, a pivot offset `x` and `y` if the rig wants one, and optionally `values.weight`. Both solves account for the pivot offset, so it is an ordinary authored value on a member exactly as it is on any other bone. See ADR-054.
 - **`fk.values.weight`**: how much of the solved rotation this bone composes with, per member rather than per solver, so a chain can stagger its reach: a shoulder that commits early while a wrist lags is two weights on two bones. It defaults to `1`, which is the unconditional override every rig had before the key existed, `0` is exactly the authored `rotation` with the solve discarded, and anything between blends along the shorter of the two arcs between them. Values outside `[0, 1]` are clamped rather than extrapolated, and a non-finite weight reads as `1`. Authoring `rotation` on a solver-bound member is legal exactly when a `weight` sits beside it in the same group, and refused as `ik-solved-rotation-dead` when it does not. A member that bound its solver under one plugin group and authored its `weight` under another is `ik-weight-without-solver`, because the solve cannot reach a key outside the group that asked for it. See ADR-055.
@@ -253,7 +268,9 @@ A branching chain addresses its goals by member id:
 
 Keyed by member id rather than by position, because an index cannot be wrong: it silently means whatever the rig currently makes it mean, so inserting a bone or reordering two tracks would keep loading and pull the wrong limb. A member id can be wrong, so it can be checked.
 
-Both spellings are supported and neither is deprecated. `target` is exactly the degenerate case of the record, so a solver picks one and `ik-goal-conflict` refuses both together. Because `target` names no member, it addresses a leaf only while there is one leaf to address, and a solver that binds it over a branching chain is `ik-target-not-single-leaf`. A linear chain has one leaf however long it is, so the bare slot keeps working past two bones.
+Two leaves may reach for the same node. Each goal is its own binding carrying its own key, so two entries naming one target are two distinct edges rather than one, and neither is reported as a duplicate. See ADR-057.
+
+Both spellings are supported and neither is deprecated. `target` is exactly the degenerate case of the dict, so a solver picks one and `ik-goal-conflict` refuses both together. Because `target` names no member, it addresses a leaf only while there is one leaf to address, and a solver that binds it over a branching chain is `ik-target-not-single-leaf`. A linear chain has one leaf however long it is, so the bare slot keeps working past two bones.
 
 A solve publishes `rotations`, a record of one local rotation per member id, and nothing else. Convergence is not reported on the patch: an iterative solve reaches a goal within a tolerance, an unreachable goal leaves the chain fully extended toward it, and both are ordinary results rather than failures. A member's `weight` never reaches a patch either: `fk` publishes a composed frame, so the blend is applied and the key is dropped. See ADR-051, ADR-052, and ADR-055.
 
@@ -264,7 +281,8 @@ A solve publishes `rotations`, a record of one local rotation per member id, and
 - A group holds only `values` and `requires`. Anything else is `keyframes-unknown-section`, and a group authoring its leaves at the top level is `keyframes-missing-values-section`.
 - A present `values` must be a non-empty object: `keyframes-values-shape` and `keyframes-values-empty`. Omitting it is how you author no properties.
 - Requirement slots may not be empty or contain `:`. Malformed sections use `keyframes-requires-shape`, `keyframes-requires-empty`, `keyframes-requires-slot`, and `keyframes-requires-source`.
-- The reserved `targets` slot holds a non-empty record of member id to source id. Malformed records use `keyframes-targets-shape`, `keyframes-targets-empty`, `keyframes-targets-member`, and `keyframes-targets-source`. A member key may not be empty or contain `:`, `[`, or `]`, because a bracket would forge the derived slot identity.
+- A dict-valued slot holds a non-empty record of key to source id. `targets` specifically must be a record at all, which is `keyframes-targets-shape`, because only the slot's name can say so. The dict itself uses `keyframes-requires-dict-empty`, `keyframes-requires-dict-key`, and `keyframes-requires-dict-source`. A key may not be empty or contain `:`, `[`, or `]`: the colon is reserved in every authored name, and the brackets go with it because they were refused before and no authored spelling gains legality here.
+- Whether a slot was allowed to carry a dict at all is the plugin's declaration, reported as `plugin-requirement-dict-unsupported` for a dict at a slot that takes one source and `plugin-requirement-dict-required` for one source at a slot that takes a dict.
 - A top-level `values` or `requires` is rejected with `keyframes-reserved-section` because it has no owning plugin.
 - An empty object is an accepted no-op property rather than a group, because it names no section.
 - One compiled key may be authored once. Collisions use `keyframes-duplicate-key`.
@@ -314,7 +332,7 @@ interface Diagnostic {
 
 Errors reject a candidate project before it replaces the active project. Warnings load and remain readable.
 
-A diagnostic about a grouped leaf cites the authored path, including the section: `keyframes.fk.values.length`. A diagnostic about a stop cites its index on the property: `keyframes.x[0].p`. A diagnostic about a goal cites the member key you typed: `keyframes.ik.requires.targets.forearm`.
+A diagnostic about a grouped leaf cites the authored path, including the section: `keyframes.fk.values.length`. A diagnostic about a stop cites its index on the property: `keyframes.x[0].p`. A diagnostic about a dict entry cites the key you typed: `keyframes.ik.requires.targets.forearm`. There is no derived slot spelling for it to cite instead.
 
 Load-time solver diagnostics include:
 
@@ -329,8 +347,10 @@ Load-time solver diagnostics include:
 - `ik-goal-not-leaf`: A goal is authored on a member another member hangs from.
 - `ik-goal-duplicate`: Two goal keys qualify to one member id.
 - `ik-goal-conflict`: One solver authors both `target` and `targets`.
-- `ik-leaf-without-goal`: The goal record was used and a chain leaf it never named has nothing to reach for.
+- `ik-leaf-without-goal`: The goal dict was used and a chain leaf it never named has nothing to reach for.
 - `ik-target-not-single-leaf`: A solver binds the bare `target` slot over a chain with more than one leaf.
+
+Those all answer about the member a goal key names. Whether `targets` was allowed to carry keys at all is answered one layer up by the plugin's declaration, so the two never report together.
 
 There is no diagnostic about a solver's derived member count. `ik-solver-unsupported-arity` refused every count other than two and is deleted rather than widened, because a rule that refuses a shape the runtime solves is worse than no rule. See ADR-052.
 
@@ -340,4 +360,4 @@ And there is no diagnostic about a `weight` on a bone that bound no solver anywh
 
 ## Rejected input
 
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, the retired stops wrapper, a leaf that is neither an array nor a static scalar, malformed group sections, malformed bindings and edges, a malformed goal record, unknown sources, duplicate edges, self-reference, cycles, invalid solver topologies, solvers with no goal, unaddressable or unaddressed solver goals, dead rotations and unreachable blend weights on solved bones, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Flat keys with multiple plugin claimants are errors too. Missing perspective for detected 3D content and unused free tracks are warnings.
+Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, the retired stops wrapper, a leaf that is neither an array nor a static scalar, malformed group sections, malformed bindings and edges, a malformed goal dict, a dict at a slot that takes one source or one source at a slot that takes a dict, unknown sources, duplicate edges, self-reference, cycles, invalid solver topologies, solvers with no goal, unaddressable or unaddressed solver goals, dead rotations and unreachable blend weights on solved bones, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Flat keys with multiple plugin claimants are errors too. Missing perspective for detected 3D content and unused free tracks are warnings.

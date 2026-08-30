@@ -212,18 +212,9 @@
       "id": "l-time-loop-semantics",
       "test": "packages/core/test/integration/trigger-time-loop.test.ts"
     },
-    {
-      "id": "track-node-id",
-      "test": "packages/core/test/unit/domain/track-node-id.test.ts"
-    },
-    {
-      "id": "resolve-solvers",
-      "test": "packages/core/test/unit/graph/resolve-solvers.test.ts"
-    },
-    {
-      "id": "ik-solve",
-      "test": "packages/core/test/unit/plugins/ik-solve.test.ts"
-    },
+    { "id": "track-node-id", "test": "packages/core/test/unit/domain/track-node-id.test.ts" },
+    { "id": "resolve-solvers", "test": "packages/core/test/unit/graph/resolve-solvers.test.ts" },
+    { "id": "ik-solve", "test": "packages/core/test/unit/plugins/ik-solve.test.ts" },
     {
       "id": "fk-solver-override",
       "test": "packages/core/test/unit/plugins/fk-solver-override.test.ts"
@@ -236,34 +227,18 @@
       "id": "ik-two-bone-integration",
       "test": "packages/core/test/integration/ik-two-bone.test.ts"
     },
-    {
-      "id": "solver-slot-claim",
-      "test": "packages/core/test/unit/domain/plugin-slot-claim.test.ts"
-    },
-    {
-      "id": "solver-goals",
-      "test": "packages/core/test/unit/graph/solver-goals.test.ts"
-    },
+    { "id": "solver-goals", "test": "packages/core/test/unit/graph/solver-goals.test.ts" },
     {
       "id": "ik-multi-goal-integration",
       "test": "packages/core/test/integration/ik-multi-goal.test.ts"
     },
-    {
-      "id": "fabrik-solve",
-      "test": "packages/core/test/unit/plugins/fabrik-solve.test.ts"
-    },
-    {
-      "id": "fabrik-dispatch",
-      "test": "packages/core/test/unit/plugins/fabrik-dispatch.test.ts"
-    },
+    { "id": "fabrik-solve", "test": "packages/core/test/unit/plugins/fabrik-solve.test.ts" },
+    { "id": "fabrik-dispatch", "test": "packages/core/test/unit/plugins/fabrik-dispatch.test.ts" },
     {
       "id": "fabrik-arity-one",
       "test": "packages/core/test/unit/plugins/fabrik-arity-one.test.ts"
     },
-    {
-      "id": "solver-arity-lift",
-      "test": "packages/core/test/unit/graph/arity-lift.test.ts"
-    },
+    { "id": "solver-arity-lift", "test": "packages/core/test/unit/graph/arity-lift.test.ts" },
     {
       "id": "solver-goal-required",
       "test": "packages/core/test/unit/graph/solver-goal-required.test.ts"
@@ -272,10 +247,7 @@
       "id": "solved-pivot-offset",
       "test": "packages/core/test/unit/graph/solved-pivot-offset.test.ts"
     },
-    {
-      "id": "angle-blend",
-      "test": "packages/core/test/unit/plugins/angle-blend.test.ts"
-    },
+    { "id": "angle-blend", "test": "packages/core/test/unit/plugins/angle-blend.test.ts" },
     {
       "id": "fk-solved-weight",
       "test": "packages/core/test/unit/plugins/fk-solved-weight.test.ts"
@@ -288,10 +260,7 @@
       "id": "ik-fabrik-chain-integration",
       "test": "packages/core/test/integration/ik-fabrik-chain.test.ts"
     },
-    {
-      "id": "walker-demo",
-      "test": "packages/core/test/integration/phase7-walker-demo.test.ts"
-    },
+    { "id": "walker-demo", "test": "packages/core/test/integration/phase7-walker-demo.test.ts" },
     {
       "id": "stale-track-handle",
       "test": "packages/core/test/unit/runtime/stale-track-handle.test.ts"

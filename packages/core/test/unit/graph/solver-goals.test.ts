@@ -175,10 +175,16 @@ describe("goal-addressed solving (Slice D1)", () => {
     expect(reported(built)).toEqual([]);
     expect(solvesOf(built)).toEqual(EXPECTED_SOLVES);
 
-    // The goal is a qualified node id rather than the authored key, because the publisher reads it
-    // straight off the registry and holds no owner to qualify against.
+    // The slot is the name the author wrote and the member key is data beside it, so the edge is
+    // found by the field rather than by matching a derived `targets[forearm]` spelling. Two
+    // assertions rather than one concatenation: a reader that got either half wrong used to produce
+    // a string that still matched. See ADR-057.
+    //
+    // The goal on `solves` is a qualified node id rather than the authored key, because the publisher
+    // reads it straight off the registry and holds no owner to qualify against.
     const solver = built.graph?.nodeById["walker/arm-solve"];
-    const goal = solver?.edges.find((edge) => edge.requirement?.slot === "targets[forearm]");
+    const goal = solver?.edges.find((edge) => edge.requirement?.memberKey === "forearm");
+    expect(goal?.requirement?.slot).toBe("targets");
     expect(goal?.sourceId).toBe("walker/hand-target");
 
     // Both builders answer identically, because both finalize through `finalizeGraph`.
@@ -247,7 +253,7 @@ describe("goal-addressed solving (Slice D1)", () => {
     expect(reported(buildGraphIR(CONFLICT))).toEqual(["ik-goal-conflict at walker/arm-solve"]);
   });
 
-  it("MG-9 ik-mode-ambiguous reads the goal grammar, not the literal slot name", () => {
+  it("MG-9 ik-mode-ambiguous reads the goal classification, not the literal slot name", () => {
     // Reported against the member, which is the node that authored the contradiction. Before D1 this
     // rig loaded clean and the member's goals were ignored with no diagnostic behind them.
     expect(reported(buildGraphIR(MEMBER_WITH_GOALS))).toEqual([

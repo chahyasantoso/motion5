@@ -154,6 +154,10 @@ function mergeValues(
  * Freezes the collected scoped inputs one level down, so a composer cannot reach back into the
  * publisher's accumulator. There is no projection step: the slot is the scope, so the source's
  * values arrive whole and under their own names. See ADR-044.
+ *
+ * One level is still enough with dict-valued slots in play, because a dict is frozen where it is
+ * assembled rather than here: nesting the freeze would make this function walk a shape it does not
+ * own. See ADR-057.
  */
 function freezeRequirementInputs(
   collected: Readonly<Record<string, Record<string, unknown>>>,
@@ -270,6 +274,10 @@ export class GraphPublisher {
         }
         try {
           const collected: Record<string, Record<string, unknown>> = {};
+          // One accumulator per dict-valued slot, kept beside `collected` until the input loop is
+          // done. Assembled separately rather than merged in place so the slot's own record is
+          // frozen once, at a point where it is known to be complete.
+          const memberSlots = new Map<string, Map<string, Record<string, unknown>>>();
           const sourceRevisions: Record<string, number> = {};
           if (node.solves && node.solves.length > 0) {
             const solvingPlugin = solvingPluginOf(node);
@@ -291,9 +299,12 @@ export class GraphPublisher {
               // from a second walk over the member's edges by whoever supplies `interpolated`.
               const state = memberNode.interpolated();
               // And so does `goal`, for the same reason: a goal is one authored dict entry that
-              // `readPluginBindings` expanded into one binding per member, so the node it names is
-              // an ordinary input edge of this solver and is already resolved by the pending check
-              // above. The guard is the same defensive invariant the input loop carries.
+              // `readPluginBindings` expanded into its own binding, so the node it names is an
+              // ordinary input edge of this solver and is already resolved by the pending check
+              // above. The slot delivers that same value under the author's own key through the
+              // loop below; this join is what carries the qualified member id, which is the one
+              // thing a plugin holding no graph cannot recover. The guard is the same defensive
+              // invariant the input loop carries.
               let goal: Readonly<Record<string, unknown>> | undefined;
               if (memberRef.goal !== undefined) {
                 const goalValues = readSourceValues(memberRef.goal);
@@ -341,11 +352,29 @@ export class GraphPublisher {
                 "observation-input-shape",
                 `Input observation edge ${describeEdge(edge)} carries no requirement.`,
               );
+            // A dict entry is delivered under its authored key inside the slot rather than at the
+            // slot itself. Assigning at the slot gave N entries one destination, so the last edge
+            // in canonical order was the only one that arrived and the rest were dropped with no
+            // diagnostic: survivable only while nothing read the channel, which is exactly how the
+            // next consumer of it inherits a last-write-wins bug. See ADR-057.
+            if (requirement.memberKey !== undefined) {
+              const slots = memberSlots.get(requirement.plugin) ?? new Map();
+              memberSlots.set(requirement.plugin, slots);
+              const members = slots.get(requirement.slot) ?? {};
+              slots.set(requirement.slot, members);
+              members[requirement.memberKey] = sourceValues;
+              continue;
+            }
             // The slot is the scope, so the source's values arrive whole and under their own names.
             // Nothing is projected and nothing is flat-merged, so there is no key left to collide
             // with and no collision guard left to reach. See ADR-044.
             (collected[requirement.plugin] ??= {})[requirement.slot] = sourceValues;
           }
+          // Frozen at assembly, in canonical key order: the entries were collected over
+          // `edgesByRole`, which sorts by `compareEdges`, and the member key is its last tiebreak.
+          for (const [plugin, slots] of memberSlots)
+            for (const [slot, members] of slots)
+              (collected[plugin] ??= {})[slot] = Object.freeze(members);
           const requirementInputs = freezeRequirementInputs(collected);
           // One memo, and it is `Track`'s. Its key is the seed as well as the requirement inputs,
           // and the members travel inside those inputs, so member lengths are covered by the same

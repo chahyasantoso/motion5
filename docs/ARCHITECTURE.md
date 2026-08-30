@@ -80,6 +80,7 @@ Each one is a test, not a hope. The test id is the invariant id.
 - **I-13** Exactly one upstream clock subscription exists per project, regardless of how many motions are mounted.
 - **I-14** No shipped code branches on a capability or rollout flag. Free tracks and cross-motion references travel the same path as any authored node.
 - **I-15** A warning-severity diagnostic never blocks a load, and an error-severity diagnostic never permits one.
+- **I-16** Whether a `requires` slot carries one source or a dict of them is declared by the plugin that owns the slot, never derived from the slot's name, and every entry of a dict derives its own edge with its own identity. See ADR-057.
 
 ## 5. Identity
 

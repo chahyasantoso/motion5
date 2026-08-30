@@ -108,42 +108,49 @@ export type AuthoredStaticValue = number | string | boolean;
  */
 export type AuthoredProperty = readonly AuthoredStop[] | AuthoredStaticValue;
 /**
- * The authored goals of one solver: the source id each chain member reaches toward, keyed by that
- * member's own id.
+ * The authored value of a dict-valued requirement slot: one source id per key the author names.
  *
- * Keyed by member id rather than by position, because an index can never be wrong: it silently
- * means whatever the rig currently makes it mean, so inserting a bone or reordering two tracks
- * would keep loading and pull the wrong limb. A member id can be wrong, so it can be checked. That
- * is the argument that retired `reach` in favour of a named `root`, and object keys being unique
- * makes two goals for one member unrepresentable rather than merely diagnosed. See issue #195.
+ * A solver's goals are the case that forced it. A solver reaches for one goal per chain leaf, keyed
+ * by that leaf's own member id rather than by position, because an index can never be wrong: it
+ * silently means whatever the rig currently makes it mean, so inserting a bone or reordering two
+ * tracks would keep loading and pull the wrong limb. A member id can be wrong, so it can be checked.
+ * That is the argument that retired `reach` in favour of a named `root`, and object keys being unique
+ * makes two entries for one key unrepresentable rather than merely diagnosed. See issue #195.
+ *
+ * Named for the shape rather than for goals, because the shape is not the goals section's own any
+ * more. Any plugin may declare a slot that accepts one, through `PluginRequirement.dict`, and the
+ * parser detects one by shape under any name. Keeping `AuthoredPluginGoals` would have made the one
+ * plugin that reached the capability first the name of the capability. See ADR-057.
  *
  * One authored section, but one binding per entry. `readPluginBindings` expands each into its own
- * derived slot identity, because the publisher delivers a source's values as
- * `collected[plugin][slot]` and two goals under one slot name would overwrite each other silently,
- * while a goal deriving no edge would be invisible to ordering and to pending classification.
+ * binding carrying the authored key as `memberKey`, because an entry deriving no edge would be
+ * invisible to ordering and to pending classification, and because the publisher has to deliver each
+ * entry separately.
  *
  * Not re-exported from the package entry, so this adds no entry to the export map or to the
  * boundary allow-list. Same finding ADR-049 recorded for `AuthoredPluginRequires`.
  */
-export type AuthoredPluginGoals = Readonly<Record<string, string>>;
+export type AuthoredRequirementDict = Readonly<Record<string, string>>;
 /**
  * The optional bindings section of a plugin-named group: one graph source id per requirement slot
- * the named plugin declares, or the goals dict for the reserved goals slot.
+ * the named plugin declares, or a dict of source ids for a slot that declares it accepts one.
  *
  * The slot name is the destination, so there is no author-facing projection map and no naming
  * convention such as `parentX` for the author to keep synchronized with the plugin. Omitting the
  * section, or a slot within it, derives no edge and leaves the unbound case to the plugin.
  * See ADR-044.
  *
- * The index signature stays open across both value shapes rather than pinning the dict to the
- * reserved slot name, on the precedent `MotionDefinition.trigger` sets below: the type is
- * deliberately structurally permissive and validation is the exact owner. A dict authored at any
- * other slot derives no binding and is refused as `keyframes-requires-source`, so the looseness
- * costs no silence: nothing is accepted and then ignored, which is what rule 6 of ADR-033 forbids.
- * Pinning it in the type instead would need an index signature widened with `undefined` for every
- * reader of a slot value, to describe one reserved name the validator already owns. See issue #195.
+ * The index signature stays open across both value shapes rather than pinning the dict to particular
+ * slot names, on the precedent `MotionDefinition.trigger` sets below: the type is deliberately
+ * structurally permissive and validation is the exact owner. A dict derives one binding per key at
+ * whatever slot it was authored under, and whether that slot was allowed to carry one is
+ * `PluginRequirement.dict`, read by `PluginRegistry` and refused by name as
+ * `plugin-requirement-dict-unsupported`. So the looseness costs no silence: nothing is accepted and
+ * then ignored, which is what rule 6 of ADR-033 forbids. Pinning it in the type instead would need a
+ * per-plugin slot map inside the contract layer, which is the registry this layer must not hold.
+ * See issue #195 and ADR-057.
  */
-export type AuthoredPluginRequires = Readonly<Record<string, string | AuthoredPluginGoals>>;
+export type AuthoredPluginRequires = Readonly<Record<string, string | AuthoredRequirementDict>>;
 /**
  * A plugin-named group: the properties that plugin claims, under `values`, plus its optional
  * `requires` section.
@@ -179,7 +186,19 @@ export interface PluginRequiresBinding {
   readonly plugin: string;
   readonly slot: string;
   readonly source: string;
-  /** `plugin.requires.slot`, relative to the keyframes record. Diagnostics cite this. */
+  /**
+   * The key this binding was authored under inside a dict-valued slot, absent for a scalar slot.
+   *
+   * Data rather than a formatted slot name. The slot stays exactly as the author spelled it, so the
+   * one thing that distinguishes two entries of one slot is a field, with one owner and no parser.
+   * It reaches `EdgeRequirement`, participates in edge identity and ordering, and is what a solver's
+   * goal is recovered from. See ADR-057.
+   */
+  readonly memberKey?: string;
+  /**
+   * `plugin.requires.slot`, or `plugin.requires.slot.memberKey` for a dict entry, relative to the
+   * keyframes record. Diagnostics cite this, so a refusal names the path the author actually wrote.
+   */
   readonly authoredPath: string;
 }
 export interface TrackDefinition {
