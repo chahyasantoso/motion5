@@ -158,24 +158,23 @@ import { fileURLToPath } from "node:url";
 // memoization, seed propagation, and renderer shielding. It is the sixth two-letter series, under
 // the policy the `P-` paragraph sets.
 //
-// `SL-` belongs to solver slot arity, slice D0 of issue #195: that a plugin may claim a slot family
-// it could not enumerate, that the goal-addressing grammar has one owner, that the authored goal
-// dict derives one binding and one edge per member, and that the reserved spellings are refused as
-// declared slot names. `Q-` owns what a declared requirement does and `J-` owns that it is the only
-// input channel; `SL-` owns how many slots a plugin is allowed to accept and who decides. It is the
-// seventh two-letter series, under the policy the `P-` paragraph sets, and `S-` alone is the
-// progress state commit series. It sorts before `S` in the pattern below, because an alternation
-// that offered `S` first would match `S` and then fail on the `L`.
+// `SL-` is retired rather than reserved. It belonged to solver slot arity, slice D0 of issue #195:
+// that a plugin may claim a slot family it could not enumerate, and that the goal-addressing
+// grammar has one owner. ADR-057 deletes both the predicate and the grammar, so every case it
+// owned either moved into `DV-` against the field representation or describes something that no
+// longer exists, and the letters are removed from the pattern below rather than left matching
+// nothing. Citations of `SL-` in ADR-052 are historical. The `P-` paragraph's policy cuts both
+// ways: a series joins the pattern when it is opened, and leaves when it closes.
 //
 // `MG-` belongs to goal-addressed solving, slice D1 of issue #195: that an authored goal dict
 // resolves to a chain leaf, that the bare `target` slot keeps working beside it, and that the six
 // load-time rules naming an unknown member, a non-leaf, an unaddressed leaf, a duplicate spelling,
 // a conflicting pair of spellings and an ambiguous mode all report from the one owner that knows
-// the member set. `SL-` owns whether a slot may be claimed at all; `MG-` owns whether the member it
-// names exists and what the solve does with it. It is the eighth two-letter series, under the policy
-// the `P-` paragraph sets, and `M-` alone is the Motion mutation series. It sorts before `M` in the
-// pattern below, because an alternation that offered `M` first would match `M` and then fail on the
-// `G`.
+// the member set. `DV-` owns whether a slot may carry a dict at all; `MG-` owns whether the member
+// a key names exists and what the solve does with it. It is the eighth two-letter series, under the
+// policy the `P-` paragraph sets, and `M-` alone is the Motion mutation series. It sorts before `M`
+// in the pattern below, because an alternation that offered `M` first would match `M` and then fail
+// on the `G`.
 //
 // `FB-` belongs to the FABRIK solve, slice D2 of issue #195: that a chain past arity two reaches
 // its goal and keeps its segment lengths, that both elbow branches agree with the closed form at
@@ -220,10 +219,21 @@ import { fileURLToPath } from "node:url";
 // paragraph sets, and `S-` alone is the progress state commit series. It sorts before `S` in the
 // pattern below, because an alternation that offered `S` first would match `S` and then fail on
 // the `H`.
+//
+// `DV-` belongs to dict-valued requirement slots, issue #220 and ADR-057: that a slot whose
+// authored value is a record expands to one binding per key under any name, that whether a slot may
+// carry one is a declaration the registry reads rather than a predicate a plugin answers, that the
+// key participates in edge identity and ordering so two entries of one slot stay two edges, and
+// that another plugin's dict is not read as a solver's goals. `Q-` owns what a declared requirement
+// does and `J-` owns that it is the only input channel; `SL-` owned how many slots a plugin may
+// accept, and this replaces that question rather than extending it, which is why that series
+// retires above. It is the thirteenth two-letter series, under the policy the `P-` paragraph sets,
+// and `D-` alone is the teardown ownership series. It sorts before `D` in the pattern below,
+// because an alternation that offered `D` first would match `D` and then fail on the `V`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE =
-  /it\(\s*"((?:CF|CN|FB|FO|IK|LF|MG|PV|RS|SH|SL|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:CF|CN|DV|FB|FO|IK|LF|MG|PV|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })

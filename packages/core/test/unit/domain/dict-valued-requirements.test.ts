@@ -292,20 +292,24 @@ describe("dict-valued requirement slots (issue #220)", () => {
       },
     ]);
     // The one shape rule that stays keyed on the literal, because it runs with no registry: this
-    // name specifically carries a dict, and a scalar at it is malformed exactly as before.
+    // name specifically carries a dict, so a scalar at it is malformed exactly as before.
     expect(ruleIds({ ik: { requires: { targets: "hand-target" } } })).toEqual([
       "keyframes-targets-shape",
     ]);
     expect(ruleIds({ ik: { requires: { targets: [] } } })).toEqual(["keyframes-targets-shape"]);
-    expect(ruleIds({ ik: { requires: { targets: {} } } })).toEqual(["keyframes-targets-empty"]);
+    // The entry rules generalize with the parser, so they are named for the dict rather than for the
+    // one slot that reached the shape first.
+    expect(ruleIds({ ik: { requires: { targets: {} } } })).toEqual([
+      "keyframes-requires-dict-empty",
+    ]);
     expect(ruleIds({ ik: { requires: { targets: { forearm: "" } } } })).toEqual([
-      "keyframes-targets-source",
+      "keyframes-requires-dict-source",
     ]);
     expect(ruleIds({ ik: { requires: { targets: { "a[b]": "hand-target" } } } })).toEqual([
-      "keyframes-targets-member",
+      "keyframes-requires-dict-key",
     ]);
-    // And the entry rules generalize with the parser, so a second dict-accepting plugin reaches its
-    // own declaration instead of being refused as malformed one layer earlier.
+    // And a second dict-accepting plugin reaches its own declaration instead of being refused as
+    // malformed one layer earlier, which is what made the capability unreachable for anyone else.
     expect(ruleIds({ fk: { requires: { base: { "seg-a": "post" } } } })).toEqual([]);
   });
 
@@ -362,5 +366,22 @@ describe("dict-valued requirement slots (issue #220)", () => {
       { plugin: "ik", slot: "root", source: "shoulder" },
       { plugin: "ik", slot: "targets", source: "hand-target", memberKey: "forearm" },
     ]);
+  });
+
+  it("DV-12 one source at a slot that takes a dict is the mirror refusal", () => {
+    // The declaration answers in both directions, because a mismatch is silent in both. A plugin
+    // reading this slot as a keyed record would otherwise be handed one node's values under the slot
+    // itself, with nothing to say the author meant something else. `keyframes-targets-shape` is the
+    // registry-free half of the same refusal, and it answers for the one slot whose name says so.
+    const resolved = registry(springStub).resolveForKeyframes({
+      spring: { requires: { tensions: "post" } },
+    });
+    const refused = resolved.diagnostics.find(
+      ({ ruleId }) => ruleId === "plugin-requirement-dict-required",
+    );
+    expect(refused?.path).toBe("keyframes.spring.requires.tensions");
+    expect(refused?.severity).toBe("error");
+    expect(refused?.ids).toEqual(["spring", "tensions"]);
+    expect(resolved.requirements).toEqual([]);
   });
 });
