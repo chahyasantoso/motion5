@@ -35,7 +35,7 @@ export interface GsapLike {
   timeline?(vars?: Record<string, unknown>): GsapTimelineLike;
   to?(target: Record<string, unknown>, vars: Record<string, unknown>): GsapTweenLike;
 }
-/** One frozen value each, so a key with nothing compiled and an absent overlay allocate nothing. */
+/** One frozen value, so a key with nothing compiled allocates nothing. */
 const NO_STOPS: readonly AuthoredStop[] = Object.freeze([]);
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -60,12 +60,24 @@ function hasError(diagnostics: readonly Diagnostic[]): boolean {
   return diagnostics.some(({ severity }) => severity === "error");
 }
 /**
+ * The most recently added child, or nothing when the host cannot answer.
+ *
+ * The member is declared on `GsapTimelineLike`, so a host written against the type has it. A cast
+ * fixture is not held to the type, and there are older ones in the suite that predate it. Reading
+ * through one guard rather than adding a branch at the call site keeps the cost of an unanswering
+ * host to exactly one thing: that timeline retains no per-key handles, so `patchKeys` finds nothing
+ * to kill and declines, and the caller recompiles. A `TypeError` from a shim that was correct
+ * yesterday is the alternative, and it is worse.
+ */
+function recentChild(timeline: GsapTimelineLike): unknown {
+  const read = timeline.recent;
+  return typeof read === "function" ? read.call(timeline) : undefined;
+}
+/**
  * The child this adapter is allowed to retain: anything that can be killed on its own.
  *
  * Narrowed here rather than in `GsapTimelineLike`, because gsap's `recent()` answers with a tween,
- * a nested timeline, or a plain callback, and only two of those have a `kill`. A shape this cannot
- * recognize is simply not retained, which costs one key its per-key handles and therefore one
- * decline, rather than a `TypeError` from calling a method a host never had.
+ * a nested timeline, or a plain callback, and only two of those have a `kill`.
  */
 function asTween(child: unknown): GsapTweenLike | undefined {
   if (!isRecord(child)) return undefined;
@@ -117,8 +129,8 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
   return {
     create(config): InterpolationTimeline {
       // The base record and the compile that is currently on the timeline. The overlay is not
-      // retained beside them, because it is `live` minus `base` and retaining it as well would be
-      // two answers to one question. A rebase is therefore one assignment rather than two.
+      // retained beside them, because it is the live record minus the base and retaining it as well
+      // would be two answers to one question. A rebase is therefore one assignment rather than two.
       let base = readKeyframes(config);
       let compiled = compilePercentKeyframes(base);
       if (hasError(compiled.diagnostics)) throw new KeyframeCompilationError(compiled.diagnostics);
@@ -145,7 +157,7 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
           if (next.ease !== undefined) vars.ease = next.ease;
           else if (!("ease" in tweenVars)) vars.ease = "none";
           timeline.to(proxy, vars, previous.p * duration);
-          const child = asTween(timeline.recent());
+          const child = asTween(recentChild(timeline));
           if (child) handles.push(child);
         }
         return handles;
@@ -173,6 +185,10 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
         const changed = next.properties.filter(
           ({ key, stops }) => !sameStops(stops, stopsOf(compiled, key)),
         );
+        // A host that answered nothing for `recent()` retains no handles, so there is nothing to
+        // kill and a rebuild would double the tweens. Decline instead, which is the same answer the
+        // one-tween adapter gives by not declaring the member at all.
+        if (changed.some(({ key }) => (tweensByKey.get(key) ?? []).length === 0)) return false;
         const at = timeline.progress();
         for (const { key, stops } of changed) {
           for (const tween of tweensByKey.get(key) ?? []) tween.kill();

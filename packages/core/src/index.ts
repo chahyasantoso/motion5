@@ -51,12 +51,13 @@ export type { EngineOptions, ProjectHandle } from "./engine";
  * the failure a name instead of a message to match. Named from its owner rather than re-exported
  * through `./engine`, so there is one declaration and one export path. See ADR-056.
  *
- * `AuthoredValues` is the parameter type of both live write members, so a caller that writes one
- * has to be able to name it. `LiveValues` stays beside it as the narrower mask type, which is what
- * a caller names when it only ever writes static values. See ADR-060.
+ * `LiveValues` is the narrow half of the live write boundary and stays exported. `AuthoredValues`
+ * is deliberately not added beside it: `public-export-surface` is allow-listed, and widening that
+ * list is a decision of its own. A caller that has to spell the wider type already can, because
+ * `AuthoredProperty` is exported above and `AuthoredValues` is a record of it. See ADR-060.
  */
 export { StaleTrackHandleError } from "./contract/track-handle";
-export type { AuthoredValues, LiveValues, TrackHandle } from "./contract/track-handle";
+export type { LiveValues, TrackHandle } from "./contract/track-handle";
 /**
  * The refusal a live value write reports, exported on exactly the rule above: a caller cannot
  * `instanceof` a type it cannot name, and `ruleId` is what it branches on. `Track` is not exported

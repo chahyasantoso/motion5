@@ -41,6 +41,7 @@ describe("adapter ports", () => {
         return this;
       },
       to: () => timeline,
+      recent: () => undefined,
       kill: () => {
         killed = true;
       },
