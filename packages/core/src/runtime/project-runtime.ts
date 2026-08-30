@@ -9,11 +9,7 @@ import type {
   MotionDefinition,
 } from "../contract/v5";
 import { readAuthoredLeaf } from "../contract/authored-leaf";
-import {
-  StaleTrackHandleError,
-  type LiveValues,
-  type TrackHandle,
-} from "../contract/track-handle";
+import { StaleTrackHandleError, type LiveValues, type TrackHandle } from "../contract/track-handle";
 import { validateMotionTrigger, validateTrackDefinition } from "../contract/validate-v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
@@ -371,8 +367,8 @@ export class ProjectRuntime {
    * The entry for a node id, or the refusal for an id this project never had.
    *
    * Separate from `#liveEntry` below on purpose: this answers about an id, which is what the public
-   * `track`, `seek`-shaped members take, and that one answers about a captured token. Both are one
-   * lookup with one message, rather than a copy per caller.
+   * members that take one ask, and that one answers about a captured token. Both are one lookup
+   * with one message rather than a copy per caller.
    */
   #entryOf(nodeId: string): TrackEntry {
     const entry = this.#tracks.get(nodeId);

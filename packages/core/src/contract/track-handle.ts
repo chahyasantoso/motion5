@@ -1,9 +1,4 @@
-import type {
-  AuthoredStaticValue,
-  ObservationDefinition,
-  PatchBatch,
-  TrackDefinition,
-} from "./v5";
+import type { AuthoredStaticValue, ObservationDefinition, PatchBatch, TrackDefinition } from "./v5";
 
 /**
  * The one failure a stale `TrackHandle` reports, from every member it has.
