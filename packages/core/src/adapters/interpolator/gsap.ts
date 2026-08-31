@@ -141,6 +141,12 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
 
       // Tween construction is untouched. The only thing added is reading back the child each `to()`
       // appended, so one key's tweens can later be killed without touching a sibling's.
+      //
+      // What is load-bearing here, and what `patchKeys` below has to reproduce, is the state this
+      // runs in: the proxy holds every key's first compiled stop and nothing has rendered yet. A
+      // tween built by `to()` carries no start value of its own, it reads one off the target, so
+      // this precondition is the whole reason a chain of segments starts where the previous one
+      // ended rather than somewhere else.
       const buildKey = (key: string, stops: readonly AuthoredStop[]): readonly GsapTweenLike[] => {
         const handles: GsapTweenLike[] = [];
         for (let index = 1; index < stops.length; index += 1) {
@@ -188,18 +194,25 @@ export function createGsapInterpolator(gsap: GsapLike): Interpolator {
         // one-tween adapter gives by not declaring the member at all.
         if (changed.some(({ key }) => (tweensByKey.get(key) ?? []).length === 0)) return false;
         const at = timeline.progress();
+        // Wind the playhead back before anything is rebuilt, and re-seed from the recompiled
+        // initial before any `to()` is called. That order is the correctness here rather than
+        // tidiness: a rebuilt tween reads its start value off the proxy, and the only state in
+        // which that read is right is the one `create()` builds in, with the proxy holding each
+        // key's first compiled stop. A mid-animation progress is not that state, so a key patched
+        // at 50% animated from whatever the replaced tween happened to be holding instead of from
+        // its own first stop. `PK-11` asks for indistinguishability from a fresh create, and
+        // restoring the precondition rather than compensating after the fact is what earns it.
+        timeline.progress(0);
+        Object.assign(proxy, next.initial);
         for (const { key, stops } of changed) {
           for (const tween of tweensByKey.get(key) ?? []) tween.kill();
           tweensByKey.set(key, buildKey(key, stops));
         }
-        // Killing a tween does not revert the proxy, and the proxy is `state`, so every key is
-        // re-seeded from the recompiled initial before the playhead is re-applied. The seek is a
-        // round trip rather than a same-value write, because gsap owes no render for a progress it
-        // is already holding and a rebuilt key reads its start value on first render.
-        Object.assign(proxy, next.initial);
         compiled = next;
         if (rebase) base = effective;
-        timeline.progress(at === 0 ? 1 : 0);
+        // Re-applying the progress renders the rebuilt keys and returns every sibling the rewind
+        // moved. A timeline that was already holding 0 needs no render at all, because the re-seed
+        // above is the state at 0.
         timeline.progress(at);
         return true;
       }

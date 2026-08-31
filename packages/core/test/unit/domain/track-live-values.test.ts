@@ -178,7 +178,9 @@ describe("a live value masks the interpolated state, and nothing else", () => {
     // A plugin-prepared key is compiled from the plugin's value, and an overlay sits over the base,
     // so patching one would invert that precedence rather than write through it.
     expect(overlayRefusalFor("rotation", ["rotation"]).reason).toBe("prepared");
-    expect(overlayRefusalFor("rotation").reason).toBe("kind");
+    // `rotation` without a plugin claiming it is deliberately absent from this table. It is the
+    // one case the slice exists to allow, so it is asserted as an accepted write in the next case
+    // rather than as a fourth refusal here.
 
     const track = createTrack();
     track.setProgress(0.5);
