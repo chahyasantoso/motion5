@@ -221,13 +221,15 @@ describe("one handle base, one definition spelling, and one stale error family",
     expect(thrown).toBeInstanceOf(TypeError);
 
     // Same guarantee `SH-4` pins for a track: the id returns under a fresh token and the handle that
-    // captured the old one stays refused.
+    // captured the old one stays refused. Disposal is the other half of it, and `live` answers both
+    // without throwing.
     project.addMotion({ id: EXTRA, trigger: { type: "manual" }, tracks: [] });
     expect(handle.live).toBe(false);
-    expect(seam.motion(EXTRA).live).toBe(true);
+    const readded = seam.motion(EXTRA);
+    expect(readded.live).toBe(true);
 
     project.dispose();
-    expect(seam.motion.length).toBe(1);
+    expect(readded.live).toBe(false);
   });
 
   it("RA-31 reports the bindings the one reader of the group shape derives, dict entries and all", () => {
