@@ -38,8 +38,8 @@ describe("unified runtime mutation surface (W5)", () => {
     expect(() => handle.destroyMotion("scene")).toThrow(/still has/);
     const authored = handle.track("scene/arm");
     const free = handle.track("~/free");
-    expect(authored.track.id).toBe("arm");
-    expect(free.track.id).toBe("free");
+    expect(authored.definition.id).toBe("arm");
+    expect(free.definition.id).toBe("free");
     expect(() => handle.mount("scene/arm")).not.toThrow();
     expect(() => handle.mount("~/free")).not.toThrow();
     authored.remove();

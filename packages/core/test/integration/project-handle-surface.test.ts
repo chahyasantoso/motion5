@@ -19,6 +19,8 @@ describe("public project handle surface (P1-9)", () => {
     expect((runtime as unknown as { binding?: unknown }).binding).toBeUndefined();
     expect((runtime as unknown as { registry?: unknown }).registry).toBeUndefined();
     expect((runtime as unknown as { publisher?: unknown }).publisher).toBeUndefined();
+    // Enumerated rather than sampled, so a member added to `ProjectHandle` lands here first. The
+    // three resolvers below arrived with the handle base in issue #223; nothing else moved.
     expect(Object.keys(runtime).sort()).toEqual([
       "addMotion",
       "addTrack",
@@ -28,12 +30,15 @@ describe("public project handle surface (P1-9)", () => {
       "destroyMotion",
       "dispose",
       "get",
+      "motion",
       "mount",
       "seek",
       "signal",
       "subscribe",
       "subscribeNode",
       "track",
+      "tryMotion",
+      "tryTrack",
       "unmount",
     ]);
     runtime.dispose();

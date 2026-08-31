@@ -85,9 +85,9 @@ function published(handle: ProjectHandle, key: string): number {
   expect(patch).toBeDefined();
   return readNumber(patch?.values ?? {}, key);
 }
-/** The authored group as retained, which is what `handle.track` answers with. */
+/** The authored group as retained, which is what `handle.definition` answers with. */
 function retained(handle: TrackHandle): unknown {
-  return handle.track.keyframes?.transform;
+  return handle.definition.keyframes?.transform;
 }
 
 describe("an animated live value is written on the timeline the track already has", () => {
@@ -117,8 +117,8 @@ describe("an animated live value is written on the timeline the track already ha
     arm.overrideValues({ rotation: FASTER });
 
     expect(published(handle, "rotation")).toBeCloseTo(90, 4);
-    // The half plan v2 called impossible: an animated override, and `handle.track` still answering
-    // with the authored stops because the retained definition deliberately did not move.
+    // The half plan v2 called impossible: an animated override, and `handle.definition` still
+    // answering with the authored stops because the retained definition deliberately did not move.
     expect(retained(arm)).toEqual({
       values: { x: 200, y: 300, rotation: AUTHORED_ROTATION },
     });

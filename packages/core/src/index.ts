@@ -44,6 +44,16 @@ export type { GoldenFixture, GoldenValidationFixture } from "./contract/golden";
 export { Engine } from "./engine";
 export type { EngineOptions, ProjectHandle } from "./engine";
 /**
+ * The handle base and the one failure family every handle reports.
+ *
+ * `StaleHandleError` is a runtime export rather than a type, on the rule ADR-056 set for the class it
+ * is now the parent of: a caller cannot `instanceof` a type it cannot name, and this is the name for
+ * "whatever handle I was holding is no longer live". `Handle` is the shape a consumer writes a generic
+ * over, which is the whole reason it exists rather than being spelled twice.
+ */
+export { StaleHandleError } from "./contract/handle";
+export type { Handle } from "./contract/handle";
+/**
  * The track mutation capability and the one failure it reports.
  *
  * `StaleTrackHandleError` is a runtime export rather than a type, because a caller cannot
@@ -55,9 +65,19 @@ export type { EngineOptions, ProjectHandle } from "./engine";
  * is deliberately not added beside it: `public-export-surface` is allow-listed, and widening that
  * list is a decision of its own. A caller that has to spell the wider type already can, because
  * `AuthoredProperty` is exported above and `AuthoredValues` is a record of it. See ADR-060.
+ *
+ * `RequireView` joins them because `TrackHandle.requires` is typed with it, and a member whose type
+ * cannot be named is a member a consumer cannot hold in a variable.
  */
 export { StaleTrackHandleError } from "./contract/track-handle";
-export type { LiveValues, TrackHandle } from "./contract/track-handle";
+export type { LiveValues, RequireView, TrackHandle } from "./contract/track-handle";
+/**
+ * The motion capability and its refusal, exported on the same two rules as the pair above: the error
+ * is a value because a caller has to name it to catch it, and the handle is a type because
+ * `ProjectHandle.motion` returns one.
+ */
+export { StaleMotionHandleError } from "./contract/motion-handle";
+export type { MotionHandle } from "./contract/motion-handle";
 /**
  * The refusal a live value write reports, exported on exactly the rule above: a caller cannot
  * `instanceof` a type it cannot name, and `ruleId` is what it branches on. `Track` is not exported

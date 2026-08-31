@@ -112,9 +112,9 @@ function values(handle: ProjectHandle, id: string): Readonly<Record<string, unkn
   expect(patch).toBeDefined();
   return patch?.values ?? {};
 }
-/** The authored group as retained, which is what `handle.track` answers with. */
+/** The authored group as retained, which is what `handle.definition` answers with. */
 function retained(handle: TrackHandle): unknown {
-  return handle.track.keyframes?.transform;
+  return handle.definition.keyframes?.transform;
 }
 
 describe("live values reach the graph without replacing it", () => {
@@ -169,7 +169,7 @@ describe("live values reach the graph without replacing it", () => {
 
     track.setValues({ x: 260 });
 
-    // `handle.track` reads the retained definition, so this is the assertion that separates a
+    // `handle.definition` reads the retained definition, so this is the assertion that separates a
     // `setValues` from an override, and the mutant that updates only the mask dies here.
     expect(retained(track)).toEqual({
       values: {
@@ -178,8 +178,8 @@ describe("live values reach the graph without replacing it", () => {
         rotation: AUTHORED_ROTATION,
       },
     });
-    expect(track.track.id).toBe("arm");
-    expect(track.track.duration).toBe(400);
+    expect(track.definition.id).toBe("arm");
+    expect(track.definition.duration).toBe(400);
     // Progress survives because nothing recompiled: the interpolator still holds 0.5.
     expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
     expect(values(handle, ARM)).toEqual({ x: 260, y: 300, rotation: 45 });
@@ -206,7 +206,7 @@ describe("live values reach the graph without replacing it", () => {
     });
     expect(values(handle, ARM)).toEqual({ x: 260, y: 300, rotation: 45 });
     expect(retained(leg)).toEqual({ values: { x: 40 } });
-    expect(leg.track.observes).toEqual([{ source: ARM }]);
+    expect(leg.definition.observes).toEqual([{ source: ARM }]);
     expect(handle.dependantsOf(ARM)).toEqual([LEG]);
     handle.dispose();
   });
@@ -264,7 +264,7 @@ describe("live values reach the graph without replacing it", () => {
     const handle = load();
     const arm = handle.track(ARM);
     handle.seek(ARM, 0.5);
-    const before = arm.track;
+    const before = arm.definition;
     const published = values(handle, ARM);
     const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
     // Definition-shaped input, so `validateKeyframes` owns its shape and this is the one write that
@@ -274,7 +274,7 @@ describe("live values reach the graph without replacing it", () => {
     expect(() => arm.setValues({ rotation: malformed })).toThrow(TypeError);
     expect(() => arm.overrideValues({ rotation: malformed })).toThrow(TypeError);
 
-    expect(arm.track).toBe(before);
+    expect(arm.definition).toBe(before);
     expect(values(handle, ARM)).toEqual(published);
     expect(invalidate).not.toHaveBeenCalled();
 

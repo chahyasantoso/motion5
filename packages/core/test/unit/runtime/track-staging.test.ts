@@ -104,7 +104,7 @@ describe("a Track replacement is staged once and committed once", () => {
     runtime.track(NODE_ID).replace({ id: "arm", duration: 250 });
 
     expect(hooks.entries).toEqual(["stage hero/arm", "motion hero/arm 250", "commit hero/arm"]);
-    expect(runtime.track(NODE_ID).track).toEqual({ id: "arm", duration: 250 });
+    expect(runtime.track(NODE_ID).definition).toEqual({ id: "arm", duration: 250 });
 
     runtime.dispose();
   });
@@ -123,7 +123,7 @@ describe("a Track replacement is staged once and committed once", () => {
       "rollback hero/arm",
       "motion hero/arm undefined",
     ]);
-    expect(runtime.track(NODE_ID).track).toEqual({ id: "arm" });
+    expect(runtime.track(NODE_ID).definition).toEqual({ id: "arm" });
 
     runtime.dispose();
   });
@@ -139,7 +139,7 @@ describe("a Track replacement is staged once and committed once", () => {
     // The Motion refuses before it writes anything (ADR-031), so it is not restored a second time.
     const expected = ["stage hero/arm", "motion hero/arm 250", "rollback hero/arm"];
     expect(hooks.entries).toEqual(expected);
-    expect(runtime.track(NODE_ID).track).toEqual({ id: "arm" });
+    expect(runtime.track(NODE_ID).definition).toEqual({ id: "arm" });
 
     runtime.dispose();
   });
