@@ -1,5 +1,6 @@
 import { StaleHandleError, type Handle } from "./handle";
 import type {
+  AuthoredPluginGroup,
   AuthoredProperty,
   AuthoredStaticValue,
   ObservationDefinition,
@@ -124,10 +125,14 @@ export interface TrackHandle extends Handle<TrackDefinition> {
    * behind. `keyframe-group-unbound` when this node authors no group for `plugin` at all, which is
    * `setKeyframeGroup`'s job: a group holding only half its data may be transiently invalid, so
    * originating one is a different primitive with a different refusal set rather than a branch
-   * inside this one. `keyframe-require-shape` when the edit would cross a bound slot's authored
-   * shape, in either direction, because both directions silently drop an edge the caller never
-   * named. Whatever the registry answers about the candidate, cited at the path the author wrote.
-   * Whatever the graph answers about the candidate, rolled back transactionally.
+   * inside this one. `keyframe-goal-slot-reserved` when the slot named is a solver's goals slot,
+   * which `setGoal` owns: without a member key this verb can only write a scalar there, which the
+   * loader refuses, and with one it writes the right shape through the wrong verb, so the weaker
+   * spelling is deleted rather than documented as discouraged. `keyframe-require-shape` when the
+   * edit would cross a bound slot's authored shape, in either direction, because both directions
+   * silently drop an edge the caller never named. Whatever the registry answers about the candidate,
+   * cited at the path the author wrote. Whatever the graph answers about the candidate, rolled back
+   * transactionally.
    *
    * Binding a slot to the source it already reads is a no-op: no rebuild, no recompile, no flush.
    */
@@ -141,6 +146,69 @@ export interface TrackHandle extends Handle<TrackDefinition> {
    * empty, because omitting it is already how a group binds nothing.
    */
   removeRequire(plugin: string, slot: string, memberKey?: string): void;
+  /**
+   * Writes `group` as this node's whole plugin binding for `plugin`, whether or not one was there.
+   *
+   * The primitive `setRequire` refuses to be. A plugin binding holding only half its data may be
+   * transiently invalid, so values and `requires` arrive together, which is what makes this a
+   * separate verb rather than a branch inside the binding one.
+   *
+   * An upsert, and the one honest `set` verb on this surface. `setMotion` and `setTrack` were cut
+   * because each was a single name over two operations with two refusal sets: `addTrack` assigns a
+   * node id and mounts while `replace` refuses a definition whose id would move the node. A group
+   * carries no id, no token and no mount, so originating one and replacing one are the same edit at
+   * the same price with the same refusals, and nothing about the result depends on what was there
+   * before. Wholesale rather than merged, for exactly that reason. See ADR-063.
+   *
+   * Structural, so `void`: every edge the group's `requires` section names is derived in one commit,
+   * at the price the tier costs.
+   *
+   * Refusals, before anything is written. `keyframe-entry-shape` when this node authors `plugin` as
+   * an ordinary property, because a plugin name and a keyframe name share one namespace and writing
+   * a group over a property would drop every stop the author wrote. `keyframe-group-shape` when
+   * `group` names neither reserved section, because such an object is the accepted no-op property it
+   * looks like rather than a group, and authoring nothing for a plugin is spelled by removing the
+   * entry. Whatever the registry answers about the candidate's keys and slots, and whatever the
+   * graph answers about its edges, rolled back transactionally.
+   *
+   * Handing back the group this node already authors, by identity, is a no-op.
+   */
+  setKeyframeGroup(plugin: string, group: AuthoredPluginGroup): void;
+  /**
+   * Drops this node's whole plugin binding for `plugin`, and every edge its `requires` derived.
+   *
+   * Not the inverse of `removeRequire`: the values go with the bindings, because what is removed is
+   * the group rather than a section of it. One commit however many edges that section named.
+   *
+   * An absent group is a no-op, on this tier's idempotence rule, and `keyframe-entry-shape` refuses a
+   * name this node authors as an ordinary property rather than deleting a property the caller never
+   * named. A record that ends up holding nothing loses its `keyframes` key entirely, on the same rule
+   * that leaves an emptied `requires` section absent.
+   */
+  removeKeyframeGroup(plugin: string): void;
+  /**
+   * Binds one entry of a solver's goals slot, addressed by the member id it is authored under.
+   *
+   * `setRequire` with the slot fixed rather than named, and that is the whole of what it buys: the
+   * caller cannot reach the scalar spelling of that slot, which the loader refuses as
+   * `keyframes-targets-shape`, and one slot has one verb instead of two that would have to stay in
+   * agreement. Same tier, same order, same refusal set otherwise, and two entries of one slot stay
+   * two edges. See ADR-057 and ADR-063.
+   *
+   * Whether the member id names a leaf of this solver's chain is `resolveSolvers`' question, and it
+   * arrives from the candidate graph rather than from a check here: a goal naming no member, a goal
+   * on a non-leaf, and both goal spellings on one solver are all refused by the owner that knows the
+   * member set, and the commit rolls back.
+   */
+  setGoal(plugin: string, memberId: string, source: string): void;
+  /**
+   * Drops one entry of a solver's goals slot.
+   *
+   * The inverse of `setGoal`, the same tier and the same refusal set. A member that carries no goal
+   * is a no-op. The slot goes when its last entry does, the section goes with its last slot, and the
+   * group goes when it names no section at all, which is one rule at three levels rather than three.
+   */
+  removeGoal(plugin: string, memberId: string): void;
   /**
    * Writes this node's values until the next live write or a real `replace()`, without moving the
    * retained definition.
