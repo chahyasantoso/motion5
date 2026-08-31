@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
-import { PluginRegistry, type PluginDefinition, type ResolvedPlugins } from "../../../src/domain/plugins";
+import {
+  PluginRegistry,
+  type PluginDefinition,
+  type ResolvedPlugins,
+} from "../../../src/domain/plugins";
 import { Engine, type ProjectHandle } from "../../../src/engine";
 import { fkPlugin } from "../../../src/plugins/fk";
 import { transformPlugin } from "../../../src/plugins/transform";
@@ -24,26 +28,26 @@ import { createFakeInterpolator, createFakeScheduler } from "../../../src/testin
  * resolve is the only place a `PluginRegistry` ever sees an already-compiled node's candidate,
  * because `compileTrack` reuses a live entry and returns early. So the resolve is validation and is
  * never skipped, and `compilePercentKeyframes` plus a fresh `Track` through the interpolator is the
- * expense that is. `RA-60` is the case that goes green if someone optimises the resolve away instead,
- * and the rig is built so that nothing else would catch it: the staging seam below refuses nothing at
- * all, so a candidate naming a slot no plugin declares reaches a committed graph unless the resolve
- * refused it first.
+ * expense that is. `RA-60` is the case that goes green if someone optimises the resolve away
+ * instead, and the rig is built so that nothing else would catch it: the staging seam below refuses
+ * nothing at all, so a candidate naming a slot no plugin declares reaches a committed graph unless
+ * the resolve refused it first.
  *
  * `RA-61` is the case the plan's own wording would have failed. The predicate was named as
- * `ResolvedPlugins.plugins` alone, and a plugin list is one of the things a compiled `Track` is built
- * from rather than all of them: `replace()` and `addObserve` reach the same path with a changed
- * value, a changed duration or a changed observation and an untouched chain, so a plugin-list
- * comparison alone would skip a build those three require.
+ * `ResolvedPlugins.plugins` alone, and a plugin list is one of the things a compiled `Track` is
+ * built from rather than all of them: `replace()` and `addObserve` reach the same path with a
+ * changed value, a changed duration or a changed observation and an untouched chain, so a
+ * plugin-list comparison alone would skip a build those three require.
  *
  * Four cases are driven through a bare `ProjectRuntime` whose seams are journals, because what they
  * pin is how many times each seam was asked. `RA-59` is driven through a real `Engine` with the two
  * shipped plugins, because the only honest oracle for "the skip is not a stale composer" is the
  * document authored with the same binding and loaded fresh.
  *
- * The failing-first run declares the seam locally, through `ResolveSeam` below, because a file naming
- * an option before the source exists fails `typecheck` and stops `quality` before a single test runs.
- * That declaration is deleted by the commit that lands the source, which is where the shipped file
- * derives its parameter types from the real option instead.
+ * The failing-first run declares the seam locally, through `ResolveSeam` below, because a file
+ * naming an option before the source exists fails `typecheck` and stops `quality` before a single
+ * test runs. That declaration is deleted by the commit that lands the source, which is where the
+ * shipped file takes its parameter types from the real option instead.
  */
 type ResolveSeam = {
   readonly resolveKeyframes: (
@@ -75,7 +79,7 @@ const LONGER_LEG: TrackDefinition = {
     fk: { values: { length: 20 }, requires: { base: ARM, members: { left: HAND } } },
   },
 };
-/** The same values and the same chain, with a duration the interpolator compiles against. */
+/** The same values and the same chain, with a duration the percent map compiles against. */
 const TIMED_LEG: TrackDefinition = { ...LONGER_LEG, duration: 2 };
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
@@ -96,8 +100,8 @@ const compose = (node: { id: string }) => () => ({
  * The plugin `fk` names here, declaring exactly the two slots `LEG_TRACK` binds and no third.
  *
  * `tip` is declared nowhere, which is what `RA-60` measures, and `length` is claimed so the values
- * half of the group resolves clean and the only diagnostic a candidate can carry is the one about the
- * binding.
+ * half of the group resolves clean and the only diagnostic a candidate can carry is the one about
+ * the binding.
  */
 const FK_PLUGIN: PluginDefinition = {
   name: "fk",
@@ -108,7 +112,7 @@ const FK_PLUGIN: PluginDefinition = {
 /**
  * A plugin that claims no key at all, so the only way it can enter a chain is through a binding.
  *
- * V4's mechanism, as a rig rather than as an argument: a group may author nothing but bindings, so
+ * V4's mechanism as a rig rather than as an argument: a group may author nothing but bindings, so
  * originating one puts a composer in the chain that was not there before and dropping it takes one
  * out. That is the one thing in this tier the predicate must never call unchanged, and `RA-58` is
  * where both directions are counted.
@@ -133,7 +137,7 @@ interface Journal {
  * every refusal below is the resolve's, and a deleted resolve is a committed graph rather than a
  * greener test.
  */
-function runtime(journal: Journal): ProjectRuntime {
+function runtime(seams: Journal): ProjectRuntime {
   const registry = new PluginRegistry();
   registry.register(FK_PLUGIN);
   registry.register(SHADE_PLUGIN);
@@ -141,11 +145,11 @@ function runtime(journal: Journal): ProjectRuntime {
     clock: createManualClock(),
     compose,
     resolveKeyframes: (keyframes, path, track) => {
-      journal.resolved.push(keyframes);
+      seams.resolved.push(keyframes);
       return registry.resolveForKeyframes(keyframes, path, track);
     },
     stageTrack: (_track, nodeId): StagedTrack => {
-      journal.built.push(nodeId);
+      seams.built.push(nodeId);
       return { commit: () => undefined, rollback: () => undefined };
     },
   };
@@ -231,8 +235,8 @@ describe("a structural edit pays the resolve and only the build it can prove it 
     // flattened record the interpolator and the percent map receive carries the `values` section and
     // nothing else, and the plugin it names is already in the chain by precondition.
     expect(seams.built).toEqual([]);
-    // The candidate resolved exactly once. It is the only record naming the new entry, so counting it
-    // separately is what keeps this from being green against a predicate that resolves in a loop.
+    // The candidate resolved exactly once. It is the only record naming the new entry, so counting
+    // it separately is what keeps this from being green against a predicate that resolves in a loop.
     const candidates = seams.resolved.filter((record) => askedMembers(record).includes("right"));
     expect(candidates).toHaveLength(1);
     // Two in total: the candidate, and the retained record the comparison is against. The retained
@@ -240,8 +244,8 @@ describe("a structural edit pays the resolve and only the build it can prove it 
     // key is the registry's own contents.
     expect(seams.resolved).toHaveLength(2);
     // Still exactly one rebuild. An edge is added, so there is no fast lane for the graph, and this
-    // slice never claimed one: what it declines to pay is a second, unrelated cost on the far side of
-    // that boundary.
+    // slice never claimed one: what it declines to pay is a second, unrelated cost on the far side
+    // of that boundary.
     expect(replaceGraph).toHaveBeenCalledTimes(1);
     expect(handle.requires.filter(({ slot }) => slot === "members")).toEqual([
       { plugin: "fk", slot: "members", source: HAND, memberKey: "left" },
@@ -264,8 +268,8 @@ describe("a structural edit pays the resolve and only the build it can prove it 
 
     handle.removeKeyframeGroup("shade");
 
-    // The other direction, which is the named mutation target: a predicate that answered "unchanged"
-    // for a plugin that left the chain would leave a composer running that nothing authors any more.
+    // The other direction, which is the named mutation target: a predicate answering "unchanged" for
+    // a plugin that left the chain would leave a composer running that nothing authors any more.
     expect(seams.built).toEqual([LEG, LEG]);
 
     project.dispose();
