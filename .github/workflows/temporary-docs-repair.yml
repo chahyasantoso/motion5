@@ -1,0 +1,59 @@
+name: Temporary docs repair
+
+on:
+  push:
+    branches:
+      - docs/runtime-authoring-surface
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply bounded documentation corrections
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          runtime = Path('docs/guide/runtime-changes.md')
+          text = runtime.read_text()
+          needle = '''`addMotion` validates, builds the motion, and only then publishes its id. If the trigger cannot resolve a driver, or the graph rejects the definition, nothing is committed and no public surface ever names a motion that failed to build. The rejection you get back is the reason the operation was refused, never a failure from the rollback that followed it.\n\n'''
+          addition = '''`addMotion` validates, builds the motion, and only then publishes its id. If the trigger cannot resolve a driver, or the graph rejects the definition, nothing is committed and no public surface ever names a motion that failed to build. The rejection you get back is the reason the operation was refused, never a failure from the rollback that followed it.\n\nA `MotionHandle` edits a live Motion without tearing down its tracks. Resolve one with `handle.motion(motionId)`; use `tryMotion(motionId)` when a missing id is expected. It exposes `id`, `live`, `definition`, `trackIds`, `setTrigger`, `setStagger`, `addTrack`, `track`, `tryTrack`, `signal`, and `destroy`. Trigger and stagger edits are tier 0: they touch no graph node or edge, preserve the playhead, and refuse stale handles with `StaleMotionHandleError`.\n\n'''
+          if text.count(needle) != 1:
+              raise SystemExit('runtime insertion point changed')
+          runtime.write_text(text.replace(needle, addition))
+
+          errors = Path('docs/guide/errors-and-diagnostics.md')
+          text = errors.read_text()
+          stale_old = '''every member of a stale `TrackHandle` throws `StaleTrackHandleError`, which is exported from the package entry: the `track` getter, `remove()`, `replace()`, `addObserve()`, `removeObserve()`, `overrideValues()`, and `setValues()`.'''
+          stale_new = '''every member of a stale `TrackHandle` throws `StaleTrackHandleError`, which is exported from the package entry: the `definition` getter, `requires`, `remove()`, `replace()`, `addObserve()`, `removeObserve()`, `setRequire()`, `removeRequire()`, `setKeyframeGroup()`, `removeKeyframeGroup()`, `setGoal()`, `removeGoal()`, `overrideValues()`, and `setValues()`.'''
+          if text.count(stale_old) != 1:
+              raise SystemExit('stale handle documentation point changed')
+          text = text.replace(stale_old, stale_new)
+          anchor = '''- `plugin-contribution-unsupported-entry`, for the legacy `use` field, which is not part of schema v5.\n'''
+          rules = '''- `plugin-contribution-unsupported-entry`, for the legacy `use` field, which is not part of schema v5.\n- `keyframe-group-unbound`, when a live binding edit names a plugin group this node does not author. Use `setKeyframeGroup` to originate the whole group instead of creating a partial binding.\n- `keyframe-require-shape`, when a live binding edit crosses a slot's authored scalar or dict shape. Use `replace()` for a shape change rather than silently dropping an edge or a dict entry.\n- `keyframe-goal-slot-reserved`, when `setRequire` or `removeRequire` addresses a solver's goals slot by name. Use `setGoal` or `removeGoal` with the member id.\n- `keyframe-entry-shape`, when a group verb addresses a name this node authors as an ordinary property. Use `replace()` to change an entry's shape rather than dropping the property.\n- `keyframe-group-shape`, when `setKeyframeGroup` receives an object naming neither `values` nor `requires`. Remove the entry to author nothing; do not commit a husk.\n'''
+          if text.count(anchor) != 1:
+              raise SystemExit('diagnostics insertion point changed')
+          errors.write_text(text.replace(anchor, rules))
+
+          status = Path('docs/SESSION-STATUS.md')
+          text = status.read_text()
+          old = '''- **Debt this slice found and did not fix.** `docs/guide/runtime-changes.md` names neither `MotionHandle` nor the two probes, so a reader of the guides cannot reach tier 0 or an upsert from them. C2 finished B1's rename at the one reader no gate can see, deleted the two verbatim duplicates of the `setRequire` paragraph that #242 left under "a stale handle refuses" and "ordering and preflight", and `docs/guide/api-reference.md` now names all six structural verbs and their five refusals; what is left is a missing section rather than a stale one, and it is recorded here because a guide gap is its own change with its own review.'''
+          new = '''- **Debt this slice found and did not fix.** `docs/guide/errors-and-diagnostics.md` still has stale B1 wording for the renamed `definition` member and the old stale-handle list, and it does not enumerate C1 and C2's five new keyframe rule ids. `runtime-changes.md` also lacks the `MotionHandle` section and the `tryTrack`/`tryMotion` guidance. `api-reference.md` names the structural verbs, but the diagnostics and runtime guides need this follow-up so docs, public types and status move together.'''
+          if text.count(old) != 1:
+              raise SystemExit('status debt bullet changed')
+          status.write_text(text.replace(old, new))
+          PY
+      - name: Commit changes and remove this workflow
+        shell: bash
+        run: |
+          rm .github/workflows/temporary-docs-repair.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/ .github/workflows/temporary-docs-repair.yml
+          git commit -m "docs: align runtime authoring guides with shipped API"
+          git push origin HEAD:docs/runtime-authoring-surface
