@@ -55,8 +55,17 @@ export interface PublisherNode extends GraphNode {
   readonly compose: (requirementInputs: RequirementInputs) => PublisherComposition;
   readonly interpolated?: () => MemberState;
 }
+/**
+ * The graph a flush runs over, with a composer on every node.
+ *
+ * `nodeById` narrows too, and that narrowing is what lets the publisher stop rebuilding it. The
+ * runtime already assembles that map from the very nodes it puts in `nodes`, so the publisher was
+ * walking `nodes` once per tick to recover types the snapshot could simply carry. `dependents` comes
+ * from `GraphIR` unchanged, derived once per graph by `finalizeGraph`.
+ */
 export interface PublisherSnapshot extends GraphIR {
   readonly nodes: readonly PublisherNode[];
+  readonly nodeById: Readonly<Record<string, PublisherNode>>;
   readonly members?: ReadonlySet<string>;
 }
 export interface PublisherFailure {
@@ -177,29 +186,26 @@ export class GraphPublisher {
 
   flush(snapshot: PublisherSnapshot, seeds: readonly string[], tick: number): PatchBatch {
     if (this.#registry.notifying) throw new Error(REENTRANT_BATCH_MESSAGE);
-    const byId = new Map(snapshot.nodes.map((node) => [node.id, node]));
-    const dependents = new Map<string, string[]>();
-    for (const node of snapshot.nodes) dependents.set(node.id, []);
-    for (const node of snapshot.nodes) {
-      for (const edge of node.edges) dependents.get(edge.sourceId)?.push(node.id);
-      if (node.solves) {
-        for (const member of node.solves) dependents.get(member.id)?.push(node.id);
-      }
-    }
+    // Graph shape is read, never derived. Both of these were rebuilt here on every tick, and the
+    // second walked every edge of every node plus every solver's members to do it, over a graph that
+    // changes at most once between ticks. `finalizeGraph` owns both now, so the two walks below cost
+    // O(affected) instead of O(V+E) and a steady-state tick allocates nothing for graph shape.
+    const byId = snapshot.nodeById;
+    const dependents = snapshot.dependents;
     const affected = new Set<string>();
     const queue = [...seeds];
     for (let index = 0; index < queue.length; index += 1) {
       const id = queue[index];
       if (id === undefined || affected.has(id)) continue;
       affected.add(id);
-      queue.push(...(dependents.get(id) ?? []));
+      queue.push(...(dependents[id] ?? []));
     }
     const isMember = (nodeId: string) =>
-      snapshot.members ? snapshot.members.has(nodeId) : byId.has(nodeId);
+      snapshot.members ? snapshot.members.has(nodeId) : Object.hasOwn(byId, nodeId);
     const upstreamQueue = [...affected];
     for (let index = 0; index < upstreamQueue.length; index += 1) {
       const id = upstreamQueue[index]!;
-      const node = byId.get(id);
+      const node = byId[id];
       if (!node) continue;
       for (const edge of node.edges) {
         if (this.#registry.get(edge.sourceId) === undefined && isMember(edge.sourceId)) {
@@ -231,7 +237,7 @@ export class GraphPublisher {
     try {
       for (const id of snapshot.order) {
         if (!affected.has(id)) continue;
-        const node = byId.get(id);
+        const node = byId[id];
         if (node === undefined) continue;
         const sourceFailure = node.edges
           .filter(
@@ -289,7 +295,7 @@ export class GraphPublisher {
             }
             const membersList: SolverMember[] = [];
             for (const memberRef of node.solves) {
-              const memberNode = byId.get(memberRef.id);
+              const memberNode = byId[memberRef.id];
               if (typeof memberNode?.interpolated !== "function") {
                 throw new Error(
                   `Solver member "${memberRef.id}" exposes no interpolated function.`,

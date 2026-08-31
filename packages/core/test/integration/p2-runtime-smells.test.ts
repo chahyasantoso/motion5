@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import type { GraphEdge, GraphIR } from "../../src/graph/ir";
-import { GraphPublisher, type PublisherNode } from "../../src/runtime/graph-publisher";
+import { deriveDependents, type GraphEdge } from "../../src/graph/ir";
+import {
+  GraphPublisher,
+  type PublisherNode,
+  type PublisherSnapshot,
+} from "../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
 import { Track } from "../../src/domain/track";
 import type { Interpolator } from "../../src/ports/interpolator";
@@ -15,11 +19,13 @@ const node = (id: string, edges: GraphEdge[], compose: PublisherNode["compose"])
     edges: Object.freeze(edges),
     compose,
   });
-const snapshot = (
-  nodes: readonly PublisherNode[],
-): GraphIR & { nodes: readonly PublisherNode[] } => ({
+// Reverse topology comes from its one owner rather than from a second walk written here. A snapshot
+// assembled by hand is still a graph, and the publisher reads shape instead of deriving it, so a
+// helper that answered this itself would be the second derivation the source just deleted.
+const snapshot = (nodes: readonly PublisherNode[]): PublisherSnapshot => ({
   nodes,
   nodeById: Object.freeze(Object.fromEntries(nodes.map((entry) => [entry.id, entry]))),
+  dependents: deriveDependents(nodes),
   order: Object.freeze(nodes.map(({ id }) => id)),
   diagnostics: Object.freeze([]),
 });
