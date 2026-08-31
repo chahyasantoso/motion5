@@ -21,9 +21,9 @@ import { ProjectRuntime, type StagedTrack } from "../../../src/runtime/project-r
  * which is the shape this project has refused to build three times already: rest-pose-via-`rotation`,
  * the reserved `targets` string, and the `setTrack` upsert the two probes replaced.
  *
- * `RA-39` through `RA-45` are driven through a bare `ProjectRuntime` with no `PluginRegistry`,
- * because what they pin is the authored record and the edges derived from it, and both belong to the
- * layer that owns the retained definitions. Whether a plugin declares the slot at all is
+ * Every case but `RA-46` is driven through a bare `ProjectRuntime` with no `PluginRegistry`, because
+ * what they pin is the authored record and the edges derived from it, and both belong to the layer
+ * that owns the retained definitions. Whether a plugin declares the slot at all is
  * `PluginRegistry.resolveForKeyframes`, reached at recompile, and a registry in those cases would
  * make them a second owner of that question. See ADR-044 and ADR-057.
  *
@@ -374,6 +374,36 @@ describe("one edge on an already-bound plugin, at the price the structural tier 
       { plugin: "fk", slot: "members", source: HAND, memberKey: "left" },
       { plugin: "fk", slot: "members", source: ARM, memberKey: "right" },
     ]);
+
+    project.dispose();
+  });
+
+  it("RA-47 refuses to cross a bound slot's shape, in both directions", () => {
+    const project = runtime();
+    const handle = declaring(project);
+    const retained = handle.definition;
+    const replaceGraph = vi.spyOn(project.graph, "replaceGraph");
+
+    // Four refusals, one argument. A scalar written over a dict-valued slot drops every entry the
+    // author wrote, and removing that slot without naming a key does the same; a member key at a
+    // scalar slot names an entry the slot cannot hold, and removing one from it names an entry that
+    // was never there. Each is silent in the way ADR-057 refused in both directions, and none of
+    // them is what this primitive is for: crossing a slot's shape is a `replace()`.
+    const crossings = [
+      () => handle.setRequire("fk", "members", ARM),
+      () => handle.setRequire("fk", "base", ARM, "left"),
+      () => handle.removeRequire("fk", "members"),
+      () => handle.removeRequire("fk", "base", "left"),
+    ];
+    for (const crossing of crossings) {
+      const thrown = thrownBy(crossing);
+      expect(thrown).toBeInstanceOf(TypeError);
+      // Names the slot, because the slot is the thing whose shape the caller has to look at.
+      expect((thrown as Error).message).toMatch(/base|members/);
+    }
+
+    expect(handle.definition).toBe(retained);
+    expect(replaceGraph).not.toHaveBeenCalled();
 
     project.dispose();
   });
