@@ -32,11 +32,10 @@ import { ProjectRuntime, type StagedTrack } from "../../../src/runtime/project-r
  * reaches, and nowhere else. It is what makes the recompile this tier pays the validation rather
  * than an expense, so no primitive here asks permission for its own edit. See ADR-062.
  *
- * `setRequire` and `removeRequire` are declared through a local seam and cast, because a file naming
- * a member before the source exists fails `typecheck` and stops `quality` before a single test runs,
- * which is a broken file rather than evidence. `StaleSeam`, `ComposeSeam`, the `LV-` locals, 7a's
- * `ReverseTopology` and B2's `TierZeroEdits` are the precedent, and the declaration below is deleted
- * by the commit that lands the source.
+ * The failing-first run declared both verbs through a local `RequireEdits` seam and cast, because a
+ * file naming a member before the source exists fails `typecheck` and stops `quality` before a single
+ * test runs. That declaration is deleted here, by the commit that landed the source, so the shipped
+ * cases name the members directly.
  *
  * Staleness is deliberately not asserted here. `SH-1` derives the track handle's whole refusing
  * surface from the handle's own keys and holds it against one argument record, so both members are
@@ -94,21 +93,6 @@ const FK_PLUGIN: PluginDefinition = {
   compose: () => ({}),
 };
 
-/**
- * The two verbs this slice adds. Deleted by the commit that declares them on `TrackHandle`.
- *
- * The node id is the handle's identity rather than a parameter, which is the addressing rule ADR-056
- * collapsed a second refusal into and ADR-061 stated on the base. `memberKey` is optional because a
- * scalar slot has none, and it is a field rather than a spelling inside `slot` because that is what
- * ADR-057 decided when it deleted the goal-addressing grammar: the slot stays exactly as the author
- * wrote it, and the one thing distinguishing two entries of it is data.
- */
-interface RequireEdits {
-  setRequire(plugin: string, slot: string, source: string, memberKey?: string): void;
-  removeRequire(plugin: string, slot: string, memberKey?: string): void;
-}
-type EditableTrack = TrackHandle & RequireEdits;
-
 function runtime(): ProjectRuntime {
   return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
 }
@@ -164,10 +148,11 @@ function thrownBy(operation: () => unknown): unknown {
  * `Object.keys` rather than a type, for the reason `RA-27` reads a spelling that way and `RA-33`
  * asked for tier 0's: the question is whether the handle declares the member at all, and asking it as
  * an assertion is what keeps a red run reporting an absent verb rather than a `TypeError` from
- * calling `undefined`.
+ * calling `undefined`. It stays after the source lands, because the frozen handle is built by hand
+ * and a member deleted from it would otherwise fail every case at once with no name attached.
  */
-function declaring(project: ProjectRuntime, nodeId: string = LEG): EditableTrack {
-  const handle = project.track(nodeId) as EditableTrack;
+function declaring(project: ProjectRuntime, nodeId: string = LEG): TrackHandle {
+  const handle = project.track(nodeId);
   const keys = Object.keys(handle);
   expect(keys).toContain("setRequire");
   expect(keys).toContain("removeRequire");

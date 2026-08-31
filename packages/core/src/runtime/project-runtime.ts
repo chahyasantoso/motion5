@@ -23,6 +23,13 @@ import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
 import type { LiveWriteResult } from "../domain/track";
 import { flattenAuthoredKeyframes } from "../domain/keyframe-groups";
+import {
+  readBoundGroup,
+  removeRequire,
+  setRequire,
+  type AuthoredKeyframes,
+  type BoundGroup,
+} from "../domain/authoring/keyframes";
 import { observationEdgeKey } from "../graph/ir";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
@@ -183,6 +190,22 @@ function runRollbackSteps(steps: readonly (() => void)[]): void {
   if (failures.length === 0) return;
   if (failures.length === 1) throw failures[0];
   throw new AggregateError(failures, "Track replacement rollback failed.");
+}
+/**
+ * Refuses a binding edit addressed at a plugin this node authors no group for.
+ *
+ * The boundary between this tier's two primitives, and it is a refusal rather than a creation on
+ * purpose. Originating a binding is `setKeyframeGroup`'s job, because a plugin group holding only
+ * half its data may be transiently invalid, and one verb whose cost and refusal set depend on
+ * whether the group already existed is the shape this project has declined to build three times.
+ *
+ * Answered from the retained record on this node, so it stays a different question from anything
+ * `PluginRegistry` answers about a candidate: whether the plugin exists at all, and whether it
+ * declares the slot, belong to the registry and arrive from it at the recompile. See ADR-062.
+ */
+function unboundGroup(nodeId: string, plugin: string): never {
+  const use = "Use setKeyframeGroup to originate one.";
+  throw new TypeError(`keyframe-group-unbound: "${nodeId}" authors no "${plugin}" group. ${use}`);
 }
 /**
  * The bindings `track` authored, as a handle reports them.
@@ -813,6 +836,10 @@ export class ProjectRuntime {
         runtime.#replaceWithObservation(id, token, observation, true),
       removeObserve: (observation: ObservationDefinition) =>
         runtime.#replaceWithObservation(id, token, observation, false),
+      setRequire: (plugin: string, slot: string, source: string, memberKey?: string) =>
+        runtime.#setRequire(id, token, plugin, slot, source, memberKey),
+      removeRequire: (plugin: string, slot: string, memberKey?: string) =>
+        runtime.#removeRequire(id, token, plugin, slot, memberKey),
       overrideValues: (next: AuthoredValues) =>
         runtime.#writeValues(id, runtime.#liveEntry(id, token), next, false),
       setValues: (next: AuthoredValues) =>
@@ -1026,6 +1053,65 @@ export class ProjectRuntime {
       observations.splice(index, 1);
     }
     this.#replaceTrack(id, token, { ...entry.track, observes: observations });
+  }
+  /**
+   * One binding edit on an already-bound plugin, and the one owner of the order both verbs follow.
+   *
+   * Staleness first, through the resolver every member of the handle reads. Then the unbound-group
+   * refusal, which is answered from the retained record on this node and is a different question
+   * from anything the registry answers about a candidate. Then the pure edit, which is the only
+   * thing that knows the group layout. Then the redundant edit, by identity, because the pure layer
+   * returns the record it was given when nothing changed and comparing anything else would be a
+   * second opinion about whether an edit happened. Then the commit.
+   *
+   * `#replaceTrack` rather than a plan of its own, for the reason `#replaceWithObservation` already
+   * routes there: a binding edit is a candidate the graph accepts or refuses, which is exactly the
+   * transaction `#commit` owns, and a sixth copy of that ordering is what A1 deleted. What this
+   * primitive is not is `replace()` at the call site, where a caller hands in a whole definition and
+   * has to have decided every other field of it already.
+   *
+   * So the price is one candidate build, one edge delta, one recompile and one flush, and there is
+   * no fast lane missing: a binding adds, removes or redirects a `GraphEdge`, which is the boundary
+   * the value tier is forbidden to cross. The recompile is also the only path on which the plugin
+   * registry sees this node's candidate record, because `compileTrack` reuses a live entry, so it is
+   * the validation rather than an expense. See ADR-045 and ADR-062.
+   */
+  #editRequire(
+    id: string,
+    token: number,
+    plugin: string,
+    edit: (keyframes: AuthoredKeyframes, bound: BoundGroup) => AuthoredKeyframes,
+  ): void {
+    const entry = this.#liveEntry(id, token);
+    const keyframes = entry.track.keyframes;
+    const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);
+    if (keyframes === undefined || bound === undefined) unboundGroup(id, plugin);
+    const next = edit(keyframes, bound);
+    if (next === keyframes) return;
+    this.#replaceTrack(id, token, { ...entry.track, keyframes: next });
+  }
+  #setRequire(
+    id: string,
+    token: number,
+    plugin: string,
+    slot: string,
+    source: string,
+    memberKey?: string,
+  ): void {
+    this.#editRequire(id, token, plugin, (keyframes, bound) =>
+      setRequire(keyframes, bound, slot, source, memberKey),
+    );
+  }
+  #removeRequire(
+    id: string,
+    token: number,
+    plugin: string,
+    slot: string,
+    memberKey?: string,
+  ): void {
+    this.#editRequire(id, token, plugin, (keyframes, bound) =>
+      removeRequire(keyframes, bound, slot, memberKey),
+    );
   }
   #snapshot(
     tracks: ReadonlyMap<string, TrackEntry>,
