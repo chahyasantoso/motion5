@@ -1,10 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
-import {
-  PluginRegistry,
-  type PluginDefinition,
-  type ResolvedPlugins,
-} from "../../../src/domain/plugins";
+import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
 import { Engine, type ProjectHandle } from "../../../src/engine";
 import { fkPlugin } from "../../../src/plugins/fk";
 import { transformPlugin } from "../../../src/plugins/transform";
@@ -44,19 +40,11 @@ import { createFakeInterpolator, createFakeScheduler } from "../../../src/testin
  * shipped plugins, because the only honest oracle for "the skip is not a stale composer" is the
  * document authored with the same binding and loaded fresh.
  *
- * The failing-first run declares the seam locally, through `ResolveSeam` below, because a file
- * naming an option before the source exists fails `typecheck` and stops `quality` before a single
- * test runs. That declaration is deleted by the commit that lands the source, which is where the
- * shipped file takes its parameter types from the real option instead.
+ * The failing-first run declared the seam locally and cast, because a file naming an option before
+ * the source exists fails `typecheck` and stops `quality` before a single test runs. That
+ * declaration is deleted here, by the commit that landed the source, so the rig takes its parameter
+ * types from the real option instead of restating them.
  */
-type ResolveSeam = {
-  readonly resolveKeyframes: (
-    keyframes: Readonly<Record<string, unknown>>,
-    path: string,
-    track: { readonly id?: string; readonly duration?: number },
-  ) => ResolvedPlugins;
-};
-
 const ARM = "hero/arm";
 const HAND = "hero/hand";
 const LEG = "hero/leg";
@@ -141,7 +129,7 @@ function runtime(seams: Journal): ProjectRuntime {
   const registry = new PluginRegistry();
   registry.register(FK_PLUGIN);
   registry.register(SHADE_PLUGIN);
-  const options: ProjectRuntimeOptions & ResolveSeam = {
+  const options: ProjectRuntimeOptions = {
     clock: createManualClock(),
     compose,
     resolveKeyframes: (keyframes, path, track) => {
