@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { PluginRegistry } from "../../../src/domain/plugins";
 import { Engine } from "../../../src/engine";
-import type { GraphIR } from "../../../src/graph/ir";
+import { deriveDependents, type GraphIR } from "../../../src/graph/ir";
 import { createManualClock } from "../../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
-import { GraphPublisher, type PublisherNode } from "../../../src/runtime/graph-publisher";
+import {
+  GraphPublisher,
+  type PublisherNode,
+  type PublisherSnapshot,
+} from "../../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../../src/runtime/patch-registry";
 
 const node = (
@@ -21,11 +25,10 @@ const node = (
     compose,
   });
 
-const snapshot = (
-  nodes: readonly PublisherNode[],
-): GraphIR & { nodes: readonly PublisherNode[] } => ({
+const snapshot = (nodes: readonly PublisherNode[]): PublisherSnapshot => ({
   nodes,
   nodeById: Object.freeze(Object.fromEntries(nodes.map((item) => [item.id, item]))),
+  dependents: deriveDependents(nodes),
   order: Object.freeze(nodes.map(({ id }) => id)),
   diagnostics: Object.freeze([]),
 });

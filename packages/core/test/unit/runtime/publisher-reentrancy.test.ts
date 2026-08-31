@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../../src/contract/v5";
-import type { GraphIR } from "../../../src/graph/ir";
+import { deriveDependents } from "../../../src/graph/ir";
 import { createManualClock } from "../../../src/ports/clock";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
-import { GraphPublisher, type PublisherNode } from "../../../src/runtime/graph-publisher";
+import {
+  GraphPublisher,
+  type PublisherNode,
+  type PublisherSnapshot,
+} from "../../../src/runtime/graph-publisher";
 import { PatchRegistry, type PatchBatch } from "../../../src/runtime/patch-registry";
 
 const project: ProjectDefinition = {
@@ -30,11 +34,12 @@ const soleNode = (id: string): PublisherNode =>
     compose: () => ({ values: { x: 1 }, sourceProgress: 0, sourceRevisions: {} }),
   });
 
-const soleSnapshot = (id: string): GraphIR & { nodes: readonly PublisherNode[] } => {
+const soleSnapshot = (id: string): PublisherSnapshot => {
   const node = soleNode(id);
   return {
     nodes: [node],
     nodeById: Object.freeze({ [id]: node }),
+    dependents: deriveDependents([node]),
     order: Object.freeze([id]),
     diagnostics: Object.freeze([]),
   };
