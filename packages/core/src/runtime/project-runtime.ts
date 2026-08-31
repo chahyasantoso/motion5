@@ -616,6 +616,16 @@ export class ProjectRuntime {
     return entry;
   }
   /**
+   * This handle's motion id, once the handle is known to be live.
+   *
+   * One owner, because four members of the handle need exactly this and each spelling of it is also
+   * the staleness check: reading the id and refusing a stale handle are the same call, so there is no
+   * order for a member to get wrong and no member that can forget.
+   */
+  #liveId(motionId: string, token: number): string {
+    return this.#liveMotion(motionId, token).definition.id;
+  }
+  /**
    * The Motion definition as it currently stands, tracks included.
    *
    * Projected through `#ownedBy` rather than answered from the entry, because the entry a runtime add
@@ -673,20 +683,16 @@ export class ProjectRuntime {
         return runtime.#motionDefinition(runtime.#liveMotion(id, token));
       },
       get trackIds(): readonly string[] {
-        runtime.#liveMotion(id, token);
-        return Object.freeze(runtime.#ownedBy(runtime.#tracks, id).map(([nodeId]) => nodeId));
+        const owner = runtime.#liveId(id, token);
+        return Object.freeze(runtime.#ownedBy(runtime.#tracks, owner).map(([node]) => node));
       },
       addTrack: (track: TrackDefinition) =>
-        runtime.#addTrack(track, runtime.#schemaOwner, {
-          motionId: runtime.#liveMotion(id, token).definition.id,
-        }),
+        runtime.#addTrack(track, runtime.#schemaOwner, { motionId: runtime.#liveId(id, token) }),
       track: (trackId: string) =>
-        runtime.track(qualifyMotionTrack(runtime.#liveMotion(id, token).definition.id, trackId).value),
+        runtime.track(qualifyMotionTrack(runtime.#liveId(id, token), trackId).value),
       tryTrack: (trackId: string) =>
-        runtime.tryTrack(
-          qualifyMotionTrack(runtime.#liveMotion(id, token).definition.id, trackId).value,
-        ),
-      destroy: () => runtime.#removeMotion(runtime.#liveMotion(id, token).definition.id),
+        runtime.tryTrack(qualifyMotionTrack(runtime.#liveId(id, token), trackId).value),
+      destroy: () => runtime.#removeMotion(runtime.#liveId(id, token)),
     });
   }
   #handle(id: string, token: number): TrackHandle {
