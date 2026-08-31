@@ -304,6 +304,24 @@ export class Engine {
         "Composition disposal failed.",
       );
     };
+    // One owner of the registration, because the trigger swap below has to make exactly the decision
+    // the build made, and two copies of an exhaustive switch is how they end up disagreeing about a
+    // binding kind. Total and exhaustive, with no `??` fallback, so a push-driven trigger cannot
+    // silently inherit motion.onTick, and no Motion can ever hold both a driver and its own clock
+    // advance.
+    const bindClock = (motionId: string, motion: Motion, created: CreatedTrigger): void => {
+      const binding = created.clockBinding;
+      switch (binding.kind) {
+        case "driver":
+          consumers.set(motionId, { onTick: (event) => binding.onTick(event) });
+          break;
+        case "motion":
+          consumers.set(motionId, { onTick: (event) => motion.onTick(event) });
+          break;
+        case "none":
+          break;
+      }
+    };
     const buildMotion = (
       definition: MotionDefinition,
       entries: readonly MotionTrackEntry[],
@@ -352,19 +370,7 @@ export class Engine {
         motion.play();
         if (consumers.has(definition.id))
           throw new TypeError(`Motion "${definition.id}" already has a clock consumer.`);
-        // Total and exhaustive. No `??` fallback, so a push-driven trigger cannot silently inherit
-        // motion.onTick, and no Motion can ever hold both a driver and its own clock advance.
-        const binding = created.clockBinding;
-        switch (binding.kind) {
-          case "driver":
-            consumers.set(definition.id, { onTick: (event) => binding.onTick(event) });
-            break;
-          case "motion":
-            consumers.set(definition.id, { onTick: (event) => motion.onTick(event) });
-            break;
-          case "none":
-            break;
-        }
+        bindClock(definition.id, motion, created);
         return motion;
       } catch (error) {
         throw afterCleanup(error, () => {
@@ -447,6 +453,58 @@ export class Engine {
           motion.replaceTrack({ id: trackId, ...(duration === undefined ? {} : { duration }) });
         },
         removeMotionTrack: (motionId, trackId) => motions.get(motionId)?.removeTrack(trackId),
+        replaceMotionTrigger: (motionId, definition) => {
+          const motion = motions.get(motionId);
+          if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
+          const trigger = resolveTriggerDefinition(
+            definition.trigger,
+            `motions.${motionId}.trigger`,
+          );
+          // Built before anything is released, on addMotion's own rule: a driver that cannot be
+          // created -- a scroll trigger with no registered source is the live case -- must leave
+          // the Motion driving the one it already had rather than driving none. See ADR-032.
+          const created = triggerFactory.create({
+            motionId,
+            definition,
+            trigger,
+            clock: this.#options.clock,
+            scheduler: this.#options.scheduler,
+          });
+          const displaced = createdTriggers.get(motionId);
+          // The replacement is recorded before the displaced one is released, so a host `dispose`
+          // that throws can never leave the new driver with no owner: disposeComposition reaches it
+          // either way, which is the ownership rule releaseMotion already states.
+          createdTriggers.set(motionId, created);
+          consumers.delete(motionId);
+          bindClock(motionId, motion, created);
+          try {
+            motion.setTrigger(created.port, created.acceptsExternalSignal);
+          } catch (error) {
+            // The swap never landed, so the replacement is what has no owner left. Restore the
+            // displaced registrations and release what this hook built, on buildMotion's own
+            // cleanup shape: the failure that refused the edit outranks what its cleanup reports.
+            // See ADR-035.
+            consumers.delete(motionId);
+            if (displaced === undefined) createdTriggers.delete(motionId);
+            else {
+              createdTriggers.set(motionId, displaced);
+              bindClock(motionId, motion, displaced);
+            }
+            throw afterCleanup(error, () => created.dispose());
+          }
+          // Released last, so every step that can refuse has refused before the driver moved. A
+          // host `dispose` that throws is reported rather than swallowed: it is a teardown failure
+          // at the layer that owns the host resource, and the swap it follows has already landed.
+          displaced?.dispose();
+        },
+        setMotionStagger: (motionId, stagger) => {
+          const motion = motions.get(motionId);
+          if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
+          // The stagger rule has one owner, and it is this class: an absent value is zero and a
+          // negative or non-finite one is refused, at construction and here through the same
+          // function. `ProjectRuntime` asks no copy of it.
+          motion.setStagger(stagger);
+        },
         createMotion: (definition) => motions.set(definition.id, buildMotion(definition, [])),
         destroyMotion: (motionId) => {
           const motion = motions.get(motionId);

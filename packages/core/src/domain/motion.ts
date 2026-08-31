@@ -26,18 +26,32 @@ export interface MotionOptions {
   readonly listenToClock?: boolean;
   readonly acceptsExternalSignal?: boolean;
 }
+/**
+ * The one owner of what a legal stagger is, and of what an omitted one means.
+ *
+ * Construction and the in-place edit ask the same question, so they ask it in the same place: a
+ * second copy of the rule is how one of them ends up accepting a value the other refuses. An
+ * absent stagger is zero here rather than at each reader, because the schedule is arithmetic and
+ * `undefined` is not.
+ */
+function acceptStagger(stagger: number | undefined): number {
+  const value = stagger ?? 0;
+  if (!Number.isFinite(value) || value < 0)
+    throw new TypeError("Motion stagger must be a finite non-negative number.");
+  return value;
+}
 export class Motion {
   readonly #clock: Clock;
   readonly #scheduler: Scheduler;
   readonly #tracks: MotionTrackEntry[];
   readonly #trackMap = new Map<string, MotionTrackEntry>();
   readonly #resolveTrack: (id: string) => Track | undefined;
-  readonly #trigger: TriggerPort | undefined;
+  #trigger: TriggerPort | undefined;
   readonly #invalidate: (progress: number) => void;
-  readonly #stagger: number;
+  #stagger: number;
   readonly #disposeTracks: boolean;
   readonly #listenToClock: boolean;
-  readonly #acceptsExternalSignal: boolean;
+  #acceptsExternalSignal: boolean;
   readonly #lifecycle: Lifecycle;
   #pendingProgress: number | undefined;
   #progressJob: { cancel(): void } | undefined;
@@ -49,8 +63,7 @@ export class Motion {
     if (typeof options.resolveTrack !== "function")
       throw new TypeError("Motion requires a resolveTrack function.");
     this.#resolveTrack = options.resolveTrack;
-    if (!Number.isFinite(options.stagger ?? 0) || (options.stagger ?? 0) < 0)
-      throw new TypeError("Motion stagger must be a finite non-negative number.");
+    const stagger = acceptStagger(options.stagger);
     for (const entry of options.tracks) {
       if (!entry.id || this.#trackMap.has(entry.id))
         throw new Error(`Duplicate Motion track id: ${entry.id}.`);
@@ -63,7 +76,7 @@ export class Motion {
     this.#tracks = [...options.tracks];
     this.#trigger = options.trigger;
     this.#invalidate = options.invalidate ?? (() => undefined);
-    this.#stagger = options.stagger ?? 0;
+    this.#stagger = stagger;
     this.#disposeTracks = options.disposeTracks ?? false;
     this.#listenToClock = options.listenToClock ?? true;
     this.#acceptsExternalSignal = options.acceptsExternalSignal ?? true;
@@ -126,6 +139,44 @@ export class Motion {
     if (index === -1) return;
     this.#tracks.splice(index, 1);
     this.#trackMap.delete(trackId);
+  }
+  /**
+   * Installs the trigger this Motion listens to, keeping its tracks, its playhead and its position.
+   *
+   * An in-place swap rather than a rebuilt instance, and that is what the tracks and the playhead
+   * survive: #attachTrigger is already isolated and guarded, detach is the same two lines pause()
+   * uses, and `TriggerPort` declares no dispose, so the host resource this Motion never owned stays
+   * with the layer that created it. Reattached only while mounted, so an unmounted Motion subscribes
+   * to nothing and mount() still attaches exactly once.
+   *
+   * Both halves of the port move together, because they are one decision: acceptsExternalSignal is
+   * false exactly for a driver-backed trigger, so a swap that left it behind would let signal()
+   * scrub a Motion whose driver owns time.
+   *
+   * No guard for a redundant install, and that is deliberate: the runtime refuses an edit that
+   * changes nothing before this is reached, and a second owner of that rule is the shape ADR-056
+   * collapsed.
+   */
+  setTrigger(trigger: TriggerPort | undefined, acceptsExternalSignal: boolean): void {
+    this.assertActive();
+    this.#triggerUnsubscribe?.();
+    this.#triggerUnsubscribe = undefined;
+    this.#trigger = trigger;
+    this.#acceptsExternalSignal = acceptsExternalSignal;
+    if (this.#lifecycle.state === "mounted") this.#attachTrigger();
+  }
+  /**
+   * Moves the stagger every track's effective progress is derived from.
+   *
+   * Re-seeded synchronously, exactly as addTrack and replaceTrack re-seed: one answer to when a
+   * layout-affecting mutation becomes visible rather than two, and a deferred one would be a silent
+   * no-op from the caller's side until some unrelated later event fired. Only while mounted, because
+   * an unmounted Motion drives nothing that could read the new schedule.
+   */
+  setStagger(stagger?: number): void {
+    this.assertActive();
+    this.#stagger = acceptStagger(stagger);
+    if (this.#lifecycle.state === "mounted") this.#setProgress(this.#position);
   }
   schedule(): readonly number[] {
     return this.#tracks.map((_, index) => index * this.#stagger);

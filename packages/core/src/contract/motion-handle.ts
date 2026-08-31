@@ -35,9 +35,13 @@ export class StaleMotionHandleError extends StaleHandleError {
  * motion reporting no tracks while owning three would be a handle that lies. It is derived through
  * the same owner the committed snapshot reads, so the two cannot disagree.
  *
- * No `setTrigger` or `setStagger` here yet. Those are a live driver edit reaching the layer that
- * owns the created trigger and the clock consumer, with a refusal set of their own, and they ship as
- * their own slice rather than inside the one that introduces the base.
+ * `setTrigger` and `setStagger` are tier 0: neither field appears in a `GraphNode`, so they reach
+ * the layer that owns the created trigger and the clock consumer through a seam of their own rather
+ * than through a graph commit, and they tear down none of the tracks the motion owns. That last
+ * clause is the capability. Changing a trigger otherwise means destroy plus recreate, which tears
+ * down every node under the motion, and it is why the plan cut `setMotion` rather than writing it:
+ * an upsert taking a whole `MotionDefinition` has to do something with a required `tracks` array,
+ * and dropping the live tracks, refusing, and accepting-then-ignoring are all wrong.
  *
  * No `signal` either, and that is not an omission: signalling a Motion is the composition root's
  * question, answered by `ProjectHandle.signal`, and the runtime that owns these tokens holds no
@@ -51,6 +55,23 @@ export interface MotionHandle extends Handle<MotionDefinition> {
   track(trackId: string): TrackHandle;
   /** The same lookup without the refusal, for a caller whose miss is expected. */
   tryTrack(trackId: string): TrackHandle | undefined;
+  /**
+   * Installs this motion's trigger, keeping every track it owns, its playhead and its position.
+   *
+   * Validated before anything is released, so a refused trigger costs no teardown at all: a verb
+   * that released the live driver and then refused the replacement would leave the motion with none
+   * and no way back. An edit that changes nothing asks the driver layer nothing, because installing
+   * the trigger a motion already has means disposing a live driver and resubscribing a host source
+   * that the caller cannot see and did not ask for.
+   */
+  setTrigger(trigger: MotionDefinition["trigger"]): void;
+  /**
+   * Moves this motion's stagger, which no driver reads and no node carries.
+   *
+   * Omitting the argument clears it, and a cleared stagger is absent from `definition` rather than
+   * present and undefined, because that is the only shape an author can write.
+   */
+  setStagger(stagger?: number): void;
   /**
    * Destroys this motion, which must own no tracks.
    *
