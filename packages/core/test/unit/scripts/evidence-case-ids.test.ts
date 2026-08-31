@@ -265,10 +265,22 @@ import { fileURLToPath } from "node:url";
 // the policy the `P-` paragraph sets, and `P-` alone is the rollback error precedence series. It
 // sorts before `P` in the pattern below, because an alternation that offered `P` first would match
 // `P` and then fail on the `K`.
+//
+// `RA-` belongs to the runtime authoring surface, issue #223: that a structural change has one
+// transaction owner rather than one copy of the ordering per entry point, that the hooks a commit
+// reaches are applied in one sequence and reverted in apply order, that an effect counts as applied
+// only once its call returned, and that the retained definitions and the committed graph are never
+// allowed to disagree by identity. `U-` owns whether the graph, the compiled map and the Motion
+// entry may disagree during one Track replacement, and `SH-` owns what a caller is told when the
+// handle it holds is no longer live; `RA-` owns how many places are allowed to run a structural
+// transaction at all, which is a question neither asks. It is the seventeenth two-letter series,
+// under the policy the `P-` paragraph sets, and `R-` alone is the progress range fix. It sorts
+// before `R` in the pattern below, because an alternation that offered `R` first would match `R`
+// and then fail on the `A`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE =
-  /it\(\s*"((?:CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PK|PV|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PK|PV|RA|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
