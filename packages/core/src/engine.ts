@@ -393,10 +393,21 @@ export class Engine {
         // chain is `SolveMember.base`, derived once by `resolveSolvers` and joined in by the
         // publisher, so this closure needs no opinion about a requirement slot named `base` and
         // there is no second answer for it to disagree with. See ADR-051.
-        interpolated: (node) => {
+        //
+        // The map is resolved when the publisher calls, exactly as `compose` above resolves it,
+        // because the compiled map is the single owner and this closure outlives the entry it
+        // reads: the publisher caches one node per graph node, and a live write the interpolator
+        // declined replaces a compiled Track without touching the graph. A captured instance was
+        // the disposed one from that commit on, and a solver was the one reader of it.
+        // See ADR-031 and ADR-060.
+        interpolated: (node) => () => {
           const track = tracks.get(node.id);
-          if (!track) return undefined;
-          return () => ({ id: node.id, values: track.interpolated(), progress: track.progress });
+          // Unreachable through a solver member, whose node exists because its Track compiled.
+          // Refused by name rather than omitted, because omitting `interpolated` makes the
+          // publisher report that a member exposes no interpolated function, which names this seam
+          // instead of the node that is missing.
+          if (!track) throw new TypeError(`Unknown graph node "${node.id}".`);
+          return { id: node.id, values: track.interpolated(), progress: track.progress };
         },
         graphBuilder: new IncrementalGraphBuilder(),
         setProgress: (nodeId, progress) => tracks.get(nodeId)?.setProgress(progress),
