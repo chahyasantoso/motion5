@@ -159,6 +159,87 @@ interface OpenTransaction {
   tracks: ReadonlyMap<string, TrackEntry>;
   motions: ReadonlyMap<string, MotionEntry>;
 }
+/**
+ * The one seam by which a live value reaches the compiled Track this runtime does not own.
+ *
+ * One hook rather than one per entry point, and that is the ownership statement restored rather than
+ * reversed: there is one mechanism, so there is one hook. What separates `setValues` from
+ * `overrideValues` is the retained definition, which is this runtime's own, and at the compiled
+ * Track it is one boolean. `undefined` for the overlay is a write no animated key is involved in,
+ * which is what keeps a static-only write on the path it was already on. See ADR-059 and ADR-060.
+ */
+export type LiveValueWriter = (
+  nodeId: string,
+  values: LiveValues,
+  overlay: Readonly<Record<string, unknown>> | undefined,
+  rebase: boolean,
+) => LiveWriteResult | undefined;
+/**
+ * How this layer asks what an authored record resolves to.
+ *
+ * One hook, one implementation. `PluginRegistry.resolveForKeyframes` is the only thing that answers
+ * it, and it stays the only owner of key ownership, slot declaration and the plugin chain; this
+ * runtime depends on a function so that it can read that answer without holding a registry it has no
+ * other reason to hold. See ADR-062.
+ */
+export type KeyframeResolver = (
+  keyframes: Readonly<Record<string, unknown>>,
+  path: string,
+  track: TrackConfigView,
+) => ResolvedPlugins;
+export interface ProjectRuntimeOptions {
+  readonly clock: Clock;
+  readonly scheduler?: Scheduler;
+  readonly compose: ComposeResolver;
+  /**
+   * How one node's interpolated state is read, forwarded to `GraphRuntime` untouched.
+   *
+   * Total, for the reason the option it forwards to gives: the supplier may not answer "this node
+   * has none", because the publisher's report for a member with no such function names the seam
+   * rather than the node. The function it returns resolves the compiled Track per call.
+   */
+  readonly interpolated?: (node: GraphNode) => () => MemberState;
+  readonly setProgress?: (nodeId: string, progress: number) => void;
+  readonly writeValues?: LiveValueWriter;
+  readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
+  readonly disposeTrack?: (nodeId: string) => void;
+  readonly stageTrack?: (track: TrackDefinition, nodeId: string) => StagedTrack;
+  /**
+   * The registry's own answer about one authored record, as data rather than as a refusal.
+   *
+   * Optional, because a project may be loaded with no `PluginRegistry` at all, and total when it is
+   * present: a supplier allowed to answer "I have nothing for this record" would make the predicate
+   * that reads it depend on which of two absences it was handed. With no seam every replacement
+   * builds, exactly as it did before the predicate existed, which is what keeps every prior
+   * registry-free rig byte-identical.
+   *
+   * The second parameter is a diagnostics path rather than a node id, and that is the one thing
+   * about this signature worth stating: `engine.ts` already asks the registry with
+   * `<node>.keyframes` there, so an option declared to take an id would either mis-cite every
+   * diagnostic it produced or force a second normalization at the wiring site. See ADR-062.
+   */
+  readonly resolveKeyframes?: KeyframeResolver;
+  readonly addMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
+  readonly replaceMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
+  readonly removeMotionTrack?: (motionId: string, trackId: string) => void;
+  /**
+   * The two tier 0 seams: a Motion's trigger and its stagger, neither of which any node carries.
+   *
+   * Two hooks rather than one, because which one an edit asks is half of what the edit claims. A
+   * stagger routed through the trigger hook would dispose a live driver and resubscribe a host
+   * source for a field no driver reads, and one hook taking both fields could not tell that from a
+   * correct edit. Named beside the `addMotionTrack` family, and named for what they do: a trigger
+   * carries a disposable resource behind it, a stagger is a bare field.
+   */
+  readonly replaceMotionTrigger?: (motionId: string, definition: MotionDefinition) => void;
+  readonly setMotionStagger?: (motionId: string, stagger?: number) => void;
+  readonly createMotion?: (definition: MotionDefinition) => void;
+  readonly destroyMotion?: (motionId: string) => void;
+  readonly onClockTick?: (event: ClockTick) => void;
+  readonly disposeComposition?: () => void;
+  readonly diagnosticsCapacity?: number;
+  readonly graphBuilder?: GraphBuilder;
+}
 function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
   return diagnostics
     .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
@@ -571,7 +652,7 @@ export class ProjectRuntime {
       answer = recipe(this.#transaction());
     } finally {
       // Cleared before the commit rather than after it, so the settle steps mount against the
-      // retained pair and a nested `edit` after a throw finds no transaction open.
+      // retained pair and an `edit` after a throw finds no transaction open.
       this.#open = undefined;
     }
     if (open.tracks !== this.#tracks || open.motions !== this.#motions)
@@ -618,7 +699,7 @@ export class ProjectRuntime {
     motions.set(accepted.id, { definition: accepted, token: this.#nextToken++ });
     // A map builder and nothing else. Which hooks a created Motion costs, and that the driver is
     // built before the graph is asked so a trigger that cannot be created leaves no definition and
-    // no node behind, is `#derive`'s answer now. See ADR-032 and ADR-064.
+    // no node behind, are `#derive`'s answer now. See ADR-032 and ADR-064.
     this.#commit({ tracks: this.#readTracks(), motions });
     return Object.freeze({ id: accepted.id });
   }
@@ -719,7 +800,7 @@ export class ProjectRuntime {
     return this.#handle(id, token);
   }
   /**
-   * Every retained track a motion owns, in commit order, and the one owner of that question.
+   * Every readable track a motion owns, in commit order, and the one owner of that question.
    *
    * Four readers ask it: the committed snapshot, the count in the destroy refusal, and both
    * `MotionHandle.definition` and `MotionHandle.trackIds`. Each carried its own filter before, which
@@ -1184,6 +1265,9 @@ export class ProjectRuntime {
         if (motionId !== undefined)
           settle.push(() => this.#addMotionTrack?.(motionId, nodeId, added.duration));
         settle.push(() => this.mount(nodeId));
+        // The new node publishes, which it never did before. A node whose sources have not published
+        // yet lands on blocked with a pending diagnostic rather than on nothing at all, and that is
+        // the whole of what building a structure up incrementally requires. See `RA-9`.
         touched.push(nodeId);
         continue;
       }
