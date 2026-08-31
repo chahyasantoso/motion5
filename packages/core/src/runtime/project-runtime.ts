@@ -10,6 +10,7 @@ import type {
 } from "../contract/v5";
 import { readAuthoredLeaf } from "../contract/authored-leaf";
 import { readPluginBindings } from "../contract/keyframe-shape";
+import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { StaleMotionHandleError, type MotionHandle } from "../contract/motion-handle";
 import {
   StaleTrackHandleError,
@@ -25,7 +26,10 @@ import type { LiveWriteResult } from "../domain/track";
 import { flattenAuthoredKeyframes } from "../domain/keyframe-groups";
 import {
   readBoundGroup,
+  readsAsProperty,
+  removeGroup,
   removeRequire,
+  setGroup,
   setRequire,
   type AuthoredKeyframes,
   type BoundGroup,
@@ -70,6 +74,15 @@ type MotionEntry = {
 };
 /** No animated write. One frozen value, so the common entry allocates nothing. */
 const NO_OVERLAY: Readonly<Record<string, unknown>> = Object.freeze({});
+/**
+ * No authored record. One frozen value, so a track that authors nothing allocates nothing.
+ *
+ * Stands in for an absent `keyframes` at the one place a group edit reads it, which is what lets
+ * `setKeyframeGroup` originate on a track that authors nothing without a branch, and lets
+ * `removeKeyframeGroup` answer by identity on one instead of committing an empty record on the way
+ * to removing nothing from it.
+ */
+const EMPTY_KEYFRAMES: AuthoredKeyframes = Object.freeze({});
 export interface StagedTrack {
   commit(): void;
   rollback(): void;
@@ -194,7 +207,7 @@ function runRollbackSteps(steps: readonly (() => void)[]): void {
 /**
  * Refuses a binding edit addressed at a plugin this node authors no group for.
  *
- * The boundary between this tier's two primitives, and it is a refusal rather than a creation on
+ * The boundary between this tier's two levels, and it is a refusal rather than a creation on
  * purpose. Originating a binding is `setKeyframeGroup`'s job, because a plugin group holding only
  * half its data may be transiently invalid, and one verb whose cost and refusal set depend on
  * whether the group already existed is the shape this project has declined to build three times.
@@ -206,6 +219,41 @@ function runRollbackSteps(steps: readonly (() => void)[]): void {
 function unboundGroup(nodeId: string, plugin: string): never {
   const use = "Use setKeyframeGroup to originate one.";
   throw new TypeError(`keyframe-group-unbound: "${nodeId}" authors no "${plugin}" group. ${use}`);
+}
+/**
+ * Refuses a binding edit addressed at a solver's goals slot by name.
+ *
+ * That slot holds one source per chain leaf, and both spellings a caller could reach it with through
+ * `setRequire` are wrong in a way this layer can see. Without a member key the verb can only write a
+ * scalar there, which `keyframes-targets-shape` refuses at load, so the candidate would be a record
+ * the loader rejects. With one it writes the right shape through the wrong verb, and then one
+ * question has two mechanisms: `setGoal` is the owner, so the weaker spelling is deleted rather than
+ * documented as discouraged.
+ *
+ * Scoped to the slot rather than to the plugin that happens to own it, because the reservation is
+ * about what the slot holds. Every other slot of that same group stays reachable through
+ * `setRequire`. See ADR-057 and ADR-063.
+ */
+function reservedGoalSlot(plugin: string, slot: string): never {
+  const use = "Use setGoal to bind one entry of it, or removeGoal to drop one.";
+  throw new TypeError(
+    `keyframe-goal-slot-reserved: Slot "${slot}" of "${plugin}" holds a solver's goals. ${use}`,
+  );
+}
+/**
+ * Refuses a group edit addressed at a name this node authors as an ordinary property.
+ *
+ * The entry-level twin of `keyframe-require-shape`, and the primitive's own for the same reason: a
+ * plugin name and a keyframe name share one namespace, both shapes are legal there, and nothing
+ * below this layer can catch either direction. Writing a group over a property drops every stop the
+ * author wrote; removing one deletes a property the caller never named. Crossing an entry's shape is
+ * a `replace()`, where a whole definition is validated. See ADR-063.
+ */
+function propertyEntry(nodeId: string, plugin: string): never {
+  const use = "Use replace() to change an entry's shape.";
+  throw new TypeError(
+    `keyframe-entry-shape: "${nodeId}" authors "${plugin}" as a property, not a group. ${use}`,
+  );
 }
 /**
  * The bindings `track` authored, as a handle reports them.
@@ -301,6 +349,8 @@ function withAuthoredValues(track: TrackDefinition, values: AuthoredValues): Tra
 }
 /** One retained Motion definition, writable, for the two fields a tier 0 edit moves. */
 type MutableMotion = { -readonly [K in keyof MotionDefinition]: MotionDefinition[K] };
+/** One retained track definition, writable, for the one field an authored edit moves. */
+type MutableTrack = { -readonly [K in keyof TrackDefinition]: TrackDefinition[K] };
 /**
  * Whether two authored triggers are the same trigger.
  *
@@ -840,6 +890,13 @@ export class ProjectRuntime {
         runtime.#setRequire(id, token, plugin, slot, source, memberKey),
       removeRequire: (plugin: string, slot: string, memberKey?: string) =>
         runtime.#removeRequire(id, token, plugin, slot, memberKey),
+      setKeyframeGroup: (plugin: string, group: AuthoredPluginGroup) =>
+        runtime.#setKeyframeGroup(id, token, plugin, group),
+      removeKeyframeGroup: (plugin: string) => runtime.#removeKeyframeGroup(id, token, plugin),
+      setGoal: (plugin: string, memberId: string, source: string) =>
+        runtime.#setGoal(id, token, plugin, memberId, source),
+      removeGoal: (plugin: string, memberId: string) =>
+        runtime.#removeGoal(id, token, plugin, memberId),
       overrideValues: (next: AuthoredValues) =>
         runtime.#writeValues(id, runtime.#liveEntry(id, token), next, false),
       setValues: (next: AuthoredValues) =>
@@ -1055,14 +1112,21 @@ export class ProjectRuntime {
     this.#replaceTrack(id, token, { ...entry.track, observes: observations });
   }
   /**
-   * One binding edit on an already-bound plugin, and the one owner of the order both verbs follow.
+   * One binding edit on an already-bound plugin, and the one owner of the order all four binding
+   * verbs follow.
    *
    * Staleness first, through the resolver every member of the handle reads. Then the unbound-group
    * refusal, which is answered from the retained record on this node and is a different question
-   * from anything the registry answers about a candidate. Then the pure edit, which is the only
-   * thing that knows the group layout. Then the redundant edit, by identity, because the pure layer
+   * from anything the registry answers about a candidate. Then the edit, which is where a slot the
+   * caller named is checked against the one reservation this surface has and where the pure editor
+   * that knows the group layout runs. Then the redundant edit, by identity, because the pure layer
    * returns the record it was given when nothing changed and comparing anything else would be a
    * second opinion about whether an edit happened. Then the commit.
+   *
+   * The goals-slot reservation sits inside the edit rather than ahead of it, and that order is the
+   * honest one: it answers about a slot of a group this node authors, so the group has to exist for
+   * the question to be about anything at all. A `setRequire` at that slot on a node authoring no
+   * such group is `keyframe-group-unbound`, which names the primitive that would originate one.
    *
    * `#replaceTrack` rather than a plan of its own, for the reason `#replaceWithObservation` already
    * routes there: a binding edit is a candidate the graph accepts or refuses, which is exactly the
@@ -1088,7 +1152,7 @@ export class ProjectRuntime {
     if (keyframes === undefined || bound === undefined) unboundGroup(id, plugin);
     const next = edit(keyframes, bound);
     if (next === keyframes) return;
-    this.#replaceTrack(id, token, { ...entry.track, keyframes: next });
+    this.#writeKeyframes(id, token, entry.track, next);
   }
   #setRequire(
     id: string,
@@ -1098,9 +1162,10 @@ export class ProjectRuntime {
     source: string,
     memberKey?: string,
   ): void {
-    this.#editRequire(id, token, plugin, (keyframes, bound) =>
-      setRequire(keyframes, bound, slot, source, memberKey),
-    );
+    this.#editRequire(id, token, plugin, (keyframes, bound) => {
+      if (slot === PLUGIN_GOALS_SLOT) reservedGoalSlot(bound.plugin, slot);
+      return setRequire(keyframes, bound, slot, source, memberKey);
+    });
   }
   #removeRequire(
     id: string,
@@ -1109,9 +1174,94 @@ export class ProjectRuntime {
     slot: string,
     memberKey?: string,
   ): void {
+    this.#editRequire(id, token, plugin, (keyframes, bound) => {
+      if (slot === PLUGIN_GOALS_SLOT) reservedGoalSlot(bound.plugin, slot);
+      return removeRequire(keyframes, bound, slot, memberKey);
+    });
+  }
+  /**
+   * Binds one entry of a solver's goals slot, addressed by the member id it is authored under.
+   *
+   * The same tier, the same owner of order and the same pure editor as `setRequire`, with the slot
+   * fixed rather than named. That is the whole of what the verb buys: the caller cannot reach the
+   * scalar spelling of the slot, which the loader refuses as `keyframes-targets-shape`, and one slot
+   * has one verb rather than two that would have to stay in agreement. No editor of its own, because
+   * a dict entry is a dict entry and `setRequire` already owns what one is. See ADR-057 and ADR-063.
+   *
+   * Whether the member id names a leaf of this solver's chain, whether two spellings name one
+   * member, and whether the solver also bound the bare goal slot are all `resolveSolvers`' questions.
+   * They arrive from the candidate graph and roll the commit back, rather than being asked here,
+   * because a per-primitive copy of them is a second owner that can disagree with the loader.
+   */
+  #setGoal(id: string, token: number, plugin: string, memberId: string, source: string): void {
     this.#editRequire(id, token, plugin, (keyframes, bound) =>
-      removeRequire(keyframes, bound, slot, memberKey),
+      setRequire(keyframes, bound, PLUGIN_GOALS_SLOT, source, memberId),
     );
+  }
+  #removeGoal(id: string, token: number, plugin: string, memberId: string): void {
+    this.#editRequire(id, token, plugin, (keyframes, bound) =>
+      removeRequire(keyframes, bound, PLUGIN_GOALS_SLOT, memberId),
+    );
+  }
+  /**
+   * One whole-group edit, and the one owner of the order both group verbs follow.
+   *
+   * Staleness first, through the resolver every member of the handle reads. Then the property-entry
+   * refusal, which is answered from the retained record on this node and is the only thing about a
+   * group edit that no other layer can see: a plugin name and a keyframe name share one namespace,
+   * so writing a group over an authored property would drop every stop the author wrote and removing
+   * one would delete a property the caller never named. Then the pure edit, which is the only thing
+   * that knows the group layout and which refuses `keyframe-group-shape` rather than committing a
+   * husk. Then the redundant edit, by identity. Then the commit.
+   *
+   * An absent record reads as one frozen empty one, which is what lets `setKeyframeGroup` originate
+   * on a track that authors nothing with no branch here, and lets `removeKeyframeGroup` answer by
+   * identity on it rather than committing an empty record on the way to removing nothing.
+   *
+   * No registry question is asked and none is missing: whether the plugin exists, whether it claims
+   * each leaf of the group's `values`, and whether it declares each bound slot all arrive from
+   * `PluginRegistry` at the recompile this commit pays, which is where a candidate is validated
+   * rather than where an expense is incurred. See ADR-062.
+   */
+  #editGroup(
+    id: string,
+    token: number,
+    plugin: string,
+    edit: (keyframes: AuthoredKeyframes) => AuthoredKeyframes,
+  ): void {
+    const entry = this.#liveEntry(id, token);
+    const keyframes = entry.track.keyframes ?? EMPTY_KEYFRAMES;
+    if (readsAsProperty(keyframes, plugin)) propertyEntry(id, plugin);
+    const next = edit(keyframes);
+    if (next === keyframes) return;
+    this.#writeKeyframes(id, token, entry.track, next);
+  }
+  #setKeyframeGroup(id: string, token: number, plugin: string, group: AuthoredPluginGroup): void {
+    this.#editGroup(id, token, plugin, (keyframes) => setGroup(keyframes, plugin, group));
+  }
+  #removeKeyframeGroup(id: string, token: number, plugin: string): void {
+    this.#editGroup(id, token, plugin, (keyframes) => removeGroup(keyframes, plugin));
+  }
+  /**
+   * Writes an edited authored record back onto `track` and commits it as a replacement.
+   *
+   * The one owner of what an authored edit leaves behind, so the six verbs in this tier cannot
+   * disagree about it. A record that ends up holding nothing loses the key rather than being
+   * committed as `{}`, on the rule the pure layer already follows two levels down: omitting a slot is
+   * how a section binds nothing, omitting the section is how a group binds nothing, and omitting
+   * `keyframes` is how a track authors nothing. An edit may not leave behind a shape that is legal
+   * only because nothing refuses it. See ADR-063.
+   */
+  #writeKeyframes(
+    id: string,
+    token: number,
+    track: TrackDefinition,
+    keyframes: AuthoredKeyframes,
+  ): void {
+    const next: MutableTrack = { ...track };
+    if (Object.keys(keyframes).length === 0) delete next.keyframes;
+    else next.keyframes = keyframes;
+    this.#replaceTrack(id, token, next);
   }
   #snapshot(
     tracks: ReadonlyMap<string, TrackEntry>,
