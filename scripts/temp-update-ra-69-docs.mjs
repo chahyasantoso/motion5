@@ -20,15 +20,24 @@ function replaceOnce(text, pattern, replacement, label) {
   return text.replace(pattern, replacement);
 }
 
+function replaceSection(text, start, end, replacement, label) {
+  const pattern = new RegExp(`^${start}.*?(?=^${end})`, "ms");
+  return replaceOnce(text, pattern, `${replacement}\n`, label);
+}
+
 let status = read(files.status);
 status = replaceOnce(status, /^- \*\*Verified on:\*\*.*$/m,
   "- **Verified on:** PR #250 head df355536, with slices A1, A2, A3, B1, B2, C1, C2, C3, D and E of issue #223 landed. This docs-only follow-up verifies documentation consistency, not runtime behavior; runtime evidence and CI remain on PR #250.",
   "status verification");
-status = replaceOnce(status, /^- \*\*Open\.\*\*.*?\n- \*\*After it\.\*\*.*$/ms,
+status = replaceSection(status,
+  "- \\*\\*Open\\.\\*\\*",
+  "- \\*\\*Just landed\\.\\*\\*",
   "- **Open.** The runtime authoring surface, issue #223. Slices A1, A2, A3, B1, B2, C1, C2, C3, D and E are landed. **F is next:** delete ProjectDefinition.templates, refuse it as project-templates-unsupported, and remove the corresponding promise from docs/AUTHORED-SCHEMA.md.\n- **Docs follow-up landed.** This PR documents Slice E and its remaining F scope.",
   "status scope");
-status = replaceOnce(status, /^- \*\*Debt this slice found and did not fix\.\*\*.*$/m,
-  "- **Previously tracked docs debt, now resolved here.** The guides now cover the renamed definition member, stale handles, C1 through E keyframe rules, MotionHandle and try-resolver guidance, and D's edit(recipe) and SchemaTransaction surface. F still needs the ProjectDefinition.templates removal and its authored-schema documentation change.",
+status = replaceSection(status,
+  "- \\*\\*Debt this slice found and did not fix\\.\\*\\*",
+  "## What a live edit costs today",
+  "- **Previously tracked docs debt, now resolved here.** The guides now cover the renamed definition member, stale handles, C1 through E keyframe rules, MotionHandle and try-resolver guidance, and D's edit(recipe) and SchemaTransaction surface. F still needs the ProjectDefinition.templates removal and its authored-schema documentation change.\n",
   "status debt");
 write(files.status, status);
 
@@ -69,7 +78,7 @@ if (!decisions.includes("## ADR-065: Edit one authored property inside a bound p
 write(files.decisions, decisions);
 
 let api = read(files.api);
-api = replaceOnce(api, /A `TrackHandle` carries .*? and `setValues\(next\)\`\./,
+api = replaceOnce(api, /A `TrackHandle` carries .*? and `setValues\(next\)`\./,
   "A TrackHandle carries id, live, definition, requires, remove(), replace(next), addObserve(observation), removeObserve(observation), setRequire(plugin, slot, source, memberKey?), removeRequire(plugin, slot, memberKey?), setKeyframeGroup(plugin, group), removeKeyframeGroup(plugin), setGoal(plugin, memberId, source), removeGoal(plugin, memberId), setKeyframe(plugin, key, value), removeKeyframe(plugin, key), overrideValues(next), and setValues(next).",
   "api handle surface");
 api = replaceOnce(api, /The six authoring members above are the structural tier, and each returns `void` because the return type carries the tier:/,
@@ -90,12 +99,12 @@ write(files.runtime, runtime);
 
 let errors = read(files.errors);
 errors = replaceOnce(errors, /- `keyframe-group-shape`, when `setKeyframeGroup` receives an object naming neither `values` nor `requires`\. Remove the entry to author nothing; do not commit a husk\.\n/,
-  "- `keyframe-group-shape`, when `setKeyframeGroup` receives an object naming neither `values` nor `requires`. Remove the entry to author nothing; do not commit a husk.\n- `keyframe-group-unbound`, when setKeyframe or removeKeyframe names a plugin group the node does not author. Use setKeyframeGroup to originate the group; property edits never create a partial group.\n",
+  "- `keyframe-group-shape`, when `setKeyframeGroup` receives an object naming neither `values` nor `requires`. Remove the entry to author nothing; do not commit a husk.\n- keyframe-group-unbound, when setKeyframe or removeKeyframe names a plugin group the node does not author. Use setKeyframeGroup to originate the group; property edits never create a partial group.\n",
   "errors rule insertion");
 errors = replaceOnce(errors, /`setKeyframeGroup\(\)`, `removeKeyframeGroup\(\)`, `setGoal\(\)`, `removeGoal\(\)`, `overrideValues\(\)`, and `setValues\(\)` all throw `StaleTrackHandleError`/,
   "setKeyframeGroup(), removeKeyframeGroup(), setGoal(), removeGoal(), setKeyframe(), removeKeyframe(), overrideValues(), and setValues() all throw StaleTrackHandleError",
   "errors stale surface");
-errors = errors.replace("- `keyframe-group-unbound`, when setKeyframe or removeKeyframe names a plugin group the node does not author. Use setKeyframeGroup to originate the group; property edits never create a partial group.\n", "- keyframe-group-unbound, when setKeyframe or removeKeyframe names a plugin group the node does not author. Use setKeyframeGroup to originate the group; property edits never create a partial group.\n- schema-transaction-nested and schema-transaction-immediate, when a recipe is nested or an immediate tier 0 or tier 2 edit is attempted inside one.\n");
+errors = errors.replace("- keyframe-group-unbound, when setKeyframe or removeKeyframe names a plugin group the node does not author. Use setKeyframeGroup to originate the group; property edits never create a partial group.\n", "- keyframe-group-unbound, when setKeyframe or removeKeyframe names a plugin group the node does not author. Use setKeyframeGroup to originate the group; property edits never create a partial group.\n- schema-transaction-nested and schema-transaction-immediate, when a recipe is nested or an immediate tier 0 or tier 2 edit is attempted inside one.\n");
 write(files.errors, errors);
 
 execFileSync("npx", ["prettier", "--write", ...Object.values(files)], { stdio: "inherit" });
