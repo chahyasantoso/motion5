@@ -79,6 +79,17 @@ export type { LiveValues, RequireView, TrackHandle } from "./contract/track-hand
 export { StaleMotionHandleError } from "./contract/motion-handle";
 export type { MotionHandle } from "./contract/motion-handle";
 /**
+ * The structural authoring surface one recipe is handed.
+ *
+ * A type rather than a value, and exported on the parameter half of the declaration-surface rule
+ * rather than the return half: `ProjectHandle.edit` takes a function of this type, and a member the
+ * entry exposes is unusable if its argument type cannot be imported. Declared in `contract/` for the
+ * same reason the gate enforces, so naming it here adds no `runtime/` module to the entry's
+ * declaration closure. Its two refusals travel as `TypeError` under `schema-transaction-nested` and
+ * `schema-transaction-immediate`, so nothing new has to be exported to catch them. See ADR-064.
+ */
+export type { SchemaTransaction } from "./contract/schema-transaction";
+/**
  * The refusal a live value write reports, exported on exactly the rule above: a caller cannot
  * `instanceof` a type it cannot name, and `ruleId` is what it branches on. `Track` is not exported
  * beside it and never has been, so the only thing crossing the entry from the domain layer is the
