@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
-import type { GraphEdge, GraphIR } from "../../../src/graph/ir";
+import { deriveDependents, type GraphEdge } from "../../../src/graph/ir";
 import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
 import { Track } from "../../../src/domain/track";
 import type { ImmutableRecord } from "../../../src/domain/values";
-import { GraphPublisher, type PublisherNode } from "../../../src/runtime/graph-publisher";
+import {
+  GraphPublisher,
+  type PublisherNode,
+  type PublisherSnapshot,
+} from "../../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../../src/runtime/patch-registry";
 import { createFakeInterpolator } from "../../../src/testing/fakes";
 
@@ -63,15 +67,19 @@ function shoulderNode(id = "walker/shoulder"): PublisherNode {
   });
 }
 
-function snapshot(nodes: readonly PublisherNode[]): GraphIR & { nodes: readonly PublisherNode[] } {
+// `deriveDependents` rather than a reverse walk written here, and `IK-12` is why it matters: seeding
+// a member alone has to mark its solver, and that fan-in comes off `solves`, which no edge carries.
+// A helper that derived it itself would make this file agree with itself instead of with the graph.
+function snapshot(nodes: readonly PublisherNode[]): PublisherSnapshot {
   const nodeById: Record<string, PublisherNode> = {};
   for (const entry of nodes) nodeById[entry.id] = entry;
   return {
     nodes,
     nodeById,
+    dependents: deriveDependents(nodes),
     order: nodes.map((entry) => entry.id),
     diagnostics: [],
-  } as unknown as GraphIR & { nodes: readonly PublisherNode[] };
+  };
 }
 
 describe("Publisher solver member inputs (Slice C3)", () => {

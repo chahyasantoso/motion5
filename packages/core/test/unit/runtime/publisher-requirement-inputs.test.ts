@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { GraphIR } from "../../../src/graph/ir";
-import { GraphPublisher, type PublisherNode } from "../../../src/runtime/graph-publisher";
+import { deriveDependents, type GraphIR } from "../../../src/graph/ir";
+import {
+  GraphPublisher,
+  type PublisherNode,
+  type PublisherSnapshot,
+} from "../../../src/runtime/graph-publisher";
 import { PatchRegistry } from "../../../src/runtime/patch-registry";
 import { slotOf } from "../../helpers/requirement-inputs";
 
@@ -19,16 +23,14 @@ function node(
   });
 }
 
-function pair(
-  source: PublisherNode,
-  observer: PublisherNode,
-): GraphIR & { nodes: readonly PublisherNode[] } {
+function pair(source: PublisherNode, observer: PublisherNode): PublisherSnapshot {
   return {
     nodes: [source, observer],
     nodeById: { [source.id]: source, [observer.id]: observer },
+    dependents: deriveDependents([source, observer]),
     order: [source.id, observer.id],
     diagnostics: [],
-  } as GraphIR & { nodes: readonly PublisherNode[] };
+  };
 }
 
 // The successor of the flat-input suite. Its first case survives here as delivery under a plugin

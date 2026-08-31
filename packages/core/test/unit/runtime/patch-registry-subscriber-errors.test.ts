@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { PatchRegistry } from "../../../src/runtime/patch-registry";
-import { GraphPublisher, type PublisherNode } from "../../../src/runtime/graph-publisher";
-import type { GraphIR } from "../../../src/graph/ir";
+import {
+  GraphPublisher,
+  type PublisherNode,
+  type PublisherSnapshot,
+} from "../../../src/runtime/graph-publisher";
+import { deriveDependents } from "../../../src/graph/ir";
 
 const soleNode = (id: string): PublisherNode =>
   Object.freeze({
@@ -13,11 +17,12 @@ const soleNode = (id: string): PublisherNode =>
     compose: () => ({ values: { x: 1 }, sourceProgress: 0, sourceRevisions: {} }),
   });
 
-const soleSnapshot = (id: string): GraphIR & { nodes: readonly PublisherNode[] } => {
+const soleSnapshot = (id: string): PublisherSnapshot => {
   const node = soleNode(id);
   return {
     nodes: [node],
     nodeById: Object.freeze({ [id]: node }),
+    dependents: deriveDependents([node]),
     order: Object.freeze([id]),
     diagnostics: Object.freeze([]),
   };
