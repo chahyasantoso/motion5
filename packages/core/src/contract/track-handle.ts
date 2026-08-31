@@ -106,6 +106,42 @@ export interface TrackHandle extends Handle<TrackDefinition> {
   addObserve(observation: ObservationDefinition): void;
   removeObserve(observation: ObservationDefinition): void;
   /**
+   * Binds one requirement slot of an already-bound plugin to `source`, without naming that plugin's
+   * other slots or any of its values.
+   *
+   * Structural, and the return type says so: `void`, because the graph was replaced, where the value
+   * tier returns the `PatchBatch` of its one invalidate. There is no fast lane and none is missing:
+   * a binding adds, removes or redirects a `GraphEdge`, which is the boundary `overrideValues` and
+   * `setValues` are forbidden to cross, so this costs one candidate build, one edge delta and one
+   * recompile. The recompile is also where the plugin registry sees the candidate, so it is the
+   * validation rather than an expense. See ADR-062.
+   *
+   * `memberKey` names the key inside a dict-valued slot, and is omitted for a slot that takes one
+   * source. Two entries of one slot are two edges, so an entry is addressed by the key it was
+   * authored under rather than by a formatted slot name. See ADR-057.
+   *
+   * Refusals, all of them before anything is written, and none of them leaving a partial edit
+   * behind. `keyframe-group-unbound` when this node authors no group for `plugin` at all, which is
+   * `setKeyframeGroup`'s job: a group holding only half its data may be transiently invalid, so
+   * originating one is a different primitive with a different refusal set rather than a branch
+   * inside this one. `keyframe-require-shape` when the edit would cross a bound slot's authored
+   * shape, in either direction, because both directions silently drop an edge the caller never
+   * named. Whatever the registry answers about the candidate, cited at the path the author wrote.
+   * Whatever the graph answers about the candidate, rolled back transactionally.
+   *
+   * Binding a slot to the source it already reads is a no-op: no rebuild, no recompile, no flush.
+   */
+  setRequire(plugin: string, slot: string, source: string, memberKey?: string): void;
+  /**
+   * Unbinds one requirement slot of an already-bound plugin, or one entry of a dict-valued slot.
+   *
+   * The inverse of `setRequire` and the same tier, the same order, and the same refusal set. A slot
+   * that is not bound and an entry that is not there are both no-ops, on the idempotence rule every
+   * primitive in this tier follows. Removing the last binding leaves the section absent rather than
+   * empty, because omitting it is already how a group binds nothing.
+   */
+  removeRequire(plugin: string, slot: string, memberKey?: string): void;
+  /**
    * Writes this node's values until the next live write or a real `replace()`, without moving the
    * retained definition.
    *
