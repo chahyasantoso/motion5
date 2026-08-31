@@ -52,6 +52,66 @@ If you cannot run `npx` or `prettier` at all, which is a normal condition rather
 
 Formatting never shares a behavior commit, on either path.
 
+## Temporary workflow edits
+
+An implementor may create a temporary GitHub Actions workflow on a trusted branch when the repository already provides a write credential for that purpose, such as a configured repository secret or PAT-backed automation. This is an escape hatch for mechanical work or scripts the implementor cannot run locally, not a standing permission to execute arbitrary code.
+
+Use it for a narrow, reviewable job such as correcting documentation, running Prettier, or applying a custom migration script. The workflow must:
+
+- run only from an explicit same-repository branch or manual dispatch, never from untrusted fork pull-request code;
+- grant the smallest required permission, normally `contents: write`, and read the credential from the repository secret or configured automation rather than hard-coding it;
+- make the edit deterministic, limit the files it can change, and fail if the expected input is not found;
+- commit with a clear message, push only the intended branch, and never print the credential or include it in an artifact;
+- remove itself in the same commit after the edit, then leave the resulting diff for review.
+
+A PAT does not make every workflow safe. Treat a temporary workflow as code with repository-write power: review the YAML and script before it runs, keep the token scope narrow, and do not use this path for secrets from forks or for behavior changes that should be implemented and tested normally.
+
+Example for a docs correction, Prettier repair, or a custom script:
+
+```yaml
+name: Temporary repository edit
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  edit:
+    if: github.event.inputs.branch == github.ref_name
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          token: ${{ secrets.REPO_WRITE_PAT }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci
+      - name: Apply the bounded edit
+        shell: bash
+        run: |
+          python3 scripts/update-docs.py
+          npm run format
+      - name: Commit and push, then remove this workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/ scripts/ .github/workflows/temporary-repository-edit.yml
+          git rm .github/workflows/temporary-repository-edit.yml
+          git diff --cached --quiet || git commit -m "docs: apply bounded repository edit"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+```
+
+Replace `scripts/update-docs.py` with the narrowly scoped script the PR needs, or replace that step with `npx prettier --write <explicit paths>` for a format repair. The workflow itself is temporary: it is removed before the push, and the PR must review the generated commit and its exact file list.
+
 ## CI logs
 
 Failed `CI` and `Recovery audit` runs are archived by `.github/workflows/archive-ci-logs.yml` on the separate `ci-logs` branch at `logs/<run-id>/`. The archive contains `README.md`, `run.json`, and `failed-jobs.log`. Link the original Actions run in the PR/status note; consult the archive for durable diagnostics. Never treat `ci-logs` as a development branch.
