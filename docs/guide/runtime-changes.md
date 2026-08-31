@@ -26,7 +26,11 @@ const track = handle.addTrack(armTrack, { motionId: "walk" });
 track.replace(nextDefinition);
 track.addObserve({ source: "walk/chest" });
 track.remove();
+track.setRequire("fk", "base", "walk/chest");
+track.removeRequire("fk", "base");
 ```
+
+`setRequire` and `removeRequire` edit one edge on an already-bound plugin group. They preserve the group values, redirect rather than append, support `memberKey` for dict-valued slots, and leave the `requires` section absent when its last binding is removed. They rebuild the graph because an authored requirement is topology, and refused candidates leave the handle unchanged. To originate a plugin group, use `setKeyframeGroup` in the structural authoring API rather than silently creating a partial group.
 
 An observation carries `source` and nothing else, and the edge it declares is always an output edge: the source's contribution merges over this track's composed patch. `addObserve` throws for each of the three removed fields, `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`. There is no way to declare an input edge by hand: bind the dependency under the plugin group's `requires` section, which is the only way a value enters composition. See ADR-046 and ADR-047.
 
@@ -40,13 +44,13 @@ Omit `motionId` to add a free track, which lands at `~/trackId` with no motion s
 // Revertible. The authored definition is untouched.
 track.overrideValues({ length: 100 });
 
-// Sticky. `track.track` moves with it.
+// Sticky. `track.definition` moves with it.
 track.setValues({ length: 100 });
 ```
 
 Both return the `PatchBatch` of the one invalidation they cause, exactly as `seek()` does, so a dependent recomputes in the same call: masking a bone's `length` moves what an IK solver publishes for it, because a member's values reach a solve through the same read.
 
-The difference is the retained definition. `track.track` answers from it, so `setValues` is the one that keeps `handle.track` and the live composition in agreement, and `overrideValues` deliberately does not: it is a write you expect to take back.
+The difference is the retained definition. `track.definition` answers from it, so `setValues` is the one that keeps `handle.definition` and the live composition in agreement, and `overrideValues` deliberately does not: it is a write you expect to take back.
 
 Either member takes an animated key as well as a static one, and the two are the same sentence to a reader:
 
@@ -59,7 +63,7 @@ track.overrideValues({
 });
 ```
 
-A static key is masked over the interpolated state. An animated key has its tweens replaced on the still-live timeline, against a base record the interpolator kept when it compiled, so progress is preserved and no graph is rebuilt. An interpolator with no per-key write is not a second behavior: the runtime escalates to a recompile of the same definition and re-seeks to the same progress, so the published values and `handle.track` are identical either way.
+A static key is masked over the interpolated state. An animated key has its tweens replaced on the still-live timeline, against a base record the interpolator kept when it compiled, so progress is preserved and no graph is rebuilt. An interpolator with no per-key write is not a second behavior: the runtime escalates to a recompile of the same definition and re-seeks to the same progress, so the published values and `handle.definition` are identical either way.
 
 A write is replaced wholesale by the next one rather than accumulated, so an empty record is the clear for both kinds:
 
@@ -89,7 +93,11 @@ The error extends `TypeError` and keeps the message `Track "<id>" is no longer l
 
 ```ts
 if (track.live) track.remove();
+track.setRequire("fk", "base", "walk/chest");
+track.removeRequire("fk", "base");
 ```
+
+`setRequire` and `removeRequire` edit one edge on an already-bound plugin group. They preserve the group values, redirect rather than append, support `memberKey` for dict-valued slots, and leave the `requires` section absent when its last binding is removed. They rebuild the graph because an authored requirement is topology, and refused candidates leave the handle unchanged. To originate a plugin group, use `setKeyframeGroup` in the structural authoring API rather than silently creating a partial group.
 
 `live` never throws, on either side of any invalidation and on a disposed project. On a disposed project `remove()` reports the disposal rather than the staleness, because the project's own lifecycle outranks one handle's, and the guard above is correct either way.
 
@@ -101,7 +109,11 @@ Remove children before parents so every intermediate graph stays valid. When you
 
 ```ts
 for (const track of [...handles].reverse()) track.remove();
+track.setRequire("fk", "base", "walk/chest");
+track.removeRequire("fk", "base");
 ```
+
+`setRequire` and `removeRequire` edit one edge on an already-bound plugin group. They preserve the group values, redirect rather than append, support `memberKey` for dict-valued slots, and leave the `requires` section absent when its last binding is removed. They rebuild the graph because an authored requirement is topology, and refused candidates leave the handle unchanged. To originate a plugin group, use `setKeyframeGroup` in the structural authoring API rather than silently creating a partial group.
 
 `handle.dependantsOf(nodeId)` is a read-only query for editor preflight: it tells you who observes a node before you try to delete it. It is not the enforcement. Graph validation rejects a deletion that would orphan a live dependant, and there is no cascade delete.
 
