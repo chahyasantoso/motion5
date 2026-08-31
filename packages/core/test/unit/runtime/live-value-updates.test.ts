@@ -1,10 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+import type { AuthoredStop, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { StaleTrackHandleError, type TrackHandle } from "../../../src/contract/track-handle";
 import { PluginRegistry } from "../../../src/domain/plugins";
-import { LiveValueKeyError } from "../../../src/domain/track";
 import { Engine, type ProjectHandle } from "../../../src/engine";
 import { transformPlugin } from "../../../src/plugins/transform";
 import { createManualClock } from "../../../src/ports/clock";
@@ -12,19 +11,35 @@ import type { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 
 /**
- * Issue #218, part B of #212. The two runtime entry points: a read-time mask and an authored
- * replacement, neither of which may validate a whole definition, stage a Track, or rebuild the
+ * Issue #218, part B of #212, extended by issue #231. The two runtime entry points, neither of which
+ * may validate a whole definition for a static write, stage a Track for one, or ever rebuild the
  * graph.
  *
  * Driven through `Engine` rather than through a bare `ProjectRuntime`, because the claim under test
  * is that the retained definition and the live composition cannot disagree, and only the loaded
  * composition owns the second half of that.
+ *
+ * The interpolator here is the fake, which declares no `patchKeys` and therefore declines every
+ * animated write. That makes this the file that owns the escalation. The patching backend's end to
+ * end behavior is `live-value-animated.test.ts`.
+ *
+ * `LV-11` retires here, both halves, because finding 11 of issue #231 deletes the reason it
+ * asserted: an animated key is no longer refused on either entry point.
  */
 const RUNTIME_SOURCE = fileURLToPath(
   new URL("../../../src/runtime/project-runtime.ts", import.meta.url),
 );
 const ARM = "hero/arm";
 const LEG = "hero/leg";
+const AUTHORED_ROTATION = Object.freeze([
+  { p: 0, v: 0 },
+  { p: 1, v: 90 },
+]);
+/** Twice the authored sweep, so the published value at half progress moves from 45 to 90. */
+const FASTER = Object.freeze([
+  { p: 0, v: 0 },
+  { p: 1, v: 180 },
+]);
 const ARM_TRACK: TrackDefinition = {
   id: "arm",
   duration: 400,
@@ -33,10 +48,7 @@ const ARM_TRACK: TrackDefinition = {
       values: {
         x: 200,
         y: 300,
-        rotation: [
-          { p: 0, v: 0 },
-          { p: 1, v: 90 },
-        ],
+        rotation: AUTHORED_ROTATION,
       },
     },
   },
@@ -163,10 +175,7 @@ describe("live values reach the graph without replacing it", () => {
       values: {
         x: 260,
         y: 300,
-        rotation: [
-          { p: 0, v: 0 },
-          { p: 1, v: 90 },
-        ],
+        rotation: AUTHORED_ROTATION,
       },
     });
     expect(track.track.id).toBe("arm");
@@ -192,10 +201,7 @@ describe("live values reach the graph without replacing it", () => {
       values: {
         x: 260,
         y: 300,
-        rotation: [
-          { p: 0, v: 0 },
-          { p: 1, v: 90 },
-        ],
+        rotation: AUTHORED_ROTATION,
       },
     });
     expect(values(handle, ARM)).toEqual({ x: 260, y: 300, rotation: 45 });
@@ -217,22 +223,91 @@ describe("live values reach the graph without replacing it", () => {
     handle.dispose();
   });
 
-  it("LV-11 refuses an animated key by name and commits nothing", () => {
+  it("PK-16 escalates through one stageTrack when the backend declines", () => {
+    const handle = load();
+    const arm = handle.track(ARM);
+    handle.seek(ARM, 0.5);
+    const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
+
+    arm.setValues({ rotation: FASTER });
+
+    // The declining backend and the patching one publish the same values at the same progress,
+    // which is the substitutability claim, and neither of them rebuilds the graph.
+    expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 90 });
+    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    expect(retained(arm)).toEqual({ values: { x: 200, y: 300, rotation: FASTER } });
+    expect(replaceGraph).not.toHaveBeenCalled();
+    handle.dispose();
+
+    // The override half of the same escalation: the published value moves and the definition does
+    // not, so the escalation compiles from a definition that is not the retained one.
+    const second = load();
+    const overridden = second.track(ARM);
+    second.seek(ARM, 0.5);
+    const graph = vi.spyOn(runtimeOf(second).graph, "replaceGraph");
+
+    overridden.overrideValues({ rotation: FASTER });
+
+    expect(values(second, ARM)).toEqual({ x: 200, y: 300, rotation: 90 });
+    expect(retained(overridden)).toEqual({
+      values: { x: 200, y: 300, rotation: AUTHORED_ROTATION },
+    });
+    expect(graph).not.toHaveBeenCalled();
+
+    // And it is revertible, through the same call that made it.
+    overridden.overrideValues({});
+    expect(values(second, ARM)).toEqual({ x: 200, y: 300, rotation: 45 });
+    second.dispose();
+  });
+
+  it("PK-17 refuses a malformed stop list before anything mutates, on both entry points", () => {
     const handle = load();
     const arm = handle.track(ARM);
     handle.seek(ARM, 0.5);
     const before = arm.track;
     const published = values(handle, ARM);
     const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
+    // Definition-shaped input, so `validateKeyframes` owns its shape and this is the one write that
+    // has to reach it. A stop with no position is `stop-position`.
+    const malformed = [{ v: 1 }] as unknown as readonly AuthoredStop[];
 
-    // Refused until the port grows a per-key capability, which `LV-12` pins as not having happened.
-    // A partial implementation that froze an authored animation is the failure this slice avoids.
-    expect(() => arm.setValues({ rotation: 45 })).toThrow(LiveValueKeyError);
-    expect(() => arm.overrideValues({ rotation: 45 })).toThrow(LiveValueKeyError);
+    expect(() => arm.setValues({ rotation: malformed })).toThrow(TypeError);
+    expect(() => arm.overrideValues({ rotation: malformed })).toThrow(TypeError);
 
     expect(arm.track).toBe(before);
     expect(values(handle, ARM)).toEqual(published);
     expect(invalidate).not.toHaveBeenCalled();
+
+    // The static-only path is asserted not to reach the validator at all, which is what keeps its
+    // cost exactly what it was.
+    arm.setValues({ x: 260 });
+    expect(invalidate).toHaveBeenCalledTimes(1);
+    const write = region(code(RUNTIME_SOURCE), "#writeValues(", "#replaceWithObservation(");
+    expect(write).toContain("if (involved)");
+    expect(write).toContain("validateTrackDefinition(rewritten");
+    handle.dispose();
+  });
+
+  it("PK-19 pins the two mutants no other case can see", () => {
+    // Each other guard is owned by the case named beside it: returning true on an empty rebuild is
+    // `PK-4`, a dropped proxy re-seed is `PK-9`, killed siblings are `PK-3`, a padding tween inside
+    // the retained map is `PK-8`, patching before every key is classified is `PK-15`, and a decline
+    // read as a success is `PK-16`. The two below are this case's own.
+    const handle = load();
+    const arm = handle.track(ARM);
+    handle.seek(ARM, 0.5);
+
+    // Skipping the re-seek on escalation is the amendment's own defect, and it shows up as a
+    // freshly compiled Track sitting at progress 0 while the runtime still reports 0.5.
+    arm.setValues({ rotation: FASTER });
+    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 90 });
+
+    // An overlay left populated after a rebase would revert the sticky write on the next one, so a
+    // static write following it would silently lose the animated key it never named.
+    arm.setValues({ x: 260 });
+    expect(retained(arm)).toEqual({ values: { x: 260, y: 300, rotation: FASTER } });
+    expect(values(handle, ARM)).toEqual({ x: 260, y: 300, rotation: 90 });
     handle.dispose();
   });
 

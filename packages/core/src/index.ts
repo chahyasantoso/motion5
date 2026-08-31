@@ -50,6 +50,11 @@ export type { EngineOptions, ProjectHandle } from "./engine";
  * `instanceof` a type it cannot name, and branching on its `ruleId` is the whole point of giving
  * the failure a name instead of a message to match. Named from its owner rather than re-exported
  * through `./engine`, so there is one declaration and one export path. See ADR-056.
+ *
+ * `LiveValues` is the narrow half of the live write boundary and stays exported. `AuthoredValues`
+ * is deliberately not added beside it: `public-export-surface` is allow-listed, and widening that
+ * list is a decision of its own. A caller that has to spell the wider type already can, because
+ * `AuthoredProperty` is exported above and `AuthoredValues` is a record of it. See ADR-060.
  */
 export { StaleTrackHandleError } from "./contract/track-handle";
 export type { LiveValues, TrackHandle } from "./contract/track-handle";

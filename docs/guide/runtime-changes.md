@@ -34,36 +34,50 @@ Omit `motionId` to add a free track, which lands at `~/trackId` with no motion s
 
 ## Changing values without rebuilding the graph
 
-`replace()` is for topology. To move a value, use the two cheap members, which validate no definition, stage no Track, and rebuild no graph:
+`replace()` is for topology. To move a value, use the two cheap members, which stage no Track and rebuild no graph:
 
 ```ts
-// A read-time mask. The authored definition is untouched.
+// Revertible. The authored definition is untouched.
 track.overrideValues({ length: 100 });
 
-// An authored change. `track.track` moves with it.
+// Sticky. `track.track` moves with it.
 track.setValues({ length: 100 });
 ```
 
 Both return the `PatchBatch` of the one invalidation they cause, exactly as `seek()` does, so a dependent recomputes in the same call: masking a bone's `length` moves what an IK solver publishes for it, because a member's values reach a solve through the same read.
 
-The difference is the retained definition. `track.track` answers from it, so `setValues` is the one that keeps `handle.track` and the live composition in agreement, and `overrideValues` deliberately does not: it is a mask you expect to take back.
+The difference is the retained definition. `track.track` answers from it, so `setValues` is the one that keeps `handle.track` and the live composition in agreement, and `overrideValues` deliberately does not: it is a write you expect to take back.
 
-A mask is replaced wholesale by the next live write rather than accumulated, so an empty record is the clear:
+Either member takes an animated key as well as a static one, and the two are the same sentence to a reader:
+
+```ts
+track.overrideValues({
+  rotation: [
+    { p: 0, v: 0 },
+    { p: 1, v: 180 },
+  ],
+});
+```
+
+A static key is masked over the interpolated state. An animated key has its tweens replaced on the still-live timeline, against a base record the interpolator kept when it compiled, so progress is preserved and no graph is rebuilt. An interpolator with no per-key write is not a second behavior: the runtime escalates to a recompile of the same definition and re-seeks to the same progress, so the published values and `handle.track` are identical either way.
+
+A write is replaced wholesale by the next one rather than accumulated, so an empty record is the clear for both kinds:
 
 ```ts
 track.overrideValues({});
 ```
 
-That restores the authored values and nothing else. A real `replace()` also drops the mask, because it compiles a fresh Track. Omitted keys always keep their authored values, and topology, progress, and observations are untouched by either member.
+That restores the authored values, or whatever the last `setValues` wrote, and nothing else. A real `replace()` also drops it, because it compiles a fresh Track. Omitted keys always keep their values, and topology, progress, and observations are untouched by either member.
 
 The refusal set is contract, not a limitation. Each of these throws `LiveValueKeyError`, whose `ruleId` is `live-value-key`, with no mutation and no publish:
 
 - a key the track does not author;
 - a key another plugin owns, which is the same thing: the group form is how you name the owner;
 - a namespaced `key:like:this` or an interpolator scratch `_key`, neither of which is authorable;
-- a key the interpolator animates.
+- a key whose incoming leaf is a different kind from the authored one, which is `reason: "kind"`;
+- a key a plugin prepared, which is `reason: "prepared"`.
 
-The last one is the interesting one. An animated key is refused rather than frozen at the value you passed, because a mask over an authored animation would silently hold that property still forever. Change the animation with `replace()`. See ADR-059.
+The last two are the interesting ones. A live write moves a value; it does not change what a leaf is, so a scalar for an animated key and a stop list for a static key are both recompiles of a different shape rather than writes. Use `replace()` for those. A prepared key is compiled from the plugin's value, and a write over it would invert that precedence and disagree with the next real recompile. A malformed stop list is refused too, by the same validator a whole definition goes through, because an authored stop list is definition-shaped input. See ADR-059 and ADR-060.
 
 ## A stale handle refuses, and `live` asks without throwing
 
@@ -93,7 +107,7 @@ for (const track of [...handles].reverse()) track.remove();
 
 ## What atomicity guarantees you get
 
-A refused single-track mutation costs nothing. `addTrack` and `replaceTrack` resolve the compiled track and seed its progress against the entry list they are about to commit, then commit, so a rejection leaves no partial state and the seeded values are identical to what a successful commit would have produced. A refused live value write is the same: the key check runs before anything is written, so the retained definition, the mask, and the published patch are all exactly as they were.
+A refused single-track mutation costs nothing. `addTrack` and `replaceTrack` resolve the compiled track and seed its progress against the entry list they are about to commit, then commit, so a rejection leaves no partial state and the seeded values are identical to what a successful commit would have produced. A refused live value write is the same: every key is classified before anything is written, so the retained definition, the mask, the timeline, and the published patch are all exactly as they were.
 
 A rejected motion mutation reports the rejection that caused it. If the rollback itself also fails, for example because your own scroll-source unsubscribe throws, you get one `AggregateError` whose message opens with the original rejection verbatim and whose `errors` are `[rejection, rollbackFailure]`. The reason the operation was refused always outranks the noise from cleaning up.
 

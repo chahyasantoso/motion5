@@ -16,7 +16,7 @@ A declared subpath is not automatically production API. The tier says who may im
 
 ## @motion5/core
 
-**Engine and handles.** `Engine`, `StaleTrackHandleError`, and `LiveValueKeyError`, and the types `EngineOptions`, `ProjectHandle`, `TrackHandle`, and `LiveValues`.
+**Engine and handles.** `Engine`, `StaleTrackHandleError`, and `LiveValueKeyError`, and the types `EngineOptions`, `ProjectHandle`, `TrackHandle`, `AuthoredValues`, and `LiveValues`.
 
 `new Engine({ clock, interpolator, scheduler, plugins?, triggerFactory? })` validates all three ports. `engine.load(project)` returns a `ProjectHandle`:
 
@@ -33,7 +33,9 @@ A declared subpath is not automatically production API. The tier says who may im
 
 A `TrackHandle` carries `id`, `live`, `track`, `remove()`, `replace(next)`, `addObserve(observation)`, `removeObserve(observation)`, `overrideValues(next)`, and `setValues(next)`. A generic observation declares an output edge, which merges the source's contribution over the observer's composed patch. A dependency that feeds a track's own composition is bound under the plugin group's `requires` section, which is the only way a value enters composition.
 
-`overrideValues` and `setValues` are the cheap pair, and they take a `LiveValues`: one static authored value per key, which is this capability's refusal set stated as a type rather than as a check. Both return the `PatchBatch` of the single invalidation they cause, exactly as `seek()` does. Neither validates a `TrackDefinition`, stages a Track, or rebuilds the graph, which is what separates them from `replace(next)`. The difference between the two is the retained definition: `setValues` rewrites it, so `handle.track` and the live composition cannot disagree, and `overrideValues` deliberately leaves it alone, because it is a mask you expect to take back. A mask is replaced wholesale rather than accumulated, so an empty record is the clear, and a real `replace()` drops it by construction. `LiveValueKeyError` is the refusal, with `ruleId` of `live-value-key`; an animated key is refused rather than frozen. See ADR-059.
+`overrideValues` and `setValues` are the cheap pair, and they take an `AuthoredValues`: one authored leaf per key, static or animated, which is `LiveValues` widened per key to `AuthoredProperty`. Both return the `PatchBatch` of the single invalidation they cause, exactly as `seek()` does. Neither stages a Track or rebuilds the graph, which is what separates them from `replace(next)`. The difference between the two is the retained definition: `setValues` rewrites it, so `handle.track` and the live composition cannot disagree, and `overrideValues` deliberately leaves it alone, because it is a write you expect to take back. A write is replaced wholesale rather than accumulated, so an empty record is the clear, and a real `replace()` drops it by construction. A static key is masked over the interpolated state and an animated one has its tweens replaced on the live timeline, so a caller reads one API for both. `LiveValueKeyError` is the refusal, with `ruleId` of `live-value-key`, and its `reason` is `unknown`, `kind`, or `prepared`. See ADR-059 and ADR-060.
+
+`LiveValues` stays declared beside `AuthoredValues` as the narrower type: one static authored value per key, which is the type of the mask itself. Name it when your call site only ever writes static values; the mask is structurally unable to carry stops, which is what keeps an animated key from being frozen at a value you passed.
 
 `live` is a boolean that never throws. Every other member throws `StaleTrackHandleError` once the token the handle captured is no longer current, so one condition has one failure contract across the whole surface. That error is a runtime export rather than a type, because a caller cannot `instanceof` a type it cannot name: it extends `TypeError`, keeps the message the `track` getter already threw, and carries a stable `ruleId` of `stale-track-handle` beside the `nodeId` it refused. Both it and `TrackHandle` are declared once, in the contract layer, and named from there by the runtime and by the package entry. `LiveValueKeyError` is public on that same rule, and it is declared in the domain layer that owns the refusal while `Track` itself stays private. See ADR-056 and ADR-059.
 
@@ -49,6 +51,8 @@ A `PluginDefinition` may declare `requirements`, a record of optional input slot
 
 **Ports.** `createManualClock`, `createMicrotaskScheduler`, `createManualTriggerPort`, `createDefaultTriggerFactory`, `createTriggerFactory`, and the assertions `assertClock`, `assertInterpolator`, `assertScheduler`, `assertTriggerPort`, and `assertTriggerFactory`. Port types include `Clock`, `ClockTick`, `Scheduler`, `Cancel`, `SchedulerHost`, `MicrotaskSchedulerOptions`, `TriggerPort`, `Interpolator`, `InterpolationTimeline`, `ClockBinding`, `ClockConsumer`, `CreatedTrigger`, `TriggerFactory`, `TriggerFactoryContext`, `TriggerFactoryOptions`, `ScrollSource`, `ScrollSourceResolver`, and `ScrollSourceResolverContext`.
 
+`InterpolationTimeline` has one optional member, `patchKeys(overlay, rebase?)`. An implementation that keeps a per-key child may declare it and replace those children in place; one that cannot answers by not declaring it, and the runtime recompiles instead and publishes the same values at the same progress. `false` from it means escalate and nothing else: it is never a report about the caller's input. `assertInterpolator` does not check for it, because the capability is not part of what makes something an `Interpolator`. See ADR-060.
+
 `createMicrotaskScheduler(options?)` is the shipped Scheduler. It runs queued jobs in one pass on the injected host, honors cancellation, and reports failures through `onError` without stopping later jobs in the same pass. See ADR-038.
 
 **Version.** `CORE_VERSION`, independent of the authored schema version.
@@ -59,7 +63,7 @@ Optional implementations for the composition root.
 
 - `createBrowserClock(frameSource)` returns a `Clock` with `dispose()`.
 - `createMicrotaskScheduler(options?)`, plus `SchedulerHost` and `MicrotaskSchedulerOptions`.
-- `createGsapInterpolator(gsap)` and `createGsapOneTweenInterpolator(gsap)`, plus structural GSAP types.
+- `createGsapInterpolator(gsap)` and `createGsapOneTweenInterpolator(gsap)`, plus structural GSAP types. The timeline-backed one declares `patchKeys`; the one-tween one deliberately does not, because a single tween carrying a `keyframes` map has no per-key child to replace.
 - `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?, metadata?)`, plus DOM adapter types.
 - `createScrollTriggerPort(source)` wraps a `ScrollSource` as a `TriggerPort`.
 - `createGsapScrollSource(scrollTrigger, options)`, plus structural GSAP scroll source types. Core never imports GSAP.
@@ -77,7 +81,7 @@ Registering both is the rig case: both claim `rotation`, so flat `rotation` is a
 
 Test support, and the only tier a production consumer may not import: `createFakeInterpolator`, `createFakeScheduler`, `createFakeTriggerPort`, `createFakeTrackRegistry`, and `ScheduledJob`.
 
-These are the implementations the core suite runs the port contract suite against, per TR-P-05, so they ship inside the package rather than beside it. The restriction is mechanical, not advisory: `scripts/boundary-scan.mjs` scans every workspace declared in the root `package.json`, `apps/*` included, and reports a `testing entrypoint import` violation for any consumer that names this path or reaches `packages/core/src/testing` directly. This path replaces `@motion5/core/ports/fakes`, which is no longer declared. See ADR-048.
+These are the implementations the core suite runs the port contract suite against, per TR-P-05, so they ship inside the package rather than beside it. `createFakeInterpolator` declares no `patchKeys`, deliberately: it is the double that proves the capability is genuinely optional and that a declining backend is observably identical to a patching one. The restriction is mechanical, not advisory: `scripts/boundary-scan.mjs` scans every workspace declared in the root `package.json`, `apps/*` included, and reports a `testing entrypoint import` violation for any consumer that names this path or reaches `packages/core/src/testing` directly. This path replaces `@motion5/core/ports/fakes`, which is no longer declared. See ADR-048.
 
 ## @motion5/core/internal
 
