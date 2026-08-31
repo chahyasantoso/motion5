@@ -1,11 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type {
-  MotionDefinition,
-  ProjectDefinition,
-  TrackDefinition,
-} from "../../../src/contract/v5";
+import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { readPluginBindings } from "../../../src/contract/keyframe-shape";
-import { StaleTrackHandleError, type TrackHandle } from "../../../src/contract/track-handle";
+import { StaleHandleError } from "../../../src/contract/handle";
+import { StaleMotionHandleError, type MotionHandle } from "../../../src/contract/motion-handle";
+import { StaleTrackHandleError } from "../../../src/contract/track-handle";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 
@@ -24,12 +22,12 @@ import { ProjectRuntime } from "../../../src/runtime/project-runtime";
  * anything the runtime could not already mutate: the motion handle's `destroy` reaches the same
  * `destroyMotion` a caller reaches today, through the same commit path.
  *
- * The seams below are declared locally and cast, because a file naming `Handle`, `MotionHandle`,
- * `tryTrack` or `requires` before the source exists fails `typecheck` and stops `quality` before a
- * single test runs, which is a broken file rather than evidence. `StaleSeam`, `ComposeSeam`, the
- * `LV-` locals and 7a's `ReverseTopology` are the precedent, and every one of these is deleted by
- * the commit that lands the source. Two claims need none of it: `RA-27` asks `Object.keys` for a
- * spelling and `RA-28` reads a constructor's own prototype, and both typecheck on either side.
+ * The failing-first run named every one of these members through local seam interfaces and casts,
+ * because a file naming `Handle`, `MotionHandle`, `tryTrack` or `requires` before the source exists
+ * fails `typecheck` and stops `quality` before a single test runs, which is a broken file rather than
+ * evidence. All of them are deleted here, by the commit that landed the source, so the shipped cases
+ * name the types directly. `StaleSeam`, `ComposeSeam`, the `LV-` locals and 7a's `ReverseTopology`
+ * are the precedent. See ADR-056.
  */
 const MOTION = "hero";
 const LEG = "hero/leg";
@@ -68,34 +66,6 @@ const compose = (node: { id: string }) => () => ({
   sourceRevisions: {},
 });
 
-/** One authored binding as a handle reports it: the diagnostics path is not a caller's business. */
-interface RequireViewSeam {
-  readonly plugin: string;
-  readonly slot: string;
-  readonly source: string;
-  readonly memberKey?: string;
-}
-/** The base both handles are about to extend. */
-interface HandleSeam<T> {
-  readonly id: string;
-  readonly live: boolean;
-  readonly definition: T;
-}
-type TrackHandleSeam = HandleSeam<TrackDefinition> & {
-  readonly requires: readonly RequireViewSeam[];
-};
-type MotionHandleSeam = HandleSeam<MotionDefinition> & {
-  readonly trackIds: readonly string[];
-  addTrack(track: TrackDefinition): unknown;
-  track(trackId: string): unknown;
-  tryTrack(trackId: string): unknown;
-  destroy(): void;
-};
-type RuntimeSeam = {
-  motion(motionId: string): MotionHandleSeam;
-  tryMotion(motionId: string): MotionHandleSeam | undefined;
-  tryTrack(nodeId: string): TrackHandleSeam | undefined;
-};
 /**
  * The arguments each refusing member of the motion handle needs, keyed by member name.
  *
@@ -107,8 +77,8 @@ const MOTION_MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   definition: [],
   trackIds: [],
   addTrack: [{ id: "tail" } satisfies TrackDefinition],
-  track: [`${EXTRA}/tail`],
-  tryTrack: [`${EXTRA}/tail`],
+  track: ["tail"],
+  tryTrack: ["tail"],
   destroy: [],
 };
 /** The two members that answer on a stale handle rather than refusing. */
@@ -116,13 +86,6 @@ const NON_REFUSING = ["id", "live"] as const;
 
 function runtime(): ProjectRuntime {
   return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
-}
-function seamOf(project: ProjectRuntime): RuntimeSeam {
-  return project as unknown as RuntimeSeam;
-}
-function trackHandle(project: ProjectRuntime, nodeId: string): TrackHandleSeam {
-  const handle: TrackHandle = project.track(nodeId);
-  return handle as unknown as TrackHandleSeam;
 }
 /** Returns the thrown value, because each case asserts on more than one facet of it. */
 function thrownBy(operation: () => unknown): unknown {
@@ -138,7 +101,7 @@ function thrownBy(operation: () => unknown): unknown {
  * as a call. `typeof handle.definition` cannot be asked here: on a stale handle that read is itself
  * the refusal being measured.
  */
-function touch(handle: object, member: string): () => unknown {
+function touch(handle: MotionHandle, member: string): () => unknown {
   const descriptor = Object.getOwnPropertyDescriptor(handle, member);
   if (descriptor === undefined) throw new Error(`No handle member named "${member}".`);
   const read = descriptor.get;
@@ -151,7 +114,7 @@ function touch(handle: object, member: string): () => unknown {
 describe("one handle base, one definition spelling, and one stale error family", () => {
   it("RA-27 answers `definition` on a track handle, and no `track` survives beside it", () => {
     const project = runtime();
-    const handle = trackHandle(project, LEG);
+    const handle = project.track(LEG);
 
     const keys = Object.keys(handle);
     expect(keys).toContain("definition");
@@ -167,6 +130,7 @@ describe("one handle base, one definition spelling, and one stale error family",
     const base = Object.getPrototypeOf(StaleTrackHandleError) as { readonly name: string };
     expect(base.name).toBe("StaleHandleError");
     expect(Object.getPrototypeOf(base)).toBe(TypeError);
+    expect(Object.getPrototypeOf(StaleMotionHandleError)).toBe(StaleHandleError);
 
     // The half that must not move. Inserting a base is a narrowing, so every existing catch on
     // `TypeError` and on this class keeps matching, and the message stays what the getter threw.
@@ -176,36 +140,34 @@ describe("one handle base, one definition spelling, and one stale error family",
     expect(StaleTrackHandleError.ruleId).toBe("stale-track-handle");
     expect(refusal.name).toBe("StaleTrackHandleError");
     expect(refusal).toBeInstanceOf(TypeError);
+    // The one name a caller reaches for when it does not care which handle went stale.
+    expect(refusal).toBeInstanceOf(StaleHandleError);
+    expect(new StaleMotionHandleError(EXTRA)).toBeInstanceOf(StaleHandleError);
   });
 
   it("RA-29 probes without throwing while the resolvers keep refusing by name", () => {
     const project = runtime();
-    const seam = seamOf(project);
-    expect(typeof seam.tryTrack).toBe("function");
-    expect(typeof seam.tryMotion).toBe("function");
 
-    expect(seam.tryTrack("hero/nope")).toBeUndefined();
-    expect(seam.tryMotion("villain")).toBeUndefined();
-    expect(seam.tryTrack(LEG)?.id).toBe(LEG);
-    expect(seam.tryMotion(MOTION)?.id).toBe(MOTION);
+    expect(project.tryTrack("hero/nope")).toBeUndefined();
+    expect(project.tryMotion("villain")).toBeUndefined();
+    expect(project.tryTrack(LEG)?.id).toBe(LEG);
+    expect(project.tryMotion(MOTION)?.id).toBe(MOTION);
 
     // The probe and the resolver answer from one entry rather than from two lookups that could
     // disagree, which is the same relationship `live` already has to the refusing members.
-    expect(seam.tryTrack(LEG)?.definition).toBe(trackHandle(project, LEG).definition);
+    expect(project.tryTrack(LEG)?.definition).toBe(project.track(LEG).definition);
 
     expect(() => project.track("hero/nope")).toThrow('Unknown graph node "hero/nope".');
-    expect(() => seam.motion("villain")).toThrow('Unknown motion "villain".');
+    expect(() => project.motion("villain")).toThrow('Unknown motion "villain".');
 
     project.dispose();
   });
 
   it("RA-30 keys a motion handle on its own token, and the id coming back does not revive it", () => {
     const project = runtime();
-    const seam = seamOf(project);
-    expect(typeof seam.motion).toBe("function");
 
     project.addMotion({ id: EXTRA, trigger: { type: "manual" }, tracks: [] });
-    const handle = seam.motion(EXTRA);
+    const handle = project.motion(EXTRA);
     expect(handle.id).toBe(EXTRA);
     expect(handle.live).toBe(true);
     expect(handle.definition.trigger).toEqual({ type: "manual" });
@@ -215,17 +177,18 @@ describe("one handle base, one definition spelling, and one stale error family",
     expect(handle.live).toBe(false);
 
     const thrown = thrownBy(() => handle.definition);
-    expect((thrown as { readonly ruleId?: string }).ruleId).toBe("stale-motion-handle");
+    expect((thrown as StaleMotionHandleError).ruleId).toBe("stale-motion-handle");
     expect((thrown as Error).message).toBe(`Motion "${EXTRA}" is no longer live.`);
     expect((thrown as Error).name).toBe("StaleMotionHandleError");
     expect(thrown).toBeInstanceOf(TypeError);
+    expect((thrown as StaleMotionHandleError).motionId).toBe(EXTRA);
 
     // Same guarantee `SH-4` pins for a track: the id returns under a fresh token and the handle that
     // captured the old one stays refused. Disposal is the other half of it, and `live` answers both
     // without throwing.
     project.addMotion({ id: EXTRA, trigger: { type: "manual" }, tracks: [] });
     expect(handle.live).toBe(false);
-    const readded = seam.motion(EXTRA);
+    const readded = project.motion(EXTRA);
     expect(readded.live).toBe(true);
 
     project.dispose();
@@ -234,7 +197,7 @@ describe("one handle base, one definition spelling, and one stale error family",
 
   it("RA-31 reports the bindings the one reader of the group shape derives, dict entries and all", () => {
     const project = runtime();
-    const handle = trackHandle(project, LEG);
+    const handle = project.track(LEG);
     expect(Object.keys(handle)).toContain("requires");
 
     expect(handle.requires).toEqual([
@@ -258,18 +221,16 @@ describe("one handle base, one definition spelling, and one stale error family",
     // A track that authors no group answers with an empty list rather than with nothing, for the
     // reason 7a's reverse topology is total: a caller spelling `?? []` makes the shape depend on
     // the input.
-    expect(trackHandle(project, ARM).requires).toEqual([]);
+    expect(project.track(ARM).requires).toEqual([]);
 
     project.dispose();
   });
 
   it("RA-32 refuses on every member of the motion handle, and answers `id` and `live`", () => {
     const project = runtime();
-    const seam = seamOf(project);
-    expect(typeof seam.motion).toBe("function");
 
     project.addMotion({ id: EXTRA, trigger: { type: "manual" }, tracks: [] });
-    const handle = seam.motion(EXTRA);
+    const handle = project.motion(EXTRA);
 
     // Derived from the handle's own keys, never from the assertions below, so a member added later
     // with no entry in the argument record lands here first.
@@ -287,7 +248,7 @@ describe("one handle base, one definition spelling, and one stale error family",
         touch(handle, member)();
         return true;
       } catch (error) {
-        return (error as { readonly ruleId?: string }).ruleId !== "stale-motion-handle";
+        return !(error instanceof StaleMotionHandleError);
       }
     });
     expect(escaped).toEqual([]);

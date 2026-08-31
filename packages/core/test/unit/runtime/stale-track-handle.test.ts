@@ -46,9 +46,12 @@ const compose = (node: { id: string }) => () => ({
  *
  * `overrideValues` and `setValues` are that mechanism working as intended: both arrived with
  * ADR-059 and both are covered here rather than through a private copy of the stale contract.
+ * `definition` and `requires` are the same mechanism again: the first is `track` renamed by the
+ * slice that introduced the handle base, and the second is a member that slice added.
  */
 const MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
-  track: [],
+  definition: [],
+  requires: [],
   remove: [],
   replace: [{ id: "arm" } satisfies TrackDefinition],
   addObserve: [{ source: OTHER_ID } satisfies ObservationDefinition],
@@ -82,7 +85,7 @@ function thrownBy(operation: () => unknown): unknown {
 }
 /**
  * Reads a member through its own property descriptor, so a getter is touched as a read and a
- * method as a call. `typeof handle.track` cannot be asked here: on a stale handle that read is
+ * method as a call. `typeof handle.definition` cannot be asked here: on a stale handle that read is
  * itself the refusal being measured.
  */
 function touch(handle: TrackHandle, member: string): () => unknown {
@@ -142,7 +145,7 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
     const project = runtime();
     const handle = staleHandle(project);
 
-    const thrown = thrownBy(() => handle.track);
+    const thrown = thrownBy(() => handle.definition);
 
     // Two claims, deliberately separate: compatibility with what the getter already said, and the
     // identity a caller branches on instead of matching that string.
@@ -159,7 +162,7 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
     const project = runtime();
     const handle = staleHandle(project);
 
-    expect(thrownBy(() => handle.track)).toBeInstanceOf(TypeError);
+    expect(thrownBy(() => handle.definition)).toBeInstanceOf(TypeError);
     expect(thrownBy(() => handle.remove())).toBeInstanceOf(TypeError);
     expect(thrownBy(() => handle.remove())).toBeInstanceOf(StaleTrackHandleError);
 
@@ -213,10 +216,10 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
   it("SH-6 leaves the live path exactly as it was", () => {
     const project = runtime();
     const handle = handleFor(project);
-    expect(handle.track).toEqual({ id: "arm" });
+    expect(handle.definition).toEqual({ id: "arm" });
 
     handle.replace({ id: "arm", duration: 250 });
-    expect(handle.track).toEqual({ id: "arm", duration: 250 });
+    expect(handle.definition).toEqual({ id: "arm", duration: 250 });
 
     const observation: ObservationDefinition = { source: OTHER_ID };
     handle.addObserve(observation);
@@ -233,8 +236,10 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
   it("SH-7 keeps one token comparison and no branch inside the handle factory", () => {
     const source = code(RUNTIME_SOURCE);
 
-    // The DRY claim, as a number. Three private mutators and the `track` getter each carried a
-    // copy of this comparison; a reintroduced silent return needs one of its own.
+    // The DRY claim, as a number. Three private mutators and the `definition` getter each carried a
+    // copy of this comparison; a reintroduced silent return needs one of its own. It survives the
+    // motion handle arriving because both retained kinds carry a token and `#liveOf` is generic over
+    // the entry, so a second handle family cost a second probe name and no second comparison.
     const comparisons = [...source.matchAll(/\btoken\b\s*(?:===|!==)\s*\btoken\b/g)];
     expect(comparisons.map((match) => match[0])).toHaveLength(1);
     expect(source).toContain("#liveEntry(");
