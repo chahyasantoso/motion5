@@ -23,6 +23,7 @@ import { validateMotionTrigger, validateTrackDefinition } from "../contract/vali
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
 import type { LiveWriteResult } from "../domain/track";
+import type { ResolvedPlugins, TrackConfigView } from "../domain/plugins";
 import { flattenAuthoredKeyframes } from "../domain/keyframe-groups";
 import {
   readBoundGroup,
@@ -34,6 +35,7 @@ import {
   type AuthoredKeyframes,
   type BoundGroup,
 } from "../domain/authoring/keyframes";
+import { sameCompiledTrackInput } from "../domain/authoring/recompile";
 import { observationEdgeKey } from "../graph/ir";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
@@ -145,6 +147,19 @@ export type LiveValueWriter = (
   overlay: Readonly<Record<string, unknown>> | undefined,
   rebase: boolean,
 ) => LiveWriteResult | undefined;
+/**
+ * How this layer asks what an authored record resolves to.
+ *
+ * One hook, one implementation. `PluginRegistry.resolveForKeyframes` is the only thing that answers
+ * it, and it stays the only owner of key ownership, slot declaration and the plugin chain; this
+ * runtime depends on a function so that it can read that answer without holding a registry it has no
+ * other reason to hold. See ADR-062.
+ */
+export type KeyframeResolver = (
+  keyframes: Readonly<Record<string, unknown>>,
+  path: string,
+  track: TrackConfigView,
+) => ResolvedPlugins;
 export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly scheduler?: Scheduler;
@@ -162,6 +177,21 @@ export interface ProjectRuntimeOptions {
   readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
   readonly disposeTrack?: (nodeId: string) => void;
   readonly stageTrack?: (track: TrackDefinition, nodeId: string) => StagedTrack;
+  /**
+   * The registry's own answer about one authored record, as data rather than as a refusal.
+   *
+   * Optional, because a project may be loaded with no `PluginRegistry` at all, and total when it is
+   * present: a supplier allowed to answer "I have nothing for this record" would make the predicate
+   * that reads it depend on which of two absences it was handed. With no seam every replacement
+   * builds, exactly as it did before the predicate existed, which is what keeps every prior
+   * registry-free rig byte-identical.
+   *
+   * The second parameter is a diagnostics path rather than a node id, and that is the one thing
+   * about this signature worth stating: `engine.ts` already asks the registry with
+   * `<node>.keyframes` there, so an option declared to take an id would either mis-cite every
+   * diagnostic it produced or force a second normalization at the wiring site. See ADR-062.
+   */
+  readonly resolveKeyframes?: KeyframeResolver;
   readonly addMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly replaceMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly removeMotionTrack?: (motionId: string, trackId: string) => void;
@@ -425,6 +455,7 @@ export class ProjectRuntime {
   readonly #compileTrack: ((track: TrackDefinition, nodeId?: string) => void) | undefined;
   readonly #disposeTrack: ((nodeId: string) => void) | undefined;
   readonly #stageTrack: ((track: TrackDefinition, nodeId: string) => StagedTrack) | undefined;
+  readonly #resolveKeyframes: KeyframeResolver | undefined;
   readonly #addMotionTrack:
     | ((motionId: string, trackId: string, duration?: number) => void)
     | undefined;
@@ -465,6 +496,7 @@ export class ProjectRuntime {
     this.#compileTrack = options.compileTrack;
     this.#disposeTrack = options.disposeTrack;
     this.#stageTrack = options.stageTrack;
+    this.#resolveKeyframes = options.resolveKeyframes;
     this.#addMotionTrack = options.addMotionTrack;
     this.#replaceMotionTrack = options.replaceMotionTrack;
     this.#removeMotionTrack = options.removeMotionTrack;
@@ -928,6 +960,53 @@ export class ProjectRuntime {
       touched: [],
     });
   }
+  /**
+   * The registry's answer about one authored record, or nothing when no registry was injected.
+   *
+   * The diagnostics path is spelled exactly as `compileTrack` spells it, because the seam's second
+   * parameter is a path rather than a node id: a refusal citing a bare node id where the compile
+   * path cites `<node>.keyframes` would be two spellings of one location, and an author cannot look
+   * up the second one.
+   */
+  #resolve(nodeId: string, track: TrackDefinition): ResolvedPlugins | undefined {
+    return this.#resolveKeyframes?.(track.keyframes ?? {}, `${nodeId}.keyframes`, {
+      id: nodeId,
+      duration: track.duration,
+    });
+  }
+  /**
+   * Whether a replacement has to build a new timeline, and the one place a candidate is resolved.
+   *
+   * The resolve is validation and is never skipped. `compileTrack` reuses a live entry and returns
+   * early, so the staging seam is the only path on which a `PluginRegistry` ever sees an
+   * already-compiled node's candidate record, and a predicate that skipped the resolve would delete
+   * a validator rather than a cost: an undeclared slot would ship a real `GraphEdge` into a consumer
+   * that does not exist, refused by name only when someone reloaded the document that same record
+   * now fails to load, which is the symptomless misconfiguration this project refuses at load time.
+   * So the candidate is resolved here, refused here, and only then read as data. See ADR-062.
+   *
+   * The retained record is resolved beside it rather than kept anywhere. A kept plugin chain would
+   * be a cache whose key is the registry's own contents, held by a layer that owns neither, and a
+   * resolve is the pure and cheap half of the compile this declines to pay.
+   *
+   * What the answer is compared with is `sameCompiledTrackInput`'s question rather than this one's:
+   * a plugin list is one of the things a compiled Track is built from rather than all of them, and
+   * that module is the one owner of which.
+   */
+  #needsTimelineBuild(
+    nodeId: string,
+    current: TrackDefinition,
+    candidate: TrackDefinition,
+  ): boolean {
+    const resolved = this.#resolve(nodeId, candidate);
+    if (resolved === undefined) return true;
+    if (resolved.diagnostics.some(({ severity }) => severity === "error"))
+      throw new TypeError(describeDiagnostics(resolved.diagnostics));
+    return !sameCompiledTrackInput(
+      { definition: current, resolved: this.#resolve(nodeId, current) },
+      { definition: candidate, resolved },
+    );
+  }
   #replaceTrack(id: string, token: number, next: TrackDefinition): void {
     const entry = this.#liveEntry(id, token);
     const expected =
@@ -939,6 +1018,9 @@ export class ProjectRuntime {
     if (!validation.valid || !validation.value)
       throw new TypeError(describeDiagnostics(validation.diagnostics));
     const accepted = validation.value;
+    // Asked before anything is applied, so a candidate the registry refuses costs no teardown, and a
+    // candidate it accepts has already told this transaction which half of a recompile it owes.
+    const build = this.#needsTimelineBuild(id, entry.track, accepted);
     const tracks = new Map(this.#tracks);
     tracks.set(id, { ...entry, track: accepted, overlay: NO_OVERLAY });
     const motionId = entry.motionId;
@@ -946,14 +1028,20 @@ export class ProjectRuntime {
     // The compiled-map owner publishes a prepared replacement while retaining the displaced Track.
     // Motion must see that staged instance because it resolves and seeds by id. The graph is the
     // final acceptance step; only after it accepts can the old compiled Track be released.
-    const effects: SchemaEffect[] = [
-      {
+    //
+    // Conditional, and that is the whole of this slice. Nothing else about the transaction moves: the
+    // graph is still asked to accept a candidate, the edge delta is still paid and the flush is still
+    // seeded, because an edge changed and there is no fast lane for that. A skipped build leaves
+    // `staged` undefined, so the settle step below is the no-op it already was for a caller that
+    // wired no staging seam at all. See ADR-062.
+    const effects: SchemaEffect[] = [];
+    if (build)
+      effects.push({
         apply: () => {
           staged = this.#stageTrack?.(accepted, id);
         },
         revert: () => staged?.rollback(),
-      },
-    ];
+      });
     // Republish the displaced compiled Track before restoring Motion: its restore call resolves and
     // seeds by id, so the old instance must already be live. Reverts run in apply order, which is
     // what puts the staging rollback above ahead of this one. See ADR-031 and ADR-045.
@@ -1134,11 +1222,12 @@ export class ProjectRuntime {
    * primitive is not is `replace()` at the call site, where a caller hands in a whole definition and
    * has to have decided every other field of it already.
    *
-   * So the price is one candidate build, one edge delta, one recompile and one flush, and there is
-   * no fast lane missing: a binding adds, removes or redirects a `GraphEdge`, which is the boundary
-   * the value tier is forbidden to cross. The recompile is also the only path on which the plugin
-   * registry sees this node's candidate record, because `compileTrack` reuses a live entry, so it is
-   * the validation rather than an expense. See ADR-045 and ADR-062.
+   * So the price is one candidate build, one edge delta and one flush, and there is no fast lane
+   * missing: a binding adds, removes or redirects a `GraphEdge`, which is the boundary the value tier
+   * is forbidden to cross. What it no longer pays is the timeline build on the far side of that
+   * boundary, because a binding edit changes no compiled property; the resolve it does pay is the
+   * validation rather than an expense, because `compileTrack` reuses a live entry and never asks the
+   * registry. See ADR-045 and ADR-062.
    */
   #editRequire(
     id: string,
@@ -1220,7 +1309,7 @@ export class ProjectRuntime {
    *
    * No registry question is asked and none is missing: whether the plugin exists, whether it claims
    * each leaf of the group's `values`, and whether it declares each bound slot all arrive from
-   * `PluginRegistry` at the recompile this commit pays, which is where a candidate is validated
+   * `PluginRegistry` at the resolve this commit pays, which is where a candidate is validated
    * rather than where an expense is incurred. See ADR-062.
    */
   #editGroup(

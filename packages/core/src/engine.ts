@@ -175,6 +175,10 @@ export class Engine {
   }
   load(project: ProjectDefinition): ProjectHandle {
     const acceptedProject = assertValidProject(project);
+    // Named once, because two things ask it now: the load-time compile below, and the seam that hands
+    // `ProjectRuntime` the registry's answer about a candidate. One reference, so the compile and the
+    // predicate cannot end up asking different registries. See ADR-062.
+    const registry = this.#plugins;
     const tracks = new Map<string, Track>();
     const nodes = new Map<string, CompilableTrack>();
     const motionTrackIds = new Map<string, readonly string[]>();
@@ -193,7 +197,7 @@ export class Engine {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
       const path = `${nodeId}.keyframes`;
-      const resolved = this.#plugins?.resolveForKeyframes(trackDef.keyframes ?? {}, path, {
+      const resolved = registry?.resolveForKeyframes(trackDef.keyframes ?? {}, path, {
         id: nodeId,
         duration: trackDef.duration,
       });
@@ -442,6 +446,14 @@ export class Engine {
         compileTrack: compileTrackDefinition,
         disposeTrack,
         stageTrack: stageTrackDefinition,
+        // The registry's answer about a candidate, handed over as data rather than as a refusal, so
+        // a structural edit that provably cannot move what a Track is built from pays the resolve
+        // and not the timeline build. Nothing else changes hands: it is the same call `compileTrack`
+        // makes, on the same registry, so `PluginRegistry` stays the only implementation of it and
+        // no layer gains a registry it has no other reason to hold. With none injected there is
+        // nothing to resolve and nothing to compare, which is the posture `compileTrack` already
+        // takes above, and every replacement builds exactly as it did before. See ADR-062.
+        resolveKeyframes: registry?.resolveForKeyframes.bind(registry),
         addMotionTrack: (motionId, trackId, duration) => {
           const motion = motions.get(motionId);
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
