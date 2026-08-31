@@ -51,6 +51,43 @@ export interface StagedTrack {
   rollback(): void;
 }
 /**
+ * One side effect a structural commit needs in place before the graph is asked to accept it.
+ *
+ * `revert` is the inverse, and it is optional because two of the transactions have nothing to undo:
+ * a removal and a motion destroy reach the candidate graph with no hook applied yet, and an empty
+ * revert set is what keeps their failures byte-identical to the raw `replaceGraph` throw they used
+ * to be.
+ *
+ * An effect counts as applied only once its `apply` returned. A hook that refused before it wrote
+ * anything must not be restored, which is the behaviour `U-7` pins on `replaceMotionTrack` and
+ * `RA-2` pins on `createMotion`.
+ */
+interface SchemaEffect {
+  readonly apply: () => void;
+  readonly revert?: () => void;
+}
+/**
+ * One structural transaction, as data.
+ *
+ * `tracks` and `motions` are what the graph is asked to accept and, once it has, what the retained
+ * maps become. They are adopted from the same pair that built the snapshot rather than rewritten
+ * beside it, so the committed graph and the maps cannot drift: `RA-7` compares them by identity,
+ * because a fresh definition object for an untouched entry is exactly what costs the incremental
+ * builder its cache hit. See ADR-058.
+ *
+ * `effects` are applied before the graph sees the candidate and reverted in **apply order** when it
+ * refuses. Apply order rather than reverse, and that is load-bearing rather than incidental:
+ * `#replaceTrack` republishes the displaced compiled Track before restoring the Motion entry,
+ * because the restore resolves and seeds by id. `settle` runs only after acceptance.
+ * See ADR-031 and ADR-045.
+ */
+interface SchemaPlan {
+  readonly tracks: ReadonlyMap<string, TrackEntry>;
+  readonly motions: ReadonlyMap<string, MotionDefinition>;
+  readonly effects: readonly SchemaEffect[];
+  readonly settle: readonly (() => void)[];
+}
+/**
  * The one seam by which a live value reaches the compiled Track this runtime does not own.
  *
  * One hook rather than one per entry point, and that is the ownership statement restored rather than
@@ -186,15 +223,16 @@ function withAuthoredValues(track: TrackDefinition, values: AuthoredValues): Tra
 /**
  * Rejects an operation whose rollback can fail on its own.
  *
- * Both mutating entry points below roll back through a hook that reaches application code: the
- * `destroyMotion` hook disposes a `CreatedTrigger` whose `dispose` closes over a host-owned
- * `ScrollSource` unsubscribe, and `disposeTrack` disposes a compiled `Track`. A host whose
- * teardown throws must not be able to replace the diagnosis with its own unrelated failure.
+ * Every structural commit rolls back through hooks that reach application code: the `destroyMotion`
+ * hook disposes a `CreatedTrigger` whose `dispose` closes over a host-owned `ScrollSource`
+ * unsubscribe, and `disposeTrack` disposes a compiled `Track`. A host whose teardown throws must
+ * not be able to replace the diagnosis with its own unrelated failure.
  *
  * Suppress and attach, never suppress and drop. When the rollback succeeds the rejection is
- * rethrown untouched, so every existing message and error type contract holds. When it fails, one
- * error carries both, which is the collect-then-report-once shape `Engine`'s clock consumer
- * fanout already uses, so no new failure shape is invented here. See ADR-035.
+ * rethrown untouched, so every existing message and error type contract holds, including the two
+ * transactions that have nothing to revert at all. When it fails, one error carries both, which is
+ * the collect-then-report-once shape `Engine`'s clock consumer fanout already uses, so no new
+ * failure shape is invented here. See ADR-035.
  */
 function rejectAfterRollback(rejection: unknown, rollback: () => void): never {
   try {
@@ -318,24 +356,27 @@ export class ProjectRuntime {
     if (this.#motions.has(definition.id))
       throw new TypeError(`Motion "${definition.id}" already exists.`);
     const accepted = { ...definition, tracks: [] };
-    const next = new Map(this.#motions);
-    next.set(accepted.id, accepted);
-    // Build the Motion before committing anything. A driver that cannot be created, such as a
-    // scroll trigger with no registered source, must not leave a definition or a graph node
-    // behind: addTrack would accept the id, compile a Track, replace the graph, and only then
-    // fail from a hook, one layer too late to name the real cause. Mirrors #addTrack, which
-    // compiles first and disposes on graph rejection. See ADR-032.
-    this.#createMotion?.(accepted);
-    try {
-      this.#graph.replaceGraph(this.#snapshot(this.#tracks, next));
-    } catch (error) {
-      // The destroyMotion hook is already the exact rollback set -- it releases the clock
-      // consumer, disposes the created trigger, disposes the Motion, and drops the map entry --
-      // and it is a no-op for an absent id, so no second rollback owner is introduced. It is also
-      // application code, which is why it runs inside the rejection owner. See ADR-035.
-      rejectAfterRollback(error, () => this.#destroyMotion?.(accepted.id));
-    }
-    this.#motions.set(accepted.id, accepted);
+    const motions = new Map(this.#motions);
+    motions.set(accepted.id, accepted);
+    this.#commit({
+      tracks: this.#tracks,
+      motions,
+      // Build the Motion before committing anything. A driver that cannot be created, such as a
+      // scroll trigger with no registered source, must not leave a definition or a graph node
+      // behind: addTrack would accept the id, compile a Track, replace the graph, and only then
+      // fail from a hook, one layer too late to name the real cause. See ADR-032.
+      //
+      // The destroyMotion hook is already the exact rollback set -- it releases the clock consumer,
+      // disposes the created trigger, disposes the Motion, and drops the map entry -- and it is a
+      // no-op for an absent id, so no second rollback owner is introduced. See ADR-035.
+      effects: [
+        {
+          apply: () => this.#createMotion?.(accepted),
+          revert: () => this.#destroyMotion?.(accepted.id),
+        },
+      ],
+      settle: [],
+    });
     return Object.freeze({ id: accepted.id });
   }
   destroyMotion(motionId: string): void {
@@ -346,11 +387,16 @@ export class ProjectRuntime {
       throw new TypeError(
         `Motion "${motionId}" still has ${owned.length} track(s). Remove them before destroying it.`,
       );
-    const next = new Map(this.#motions);
-    next.delete(motionId);
-    this.#graph.replaceGraph(this.#snapshot(this.#tracks, next));
-    this.#motions.delete(motionId);
-    this.#destroyMotion?.(motionId);
+    const motions = new Map(this.#motions);
+    motions.delete(motionId);
+    // Nothing to apply and nothing to revert: the graph is asked first, and the hook that disposes
+    // the driver runs only once it accepted. An empty revert set rethrows the rejection verbatim.
+    this.#commit({
+      tracks: this.#tracks,
+      motions,
+      effects: [],
+      settle: [() => this.#destroyMotion?.(motionId)],
+    });
   }
   addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle {
     return this.#addTrack(track, this.#schemaOwner, options);
@@ -402,22 +448,28 @@ export class ProjectRuntime {
       throw new TypeError(describeDiagnostics(validation.diagnostics));
     const accepted = validation.value;
     const token = this.#nextToken++;
-    const next = new Map(this.#tracks);
-    next.set(id, { track: accepted, owner, motionId, token, overlay: NO_OVERLAY });
-    this.#compileTrack?.(accepted, id);
-    try {
-      this.#graph.replaceGraph(this.#snapshot(next, this.#motions));
-    } catch (error) {
-      // disposeTrack is application code too, and a compiled Track whose dispose throws must not
-      // hide the rule that rejected the candidate. Same owner, same shape as addMotion, because a
-      // rollback that can outrank its trigger is one defect rather than two. See ADR-035.
-      rejectAfterRollback(error, () => this.#disposeTrack?.(id));
-    }
-    this.#tracks.set(id, { track: accepted, owner, motionId, token, overlay: NO_OVERLAY });
+    const tracks = new Map(this.#tracks);
+    tracks.set(id, { track: accepted, owner, motionId, token, overlay: NO_OVERLAY });
     // Must run after compileTrack: Motion resolves by id against the live compiled map, so an
     // earlier call would resolve nothing and reject the add. See ADR-031.
-    if (motionId !== undefined) this.#addMotionTrack?.(motionId, id, accepted.duration);
-    this.mount(id);
+    const settle: (() => void)[] = [];
+    if (motionId !== undefined)
+      settle.push(() => this.#addMotionTrack?.(motionId, id, accepted.duration));
+    settle.push(() => this.mount(id));
+    this.#commit({
+      tracks,
+      motions: this.#motions,
+      // disposeTrack is application code too, and a compiled Track whose dispose throws must not
+      // hide the rule that rejected the candidate. Same shape as addMotion above, because a
+      // rollback that can outrank its trigger is one defect rather than two. See ADR-035.
+      effects: [
+        {
+          apply: () => this.#compileTrack?.(accepted, id),
+          revert: () => this.#disposeTrack?.(id),
+        },
+      ],
+      settle,
+    });
     return this.#handle(id, token);
   }
   /**
@@ -482,14 +534,23 @@ export class ProjectRuntime {
   #removeTrack(id: string, token: number): void {
     this.#assertLive();
     const entry = this.#liveEntry(id, token);
-    const next = new Map(this.#tracks);
-    next.delete(id);
-    this.#graph.replaceGraph(this.#snapshot(next, this.#motions));
-    this.#tracks.delete(id);
-    this.#instances.delete(id);
-    this.#graph.evictNode(id);
-    this.#disposeTrack?.(id);
-    if (entry.motionId !== undefined) this.#removeMotionTrack?.(entry.motionId, id);
+    const tracks = new Map(this.#tracks);
+    tracks.delete(id);
+    this.#commit({
+      tracks,
+      motions: this.#motions,
+      effects: [],
+      // One settle step rather than four, because the order inside it is not a sequence of
+      // independent commitments: the entry is already gone by the time any of them runs.
+      settle: [
+        () => {
+          this.#instances.delete(id);
+          this.#graph.evictNode(id);
+          this.#disposeTrack?.(id);
+          if (entry.motionId !== undefined) this.#removeMotionTrack?.(entry.motionId, id);
+        },
+      ],
+    });
   }
   #replaceTrack(id: string, token: number, next: TrackDefinition): void {
     const entry = this.#liveEntry(id, token);
@@ -502,32 +563,85 @@ export class ProjectRuntime {
     if (!validation.valid || !validation.value)
       throw new TypeError(describeDiagnostics(validation.diagnostics));
     const accepted = validation.value;
-    const replaced = new Map(this.#tracks);
-    replaced.set(id, { ...entry, track: accepted, overlay: NO_OVERLAY });
-
+    const tracks = new Map(this.#tracks);
+    tracks.set(id, { ...entry, track: accepted, overlay: NO_OVERLAY });
+    const motionId = entry.motionId;
+    let staged: StagedTrack | undefined;
     // The compiled-map owner publishes a prepared replacement while retaining the displaced Track.
     // Motion must see that staged instance because it resolves and seeds by id. The graph is the
     // final acceptance step; only after it accepts can the old compiled Track be released.
-    const staged = this.#stageTrack?.(accepted, id);
-    const motionId = entry.motionId;
-    let motionReplaced = false;
+    const effects: SchemaEffect[] = [
+      {
+        apply: () => {
+          staged = this.#stageTrack?.(accepted, id);
+        },
+        revert: () => staged?.rollback(),
+      },
+    ];
+    // Republish the displaced compiled Track before restoring Motion: its restore call resolves and
+    // seeds by id, so the old instance must already be live. Reverts run in apply order, which is
+    // what puts the staging rollback above ahead of this one. See ADR-031 and ADR-045.
+    if (motionId !== undefined)
+      effects.push({
+        apply: () => this.#replaceMotionTrack?.(motionId, id, accepted.duration),
+        revert: () => this.#replaceMotionTrack?.(motionId, id, entry.track.duration),
+      });
+    this.#commit({
+      tracks,
+      motions: this.#motions,
+      effects,
+      settle: [() => staged?.commit()],
+    });
+  }
+  /**
+   * The one path by which a structural change reaches the graph.
+   *
+   * Five transactions used to carry their own copy of it, each with its own hook ordering and its
+   * own rollback ordering, and the ordering comments explained that the sequence was load-bearing
+   * in three different ways: ADR-031 for the compiled map, ADR-035 for rollback precedence, and
+   * ADR-045 for republish-before-restore. Six more authoring primitives on top of that would have
+   * been six more copies. `replaceGraph` and `rejectAfterRollback` now have one call site each.
+   *
+   * The effects are applied inside the try, so a hook that throws is rolled back exactly as a
+   * refused candidate is. Each one is recorded only after its `apply` returned, because a hook that
+   * refused before writing anything must not be restored.
+   *
+   * No flush is seeded here. Whether a structural commit publishes is a separate question with a
+   * separate answer, and folding a behaviour change into an equivalence refactor would make neither
+   * of them provable.
+   */
+  #commit(plan: SchemaPlan): void {
+    const applied: SchemaEffect[] = [];
     try {
-      if (motionId !== undefined) {
-        this.#replaceMotionTrack?.(motionId, id, accepted.duration);
-        motionReplaced = true;
+      for (const effect of plan.effects) {
+        effect.apply();
+        applied.push(effect);
       }
-      this.#graph.replaceGraph(this.#snapshot(replaced, this.#motions));
+      this.#graph.replaceGraph(this.#snapshot(plan.tracks, plan.motions));
     } catch (error) {
-      const rollbackSteps: (() => void)[] = [];
-      if (staged !== undefined) rollbackSteps.push(() => staged.rollback());
-      // Republish the displaced compiled Track before restoring Motion: its restore call resolves
-      // and seeds by id, so the old instance must already be live. See ADR-031 and ADR-045.
-      if (motionReplaced && motionId !== undefined)
-        rollbackSteps.push(() => this.#replaceMotionTrack?.(motionId, id, entry.track.duration));
-      rejectAfterRollback(error, () => runRollbackSteps(rollbackSteps));
+      const steps: (() => void)[] = [];
+      for (const effect of applied) {
+        if (effect.revert !== undefined) steps.push(effect.revert);
+      }
+      rejectAfterRollback(error, () => runRollbackSteps(steps));
     }
-    this.#tracks.set(id, { ...entry, track: accepted, overlay: NO_OVERLAY });
-    staged?.commit();
+    this.#adoptMaps(plan);
+    for (const step of plan.settle) step();
+  }
+  /**
+   * Adopts the accepted maps wholesale, from the same pair that built the accepted snapshot.
+   *
+   * The pair is read out before anything is cleared, because a plan builder hands its own live map
+   * straight through for the half of the schema that did not move, and clearing the source
+   * mid-iteration would empty it.
+   */
+  #adoptMaps(plan: SchemaPlan): void {
+    const tracks = [...plan.tracks];
+    const motions = [...plan.motions];
+    this.#tracks.clear();
+    for (const [id, entry] of tracks) this.#tracks.set(id, entry);
+    this.#motions.clear();
+    for (const [id, motion] of motions) this.#motions.set(id, motion);
   }
   /**
    * The one live-value write path.
@@ -544,6 +658,9 @@ export class ProjectRuntime {
    * refusal throws from the layer holding the resolved plugins with nothing written here. Then
    * rewrite the retained entry and its overlay, escalate if the hook declined, and end at one
    * `invalidate`. Nothing can observe the gap, because no flush happens until that invalidate.
+   *
+   * Not a `#commit` caller, and it must not become one: topology did not change, so there is no
+   * candidate graph to accept and nothing to roll back.
    *
    * A static-only write validates nothing and builds nothing, which keeps its cost exactly what it
    * was. No `replaceGraph` on either path. See ADR-059 and ADR-060.
