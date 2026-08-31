@@ -7,6 +7,7 @@ import type {
   TrackDefinition,
   TriggerSignal,
 } from "./contract/v5";
+import type { MotionHandle } from "./contract/motion-handle";
 import type { TrackHandle } from "./contract/track-handle";
 import { describeDiagnostics } from "./contract/diagnostics";
 import { resolveTriggerDefinition, validateV5 } from "./contract/validate-v5";
@@ -40,6 +41,17 @@ export interface ProjectHandle {
   destroyMotion(motionId: string): void;
   addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle;
   track(nodeId: string): TrackHandle;
+  /**
+   * The two probes, and the reason they exist rather than a single upsert verb.
+   *
+   * Neither throws for an id this project does not have, so a caller writes the branch at its own
+   * call site: `addTrack` assigns a node id and mounts, `replace` refuses a definition whose id would
+   * move the node, and one name over both would have a cost and a refusal set depending on which one
+   * it landed in. Same relationship `Handle.live` has to every throwing member.
+   */
+  tryTrack(nodeId: string): TrackHandle | undefined;
+  motion(motionId: string): MotionHandle;
+  tryMotion(motionId: string): MotionHandle | undefined;
   dependantsOf(nodeId: string): readonly string[];
   subscribe(nodeId: string, listener: PatchListener): () => void;
   get(nodeId: string): Patch | undefined;
@@ -71,6 +83,9 @@ function createHandle(
     destroyMotion: (motionId) => runtime.destroyMotion(motionId),
     addTrack: (track, options) => runtime.addTrack(track, options),
     track: (nodeId) => runtime.track(nodeId),
+    tryTrack: (nodeId) => runtime.tryTrack(nodeId),
+    motion: (motionId) => runtime.motion(motionId),
+    tryMotion: (motionId) => runtime.tryMotion(motionId),
     dependantsOf: (nodeId) => runtime.dependantsOf(nodeId),
     subscribe: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
     get: (nodeId) => runtime.graph.registry.get(nodeId),
