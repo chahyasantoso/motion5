@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+import type {
+  MotionDefinition,
+  ProjectDefinition,
+  TrackDefinition,
+} from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 
@@ -8,7 +12,7 @@ import { ProjectRuntime } from "../../../src/runtime/project-runtime";
  *
  * A structural commit ends at one flush. Every one of the five paths reached `replaceGraph` and
  * stopped there, and `replaceGraph` commits a snapshot without seeding anything, so a project
- * whose structure was built after load published nothing until something unrelated ticked:
+ * whose structure was built after load published nothing until something unrelated ticked, and
  * `addObserve` on a manual clock with no tick was invisible forever. That is exactly what "build a
  * project's structure up incrementally from nothing, driven by runtime code" needs and did not
  * have.
@@ -28,15 +32,20 @@ const LEG_ID = "hero/leg";
 const HAND_ID = "hero/hand";
 /** Accepted by the graph, and deliberately never mounted, so it publishes no value of its own. */
 const CURSOR_ID = "~/cursor";
+const MOTION: MotionDefinition = {
+  id: MOTION_ID,
+  trigger: { type: "manual" },
+  tracks: [{ id: "arm" }, { id: "leg" }],
+};
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [
-    { id: MOTION_ID, trigger: { type: "manual" }, tracks: [{ id: "arm" }, { id: "leg" }] },
-  ],
+  motions: [MOTION],
   freeTracks: [{ id: "cursor" }],
 };
 /** Refused by the candidate graph rather than by authored validation, so a commit is attempted. */
 const REJECTED_TRACK: TrackDefinition = { id: "hand", observes: [{ source: "~/missing" }] };
+/** Observes a node the graph accepted and nothing mounted, so its source publishes nothing. */
+const PENDING_TRACK: TrackDefinition = { id: "hand", observes: [{ source: CURSOR_ID }] };
 /**
  * One key per node, so an output merge cannot hide a missing publication behind a shared key.
  *
@@ -76,7 +85,7 @@ describe("a structural commit ends at one flush", () => {
     const runtime = create();
     const registry = runtime.graph.registry;
 
-    runtime.addTrack({ id: "hand", observes: [{ source: CURSOR_ID }] }, { motionId: MOTION_ID });
+    runtime.addTrack(PENDING_TRACK, { motionId: MOTION_ID });
 
     // The blast radius, stated as evidence rather than as a footnote: this node previously
     // published nothing at all, and a pending upstream is what it publishes instead.
