@@ -1,0 +1,115 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-31T13:12:19.2747251Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:19.2747623Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:19.2790244Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:19.2790769Z env:
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:19.2790997Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:19.2791232Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:19.3857891Z 
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:19.3858952Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:19.3859667Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:19.3860034Z 
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7196885Z ##[error]packages/core/src/engine.ts(428,24): error TS7006: Parameter 'node' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7208716Z ##[error]packages/core/src/engine.ts(438,23): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7211018Z ##[error]packages/core/src/engine.ts(438,31): error TS7006: Parameter 'progress' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7213309Z ##[error]packages/core/src/engine.ts(444,23): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7215822Z ##[error]packages/core/src/engine.ts(444,31): error TS7006: Parameter 'values' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7218153Z ##[error]packages/core/src/engine.ts(444,39): error TS7006: Parameter 'overlay' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7220393Z ##[error]packages/core/src/engine.ts(444,48): error TS7006: Parameter 'rebase' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7222579Z ##[error]packages/core/src/engine.ts(457,26): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7225034Z ##[error]packages/core/src/engine.ts(457,36): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7227293Z ##[error]packages/core/src/engine.ts(457,45): error TS7006: Parameter 'duration' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7229591Z ##[error]packages/core/src/engine.ts(462,30): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7231825Z ##[error]packages/core/src/engine.ts(462,40): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7234252Z ##[error]packages/core/src/engine.ts(462,49): error TS7006: Parameter 'duration' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7236679Z ##[error]packages/core/src/engine.ts(467,29): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7239044Z ##[error]packages/core/src/engine.ts(467,39): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7241386Z ##[error]packages/core/src/engine.ts(468,32): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7243794Z ##[error]packages/core/src/engine.ts(468,42): error TS7006: Parameter 'definition' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7246326Z ##[error]packages/core/src/engine.ts(512,28): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7248627Z ##[error]packages/core/src/engine.ts(512,38): error TS7006: Parameter 'stagger' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7250966Z ##[error]packages/core/src/engine.ts(520,24): error TS7006: Parameter 'definition' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7253303Z ##[error]packages/core/src/engine.ts(521,25): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7255663Z ##[error]packages/core/src/engine.ts(537,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7258246Z ##[error]packages/core/src/runtime/project-runtime.ts(435,30): error TS2304: Cannot find name 'LiveValueWriter'.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7260803Z ##[error]packages/core/src/runtime/project-runtime.ts(439,31): error TS2304: Cannot find name 'KeyframeResolver'.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7263544Z ##[error]packages/core/src/runtime/project-runtime.ts(455,52): error TS2552: Cannot find name 'ProjectRuntimeOptions'. Did you mean 'ProjectRuntime'?
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7266477Z ##[error]packages/core/test/integration/adoption.test.ts(130,24): error TS7006: Parameter 'mId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7269644Z ##[error]packages/core/test/integration/adoption.test.ts(130,29): error TS7006: Parameter 'tId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7272446Z ##[error]packages/core/test/integration/adoption.test.ts(163,27): error TS7006: Parameter 'mId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7275102Z ##[error]packages/core/test/integration/adoption.test.ts(163,32): error TS7006: Parameter 'tId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7279102Z ##[error]packages/core/test/unit/runtime/motion-driver-edit.test.ts(5,31): error TS2724: '"../../../src/runtime/project-runtime"' has no exported member named 'ProjectRuntimeOptions'. Did you mean 'ProjectRuntime'?
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7282336Z ##[error]packages/core/test/unit/runtime/motion-driver-edit.test.ts(89,28): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7285288Z ##[error]packages/core/test/unit/runtime/motion-driver-edit.test.ts(89,38): error TS7006: Parameter 'definition' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7288027Z ##[error]packages/core/test/unit/runtime/motion-driver-edit.test.ts(93,24): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7290775Z ##[error]packages/core/test/unit/runtime/motion-driver-edit.test.ts(93,34): error TS7006: Parameter 'stagger' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7293438Z ##[error]packages/core/test/unit/runtime/plugin-require-edit.test.ts(121,18): error TS7006: Parameter 'track' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7296276Z ##[error]packages/core/test/unit/runtime/plugin-require-edit.test.ts(121,25): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7299909Z ##[error]packages/core/test/unit/runtime/recompile-predicate.test.ts(10,8): error TS2724: '"../../../src/runtime/project-runtime"' has no exported member named 'ProjectRuntimeOptions'. Did you mean 'ProjectRuntime'?
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7303127Z ##[error]packages/core/test/unit/runtime/recompile-predicate.test.ts(135,24): error TS7006: Parameter 'keyframes' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7305963Z ##[error]packages/core/test/unit/runtime/recompile-predicate.test.ts(135,35): error TS7006: Parameter 'path' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7308677Z ##[error]packages/core/test/unit/runtime/recompile-predicate.test.ts(135,41): error TS7006: Parameter 'track' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7311490Z ##[error]packages/core/test/unit/runtime/recompile-predicate.test.ts(139,18): error TS7006: Parameter '_track' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7314417Z ##[error]packages/core/test/unit/runtime/recompile-predicate.test.ts(139,26): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7318199Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(13,8): error TS2724: '"../../../src/runtime/project-runtime"' has no exported member named 'ProjectRuntimeOptions'. Did you mean 'ProjectRuntime'?
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7321348Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(133,15): error TS7006: Parameter 'project' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7324282Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(138,20): error TS7006: Parameter 'track' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7327029Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(138,27): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7329752Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(139,20): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7332401Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(140,18): error TS7006: Parameter 'track' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7335248Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(140,25): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7338227Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(144,22): error TS7006: Parameter '_motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7341100Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(144,33): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7343812Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(144,42): error TS7006: Parameter 'duration' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7346663Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(146,26): error TS7006: Parameter '_motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7349341Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(146,37): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7352183Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(146,46): error TS7006: Parameter 'duration' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7355114Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(148,25): error TS7006: Parameter '_motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7357871Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(148,36): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7360701Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(149,20): error TS7006: Parameter 'definition' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7363480Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(150,21): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7366394Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(151,24): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7369142Z ##[error]packages/core/test/unit/runtime/schema-transaction.test.ts(151,34): error TS7006: Parameter 'stagger' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7372932Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(8,31): error TS2724: '"../../../src/runtime/project-runtime"' has no exported member named 'ProjectRuntimeOptions'. Did you mean 'ProjectRuntime'?
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7376296Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(78,22): error TS7006: Parameter '_track' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7378971Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(78,30): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7381646Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(79,22): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7384509Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(80,24): error TS7006: Parameter '_motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7387346Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(80,35): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7390088Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(80,44): error TS7006: Parameter 'duration' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7392922Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(82,27): error TS7006: Parameter '_motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7395861Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(82,38): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7397905Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(83,22): error TS7006: Parameter 'definition' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7399568Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(87,23): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T13:12:23.7715014Z ##[error]Process completed with exit code 2.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-08-31T13:12:18.6406089Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:18.6406571Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:18.6445827Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:18.6446101Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:18.6446323Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:18.6446540Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2780902Z ##[error]packages/core/src/engine.ts(428,24): error TS7006: Parameter 'node' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2793456Z ##[error]packages/core/src/engine.ts(438,23): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2795915Z ##[error]packages/core/src/engine.ts(438,31): error TS7006: Parameter 'progress' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2797897Z ##[error]packages/core/src/engine.ts(444,23): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2800042Z ##[error]packages/core/src/engine.ts(444,31): error TS7006: Parameter 'values' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2801747Z ##[error]packages/core/src/engine.ts(444,39): error TS7006: Parameter 'overlay' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2803228Z ##[error]packages/core/src/engine.ts(444,48): error TS7006: Parameter 'rebase' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2804703Z ##[error]packages/core/src/engine.ts(457,26): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2806213Z ##[error]packages/core/src/engine.ts(457,36): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2807671Z ##[error]packages/core/src/engine.ts(457,45): error TS7006: Parameter 'duration' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2809840Z ##[error]packages/core/src/engine.ts(462,30): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2811544Z ##[error]packages/core/src/engine.ts(462,40): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2813096Z ##[error]packages/core/src/engine.ts(462,49): error TS7006: Parameter 'duration' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2814620Z ##[error]packages/core/src/engine.ts(467,29): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2816120Z ##[error]packages/core/src/engine.ts(467,39): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2817577Z ##[error]packages/core/src/engine.ts(468,32): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2819330Z ##[error]packages/core/src/engine.ts(468,42): error TS7006: Parameter 'definition' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2820914Z ##[error]packages/core/src/engine.ts(512,28): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2822390Z ##[error]packages/core/src/engine.ts(512,38): error TS7006: Parameter 'stagger' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2823848Z ##[error]packages/core/src/engine.ts(520,24): error TS7006: Parameter 'definition' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2825376Z ##[error]packages/core/src/engine.ts(521,25): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2826828Z ##[error]packages/core/src/engine.ts(537,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2828442Z ##[error]packages/core/src/runtime/project-runtime.ts(435,30): error TS2304: Cannot find name 'LiveValueWriter'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2830445Z ##[error]packages/core/src/runtime/project-runtime.ts(439,31): error TS2304: Cannot find name 'KeyframeResolver'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.2832222Z ##[error]packages/core/src/runtime/project-runtime.ts(455,52): error TS2552: Cannot find name 'ProjectRuntimeOptions'. Did you mean 'ProjectRuntime'?
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T13:12:21.3222170Z ##[error]Process completed with exit code 2.
