@@ -70,6 +70,21 @@ export interface GraphNode {
 export interface GraphIR {
   readonly nodes: readonly GraphNode[];
   readonly nodeById: Readonly<Record<string, GraphNode>>;
+  /**
+   * Reverse topology: for every node id, the ids that read it.
+   *
+   * Derived here rather than by every consumer, because it is a pure function of the node set and
+   * this file already walks every edge of every node twice over. `GraphPublisher` recomputed it on
+   * every tick, over a graph that changes at most once between ticks, which made steady-state
+   * ticking O(V+E) in graph shape for a graph whose shape had not moved.
+   *
+   * Total, so a node nothing reads carries an empty list rather than no entry: a missing key and an
+   * empty one are the same answer to a consumer that spells `?? []`, and only one of them makes the
+   * map's own shape depend on the rig. Not recoverable from `edges` alone either, which is the whole
+   * reason it lives beside them: a solver reads its members through `solves` and no edge points that
+   * way, so a reverse walk built from edges would miss every member of every chain.
+   */
+  readonly dependents: Readonly<Record<string, readonly string[]>>;
   readonly order: readonly string[];
   readonly diagnostics: readonly Diagnostic[];
 }
@@ -906,6 +921,36 @@ export function resolveSolvers(
 }
 
 /**
+ * Reverse topology for one node set: per node id, the ids that read it.
+ *
+ * Both kinds of reader, because both are real dependencies and only one of them is an edge. A node
+ * reads every source it names an edge for, and a solver reads every member `resolveSolvers` derived
+ * onto its `solves`, which no edge points at. A reverse walk over edges alone would therefore miss
+ * every member of every chain, and a member's own value would stop marking its solver dirty.
+ *
+ * Nodes in the given order, each node's edges before its members, and an entry pushed only for a
+ * source this node set contains: an edge naming an unknown source is `finalizeGraph`'s refusal, and
+ * a direct publisher caller may hand over a partial node set. Duplicates are kept rather than
+ * collapsed, because a consumer walking this guards on its own visited set, and collapsing them
+ * would be a second decision inside a function whose only job is to state what the graph says.
+ */
+export function deriveDependents(
+  nodes: readonly GraphNode[],
+): Readonly<Record<string, readonly string[]>> {
+  const collected = new Map<string, string[]>();
+  for (const node of nodes) collected.set(node.id, []);
+  for (const node of nodes) {
+    for (const edge of node.edges) collected.get(edge.sourceId)?.push(node.id);
+    if (node.solves) {
+      for (const member of node.solves) collected.get(member.id)?.push(node.id);
+    }
+  }
+  const dependents: Record<string, readonly string[]> = {};
+  for (const [id, readers] of collected) dependents[id] = freeze(readers);
+  return freeze(dependents);
+}
+
+/**
  * Validates collected nodes and diagnostics, linearizes them, and freezes the result.
  *
  * The one owner of the graph-building tail, so `buildGraphIR` and the incremental builder cannot
@@ -972,10 +1017,14 @@ export function finalizeGraph(
     };
   const nodeById: Record<string, GraphNode> = {};
   for (const node of resolvedNodes) nodeById[node.id] = node;
+  // Derived here, after `resolveSolvers` returned, because the solver fan-in is half the answer and
+  // it does not exist until then. One owner, in the file that already owns `compareEdges` and
+  // delegates to `orderGraph`, so every consumer reads reverse topology instead of walking for it.
   return {
     graph: freeze({
       nodes: freeze(resolvedNodes),
       nodeById: freeze(nodeById),
+      dependents: deriveDependents(resolvedNodes),
       order: ordering.order,
       diagnostics: freeze(diagnostics),
     }),
