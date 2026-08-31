@@ -1,11 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type {
-  AuthoredProperty,
-  AuthoredStop,
-  PatchBatch,
-  ProjectDefinition,
-  TrackDefinition,
-} from "../../../src/contract/v5";
+import type { AuthoredStop, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import type { TrackHandle } from "../../../src/contract/track-handle";
 import { PluginRegistry } from "../../../src/domain/plugins";
 import { LiveValueKeyError } from "../../../src/domain/track";
@@ -51,11 +45,14 @@ import { createFakeInterpolator, createFakeScheduler } from "../../../src/testin
  * interpolator is the fake, which declares no `patchKeys`, so this file also owns what an animated
  * property edit costs on a backend that declines.
  *
- * The failing-first run declares both verbs through a local `PropertyEdits` seam and casts, because a
- * file naming a member before the source exists fails `typecheck` and stops `quality` before a
- * single test runs. `SH-1`'s argument record names them in the same commit, one level up, which is
+ * The failing-first run declared both verbs through a local `PropertyEdits` seam and casts, because
+ * a file naming a member before the source exists fails `typecheck` and stops `quality` before a
+ * single test runs. `SH-1`'s argument record named them in the same commit, one level up, which is
  * that gate working rather than being weakened. C1's `RequireEdits`, C2's `GroupEdits` and C3's
- * `ResolveSeam` are the precedent. See ADR-056, ADR-060 and ADR-062.
+ * `ResolveSeam` are the precedent. The seam is deleted now that the source has landed, so every
+ * case below binds to the shipped `TrackHandle` rather than to a local restatement of it: an
+ * intersection of two declarations of one method is an overload set, so a drift between the two
+ * would have been absorbed rather than reported. See ADR-056, ADR-060 and ADR-062.
  */
 const ARM = "hero/arm";
 const LEG = "hero/leg";
@@ -112,16 +109,6 @@ function project(arm: TrackDefinition): ProjectDefinition {
     motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [arm, LEG_TRACK] }],
   };
 }
-/**
- * The two verbs this slice adds, declared locally so the red run reports absent members rather than
- * failing to compile. Deleted by the commit that lands the source.
- */
-interface PropertyEdits {
-  setKeyframe(plugin: string, key: string, value: AuthoredProperty): PatchBatch;
-  removeKeyframe(plugin: string, key: string): PatchBatch;
-}
-type Edits = TrackHandle & PropertyEdits;
-
 function load(arm: TrackDefinition = ARM_TRACK): ProjectHandle {
   const plugins = new PluginRegistry();
   plugins.register(transformPlugin);
@@ -166,12 +153,12 @@ function thrownBy(operation: () => unknown): unknown {
  * source lands, because the frozen handle is built by hand and a member deleted from it would
  * otherwise fail every case at once with no name attached.
  */
-function declaring(handle: ProjectHandle, nodeId: string): Edits {
+function declaring(handle: ProjectHandle, nodeId: string): TrackHandle {
   const track = handle.track(nodeId);
   const keys = Object.keys(track);
   expect(keys).toContain("setKeyframe");
   expect(keys).toContain("removeKeyframe");
-  return track as Edits;
+  return track;
 }
 function values(handle: ProjectHandle, id: string): Readonly<Record<string, unknown>> {
   const patch = handle.get(id);
@@ -382,10 +369,10 @@ describe("one authored property, inside a group this node already authors", () =
     const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
 
     const written = thrownBy(() =>
-      handle.edit((tx) => (tx.track(ARM) as Edits).setKeyframe("transform", "x", 260)),
+      handle.edit((tx) => tx.track(ARM).setKeyframe("transform", "x", 260)),
     );
     const removed = thrownBy(() =>
-      handle.edit((tx) => (tx.track(ARM) as Edits).removeKeyframe("transform", "x")),
+      handle.edit((tx) => tx.track(ARM).removeKeyframe("transform", "x")),
     );
 
     // Tier 2 ends at its own invalidate, so it publishes inside the recipe and would survive an
