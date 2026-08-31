@@ -34,7 +34,7 @@ Every PR states:
 
 Target fewer than twenty semantic files and one meaningful invariant. More than twenty-five commits or a second revert means recut the slice. Review first for duplicate ownership, then test validity, flags/aliases/facades, API exports, hidden behavior in formatting, and documentation drift.
 
-**Semantic files** means every distinct file in the pull request diff, counted once, excluding lockfiles, generated build output, and files touched only by the write-enabled formatting job. In practice it is the changed-file count GitHub reports, minus those exclusions. State the number once, in the PR body. A plan, amendment, or status doc that maintains its own count will disagree with it eventually, and a reader cannot tell which one is measuring the ceiling.
+**Semantic files** means every distinct file in the pull request diff, counted once, excluding lockfiles, generated build output, and files touched only by a formatting commit. In practice it is the changed-file count GitHub reports, minus those exclusions. State the number once, in the PR body. A plan, amendment, or status doc that maintains its own count will disagree with it eventually, and a reader cannot tell which one is measuring the ceiling.
 
 ## Merge and revert
 
@@ -42,11 +42,15 @@ Squash merge into protected `main` only when required checks are green. Never sk
 
 ## Formatting and CI
 
-The quality job includes a read-only `npm run format:check` step that must pass before merge. If formatting drift is detected, the quality job fails and you must fix it before proceeding.
+The `quality` job runs a read-only `npm run format:check`, and drift fails it. Nothing in `CI` repairs that drift. The write-enabled repair is `.github/workflows/format.yml`, named **Format manually**, and its only trigger is `workflow_dispatch` with a `branch` input: dispatch it against your branch and it pushes one `chore: apply prettier` commit, or reports that the branch is already formatted.
 
-On same-repository implementation PRs, if behavioral checks (quality, integration, boundaries, build, end-to-end) are all green, a write-enabled formatting job runs `npm run format` and pushes a child commit to your PR branch if drift exists. Review this commit as mechanical-only and it will be included in your merge.
+Earlier revisions of this document promised a repair job that ran automatically once behavioral checks were green and pushed a child commit to your pull request. There is no such job and there never was one on this trigger, so waiting for it is how a red `format:check` sits unfixed. Dispatch the workflow instead.
 
-For fork PRs, the write-enabled repair job cannot push to your branch. Fix formatting locally by running `npm run format`, committing the changes, and pushing through your fork workflow.
+A fork pull request is not reachable by that workflow either, because its input is a branch in this repository. Format in the fork and push from there.
+
+If you cannot run `npx` or `prettier` at all, which is a normal condition rather than a broken setup, those two are your whole toolkit: `format:check` in `CI` is how you learn the output is unformatted, and **Format manually** is how you repair it. Both cost a round trip through Actions, so write prettier-safe output rather than relying on the repair. `proseWrap` is `preserve`, so keep a paragraph on one line or break it yourself at or under 100 columns; match the surrounding TypeScript rather than guessing at its style; and author no markdown tables, because prettier rewrites their alignment and a table is the one construct you cannot get right by eye. `docs/CI-WORKFLOW.md` owns the whole rule, including which code fences prettier formats.
+
+Formatting never shares a behavior commit, on either path.
 
 ## CI logs
 
