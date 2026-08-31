@@ -1,0 +1,32 @@
+# CI log archive: 33406914509
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: feat/ra-69-authored-property-edit
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/33406914509
+- Captured: 2026-08-31T15:11:06Z
+
+## Failed job output
+
+```text
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-08-31T15:10:46.0842131Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T15:10:46.0842615Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T15:10:46.0881884Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T15:10:46.0882172Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T15:10:46.0882371Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T15:10:46.0882583Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T15:10:48.4401871Z ##[error]packages/core/src/runtime/project-runtime.ts(1017,5): error TS2739: Type 'Readonly<{ id: string; readonly live: boolean; readonly definition: TrackDefinition; readonly requires: readonly RequireView[]; remove: () => void; replace: (next: TrackDefinition) => void; ... 9 more ...; setValues: (next: Readonly<...>) => PatchBatch; }>' is missing the following properties from type 'TrackHandle': setKeyframe, removeKeyframe
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T15:10:48.4759935Z ##[error]Process completed with exit code 2.
+quality (node 24)	Run npm run typecheck	﻿2026-08-31T15:10:42.5274981Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-31T15:10:42.5275388Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-31T15:10:42.5317640Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-31T15:10:42.5318150Z env:
+quality (node 24)	Run npm run typecheck	2026-08-31T15:10:42.5318362Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-31T15:10:42.5318593Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-31T15:10:42.6284979Z 
+quality (node 24)	Run npm run typecheck	2026-08-31T15:10:42.6285707Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-31T15:10:42.6286211Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-31T15:10:42.6286424Z 
+quality (node 24)	Run npm run typecheck	2026-08-31T15:10:46.3024173Z ##[error]packages/core/src/runtime/project-runtime.ts(1017,5): error TS2739: Type 'Readonly<{ id: string; readonly live: boolean; readonly definition: TrackDefinition; readonly requires: readonly RequireView[]; remove: () => void; replace: (next: TrackDefinition) => void; ... 9 more ...; setValues: (next: Readonly<...>) => PatchBatch; }>' is missing the following properties from type 'TrackHandle': setKeyframe, removeKeyframe
+quality (node 24)	Run npm run typecheck	2026-08-31T15:10:46.3458801Z ##[error]Process completed with exit code 2.
+```
