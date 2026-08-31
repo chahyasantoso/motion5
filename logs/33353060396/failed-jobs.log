@@ -1,0 +1,356 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-31T03:12:08.8097781Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:08.8098158Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:08.8137304Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:08.8137822Z env:
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:08.8138049Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:08.8138283Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:08.9297480Z 
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:08.9298277Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:08.9299059Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:08.9299460Z 
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2230777Z ##[error]packages/core/test/integration/flush-output-merge.test.ts(9,54): error TS2322: Type '{ nodes: readonly PublisherNode[]; nodeById: Readonly<{ [k: string]: PublisherNode; }>; order: readonly string[]; diagnostics: readonly never[]; }' is not assignable to type 'GraphIR & { nodes: readonly PublisherNode[]; }'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2243569Z   Property 'dependents' is missing in type '{ nodes: readonly PublisherNode[]; nodeById: Readonly<{ [k: string]: PublisherNode; }>; order: readonly string[]; diagnostics: readonly never[]; }' but required in type 'GraphIR'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2247661Z ##[error]packages/core/test/integration/flush-output-merge.test.ts(45,54): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2250075Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2251452Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2252509Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2253439Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2256494Z ##[error]packages/core/test/integration/flush-output-merge.test.ts(74,7): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2258933Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2260090Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2261398Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2262352Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2266776Z ##[error]packages/core/test/integration/graph-publisher.test.ts(29,54): error TS2322: Type '{ nodes: readonly PublisherNode[]; nodeById: Readonly<{ [k: string]: PublisherNode; }>; order: readonly string[]; diagnostics: readonly never[]; }' is not assignable to type 'GraphIR & { nodes: readonly PublisherNode[]; }'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2271071Z   Property 'dependents' is missing in type '{ nodes: readonly PublisherNode[]; nodeById: Readonly<{ [k: string]: PublisherNode; }>; order: readonly string[]; diagnostics: readonly never[]; }' but required in type 'GraphIR'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2274827Z ##[error]packages/core/test/integration/graph-publisher.test.ts(52,54): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2277234Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2278356Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2279361Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2280526Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2283508Z ##[error]packages/core/test/integration/graph-publisher.test.ts(78,54): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2285880Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2286964Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2288420Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2289378Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2294097Z ##[error]packages/core/test/integration/partial-seed-inputs.test.ts(9,54): error TS2322: Type '{ nodes: readonly PublisherNode[]; nodeById: Readonly<{ [k: string]: PublisherNode; }>; order: readonly string[]; diagnostics: readonly never[]; }' is not assignable to type 'GraphIR & { nodes: readonly PublisherNode[]; }'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2298465Z   Property 'dependents' is missing in type '{ nodes: readonly PublisherNode[]; nodeById: Readonly<{ [k: string]: PublisherNode; }>; order: readonly string[]; diagnostics: readonly never[]; }' but required in type 'GraphIR'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2302479Z ##[error]packages/core/test/integration/partial-seed-inputs.test.ts(74,21): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2304937Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2306057Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2307110Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2308046Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2311216Z ##[error]packages/core/test/integration/partial-seed-inputs.test.ts(76,35): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2313748Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2314844Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2315870Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2316825Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2321493Z ##[error]packages/core/test/integration/publisher-output-merge-consistency.test.ts(19,54): error TS2322: Type '{ nodes: readonly PublisherNode[]; nodeById: Readonly<{ [k: string]: PublisherNode; }>; order: readonly string[]; diagnostics: readonly never[]; }' is not assignable to type 'GraphIR & { nodes: readonly PublisherNode[]; }'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2325775Z   Property 'dependents' is missing in type '{ nodes: readonly PublisherNode[]; nodeById: Readonly<{ [k: string]: PublisherNode; }>; order: readonly string[]; diagnostics: readonly never[]; }' but required in type 'GraphIR'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2329601Z ##[error]packages/core/test/integration/publisher-output-merge-consistency.test.ts(54,35): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2332377Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2333450Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2334482Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2335406Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2338622Z ##[error]packages/core/test/integration/publisher-output-merge-consistency.test.ts(83,21): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2341458Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2342577Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2343632Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2344569Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2347955Z ##[error]packages/core/test/integration/publisher-output-merge-consistency.test.ts(86,36): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2350907Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2352022Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2353071Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2354010Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2358682Z ##[error]packages/core/test/unit/runtime/composition-output-shape.test.ts(26,54): error TS2322: Type '{ nodes: readonly PublisherNode[]; nodeById: Readonly<{ [k: string]: PublisherNode; }>; order: readonly string[]; diagnostics: readonly never[]; }' is not assignable to type 'GraphIR & { nodes: readonly PublisherNode[]; }'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2363111Z   Property 'dependents' is missing in type '{ nodes: readonly PublisherNode[]; nodeById: Readonly<{ [k: string]: PublisherNode; }>; order: readonly string[]; diagnostics: readonly never[]; }' but required in type 'GraphIR'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2366887Z ##[error]packages/core/test/unit/runtime/composition-output-shape.test.ts(99,7): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2369318Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2370575Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2371618Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2372529Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2375593Z ##[error]packages/core/test/unit/runtime/composition-output-shape.test.ts(116,54): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2378156Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2379263Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2380492Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2381417Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2385861Z ##[error]packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts(18,3): error TS2322: Type '{ nodes: PublisherNode[]; nodeById: Readonly<{ [x: string]: PublisherNode; }>; order: readonly string[]; diagnostics: readonly never[]; }' is not assignable to type 'GraphIR & { nodes: readonly PublisherNode[]; }'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2390149Z   Property 'dependents' is missing in type '{ nodes: PublisherNode[]; nodeById: Readonly<{ [x: string]: PublisherNode; }>; order: readonly string[]; diagnostics: readonly never[]; }' but required in type 'GraphIR'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2394230Z ##[error]packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts(90,34): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2396882Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2397980Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2399033Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2399965Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2403282Z ##[error]packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts(95,34): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2406181Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2407259Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2408276Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2409210Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2413569Z ##[error]packages/core/test/unit/runtime/publisher-reentrancy.test.ts(35,3): error TS2322: Type '{ nodes: PublisherNode[]; nodeById: Readonly<{ [x: string]: PublisherNode; }>; order: readonly string[]; diagnostics: readonly never[]; }' is not assignable to type 'GraphIR & { nodes: readonly PublisherNode[]; }'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2417735Z   Property 'dependents' is missing in type '{ nodes: PublisherNode[]; nodeById: Readonly<{ [x: string]: PublisherNode; }>; order: readonly string[]; diagnostics: readonly never[]; }' but required in type 'GraphIR'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2421852Z ##[error]packages/core/test/unit/runtime/publisher-reentrancy.test.ts(162,23): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2424169Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2425139Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2426037Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2426836Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2429485Z ##[error]packages/core/test/unit/runtime/publisher-reentrancy.test.ts(165,34): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2431951Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2432759Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2433509Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2434209Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2436382Z ##[error]packages/core/test/unit/runtime/publisher-reentrancy.test.ts(169,34): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2438224Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2439007Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2439737Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2440863Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2445074Z ##[error]packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts(26,10): error TS2352: Conversion of type '{ nodes: PublisherNode[]; nodeById: { [x: string]: PublisherNode; }; order: string[]; diagnostics: never[]; }' to type 'GraphIR & { nodes: readonly PublisherNode[]; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2448342Z   Property 'dependents' is missing in type '{ nodes: PublisherNode[]; nodeById: { [x: string]: PublisherNode; }; order: string[]; diagnostics: never[]; }' but required in type 'GraphIR'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2450816Z ##[error]packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts(69,21): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2452779Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2453446Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2454202Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2454756Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2456622Z ##[error]packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts(91,35): error TS2345: Argument of type 'GraphIR & { nodes: readonly PublisherNode[]; }' is not assignable to parameter of type 'PublisherSnapshot'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2458148Z   Types of property 'nodeById' are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2458821Z     Type 'Readonly<Record<string, GraphNode>>' is not assignable to type 'Readonly<Record<string, PublisherNode>>'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2459440Z       'string' index signatures are incompatible.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2460008Z         Property 'compose' is missing in type 'GraphNode' but required in type 'PublisherNode'.
+quality (node 24)	Run npm run typecheck	2026-08-31T03:12:13.2725087Z ##[error]Process completed with exit code 2.
+integration (node 24)	Run npm run test:integration	﻿2026-08-31T03:12:08.8435072Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:08.8435646Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:08.8486278Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:08.8486948Z env:
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:08.8487281Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:08.8487632Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:08.9620534Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:08.9621432Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:08.9622480Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:08.9623129Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:09.3620216Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:09.3636246Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:09.3659363Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.0261813Z  ^[[32m✓^[[39m packages/core/test/integration/t4-runtime-motion-parity.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 32^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.0519877Z  ^[[32m✓^[[39m packages/core/test/integration/bare-authored-leaf.test.ts ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[32m 60^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.2236908Z ^[[90mstderr^[[2m | packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22m^[[2mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m^[[2m9. Use React usePatch hook at the React boundary
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.2300851Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.2329653Z An update to Root inside a test was not wrapped in act(...).
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.2336055Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.2358134Z When testing, code that causes React state updates should be wrapped into act(...):
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.2361745Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.2363100Z act(() => {
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.2363902Z   /* fire events that update state */
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.2379296Z });
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.2399740Z /* assert on the output */
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.2403832Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.2405210Z This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.2407311Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.2575122Z  ^[[32m✓^[[39m packages/core/test/integration/phase7-walker-demo.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[32m 135^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.3331478Z  ^[[32m✓^[[39m packages/core/test/integration/engine-teardown-ownership.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.4125192Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-group-values-section.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[32m 51^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.5660738Z  ^[[32m✓^[[39m packages/core/test/integration/authored-leaf-reader.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.6201563Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-time-loop.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 45^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:10.7761030Z  ^[[32m✓^[[39m packages/core/test/integration/solver-member-cache.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 60^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:11.0560897Z  ^[[32m✓^[[39m packages/core/test/integration/ik-fabrik-chain.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 58^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:11.0588807Z  ^[[32m✓^[[39m packages/core/test/integration/ik-two-bone.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 52^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:11.0740437Z  ^[[32m✓^[[39m packages/core/test/integration/rollback-error-precedence.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:11.3508446Z  ^[[32m✓^[[39m packages/core/test/integration/adoption.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 35^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:11.3795022Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-owned-requirements.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 42^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:11.3862217Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-types.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 33^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:11.6468051Z  ^[[32m✓^[[39m packages/core/test/integration/phase4-dynamic-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:11.6842170Z  ^[[32m✓^[[39m packages/core/test/integration/phase0-red-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 39^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:11.7291022Z  ^[[32m✓^[[39m packages/core/test/integration/replace-track-transactionality.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 50^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:11.9565732Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-time.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 37^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:12.0250841Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-scroll.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:12.0408127Z  ^[[32m✓^[[39m packages/core/test/integration/ik-multi-goal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 50^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:12.2921253Z  ^[[32m✓^[[39m packages/core/test/integration/mutation-transactionality.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 41^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:12.3260879Z  ^[[32m✓^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 44^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:12.3601448Z  ^[[32m✓^[[39m packages/core/test/integration/per-plugin-key-ownership.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 40^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:12.5767283Z  ^[[32m✓^[[39m packages/core/test/integration/phase3-trigger-port.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:12.5890666Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:12.6810852Z  ^[[32m✓^[[39m packages/core/test/integration/option-c-track-resolution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 42^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:12.8581089Z  ^[[32m✓^[[39m packages/core/test/integration/phase2-motion-scheduling.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:12.9057307Z  ^[[32m✓^[[39m packages/core/test/integration/live-value-composition.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 60^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:12.9711010Z  ^[[32m✓^[[39m packages/core/test/integration/unified-mutation-surface.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 31^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:13.1839876Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 45^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:13.2153331Z  ^[[32m✓^[[39m packages/core/test/integration/observation-identity.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 34^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:13.2584691Z  ^[[32m✓^[[39m packages/core/test/integration/cross-motion.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:13.5021951Z  ^[[32m✓^[[39m packages/core/test/integration/diagnostics.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:13.5117570Z  ^[[32m✓^[[39m packages/core/test/integration/issue-114-motion-track-regressions.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:13.5467985Z  ^[[32m✓^[[39m packages/core/test/integration/adopted-track-immutability.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:13.7476711Z  ^[[32m✓^[[39m packages/core/test/integration/replace-motion-track.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 28^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:13.7692097Z  ^[[31m❯^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:13.7694702Z ^[[31m     ^[[31m×^[[31m a same-flush requirement consumer sees the source's merged value^[[39m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:13.7696772Z ^[[31m     ^[[31m×^[[31m a later flush resolves the source's merged value via registry fallback^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:13.7855055Z  ^[[32m✓^[[39m packages/core/test/integration/keyframe-groups.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 31^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.0084512Z  ^[[32m✓^[[39m packages/core/test/integration/handle-adoption.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.0181188Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.0382612Z  ^[[32m✓^[[39m packages/core/test/integration/internal-key-strip.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.2359002Z  ^[[32m✓^[[39m packages/core/test/integration/remount.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.2521886Z  ^[[31m❯^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.2524819Z ^[[31m     ^[[31m×^[[31m I-5 composes a shared ancestor once and publishes one whole batch^[[39m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.2527691Z ^[[31m     ^[[31m×^[[31m I-9 publishes an error and blocks the downstream closure while unrelated branches continue^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.2529472Z      ^[[32m✓^[[39m does not expose topology mutation methods^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.2829765Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.4480968Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.4600577Z  ^[[31m❯^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m | ^[[22m^[[31m2 failed^[[39m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.4602053Z ^[[31m     ^[[31m×^[[31m merges output source values over the composed patch^[[39m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.4603070Z ^[[31m     ^[[31m×^[[31m uses canonical edge order when output sources collide^[[39m^[[32m 1^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.5181029Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.6611413Z  ^[[31m❯^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.6613655Z ^[[31m     ^[[31m×^[[31m uses the last published value for an unseeded requirement source^[[39m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.7274912Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.7920540Z  ^[[32m✓^[[39m packages/core/test/integration/single-input-channel.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 35^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.8632831Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:14.9962559Z  ^[[32m✓^[[39m packages/core/test/integration/adopt-destroy-readopt.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.0020720Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.0905467Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.2540836Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.2675695Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.2928314Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.4833524Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.5028121Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.5727877Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-trigger-validation.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.6835872Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.6869605Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.6908869Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.6909853Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 7 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.6910412Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.6915338Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/flush-output-merge.test.ts^[[2m > ^[[22mGraphPublisher output edges^[[2m > ^[[22mmerges output source values over the composed patch
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.6921544Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading 'source')^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.6923362Z ^[[36m ^[[2m❯^[[22m GraphPublisher.flush packages/core/src/runtime/graph-publisher.ts:^[[2m201:22^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.6994085Z     ^[[90m199|^[[39m       ^[[35mif^[[39m (id ^[[33m===^[[39m undefined ^[[33m||^[[39m affected^[[33m.^[[39m^[[34mhas^[[39m(id)) ^[[35mcontinue^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.6995780Z     ^[[90m200|^[[39m       affected^[[33m.^[[39m^[[34madd^[[39m(id)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.6997343Z     ^[[90m201|^[[39m       queue^[[33m.^[[39m^[[34mpush^[[39m(^[[33m...^[[39m(dependents[id] ^[[33m??^[[39m []))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.6998921Z     ^[[90m   |^[[39m                      ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.6999897Z     ^[[90m202|^[[39m     }
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7001102Z     ^[[90m203|^[[39m     ^[[35mconst^[[39m isMember ^[[33m=^[[39m (nodeId^[[33m:^[[39m string) ^[[33m=>^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7002927Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/flush-output-merge.test.ts:^[[2m45:48^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7003838Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7004576Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7005195Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7007093Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/flush-output-merge.test.ts^[[2m > ^[[22mGraphPublisher output edges^[[2m > ^[[22muses canonical edge order when output sources collide
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7010808Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading 'a')^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7012569Z ^[[36m ^[[2m❯^[[22m GraphPublisher.flush packages/core/src/runtime/graph-publisher.ts:^[[2m201:22^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7014658Z     ^[[90m199|^[[39m       ^[[35mif^[[39m (id ^[[33m===^[[39m undefined ^[[33m||^[[39m affected^[[33m.^[[39m^[[34mhas^[[39m(id)) ^[[35mcontinue^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7016243Z     ^[[90m200|^[[39m       affected^[[33m.^[[39m^[[34madd^[[39m(id)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7017722Z     ^[[90m201|^[[39m       queue^[[33m.^[[39m^[[34mpush^[[39m(^[[33m...^[[39m(dependents[id] ^[[33m??^[[39m []))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7019529Z     ^[[90m   |^[[39m                      ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7020373Z     ^[[90m202|^[[39m     }
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7021467Z     ^[[90m203|^[[39m     ^[[35mconst^[[39m isMember ^[[33m=^[[39m (nodeId^[[33m:^[[39m string) ^[[33m=>^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7023201Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/flush-output-merge.test.ts:^[[2m73:48^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7024153Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7024800Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7025331Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7027109Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/graph-publisher.test.ts^[[2m > ^[[22mGraphPublisher^[[2m > ^[[22mI-5 composes a shared ancestor once and publishes one whole batch
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7029419Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading 'root')^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7030075Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7031260Z ^[[36m ^[[2m❯^[[22m GraphPublisher.flush packages/core/src/runtime/graph-publisher.ts:^[[2m201:22^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7033759Z     ^[[90m199|^[[39m       ^[[35mif^[[39m (id ^[[33m===^[[39m undefined ^[[33m||^[[39m affected^[[33m.^[[39m^[[34mhas^[[39m(id)) ^[[35mcontinue^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7035549Z     ^[[90m200|^[[39m       affected^[[33m.^[[39m^[[34madd^[[39m(id)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7036916Z     ^[[90m201|^[[39m       queue^[[33m.^[[39m^[[34mpush^[[39m(^[[33m...^[[39m(dependents[id] ^[[33m??^[[39m []))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7038225Z     ^[[90m   |^[[39m                      ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7039347Z     ^[[90m202|^[[39m     }
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7040605Z     ^[[90m203|^[[39m     ^[[35mconst^[[39m isMember ^[[33m=^[[39m (nodeId^[[33m:^[[39m string) ^[[33m=>^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7042215Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/graph-publisher.test.ts:^[[2m52:48^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7043131Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7043764Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7044409Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7046450Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/graph-publisher.test.ts^[[2m > ^[[22mGraphPublisher^[[2m > ^[[22mI-9 publishes an error and blocks the downstream closure while unrelated branches continue
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7049219Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading 'bad')^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7050663Z ^[[2m Test Files ^[[22m ^[[1m^[[31m4 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m58 passed^[[39m^[[22m^[[90m (62)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7053109Z ^[[36m ^[[2m❯^[[22m GraphPublisher.flush packages/core/src/runtime/graph-publisher.ts:^[[2m201:22^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7055065Z     ^[[90m199|^[[39m       ^[[35mif^[[39m (id ^[[33m===^[[39m undefined ^[[33m||^[[39m affected^[[33m.^[[39m^[[34mhas^[[39m(id)) ^[[35mcontinue^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7056702Z     ^[[90m200|^[[39m       affected^[[33m.^[[39m^[[34madd^[[39m(id)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7058157Z     ^[[90m201|^[[39m       queue^[[33m.^[[39m^[[34mpush^[[39m(^[[33m...^[[39m(dependents[id] ^[[33m??^[[39m []))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7059842Z     ^[[90m   |^[[39m                      ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7060724Z     ^[[90m202|^[[39m     }
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7061942Z     ^[[90m203|^[[39m     ^[[35mconst^[[39m isMember ^[[33m=^[[39m (nodeId^[[33m:^[[39m string) ^[[33m=>^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7063686Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/graph-publisher.test.ts:^[[2m78:48^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7064639Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7065328Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7065921Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7068134Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/partial-seed-inputs.test.ts^[[2m > ^[[22mGraphPublisher partial-seed requirement inputs^[[2m > ^[[22muses the last published value for an unseeded requirement source
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7070944Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading 'source-a')^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7072868Z ^[[36m ^[[2m❯^[[22m GraphPublisher.flush packages/core/src/runtime/graph-publisher.ts:^[[2m201:22^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7074976Z     ^[[90m199|^[[39m       ^[[35mif^[[39m (id ^[[33m===^[[39m undefined ^[[33m||^[[39m affected^[[33m.^[[39m^[[34mhas^[[39m(id)) ^[[35mcontinue^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7076653Z     ^[[90m200|^[[39m       affected^[[33m.^[[39m^[[34madd^[[39m(id)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7078224Z     ^[[90m201|^[[39m       queue^[[33m.^[[39m^[[34mpush^[[39m(^[[33m...^[[39m(dependents[id] ^[[33m??^[[39m []))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7080115Z ^[[2m      Tests ^[[22m ^[[1m^[[31m7 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m251 passed^[[39m^[[22m^[[90m (258)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7081543Z     ^[[90m   |^[[39m                      ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7082383Z     ^[[90m202|^[[39m     }
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7083609Z     ^[[90m203|^[[39m     ^[[35mconst^[[39m isMember ^[[33m=^[[39m (nodeId^[[33m:^[[39m string) ^[[33m=>^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7085379Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/partial-seed-inputs.test.ts:^[[2m74:15^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7086350Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7087374Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7087951Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7090435Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/publisher-output-merge-consistency.test.ts^[[2m > ^[[22mGraphPublisher: memo/registry consistency (recovery A1)^[[2m > ^[[22ma same-flush requirement consumer sees the source's merged value
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7093272Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading 'overlaySource')^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7095126Z ^[[36m ^[[2m❯^[[22m GraphPublisher.flush packages/core/src/runtime/graph-publisher.ts:^[[2m201:22^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7097115Z     ^[[90m199|^[[39m       ^[[35mif^[[39m (id ^[[33m===^[[39m undefined ^[[33m||^[[39m affected^[[33m.^[[39m^[[34mhas^[[39m(id)) ^[[35mcontinue^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7098920Z     ^[[90m200|^[[39m       affected^[[33m.^[[39m^[[34madd^[[39m(id)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7099815Z ^[[2m   Start at ^[[22m 03:12:09
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7101166Z     ^[[90m201|^[[39m       queue^[[33m.^[[39m^[[34mpush^[[39m(^[[33m...^[[39m(dependents[id] ^[[33m??^[[39m []))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7102878Z     ^[[90m   |^[[39m                      ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7103929Z     ^[[90m202|^[[39m     }
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7105137Z     ^[[90m203|^[[39m     ^[[35mconst^[[39m isMember ^[[33m=^[[39m (nodeId^[[33m:^[[39m string) ^[[33m=>^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7107063Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/publisher-output-merge-consistency.test.ts:^[[2m54:29^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7108160Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7109248Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7109916Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7112387Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/publisher-output-merge-consistency.test.ts^[[2m > ^[[22mGraphPublisher: memo/registry consistency (recovery A1)^[[2m > ^[[22ma later flush resolves the source's merged value via registry fallback
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7115148Z ^[[31m^[[1mTypeError^[[22m: Cannot read properties of undefined (reading 'overlaySource')^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7117035Z ^[[36m ^[[2m❯^[[22m GraphPublisher.flush packages/core/src/runtime/graph-publisher.ts:^[[2m201:22^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7119230Z     ^[[90m199|^[[39m       ^[[35mif^[[39m (id ^[[33m===^[[39m undefined ^[[33m||^[[39m affected^[[33m.^[[39m^[[34mhas^[[39m(id)) ^[[35mcontinue^[[39m^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7120831Z     ^[[90m200|^[[39m       affected^[[33m.^[[39m^[[34madd^[[39m(id)^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7122420Z     ^[[90m201|^[[39m       queue^[[33m.^[[39m^[[34mpush^[[39m(^[[33m...^[[39m(dependents[id] ^[[33m??^[[39m []))^[[33m;^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7124026Z ^[[2m   Duration ^[[22m 6.31s^[[2m (transform 1.75s, setup 421ms, import 5.43s, tests 1.80s, environment 9ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7124486Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7124494Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7154460Z ##[error]TypeError: Cannot read properties of undefined (reading 'source')
+integration (node 24)	Run npm run test:integration	 ❯ GraphPublisher.flush packages/core/src/runtime/graph-publisher.ts:201:22
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/flush-output-merge.test.ts:45:48
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7167728Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7171514Z ##[error]TypeError: Cannot read properties of undefined (reading 'a')
+integration (node 24)	Run npm run test:integration	 ❯ GraphPublisher.flush packages/core/src/runtime/graph-publisher.ts:201:22
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/flush-output-merge.test.ts:73:48
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7173155Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7176722Z ##[error]TypeError: Cannot read properties of undefined (reading 'root')
+integration (node 24)	Run npm run test:integration	 ❯ GraphPublisher.flush packages/core/src/runtime/graph-publisher.ts:201:22
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/graph-publisher.test.ts:52:48
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7179267Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7182641Z ##[error]TypeError: Cannot read properties of undefined (reading 'bad')
+integration (node 24)	Run npm run test:integration	 ❯ GraphPublisher.flush packages/core/src/runtime/graph-publisher.ts:201:22
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/graph-publisher.test.ts:78:48
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7184800Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7188082Z ##[error]TypeError: Cannot read properties of undefined (reading 'source-a')
+integration (node 24)	Run npm run test:integration	 ❯ GraphPublisher.flush packages/core/src/runtime/graph-publisher.ts:201:22
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/partial-seed-inputs.test.ts:74:15
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7190655Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7194203Z ##[error]TypeError: Cannot read properties of undefined (reading 'overlaySource')
+integration (node 24)	Run npm run test:integration	 ❯ GraphPublisher.flush packages/core/src/runtime/graph-publisher.ts:201:22
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/publisher-output-merge-consistency.test.ts:54:29
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7196813Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7200857Z ##[error]TypeError: Cannot read properties of undefined (reading 'overlaySource')
+integration (node 24)	Run npm run test:integration	 ❯ GraphPublisher.flush packages/core/src/runtime/graph-publisher.ts:201:22
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/test/integration/publisher-output-merge-consistency.test.ts:83:15
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7203763Z     ^[[90m   |^[[39m                      ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7204347Z     ^[[90m202|^[[39m     }
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7205176Z     ^[[90m203|^[[39m     ^[[35mconst^[[39m isMember ^[[33m=^[[39m (nodeId^[[33m:^[[39m string) ^[[33m=>^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7206606Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/publisher-output-merge-consistency.test.ts:^[[2m83:15^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7207375Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7207781Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7208131Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T03:12:15.7485027Z ##[error]Process completed with exit code 1.
