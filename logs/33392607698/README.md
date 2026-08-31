@@ -1,0 +1,26 @@
+# CI log archive: 33392607698
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: feat/ra-62-schema-transaction
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/33392607698
+- Captured: 2026-08-31T12:37:09Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm run format:check	﻿2026-08-31T12:36:48.5620749Z ##[group]Run npm run format:check
+quality (node 24)	Run npm run format:check	2026-08-31T12:36:48.5621099Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Run npm run format:check	2026-08-31T12:36:48.5659227Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run format:check	2026-08-31T12:36:48.5659489Z env:
+quality (node 24)	Run npm run format:check	2026-08-31T12:36:48.5659697Z   NODE_VERSION: 24
+quality (node 24)	Run npm run format:check	2026-08-31T12:36:48.5659921Z ##[endgroup]
+quality (node 24)	Run npm run format:check	2026-08-31T12:36:48.6664205Z 
+quality (node 24)	Run npm run format:check	2026-08-31T12:36:48.6664824Z > motion5@0.0.0 format:check
+quality (node 24)	Run npm run format:check	2026-08-31T12:36:48.6665283Z > prettier . --check
+quality (node 24)	Run npm run format:check	2026-08-31T12:36:48.6665454Z 
+quality (node 24)	Run npm run format:check	2026-08-31T12:36:48.7591872Z Checking formatting...
+quality (node 24)	Run npm run format:check	2026-08-31T12:36:54.8318857Z [^[[33mwarn^[[39m] packages/core/test/unit/runtime/schema-transaction.test.ts
+quality (node 24)	Run npm run format:check	2026-08-31T12:36:55.1247099Z [^[[33mwarn^[[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+quality (node 24)	Run npm run format:check	2026-08-31T12:36:55.1691354Z ##[error]Process completed with exit code 1.
+```
