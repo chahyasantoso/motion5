@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { MotionDefinition, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+import type {
+  MotionDefinition,
+  ProjectDefinition,
+  TrackDefinition,
+} from "../../../src/contract/v5";
 import type { MotionHandle } from "../../../src/contract/motion-handle";
 import type { TrackHandle } from "../../../src/contract/track-handle";
 import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
@@ -43,9 +47,7 @@ const CAPE_ID = "villain/cape";
 const VILLAIN: MotionDefinition = { id: "villain", trigger: { type: "manual" }, tracks: [] };
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
-  motions: [
-    { id: MOTION_ID, trigger: { type: "manual" }, tracks: [{ id: "arm" }, { id: "leg" }] },
-  ],
+  motions: [{ id: MOTION_ID, trigger: { type: "manual" }, tracks: [{ id: "arm" }, { id: "leg" }] }],
 };
 /** One key per node, so a shared key cannot hide a missing publication behind an output merge. */
 const compose = (node: { id: string }) => () => ({
@@ -146,7 +148,8 @@ function rig(): Rig {
     removeMotionTrack: (_motionId, trackId) => record(`motion-remove ${trackId}`),
     createMotion: (definition) => record(`motion-create ${definition.id}`),
     destroyMotion: (motionId) => record(`motion-destroy ${motionId}`),
-    setMotionStagger: (motionId, stagger) => record(`motion-stagger ${motionId} ${String(stagger)}`),
+    setMotionStagger: (motionId, stagger) =>
+      record(`motion-stagger ${motionId} ${String(stagger)}`),
   };
   const runtime = new ProjectRuntime(PROJECT, options);
   return {
