@@ -9,10 +9,13 @@ import type {
   MotionDefinition,
 } from "../contract/v5";
 import { readAuthoredLeaf } from "../contract/authored-leaf";
+import { readPluginBindings } from "../contract/keyframe-shape";
+import { StaleMotionHandleError, type MotionHandle } from "../contract/motion-handle";
 import {
   StaleTrackHandleError,
   type AuthoredValues,
   type LiveValues,
+  type RequireView,
   type TrackHandle,
 } from "../contract/track-handle";
 import { validateMotionTrigger, validateTrackDefinition } from "../contract/validate-v5";
@@ -43,6 +46,20 @@ type TrackEntry = {
    * patched timeline patched. A private map entry; no public surface carries it. See ADR-060.
    */
   overlay: Readonly<Record<string, unknown>>;
+};
+/**
+ * One retained Motion, and the token every handle to it captures.
+ *
+ * The token is drawn from the same `#nextToken` the track entries use, because the staleness
+ * machinery here is per-entry rather than per-track-ness: `#liveOf` below answers for both maps, so a
+ * motion handle needed a token and a noun rather than a second token policy. See ADR-056.
+ *
+ * `definition.tracks` is empty for a runtime add by construction and authoritative for a loaded one,
+ * which is why no reader trusts it: `#ownedBy` is the one owner of which tracks a motion has.
+ */
+type MotionEntry = {
+  definition: MotionDefinition;
+  token: number;
 };
 /** No animated write. One frozen value, so the common entry allocates nothing. */
 const NO_OVERLAY: Readonly<Record<string, unknown>> = Object.freeze({});
@@ -88,7 +105,7 @@ interface SchemaEffect {
  */
 interface SchemaPlan {
   readonly tracks: ReadonlyMap<string, TrackEntry>;
-  readonly motions: ReadonlyMap<string, MotionDefinition>;
+  readonly motions: ReadonlyMap<string, MotionEntry>;
   readonly effects: readonly SchemaEffect[];
   readonly settle: readonly (() => void)[];
   readonly touched: readonly string[];
@@ -157,12 +174,27 @@ function runRollbackSteps(steps: readonly (() => void)[]): void {
   throw new AggregateError(failures, "Track replacement rollback failed.");
 }
 /**
+ * The bindings `track` authored, as a handle reports them.
+ *
+ * `readPluginBindings` is the one reader of the authored group shape and stays the one reader, so
+ * this derives nothing: it drops the diagnostics path, which belongs to the layer that cites it, and
+ * keeps everything that identifies the binding, `memberKey` included. Total by construction, because
+ * that reader answers with an empty list for a record that authors no group. See ADR-044 and ADR-057.
+ */
+function requireViews(track: TrackDefinition): readonly RequireView[] {
+  return Object.freeze(
+    readPluginBindings(track.keyframes ?? {}).map(({ plugin, slot, source, memberKey }) =>
+      Object.freeze({ plugin, slot, source, ...(memberKey === undefined ? {} : { memberKey }) }),
+    ),
+  );
+}
+/**
  * The authored static values of `track`, flattened, and nothing else.
  *
  * The mask a live write applies is derived from the retained definition rather than accumulated
- * across calls, and that is what makes `handle.track` and the composition unable to disagree: every
- * static leaf is masked with exactly what the definition says it is, so the key a caller named is
- * the only one that differs, an override cannot outlive the authored value it masked, and an empty
+ * across calls, and that is what makes `handle.definition` and the composition unable to disagree:
+ * every static leaf is masked with exactly what the definition says it is, so the key a caller named
+ * is the only one that differs, an override cannot outlive the authored value it masked, and an empty
  * record is a clear back to authored truth rather than a hole.
  *
  * An animated leaf is absent by construction, and that is unchanged by the animated key being
@@ -266,7 +298,7 @@ export class ProjectRuntime {
   readonly #graph: GraphRuntime;
   readonly #instances = new Map<string, object>();
   readonly #tracks = new Map<string, TrackEntry>();
-  readonly #motions = new Map<string, MotionDefinition>();
+  readonly #motions = new Map<string, MotionEntry>();
   readonly #schemaOwner = {};
   #nextToken = 1;
   readonly #diagnostics: Diagnostics;
@@ -289,7 +321,7 @@ export class ProjectRuntime {
   constructor(project: ProjectDefinition, options: ProjectRuntimeOptions) {
     this.#project = project;
     for (const motion of project.motions) {
-      this.#motions.set(motion.id, motion);
+      this.#motions.set(motion.id, { definition: motion, token: this.#nextToken++ });
       for (const track of motion.tracks)
         this.#tracks.set(qualifyMotionTrack(motion.id, track.id).value, {
           track,
@@ -370,7 +402,7 @@ export class ProjectRuntime {
       throw new TypeError(`Motion "${definition.id}" already exists.`);
     const accepted = { ...definition, tracks: [] };
     const motions = new Map(this.#motions);
-    motions.set(accepted.id, accepted);
+    motions.set(accepted.id, { definition: accepted, token: this.#nextToken++ });
     this.#commit({
       tracks: this.#tracks,
       motions,
@@ -398,22 +430,25 @@ export class ProjectRuntime {
   destroyMotion(motionId: string): void {
     this.#assertLive();
     if (!this.#motions.has(motionId)) throw new TypeError(`Unknown motion "${motionId}".`);
-    const owned = [...this.#tracks.entries()].filter(([, entry]) => entry.motionId === motionId);
-    if (owned.length)
-      throw new TypeError(
-        `Motion "${motionId}" still has ${owned.length} track(s). Remove them before destroying it.`,
-      );
-    const motions = new Map(this.#motions);
-    motions.delete(motionId);
-    // Nothing to apply and nothing to revert: the graph is asked first, and the hook that disposes
-    // the driver runs only once it accepted. An empty revert set rethrows the rejection verbatim.
-    this.#commit({
-      tracks: this.#tracks,
-      motions,
-      effects: [],
-      settle: [() => this.#destroyMotion?.(motionId)],
-      touched: [],
-    });
+    this.#removeMotion(motionId);
+  }
+  /**
+   * The resolver for one Motion, refusing an id this project never had.
+   *
+   * Separate from `tryMotion` below for the reason `#entryOf` is separate from `#entryIfLive`: this
+   * one refuses and that one answers, so a caller whose miss is expected rather than mistaken guards
+   * instead of catching, and neither grows a copy of the other's lookup.
+   */
+  motion(motionId: string): MotionHandle {
+    this.#assertLive();
+    const entry = this.#motions.get(motionId);
+    if (!entry) throw new TypeError(`Unknown motion "${motionId}".`);
+    return this.#motionHandle(motionId, entry.token);
+  }
+  tryMotion(motionId: string): MotionHandle | undefined {
+    this.#assertLive();
+    const entry = this.#motions.get(motionId);
+    return entry === undefined ? undefined : this.#motionHandle(motionId, entry.token);
   }
   addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle {
     return this.#addTrack(track, this.#schemaOwner, options);
@@ -423,13 +458,25 @@ export class ProjectRuntime {
     const entry = this.#entryOf(nodeId);
     return this.#handle(nodeId, entry.token);
   }
+  /**
+   * The same resolution as `track` above without the refusal.
+   *
+   * The probe an upsert is written with: a caller branches on the answer at its own call site, which
+   * is what keeps a single `setTrack` verb -- whose cost and refusal set would depend on whether the
+   * node already exists -- out of this surface.
+   */
+  tryTrack(nodeId: string): TrackHandle | undefined {
+    this.#assertLive();
+    const entry = this.#tracks.get(nodeId);
+    return entry === undefined ? undefined : this.#handle(nodeId, entry.token);
+  }
   adopt(
     track: TrackDefinition,
     owner: object,
     options?: { motionId?: string },
   ): { readonly id: string; readonly track: TrackDefinition } {
     const handle = this.#addTrack(track, owner, options);
-    return Object.freeze({ id: handle.id, track: handle.track });
+    return Object.freeze({ id: handle.id, track: handle.definition });
   }
   destroyAdopted(nodeId: string, owner: object): void {
     this.#assertLive();
@@ -494,6 +541,22 @@ export class ProjectRuntime {
     return this.#handle(id, token);
   }
   /**
+   * Every retained track a motion owns, in commit order, and the one owner of that question.
+   *
+   * Four readers ask it: the committed snapshot, the count in the destroy refusal, and both
+   * `MotionHandle.definition` and `MotionHandle.trackIds`. Each carried its own filter before, which
+   * is how a motion could report `tracks: []` while owning three, or a refusal could name a count no
+   * handle agreed with. It takes the map explicitly because a plan builder asks about the tracks it
+   * is about to commit while a handle asks about the live ones, and reading `#tracks` here would make
+   * that difference invisible at the call site.
+   */
+  #ownedBy(
+    tracks: ReadonlyMap<string, TrackEntry>,
+    motionId: string,
+  ): readonly (readonly [string, TrackEntry])[] {
+    return [...tracks.entries()].filter(([, entry]) => entry.motionId === motionId);
+  }
+  /**
    * The entry for a node id, or the refusal for an id this project never had.
    *
    * Separate from `#liveEntry` below on purpose: this answers about an id, which is what the public
@@ -506,17 +569,31 @@ export class ProjectRuntime {
     return entry;
   }
   /**
-   * The one place that compares a captured token against the live one.
+   * The one place in this file that compares a captured token against the live one.
    *
-   * `#liveEntry` below is the refusal and this is the probe, so `TrackHandle.live` and every
-   * throwing member read the same answer and cannot disagree about the same handle. The `track`
-   * getter and the three private mutators each carried their own copy of this comparison, which is
-   * how one condition ended up with two public failure contracts; the copies are deleted rather
+   * Generic over the entry rather than over the map it came from, because both retained kinds carry a
+   * token and the comparison is the same question about either. The track probe and the motion probe
+   * below are two names for two maps, not two copies of the rule: `SH-7` measures the number of
+   * comparisons in this module, and a second one here is what it exists to fail on. See ADR-056.
+   */
+  #liveOf<E extends { readonly token: number }>(
+    entries: ReadonlyMap<string, E>,
+    id: string,
+    token: number,
+  ): E | undefined {
+    const entry = entries.get(id);
+    return entry !== undefined && entry.token === token ? entry : undefined;
+  }
+  /**
+   * The probe every `live` getter reads, so `TrackHandle.live` and every throwing member answer the
+   * same question about the same handle.
+   *
+   * The `definition` getter and the three private mutators each carried their own comparison, which
+   * is how one condition ended up with two public failure contracts; the copies are deleted rather
    * than joined by a fifth. See ADR-056.
    */
   #entryIfLive(id: string, token: number): TrackEntry | undefined {
-    const entry = this.#tracks.get(id);
-    return entry !== undefined && entry.token === token ? entry : undefined;
+    return this.#liveOf(this.#tracks, id, token);
   }
   /**
    * The resolver every handle member and every private mutation path goes through.
@@ -530,6 +607,88 @@ export class ProjectRuntime {
     if (entry === undefined) throw new StaleTrackHandleError(id);
     return entry;
   }
+  #motionIfLive(id: string, token: number): MotionEntry | undefined {
+    return this.#liveOf(this.#motions, id, token);
+  }
+  #liveMotion(id: string, token: number): MotionEntry {
+    const entry = this.#motionIfLive(id, token);
+    if (entry === undefined) throw new StaleMotionHandleError(id);
+    return entry;
+  }
+  /**
+   * The Motion definition as it currently stands, tracks included.
+   *
+   * Projected through `#ownedBy` rather than answered from the entry, because the entry a runtime add
+   * accepted carries an empty list by construction: a handle answering with it would report no tracks
+   * for a motion that owns three. Same owner the committed snapshot reads, so the two cannot
+   * disagree.
+   */
+  #motionDefinition(entry: MotionEntry): MotionDefinition {
+    const id = entry.definition.id;
+    return Object.freeze({
+      ...entry.definition,
+      tracks: this.#ownedBy(this.#tracks, id).map(([, owned]) => owned.track),
+    });
+  }
+  /**
+   * Destroys a Motion that owns no tracks, from the id or from a live handle.
+   *
+   * The refusal counts through `#ownedBy`, so the number it names is the list `MotionHandle.trackIds`
+   * shows. Nothing to apply and nothing to revert: the graph is asked first, and the hook that
+   * disposes the driver runs only once it accepted. An empty revert set rethrows the rejection
+   * verbatim.
+   */
+  #removeMotion(motionId: string): void {
+    const owned = this.#ownedBy(this.#tracks, motionId);
+    if (owned.length)
+      throw new TypeError(
+        `Motion "${motionId}" still has ${owned.length} track(s). Remove them before destroying it.`,
+      );
+    const motions = new Map(this.#motions);
+    motions.delete(motionId);
+    this.#commit({
+      tracks: this.#tracks,
+      motions,
+      effects: [],
+      settle: [() => this.#destroyMotion?.(motionId)],
+      touched: [],
+    });
+  }
+  /**
+   * Every member resolves the entry before it reads an argument, which is what makes staleness the
+   * first answer rather than a second one.
+   *
+   * `tryTrack` refuses here as well, and that is deliberate. The probe never throws about an id it
+   * cannot find, but whether this handle is the live one at all is a different question, and it is
+   * answered before any id is looked at.
+   */
+  #motionHandle(id: string, token: number): MotionHandle {
+    const runtime = this;
+    return Object.freeze({
+      id,
+      get live(): boolean {
+        return runtime.#motionIfLive(id, token) !== undefined;
+      },
+      get definition(): MotionDefinition {
+        return runtime.#motionDefinition(runtime.#liveMotion(id, token));
+      },
+      get trackIds(): readonly string[] {
+        runtime.#liveMotion(id, token);
+        return Object.freeze(runtime.#ownedBy(runtime.#tracks, id).map(([nodeId]) => nodeId));
+      },
+      addTrack: (track: TrackDefinition) =>
+        runtime.#addTrack(track, runtime.#schemaOwner, {
+          motionId: runtime.#liveMotion(id, token).definition.id,
+        }),
+      track: (trackId: string) =>
+        runtime.track(qualifyMotionTrack(runtime.#liveMotion(id, token).definition.id, trackId).value),
+      tryTrack: (trackId: string) =>
+        runtime.tryTrack(
+          qualifyMotionTrack(runtime.#liveMotion(id, token).definition.id, trackId).value,
+        ),
+      destroy: () => runtime.#removeMotion(runtime.#liveMotion(id, token).definition.id),
+    });
+  }
   #handle(id: string, token: number): TrackHandle {
     const runtime = this;
     return Object.freeze({
@@ -537,8 +696,11 @@ export class ProjectRuntime {
       get live(): boolean {
         return runtime.#entryIfLive(id, token) !== undefined;
       },
-      get track(): TrackDefinition {
+      get definition(): TrackDefinition {
         return runtime.#liveEntry(id, token).track;
+      },
+      get requires(): readonly RequireView[] {
+        return requireViews(runtime.#liveEntry(id, token).track);
       },
       remove: () => runtime.#removeTrack(id, token),
       replace: (next: TrackDefinition) => runtime.#replaceTrack(id, token, next),
@@ -762,15 +924,13 @@ export class ProjectRuntime {
   }
   #snapshot(
     tracks: ReadonlyMap<string, TrackEntry>,
-    motions: ReadonlyMap<string, MotionDefinition>,
+    motions: ReadonlyMap<string, MotionEntry>,
   ): ProjectDefinition {
     return {
       ...this.#project,
-      motions: [...motions.values()].map((motion) => ({
-        ...motion,
-        tracks: [...tracks.values()]
-          .filter((entry) => entry.motionId === motion.id)
-          .map((entry) => entry.track),
+      motions: [...motions.values()].map((entry) => ({
+        ...entry.definition,
+        tracks: this.#ownedBy(tracks, entry.definition.id).map(([, owned]) => owned.track),
       })),
       freeTracks: [...tracks.values()]
         .filter((entry) => entry.motionId === undefined)
@@ -798,9 +958,9 @@ export class ProjectRuntime {
   /**
    * Rewrites `nodeId`'s authored values, topology untouched.
    *
-   * The authored half: the retained `TrackDefinition` moves with the live values, so `handle.track`
-   * and the composition cannot disagree, and it still costs one invalidate rather than a staged
-   * Track and a graph rebuild. See ADR-059 and ADR-060.
+   * The authored half: the retained `TrackDefinition` moves with the live values, so
+   * `handle.definition` and the composition cannot disagree, and it still costs one invalidate
+   * rather than a staged Track and a graph rebuild. See ADR-059 and ADR-060.
    */
   setValues(nodeId: string, values: AuthoredValues) {
     this.#assertLive();
