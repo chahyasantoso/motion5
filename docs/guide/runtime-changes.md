@@ -25,12 +25,22 @@ const track = handle.addTrack(armTrack, { motionId: "walk" });
 
 track.replace(nextDefinition);
 track.addObserve({ source: "walk/chest" });
-track.remove();
 track.setRequire("fk", "base", "walk/chest");
 track.removeRequire("fk", "base");
+track.setKeyframeGroup("fk", { values: { length: 10 }, requires: { base: "walk/chest" } });
+track.removeKeyframeGroup("fk");
+track.setGoal("ik", "wrist", "walk/hand");
+track.removeGoal("ik", "wrist");
+track.remove();
 ```
 
-`setRequire` and `removeRequire` edit one edge on an already-bound plugin group. They preserve the group values, redirect rather than append, support `memberKey` for dict-valued slots, and leave the `requires` section absent when its last binding is removed. They rebuild the graph because an authored requirement is topology, and refused candidates leave the handle unchanged. To originate a plugin group, use `setKeyframeGroup` in the structural authoring API rather than silently creating a partial group.
+`setRequire` and `removeRequire` edit one edge on an already-bound plugin group. They preserve the group values, redirect rather than append, support `memberKey` for dict-valued slots, and leave the `requires` section absent when its last binding is removed. They rebuild the graph because an authored requirement is topology, and refused candidates leave the handle unchanged. To originate a plugin group, use `setKeyframeGroup` rather than silently creating a partial group: `keyframe-group-unbound` is what you get for naming a plugin this node authors no group for.
+
+`setKeyframeGroup` and `removeKeyframeGroup` are the whole-group pair. The first writes a plugin binding, values and `requires` together, whether or not the node had one, because a group holding only half its data may be transiently invalid; that also makes it the one honest `set` verb here, since a group carries no id, no token and no mount, so originating one and replacing one are the same edit at the same price. It is wholesale rather than merged: the group you hand over is the group the node authors afterwards. The second drops the group and every edge its `requires` derived, in one commit, values included, because what is removed is the group rather than a section of it.
+
+`setGoal` and `removeGoal` edit one entry of a solver's goals slot, addressed by the member id it is authored under, so two entries of one slot stay two edges. `setRequire` and `removeRequire` refuse that slot by name, as `keyframe-goal-slot-reserved`, and point at these two: without a member key they could only write the scalar spelling the loader refuses, and with one they would write the right shape through the wrong verb.
+
+All four are no-ops when nothing changes, and each refuses before writing anything: `keyframe-entry-shape` for a name this node authors as an ordinary property, because writing a group over one would drop every stop you wrote, and `keyframe-group-shape` for a group naming neither reserved section, because that object is the ordinary property it looks like and removing the entry is how you author nothing. Everything else about the candidate is answered where it already is, by the plugin registry and by graph validation, and a refused candidate is rolled back with the handle unchanged. See ADR-062 and ADR-063.
 
 An observation carries `source` and nothing else, and the edge it declares is always an output edge: the source's contribution merges over this track's composed patch. `addObserve` throws for each of the three removed fields, `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`. There is no way to declare an input edge by hand: bind the dependency under the plugin group's `requires` section, which is the only way a value enters composition. See ADR-046 and ADR-047.
 
@@ -71,7 +81,7 @@ A write is replaced wholesale by the next one rather than accumulated, so an emp
 track.overrideValues({});
 ```
 
-That restores the authored values, or whatever the last `setValues` wrote, and nothing else. A real `replace()` also drops it, because it compiles a fresh Track. Omitted keys always keep their values, and topology, progress, and observations are untouched by either member.
+That restores the authored values, or whatever the last `setValues` wrote, and nothing else. A real `replace()` also drops it, because it compiles a fresh Track. A structural edit drops it too, for the same reason. Omitted keys always keep their values, and topology, progress, and observations are untouched by either member.
 
 The refusal set is contract, not a limitation. Each of these throws `LiveValueKeyError`, whose `ruleId` is `live-value-key`, with no mutation and no publish:
 
@@ -85,7 +95,7 @@ The last two are the interesting ones. A live write moves a value; it does not c
 
 ## A stale handle refuses, and `live` asks without throwing
 
-A handle carries a private token, so it can never affect a later track that reuses the same id. Once that token is no longer current the handle is stale, and every member of it fails the same way: `track`, `remove()`, `replace()`, `addObserve()`, `removeObserve()`, `overrideValues()`, and `setValues()` all throw `StaleTrackHandleError`. Four of them used to return silently, which reported success for doing nothing. See ADR-056.
+A handle carries a private token, so it can never affect a later track that reuses the same id. Once that token is no longer current the handle is stale, and every member of it fails the same way: `definition`, `requires`, `remove()`, `replace()`, `addObserve()`, `removeObserve()`, `setRequire()`, `removeRequire()`, `setKeyframeGroup()`, `removeKeyframeGroup()`, `setGoal()`, `removeGoal()`, `overrideValues()`, and `setValues()` all throw `StaleTrackHandleError`. Four of them used to return silently, which reported success for doing nothing. See ADR-056.
 
 The error extends `TypeError` and keeps the message `Track "<id>" is no longer live.` verbatim, so an existing `instanceof TypeError` narrowing keeps matching. Branch on `ruleId`, which is `stale-track-handle`, rather than on the message; `nodeId` carries the node the refused handle was captured against.
 
@@ -93,11 +103,7 @@ The error extends `TypeError` and keeps the message `Track "<id>" is no longer l
 
 ```ts
 if (track.live) track.remove();
-track.setRequire("fk", "base", "walk/chest");
-track.removeRequire("fk", "base");
 ```
-
-`setRequire` and `removeRequire` edit one edge on an already-bound plugin group. They preserve the group values, redirect rather than append, support `memberKey` for dict-valued slots, and leave the `requires` section absent when its last binding is removed. They rebuild the graph because an authored requirement is topology, and refused candidates leave the handle unchanged. To originate a plugin group, use `setKeyframeGroup` in the structural authoring API rather than silently creating a partial group.
 
 `live` never throws, on either side of any invalidation and on a disposed project. On a disposed project `remove()` reports the disposal rather than the staleness, because the project's own lifecycle outranks one handle's, and the guard above is correct either way.
 
@@ -109,11 +115,7 @@ Remove children before parents so every intermediate graph stays valid. When you
 
 ```ts
 for (const track of [...handles].reverse()) track.remove();
-track.setRequire("fk", "base", "walk/chest");
-track.removeRequire("fk", "base");
 ```
-
-`setRequire` and `removeRequire` edit one edge on an already-bound plugin group. They preserve the group values, redirect rather than append, support `memberKey` for dict-valued slots, and leave the `requires` section absent when its last binding is removed. They rebuild the graph because an authored requirement is topology, and refused candidates leave the handle unchanged. To originate a plugin group, use `setKeyframeGroup` in the structural authoring API rather than silently creating a partial group.
 
 `handle.dependantsOf(nodeId)` is a read-only query for editor preflight: it tells you who observes a node before you try to delete it. It is not the enforcement. Graph validation rejects a deletion that would orphan a live dependant, and there is no cascade delete.
 
