@@ -99,7 +99,7 @@ describe("a refused Track replacement commits nothing", () => {
     // Red on the parent: the graph was already replaced and the live Track already disposed, so
     // the next flush resolved nothing and published a composition failure instead of a value.
     expect(valuesAfterSeek(handle, 0.5)).toEqual({ x: 50 });
-    expect(handle.track(NODE_ID).track).toEqual(armTrack(0, 100));
+    expect(handle.track(NODE_ID).definition).toEqual(armTrack(0, 100));
 
     handle.dispose();
   });
@@ -114,7 +114,7 @@ describe("a refused Track replacement commits nothing", () => {
     handle.track(NODE_ID).replace(armTrack(0, 200));
 
     expect(valuesAfterSeek(handle, 0.5)).toEqual({ x: 100 });
-    expect(handle.track(NODE_ID).track).toEqual(armTrack(0, 200));
+    expect(handle.track(NODE_ID).definition).toEqual(armTrack(0, 200));
 
     handle.dispose();
   });
@@ -128,7 +128,7 @@ describe("a refused Track replacement commits nothing", () => {
     // Red on the parent twice over: the graph, the compiled Track, and the runtime's own entry had
     // all moved to a definition the Motion then refused, so the handle reported a replacement that
     // never took effect and the node composed values nothing had accepted.
-    expect(handle.track(NODE_ID).track).toEqual(armTrack(0, 100));
+    expect(handle.track(NODE_ID).definition).toEqual(armTrack(0, 100));
     expect(valuesAfterSeek(handle, 0.5)).toEqual({ x: 50 });
 
     handle.dispose();
@@ -144,7 +144,7 @@ describe("a refused Track replacement commits nothing", () => {
     const thrown = thrownBy(() => handle.track(NODE_ID).addObserve(observation));
 
     expect((thrown as Error).message).toMatch(/^observation-unknown-source at /);
-    expect(handle.track(NODE_ID).track.observes).toBeUndefined();
+    expect(handle.track(NODE_ID).definition.observes).toBeUndefined();
     expect(valuesAfterSeek(handle, 0.5)).toEqual({ x: 50 });
 
     handle.dispose();
