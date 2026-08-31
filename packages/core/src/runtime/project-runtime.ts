@@ -12,6 +12,7 @@ import { readAuthoredLeaf } from "../contract/authored-leaf";
 import { readPluginBindings } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { StaleMotionHandleError, type MotionHandle } from "../contract/motion-handle";
+import type { SchemaTransaction } from "../contract/schema-transaction";
 import {
   StaleTrackHandleError,
   type AuthoredValues,
@@ -92,7 +93,7 @@ export interface StagedTrack {
 /**
  * One side effect a structural commit needs in place before the graph is asked to accept it.
  *
- * `revert` is the inverse, and it is optional because two of the transactions have nothing to undo:
+ * `revert` is the inverse, and it is optional because two of the categories have nothing to undo:
  * a removal and a motion destroy reach the candidate graph with no hook applied yet, and an empty
  * revert set is what keeps their failures byte-identical to the raw `replaceGraph` throw they used
  * to be.
@@ -106,7 +107,7 @@ interface SchemaEffect {
   readonly revert?: () => void;
 }
 /**
- * One structural transaction, as data.
+ * One structural transaction, as data, and now only the pair the graph is asked to accept.
  *
  * `tracks` and `motions` are what the graph is asked to accept and, once it has, what the retained
  * maps become. They are adopted from the same pair that built the snapshot rather than rewritten
@@ -114,10 +115,27 @@ interface SchemaEffect {
  * because a fresh definition object for an untouched entry is exactly what costs the incremental
  * builder its cache hit. See ADR-058.
  *
+ * What a plan no longer carries is a hook list. A1 gave every entry point one transaction owner and
+ * left each of them assembling its own effects, settle steps and seeds, and those lists compose only
+ * while a commit carries exactly one change. A recipe that adds a track and then edits it would
+ * accumulate an `addMotionTrack` in the settle steps, from the add, and a `replaceMotionTrack` in
+ * the effects, from the edit; effects run before the graph is asked and settle steps run after it
+ * accepted, so the Motion would be asked to replace a track it has not been told about yet. So a
+ * commit's hooks are derived from what it commits, by `#derive` below, and every entry point is a
+ * map builder that names no hook at all. `RA-65` is the first case that can tell the two apart.
+ * See ADR-064.
+ */
+interface SchemaPlan {
+  readonly tracks: ReadonlyMap<string, TrackEntry>;
+  readonly motions: ReadonlyMap<string, MotionEntry>;
+}
+/**
+ * What one accepted pair costs, and the only thing in this file that names a hook.
+ *
  * `effects` are applied before the graph sees the candidate and reverted in **apply order** when it
- * refuses. Apply order rather than reverse, and that is load-bearing rather than incidental:
- * `#replaceTrack` republishes the displaced compiled Track before restoring the Motion entry,
- * because the restore resolves and seeds by id. `settle` runs only after acceptance.
+ * refuses. Apply order rather than reverse, and that is load-bearing rather than incidental: a
+ * replacement republishes the displaced compiled Track before restoring the Motion entry, because
+ * the restore resolves and seeds by id. `settle` runs only after acceptance.
  * See ADR-031 and ADR-045.
  *
  * `touched` names the nodes this transaction changed, and it is seeded into one flush once the
@@ -125,93 +143,21 @@ interface SchemaEffect {
  * node and no edge at all, and a removal's node is gone with nothing left depending on it, because
  * `finalizeGraph` would have refused the candidate otherwise.
  */
-interface SchemaPlan {
-  readonly tracks: ReadonlyMap<string, TrackEntry>;
-  readonly motions: ReadonlyMap<string, MotionEntry>;
+interface SchemaCommit {
   readonly effects: readonly SchemaEffect[];
   readonly settle: readonly (() => void)[];
   readonly touched: readonly string[];
 }
 /**
- * The one seam by which a live value reaches the compiled Track this runtime does not own.
+ * The pending pair one open recipe is staging, and the whole of the transaction owner's state.
  *
- * One hook rather than one per entry point, and that is the ownership statement restored rather than
- * reversed: there is one mechanism, so there is one hook. What separates `setValues` from
- * `overrideValues` is the retained definition, which is this runtime's own, and at the compiled
- * Track it is one boolean. `undefined` for the overlay is a write no animated key is involved in,
- * which is what keeps a static-only write on the path it was already on. See ADR-059 and ADR-060.
+ * Mutable in exactly its two fields, because `#commit` merges into it rather than queueing an op:
+ * every entry point builds its candidate pair from whatever is open, so the pair that is open is
+ * always the answer the recipe has produced so far, and there is no op log to replay. See ADR-064.
  */
-export type LiveValueWriter = (
-  nodeId: string,
-  values: LiveValues,
-  overlay: Readonly<Record<string, unknown>> | undefined,
-  rebase: boolean,
-) => LiveWriteResult | undefined;
-/**
- * How this layer asks what an authored record resolves to.
- *
- * One hook, one implementation. `PluginRegistry.resolveForKeyframes` is the only thing that answers
- * it, and it stays the only owner of key ownership, slot declaration and the plugin chain; this
- * runtime depends on a function so that it can read that answer without holding a registry it has no
- * other reason to hold. See ADR-062.
- */
-export type KeyframeResolver = (
-  keyframes: Readonly<Record<string, unknown>>,
-  path: string,
-  track: TrackConfigView,
-) => ResolvedPlugins;
-export interface ProjectRuntimeOptions {
-  readonly clock: Clock;
-  readonly scheduler?: Scheduler;
-  readonly compose: ComposeResolver;
-  /**
-   * How one node's interpolated state is read, forwarded to `GraphRuntime` untouched.
-   *
-   * Total, for the reason the option it forwards to gives: the supplier may not answer "this node
-   * has none", because the publisher's report for a member with no such function names the seam
-   * rather than the node. The function it returns resolves the compiled Track per call.
-   */
-  readonly interpolated?: (node: GraphNode) => () => MemberState;
-  readonly setProgress?: (nodeId: string, progress: number) => void;
-  readonly writeValues?: LiveValueWriter;
-  readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
-  readonly disposeTrack?: (nodeId: string) => void;
-  readonly stageTrack?: (track: TrackDefinition, nodeId: string) => StagedTrack;
-  /**
-   * The registry's own answer about one authored record, as data rather than as a refusal.
-   *
-   * Optional, because a project may be loaded with no `PluginRegistry` at all, and total when it is
-   * present: a supplier allowed to answer "I have nothing for this record" would make the predicate
-   * that reads it depend on which of two absences it was handed. With no seam every replacement
-   * builds, exactly as it did before the predicate existed, which is what keeps every prior
-   * registry-free rig byte-identical.
-   *
-   * The second parameter is a diagnostics path rather than a node id, and that is the one thing
-   * about this signature worth stating: `engine.ts` already asks the registry with
-   * `<node>.keyframes` there, so an option declared to take an id would either mis-cite every
-   * diagnostic it produced or force a second normalization at the wiring site. See ADR-062.
-   */
-  readonly resolveKeyframes?: KeyframeResolver;
-  readonly addMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
-  readonly replaceMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
-  readonly removeMotionTrack?: (motionId: string, trackId: string) => void;
-  /**
-   * The two tier 0 seams: a Motion's trigger and its stagger, neither of which any node carries.
-   *
-   * Two hooks rather than one, because which one an edit asks is half of what the edit claims. A
-   * stagger routed through the trigger hook would dispose a live driver and resubscribe a host
-   * source for a field no driver reads, and one hook taking both fields could not tell that from a
-   * correct edit. Named beside the `addMotionTrack` family, and named for what they do: a trigger
-   * carries a disposable resource behind it, a stagger is a bare field.
-   */
-  readonly replaceMotionTrigger?: (motionId: string, definition: MotionDefinition) => void;
-  readonly setMotionStagger?: (motionId: string, stagger?: number) => void;
-  readonly createMotion?: (definition: MotionDefinition) => void;
-  readonly destroyMotion?: (motionId: string) => void;
-  readonly onClockTick?: (event: ClockTick) => void;
-  readonly disposeComposition?: () => void;
-  readonly diagnosticsCapacity?: number;
-  readonly graphBuilder?: GraphBuilder;
+interface OpenTransaction {
+  tracks: ReadonlyMap<string, TrackEntry>;
+  motions: ReadonlyMap<string, MotionEntry>;
 }
 function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
   return diagnostics
@@ -233,6 +179,33 @@ function runRollbackSteps(steps: readonly (() => void)[]): void {
   if (failures.length === 0) return;
   if (failures.length === 1) throw failures[0];
   throw new AggregateError(failures, "Track replacement rollback failed.");
+}
+/**
+ * Refuses a recipe opened inside a recipe.
+ *
+ * Joining the open one silently would mean the inner `edit` returns before anything it asked for has
+ * committed, so a helper's cost and its guarantees would depend on whether something above it had
+ * opened a transaction. That is the invisible-context shape that cut `setMotion`, cut `setTrack` and
+ * kept `setKeyframe` separate from `setKeyframeGroup`. See ADR-064.
+ */
+function nestedTransaction(): never {
+  const use = "Finish it before opening another.";
+  throw new TypeError(`schema-transaction-nested: A recipe is already open. ${use}`);
+}
+/**
+ * Refuses an edit that applies immediately from inside a recipe.
+ *
+ * Neither tier this reaches is a structural commit: tier 0 reaches the layer that owns the created
+ * trigger and the clock consumer, and tier 2 ends at its own `invalidate`. Both therefore apply
+ * immediately and would survive an abort. Deferring them into the settle steps was read and refused,
+ * because a settle step cannot refuse: it would move `setTrigger`'s failure to after the graph
+ * committed and after the retained definition moved, which is the opposite of the contract `RA-35`
+ * pins. One condition has one failure contract, so the verb is refused by name inside a recipe
+ * rather than given a second, weaker one outside it. See ADR-064.
+ */
+function immediateInTransaction(verb: string): never {
+  const detail = `"${verb}" applies immediately and cannot travel with a recipe.`;
+  throw new TypeError(`schema-transaction-immediate: ${detail} Call it outside edit().`);
 }
 /**
  * Refuses a binding edit addressed at a plugin this node authors no group for.
@@ -423,7 +396,7 @@ function withStagger(definition: MotionDefinition, stagger: number | undefined):
  *
  * Suppress and attach, never suppress and drop. When the rollback succeeds the rejection is
  * rethrown untouched, so every existing message and error type contract holds, including the two
- * transactions that have nothing to revert at all. When it fails, one error carries both, which is
+ * categories that have nothing to revert at all. When it fails, one error carries both, which is
  * the collect-then-report-once shape `Engine`'s clock consumer fanout already uses, so no new
  * failure shape is invented here. See ADR-035.
  */
@@ -449,6 +422,14 @@ export class ProjectRuntime {
   readonly #motions = new Map<string, MotionEntry>();
   readonly #schemaOwner = {};
   #nextToken = 1;
+  /**
+   * The open transaction, and the one piece of state `edit` adds to this class.
+   *
+   * Present exactly while a recipe is running. Nothing else about the runtime is duplicated for it:
+   * the pending pair is the same shape the retained maps are, so every entry point reads it through
+   * the two accessors below and no verb learns that it is inside a recipe. See ADR-064.
+   */
+  #open: OpenTransaction | undefined;
   readonly #diagnostics: Diagnostics;
   readonly #setProgress: (nodeId: string, progress: number) => void;
   readonly #writeValuesHook: LiveValueWriter;
@@ -531,6 +512,23 @@ export class ProjectRuntime {
   get diagnostics(): DiagnosticsSnapshot {
     return this.#diagnostics.snapshot();
   }
+  /**
+   * The retained tracks, or the pending ones while a recipe is open.
+   *
+   * Every structural read in this class goes through this rather than reaching `#tracks` directly,
+   * which is what makes a two-step edit possible at all: the second step resolves against what the
+   * first staged, and a handle issued inside the recipe answers `live` truthfully on both sides of
+   * an abort, because its entry is in the pending pair and never in the retained one. The two
+   * in-place tiers keep reading the retained maps, and they are refused by name inside a recipe
+   * rather than allowed to write through the open one. See ADR-064.
+   */
+  #readTracks(): ReadonlyMap<string, TrackEntry> {
+    return this.#open?.tracks ?? this.#tracks;
+  }
+  /** The same question about the other map, and the same reason. */
+  #readMotions(): ReadonlyMap<string, MotionEntry> {
+    return this.#open?.motions ?? this.#motions;
+  }
   mount(nodeId: string, instance: object = {}): object {
     this.#assertLive();
     if (this.#instances.has(nodeId)) throw new TypeError(`Node "${nodeId}" is already mounted.`);
@@ -544,6 +542,65 @@ export class ProjectRuntime {
     this.#instances.delete(nodeId);
     this.#graph.detach(nodeId);
   }
+  /**
+   * Runs `recipe` as one transaction and commits what it staged exactly once.
+   *
+   * The verb issue #223 says has no vocabulary: build a project's structure up incrementally from
+   * nothing, driven by runtime code, with each step individually correct and the whole thing
+   * committed once. `n` authored ops across `m` tracks cost one candidate build, one
+   * `GraphBinding.replace`, one `ObservationState.commit`, one side-effect ordering with one
+   * rollback, and one flush, where the same sequence spelled one op at a time costs `n` of each.
+   *
+   * Abort semantics come free from A1 rather than from a compensation path: only `#commit` registers
+   * a token and only a commit applies an effect, so a throw inside the recipe commits nothing,
+   * reaches no hook, and issues no live handle. The throw travels verbatim, because the recipe's own
+   * failure is the reason the caller can act on.
+   *
+   * A recipe that staged nothing commits nothing, answered by identity on the pair rather than by a
+   * dirty flag: an op that was a no-op hands the map it was given straight back, so the pair a
+   * recipe ends on is the pair it opened with and there is nothing to spend a candidate build on.
+   * See `RA-66` and ADR-064.
+   */
+  edit<T>(recipe: (transaction: SchemaTransaction) => T): T {
+    this.#assertLive();
+    if (this.#open !== undefined) nestedTransaction();
+    const open: OpenTransaction = { tracks: this.#tracks, motions: this.#motions };
+    this.#open = open;
+    let answer: T;
+    try {
+      answer = recipe(this.#transaction());
+    } finally {
+      // Cleared before the commit rather than after it, so the settle steps mount against the
+      // retained pair and a nested `edit` after a throw finds no transaction open.
+      this.#open = undefined;
+    }
+    if (open.tracks !== this.#tracks || open.motions !== this.#motions)
+      this.#apply({ tracks: open.tracks, motions: open.motions });
+    return answer;
+  }
+  /**
+   * The narrowed surface one recipe is handed, and a projection rather than a second author.
+   *
+   * Every member forwards to the member this class already has, deliberately: a second `addTrack`
+   * would be a second owner of what an add costs, and the whole point of this slice is that there is
+   * one. What the object buys is the narrowing -- `mount`, `seek`, `subscribe` and `dispose` are not
+   * reachable through it, because none of them is a structural change and none of them can be undone
+   * by a recipe that throws. `addMotion` resolves the handle it returns through `motion` for the
+   * same reason: the id is what the entry point answers and the handle is what one lookup makes of
+   * it. See ADR-064.
+   */
+  #transaction(): SchemaTransaction {
+    const runtime = this;
+    return Object.freeze({
+      addMotion: (definition: MotionDefinition) => runtime.motion(runtime.addMotion(definition).id),
+      motion: (motionId: string) => runtime.motion(motionId),
+      tryMotion: (motionId: string) => runtime.tryMotion(motionId),
+      addTrack: (track: TrackDefinition, options?: { motionId?: string }) =>
+        runtime.addTrack(track, options),
+      track: (nodeId: string) => runtime.track(nodeId),
+      tryTrack: (nodeId: string) => runtime.tryTrack(nodeId),
+    });
+  }
   addMotion(definition: MotionDefinition): { readonly id: string } {
     this.#assertLive();
     const triggerDiagnostics = validateMotionTrigger(
@@ -554,38 +611,20 @@ export class ProjectRuntime {
       throw new TypeError(describeDiagnostics(triggerDiagnostics));
     if (definition.tracks.length > 0)
       throw new TypeError(`Runtime Motion "${definition.id}" must start with empty tracks.`);
-    if (this.#motions.has(definition.id))
+    if (this.#readMotions().has(definition.id))
       throw new TypeError(`Motion "${definition.id}" already exists.`);
     const accepted = { ...definition, tracks: [] };
-    const motions = new Map(this.#motions);
+    const motions = new Map(this.#readMotions());
     motions.set(accepted.id, { definition: accepted, token: this.#nextToken++ });
-    this.#commit({
-      tracks: this.#tracks,
-      motions,
-      // Build the Motion before committing anything. A driver that cannot be created, such as a
-      // scroll trigger with no registered source, must not leave a definition or a graph node
-      // behind: addTrack would accept the id, compile a Track, replace the graph, and only then
-      // fail from a hook, one layer too late to name the real cause. See ADR-032.
-      //
-      // The destroyMotion hook is already the exact rollback set -- it releases the clock consumer,
-      // disposes the created trigger, disposes the Motion, and drops the map entry -- and it is a
-      // no-op for an absent id, so no second rollback owner is introduced. See ADR-035.
-      effects: [
-        {
-          apply: () => this.#createMotion?.(accepted),
-          revert: () => this.#destroyMotion?.(accepted.id),
-        },
-      ],
-      settle: [],
-      // A motion derives no node and no edge, so there is nothing to publish. Its graph pass is an
-      // id-uniqueness gate reached through a full rebuild, not a topology commit.
-      touched: [],
-    });
+    // A map builder and nothing else. Which hooks a created Motion costs, and that the driver is
+    // built before the graph is asked so a trigger that cannot be created leaves no definition and
+    // no node behind, is `#derive`'s answer now. See ADR-032 and ADR-064.
+    this.#commit({ tracks: this.#readTracks(), motions });
     return Object.freeze({ id: accepted.id });
   }
   destroyMotion(motionId: string): void {
     this.#assertLive();
-    if (!this.#motions.has(motionId)) throw new TypeError(`Unknown motion "${motionId}".`);
+    if (!this.#readMotions().has(motionId)) throw new TypeError(`Unknown motion "${motionId}".`);
     this.#removeMotion(motionId);
   }
   /**
@@ -597,13 +636,13 @@ export class ProjectRuntime {
    */
   motion(motionId: string): MotionHandle {
     this.#assertLive();
-    const entry = this.#motions.get(motionId);
+    const entry = this.#readMotions().get(motionId);
     if (!entry) throw new TypeError(`Unknown motion "${motionId}".`);
     return this.#motionHandle(motionId, entry.token);
   }
   tryMotion(motionId: string): MotionHandle | undefined {
     this.#assertLive();
-    const entry = this.#motions.get(motionId);
+    const entry = this.#readMotions().get(motionId);
     return entry === undefined ? undefined : this.#motionHandle(motionId, entry.token);
   }
   addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle {
@@ -623,7 +662,7 @@ export class ProjectRuntime {
    */
   tryTrack(nodeId: string): TrackHandle | undefined {
     this.#assertLive();
-    const entry = this.#tracks.get(nodeId);
+    const entry = this.#readTracks().get(nodeId);
     return entry === undefined ? undefined : this.#handle(nodeId, entry.token);
   }
   adopt(
@@ -636,7 +675,7 @@ export class ProjectRuntime {
   }
   destroyAdopted(nodeId: string, owner: object): void {
     this.#assertLive();
-    const entry = this.#tracks.get(nodeId);
+    const entry = this.#readTracks().get(nodeId);
     if (!entry || entry.owner !== owner)
       throw new TypeError(
         !entry
@@ -656,44 +695,27 @@ export class ProjectRuntime {
   #addTrack(track: TrackDefinition, owner: object, options?: { motionId?: string }): TrackHandle {
     this.#assertLive();
     const motionId = options?.motionId;
-    if (motionId !== undefined && !this.#motions.has(motionId))
+    if (motionId !== undefined && !this.#readMotions().has(motionId))
       throw new TypeError(`Unknown motion "${motionId}".`);
     const id =
       motionId !== undefined
         ? qualifyMotionTrack(motionId, track.id).value
         : qualifyFreeTrack(track.id).value;
-    if (this.#tracks.has(id)) throw new TypeError(`Track "${id}" already exists.`);
+    if (this.#readTracks().has(id)) throw new TypeError(`Track "${id}" already exists.`);
     const validation = validateTrackDefinition(track, `addTrack(${track.id})`);
     if (!validation.valid || !validation.value)
       throw new TypeError(describeDiagnostics(validation.diagnostics));
     const accepted = validation.value;
     const token = this.#nextToken++;
-    const tracks = new Map(this.#tracks);
+    const tracks = new Map(this.#readTracks());
     tracks.set(id, { track: accepted, owner, motionId, token, overlay: NO_OVERLAY });
-    // Must run after compileTrack: Motion resolves by id against the live compiled map, so an
-    // earlier call would resolve nothing and reject the add. See ADR-031.
-    const settle: (() => void)[] = [];
-    if (motionId !== undefined)
-      settle.push(() => this.#addMotionTrack?.(motionId, id, accepted.duration));
-    settle.push(() => this.mount(id));
-    this.#commit({
-      tracks,
-      motions: this.#motions,
-      // disposeTrack is application code too, and a compiled Track whose dispose throws must not
-      // hide the rule that rejected the candidate. Same shape as addMotion above, because a
-      // rollback that can outrank its trigger is one defect rather than two. See ADR-035.
-      effects: [
-        {
-          apply: () => this.#compileTrack?.(accepted, id),
-          revert: () => this.#disposeTrack?.(id),
-        },
-      ],
-      settle,
-      // The new node publishes, which it never did before. A node whose sources have not published
-      // yet lands on blocked with a pending diagnostic rather than on nothing at all, and that is
-      // the whole of what building a structure up incrementally requires. See `RA-9`.
-      touched: [id],
-    });
+    // A map builder and nothing else. That the compile runs before the graph is asked, that the
+    // Motion entry is written after it because Motion resolves by id against the live compiled map,
+    // and that the mount settles last are all `#derive`'s answer now, derived from the fact that
+    // this id is absent from the retained pair. That is also what makes an add-then-remove inside
+    // one recipe cost nothing at all rather than mounting a node the committed graph lacks.
+    // See ADR-031 and ADR-064.
+    this.#commit({ tracks, motions: this.#readMotions() });
     return this.#handle(id, token);
   }
   /**
@@ -703,8 +725,8 @@ export class ProjectRuntime {
    * `MotionHandle.definition` and `MotionHandle.trackIds`. Each carried its own filter before, which
    * is how a motion could report `tracks: []` while owning three, or a refusal could name a count no
    * handle agreed with. It takes the map explicitly because a plan builder asks about the tracks it
-   * is about to commit while a handle asks about the live ones, and reading `#tracks` here would make
-   * that difference invisible at the call site.
+   * is about to commit while a handle asks about the readable ones, and reading `#tracks` here would
+   * make that difference invisible at the call site.
    */
   #ownedBy(
     tracks: ReadonlyMap<string, TrackEntry>,
@@ -720,7 +742,7 @@ export class ProjectRuntime {
    * with one message rather than a copy per caller.
    */
   #entryOf(nodeId: string): TrackEntry {
-    const entry = this.#tracks.get(nodeId);
+    const entry = this.#readTracks().get(nodeId);
     if (!entry) throw new TypeError(`Unknown graph node "${nodeId}".`);
     return entry;
   }
@@ -746,10 +768,12 @@ export class ProjectRuntime {
    *
    * The `definition` getter and the three private mutators each carried their own comparison, which
    * is how one condition ended up with two public failure contracts; the copies are deleted rather
-   * than joined by a fifth. See ADR-056.
+   * than joined by a fifth. Asked of the pending pair while a recipe is open, which is what makes a
+   * handle issued inside one live for the rest of the recipe and never live after an abort.
+   * See ADR-056 and ADR-064.
    */
   #entryIfLive(id: string, token: number): TrackEntry | undefined {
-    return this.#liveOf(this.#tracks, id, token);
+    return this.#liveOf(this.#readTracks(), id, token);
   }
   /**
    * The resolver every handle member and every private mutation path goes through.
@@ -764,7 +788,7 @@ export class ProjectRuntime {
     return entry;
   }
   #motionIfLive(id: string, token: number): MotionEntry | undefined {
-    return this.#liveOf(this.#motions, id, token);
+    return this.#liveOf(this.#readMotions(), id, token);
   }
   #liveMotion(id: string, token: number): MotionEntry {
     const entry = this.#motionIfLive(id, token);
@@ -793,51 +817,58 @@ export class ProjectRuntime {
     const id = entry.definition.id;
     return Object.freeze({
       ...entry.definition,
-      tracks: this.#ownedBy(this.#tracks, id).map(([, owned]) => owned.track),
+      tracks: this.#ownedBy(this.#readTracks(), id).map(([, owned]) => owned.track),
     });
   }
   /**
    * Destroys a Motion that owns no tracks, from the id or from a live handle.
    *
    * The refusal counts through `#ownedBy`, so the number it names is the list `MotionHandle.trackIds`
-   * shows. Nothing to apply and nothing to revert: the graph is asked first, and the hook that
-   * disposes the driver runs only once it accepted. An empty revert set rethrows the rejection
-   * verbatim.
+   * shows, and inside a recipe it counts the tracks that recipe has staged rather than the retained
+   * ones: a Motion whose last track the same recipe removed is destroyable in it.
    */
   #removeMotion(motionId: string): void {
-    const owned = this.#ownedBy(this.#tracks, motionId);
+    const owned = this.#ownedBy(this.#readTracks(), motionId);
     if (owned.length)
       throw new TypeError(
         `Motion "${motionId}" still has ${owned.length} track(s). Remove them before destroying it.`,
       );
-    const motions = new Map(this.#motions);
+    const motions = new Map(this.#readMotions());
     motions.delete(motionId);
-    this.#commit({
-      tracks: this.#tracks,
-      motions,
-      effects: [],
-      settle: [() => this.#destroyMotion?.(motionId)],
-      touched: [],
-    });
+    this.#commit({ tracks: this.#readTracks(), motions });
+  }
+  /**
+   * Refuses `verb` while a recipe is open.
+   *
+   * One guard for both in-place tiers, because both are refused for one reason rather than two: the
+   * edit applies immediately and would survive an abort. Named at the verb rather than at the tier,
+   * so the message tells a caller which call to move out of the recipe. See ADR-064.
+   */
+  #refuseInsideRecipe(verb: string): void {
+    if (this.#open !== undefined) immediateInTransaction(verb);
   }
   /**
    * Installs a Motion's trigger, and reaches no node and no edge doing it.
    *
    * Tier 0, which is a claim about the mechanism rather than about the cost: `trigger` appears in no
    * `GraphNode`, so there is no candidate graph for a commit to accept and `#commit` is the wrong
-   * path rather than an expensive one. `RA-33` measures that as a `replaceGraph` call count.
+   * path rather than an expensive one. `RA-33` measures that as a `replaceGraph` call count. It is
+   * also why the verb is refused inside a recipe: an edit that reaches the driver layer immediately
+   * cannot be undone by a recipe that throws. See `RA-68`.
    *
-   * The order is the whole contract. Staleness first, through the one resolver every member of the
-   * handle reads. Then the trigger's own validity, asked of `validateMotionTrigger`, which is the
-   * owner `addMotion` already asks rather than a copy of it, so a refusal costs no teardown at all:
-   * a verb that released the live driver and then refused the replacement would leave the Motion
-   * with none and no way back. Then the redundant edit, which asks the seam nothing, because
-   * installing the trigger the Motion already has means disposing a live driver and resubscribing a
-   * host source the caller cannot see and did not ask for. Then the seam itself, whose failure is
-   * reported verbatim rather than wrapped. The retained definition moves last, once nothing that
-   * can refuse is left. See ADR-035 and ADR-061.
+   * The order is the whole contract. The recipe refusal first, because it is about whether the verb
+   * is reachable at all. Then staleness, through the one resolver every member of the handle reads.
+   * Then the trigger's own validity, asked of `validateMotionTrigger`, which is the owner `addMotion`
+   * already asks rather than a copy of it, so a refusal costs no teardown at all: a verb that
+   * released the live driver and then refused the replacement would leave the Motion with none and
+   * no way back. Then the redundant edit, which asks the seam nothing, because installing the trigger
+   * the Motion already has means disposing a live driver and resubscribing a host source the caller
+   * cannot see and did not ask for. Then the seam itself, whose failure is reported verbatim rather
+   * than wrapped. The retained definition moves last, once nothing that can refuse is left.
+   * See ADR-035 and ADR-061.
    */
   #setTrigger(id: string, token: number, trigger: MotionDefinition["trigger"]): void {
+    this.#refuseInsideRecipe("setTrigger");
     const entry = this.#liveMotion(id, token);
     const motionId = entry.definition.id;
     const diagnostics = validateMotionTrigger(trigger, `setTrigger(${motionId}).trigger`);
@@ -860,6 +891,7 @@ export class ProjectRuntime {
    * An unchanged value asks the seam nothing, and a cleared one leaves no key behind. See ADR-061.
    */
   #setStagger(id: string, token: number, stagger: number | undefined): void {
+    this.#refuseInsideRecipe("setStagger");
     const entry = this.#liveMotion(id, token);
     const motionId = entry.definition.id;
     if (entry.definition.stagger === stagger) return;
@@ -886,7 +918,7 @@ export class ProjectRuntime {
       },
       get trackIds(): readonly string[] {
         const owner = runtime.#liveId(id, token);
-        return Object.freeze(runtime.#ownedBy(runtime.#tracks, owner).map(([node]) => node));
+        return Object.freeze(runtime.#ownedBy(runtime.#readTracks(), owner).map(([node]) => node));
       },
       addTrack: (track: TrackDefinition) =>
         runtime.#addTrack(track, runtime.#schemaOwner, { motionId: runtime.#liveId(id, token) }),
@@ -935,30 +967,19 @@ export class ProjectRuntime {
         runtime.#writeValues(id, runtime.#liveEntry(id, token), next, true),
     });
   }
+  /**
+   * Drops one node from the pair, and names no hook.
+   *
+   * The eviction, the dispose and the Motion deregistration are one settle step derived from the id
+   * being absent from the committed pair, because the order inside that step is not a sequence of
+   * independent commitments: the entry is already gone by the time any of them runs. See ADR-064.
+   */
   #removeTrack(id: string, token: number): void {
     this.#assertLive();
-    const entry = this.#liveEntry(id, token);
-    const tracks = new Map(this.#tracks);
+    this.#liveEntry(id, token);
+    const tracks = new Map(this.#readTracks());
     tracks.delete(id);
-    this.#commit({
-      tracks,
-      motions: this.#motions,
-      effects: [],
-      // One settle step rather than four, because the order inside it is not a sequence of
-      // independent commitments: the entry is already gone by the time any of them runs.
-      settle: [
-        () => {
-          this.#instances.delete(id);
-          this.#graph.evictNode(id);
-          this.#disposeTrack?.(id);
-          if (entry.motionId !== undefined) this.#removeMotionTrack?.(entry.motionId, id);
-        },
-      ],
-      // The node is gone and nothing depended on it: a remaining observer of it would have made the
-      // candidate refuse with `observation-unknown-source` before this commit. Eviction already
-      // publishes the one terminal patch a destroyed node owes its subscribers.
-      touched: [],
-    });
+    this.#commit({ tracks, motions: this.#readMotions() });
   }
   /**
    * The registry's answer about one authored record, or nothing when no registry was injected.
@@ -985,6 +1006,11 @@ export class ProjectRuntime {
    * now fails to load, which is the symptomless misconfiguration this project refuses at load time.
    * So the candidate is resolved here, refused here, and only then read as data. See ADR-062.
    *
+   * Asked from `#derive` now rather than from `#replaceTrack`, which moves it from once per op to
+   * once per committed replacement and leaves it exactly where it was for every caller outside a
+   * recipe: before any effect is applied and before anything retained has moved, so a candidate the
+   * registry refuses still costs no teardown and reads the same message.
+   *
    * The retained record is resolved beside it rather than kept anywhere. A kept plugin chain would
    * be a cache whose key is the registry's own contents, held by a layer that owns neither, and a
    * resolve is the pure and cheap half of the compile this declines to pay.
@@ -1007,6 +1033,14 @@ export class ProjectRuntime {
       { definition: candidate, resolved },
     );
   }
+  /**
+   * Replaces one node's definition in the pair, preserving its node id and its token.
+   *
+   * A map builder. The staging effect, its rollback, the Motion republish and its restore, and the
+   * staging commit are `#derive`'s answer, derived from the retained definition and the committed
+   * one, which is what lets an add followed by a replacement in one recipe cost what one add costs.
+   * See `RA-65` and ADR-064.
+   */
   #replaceTrack(id: string, token: number, next: TrackDefinition): void {
     const entry = this.#liveEntry(id, token);
     const expected =
@@ -1017,77 +1051,58 @@ export class ProjectRuntime {
     const validation = validateTrackDefinition(next, `replaceTrack(${id})`);
     if (!validation.valid || !validation.value)
       throw new TypeError(describeDiagnostics(validation.diagnostics));
-    const accepted = validation.value;
-    // Asked before anything is applied, so a candidate the registry refuses costs no teardown, and a
-    // candidate it accepts has already told this transaction which half of a recompile it owes.
-    const build = this.#needsTimelineBuild(id, entry.track, accepted);
-    const tracks = new Map(this.#tracks);
-    tracks.set(id, { ...entry, track: accepted, overlay: NO_OVERLAY });
-    const motionId = entry.motionId;
-    let staged: StagedTrack | undefined;
-    // The compiled-map owner publishes a prepared replacement while retaining the displaced Track.
-    // Motion must see that staged instance because it resolves and seeds by id. The graph is the
-    // final acceptance step; only after it accepts can the old compiled Track be released.
-    //
-    // Conditional, and that is the whole of this slice. Nothing else about the transaction moves: the
-    // graph is still asked to accept a candidate, the edge delta is still paid and the flush is still
-    // seeded, because an edge changed and there is no fast lane for that. A skipped build leaves
-    // `staged` undefined, so the settle step below is the no-op it already was for a caller that
-    // wired no staging seam at all. See ADR-062.
-    const effects: SchemaEffect[] = [];
-    if (build)
-      effects.push({
-        apply: () => {
-          staged = this.#stageTrack?.(accepted, id);
-        },
-        revert: () => staged?.rollback(),
-      });
-    // Republish the displaced compiled Track before restoring Motion: its restore call resolves and
-    // seeds by id, so the old instance must already be live. Reverts run in apply order, which is
-    // what puts the staging rollback above ahead of this one. See ADR-031 and ADR-045.
-    if (motionId !== undefined)
-      effects.push({
-        apply: () => this.#replaceMotionTrack?.(motionId, id, accepted.duration),
-        revert: () => this.#replaceMotionTrack?.(motionId, id, entry.track.duration),
-      });
-    this.#commit({
-      tracks,
-      motions: this.#motions,
-      effects,
-      settle: [() => staged?.commit()],
-      // The edited node, and only it. Every node whose incoming edge set moved is downstream of this
-      // one, and the publisher walks dependents from the seed, so naming it is sufficient.
-      // `addObserve` and `removeObserve` route through here, which is what makes them publish.
-      touched: [id],
-    });
+    const tracks = new Map(this.#readTracks());
+    tracks.set(id, { ...entry, track: validation.value, overlay: NO_OVERLAY });
+    this.#commit({ tracks, motions: this.#readMotions() });
   }
   /**
-   * The one path by which a structural change reaches the graph.
+   * The one path by which a structural change reaches the graph, or the open transaction.
    *
-   * Five transactions used to carry their own copy of it, each with its own hook ordering and its
+   * While a recipe is open the accepted pair is merged into it and nothing else happens: every entry
+   * point built its candidate pair from that pair, so merging is adopting, and there is no op log to
+   * replay and no compensation to record. With none open the pair is applied immediately, which is
+   * what every caller outside a recipe has always done. See ADR-064.
+   */
+  #commit(plan: SchemaPlan): void {
+    const open = this.#open;
+    if (open !== undefined) {
+      open.tracks = plan.tracks;
+      open.motions = plan.motions;
+      return;
+    }
+    this.#apply(plan);
+  }
+  /**
+   * Applies one accepted pair: derive, apply the effects, ask the graph, settle, and flush once.
+   *
+   * Five transactions used to carry their own copy of this, each with its own hook ordering and its
    * own rollback ordering, and the ordering comments explained that the sequence was load-bearing
    * in three different ways: ADR-031 for the compiled map, ADR-035 for rollback precedence, and
-   * ADR-045 for republish-before-restore. Six more authoring primitives on top of that would have
-   * been six more copies. `replaceGraph` and `rejectAfterRollback` now have one call site each.
+   * ADR-045 for republish-before-restore. `replaceGraph` and `rejectAfterRollback` have had one call
+   * site each since A1, and every hook has one now too.
+   *
+   * The derivation runs before the try, so a candidate the registry refuses inside it costs no
+   * teardown at all: nothing has been applied and nothing retained has moved when it throws.
    *
    * The effects are applied inside the try, so a hook that throws is rolled back exactly as a
    * refused candidate is. Each one is recorded only after its `apply` returned, because a hook that
    * refused before writing anything must not be restored.
    *
-   * One flush ends it, seeded with `plan.touched`, and it runs after the settle steps rather than
-   * before them: a new node is mounted by one of those steps, and seeding earlier would flush a
-   * node the members do not contain yet. `replaceGraph` seeds nothing itself, which is why
-   * `addObserve` on a manual clock with no tick used to be invisible forever. See `RA-8`.
+   * One flush ends it, seeded with `touched`, and it runs after the settle steps rather than before
+   * them: a new node is mounted by one of those steps, and seeding earlier would flush a node the
+   * members do not contain yet. `replaceGraph` seeds nothing itself, which is why `addObserve` on a
+   * manual clock with no tick used to be invisible forever. See `RA-8`.
    *
    * An empty `touched` returns without calling `invalidate`, because an empty seed set is not a
    * cheap flush: it still opens a batch, notifies every batch subscriber, moves the sequence, and
    * drains whatever seeds a deferred flush had carried. A commit that derives no node has nothing
    * to publish and must not spend a frame's worth of machinery saying so. See `RA-10`.
    */
-  #commit(plan: SchemaPlan): void {
+  #apply(plan: SchemaPlan): void {
+    const commit = this.#derive(plan);
     const applied: SchemaEffect[] = [];
     try {
-      for (const effect of plan.effects) {
+      for (const effect of commit.effects) {
         effect.apply();
         applied.push(effect);
       }
@@ -1100,10 +1115,109 @@ export class ProjectRuntime {
       rejectAfterRollback(error, () => runRollbackSteps(steps));
     }
     this.#adoptMaps(plan);
-    for (const step of plan.settle) step();
-    if (plan.touched.length === 0) return;
-    const batch = this.#graph.invalidate(plan.touched);
+    for (const step of commit.settle) step();
+    if (commit.touched.length === 0) return;
+    const batch = this.#graph.invalidate(commit.touched);
     this.#diagnostics.recordAll(batch.diagnostics);
+  }
+  /**
+   * What one accepted pair costs, read against the retained pair, and the correction this slice
+   * found.
+   *
+   * A hook list assembled by the entry point is correct for one change and cannot compose two. An
+   * add contributes an `addMotionTrack` to the settle steps and an edit contributes a
+   * `replaceMotionTrack` to the effects; effects run before the graph is asked and settle steps run
+   * after it accepted, so a track added and then edited in one recipe would have the Motion asked to
+   * replace a track it has not been told about yet. Add-then-remove is the same shape one level
+   * worse: a mount settles for a node the committed graph does not contain, and here it derives
+   * nothing at all, because the node is absent from both pairs.
+   *
+   * Four categories, each of them the hook set its own entry point used to name, unchanged. A
+   * created Motion is built before the graph is asked and destroyed if it refuses, so a driver that
+   * cannot be created leaves no definition and no node behind (ADR-032). A removed track settles its
+   * eviction, its dispose and its deregistration as one step, because its entry is already gone by
+   * the time any of them runs. A destroyed Motion settles after that, with nothing to revert, so a
+   * Motion whose last track the same commit removed is destroyed after that track deregistered from
+   * it. An added track compiles before the graph is asked, then registers with its Motion and mounts
+   * after it accepted, in that order because Motion resolves by id against the live compiled map
+   * (ADR-031). A replaced one stages, republishes its Motion entry, and commits the staging on
+   * acceptance, with the staging build skipped when the whole compiled input provably did not move
+   * (ADR-062).
+   *
+   * Motions are created before any track compiles, because one commit may add a Motion and a track
+   * to it. Effects are reverted in apply order, so a replacement's staging rollback still runs
+   * before its Motion entry is restored. See ADR-045 and ADR-064.
+   */
+  #derive(plan: SchemaPlan): SchemaCommit {
+    const effects: SchemaEffect[] = [];
+    const settle: (() => void)[] = [];
+    const touched: string[] = [];
+    for (const [motionId, entry] of plan.motions) {
+      if (this.#motions.has(motionId)) continue;
+      const definition = entry.definition;
+      effects.push({
+        apply: () => this.#createMotion?.(definition),
+        revert: () => this.#destroyMotion?.(motionId),
+      });
+    }
+    for (const [nodeId, entry] of this.#tracks) {
+      if (plan.tracks.has(nodeId)) continue;
+      const motionId = entry.motionId;
+      settle.push(() => {
+        this.#instances.delete(nodeId);
+        this.#graph.evictNode(nodeId);
+        this.#disposeTrack?.(nodeId);
+        if (motionId !== undefined) this.#removeMotionTrack?.(motionId, nodeId);
+      });
+    }
+    for (const motionId of this.#motions.keys())
+      if (!plan.motions.has(motionId)) settle.push(() => this.#destroyMotion?.(motionId));
+    for (const [nodeId, entry] of plan.tracks) {
+      const retained = this.#tracks.get(nodeId);
+      const motionId = entry.motionId;
+      if (retained === undefined) {
+        const added = entry.track;
+        effects.push({
+          apply: () => this.#compileTrack?.(added, nodeId),
+          revert: () => this.#disposeTrack?.(nodeId),
+        });
+        if (motionId !== undefined)
+          settle.push(() => this.#addMotionTrack?.(motionId, nodeId, added.duration));
+        settle.push(() => this.mount(nodeId));
+        touched.push(nodeId);
+        continue;
+      }
+      if (retained.track === entry.track) continue;
+      const previous = retained.track;
+      const next = entry.track;
+      let staged: StagedTrack | undefined;
+      // Conditional, and that is C3's slice rather than this one's. Nothing else about the
+      // transaction moves: the graph is still asked to accept a candidate, the edge delta is still
+      // paid and the flush is still seeded, because an edge changed and there is no fast lane for
+      // that. A skipped build leaves `staged` undefined, so the settle step below is the no-op it
+      // already was for a caller that wired no staging seam at all. See ADR-062.
+      if (this.#needsTimelineBuild(nodeId, previous, next))
+        effects.push({
+          apply: () => {
+            staged = this.#stageTrack?.(next, nodeId);
+          },
+          revert: () => staged?.rollback(),
+        });
+      // Republish the displaced compiled Track before restoring Motion: its restore call resolves
+      // and seeds by id, so the old instance must already be live. Reverts run in apply order,
+      // which is what puts the staging rollback above ahead of this one. See ADR-031 and ADR-045.
+      if (motionId !== undefined)
+        effects.push({
+          apply: () => this.#replaceMotionTrack?.(motionId, nodeId, next.duration),
+          revert: () => this.#replaceMotionTrack?.(motionId, nodeId, previous.duration),
+        });
+      settle.push(() => staged?.commit());
+      // The edited node, and only it. Every node whose incoming edge set moved is downstream of
+      // this one, and the publisher walks dependents from the seed, so naming it is sufficient.
+      // `addObserve` and `removeObserve` route through here, which is what makes them publish.
+      touched.push(nodeId);
+    }
+    return { effects, settle, touched };
   }
   /**
    * Adopts the accepted maps wholesale, from the same pair that built the accepted snapshot.
@@ -1127,7 +1241,12 @@ export class ProjectRuntime {
    * definition alone and a `setValues` rewrites it, and the same boolean is what makes the animated
    * half sticky or revertible at the interpolator. Which keys are legal, what the live Track is
    * written with, when the graph is invalidated, and where the diagnostics go are all shared, so the
-   * two cannot answer differently, invalidate twice, or record in two places.
+   * two cannot answer differently, invalidate twice, or record in two places. It is also what names
+   * the verb in the recipe refusal, so the two entry points refuse under their own names without a
+   * second guard.
+   *
+   * Tier 2, and refused inside a recipe for the reason tier 0 is: it ends at its own `invalidate`,
+   * so it publishes inside the recipe and would survive an abort. See `RA-68` and ADR-064.
    *
    * Order, and it is load-bearing. Validate the rewritten definition when an animated key is named,
    * because an authored stop list is definition-shaped input and `validateKeyframes` owns its shape.
@@ -1144,6 +1263,7 @@ export class ProjectRuntime {
    * was. No `replaceGraph` on either path. See ADR-059 and ADR-060.
    */
   #writeValues(nodeId: string, entry: TrackEntry, values: AuthoredValues, rebase: boolean) {
+    this.#refuseInsideRecipe(rebase ? "setValues" : "overrideValues");
     const { statics, animated } = splitAuthoredValues(values);
     // An animated key is involved when this call names one, and also when the last one did: a
     // revert names no key at all, so the retained overlay is what keeps `overrideValues({})` from
@@ -1189,7 +1309,8 @@ export class ProjectRuntime {
     // Idempotent observation semantics, not a stale guard. Adding an edge that is already declared
     // and removing one that is not are both no-ops on a live handle, which is a different question
     // from whether the handle is the live one at all: that was answered above. Nothing is committed
-    // on either no-op, so nothing is flushed either.
+    // on either no-op, so nothing is flushed either, and inside a recipe nothing is staged, which is
+    // what lets a recipe of nothing but no-ops end without a candidate build. See `RA-66`.
     if (add) {
       if (index >= 0) return;
       observations.push(observation);
@@ -1227,7 +1348,8 @@ export class ProjectRuntime {
    * is forbidden to cross. What it no longer pays is the timeline build on the far side of that
    * boundary, because a binding edit changes no compiled property; the resolve it does pay is the
    * validation rather than an expense, because `compileTrack` reuses a live entry and never asks the
-   * registry. See ADR-045 and ADR-062.
+   * registry. Inside a recipe it is structural, so it travels with the transaction and costs its
+   * share of one commit. See ADR-045, ADR-062 and ADR-064.
    */
   #editRequire(
     id: string,
@@ -1409,6 +1531,7 @@ export class ProjectRuntime {
     this.#instances.clear();
     this.#tracks.clear();
     this.#motions.clear();
+    this.#open = undefined;
     this.#graph.dispose();
     this.#disposeComposition();
   }
