@@ -1,0 +1,61 @@
+name: Temporary ADR-064 docs edit
+
+# Temporary and self-removing. It exists because the implementor cannot run `npx` or `prettier` at
+# all, which docs/CI-WORKFLOW.md names as a normal condition rather than a broken setup, and a docs
+# commit that fails the read-only `format:check` costs a whole round trip through Actions. The job
+# runs one bounded script, applies Prettier to the two files that script touches, and deletes both
+# itself and the script in the commit it pushes. See docs/PR-WORKFLOW.md, "Temporary workflow edits".
+#
+# Scoped to one same-repository branch by name, so no fork pull-request code can reach it, and it
+# holds the smallest permission that can push. The credential is the repository secret
+# `.github/workflows/format.yml` already uses; nothing here prints it or puts it in an artifact.
+
+on:
+  push:
+    branches: [docs/adr-064-schema-transaction]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tmp-adr-064-docs
+  cancel-in-progress: false
+
+jobs:
+  edit:
+    name: apply the bounded docs edit
+    if: github.ref_name == 'docs/adr-064-schema-transaction'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Apply the bounded edit
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/tmp-adr-064-status.py
+          npx prettier --write \
+            docs/SESSION-STATUS.md \
+            docs/ADR-064-schema-transaction-derived-hooks.md
+      - name: Commit the edit, remove this workflow, and push
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -q \
+            scripts/tmp-adr-064-status.py \
+            .github/workflows/tmp-adr-064-docs.yml
+          git add docs/
+          git commit -m "docs(runtime): record ADR-064 and move slice D to landed"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
