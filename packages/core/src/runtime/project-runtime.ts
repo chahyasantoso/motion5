@@ -438,6 +438,13 @@ function withAuthoredValues(track: TrackDefinition, values: AuthoredValues): Tra
 type MutableMotion = { -readonly [K in keyof MotionDefinition]: MotionDefinition[K] };
 /** One retained track definition, writable, for the one field an authored edit moves. */
 type MutableTrack = { -readonly [K in keyof TrackDefinition]: TrackDefinition[K] };
+/** Builds a track with an edited authored keyframe record, omitting an empty record. */
+function withKeyframes(track: TrackDefinition, keyframes: AuthoredKeyframes): TrackDefinition {
+  const next: MutableTrack = { ...track };
+  if (Object.keys(keyframes).length === 0) delete next.keyframes;
+  else next.keyframes = keyframes;
+  return Object.freeze(next);
+}
 /**
  * Whether two authored triggers are the same trigger.
  *
@@ -1404,9 +1411,7 @@ export class ProjectRuntime {
     keyframes: AuthoredKeyframes,
     verb: string,
   ) {
-    const next: MutableTrack = { ...entry.track };
-    if (Object.keys(keyframes).length === 0) delete next.keyframes;
-    else next.keyframes = keyframes;
+    const next = withKeyframes(entry.track, keyframes);
     const validation = validateTrackDefinition(next, `${verb}(${nodeId})`);
     if (!validation.valid || !validation.value)
       throw new TypeError(describeDiagnostics(validation.diagnostics));
@@ -1443,9 +1448,7 @@ export class ProjectRuntime {
   ) {
     const entry = this.#liveEntry(nodeId, token);
     this.#refuseInsideRecipe("setKeyframe");
-    const keyframes = entry.track.keyframes;
-    const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);
-    if (keyframes === undefined || bound === undefined) unboundGroup(nodeId, plugin);
+    const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
     if (Object.hasOwn(bound.group.values ?? {}, key))
       return this.#writeValues(nodeId, entry, { [key]: value }, true);
     const edited = setAuthoredKeyframe(keyframes, bound, key, value);
@@ -1454,9 +1457,7 @@ export class ProjectRuntime {
   #removeKeyframe(nodeId: string, token: number, plugin: string, key: string) {
     const entry = this.#liveEntry(nodeId, token);
     this.#refuseInsideRecipe("removeKeyframe");
-    const keyframes = entry.track.keyframes;
-    const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);
-    if (keyframes === undefined || bound === undefined) unboundGroup(nodeId, plugin);
+    const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
     const edited = removeAuthoredKeyframe(keyframes, bound, key);
     if (edited === keyframes) return this.#invalidateOne(nodeId);
     return this.#recompileKeyframes(nodeId, entry, edited, "removeKeyframe");
@@ -1518,6 +1519,16 @@ export class ProjectRuntime {
    * registry. Inside a recipe it is structural, so it travels with the transaction and costs its
    * share of one commit. See ADR-045, ADR-062 and ADR-064.
    */
+  #boundGroup(
+    nodeId: string,
+    entry: TrackEntry,
+    plugin: string,
+  ): { keyframes: AuthoredKeyframes; bound: BoundGroup } {
+    const keyframes = entry.track.keyframes;
+    const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);
+    if (keyframes === undefined || bound === undefined) unboundGroup(nodeId, plugin);
+    return { keyframes, bound };
+  }
   #editRequire(
     id: string,
     token: number,
@@ -1525,9 +1536,7 @@ export class ProjectRuntime {
     edit: (keyframes: AuthoredKeyframes, bound: BoundGroup) => AuthoredKeyframes,
   ): void {
     const entry = this.#liveEntry(id, token);
-    const keyframes = entry.track.keyframes;
-    const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);
-    if (keyframes === undefined || bound === undefined) unboundGroup(id, plugin);
+    const { keyframes, bound } = this.#boundGroup(id, entry, plugin);
     const next = edit(keyframes, bound);
     if (next === keyframes) return;
     this.#writeKeyframes(id, token, entry.track, next);
@@ -1636,10 +1645,7 @@ export class ProjectRuntime {
     track: TrackDefinition,
     keyframes: AuthoredKeyframes,
   ): void {
-    const next: MutableTrack = { ...track };
-    if (Object.keys(keyframes).length === 0) delete next.keyframes;
-    else next.keyframes = keyframes;
-    this.#replaceTrack(id, token, next);
+    this.#replaceTrack(id, token, withKeyframes(track, keyframes));
   }
   #snapshot(
     tracks: ReadonlyMap<string, TrackEntry>,
