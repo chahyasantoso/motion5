@@ -22,12 +22,13 @@ function withKeyframes(track: TrackDefinition, keyframes: AuthoredKeyframes): Tr
 }`;
 next = replaceOnce(next, mutableTrack, withKeyframes, "withKeyframes insertion");
 
+const validationCall = "    const validation = validateTrackDefinition(next, `${verb}(${nodeId})`);";
 const oldRecompile = `    const next: MutableTrack = { ...entry.track };
     if (Object.keys(keyframes).length === 0) delete next.keyframes;
     else next.keyframes = keyframes;
-    const validation = validateTrackDefinition(next, \`${verb}(\${nodeId})\`);`;
+${validationCall}`;
 const newRecompile = `    const next = withKeyframes(entry.track, keyframes);
-    const validation = validateTrackDefinition(next, \`${verb}(\${nodeId})\`);`;
+${validationCall}`;
 next = replaceOnce(next, oldRecompile, newRecompile, "recompile rewrite");
 
 const oldEditRequire = `  #editRequire(
@@ -95,8 +96,8 @@ const oldWriteKeyframes = `    const next: MutableTrack = { ...track };
 const newWriteKeyframes = `    this.#replaceTrack(id, token, withKeyframes(track, keyframes));`;
 next = replaceOnce(next, oldWriteKeyframes, newWriteKeyframes, "writeKeyframes rewrite");
 
-if ((next.match(/readBoundGroup\(/g) ?? []).length !== 2)
-  throw new Error("readBoundGroup must have exactly one helper call plus its definition");
+if ((next.match(/readBoundGroup\(/g) ?? []).length !== 1)
+  throw new Error("readBoundGroup must have exactly one call in #boundGroup");
 if ((next.match(/function withKeyframes\(/g) ?? []).length !== 1)
   throw new Error("withKeyframes was not installed exactly once");
 if (next.includes("const next: MutableTrack = { ...entry.track };\n    if (Object.keys(keyframes).length"))
