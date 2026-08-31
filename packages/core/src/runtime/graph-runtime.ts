@@ -2,7 +2,7 @@ import type { Diagnostic, ProjectDefinition } from "../contract/v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import { GraphBinding } from "../graph/binding";
 import type { GraphNode, GraphIR } from "../graph/ir";
-import { GraphPublisher, type PublisherNode } from "./graph-publisher";
+import { GraphPublisher, type PublisherNode, type PublisherSnapshot } from "./graph-publisher";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
 import type { Scheduler } from "../ports/scheduler";
 export type ComposeNode = PublisherNode["compose"];
@@ -77,6 +77,10 @@ export class GraphRuntime {
   readonly #members = new Set<string>();
   readonly #pendingSeeds = new Set<string>();
   readonly #publisherNodes = new Map<GraphNode, PublisherNode>();
+  #snapshot: PublisherSnapshot | undefined;
+  #snapshotGraph: GraphIR | undefined;
+  #snapshotMembers = -1;
+  #membersRevision = 0;
   #lastTick = 0;
   #sequence = 0;
   #lastFlushError: Diagnostic | undefined;
@@ -128,16 +132,16 @@ export class GraphRuntime {
     this.#assertLive();
     if (!this.#binding.graph.nodeById[nodeId])
       throw new TypeError(`Unknown graph node "${nodeId}".`);
-    this.#members.add(nodeId);
+    this.#addMember(nodeId);
   }
   detach(nodeId: string): void {
     this.#assertLive();
-    this.#members.delete(nodeId);
+    this.#dropMember(nodeId);
     this.#registry.remove(nodeId);
   }
   evictNode(nodeId: string): void {
     this.#assertLive();
-    this.#members.delete(nodeId);
+    this.#dropMember(nodeId);
     this.#registry.evict(nodeId);
   }
   replaceGraph(project: ProjectDefinition): void {
@@ -145,7 +149,7 @@ export class GraphRuntime {
     this.#binding.replace(project);
     for (const id of this.#members)
       if (!this.#binding.graph.nodeById[id]) {
-        this.#members.delete(id);
+        this.#dropMember(id);
         this.#registry.evict(id);
       }
     // Residency, not staleness, and the difference is worth stating because the line looks like the
@@ -156,6 +160,11 @@ export class GraphRuntime {
     // is why it is one line here rather than an eviction hook every caller has to remember.
     // See ADR-058.
     this.#publisherNodes.clear();
+    // The memo goes with them, and for the same reason rather than for correctness: it is keyed on
+    // the graph identity, so an entry from the replaced graph could never be read, but holding one
+    // would retain every node the clear above exists to release.
+    this.#snapshot = undefined;
+    this.#snapshotGraph = undefined;
   }
   flush(seeds: readonly string[] = [...this.#members], tick?: number): PatchBatch {
     this.#assertLive();
@@ -173,28 +182,11 @@ export class GraphRuntime {
     this.#pendingSeeds.clear();
     this.#scheduledDrain = false;
     const effectiveSeeds = [...new Set([...seeds, ...carried])];
-    const graph = this.#binding.graph;
-    const nodes = graph.nodes.map((node) => {
-      const cached = this.#publisherNodes.get(node);
-      if (cached) return cached;
-      const interpolatedFn = this.#interpolated?.(node);
-      const publisherNode: PublisherNode = Object.freeze({
-        ...node,
-        compose: this.#compose(node),
-        ...(interpolatedFn ? { interpolated: interpolatedFn } : {}),
-      });
-      this.#publisherNodes.set(node, publisherNode);
-      return publisherNode;
-    });
-    const nodeById = Object.freeze(Object.fromEntries(nodes.map((node) => [node.id, node])));
+    const snapshot = this.#snapshotFor();
     this.#sequence += 1;
     this.#flushing = true;
     try {
-      return this.#publisher.flush(
-        Object.freeze({ ...graph, nodes: Object.freeze(nodes), nodeById, members: this.#members }),
-        effectiveSeeds,
-        this.#sequence,
-      );
+      return this.#publisher.flush(snapshot, effectiveSeeds, this.#sequence);
     } catch (error) {
       for (const seed of effectiveSeeds) this.#pendingSeeds.add(seed);
       throw error;
@@ -214,8 +206,85 @@ export class GraphRuntime {
     this.#members.clear();
     this.#pendingSeeds.clear();
     this.#publisherNodes.clear();
+    this.#snapshot = undefined;
+    this.#snapshotGraph = undefined;
     this.#scheduledDrain = false;
     this.#registry.dispose();
+  }
+  /**
+   * The frozen snapshot every flush runs over, derived once and reused until something in it moved.
+   *
+   * `nodes`, `nodeById` and `dependents` are all pure functions of the `GraphIR` identity. Publisher
+   * nodes are cached per graph node, `finalizeGraph` derives reverse topology once per graph, and
+   * every closure a publisher node carries resolves the compiled map when the publisher calls it, so
+   * an entry that survives a recompile is not stale. A second tick over a graph that did not move
+   * therefore has nothing left to compute, and steady-state ticking allocates nothing for graph
+   * shape. Optimisation 7c of issue #223.
+   *
+   * Membership is the one part that moves without the graph moving, so it is keyed rather than
+   * aliased: the snapshot carries a copy of the member set and `#membersRevision` is what the memo
+   * is keyed on. Handing over the live set inside a frozen object would be a cache whose answer
+   * changes without its key changing, and it would let a memo keyed on the graph alone look correct.
+   * See ADR-058.
+   */
+  #snapshotFor(): PublisherSnapshot {
+    const graph = this.#binding.graph;
+    const cached = this.#snapshot;
+    if (
+      cached !== undefined &&
+      this.#snapshotGraph === graph &&
+      this.#snapshotMembers === this.#membersRevision
+    )
+      return cached;
+    const nodes = graph.nodes.map((node) => this.#publisherNode(node));
+    const nodeById: Record<string, PublisherNode> = {};
+    for (const node of nodes) nodeById[node.id] = node;
+    const snapshot: PublisherSnapshot = Object.freeze({
+      ...graph,
+      nodes: Object.freeze(nodes),
+      nodeById: Object.freeze(nodeById),
+      members: new Set(this.#members),
+    });
+    this.#snapshot = snapshot;
+    this.#snapshotGraph = graph;
+    this.#snapshotMembers = this.#membersRevision;
+    return snapshot;
+  }
+  /**
+   * One publisher node per graph node, composed once and reused for as long as the graph holds it.
+   *
+   * `#compose` and the optional `#interpolated` are resolved here rather than per flush, and both of
+   * the closures they return read the compiled map when the publisher calls them, so nothing cached
+   * here can outlive a recompile. See ADR-031 and ADR-051.
+   */
+  #publisherNode(node: GraphNode): PublisherNode {
+    const cached = this.#publisherNodes.get(node);
+    if (cached) return cached;
+    const interpolatedFn = this.#interpolated?.(node);
+    const publisherNode: PublisherNode = Object.freeze({
+      ...node,
+      compose: this.#compose(node),
+      ...(interpolatedFn ? { interpolated: interpolatedFn } : {}),
+    });
+    this.#publisherNodes.set(node, publisherNode);
+    return publisherNode;
+  }
+  /**
+   * The two ways membership moves, and the one owner of the revision the snapshot is keyed on.
+   *
+   * Three call sites mutated the set directly before this, and a cache each of them has to remember
+   * to invalidate is the shape ADR-058 refuses, so they state the change and the revision follows
+   * from it. A no-op add or remove moves nothing: a key that moved when the answer did not would
+   * rebuild the snapshot for free.
+   */
+  #addMember(nodeId: string): void {
+    if (this.#members.has(nodeId)) return;
+    this.#members.add(nodeId);
+    this.#membersRevision += 1;
+  }
+  #dropMember(nodeId: string): void {
+    if (!this.#members.delete(nodeId)) return;
+    this.#membersRevision += 1;
   }
   #scheduleDrain(): void {
     if (this.#scheduler === undefined || this.#scheduledDrain || this.#disposed) return;
