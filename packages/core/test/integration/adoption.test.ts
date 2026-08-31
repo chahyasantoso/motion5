@@ -20,11 +20,13 @@ describe("P5-02 adopted free tracks", () => {
     const owner = {};
     const adopted = runtime.adopt(freeTrack, owner);
     expect(adopted.id).toBe("~/cursor");
-    const batch = runtime.seek("~/cursor", 0);
     expect(runtime.instanceCount).toBe(1);
-    expect(batch.patches.find(({ nodeId }) => nodeId === "~/cursor")?.values).toEqual({
-      node: "~/cursor",
-    });
+    // The adopt publishes it, rather than the seek that used to follow: a structural commit seeds
+    // its own flush now (issue #223, `RA-9`). The seek is a no-op by construction, because the
+    // value it would publish is the one already retained, and that half is asserted rather than
+    // dropped: without it, published-early and published-twice look the same from here.
+    expect(runtime.graph.registry.get("~/cursor")?.values).toEqual({ node: "~/cursor" });
+    expect(runtime.seek("~/cursor", 0).patches).toEqual([]);
     runtime.dispose();
   });
 
@@ -56,19 +58,20 @@ describe("P5-02 adopted free tracks", () => {
     expect(runtime.graph.state.snapshot().nodes).toEqual(
       expect.arrayContaining(["~/cursor", "~/drag"]),
     );
-    expect(
-      runtime.seek(cursor.id, 0).patches.find(({ nodeId }) => nodeId === cursor.id)?.values,
-    ).toEqual({
-      node: "~/cursor",
-    });
+    // Each adopt published its own node and nothing else. Read at the commit rather than through a
+    // following seek, and read per id, because addressability is the claim: a commit that seeded
+    // the whole member set instead of the node it touched would pass a two-node assertion here and
+    // fail this one on the second adopt, which would republish the first.
+    expect(runtime.graph.registry.get(cursor.id)?.values).toEqual({ node: "~/cursor" });
+    expect(runtime.graph.registry.get(drag.id)?.values).toEqual({ node: "~/drag" });
+    expect(runtime.graph.registry.get(cursor.id)?.revision).toBe(1);
     runtime.destroyAdopted(cursor.id, owner);
     expect(runtime.graph.state.snapshot().nodes).not.toContain("~/cursor");
     expect(runtime.graph.state.snapshot().nodes).toContain("~/drag");
-    expect(
-      runtime.seek(drag.id, 0).patches.find(({ nodeId }) => nodeId === drag.id)?.values,
-    ).toEqual({
-      node: "~/drag",
-    });
+    // Eviction drops the retained patch, so the destroyed node is addressable as absent rather
+    // than as its final pose.
+    expect(runtime.graph.registry.get(cursor.id)).toBeUndefined();
+    expect(runtime.graph.registry.get(drag.id)?.values).toEqual({ node: "~/drag" });
     runtime.dispose();
   });
 
@@ -136,10 +139,10 @@ describe("P5-02 adopted free tracks", () => {
     expect(addedMotion).toBe("hero");
     expect(addedTrack).toBe("hero/opacity");
 
-    const batch = runtime.seek("hero/opacity", 0);
-    expect(batch.patches.find(({ nodeId }) => nodeId === "hero/opacity")?.values).toEqual({
-      node: "hero/opacity",
-    });
+    // Published by the commit, and after the Motion entry was written: the flush is seeded once the
+    // settle steps ran, so a node that publishes here is one its Motion can already resolve.
+    expect(runtime.graph.registry.get("hero/opacity")?.values).toEqual({ node: "hero/opacity" });
+    expect(runtime.seek("hero/opacity", 0).patches).toEqual([]);
     runtime.dispose();
   });
 

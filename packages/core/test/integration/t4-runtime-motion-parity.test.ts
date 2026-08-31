@@ -163,6 +163,9 @@ function record(handle: ProjectHandle, nodeId: string): readonly unknown[] {
 /**
  * GraphRuntime flushes once before the scheduler applies driver progress, so an `x: 0`
  * publication rides along with each tick. `trigger-time.test.ts` filters the same way.
+ *
+ * It is also what makes the two paths in T-1 comparable at all, because only one of them still
+ * has that rider to shed. See the reasoning there.
  */
 function moved(seen: readonly unknown[]): readonly unknown[] {
   return seen.filter((values) => (values as { x?: unknown }).x !== 0);
@@ -181,6 +184,15 @@ describe("T4 runtime Motion parity and creation ordering", () => {
     // recording so the comparison covers only what the driver produced afterwards.
     authored.scheduler.flush();
     runtime.scheduler.flush();
+
+    // The one thing the two paths do not share, asserted here rather than left to surface as a
+    // missing element in the sequences below. A structural commit seeds its own flush, so the
+    // runtime add has already published the rest pose; `Engine.load()` seeds none, so the authored
+    // project has published nothing at all until something ticks. Neither has moved, and that is
+    // what parity is about. Issue #223, slice A2.
+    expect(runtime.handle.get("scene/arm")?.values).toEqual({ x: 0 });
+    expect(authored.handle.get("scene/arm")).toBeUndefined();
+
     const authoredSeen = record(authored.handle, "scene/arm");
     const runtimeSeen = record(runtime.handle, "scene/arm");
 
@@ -191,9 +203,16 @@ describe("T4 runtime Motion parity and creation ordering", () => {
       runtime.scheduler.flush();
     }
 
-    // Deep equality of the whole sequence, not the end state. A double advance still lands on 1
+    // Deep equality of the whole progression, not the end state. A double advance still lands on 1
     // and would pass a final-value assertion; it cannot reproduce the intermediate steps.
-    expect(runtimeSeen).toEqual(authoredSeen);
+    //
+    // The progression, and deliberately not the batches it arrived in. That is a restatement of
+    // this case rather than a relaxation of it: the authored side's first tick still carries the
+    // rest pose because that flush is the first one it ever had, the runtime side's does not
+    // because its add already published it and `samePatch` drops a candidate that changed nothing.
+    // Comparing the raw recordings asserts *when* a value was published, which is the asymmetry
+    // above and is owned there, in one place, instead of twice.
+    expect(moved(runtimeSeen)).toEqual(moved(authoredSeen));
     expect(moved(authoredSeen)).toEqual([{ x: 25 }, { x: 50 }, { x: 75 }, { x: 100 }]);
 
     authored.handle.dispose();

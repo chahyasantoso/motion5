@@ -21,11 +21,14 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
     const adopted = runtime.adopt({ id: "cursor" } as TrackDefinition, owner);
     expect(adopted.id).toBe("~/cursor");
 
-    const batch = runtime.seek("~/cursor", 0);
-    const patch = batch.patches.find(({ nodeId }) => nodeId === "~/cursor");
+    // The ordinary graph path, and it is now the commit's own flush rather than the next seek:
+    // still one publisher, one batch and one status, which is what this case is about.
+    // Issue #223, slice A2.
+    const patch = runtime.graph.registry.get("~/cursor");
     expect(patch).toBeDefined();
     expect(patch?.status).toBe("ready");
     expect(patch?.values).toEqual({ node: "~/cursor" });
+    expect(runtime.seek("~/cursor", 0).patches).toEqual([]);
     runtime.dispose();
   });
 

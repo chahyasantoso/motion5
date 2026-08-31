@@ -17,15 +17,19 @@ function makeHandle() {
 }
 
 describe("adoption through ProjectHandle (G2)", () => {
-  it("adopts a free track and publishes a ready patch via seek", () => {
+  it("adopts a free track and publishes a ready patch on the commit", () => {
     const handle = makeHandle();
     const owner = {};
     const adopted = handle.adopt({ id: "cursor" }, owner);
     expect(adopted.id).toBe("~/cursor");
-    const batch = handle.seek(adopted.id, 0);
-    const patch = batch.patches.find(({ nodeId }) => nodeId === adopted.id);
+    // On the commit, not on a following seek. A structural commit seeds its own flush, so the
+    // adopted node is ready through the handle before anything else is asked of it, and the seek
+    // that used to carry this patch now publishes nothing because nothing changed.
+    // Issue #223, slice A2.
+    const patch = handle.get(adopted.id);
     expect(patch).toBeDefined();
     expect(patch!.status).toBe("ready");
+    expect(handle.seek(adopted.id, 0).patches).toEqual([]);
     handle.dispose();
   });
 
