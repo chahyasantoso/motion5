@@ -1,10 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type {
-  MotionDefinition,
-  ProjectDefinition,
-  TrackDefinition,
-} from "../../../src/contract/v5";
-import type { MotionHandle } from "../../../src/contract/motion-handle";
+import type { MotionDefinition, ProjectDefinition } from "../../../src/contract/v5";
 import type { TrackHandle } from "../../../src/contract/track-handle";
 import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
 import { createManualClock } from "../../../src/ports/clock";
@@ -57,38 +52,24 @@ const compose = (node: { id: string }) => () => ({
 });
 
 /**
- * The two members this slice adds, declared locally because they do not exist yet.
+ * The seam, asserted before it is used.
  *
- * A test file naming a member the source has not landed fails `typecheck` and stops `quality` before
- * `npm test`, which is a broken file rather than evidence. `StaleSeam`, `ComposeSeam`, `TierZeroEdits`,
- * `RequireEdits`, `GroupEdits` and `ResolveSeam` are the precedent, and the commit that lands the
- * source deletes this declaration rather than restating it.
+ * `TransactionSeam` and `EditSeam` were declared locally in the red run, because a test file naming
+ * a member the source has not landed fails `typecheck` and stops `quality` before `npm test`, which
+ * is a broken file rather than evidence. Both are deleted by the commit that lands the source rather
+ * than restated: `StaleSeam`, `ComposeSeam`, `TierZeroEdits`, `RequireEdits`, `GroupEdits` and
+ * `ResolveSeam` are the precedent, and the shipped file names the real `SchemaTransaction` through
+ * `ProjectRuntime.edit` rather than a narrowed copy of it.
  *
- * Narrowed to what the cases below actually reach. The shipped interface is wider; a local seam that
- * restated all of it would be a second author of the contract.
+ * The assertion stays and the cast is gone. A cast alone would have made every case below fail with
+ * "edit is not a function", which is a call that could not run rather than an assertion that
+ * disagreed, and failing-first means failing assertions; keeping it means this file still fails on an
+ * assertion rather than on a call if the member is ever deleted. `RA-16` asserts a member is gone the
+ * same way and `RA-27` asserts a spelling the same way; this is the mirror of both.
  */
-interface TransactionSeam {
-  addMotion(definition: MotionDefinition): MotionHandle;
-  motion(motionId: string): MotionHandle;
-  addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle;
-  track(nodeId: string): TrackHandle;
-  tryTrack(nodeId: string): TrackHandle | undefined;
-}
-interface EditSeam {
-  edit<T>(recipe: (tx: TransactionSeam) => T): T;
-}
-/**
- * The seam, asserted before it is cast.
- *
- * A cast alone would make every case below fail with "edit is not a function", which is a call that
- * could not run rather than an assertion that disagreed, and failing-first means failing assertions.
- * `RA-16` asserts a member is gone the same way and `RA-27` asserts a spelling the same way; this is
- * the mirror of both.
- */
-function editing(runtime: ProjectRuntime): EditSeam {
-  const candidate = runtime as unknown as Partial<EditSeam>;
-  expect(typeof candidate.edit).toBe("function");
-  return candidate as EditSeam;
+function editing(runtime: ProjectRuntime): ProjectRuntime {
+  expect(typeof runtime.edit).toBe("function");
+  return runtime;
 }
 /** Returns the thrown value, because each case asserts on more than one facet of it. */
 function thrownBy(operation: () => unknown): unknown {
