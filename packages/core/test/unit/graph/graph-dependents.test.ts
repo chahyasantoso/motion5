@@ -69,7 +69,7 @@ const WALKER: ProjectDefinition = {
  * solver through `solves` and the forearm through its `base` edge, and the solver's entry is first
  * because the solver is the earlier node rather than because membership outranks an edge.
  */
-const EXPECTED: Readonly<Record<string, readonly string[]>> = {
+const EXPECTED: GraphIR["dependents"] = {
   "walker/shoulder": ["walker/arm-solve", "walker/upper-arm"],
   "walker/hand-target": ["walker/arm-solve"],
   "walker/arm-solve": ["walker/upper-arm", "walker/forearm"],
@@ -77,19 +77,6 @@ const EXPECTED: Readonly<Record<string, readonly string[]>> = {
   "walker/forearm": ["walker/arm-solve"],
   "~/hud": [],
 };
-
-/**
- * The seam this slice adds, declared locally so this file typechecks before the source lands.
- *
- * A test file naming a member that does not exist yet fails `typecheck` and stops `quality` before
- * `npm test`, which is a broken file rather than evidence. This declaration is deleted in the
- * commit that lands `GraphIR.dependents`, where every read below becomes a direct one. `StaleSeam`,
- * `ComposeSeam` and the `LV-` locals are the precedent.
- */
-type ReverseTopology = Readonly<Record<string, readonly string[]>>;
-function dependentsOf(graph: GraphIR): ReverseTopology | undefined {
-  return (graph as GraphIR & { readonly dependents?: ReverseTopology }).dependents;
-}
 
 function walkerGraph(build: (project: ProjectDefinition) => ReturnType<typeof buildGraphIR>) {
   const built = build(WALKER);
@@ -124,7 +111,7 @@ function inputEdge(observerId: string, sourceId: string): GraphEdge {
  */
 function snapshot(
   nodes: readonly PublisherNode[],
-  dependents: ReverseTopology,
+  dependents: GraphIR["dependents"],
   nodeById: Readonly<Record<string, PublisherNode>> = Object.fromEntries(
     nodes.map((entry) => [entry.id, entry]),
   ),
@@ -135,37 +122,31 @@ function snapshot(
     dependents,
     order: nodes.map((entry) => entry.id),
     diagnostics: [],
-  } as unknown as PublisherSnapshot;
+  };
 }
 
 describe("reverse topology is derived once, by the graph that owns every other edge rule", () => {
   it("RA-18 names every reader of every node, edges and solver membership alike", () => {
-    const dependents = dependentsOf(walkerGraph(buildGraphIR));
-    expect(dependents).toBeDefined();
-    expect(dependents).toEqual(EXPECTED);
+    expect(walkerGraph(buildGraphIR).dependents).toEqual(EXPECTED);
   });
 
   it("RA-19 answers for every node, frozen, including the ones nothing reads", () => {
     const graph = walkerGraph(buildGraphIR);
-    const dependents = dependentsOf(graph);
-    expect(dependents).toBeDefined();
+    const dependents = graph.dependents;
 
     // Total rather than sparse. A missing key and an empty list are the same answer to a consumer
     // that spells `?? []`, and one of them makes the map's own shape depend on the rig.
-    expect(Object.keys(dependents ?? {}).sort()).toEqual(graph.nodes.map(({ id }) => id).sort());
+    expect(Object.keys(dependents).sort()).toEqual(graph.nodes.map(({ id }) => id).sort());
     expect(Object.isFrozen(dependents)).toBe(true);
-    for (const [id, readers] of Object.entries(dependents ?? {}))
+    for (const [id, readers] of Object.entries(dependents))
       expect(Object.isFrozen(readers), `readers of ${id} frozen`).toBe(true);
-    expect(dependents?.["~/hud"]).toEqual([]);
+    expect(dependents["~/hud"]).toEqual([]);
   });
 
   it("RA-20 answers identically from both builders, which finalize through one owner", () => {
-    const reference = dependentsOf(walkerGraph(buildGraphIR));
     const builder = new IncrementalGraphBuilder();
-    const incremental = dependentsOf(walkerGraph((project) => builder.build(project)));
-    expect(reference).toBeDefined();
-    expect(incremental).toBeDefined();
-    expect(incremental).toEqual(reference);
+    const incremental = walkerGraph((project) => builder.build(project)).dependents;
+    expect(incremental).toEqual(walkerGraph(buildGraphIR).dependents);
   });
 });
 
