@@ -52,9 +52,10 @@ const compose = (node: { id: string }) => () => ({
  *
  * `setRequire` and `removeRequire` were declared here by C1's evidence commit, before the source
  * that added them, exactly as `RA-32`'s record named tier 0's two verbs first. C2's four verbs
- * arrive the same way. That is this gate working rather than being weakened: the surface below is
- * derived from the handle's own keys, so a member declared here and missing from the handle fails
- * `SH-1`, and a member added to the handle with no entry here fails it too.
+ * arrive the same way, and so do E's two property verbs. That is this gate working rather than
+ * being weakened: the surface below is derived from the handle's own keys, so a member declared
+ * here and missing from the handle fails `SH-1`, and a member added to the handle with no entry
+ * here fails it too.
  */
 const MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   definition: [],
@@ -71,6 +72,8 @@ const MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   removeKeyframeGroup: ["fk"],
   setGoal: ["ik", "wrist", OTHER_ID],
   removeGoal: ["ik", "wrist"],
+  setKeyframe: ["fk", "length", 1],
+  removeKeyframe: ["fk", "length"],
 };
 /** The two members that answer on a stale handle rather than refusing. */
 const NON_REFUSING = ["id", "live"] as const;
