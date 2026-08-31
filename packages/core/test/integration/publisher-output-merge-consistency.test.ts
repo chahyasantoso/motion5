@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
-import type { GraphEdge, GraphIR } from "../../src/graph/ir";
+import { deriveDependents, type GraphEdge } from "../../src/graph/ir";
 import { PatchRegistry } from "../../src/runtime/patch-registry";
-import { GraphPublisher, type PublisherNode } from "../../src/runtime/graph-publisher";
+import {
+  GraphPublisher,
+  type PublisherNode,
+  type PublisherSnapshot,
+} from "../../src/runtime/graph-publisher";
 import { slotOf } from "../helpers/requirement-inputs";
 
 const node = (id: string, edges: GraphEdge[], compose: PublisherNode["compose"]): PublisherNode =>
@@ -14,11 +18,10 @@ const node = (id: string, edges: GraphEdge[], compose: PublisherNode["compose"])
     compose,
   });
 
-const snapshot = (
-  nodes: readonly PublisherNode[],
-): GraphIR & { nodes: readonly PublisherNode[] } => ({
+const snapshot = (nodes: readonly PublisherNode[]): PublisherSnapshot => ({
   nodes,
   nodeById: Object.freeze(Object.fromEntries(nodes.map((n) => [n.id, n]))),
+  dependents: deriveDependents(nodes),
   order: Object.freeze(nodes.map(({ id }) => id)),
   diagnostics: Object.freeze([]),
 });
