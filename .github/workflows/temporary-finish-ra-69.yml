@@ -1,0 +1,36 @@
+name: Temporary finish RA-69
+
+on:
+  pull_request:
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  edit:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'feat/ra-69-authored-property-edit'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: python3 scripts/temporary-finish-ra-69.py
+      - run: npm run check
+      - run: npx tsc -p packages/core/tsconfig.build.json
+      - name: Commit and self-delete
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add packages/core/src/runtime/project-runtime.ts
+          git rm scripts/temporary-finish-ra-69.py
+          git rm .github/workflows/temporary-finish-ra-69.yml
+          git commit -m "feat(runtime): finish authored property editing"
+          git push origin HEAD:${GITHUB_HEAD_REF}
