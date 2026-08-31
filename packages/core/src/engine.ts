@@ -8,6 +8,7 @@ import type {
   TriggerSignal,
 } from "./contract/v5";
 import type { MotionHandle } from "./contract/motion-handle";
+import type { SchemaTransaction } from "./contract/schema-transaction";
 import type { TrackHandle } from "./contract/track-handle";
 import { describeDiagnostics } from "./contract/diagnostics";
 import { resolveTriggerDefinition, validateV5 } from "./contract/validate-v5";
@@ -39,6 +40,21 @@ export interface ProjectHandle {
   signal(motionId: string, signal: TriggerSignal): void;
   addMotion(definition: MotionDefinition): { readonly id: string };
   destroyMotion(motionId: string): void;
+  /**
+   * Runs `recipe` as one transaction and commits what it staged exactly once.
+   *
+   * `n` authored ops across `m` tracks cost one candidate build, one graph replacement, one
+   * `ObservationState` commit and one flush, where the same sequence spelled one op at a time costs
+   * `n` of each. A throw inside the recipe commits nothing, reaches no hook, and issues no live
+   * handle, because only the commit registers a handle's token; the throw travels verbatim.
+   *
+   * `SchemaTransaction` is the narrowed surface the recipe is handed, and the narrowing is the point:
+   * `mount`, `seek`, `subscribe` and `dispose` are not reachable through it, because none of them is
+   * a structural change and none of them can be undone by a recipe that throws. A tier 0 or tier 2
+   * edit reached through a handle refuses by name inside a recipe for the same reason.
+   * See ADR-064.
+   */
+  edit<T>(recipe: (transaction: SchemaTransaction) => T): T;
   addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle;
   track(nodeId: string): TrackHandle;
   /**
@@ -81,6 +97,7 @@ function createHandle(
     signal,
     addMotion: (definition) => runtime.addMotion(definition),
     destroyMotion: (motionId) => runtime.destroyMotion(motionId),
+    edit: <T>(recipe: (transaction: SchemaTransaction) => T) => runtime.edit(recipe),
     addTrack: (track, options) => runtime.addTrack(track, options),
     track: (nodeId) => runtime.track(nodeId),
     tryTrack: (nodeId) => runtime.tryTrack(nodeId),
