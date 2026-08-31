@@ -1,0 +1,20 @@
+quality (node 24)	Run npm run typecheck	﻿2026-08-31T08:12:41.1935548Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-31T08:12:41.1935742Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-31T08:12:41.1968394Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-31T08:12:41.1968687Z env:
+quality (node 24)	Run npm run typecheck	2026-08-31T08:12:41.1968801Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-31T08:12:41.1968919Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-31T08:12:41.2610460Z 
+quality (node 24)	Run npm run typecheck	2026-08-31T08:12:41.2611097Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-31T08:12:41.2611368Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-31T08:12:41.2611472Z 
+quality (node 24)	Run npm run typecheck	2026-08-31T08:12:43.5347971Z ##[error]packages/core/src/runtime/project-runtime.ts(799,5): error TS2739: Type 'Readonly<{ id: string; readonly live: boolean; readonly definition: TrackDefinition; readonly requires: readonly RequireView[]; remove: () => void; replace: (next: TrackDefinition) => void; addObserve: (observation: ObservationDefinition) => void; removeObserve: (observation: ObservationDefinition) => void; override...' is missing the following properties from type 'TrackHandle': setRequire, removeRequire
+quality (node 24)	Run npm run typecheck	2026-08-31T08:12:43.5730898Z ##[error]Process completed with exit code 2.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-08-31T08:12:41.5591426Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T08:12:41.5591917Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T08:12:41.5630974Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T08:12:41.5631241Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T08:12:41.5631445Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T08:12:41.5631656Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T08:12:44.1462320Z ##[error]packages/core/src/runtime/project-runtime.ts(799,5): error TS2739: Type 'Readonly<{ id: string; readonly live: boolean; readonly definition: TrackDefinition; readonly requires: readonly RequireView[]; remove: () => void; replace: (next: TrackDefinition) => void; addObserve: (observation: ObservationDefinition) => void; removeObserve: (observation: ObservationDefinition) => void; override...' is missing the following properties from type 'TrackHandle': setRequire, removeRequire
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T08:12:44.1839384Z ##[error]Process completed with exit code 2.
