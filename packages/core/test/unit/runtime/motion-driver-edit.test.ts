@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { MotionDefinition, ProjectDefinition } from "../../../src/contract/v5";
 import type { MotionHandle } from "../../../src/contract/motion-handle";
 import { createManualClock } from "../../../src/ports/clock";
-import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { ProjectRuntime, type ProjectRuntimeOptions } from "../../../src/runtime/project-runtime";
 
 /**
  * Slice B2 of issue #223, on top of B1.
@@ -16,12 +16,12 @@ import { ProjectRuntime } from "../../../src/runtime/project-runtime";
  * `MotionDefinition` has to do something with a required `tracks` array, and every one of the three
  * things it could do is wrong.
  *
- * The seams are named locally and cast, because a file naming `setTrigger`, `setStagger` or the
- * runtime hooks they reach before the source exists fails `typecheck` and stops `quality` before a
- * single test runs, which is a broken file rather than evidence. B1 paid for that rule twice and it
- * is now a guardrail. `StaleSeam`, `ComposeSeam`, the `LV-` locals, 7a's `ReverseTopology` and B1's
- * own locals are the precedent, and every local declaration here is deleted by the commit that
- * lands the source.
+ * The failing-first run named `setTrigger`, `setStagger` and both runtime options through local
+ * seam interfaces and casts, because a file naming them before the source exists fails `typecheck`
+ * and stops `quality` before a single test runs, which is a broken file rather than evidence. All
+ * of them are deleted here, by the commit that landed the source, so the shipped cases name the
+ * members directly and the journal's hooks are derived from `ProjectRuntimeOptions`: a hook whose
+ * shape drifts from the option it stands in for now fails `typecheck` rather than a case.
  *
  * Every case asks the handle for both members by name before it calls either, so a red run reports
  * an absent verb as an assertion rather than as a call on `undefined`. That is the shape `RA-29`
@@ -54,21 +54,22 @@ const compose = (node: { id: string }) => () => ({
   sourceRevisions: {},
 });
 
-/** The two verbs this slice adds. Deleted by the commit that declares them on `MotionHandle`. */
-interface TierZeroEdits {
-  setTrigger(trigger: MotionDefinition["trigger"]): void;
-  setStagger(stagger?: number): void;
-}
-type EditableMotion = MotionHandle & TierZeroEdits;
-type RuntimeOptions = ConstructorParameters<typeof ProjectRuntime>[1];
+/**
+ * The two seams this slice adds, taken from the options they stand in for rather than restated.
+ *
+ * A journal typed against its own copy of the hook shape would keep compiling after the option it
+ * fakes had changed, which is the one thing a seam this file drives must not be able to do.
+ */
+type MotionTriggerHook = NonNullable<ProjectRuntimeOptions["replaceMotionTrigger"]>;
+type MotionStaggerHook = NonNullable<ProjectRuntimeOptions["setMotionStagger"]>;
 
 interface JournalFailures {
   readonly trigger?: Error;
 }
 interface Journal {
   readonly entries: readonly string[];
-  readonly replaceMotionTrigger: (motionId: string, definition: MotionDefinition) => void;
-  readonly setMotionStagger: (motionId: string, stagger?: number) => void;
+  readonly replaceMotionTrigger: MotionTriggerHook;
+  readonly setMotionStagger: MotionStaggerHook;
 }
 /**
  * One ordered journal for both hooks, because which one was asked is half of what these cases
@@ -95,13 +96,12 @@ function journal(failures: JournalFailures = {}): Journal {
   };
 }
 function runtimeWith(hooks: Journal): ProjectRuntime {
-  const options = {
+  return new ProjectRuntime(PROJECT, {
     clock: createManualClock(),
     compose,
     replaceMotionTrigger: hooks.replaceMotionTrigger,
     setMotionStagger: hooks.setMotionStagger,
-  };
-  return new ProjectRuntime(PROJECT, options as unknown as RuntimeOptions);
+  });
 }
 /** Returns the thrown value, because each case asserts on more than one facet of it. */
 function thrownBy(operation: () => unknown): unknown {
@@ -119,8 +119,8 @@ function thrownBy(operation: () => unknown): unknown {
  * is whether the handle declares the member at all, and asking it as an assertion is what keeps a
  * red run reporting an absent verb rather than a `TypeError` from calling `undefined`.
  */
-function declaring(project: ProjectRuntime): EditableMotion {
-  const handle = project.motion(MOTION) as EditableMotion;
+function declaring(project: ProjectRuntime): MotionHandle {
+  const handle = project.motion(MOTION);
   const keys = Object.keys(handle);
   expect(keys).toContain("setTrigger");
   expect(keys).toContain("setStagger");
