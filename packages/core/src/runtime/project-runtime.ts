@@ -145,6 +145,17 @@ export interface ProjectRuntimeOptions {
   readonly addMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly replaceMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
   readonly removeMotionTrack?: (motionId: string, trackId: string) => void;
+  /**
+   * The two tier 0 seams: a Motion's trigger and its stagger, neither of which any node carries.
+   *
+   * Two hooks rather than one, because which one an edit asks is half of what the edit claims. A
+   * stagger routed through the trigger hook would dispose a live driver and resubscribe a host
+   * source for a field no driver reads, and one hook taking both fields could not tell that from a
+   * correct edit. Named beside the `addMotionTrack` family, and named for what they do: a trigger
+   * carries a disposable resource behind it, a stagger is a bare field.
+   */
+  readonly replaceMotionTrigger?: (motionId: string, definition: MotionDefinition) => void;
+  readonly setMotionStagger?: (motionId: string, stagger?: number) => void;
   readonly createMotion?: (definition: MotionDefinition) => void;
   readonly destroyMotion?: (motionId: string) => void;
   readonly onClockTick?: (event: ClockTick) => void;
@@ -265,6 +276,40 @@ function withAuthoredValues(track: TrackDefinition, values: AuthoredValues): Tra
   }
   return Object.freeze({ ...track, keyframes: Object.freeze(keyframes) });
 }
+/** One retained Motion definition, writable, for the two fields a tier 0 edit moves. */
+type MutableMotion = { -readonly [K in keyof MotionDefinition]: MotionDefinition[K] };
+/**
+ * Whether two authored triggers are the same trigger.
+ *
+ * Field by field with `Object.is`, because `MotionDefinition.trigger` is structurally open by design
+ * and a caller that rebuilt the record it already had is asking for nothing. Reference equality
+ * alone would make a redundant edit depend on whether the caller kept its object, and a deep walk
+ * would be a second opinion about a shape whose fields are the primitives `validateMotionTrigger`
+ * has just accepted. An extension key holding an object therefore reads as a change, which is the
+ * safe direction: the edit runs rather than being skipped.
+ */
+function sameTrigger(
+  current: MotionDefinition["trigger"],
+  next: MotionDefinition["trigger"],
+): boolean {
+  const fields = new Map<string, unknown>(Object.entries(next));
+  const entries = Object.entries(current);
+  if (entries.length !== fields.size) return false;
+  return entries.every(([key, value]) => fields.has(key) && Object.is(fields.get(key), value));
+}
+/**
+ * `definition` with its stagger at `stagger`, and with the field absent when that is undefined.
+ *
+ * A cleared stagger leaves no key behind, because the authored field is optional and a Motion
+ * reporting `stagger: undefined` would answer a shape no author can write. Copied and deleted from
+ * rather than rebuilt out of named fields, so a definition carrying anything else keeps it.
+ */
+function withStagger(definition: MotionDefinition, stagger: number | undefined): MotionDefinition {
+  const next: MutableMotion = { ...definition };
+  if (stagger === undefined) delete next.stagger;
+  else next.stagger = stagger;
+  return Object.freeze(next);
+}
 /**
  * Rejects an operation whose rollback can fail on its own.
  *
@@ -314,6 +359,10 @@ export class ProjectRuntime {
     | ((motionId: string, trackId: string, duration?: number) => void)
     | undefined;
   readonly #removeMotionTrack: ((motionId: string, trackId: string) => void) | undefined;
+  readonly #replaceMotionTrigger:
+    | ((motionId: string, definition: MotionDefinition) => void)
+    | undefined;
+  readonly #setMotionStagger: ((motionId: string, stagger?: number) => void) | undefined;
   readonly #createMotion: ((definition: MotionDefinition) => void) | undefined;
   readonly #destroyMotion: ((motionId: string) => void) | undefined;
   readonly #disposeComposition: () => void;
@@ -346,6 +395,8 @@ export class ProjectRuntime {
     this.#addMotionTrack = options.addMotionTrack;
     this.#replaceMotionTrack = options.replaceMotionTrack;
     this.#removeMotionTrack = options.removeMotionTrack;
+    this.#replaceMotionTrigger = options.replaceMotionTrigger;
+    this.#setMotionStagger = options.setMotionStagger;
     this.#createMotion = options.createMotion;
     this.#destroyMotion = options.destroyMotion;
     this.#disposeComposition = options.disposeComposition ?? (() => undefined);
@@ -665,6 +716,52 @@ export class ProjectRuntime {
     });
   }
   /**
+   * Installs a Motion's trigger, and reaches no node and no edge doing it.
+   *
+   * Tier 0, which is a claim about the mechanism rather than about the cost: `trigger` appears in no
+   * `GraphNode`, so there is no candidate graph for a commit to accept and `#commit` is the wrong
+   * path rather than an expensive one. `RA-33` measures that as a `replaceGraph` call count.
+   *
+   * The order is the whole contract. Staleness first, through the one resolver every member of the
+   * handle reads. Then the trigger's own validity, asked of `validateMotionTrigger`, which is the
+   * owner `addMotion` already asks rather than a copy of it, so a refusal costs no teardown at all:
+   * a verb that released the live driver and then refused the replacement would leave the Motion
+   * with none and no way back. Then the redundant edit, which asks the seam nothing, because
+   * installing the trigger the Motion already has means disposing a live driver and resubscribing a
+   * host source the caller cannot see and did not ask for. Then the seam itself, whose failure is
+   * reported verbatim rather than wrapped. The retained definition moves last, once nothing that
+   * can refuse is left. See ADR-035 and ADR-061.
+   */
+  #setTrigger(id: string, token: number, trigger: MotionDefinition["trigger"]): void {
+    const entry = this.#liveMotion(id, token);
+    const motionId = entry.definition.id;
+    const diagnostics = validateMotionTrigger(trigger, `setTrigger(${motionId}).trigger`);
+    if (diagnostics.some(({ severity }) => severity === "error"))
+      throw new TypeError(describeDiagnostics(diagnostics));
+    if (sameTrigger(entry.definition.trigger, trigger)) return;
+    const definition = Object.freeze({ ...entry.definition, trigger });
+    this.#replaceMotionTrigger?.(motionId, this.#motionDefinition({ ...entry, definition }));
+    this.#motions.set(motionId, { ...entry, definition });
+  }
+  /**
+   * Moves a Motion's stagger, which no driver reads.
+   *
+   * The same tier and the same order as the trigger above, with one difference: there is no contract
+   * rule to ask. `validateV5` has never had one for `stagger`, and `Motion` refuses a value that is
+   * not finite and non-negative at construction, so the seam is where that refusal already lives and
+   * a copy here would be a second owner of it. The seam is therefore asked before the retained
+   * definition moves, which is what keeps a refused edit from being recorded as one.
+   *
+   * An unchanged value asks the seam nothing, and a cleared one leaves no key behind. See ADR-061.
+   */
+  #setStagger(id: string, token: number, stagger: number | undefined): void {
+    const entry = this.#liveMotion(id, token);
+    const motionId = entry.definition.id;
+    if (entry.definition.stagger === stagger) return;
+    this.#setMotionStagger?.(motionId, stagger);
+    this.#motions.set(motionId, { ...entry, definition: withStagger(entry.definition, stagger) });
+  }
+  /**
    * Every member resolves the entry before it reads an argument, which is what makes staleness the
    * first answer rather than a second one.
    *
@@ -692,6 +789,8 @@ export class ProjectRuntime {
         runtime.track(qualifyMotionTrack(runtime.#liveId(id, token), trackId).value),
       tryTrack: (trackId: string) =>
         runtime.tryTrack(qualifyMotionTrack(runtime.#liveId(id, token), trackId).value),
+      setTrigger: (next: MotionDefinition["trigger"]) => runtime.#setTrigger(id, token, next),
+      setStagger: (stagger?: number) => runtime.#setStagger(id, token, stagger),
       destroy: () => runtime.#removeMotion(runtime.#liveId(id, token)),
     });
   }
