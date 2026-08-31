@@ -19,7 +19,16 @@ export interface GraphRuntimeOptions {
   readonly onFlushError?: (diagnostic: Diagnostic) => void;
   readonly onClockTick?: (event: ClockTick) => void;
   readonly graphBuilder?: GraphBuilder;
-  readonly interpolated?: (node: GraphNode) => (() => MemberState) | undefined;
+  /**
+   * Answers, for one node, how to read what it interpolated.
+   *
+   * Total on purpose. The provider is optional, because a runtime with no solver in it needs none,
+   * but its answer is not: a supplier that could return `undefined` for a node it has no compiled
+   * Track for made the publisher report that a member exposes no interpolated function, which names
+   * this seam instead of the missing node. The function it returns resolves that Track per call, so
+   * nothing here may capture one. See ADR-031 and ADR-051.
+   */
+  readonly interpolated?: (node: GraphNode) => () => MemberState;
 }
 function deferredBatch(sequence: number, seeds: readonly string[]): PatchBatch {
   const ids = Object.freeze([...seeds]);
@@ -60,7 +69,7 @@ export class GraphRuntime {
   readonly #publisher: GraphPublisher;
   readonly #clock: Clock;
   readonly #compose: ComposeResolver;
-  readonly #interpolated: ((node: GraphNode) => (() => MemberState) | undefined) | undefined;
+  readonly #interpolated: ((node: GraphNode) => () => MemberState) | undefined;
   readonly #scheduler: Scheduler | undefined;
   readonly #onFlushError: ((diagnostic: Diagnostic) => void) | undefined;
   readonly #onClockTick: ((event: ClockTick) => void) | undefined;
@@ -131,9 +140,6 @@ export class GraphRuntime {
     this.#members.delete(nodeId);
     this.#registry.evict(nodeId);
   }
-  clearPublisherCache(): void {
-    this.#publisherNodes.clear();
-  }
   replaceGraph(project: ProjectDefinition): void {
     this.#assertLive();
     this.#binding.replace(project);
@@ -142,6 +148,13 @@ export class GraphRuntime {
         this.#members.delete(id);
         this.#registry.evict(id);
       }
+    // Residency, not staleness, and the difference is worth stating because the line looks like the
+    // other one. Every closure a publisher node carries resolves the compiled map per call, so an
+    // entry that survives a rebuild is not stale; but this map is keyed by the graph node object and
+    // holds it strongly, so without the clear every node a rebuild replaced would be retained for
+    // the life of the runtime. A cache's residency is answered inside the layer that holds it, which
+    // is why it is one line here rather than an eviction hook every caller has to remember.
+    // See ADR-058.
     this.#publisherNodes.clear();
   }
   flush(seeds: readonly string[] = [...this.#members], tick?: number): PatchBatch {

@@ -112,7 +112,14 @@ export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly scheduler?: Scheduler;
   readonly compose: ComposeResolver;
-  readonly interpolated?: (node: GraphNode) => (() => MemberState) | undefined;
+  /**
+   * How one node's interpolated state is read, forwarded to `GraphRuntime` untouched.
+   *
+   * Total, for the reason the option it forwards to gives: the supplier may not answer "this node
+   * has none", because the publisher's report for a member with no such function names the seam
+   * rather than the node. The function it returns resolves the compiled Track per call.
+   */
+  readonly interpolated?: (node: GraphNode) => () => MemberState;
   readonly setProgress?: (nodeId: string, progress: number) => void;
   readonly writeValues?: LiveValueWriter;
   readonly compileTrack?: (track: TrackDefinition, nodeId?: string) => void;
