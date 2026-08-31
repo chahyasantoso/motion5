@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import type { TrackHandle } from "../../../src/contract/track-handle";
+import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
 import { createManualClock } from "../../../src/ports/clock";
-import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { ProjectRuntime, type StagedTrack } from "../../../src/runtime/project-runtime";
 
 /**
  * Slice C1 of issue #223, the first structural-tier primitive, on top of B1 and B2.
@@ -20,11 +21,16 @@ import { ProjectRuntime } from "../../../src/runtime/project-runtime";
  * which is the shape this project has refused to build three times already: rest-pose-via-`rotation`,
  * the reserved `targets` string, and the `setTrack` upsert the two probes replaced.
  *
- * Driven through a bare `ProjectRuntime` with no `PluginRegistry`, because what these cases pin is
- * the authored record and the edges derived from it, and both belong to the layer that owns the
- * retained definitions. Whether a plugin declares the slot at all is
- * `PluginRegistry.resolveForKeyframes`, reached at recompile, and a registry here would make this
- * file a second owner of that question. See ADR-044 and ADR-057.
+ * `RA-39` through `RA-45` are driven through a bare `ProjectRuntime` with no `PluginRegistry`,
+ * because what they pin is the authored record and the edges derived from it, and both belong to the
+ * layer that owns the retained definitions. Whether a plugin declares the slot at all is
+ * `PluginRegistry.resolveForKeyframes`, reached at recompile, and a registry in those cases would
+ * make them a second owner of that question. See ADR-044 and ADR-057.
+ *
+ * `RA-46` is the one case that wants one, for exactly that reason read the other way round: the
+ * refusal for an undeclared slot has to arrive from the registry through the seam a commit already
+ * reaches, and nowhere else. It is what makes the recompile this tier pays the validation rather
+ * than an expense, so no primitive here asks permission for its own edit. See ADR-062.
  *
  * `setRequire` and `removeRequire` are declared through a local seam and cast, because a file naming
  * a member before the source exists fails `typecheck` and stops `quality` before a single test runs,
@@ -74,6 +80,19 @@ const compose = (node: { id: string }) => () => ({
   sourceProgress: 0,
   sourceRevisions: {},
 });
+/**
+ * The plugin `fk` names, declaring exactly the two slots `LEG_TRACK` binds and no third.
+ *
+ * `base` takes one source, `members` takes a dict, and `tip` is declared nowhere, which is the whole
+ * of what `RA-46` measures. `length` is claimed so the values half of the group resolves clean and
+ * the only diagnostic a candidate can carry is the one about the binding.
+ */
+const FK_PLUGIN: PluginDefinition = {
+  name: "fk",
+  keys: ["length"],
+  requirements: { base: {}, members: { dict: true } },
+  compose: () => ({}),
+};
 
 /**
  * The two verbs this slice adds. Deleted by the commit that declares them on `TrackHandle`.
@@ -92,6 +111,43 @@ type EditableTrack = TrackHandle & RequireEdits;
 
 function runtime(): ProjectRuntime {
   return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
+}
+/** Every node id the staging seam accepted, in call order, so a refusal can be told from a commit. */
+interface StageJournal {
+  readonly staged: string[];
+}
+/**
+ * A runtime whose staging seam resolves the candidate through a real `PluginRegistry`.
+ *
+ * The narrowest stand-in for `engine.ts`'s `stageTrackDefinition`, and it is a stand-in rather than
+ * a second owner: the questions it asks are the registry's own, spelled through the same
+ * `resolveForKeyframes` call with the same `${nodeId}.keyframes` diagnostics path that `compileTrack`
+ * already uses, so what the case measures is where the answer comes from rather than what it says.
+ *
+ * The journal records only what the seam accepted. A refusal throws before pushing, which is what
+ * lets `RA-46` assert that a refused candidate displaced no compiled Track rather than that it was
+ * rolled back afterwards.
+ */
+function registryRuntime(journal: StageJournal): ProjectRuntime {
+  const registry = new PluginRegistry();
+  registry.register(FK_PLUGIN);
+  return new ProjectRuntime(PROJECT, {
+    clock: createManualClock(),
+    compose,
+    stageTrack: (track, nodeId): StagedTrack => {
+      const resolved = registry.resolveForKeyframes(track.keyframes ?? {}, `${nodeId}.keyframes`, {
+        id: nodeId,
+        duration: track.duration,
+      });
+      const errors = resolved.diagnostics.filter(({ severity }) => severity === "error");
+      if (errors.length > 0)
+        throw new TypeError(
+          errors.map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`).join(" "),
+        );
+      journal.staged.push(nodeId);
+      return { commit: () => undefined, rollback: () => undefined };
+    },
+  });
 }
 /** Returns the thrown value, because each case asserts on more than one facet of it. */
 function thrownBy(operation: () => unknown): unknown {
@@ -280,6 +336,44 @@ describe("one edge on an already-bound plugin, at the price the structural tier 
       { plugin: "fk", slot: "members", source: HAND, memberKey: "left" },
     ]);
     expect(handle.live).toBe(true);
+
+    project.dispose();
+  });
+
+  it("RA-46 lets the registry refuse a slot it never declared, at the seam a commit reaches", () => {
+    const journal: StageJournal = { staged: [] };
+    const project = registryRuntime(journal);
+    const handle = declaring(project);
+    const retained = handle.definition;
+    const nodes = project.graph.graph.nodes;
+    const replaceGraph = vi.spyOn(project.graph, "replaceGraph");
+
+    const thrown = thrownBy(() => handle.setRequire("fk", "tip", HAND));
+
+    // No primitive asks permission for its own edit. It builds a candidate and the owners that
+    // already judge a whole record judge this one, which is what makes a structural edit produce a
+    // graph the loader would accept by construction rather than by a per-primitive check that can
+    // disagree with it. The rule id and the authored path are both the registry's own.
+    expect((thrown as Error).message).toContain("plugin-unknown-requirement");
+    expect((thrown as Error).message).toContain(`${LEG}.keyframes.fk.requires.tip`);
+    // Nothing staged rather than staged and rolled back, because the resolve is the first thing the
+    // seam does: a refused candidate never displaced a compiled Track at all.
+    expect(journal.staged).toEqual([]);
+    expect(replaceGraph).not.toHaveBeenCalled();
+    expect(handle.definition).toBe(retained);
+    expect(project.graph.graph.nodes).toBe(nodes);
+
+    // The other direction through the same seam, and it is what keeps this case from being green
+    // against a primitive that refuses everything: a declared slot resolves clean, stages once, and
+    // rebuilds once.
+    handle.setRequire("fk", "members", ARM, "right");
+
+    expect(journal.staged).toEqual([LEG]);
+    expect(replaceGraph).toHaveBeenCalledTimes(1);
+    expect(handle.requires.filter(({ slot }) => slot === "members")).toEqual([
+      { plugin: "fk", slot: "members", source: HAND, memberKey: "left" },
+      { plugin: "fk", slot: "members", source: ARM, memberKey: "right" },
+    ]);
 
     project.dispose();
   });
