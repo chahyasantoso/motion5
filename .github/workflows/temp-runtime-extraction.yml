@@ -20,10 +20,10 @@ jobs:
         with:
           ref: feat/ra-69-authored-property-edit
           fetch-depth: 0
-      - name: Set up Node
+      - name: Set up Node 24
         uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version: 24
           cache: npm
       - name: Install dependencies
         run: npm ci
@@ -36,8 +36,6 @@ jobs:
       - name: Run focused runtime tests
         run: npx vitest run packages/core/test/unit/runtime/keyframe-property-edit.test.ts packages/core/test/unit/runtime/stale-track-handle.test.ts packages/core/test/unit/runtime/live-value-updates.test.ts
       - name: Commit source and remove temporary workflow
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
