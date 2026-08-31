@@ -1,0 +1,504 @@
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-08-31T02:24:39.5125642Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:39.5126361Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:39.5164816Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:39.5165094Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:39.5165297Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:39.5165508Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6716418Z ##[error]packages/core/src/engine.ts(25,10): error TS2305: Module '"./runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6727553Z ##[error]packages/core/src/engine.ts(25,31): error TS2305: Module '"./runtime/project-runtime"' has no exported member 'StagedTrack'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6730594Z ##[error]packages/core/src/engine.ts(403,24): error TS7006: Parameter 'node' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6733189Z ##[error]packages/core/src/engine.ts(413,23): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6735596Z ##[error]packages/core/src/engine.ts(413,31): error TS7006: Parameter 'progress' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6738055Z ##[error]packages/core/src/engine.ts(419,23): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6740725Z ##[error]packages/core/src/engine.ts(419,31): error TS7006: Parameter 'values' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6743217Z ##[error]packages/core/src/engine.ts(419,39): error TS7006: Parameter 'overlay' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6745685Z ##[error]packages/core/src/engine.ts(419,48): error TS7006: Parameter 'rebase' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6748250Z ##[error]packages/core/src/engine.ts(424,26): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6750992Z ##[error]packages/core/src/engine.ts(424,36): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6753480Z ##[error]packages/core/src/engine.ts(424,45): error TS7006: Parameter 'duration' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6755997Z ##[error]packages/core/src/engine.ts(429,30): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6758569Z ##[error]packages/core/src/engine.ts(429,40): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6761379Z ##[error]packages/core/src/engine.ts(429,49): error TS7006: Parameter 'duration' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6763866Z ##[error]packages/core/src/engine.ts(434,29): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6766353Z ##[error]packages/core/src/engine.ts(434,39): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6768827Z ##[error]packages/core/src/engine.ts(435,24): error TS7006: Parameter 'definition' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6771555Z ##[error]packages/core/src/engine.ts(436,25): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6773960Z ##[error]packages/core/src/engine.ts(452,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.6776484Z ##[error]packages/core/src/runtime/project-runtime.ts(1,1): error TS2304: Cannot find name 'PLACEHOLDER'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-08-31T02:24:41.7090002Z ##[error]Process completed with exit code 2.
+quality (node 24)	Run npm run typecheck	﻿2026-08-31T02:24:36.8367220Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:36.8367583Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:36.8411203Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:36.8411765Z env:
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:36.8412013Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:36.8412258Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:36.9461465Z 
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:36.9462065Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:36.9462545Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:36.9462772Z 
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5754339Z ##[error]packages/core/src/engine.ts(25,10): error TS2305: Module '"./runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5767831Z ##[error]packages/core/src/engine.ts(25,31): error TS2305: Module '"./runtime/project-runtime"' has no exported member 'StagedTrack'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5770982Z ##[error]packages/core/src/engine.ts(403,24): error TS7006: Parameter 'node' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5773694Z ##[error]packages/core/src/engine.ts(413,23): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5776190Z ##[error]packages/core/src/engine.ts(413,31): error TS7006: Parameter 'progress' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5778612Z ##[error]packages/core/src/engine.ts(419,23): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5781017Z ##[error]packages/core/src/engine.ts(419,31): error TS7006: Parameter 'values' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5783453Z ##[error]packages/core/src/engine.ts(419,39): error TS7006: Parameter 'overlay' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5785718Z ##[error]packages/core/src/engine.ts(419,48): error TS7006: Parameter 'rebase' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5787950Z ##[error]packages/core/src/engine.ts(424,26): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5790279Z ##[error]packages/core/src/engine.ts(424,36): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5792753Z ##[error]packages/core/src/engine.ts(424,45): error TS7006: Parameter 'duration' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5795008Z ##[error]packages/core/src/engine.ts(429,30): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5797205Z ##[error]packages/core/src/engine.ts(429,40): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5799719Z ##[error]packages/core/src/engine.ts(429,49): error TS7006: Parameter 'duration' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5802176Z ##[error]packages/core/src/engine.ts(434,29): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5804476Z ##[error]packages/core/src/engine.ts(434,39): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5806751Z ##[error]packages/core/src/engine.ts(435,24): error TS7006: Parameter 'definition' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5809059Z ##[error]packages/core/src/engine.ts(436,25): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5811483Z ##[error]packages/core/src/engine.ts(452,23): error TS7006: Parameter 'event' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5814114Z ##[error]packages/core/src/runtime/project-runtime.ts(1,1): error TS2304: Cannot find name 'PLACEHOLDER'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5817327Z ##[error]packages/core/test/integration/adoption.test.ts(4,10): error TS2305: Module '"../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5820182Z ##[error]packages/core/test/integration/adoption.test.ts(130,24): error TS7006: Parameter 'mId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5823130Z ##[error]packages/core/test/integration/adoption.test.ts(130,29): error TS7006: Parameter 'tId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5825592Z ##[error]packages/core/test/integration/adoption.test.ts(163,27): error TS7006: Parameter 'mId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5828805Z ##[error]packages/core/test/integration/adoption.test.ts(163,32): error TS7006: Parameter 'tId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5832115Z ##[error]packages/core/test/integration/diagnostics.test.ts(4,10): error TS2305: Module '"../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5834936Z ##[error]packages/core/test/integration/diagnostics.test.ts(55,34): error TS7006: Parameter 'entry' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5837637Z ##[error]packages/core/test/integration/diagnostics.test.ts(62,41): error TS7031: Binding element 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5840963Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(6,15): error TS2305: Module '"../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5843853Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(151,41): error TS7006: Parameter 'p' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5847143Z ##[error]packages/core/test/integration/phase4-dynamic-lifecycle.test.ts(5,10): error TS2305: Module '"../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5850108Z ##[error]packages/core/test/integration/phase4-dynamic-lifecycle.test.ts(80,33): error TS7006: Parameter 'id' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5853019Z ##[error]packages/core/test/integration/phase4-dynamic-lifecycle.test.ts(130,8): error TS7006: Parameter 'e' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5856093Z ##[error]packages/core/test/integration/project-runtime.test.ts(4,10): error TS2305: Module '"../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5859277Z ##[error]packages/core/test/integration/remount.test.ts(5,10): error TS2305: Module '"../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5862253Z ##[error]packages/core/test/integration/remount.test.ts(42,49): error TS7031: Binding element 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5864849Z ##[error]packages/core/test/integration/remount.test.ts(48,53): error TS7031: Binding element 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5867443Z ##[error]packages/core/test/integration/remount.test.ts(54,57): error TS7031: Binding element 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5869996Z ##[error]packages/core/test/integration/remount.test.ts(74,43): error TS7031: Binding element 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5873263Z ##[error]packages/core/test/integration/rollback-error-precedence.test.ts(12,10): error TS2305: Module '"../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5876531Z ##[error]packages/core/test/integration/solver-member-cache.test.ts(9,15): error TS2305: Module '"../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5880140Z ##[error]packages/core/test/unit/adapters/incremental-graph-builder-eviction.test.ts(4,10): error TS2305: Module '"../../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5883856Z ##[error]packages/core/test/unit/runtime/clock-tick-identity.test.ts(7,10): error TS2305: Module '"../../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5887182Z ##[error]packages/core/test/unit/runtime/live-value-animated.test.ts(8,15): error TS2305: Module '"../../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5890707Z ##[error]packages/core/test/unit/runtime/live-value-updates.test.ts(10,15): error TS2305: Module '"../../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5894008Z ##[error]packages/core/test/unit/runtime/stale-track-handle.test.ts(11,10): error TS2305: Module '"../../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5897688Z ##[error]packages/core/test/unit/runtime/structural-commit-flush.test.ts(8,10): error TS2305: Module '"../../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5901549Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(8,10): error TS2305: Module '"../../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5904299Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(8,31): error TS2305: Module '"../../../src/runtime/project-runtime"' has no exported member 'ProjectRuntimeOptions'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5906293Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(78,22): error TS7006: Parameter '_track' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5908568Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(78,30): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5911254Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(79,22): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5914316Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(80,24): error TS7006: Parameter '_motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5916762Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(80,35): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5918484Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(80,44): error TS7006: Parameter 'duration' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5920161Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(82,27): error TS7006: Parameter '_motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5922235Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(82,38): error TS7006: Parameter 'trackId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5923995Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(83,22): error TS7006: Parameter 'definition' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5925674Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(87,23): error TS7006: Parameter 'motionId' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5927315Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(109,14): error TS7006: Parameter 'node' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5928917Z ##[error]packages/core/test/unit/runtime/structural-commit-path.test.ts(110,11): error TS7006: Parameter 'node' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5931035Z ##[error]packages/core/test/unit/runtime/track-staging.test.ts(4,10): error TS2305: Module '"../../../src/runtime/project-runtime"' has no exported member 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.5933063Z ##[error]packages/core/test/unit/runtime/track-staging.test.ts(4,31): error TS2305: Module '"../../../src/runtime/project-runtime"' has no exported member 'StagedTrack'.
+quality (node 24)	Run npm run typecheck	2026-08-31T02:24:40.6276308Z ##[error]Process completed with exit code 2.
+integration (node 24)	Run npm run test:integration	﻿2026-08-31T02:24:38.6648405Z ##[group]Run npm run test:integration
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:38.6648719Z ^[[36;1mnpm run test:integration^[[0m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:38.6683025Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:38.6683421Z env:
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:38.6683608Z   NODE_VERSION: 24
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:38.6683785Z ##[endgroup]
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:38.7619904Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:38.7620600Z > motion5@0.0.0 test:integration
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:38.7621021Z > vitest run packages/core/test/integration
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:38.7621217Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:39.1605674Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:39.1608812Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:39.1609181Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:39.5242044Z  ^[[31m❯^[[39m packages/core/test/integration/t4-runtime-motion-parity.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:39.5251568Z  ^[[31m❯^[[39m packages/core/test/integration/bare-authored-leaf.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:39.5322497Z  ^[[31m❯^[[39m packages/core/test/integration/phase7-walker-demo.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:39.7085660Z  ^[[31m❯^[[39m packages/core/test/integration/engine-teardown-ownership.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:39.7181984Z  ^[[31m❯^[[39m packages/core/test/integration/trigger-time-loop.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:39.7336824Z  ^[[31m❯^[[39m packages/core/test/integration/plugin-group-values-section.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:39.8842014Z  ^[[32m✓^[[39m packages/core/test/integration/authored-leaf-reader.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:39.9019642Z  ^[[31m❯^[[39m packages/core/test/integration/ik-fabrik-chain.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:39.9144857Z  ^[[31m❯^[[39m packages/core/test/integration/solver-member-cache.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.0494899Z  ^[[31m❯^[[39m packages/core/test/integration/ik-two-bone.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.0651554Z  ^[[31m❯^[[39m packages/core/test/integration/adoption.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.0710183Z  ^[[31m❯^[[39m packages/core/test/integration/rollback-error-precedence.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.2073568Z  ^[[31m❯^[[39m packages/core/test/integration/motion-trigger-types.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.2453778Z  ^[[31m❯^[[39m packages/core/test/integration/phase0-red-baseline.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.2504339Z  ^[[31m❯^[[39m packages/core/test/integration/plugin-owned-requirements.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.4018914Z  ^[[31m❯^[[39m packages/core/test/integration/trigger-time.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.4069800Z  ^[[31m❯^[[39m packages/core/test/integration/replace-track-transactionality.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.4236549Z  ^[[31m❯^[[39m packages/core/test/integration/phase4-dynamic-lifecycle.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.5647426Z  ^[[31m❯^[[39m packages/core/test/integration/ik-multi-goal.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.5924572Z  ^[[31m❯^[[39m packages/core/test/integration/trigger-scroll.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.5970647Z  ^[[31m❯^[[39m packages/core/test/integration/mutation-transactionality.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.7445104Z  ^[[31m❯^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.7617228Z  ^[[31m❯^[[39m packages/core/test/integration/per-plugin-key-ownership.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.7720096Z  ^[[31m❯^[[39m packages/core/test/integration/phase3-trigger-port.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.9166401Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.9415499Z  ^[[31m❯^[[39m packages/core/test/integration/option-c-track-resolution.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:40.9486866Z  ^[[31m❯^[[39m packages/core/test/integration/phase2-motion-scheduling.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.0867484Z  ^[[31m❯^[[39m packages/core/test/integration/live-value-composition.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.1080398Z  ^[[31m❯^[[39m packages/core/test/integration/unified-mutation-surface.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.1322222Z  ^[[31m❯^[[39m packages/core/test/integration/runtime-motion-lifecycle.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.2776795Z  ^[[31m❯^[[39m packages/core/test/integration/observation-identity.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.3098650Z  ^[[31m❯^[[39m packages/core/test/integration/issue-114-motion-track-regressions.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.3123583Z  ^[[32m✓^[[39m packages/core/test/integration/cross-motion.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.4319291Z  ^[[31m❯^[[39m packages/core/test/integration/diagnostics.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.4688781Z  ^[[31m❯^[[39m packages/core/test/integration/adopted-track-immutability.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.4830155Z  ^[[31m❯^[[39m packages/core/test/integration/replace-motion-track.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.6013136Z  ^[[31m❯^[[39m packages/core/test/integration/keyframe-groups.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.6446788Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.6555154Z  ^[[31m❯^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.7785856Z  ^[[31m❯^[[39m packages/core/test/integration/internal-key-strip.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.7915153Z  ^[[31m❯^[[39m packages/core/test/integration/remount.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.8139902Z  ^[[31m❯^[[39m packages/core/test/integration/handle-adoption.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.9436417Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.9560657Z  ^[[31m❯^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:41.9684060Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.0820007Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.1318280Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.1461608Z  ^[[31m❯^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.2398961Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.2949380Z  ^[[31m❯^[[39m packages/core/test/integration/single-input-channel.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.3050218Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.4075904Z  ^[[31m❯^[[39m packages/core/test/integration/adopt-destroy-readopt.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.4573657Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.4620168Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.5715706Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.6130361Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.6479354Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.7320578Z  ^[[31m❯^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.7830798Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.8187242Z  ^[[31m❯^[[39m packages/core/test/integration/runtime-motion-trigger-validation.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.8758898Z  ^[[31m❯^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9107975Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9133972Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9134479Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Suites 46 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9134719Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9139031Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adopt-destroy-readopt.test.ts^[[2m [ packages/core/test/integration/adopt-destroy-readopt.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9143005Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adopted-track-immutability.test.ts^[[2m [ packages/core/test/integration/adopted-track-immutability.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9144729Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/adoption.test.ts^[[2m [ packages/core/test/integration/adoption.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9146307Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/bare-authored-leaf.test.ts^[[2m [ packages/core/test/integration/bare-authored-leaf.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9147708Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/diagnostics.test.ts^[[2m [ packages/core/test/integration/diagnostics.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9149116Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m [ packages/core/test/integration/end-to-end.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9150508Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-headless.test.ts^[[2m [ packages/core/test/integration/engine-headless.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9152135Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-load-validation.test.ts^[[2m [ packages/core/test/integration/engine-load-validation.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9153871Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-teardown-ownership.test.ts^[[2m [ packages/core/test/integration/engine-teardown-ownership.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9155599Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/engine-x3-contribution.test.ts^[[2m [ packages/core/test/integration/engine-x3-contribution.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9157215Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/handle-adoption.test.ts^[[2m [ packages/core/test/integration/handle-adoption.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9158848Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/ik-fabrik-chain.test.ts^[[2m [ packages/core/test/integration/ik-fabrik-chain.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9160398Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/ik-multi-goal.test.ts^[[2m [ packages/core/test/integration/ik-multi-goal.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9161266Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/ik-two-bone.test.ts^[[2m [ packages/core/test/integration/ik-two-bone.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9162480Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/internal-key-strip.test.ts^[[2m [ packages/core/test/integration/internal-key-strip.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9164190Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/issue-114-motion-track-regressions.test.ts^[[2m [ packages/core/test/integration/issue-114-motion-track-regressions.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9165902Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/keyframe-groups.test.ts^[[2m [ packages/core/test/integration/keyframe-groups.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9167511Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/live-value-composition.test.ts^[[2m [ packages/core/test/integration/live-value-composition.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9169317Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/motion-trigger-types.test.ts^[[2m [ packages/core/test/integration/motion-trigger-types.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9171037Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/mutation-transactionality.test.ts^[[2m [ packages/core/test/integration/mutation-transactionality.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9172691Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/observation-identity.test.ts^[[2m [ packages/core/test/integration/observation-identity.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9174350Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/option-c-track-resolution.test.ts^[[2m [ packages/core/test/integration/option-c-track-resolution.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9175581Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/per-plugin-key-ownership.test.ts^[[2m [ packages/core/test/integration/per-plugin-key-ownership.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9177007Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase0-red-baseline.test.ts^[[2m [ packages/core/test/integration/phase0-red-baseline.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9178129Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase2-motion-scheduling.test.ts^[[2m [ packages/core/test/integration/phase2-motion-scheduling.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9179643Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase3-trigger-port.test.ts^[[2m [ packages/core/test/integration/phase3-trigger-port.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9180739Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase4-dynamic-lifecycle.test.ts^[[2m [ packages/core/test/integration/phase4-dynamic-lifecycle.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9181716Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m [ packages/core/test/integration/phase7-walker-demo.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9182726Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-group-values-section.test.ts^[[2m [ packages/core/test/integration/plugin-group-values-section.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9183768Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-owned-requirements.test.ts^[[2m [ packages/core/test/integration/plugin-owned-requirements.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9184758Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/plugin-use-contract.test.ts^[[2m [ packages/core/test/integration/plugin-use-contract.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9185731Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/project-handle-surface.test.ts^[[2m [ packages/core/test/integration/project-handle-surface.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9186666Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/project-runtime.test.ts^[[2m [ packages/core/test/integration/project-runtime.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9187968Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/remount.test.ts^[[2m [ packages/core/test/integration/remount.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9189008Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/replace-motion-track.test.ts^[[2m [ packages/core/test/integration/replace-motion-track.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9190507Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/replace-track-transactionality.test.ts^[[2m [ packages/core/test/integration/replace-track-transactionality.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9192133Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/rollback-error-precedence.test.ts^[[2m [ packages/core/test/integration/rollback-error-precedence.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9193412Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/runtime-motion-lifecycle.test.ts^[[2m [ packages/core/test/integration/runtime-motion-lifecycle.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9194518Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/runtime-motion-trigger-validation.test.ts^[[2m [ packages/core/test/integration/runtime-motion-trigger-validation.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9195877Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/single-input-channel.test.ts^[[2m [ packages/core/test/integration/single-input-channel.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9196935Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/solver-member-cache.test.ts^[[2m [ packages/core/test/integration/solver-member-cache.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9197929Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/t4-runtime-motion-parity.test.ts^[[2m [ packages/core/test/integration/t4-runtime-motion-parity.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9199300Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-scroll.test.ts^[[2m [ packages/core/test/integration/trigger-scroll.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9200773Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time-loop.test.ts^[[2m [ packages/core/test/integration/trigger-time-loop.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9201932Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/trigger-time.test.ts^[[2m [ packages/core/test/integration/trigger-time.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9203392Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/unified-mutation-surface.test.ts^[[2m [ packages/core/test/integration/unified-mutation-surface.test.ts ]^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9204417Z ^[[31m^[[1mReferenceError^[[22m: PLACEHOLDER is not defined^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9204958Z ^[[36m ^[[2m❯^[[22m packages/core/src/runtime/project-runtime.ts:^[[2m1:1^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9205478Z     ^[[90m  1|^[[39m ^[[33mPLACEHOLDER^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9205752Z     ^[[90m   |^[[39m ^[[31m^^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9205887Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9206098Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/46]⎯^[[22m^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9206268Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9206295Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9206699Z ^[[2m Test Files ^[[22m ^[[1m^[[31m46 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m16 passed^[[39m^[[22m^[[90m (62)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9207330Z ^[[2m      Tests ^[[22m ^[[1m^[[32m42 passed^[[39m^[[22m^[[90m (42)^[[39m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9207665Z ^[[2m   Start at ^[[22m 02:24:39
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9208612Z ^[[2m   Duration ^[[22m 3.74s^[[2m (transform 957ms, setup 301ms, import 462ms, tests 118ms, environment 6ms)^[[22m
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9208917Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9208923Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9226246Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9234506Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9235800Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9236573Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9237701Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9238879Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9239858Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9240613Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9241912Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9242697Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9243690Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9244321Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9245222Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9246152Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9246993Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9247906Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9248948Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9249762Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9250664Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9251340Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9252255Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9252899Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9253759Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9254390Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9255257Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9255948Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9256761Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9257510Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9258479Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9259140Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9260047Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9261094Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9261921Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9262565Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9263291Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9263907Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9264615Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9265237Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9265947Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9266574Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9267306Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9267923Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9268877Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9269574Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9270302Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9270992Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9271720Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9272321Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9273037Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9273732Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9274484Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9275284Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9276043Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9276682Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9277420Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9278324Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9279115Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9280010Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9280794Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9281672Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9282877Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9283596Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9284815Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9286223Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9287575Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9288996Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9290324Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9291423Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9292580Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9293620Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9294903Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9295982Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9297245Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9298397Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9299657Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9300723Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9301909Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9302934Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9304154Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9305143Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9306351Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9307206Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9308511Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9309218Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9310004Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9310636Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9311374Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9311981Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9312711Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9313321Z 
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9314034Z ##[error]ReferenceError: PLACEHOLDER is not defined
+integration (node 24)	Run npm run test:integration	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	
+integration (node 24)	Run npm run test:integration	2026-08-31T02:24:42.9702118Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	﻿2026-08-31T02:24:39.0665967Z ##[group]Run npx vitest run packages/core/test/integration/end-to-end.test.ts
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:39.0666749Z ^[[36;1mnpx vitest run packages/core/test/integration/end-to-end.test.ts^[[0m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:39.0712708Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:39.0712977Z env:
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:39.0713187Z   NODE_VERSION: 24
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:39.0713406Z ##[endgroup]
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:39.6574573Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:39.6603820Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:39.6619008Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0597378Z  ^[[31m❯^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0650583Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0652220Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Suites 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0653092Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0678347Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/end-to-end.test.ts^[[2m [ packages/core/test/integration/end-to-end.test.ts ]^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0683086Z ^[[31m^[[1mReferenceError^[[22m: PLACEHOLDER is not defined^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0683608Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0684348Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[90m (1)^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0685343Z ^[[2m      Tests ^[[22m ^[[2mno tests^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0686100Z ^[[2m   Start at ^[[22m 02:24:39
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0687361Z ^[[2m   Duration ^[[22m 380ms^[[2m (transform 197ms, setup 17ms, import 0ms, tests 0ms, environment 0ms)^[[22m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0688193Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0702243Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0704414Z ^[[36m ^[[2m❯^[[22m packages/core/src/runtime/project-runtime.ts:^[[2m1:1^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0705533Z     ^[[90m  1|^[[39m ^[[33mPLACEHOLDER^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0732394Z ##[error]ReferenceError: PLACEHOLDER is not defined
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	 ❯ packages/core/src/runtime/project-runtime.ts:1:1
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0742898Z     ^[[90m   |^[[39m ^[[31m^^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0743475Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0744101Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.0744653Z 
+end-to-end (node 24)	Run npx vitest run packages/core/test/integration/end-to-end.test.ts	2026-08-31T02:24:40.1296274Z ##[error]Process completed with exit code 1.
