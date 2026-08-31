@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+import type {
+  MotionDefinition,
+  ProjectDefinition,
+  TrackDefinition,
+} from "../../../src/contract/v5";
 import { readPluginBindings } from "../../../src/contract/keyframe-shape";
 import { StaleHandleError } from "../../../src/contract/handle";
 import { StaleMotionHandleError, type MotionHandle } from "../../../src/contract/motion-handle";
@@ -16,11 +20,15 @@ import { ProjectRuntime } from "../../../src/runtime/project-runtime";
  * `StaleHandleError`. `TrackHandle.track` becomes `definition` with no second spelling left behind,
  * which is the break this slice takes rather than aliases.
  *
- * B's tier 0 verbs, `setTrigger` and `setStagger`, are deliberately not here. They are a live driver
- * edit needing a seam of their own into the layer that owns the created trigger, and the plan's own
- * guardrail is that a change existing to unblock a later one still ships alone. Nothing here mutates
- * anything the runtime could not already mutate: the motion handle's `destroy` reaches the same
- * `destroyMotion` a caller reaches today, through the same commit path.
+ * B's tier 0 verbs, `setTrigger` and `setStagger`, are not implemented by this slice. They are a
+ * live driver edit needing a seam of their own into the layer that owns the created trigger, and the
+ * plan's own guardrail is that a change existing to unblock a later one still ships alone, so they
+ * ship as B2. What they own behaviourally is `RA-33` through `RA-38` in `motion-driver-edit.test.ts`;
+ * what this file owns about them is only that they refuse when the handle is stale, which is the
+ * argument record below rather than a case of their own.
+ *
+ * Nothing B1 shipped mutates anything the runtime could not already mutate: the motion handle's
+ * `destroy` reaches the same `destroyMotion` a caller reaches today, through the same commit path.
  *
  * The failing-first run named every one of these members through local seam interfaces and casts,
  * because a file naming `Handle`, `MotionHandle`, `tryTrack` or `requires` before the source exists
@@ -72,6 +80,12 @@ const compose = (node: { id: string }) => () => ({
  * The declared half of `RA-32`'s coverage check, exactly as `MEMBER_ARGUMENTS` is for `SH-1`. The
  * resolver refuses before it reads an argument, so the keys carry the claim and the values only have
  * to be well-typed.
+ *
+ * `setTrigger` and `setStagger` are declared here by B2's evidence commit, before the source that
+ * adds them. That is this gate working rather than being weakened: the surface below is derived from
+ * the handle's own keys, so a member declared here and missing from the handle fails the case, and a
+ * member added to the handle with no entry here fails it too. `SH-1` went red exactly this way when
+ * `MEMBER_ARGUMENTS` named `overrideValues` and `setValues` ahead of ADR-059's source.
  */
 const MOTION_MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   definition: [],
@@ -79,6 +93,8 @@ const MOTION_MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
   addTrack: [{ id: "tail" } satisfies TrackDefinition],
   track: ["tail"],
   tryTrack: ["tail"],
+  setTrigger: [{ type: "manual" } satisfies MotionDefinition["trigger"]],
+  setStagger: [0.25],
   destroy: [],
 };
 /** The two members that answer on a stale handle rather than refusing. */
