@@ -80,12 +80,18 @@ interface SchemaEffect {
  * `#replaceTrack` republishes the displaced compiled Track before restoring the Motion entry,
  * because the restore resolves and seeds by id. `settle` runs only after acceptance.
  * See ADR-031 and ADR-045.
+ *
+ * `touched` names the nodes this transaction changed, and it is seeded into one flush once the
+ * commit settled. Empty is a real answer rather than a default: a motion add or destroy derives no
+ * node and no edge at all, and a removal's node is gone with nothing left depending on it, because
+ * `finalizeGraph` would have refused the candidate otherwise.
  */
 interface SchemaPlan {
   readonly tracks: ReadonlyMap<string, TrackEntry>;
   readonly motions: ReadonlyMap<string, MotionDefinition>;
   readonly effects: readonly SchemaEffect[];
   readonly settle: readonly (() => void)[];
+  readonly touched: readonly string[];
 }
 /**
  * The one seam by which a live value reaches the compiled Track this runtime does not own.
@@ -376,6 +382,9 @@ export class ProjectRuntime {
         },
       ],
       settle: [],
+      // A motion derives no node and no edge, so there is nothing to publish. Its graph pass is an
+      // id-uniqueness gate reached through a full rebuild, not a topology commit.
+      touched: [],
     });
     return Object.freeze({ id: accepted.id });
   }
@@ -396,6 +405,7 @@ export class ProjectRuntime {
       motions,
       effects: [],
       settle: [() => this.#destroyMotion?.(motionId)],
+      touched: [],
     });
   }
   addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle {
@@ -469,6 +479,10 @@ export class ProjectRuntime {
         },
       ],
       settle,
+      // The new node publishes, which it never did before. A node whose sources have not published
+      // yet lands on blocked with a pending diagnostic rather than on nothing at all, and that is
+      // the whole of what building a structure up incrementally requires. See `RA-9`.
+      touched: [id],
     });
     return this.#handle(id, token);
   }
@@ -550,6 +564,10 @@ export class ProjectRuntime {
           if (entry.motionId !== undefined) this.#removeMotionTrack?.(entry.motionId, id);
         },
       ],
+      // The node is gone and nothing depended on it: a remaining observer of it would have made the
+      // candidate refuse with `observation-unknown-source` before this commit. Eviction already
+      // publishes the one terminal patch a destroyed node owes its subscribers.
+      touched: [],
     });
   }
   #replaceTrack(id: string, token: number, next: TrackDefinition): void {
@@ -591,6 +609,10 @@ export class ProjectRuntime {
       motions: this.#motions,
       effects,
       settle: [() => staged?.commit()],
+      // The edited node, and only it. Every node whose incoming edge set moved is downstream of this
+      // one, and the publisher walks dependents from the seed, so naming it is sufficient.
+      // `addObserve` and `removeObserve` route through here, which is what makes them publish.
+      touched: [id],
     });
   }
   /**
@@ -606,9 +628,15 @@ export class ProjectRuntime {
    * refused candidate is. Each one is recorded only after its `apply` returned, because a hook that
    * refused before writing anything must not be restored.
    *
-   * No flush is seeded here. Whether a structural commit publishes is a separate question with a
-   * separate answer, and folding a behaviour change into an equivalence refactor would make neither
-   * of them provable.
+   * One flush ends it, seeded with `plan.touched`, and it runs after the settle steps rather than
+   * before them: a new node is mounted by one of those steps, and seeding earlier would flush a
+   * node the members do not contain yet. `replaceGraph` seeds nothing itself, which is why
+   * `addObserve` on a manual clock with no tick used to be invisible forever. See `RA-8`.
+   *
+   * An empty `touched` returns without calling `invalidate`, because an empty seed set is not a
+   * cheap flush: it still opens a batch, notifies every batch subscriber, moves the sequence, and
+   * drains whatever seeds a deferred flush had carried. A commit that derives no node has nothing
+   * to publish and must not spend a frame's worth of machinery saying so. See `RA-10`.
    */
   #commit(plan: SchemaPlan): void {
     const applied: SchemaEffect[] = [];
@@ -627,6 +655,9 @@ export class ProjectRuntime {
     }
     this.#adoptMaps(plan);
     for (const step of plan.settle) step();
+    if (plan.touched.length === 0) return;
+    const batch = this.#graph.invalidate(plan.touched);
+    this.#diagnostics.recordAll(batch.diagnostics);
   }
   /**
    * Adopts the accepted maps wholesale, from the same pair that built the accepted snapshot.
@@ -660,7 +691,8 @@ export class ProjectRuntime {
    * `invalidate`. Nothing can observe the gap, because no flush happens until that invalidate.
    *
    * Not a `#commit` caller, and it must not become one: topology did not change, so there is no
-   * candidate graph to accept and nothing to roll back.
+   * candidate graph to accept and nothing to roll back. It reaches the same `invalidate` a commit
+   * now ends at, from the other tier, which is the one thing the two paths have ever shared.
    *
    * A static-only write validates nothing and builds nothing, which keeps its cost exactly what it
    * was. No `replaceGraph` on either path. See ADR-059 and ADR-060.
@@ -710,7 +742,8 @@ export class ProjectRuntime {
     );
     // Idempotent observation semantics, not a stale guard. Adding an edge that is already declared
     // and removing one that is not are both no-ops on a live handle, which is a different question
-    // from whether the handle is the live one at all: that was answered above.
+    // from whether the handle is the live one at all: that was answered above. Nothing is committed
+    // on either no-op, so nothing is flushed either.
     if (add) {
       if (index >= 0) return;
       observations.push(observation);
