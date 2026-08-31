@@ -2,7 +2,7 @@
 
 - Status: accepted
 - Date: 2026-08-31
-- Slice: C1 of [issue #223](https://github.com/chahyasantoso/motion5/issues/223), the structural tier
+- Slice: C1 of [issue #223](https://github.com/chahyasantoso/motion5/issues/223), the structural tier, amended by C3 with the predicate it deferred
 - Supersedes nothing. Amends no earlier record. Closes the open question ADR-059's Correction #3 left reopenable and that `SESSION-STATUS.md` carried into slice C.
 
 ## The question
@@ -98,6 +98,53 @@ to avoid resolving twice on the non-skipped path. Widening a hook signature for 
 on the cheapest step is the wrong trade, and `SchemaPlan` carrying a `ResolvedPlugins` is a change
 worth making only once a measurement asks for it.
 
+## Amendment: what slice C3 shipped
+
+C3 is where the deferred optimisation landed, and it is recorded here rather than in a second ADR
+because the decision is this record's own: the seam is the signature above, the resolve is still
+validation, and the timeline build is still the only thing skipped. One thing needed correcting and
+two needed stating.
+
+**The correction. The plugin list is not the predicate.** It is one of the things a compiled `Track`
+is built from rather than all of them. A `Track` is constructed from an interpolation config, which
+is the whole track definition with its flattened `values` section spliced in and the prepared
+contribution merged over that, plus the resolved plugins. `replace()` and `addObserve` both reach the
+same transaction as the six authored verbs, with a changed value, a changed duration or a changed
+observation and an untouched chain, so a plugin-list comparison alone would have declined a build all
+three require and left a node composing a value nobody authored. The predicate therefore compares the
+whole compiled input: the definition outside its authored record, the flattened record itself, the
+plugin chain by content and in order, the prepared contribution, and the declared internal keys.
+`outputSerializers` is not compared, because it is derived from the chain and a record of functions
+can only ever compare as changed.
+
+That comparison is one pure function with one owner, `domain/authoring/recompile.ts`. It is
+conservative in one direction only: anything it cannot prove unchanged reads as changed, so a
+contributed tween var holding something structural equality cannot walk costs a build rather than
+risking a skip. `RA-61` is the case that goes red against the predicate read literally, and it is the
+sixth entry in this project's "a plan's prescription is a measurement, not a premise" list.
+
+**The retained record is resolved, not kept.** The comparison needs the answer for the record the
+live `Track` was built from as well as for the candidate. Retaining that chain beside the compiled
+map was considered and refused: it is a cache whose key is the registry's own contents, and it would
+have to be written, dropped and restored by four call sites staying in step, which is the residency
+rule this project already answers inside the layer that holds the thing. So `#needsTimelineBuild`
+resolves both records and reads only the answer, and "resolve the candidate once" stays literally
+true: the candidate is resolved exactly once, by the layer that decides, and never again by a build
+that does not happen. A resolve is the pure and cheap half of the compile this declines to pay.
+
+**The refusal moved earlier, and the message did not.** The candidate is resolved before any effect
+is applied, so a candidate the registry rejects is refused before a `Track` is staged rather than
+during the staging, on both the skipped and the built path. Same owner, same rule id, same authored
+path, same rendering: `U-1` still reads `plugin-unknown-key at ...` and the live compiled `Track` is
+still the one that survives. What changes is that a refused candidate now costs no staging at all,
+which is the property `RA-45` and `RA-46` already asked of this tier.
+
+What did not change is worth stating too, because the temptation is to read an optimisation as a
+discount on the tier: a binding edit still builds one candidate graph, still pays one edge delta,
+still commits through the one `#commit`, and still seeds one flush. There is no fast lane for an
+edge, and this slice never claimed one. Evidence `RA-57` through `RA-61` in
+`packages/core/test/unit/runtime/recompile-predicate.test.ts`.
+
 ## What stays separate
 
 `keyframe-group-unbound` is not the registry's question and must not be folded into it. "This node
@@ -125,17 +172,24 @@ slot name. Crossing a slot's shape is a `replace()`, where a whole definition is
 - **Refuse the goals slot by name here.** Deferred, not rejected. `setGoal` and `removeGoal` are a
   later slice, and until they exist a `setRequire` at a solver's goals slot can write a shape
   `ik-goal-conflict` refuses at load. Nothing in `RA-39` through `RA-47` pins it, so it is decided
-  where the two goal verbs are, with its own case.
+  where the two goal verbs are, with its own case. Landed in C2 as `keyframe-goal-slot-reserved`.
+- **Decide the skip inside `stageTrackDefinition`, where the build is.** Considered by C3 and
+  rejected. The compiled-map owner would then need the retained input for every live node, which is
+  the refused cache above, and the same seam is shared by the tier 2 escalation path, where a
+  declined animated write has to reach a fresh `Track` for reasons that have nothing to do with
+  topology. One seam, two tiers, one predicate between them is how a value-tier revert would have
+  started depending on a structural-tier optimisation.
 
 ## Consequences
 
 - A structural primitive is cheap to add: a pure editor plus a plan, with no validation of its own.
-- A structural edit costs one candidate build, one edge delta, one recompile and one flush, and that
-  price is now documented as correct rather than as pending optimisation.
+- A structural edit costs one candidate build, one edge delta and one flush, plus the resolve, and
+  that price is now documented as correct rather than as pending optimisation.
 - The guardrail this earns, recorded in `SESSION-STATUS.md`: an optimisation that removes a step is
   read for what that step also owned, because a recompile that looked like pure expense was the only
   place a validator saw the candidate.
 
 Refs ADR-031, ADR-035, ADR-043, ADR-044, ADR-045, ADR-049, ADR-056, ADR-057, ADR-059, ADR-060,
-ADR-061. Evidence `RA-39` through `RA-47` in
-`packages/core/test/unit/runtime/plugin-require-edit.test.ts`.
+ADR-061, ADR-063. Evidence `RA-39` through `RA-47` in
+`packages/core/test/unit/runtime/plugin-require-edit.test.ts`, and `RA-57` through `RA-61` in
+`packages/core/test/unit/runtime/recompile-predicate.test.ts`.
