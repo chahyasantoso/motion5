@@ -1,6 +1,7 @@
 import type {
   AuthoredKeyframe,
   AuthoredPluginGroup,
+  AuthoredProperty,
   AuthoredStaticValue,
   Diagnostic,
   ObservationDefinition,
@@ -30,8 +31,10 @@ import {
   readBoundGroup,
   readsAsProperty,
   removeGroup,
+  removeKeyframe as removeAuthoredKeyframe,
   removeRequire,
   setGroup,
+  setKeyframe as setAuthoredKeyframe,
   setRequire,
   type AuthoredKeyframes,
   type BoundGroup,
@@ -435,6 +438,13 @@ function withAuthoredValues(track: TrackDefinition, values: AuthoredValues): Tra
 type MutableMotion = { -readonly [K in keyof MotionDefinition]: MotionDefinition[K] };
 /** One retained track definition, writable, for the one field an authored edit moves. */
 type MutableTrack = { -readonly [K in keyof TrackDefinition]: TrackDefinition[K] };
+/** Builds a track with an edited authored keyframe record, omitting an empty record. */
+function withKeyframes(track: TrackDefinition, keyframes: AuthoredKeyframes): TrackDefinition {
+  const next: MutableTrack = { ...track };
+  if (Object.keys(keyframes).length === 0) delete next.keyframes;
+  else next.keyframes = keyframes;
+  return Object.freeze(next);
+}
 /**
  * Whether two authored triggers are the same trigger.
  *
@@ -1042,6 +1052,10 @@ export class ProjectRuntime {
         runtime.#setGoal(id, token, plugin, memberId, source),
       removeGoal: (plugin: string, memberId: string) =>
         runtime.#removeGoal(id, token, plugin, memberId),
+      setKeyframe: (plugin: string, key: string, value: AuthoredProperty) =>
+        runtime.#setKeyframe(id, token, plugin, key, value),
+      removeKeyframe: (plugin: string, key: string) =>
+        runtime.#removeKeyframe(id, token, plugin, key),
       overrideValues: (next: AuthoredValues) =>
         runtime.#writeValues(id, runtime.#liveEntry(id, token), next, false),
       setValues: (next: AuthoredValues) =>
@@ -1378,6 +1392,99 @@ export class ProjectRuntime {
     this.#diagnostics.recordAll(batch.diagnostics);
     return batch;
   }
+  /**
+   * The bound-group precondition every authored edit shares, and the one owner of it.
+   *
+   * A plugin this node authors no group for is `keyframe-group-unbound`, which is
+   * `setKeyframeGroup`'s job in the structural tier and is what buys the cheap price in the
+   * value tier: a bound group's plugin is already in the chain, so a leaf added to it can
+   * neither add a composer nor move one. A name this node authors as an ordinary property is
+   * not a group either, and that is `readBoundGroup`'s answer rather than a second shape check
+   * here.
+   *
+   * It answers with the record beside the group, so no caller re-reads `entry.track.keyframes`
+   * after the refusal has already proved it is there. See ADR-062 and ADR-063.
+   */
+  #boundGroup(
+    nodeId: string,
+    entry: TrackEntry,
+    plugin: string,
+  ): { keyframes: AuthoredKeyframes; bound: BoundGroup } {
+    const keyframes = entry.track.keyframes;
+    const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);
+    if (keyframes === undefined || bound === undefined) unboundGroup(nodeId, plugin);
+    return { keyframes, bound };
+  }
+  /** One value-tier flush, shared by authored-property recompiles and no-ops. */
+  #invalidateOne(nodeId: string) {
+    const batch = this.#graph.invalidate([nodeId]);
+    this.#diagnostics.recordAll(batch.diagnostics);
+    return batch;
+  }
+  /**
+   * Recompiles one edited authored record in place, preserving this node's playhead.
+   *
+   * Validation and the registry resolve both run before the live Track is touched. The read through
+   * `writeValues` then supplies the progress the existing Track owns, and the staged replacement is
+   * re-seeked after it becomes live. No graph operation is involved because a leaf carries no edge.
+   */
+  #recompileKeyframes(
+    nodeId: string,
+    entry: TrackEntry,
+    keyframes: AuthoredKeyframes,
+    verb: string,
+  ) {
+    const next = withKeyframes(entry.track, keyframes);
+    const validation = validateTrackDefinition(next, `${verb}(${nodeId})`);
+    if (!validation.valid || !validation.value)
+      throw new TypeError(describeDiagnostics(validation.diagnostics));
+    const accepted = validation.value;
+    const resolved = this.#resolve(nodeId, accepted);
+    if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
+      throw new TypeError(describeDiagnostics(resolved.diagnostics));
+    const written = this.#writeValuesHook(
+      nodeId,
+      authoredValues(entry.track),
+      Object.keys(entry.overlay).length === 0 ? undefined : NO_OVERLAY,
+      true,
+    );
+    const staged = this.#stageTrack?.(accepted, nodeId);
+    this.#tracks.set(nodeId, { ...entry, track: accepted, overlay: NO_OVERLAY });
+    staged?.commit();
+    if (written !== undefined) this.#setProgress(nodeId, written.progress);
+    return this.#invalidateOne(nodeId);
+  }
+  /**
+   * Edits one property of a plugin group this node already authors.
+   *
+   * An existing leaf goes through the live-write owner, preserving its per-key refusal ordering. A
+   * new or removed leaf cannot be expressed as a mask, so the authored candidate is validated,
+   * resolved, and recompiled in place instead. The bound-group precondition keeps every path in the
+   * value tier: the plugin is already in the chain and no edge can move.
+   */
+  #setKeyframe(
+    nodeId: string,
+    token: number,
+    plugin: string,
+    key: string,
+    value: AuthoredProperty,
+  ) {
+    const entry = this.#liveEntry(nodeId, token);
+    this.#refuseInsideRecipe("setKeyframe");
+    const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
+    if (Object.hasOwn(bound.group.values ?? {}, key))
+      return this.#writeValues(nodeId, entry, { [key]: value }, true);
+    const edited = setAuthoredKeyframe(keyframes, bound, key, value);
+    return this.#recompileKeyframes(nodeId, entry, edited, "setKeyframe");
+  }
+  #removeKeyframe(nodeId: string, token: number, plugin: string, key: string) {
+    const entry = this.#liveEntry(nodeId, token);
+    this.#refuseInsideRecipe("removeKeyframe");
+    const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
+    const edited = removeAuthoredKeyframe(keyframes, bound, key);
+    if (edited === keyframes) return this.#invalidateOne(nodeId);
+    return this.#recompileKeyframes(nodeId, entry, edited, "removeKeyframe");
+  }
   #replaceWithObservation(
     id: string,
     token: number,
@@ -1442,9 +1549,7 @@ export class ProjectRuntime {
     edit: (keyframes: AuthoredKeyframes, bound: BoundGroup) => AuthoredKeyframes,
   ): void {
     const entry = this.#liveEntry(id, token);
-    const keyframes = entry.track.keyframes;
-    const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);
-    if (keyframes === undefined || bound === undefined) unboundGroup(id, plugin);
+    const { keyframes, bound } = this.#boundGroup(id, entry, plugin);
     const next = edit(keyframes, bound);
     if (next === keyframes) return;
     this.#writeKeyframes(id, token, entry.track, next);
@@ -1553,10 +1658,7 @@ export class ProjectRuntime {
     track: TrackDefinition,
     keyframes: AuthoredKeyframes,
   ): void {
-    const next: MutableTrack = { ...track };
-    if (Object.keys(keyframes).length === 0) delete next.keyframes;
-    else next.keyframes = keyframes;
-    this.#replaceTrack(id, token, next);
+    this.#replaceTrack(id, token, withKeyframes(track, keyframes));
   }
   #snapshot(
     tracks: ReadonlyMap<string, TrackEntry>,
