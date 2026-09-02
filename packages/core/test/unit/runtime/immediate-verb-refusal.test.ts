@@ -243,14 +243,16 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
     // and refuses nothing. Deferring one of five is two failure contracts for one condition, which
     // is the defect this slice is closing rather than a shape to add a fifth copy of.
     expectImmediate(thrown, "unmount");
-    expect(test.runtime.instanceCount).toBe(1);
+    // Two: the one mounted before the recipe, still mounted, and the one the commit added. The
+    // refusal is what keeps the first number from being zero.
+    expect(test.runtime.instanceCount).toBe(2);
     // The commit mounted the added node, so the count moved by exactly what the commit added.
     expect(test.runtime.graph.memberCount).toBe(members + 1);
 
     // The accepting direction.
     test.runtime.unmount(ARM_ID);
 
-    expect(test.runtime.instanceCount).toBe(0);
+    expect(test.runtime.instanceCount).toBe(1);
 
     test.runtime.dispose();
   });
