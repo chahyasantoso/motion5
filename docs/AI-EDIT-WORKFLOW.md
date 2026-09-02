@@ -10,6 +10,8 @@ Drop one JSON file at `.ai/edits/<name>.json` on your working branch. The push i
 
 The size of the file you are editing stops mattering, because you never write it back. You write the anchor and the replacement.
 
+One request per push. The workflow reads the request from the paths your commit added or modified rather than from whatever the directory holds, so a push carrying two requests is refused instead of one of them being chosen for you.
+
 ## The request file
 
 ```json
@@ -64,15 +66,17 @@ Read the file before you write the anchor. A refused request costs exactly as mu
 
 The comment names the files written, the state each one was left in, and the exact reason for any refusal. It is the only channel an API-only implementor can actually read: a job summary and an uploaded artifact are both invisible to you, so a workflow that reported only there would leave you guessing whether your own edit landed.
 
+A refusal fails the run, so nothing is committed and your request file stays exactly where you put it. Fix that same path and push it again. An applied request is removed by the commit that consumed it, which is how you tell the two outcomes apart from the tree alone.
+
 The commit is made with `PERSONAL_ACCESS_TOKEN` rather than `GITHUB_TOKEN` for the reason [FORMATTING.md](./FORMATTING.md) already gives: a push made with `GITHUB_TOKEN` triggers no new workflow run, so the new head would carry no checks. Verify your change through the `CI` run on that commit.
 
 ## Testing the workflow
 
-A valid request applies the edits, formats the touched files, commits with the repository PAT, removes the request, and comments the result back. Three refusal modes worth testing before this workflow ships: an anchor matching zero times (request refused, no commit), an anchor matching twice (request refused, no commit), and a path guarding refusal like `.github/workflows/` (request refused, no commit).
+Exercised on the pull request that introduced it, with every report in that thread. A valid request applied its edit, formatted the touched file, committed with the repository PAT, removed the request, and commented back. Four refusals ran in the same pass, each one leaving the target file untouched and committing nothing: an anchor matching zero times, an anchor matching twice, a path under `.github/workflows/`, and a request whose second edit could not apply while its first could. That last one is the all-or-nothing rule, and it is the case to re-run by hand if you ever change the write pass.
 
 ## Two traps
 
-The commit that consumes a request is itself a push to `.ai/edits/**`, because it removes the file. The workflow is gated on the `[ai-edit]` marker in the commit body so that it does not eat its own tail, and it exits cleanly when no request file is waiting. Keep both guards if you touch the trigger.
+The commit that consumes a request is itself a push to `.ai/edits/**`, because it removes the file. Two guards keep the workflow from eating its own tail. The job is skipped when the head commit was authored by `github-actions[bot]` and carries the `AI-Edit-Request:` trailer that the consuming commit is written with, and the request is read from what the pushed commit added or modified, so a commit that only removes one names nothing. The author is part of the first guard on purpose: prose quoting the trailer cannot silence a real request. A push naming no request exits cleanly rather than failing, which is also what editing `.ai/edits/README.md` does. Keep all of that if you touch the trigger.
 
 `.ai/` is in `.prettierignore`. Without that, a hand-written request file is unformatted JSON that fails `format:check` on your pull request before it is ever applied.
 
