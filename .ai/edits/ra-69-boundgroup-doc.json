@@ -1,0 +1,16 @@
+{
+  "message": "docs(runtime): give the extracted bound-group precondition its own docblock",
+  "target": 250,
+  "edits": [
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "   */\n  #boundGroup(\n    nodeId: string,\n    entry: TrackEntry,\n    plugin: string,\n  ): { keyframes: AuthoredKeyframes; bound: BoundGroup } {\n    const keyframes = entry.track.keyframes;\n    const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);\n    if (keyframes === undefined || bound === undefined) unboundGroup(nodeId, plugin);\n    return { keyframes, bound };\n  }\n  #editRequire(",
+      "replace": "   */\n  #editRequire("
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /** One value-tier flush, shared by authored-property recompiles and no-ops. */\n  #invalidateOne(nodeId: string) {",
+      "replace": "  /**\n   * The bound-group precondition every authored edit shares, and the one owner of it.\n   *\n   * A plugin this node authors no group for is `keyframe-group-unbound`, which is\n   * `setKeyframeGroup`'s job in the structural tier and is what buys the cheap price in the\n   * value tier: a bound group's plugin is already in the chain, so a leaf added to it can\n   * neither add a composer nor move one. A name this node authors as an ordinary property is\n   * not a group either, and that is `readBoundGroup`'s answer rather than a second shape check\n   * here.\n   *\n   * It answers with the record beside the group, so no caller re-reads `entry.track.keyframes`\n   * after the refusal has already proved it is there. See ADR-062 and ADR-063.\n   */\n  #boundGroup(\n    nodeId: string,\n    entry: TrackEntry,\n    plugin: string,\n  ): { keyframes: AuthoredKeyframes; bound: BoundGroup } {\n    const keyframes = entry.track.keyframes;\n    const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);\n    if (keyframes === undefined || bound === undefined) unboundGroup(nodeId, plugin);\n    return { keyframes, bound };\n  }\n  /** One value-tier flush, shared by authored-property recompiles and no-ops. */\n  #invalidateOne(nodeId: string) {"
+    }
+  ]
+}
