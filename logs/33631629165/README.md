@@ -1,0 +1,24 @@
+# CI log archive: 33631629165
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: fix/ra-79-immediate-verb-refusal
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/33631629165
+- Captured: 2026-09-02T12:45:08Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm run typecheck	﻿2026-09-02T12:44:47.0041805Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-09-02T12:44:47.0042379Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-09-02T12:44:47.0081915Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-09-02T12:44:47.0082193Z env:
+quality (node 24)	Run npm run typecheck	2026-09-02T12:44:47.0082396Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-09-02T12:44:47.0082612Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-09-02T12:44:47.1089946Z 
+quality (node 24)	Run npm run typecheck	2026-09-02T12:44:47.1090668Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-09-02T12:44:47.1091291Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-09-02T12:44:47.1091596Z 
+quality (node 24)	Run npm run typecheck	2026-09-02T12:44:51.1500269Z ##[error]packages/core/test/unit/runtime/immediate-verb-refusal.test.ts(355,88): error TS2339: Property 'tick' does not exist on type 'Patch'.
+quality (node 24)	Run npm run typecheck	2026-09-02T12:44:51.1937840Z ##[error]Process completed with exit code 2.
+```
