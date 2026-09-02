@@ -1,0 +1,16 @@
+{
+  "message": "test(runtime): count the node the commit mounts in RA-81",
+  "target": 257,
+  "edits": [
+    {
+      "path": "packages/core/test/unit/runtime/immediate-verb-refusal.test.ts",
+      "find": "    expectImmediate(thrown, \"unmount\");\n    expect(test.runtime.instanceCount).toBe(1);",
+      "replace": "    expectImmediate(thrown, \"unmount\");\n    // Two: the one mounted before the recipe, still mounted, and the one the commit added. The\n    // refusal is what keeps the first number from being zero.\n    expect(test.runtime.instanceCount).toBe(2);"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/immediate-verb-refusal.test.ts",
+      "find": "    test.runtime.unmount(ARM_ID);\n\n    expect(test.runtime.instanceCount).toBe(0);",
+      "replace": "    test.runtime.unmount(ARM_ID);\n\n    expect(test.runtime.instanceCount).toBe(1);"
+    }
+  ]
+}
