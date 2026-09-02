@@ -1,0 +1,91 @@
+{
+  "message": "fix(runtime): refuse every verb that applies immediately inside a recipe",
+  "target": 257,
+  "edits": [
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  MotionDefinition,\n} from \"../contract/v5\";",
+      "replace": "  MotionDefinition,\n  TriggerSignal,\n} from \"../contract/v5\";"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  readonly setMotionStagger?: (motionId: string, stagger?: number) => void;",
+      "replace": "  readonly setMotionStagger?: (motionId: string, stagger?: number) => void;\n  /**\n   * The signal a live Motion's trigger takes, and the third seam this layer holds for one reason.\n   *\n   * It reaches the created trigger port, which plays the Motion and publishes, so it applies\n   * immediately and survives an abort exactly as the two above do. It lived in a closure over the\n   * engine's Motion map, where the owner of the recipe refusal cannot be asked, so it is a hook\n   * here instead: the refusal keeps one owner, and an unknown motion id is still refused by the\n   * layer that owns the Motion. See ADR-064.\n   */\n  readonly signalMotion?: (motionId: string, signal: TriggerSignal) => void;"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  readonly #setMotionStagger: ((motionId: string, stagger?: number) => void) | undefined;",
+      "replace": "  readonly #setMotionStagger: ((motionId: string, stagger?: number) => void) | undefined;\n  readonly #signalMotion: ((motionId: string, signal: TriggerSignal) => void) | undefined;"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "    this.#setMotionStagger = options.setMotionStagger;",
+      "replace": "    this.#setMotionStagger = options.setMotionStagger;\n    this.#signalMotion = options.signalMotion;"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  mount(nodeId: string, instance: object = {}): object {\n    this.#assertLive();",
+      "replace": "  mount(nodeId: string, instance: object = {}): object {\n    this.#assertLive();\n    this.#refuseInsideRecipe(\"mount\");\n    return this.#mountNode(nodeId, instance);\n  }\n  /**\n   * Attaches one member, and the one owner of mounting.\n   *\n   * Split from the public verb because a commit mounts too. That settle step mounted through the\n   * public member and stayed outside its guard only because `edit` clears the open transaction in a\n   * `finally` before `#apply` runs, which is correct and invisible: an internal caller kept out of a\n   * public refusal by the ordering of a `finally` in another method is not a thing to leave\n   * standing. The public member owns the contract, this owns the attach. See `RA-80`.\n   */\n  #mountNode(nodeId: string, instance: object = {}): object {"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  unmount(nodeId: string): void {\n    this.#assertLive();",
+      "replace": "  unmount(nodeId: string): void {\n    this.#assertLive();\n    this.#refuseInsideRecipe(\"unmount\");"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "    this.#removeMotion(motionId);\n  }",
+      "replace": "    this.#removeMotion(motionId);\n  }\n  /**\n   * Hands one signal to the layer that owns this Motion's trigger.\n   *\n   * Tier 0's twin, and refused inside a recipe on the one rule every immediate verb shares: it\n   * reaches no node and no edge, plays a live Motion through its created port, and publishes, so it\n   * would survive an abort. The hook keeps its own refusal for an unknown motion id, because that\n   * answer belongs to the map that holds them rather than to this layer.\n   */\n  signal(motionId: string, signal: TriggerSignal): void {\n    this.#assertLive();\n    this.#refuseInsideRecipe(\"signal\");\n    this.#signalMotion?.(motionId, signal);\n  }"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "      settle.push(() => this.mount(nodeId));",
+      "replace": "      settle.push(() => this.#mountNode(nodeId));"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "   * one. What the object buys is the narrowing -- `mount`, `seek`, `subscribe` and `dispose` are not\n   * reachable through it, because none of them is a structural change and none of them can be undone\n   * by a recipe that throws. `addMotion` resolves the handle it returns through `motion` for the",
+      "replace": "   * one. What the object buys is the narrowing, and only that: `mount`, `seek`, `subscribe` and\n   * `dispose` are not members of it. That is a statement about what a recipe is handed and never one\n   * about what it can reach, because the recipe closes over the `ProjectHandle` the caller called\n   * `edit` on, so every verb that applies immediately refuses at itself rather than by being absent\n   * from here. `addMotion` resolves the handle it returns through `motion` for the"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  seek(nodeId: string, progress: number) {\n    this.#assertLive();",
+      "replace": "  seek(nodeId: string, progress: number) {\n    this.#assertLive();\n    this.#refuseInsideRecipe(\"seek\");"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  invalidate(nodeIds: readonly string[]) {\n    this.#assertLive();",
+      "replace": "  invalidate(nodeIds: readonly string[]) {\n    this.#assertLive();\n    this.#refuseInsideRecipe(\"invalidate\");"
+    },
+    {
+      "path": "packages/core/src/contract/schema-transaction.ts",
+      "find": " * slice is that there is one. What the interface buys is the narrowing. `mount`, `seek`, `subscribe`\n * and `dispose` are not reachable through it, because none of them is a structural change and none of\n * them can be undone by a recipe that throws.",
+      "replace": " * slice is that there is one. What the interface buys is the narrowing, and only that: `mount`,\n * `seek`, `subscribe` and `dispose` are not members of it. A recipe still closes over the\n * `ProjectHandle` it was called on, so what it may not do while one is open is answered by the verbs\n * themselves: every verb that applies immediately refuses by name with\n * `schema-transaction-immediate`, and the two structural verbs absent from here, `adopt` and\n * `destroyAdopted`, compose into the one commit exactly as `addTrack` does."
+    },
+    {
+      "path": "packages/core/src/engine.ts",
+      "find": "   * `SchemaTransaction` is the narrowed surface the recipe is handed, and the narrowing is the point:\n   * `mount`, `seek`, `subscribe` and `dispose` are not reachable through it, because none of them is\n   * a structural change and none of them can be undone by a recipe that throws. A tier 0 or tier 2\n   * edit reached through a handle refuses by name inside a recipe for the same reason.",
+      "replace": "   * `SchemaTransaction` is the narrowed surface the recipe is handed, and it is a surface rather than\n   * a fence: the recipe closes over this handle too. So a verb that applies immediately and would\n   * survive an abort refuses by name with `schema-transaction-immediate` while a recipe is open,\n   * whether it is reached through a handle or through this object. That is both in-place tiers, plus\n   * `mount`, `unmount`, `seek`, `invalidate` and `signal`."
+    },
+    {
+      "path": "packages/core/src/engine.ts",
+      "find": "function createHandle(\n  runtime: RuntimeLike,\n  signal: (motionId: string, signal: TriggerSignal) => void,\n): ProjectHandle {",
+      "replace": "function createHandle(runtime: RuntimeLike): ProjectHandle {"
+    },
+    {
+      "path": "packages/core/src/engine.ts",
+      "find": "    seek: (nodeId, progress) => runtime.seek(nodeId, progress),\n    signal,",
+      "replace": "    seek: (nodeId, progress) => runtime.seek(nodeId, progress),\n    signal: (motionId, value) => runtime.signal(motionId, value),"
+    },
+    {
+      "path": "packages/core/src/engine.ts",
+      "find": "        createMotion: (definition) => motions.set(definition.id, buildMotion(definition, [])),",
+      "replace": "        // Moved off a closure over this map and onto the runtime, so the one owner of the recipe\n        // refusal is asked before a signal can reach a live trigger port. Nothing else about it\n        // moves: an unknown motion id is refused here, verbatim, by the layer that owns the Motion.\n        signalMotion: (motionId, signal) => {\n          const motion = motions.get(motionId);\n          if (!motion) throw new TypeError(`Unknown motion \"${motionId}\".`);\n          motion.signal(signal);\n        },\n        createMotion: (definition) => motions.set(definition.id, buildMotion(definition, [])),"
+    },
+    {
+      "path": "packages/core/src/engine.ts",
+      "find": "      return createHandle(created, (motionId, signal) => {\n        const motion = motions.get(motionId);\n        if (!motion) throw new TypeError(`Unknown motion \"${motionId}\".`);\n        motion.signal(signal);\n      });",
+      "replace": "      return createHandle(created);"
+    }
+  ]
+}
