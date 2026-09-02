@@ -47,10 +47,10 @@ jobs:
           echo "REPORT=${RUNNER_TEMP}/ai-edit-report.md" >> "$GITHUB_ENV"
           echo "TOUCHED=${RUNNER_TEMP}/ai-edit-touched.txt" >> "$GITHUB_ENV"
 
-      # The request is whatever the pushed commit added or modified, never whatever the directory
-      # happens to hold, so a request that was already consumed cannot be picked up twice. A push
-      # naming none of them is a no-op: removing a consumed request and editing the directory's
-      # README both land here.
+      # The directory is the source of truth, never the push payload. A commit created through the
+      # Git data API, which is the only way the reader of this contract can push, arrives with
+      # empty added and modified lists, so selecting from them makes the workflow a silent no-op
+      # for its own audience. More than one request is refused rather than picked alphabetically.
       - name: Choose the request
         id: request
         env:
@@ -60,9 +60,10 @@ jobs:
           if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
             request="$DISPATCH_REQUEST"
           else
-            mapfile -t requests < <(jq -r '[.head_commit.added[]?, .head_commit.modified[]?] | .[] | select(test("^\\.ai/edits/[^/]+\\.json$"))' "$GITHUB_EVENT_PATH")
+            mapfile -t requests < <(find .ai/edits -maxdepth 1 -type f -name '*.json' 2>/dev/null | sort)
             if [ "${#requests[@]}" -gt 1 ]; then
-              echo "This push carries ${#requests[@]} request files, and this workflow applies one at a time." >&2
+              printf 'This directory holds %s requests, and this workflow applies one at a time:\n' "${#requests[@]}" >&2
+              printf '%s\n' "${requests[@]}" >&2
               exit 1
             fi
             request="${requests[0]-}"
