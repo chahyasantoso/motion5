@@ -47,6 +47,10 @@ jobs:
           echo "REPORT=${RUNNER_TEMP}/ai-edit-report.md" >> "$GITHUB_ENV"
           echo "TOUCHED=${RUNNER_TEMP}/ai-edit-touched.txt" >> "$GITHUB_ENV"
 
+      # The request is whatever the pushed commit added or modified, never whatever the directory
+      # happens to hold, so a request that was already consumed cannot be picked up twice. A push
+      # naming none of them is a no-op: removing a consumed request and editing the directory's
+      # README both land here.
       - name: Choose the request
         id: request
         env:
@@ -57,11 +61,11 @@ jobs:
             request="$DISPATCH_REQUEST"
           else
             mapfile -t requests < <(jq -r '[.head_commit.added[]?, .head_commit.modified[]?] | .[] | select(test("^\\.ai/edits/[^/]+\\.json$"))' "$GITHUB_EVENT_PATH")
-            if [ "${#requests[@]}" -ne 1 ]; then
-              echo "Expected exactly one request file in the pushed commit, found ${#requests[@]}." >&2
+            if [ "${#requests[@]}" -gt 1 ]; then
+              echo "This push carries ${#requests[@]} request files, and this workflow applies one at a time." >&2
               exit 1
             fi
-            request="${requests[0]}"
+            request="${requests[0]-}"
           fi
           if [ -z "$request" ] || [ ! -f "$request" ]; then
             echo "No pending request file. Nothing to do."
@@ -83,6 +87,8 @@ jobs:
         with:
           node-version: 24
 
+      # A refused request exits non-zero here, which skips the two steps below and leaves the
+      # request file in place for a corrected push. The report still reaches the comment.
       - name: Apply the request
         id: apply
         if: steps.request.outputs.found == 'true'
@@ -141,7 +147,7 @@ jobs:
           set -euo pipefail
           comment="${RUNNER_TEMP}/comment.md"
           {
-            echo "### AI edit request \\`${REQUEST}\\`"
+            echo "### AI edit request \`${REQUEST}\`"
             echo ""
             cat "$REPORT" 2>/dev/null || echo "The apply step produced no report."
             echo ""

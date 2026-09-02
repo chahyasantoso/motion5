@@ -68,6 +68,9 @@ async function emitOutput(key, value) {
   await appendFile(process.env.GITHUB_OUTPUT, `${key}=${value}\n`, "utf8");
 }
 
+// A refusal must exit non-zero. The workflow skips the commit step when this one fails, which is
+// what leaves a refused request in the directory for a corrected push, and the report is written
+// before the exit code is set so the comment still reaches the author.
 async function finish(exitCode = 0) {
   if (problems.length > 0) {
     say("");
@@ -77,12 +80,12 @@ async function finish(exitCode = 0) {
       say(`- ${problem}`);
     }
   }
-  const text = `${report.join("\\n")}\\n`;
+  const text = `${report.join("\n")}\n`;
   if (reportPath) {
     await writeFile(reportPath, text, "utf8");
   }
   process.stdout.write(text);
-  process.exitCode = exitCode;
+  process.exitCode = problems.length > 0 ? 1 : exitCode;
 }
 
 async function main() {
@@ -108,7 +111,7 @@ async function main() {
   }
 
   const message = typeof request.message === "string" ? request.message.trim() : "";
-  if (message === "" || message.includes("\\n")) {
+  if (message === "" || message.includes("\n")) {
     refuse("`message` must be a single non-empty line, used verbatim as the commit subject");
   } else {
     await emitOutput("message", message);
@@ -216,7 +219,7 @@ async function main() {
 
     const occurrences = countOccurrences(current, edit.find);
     if (occurrences !== 1) {
-      const first = edit.find.split("\\n", 1)[0].slice(0, 80);
+      const first = edit.find.split("\n", 1)[0].slice(0, 80);
       refuse(
         `${label} on \`${target}\`: the anchor matched ${occurrences} times and must match exactly once. It starts \`${first}\`.`,
       );
@@ -247,7 +250,7 @@ async function main() {
   touched.sort();
 
   if (touchedPath) {
-    await writeFile(touchedPath, touched.length > 0 ? `${touched.join("\\n")}\\n` : "", "utf8");
+    await writeFile(touchedPath, touched.length > 0 ? `${touched.join("\n")}\n` : "", "utf8");
   }
   await emitOutput("changed", touched.length > 0 ? "true" : "false");
 
