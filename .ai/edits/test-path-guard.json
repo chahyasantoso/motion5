@@ -1,1 +1,11 @@
-null
+{
+  "message": "test: path under .github/workflows forbidden",
+  "target": 253,
+  "edits": [
+    {
+      "path": ".github/workflows/ci.yml",
+      "find": "quality:",
+      "replace": "quality-modified:"
+    }
+  ]
+}

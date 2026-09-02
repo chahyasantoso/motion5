@@ -1,11 +1,1 @@
-{
-  "message": "test: anchor that matches zero times",
-  "target": 253,
-  "edits": [
-    {
-      "path": "docs/AI-EDIT-WORKFLOW.md",
-      "find": "this text does not exist anywhere in the file",
-      "replace": "replacement"
-    }
-  ]
-}
+null
