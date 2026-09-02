@@ -1,0 +1,16 @@
+{
+  "message": "test: case D, all or nothing across two edits",
+  "target": 253,
+  "edits": [
+    {
+      "path": "docs/AI-EDIT-WORKFLOW.md",
+      "find": "You write the anchor and the replacement.",
+      "replace": "You write the anchor and the replacement. THIS MUST NOT LAND."
+    },
+    {
+      "path": "docs/AI-EDIT-WORKFLOW.md",
+      "find": "an anchor that cannot possibly match this document",
+      "replace": "unreachable"
+    }
+  ]
+}
