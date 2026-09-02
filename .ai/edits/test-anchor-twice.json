@@ -1,0 +1,11 @@
+{
+  "message": "test: this should be refused",
+  "target": 253,
+  "edits": [
+    {
+      "path": "docs/FORMATTING.md",
+      "find": "Prettier",
+      "replace": "Beautyifier"
+    }
+  ]
+}

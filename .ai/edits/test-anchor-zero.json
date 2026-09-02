@@ -1,0 +1,11 @@
+{
+  "message": "test: this should be refused",
+  "target": 253,
+  "edits": [
+    {
+      "path": "docs/AI-EDIT-WORKFLOW.md",
+      "find": "this text does not exist anywhere in the file",
+      "replace": "replacement"
+    }
+  ]
+}
