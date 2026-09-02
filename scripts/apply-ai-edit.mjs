@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Applies one AI edit request from .ai/edits/. Anchors only, and all or nothing: every edit names
 // the exact text it replaces, an anchor that does not match exactly once is refused, and no file is
-// written until every edit in the request has validated.
+// written until every edit has validated.
 //
 // Usage: node scripts/apply-ai-edit.mjs <request.json> <report.md> <touched.txt>
 // Contract: docs/AI-EDIT-WORKFLOW.md
@@ -68,9 +68,8 @@ async function emitOutput(key, value) {
   await appendFile(process.env.GITHUB_OUTPUT, `${key}=${value}\n`, "utf8");
 }
 
-async function finish() {
-  const refused = problems.length > 0;
-  if (refused) {
+async function finish(exitCode = 0) {
+  if (problems.length > 0) {
     say("");
     say("**Refused.** No file was written and nothing was committed.");
     say("");
@@ -78,12 +77,12 @@ async function finish() {
       say(`- ${problem}`);
     }
   }
-  const text = `${report.join("\n")}\n`;
+  const text = `${report.join("\\n")}\\n`;
   if (reportPath) {
     await writeFile(reportPath, text, "utf8");
   }
   process.stdout.write(text);
-  process.exit(refused ? 1 : 0);
+  process.exitCode = exitCode;
 }
 
 async function main() {
@@ -103,9 +102,13 @@ async function main() {
     refuse(`\`${requestPath}\` is not valid JSON: ${error.message}`);
     return;
   }
+  if (request === null || typeof request !== "object" || Array.isArray(request)) {
+    refuse(`\`${requestPath}\` must contain a JSON object`);
+    return;
+  }
 
   const message = typeof request.message === "string" ? request.message.trim() : "";
-  if (message === "" || message.includes("\n")) {
+  if (message === "" || message.includes("\\n")) {
     refuse("`message` must be a single non-empty line, used verbatim as the commit subject");
   } else {
     await emitOutput("message", message);
@@ -213,7 +216,7 @@ async function main() {
 
     const occurrences = countOccurrences(current, edit.find);
     if (occurrences !== 1) {
-      const first = edit.find.split("\n", 1)[0].slice(0, 80);
+      const first = edit.find.split("\\n", 1)[0].slice(0, 80);
       refuse(
         `${label} on \`${target}\`: the anchor matched ${occurrences} times and must match exactly once. It starts \`${first}\`.`,
       );
@@ -244,7 +247,7 @@ async function main() {
   touched.sort();
 
   if (touchedPath) {
-    await writeFile(touchedPath, touched.length > 0 ? `${touched.join("\n")}\n` : "", "utf8");
+    await writeFile(touchedPath, touched.length > 0 ? `${touched.join("\\n")}\\n` : "", "utf8");
   }
   await emitOutput("changed", touched.length > 0 ? "true" : "false");
 
@@ -262,5 +265,10 @@ async function main() {
   }
 }
 
-await main();
-await finish();
+try {
+  await main();
+  await finish();
+} catch (error) {
+  refuse(`internal error: ${error instanceof Error ? error.message : String(error)}`);
+  await finish(1);
+}
