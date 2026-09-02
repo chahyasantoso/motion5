@@ -1,0 +1,11 @@
+{
+  "message": "docs(ai-edit): add test evidence note",
+  "target": 253,
+  "edits": [
+    {
+      "path": "docs/AI-EDIT-WORKFLOW.md",
+      "find": "## Two traps",
+      "replace": "## Testing the workflow\n\nA valid request applies the edits, formats the touched files, commits with the repository PAT, removes the request, and comments the result back. Three refusal modes worth testing before this workflow ships: an anchor matching zero times (request refused, no commit), an anchor matching twice (request refused, no commit), and a path guarding refusal like `.github/workflows/` (request refused, no commit).\n\n## Two traps"
+    }
+  ]
+}
