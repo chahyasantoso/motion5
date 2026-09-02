@@ -1392,6 +1392,29 @@ export class ProjectRuntime {
     this.#diagnostics.recordAll(batch.diagnostics);
     return batch;
   }
+  /**
+   * The bound-group precondition every authored edit shares, and the one owner of it.
+   *
+   * A plugin this node authors no group for is `keyframe-group-unbound`, which is
+   * `setKeyframeGroup`'s job in the structural tier and is what buys the cheap price in the
+   * value tier: a bound group's plugin is already in the chain, so a leaf added to it can
+   * neither add a composer nor move one. A name this node authors as an ordinary property is
+   * not a group either, and that is `readBoundGroup`'s answer rather than a second shape check
+   * here.
+   *
+   * It answers with the record beside the group, so no caller re-reads `entry.track.keyframes`
+   * after the refusal has already proved it is there. See ADR-062 and ADR-063.
+   */
+  #boundGroup(
+    nodeId: string,
+    entry: TrackEntry,
+    plugin: string,
+  ): { keyframes: AuthoredKeyframes; bound: BoundGroup } {
+    const keyframes = entry.track.keyframes;
+    const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);
+    if (keyframes === undefined || bound === undefined) unboundGroup(nodeId, plugin);
+    return { keyframes, bound };
+  }
   /** One value-tier flush, shared by authored-property recompiles and no-ops. */
   #invalidateOne(nodeId: string) {
     const batch = this.#graph.invalidate([nodeId]);
@@ -1519,16 +1542,6 @@ export class ProjectRuntime {
    * registry. Inside a recipe it is structural, so it travels with the transaction and costs its
    * share of one commit. See ADR-045, ADR-062 and ADR-064.
    */
-  #boundGroup(
-    nodeId: string,
-    entry: TrackEntry,
-    plugin: string,
-  ): { keyframes: AuthoredKeyframes; bound: BoundGroup } {
-    const keyframes = entry.track.keyframes;
-    const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);
-    if (keyframes === undefined || bound === undefined) unboundGroup(nodeId, plugin);
-    return { keyframes, bound };
-  }
   #editRequire(
     id: string,
     token: number,
