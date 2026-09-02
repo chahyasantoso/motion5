@@ -301,7 +301,9 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
     // the driver rather than being answered here.
     signalling(test.runtime).signal(MOTION_ID, SIGNAL);
 
-    expect(test.journal.filter((line) => line.startsWith("signal"))).toEqual([`signal ${MOTION_ID}`]);
+    expect(test.journal.filter((line) => line.startsWith("signal"))).toEqual([
+      `signal ${MOTION_ID}`,
+    ]);
 
     test.runtime.dispose();
   });
@@ -314,8 +316,14 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
 
     editing(test.runtime).edit((tx) => {
       tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
-      expectImmediate(thrownBy(() => test.runtime.seek(ARM_ID, 0.5)), "seek");
-      expectImmediate(thrownBy(() => test.runtime.invalidate([ARM_ID])), "invalidate");
+      expectImmediate(
+        thrownBy(() => test.runtime.seek(ARM_ID, 0.5)),
+        "seek",
+      );
+      expectImmediate(
+        thrownBy(() => test.runtime.invalidate([ARM_ID])),
+        "invalidate",
+      );
       tx.addTrack({ id: "foot" }, { motionId: MOTION_ID });
     });
 
@@ -335,7 +343,7 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
     const test = rig();
     const owner = {};
     const builds = test.builds;
-    const batches: number[] = [];
+    let heard = 0;
 
     editing(test.runtime).edit((tx) => {
       tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
@@ -352,14 +360,16 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
       expect(test.runtime.tryTrack(FOOT_ID)).toBeUndefined();
       // A listener is the caller's own object. It survives an abort harmlessly, and taken inside a
       // recipe it receives the commit's flush, which is what a caller building a structure up wants.
-      test.runtime.graph.registry.subscribeNode(HAND_ID, (batch) => batches.push(batch.tick));
+      test.runtime.graph.registry.subscribeNode(HAND_ID, () => {
+        heard += 1;
+      });
     });
 
     // One commit for the add, the adopt and the destroy together, and the subscription heard it.
     expect(test.builds).toBe(builds + 1);
     expect(test.runtime.track(HAND_ID).live).toBe(true);
     expect(test.runtime.tryTrack(FOOT_ID)).toBeUndefined();
-    expect(batches.length).toBe(1);
+    expect(heard).toBe(1);
 
     test.runtime.dispose();
   });
