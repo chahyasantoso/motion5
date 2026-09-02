@@ -1,0 +1,11 @@
+{
+  "message": "test: case A, anchor matching zero times",
+  "target": 253,
+  "edits": [
+    {
+      "path": "docs/AI-EDIT-WORKFLOW.md",
+      "find": "This sentence does not appear anywhere in this document.",
+      "replace": "nothing should be written"
+    }
+  ]
+}
