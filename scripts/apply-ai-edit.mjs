@@ -11,12 +11,7 @@ import { appendFile, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const MAX_EDITS = 50;
-const FORBIDDEN_PREFIXES = [
-  ".git/",
-  ".github/workflows/",
-  ".ai/",
-  "node_modules/",
-];
+const FORBIDDEN_PREFIXES = [".git/", ".github/workflows/", ".ai/", "node_modules/"];
 
 const [requestPath, reportPath, touchedPath] = process.argv.slice(2);
 
@@ -62,8 +57,7 @@ function countOccurrences(haystack, needle) {
 
 function describeMode(edit) {
   const modes = [];
-  if (Object.hasOwn(edit, "find") || Object.hasOwn(edit, "replace"))
-    modes.push("anchor");
+  if (Object.hasOwn(edit, "find") || Object.hasOwn(edit, "replace")) modes.push("anchor");
   if (Object.hasOwn(edit, "create")) modes.push("create");
   if (Object.hasOwn(edit, "delete")) modes.push("delete");
   return modes;
@@ -110,21 +104,16 @@ async function main() {
     return;
   }
 
-  const message =
-    typeof request.message === "string" ? request.message.trim() : "";
+  const message = typeof request.message === "string" ? request.message.trim() : "";
   if (message === "" || message.includes("\n")) {
-    refuse(
-      "`message` must be a single non-empty line, used verbatim as the commit subject"
-    );
+    refuse("`message` must be a single non-empty line, used verbatim as the commit subject");
   } else {
     await emitOutput("message", message);
   }
 
   if (request.target !== undefined) {
     if (!Number.isInteger(request.target) || request.target <= 0) {
-      refuse(
-        "`target` must be the issue or pull request number to report back to"
-      );
+      refuse("`target` must be the issue or pull request number to report back to");
     } else {
       await emitOutput("target", request.target);
     }
@@ -136,9 +125,7 @@ async function main() {
     return;
   }
   if (edits.length > MAX_EDITS) {
-    refuse(
-      `\`edits\` holds ${edits.length} entries, and ${MAX_EDITS} is the ceiling`
-    );
+    refuse(`\`edits\` holds ${edits.length} entries, and ${MAX_EDITS} is the ceiling`);
     return;
   }
 
@@ -165,16 +152,14 @@ async function main() {
     const modes = describeMode(edit);
     if (modes.length !== 1) {
       refuse(
-        `${label} on \`${target}\` must name exactly one of find/replace, create, or delete, and it names ${modes.length}`
+        `${label} on \`${target}\` must name exactly one of find/replace, create, or delete, and it names ${modes.length}`,
       );
       continue;
     }
     const [mode] = modes;
 
     if (removed.has(target) && mode !== "create") {
-      refuse(
-        `${label} edits \`${target}\`, which an earlier edit in this request deleted`
-      );
+      refuse(`${label} edits \`${target}\`, which an earlier edit in this request deleted`);
       continue;
     }
 
@@ -195,15 +180,11 @@ async function main() {
 
     if (mode === "create") {
       if (typeof edit.create !== "string") {
-        refuse(
-          `${label} on \`${target}\`: \`create\` must be the full file content as a string`
-        );
+        refuse(`${label} on \`${target}\`: \`create\` must be the full file content as a string`);
         continue;
       }
       if (existsSync(target) && !removed.has(target)) {
-        refuse(
-          `${label} creates \`${target}\`, which already exists. Use find/replace instead.`
-        );
+        refuse(`${label} creates \`${target}\`, which already exists. Use find/replace instead.`);
         continue;
       }
       staged.set(target, edit.create);
@@ -213,15 +194,11 @@ async function main() {
     }
 
     if (typeof edit.find !== "string" || edit.find === "") {
-      refuse(
-        `${label} on \`${target}\`: \`find\` must be a non-empty string`
-      );
+      refuse(`${label} on \`${target}\`: \`find\` must be a non-empty string`);
       continue;
     }
     if (typeof edit.replace !== "string") {
-      refuse(
-        `${label} on \`${target}\`: \`replace\` must be a string, empty to delete the anchor`
-      );
+      refuse(`${label} on \`${target}\`: \`replace\` must be a string, empty to delete the anchor`);
       continue;
     }
 
@@ -238,12 +215,15 @@ async function main() {
     if (occurrences !== 1) {
       const first = edit.find.split("\n", 1)[0].slice(0, 80);
       refuse(
-        `${label} on \`${target}\`: the anchor matched ${occurrences} times and must match exactly once. It starts \`${first}\`.`
+        `${label} on \`${target}\`: the anchor matched ${occurrences} times and must match exactly once. It starts \`${first}\`.`,
       );
       continue;
     }
 
-    staged.set(target, current.replace(edit.find, () => edit.replace));
+    staged.set(
+      target,
+      current.replace(edit.find, () => edit.replace),
+    );
   }
 
   if (problems.length > 0) return;
@@ -264,17 +244,11 @@ async function main() {
   touched.sort();
 
   if (touchedPath) {
-    await writeFile(
-      touchedPath,
-      touched.length > 0 ? `${touched.join("\n")}\n` : "",
-      "utf8"
-    );
+    await writeFile(touchedPath, touched.length > 0 ? `${touched.join("\n")}\n` : "", "utf8");
   }
   await emitOutput("changed", touched.length > 0 ? "true" : "false");
 
-  say(
-    `Applied ${edits.length} edit${edits.length === 1 ? "" : "s"} from \`${requestPath}\`.`
-  );
+  say(`Applied ${edits.length} edit${edits.length === 1 ? "" : "s"} from \`${requestPath}\`.`);
   say("");
   if (touched.length === 0) {
     say("Every edit was already satisfied, so no file changed.");
@@ -283,11 +257,7 @@ async function main() {
   say("Files written, before the formatter runs:");
   say("");
   for (const target of touched) {
-    const state = removed.has(target)
-      ? "deleted"
-      : created.has(target)
-        ? "created"
-        : "edited";
+    const state = removed.has(target) ? "deleted" : created.has(target) ? "created" : "edited";
     say(`- \`${target}\` ${state}`);
   }
 }
