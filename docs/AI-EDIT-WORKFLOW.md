@@ -66,6 +66,10 @@ The comment names the files written, the state each one was left in, and the exa
 
 The commit is made with `PERSONAL_ACCESS_TOKEN` rather than `GITHUB_TOKEN` for the reason [FORMATTING.md](./FORMATTING.md) already gives: a push made with `GITHUB_TOKEN` triggers no new workflow run, so the new head would carry no checks. Verify your change through the `CI` run on that commit.
 
+## Testing the workflow
+
+A valid request applies the edits, formats the touched files, commits with the repository PAT, removes the request, and comments the result back. Three refusal modes worth testing before this workflow ships: an anchor matching zero times (request refused, no commit), an anchor matching twice (request refused, no commit), and a path guarding refusal like `.github/workflows/` (request refused, no commit).
+
 ## Two traps
 
 The commit that consumes a request is itself a push to `.ai/edits/**`, because it removes the file. The workflow is gated on the `[ai-edit]` marker in the commit body so that it does not eat its own tail, and it exits cleanly when no request file is waiting. Keep both guards if you touch the trigger.
