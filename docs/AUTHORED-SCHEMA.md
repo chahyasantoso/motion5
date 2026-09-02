@@ -19,7 +19,6 @@ const project = {
   schemaVersion: 5,
   projectId: "landing",
   perspective: 1200,
-  templates: [],
   motions: [
     {
       id: "hero",
@@ -59,9 +58,10 @@ const project = {
 - **`schemaVersion`**: required number `5`.
 - **`projectId`**: optional non-empty informational string.
 - **`perspective`**: optional finite number greater than zero. Core preserves it but does not animate or publish it.
-- **`templates`**: optional reusable keyframe bundles.
 - **`motions`**: required array, possibly empty.
 - **`freeTracks`**: optional array, defaulting to empty. Free tracks have no trigger or automatic schedule.
+
+There is no `templates`. It promised reusable keyframe bundles, nothing ever read one, and the runtime's project snapshot carried it through every graph rebuild untouched, so it is removed and an authored one is refused by name as `project-templates-unsupported`. A field with no consumer is removed and then refused rather than left declared, and a documented feature that does not exist is the one documentation failure ADR-053 calls worse than none.
 
 ## Motion fields
 
@@ -360,4 +360,4 @@ And there is no diagnostic about a `weight` on a bone that bound no solver anywh
 
 ## Rejected input
 
-Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, the retired stops wrapper, a leaf that is neither an array nor a static scalar, malformed group sections, malformed bindings and edges, a malformed goal dict, a dict at a slot that takes one source or one source at a slot that takes a dict, unknown sources, duplicate edges, self-reference, cycles, invalid solver topologies, solvers with no goal, unaddressable or unaddressed solver goals, dead rotations and unreachable blend weights on solved bones, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Flat keys with multiple plugin claimants are errors too. Missing perspective for detected 3D content and unused free tracks are warnings.
+Wrong schema version, malformed or duplicate ids, reserved namespace characters, invalid triggers, invalid perspective, the retired stops wrapper, a leaf that is neither an array nor a static scalar, malformed group sections, malformed bindings and edges, a malformed goal dict, a dict at a slot that takes one source or one source at a slot that takes a dict, unknown sources, duplicate edges, self-reference, cycles, invalid solver topologies, solvers with no goal, unaddressable or unaddressed solver goals, dead rotations and unreachable blend weights on solved bones, removed fields, and legacy `use` entries are errors. The removed fields are an observation `target`, `role`, and `projection`, reported as `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`, a project `templates`, reported as `project-templates-unsupported`, and a track `use`. A plugin group that names an unknown section, or that authors its properties outside `values`, is also an error. Flat keys with multiple plugin claimants are errors too. Missing perspective for detected 3D content and unused free tracks are warnings.
