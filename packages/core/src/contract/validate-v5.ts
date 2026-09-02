@@ -48,6 +48,16 @@ const STOPS_REQUIRED =
 /** The retired form, refused by name so the diagnostic names the migration and not a shape. */
 const WRAPPER_RETIRED =
   "The { stops: [...] } wrapper is retired; author the stops array directly as the value.";
+/**
+ * The removed top-level field, refused by name so the diagnostic names the removal and not a shape.
+ *
+ * `templates` promised reusable keyframe bundles and had no reader anywhere: the declaration and two
+ * lines of `docs/AUTHORED-SCHEMA.md` were the whole feature, while the runtime's project snapshot
+ * carried the field through every graph rebuild untouched. A field with no consumer is removed and
+ * then refused, never left declared or silently ignored.
+ */
+const TEMPLATES_UNSUPPORTED =
+  "Project templates are not supported; author keyframes on the tracks that use them.";
 /** `'requires' or 'values'`, so the unknown-section message never hardcodes the legal set twice. */
 const SECTION_NAMES = PLUGIN_GROUP_SECTIONS.map((name) => `'${name}'`).join(" or ");
 const THREE_D_KEYS = ["z", "rotationX", "rotationY"];
@@ -571,6 +581,12 @@ export function validateV5(input: unknown): ValidationResult {
     diagnostics.push(
       issue("project-id", "projectId", "projectId must be a non-empty string when present."),
     );
+  // The removed field, read by the key rather than by the value at it. That is the same reading the
+  // retired track `use` field gets a few functions up, and for the same reason: authoring the key
+  // is the mistake, so `templates: undefined` is refused too rather than being a spelling that
+  // slips a removed field back in through a spread of an older document.
+  if ("templates" in input)
+    diagnostics.push(issue("project-templates-unsupported", "templates", TEMPLATES_UNSUPPORTED));
   if (!Array.isArray(input.motions))
     diagnostics.push(issue("motions-shape", "motions", "motions must be an array."));
   if (input.freeTracks !== undefined && !Array.isArray(input.freeTracks))
