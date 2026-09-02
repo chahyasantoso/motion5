@@ -31,7 +31,8 @@ The runtime mutation model, the trigger drivers, and compiled Track ownership ha
 - [TESTING-STRATEGY.md](./TESTING-STRATEGY.md): test tiers, determinism rules, migration evidence, invariant evidence, and prohibited evidence.
 - [CI-WORKFLOW.md](./CI-WORKFLOW.md): workflow rules, job contracts, artifacts, required versus advisory gates, and rollout schedule.
 - [PR-WORKFLOW.md](./PR-WORKFLOW.md): branch naming, commit style, pull request contents, review order, merge policy, and reverts.
-- [FORMATTING.md](./FORMATTING.md): Prettier configuration, the read-only gate, the write-enabled repair, and manual runs.
+- [FORMATTING.md](./FORMATTING.md): Prettier configuration, the read-only gate, why nothing in CI repairs drift, and the manual repair.
+- [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md): the request contract for an implementor with no local checkout, the anchor rule, the bounded file list, and the cost of a round trip. [AGENTS.md](../AGENTS.md) in the repository root is that reader's entry point.
 
 ## Lineage
 

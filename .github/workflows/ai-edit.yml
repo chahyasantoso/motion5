@@ -1,0 +1,167 @@
+name: AI edit
+
+# Applies one anchor-based edit request dropped at .ai/edits/*.json by an implementor that has no
+# local checkout, formats what it touched with the pinned Prettier, commits with the personal
+# access token, and reports the result back as a comment. Contract: docs/AI-EDIT-WORKFLOW.md
+
+on:
+  push:
+    branches-ignore: [main, ci-logs]
+    paths: [".ai/edits/**"]
+  workflow_dispatch:
+    inputs:
+      request:
+        description: Request file to apply, for example .ai/edits/my-slice.json
+        required: true
+        type: string
+
+concurrency:
+  group: ai-edit-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  apply:
+    name: apply one request
+    # A consumed request is removed by the workflow and carries this exact trailer. Restricting
+    # the gate to the bot author means prose mentioning the trailer cannot silence real requests.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      !(github.event.head_commit.author.username == 'github-actions[bot]' &&
+      contains(github.event.head_commit.message, 'AI-Edit-Request: .ai/edits/'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          fetch-depth: 1
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      - name: Name the scratch files
+        run: |
+          echo "REPORT=${RUNNER_TEMP}/ai-edit-report.md" >> "$GITHUB_ENV"
+          echo "TOUCHED=${RUNNER_TEMP}/ai-edit-touched.txt" >> "$GITHUB_ENV"
+
+      # The directory is the source of truth, never the push payload. A commit created through the
+      # Git data API, which is the only way the reader of this contract can push, arrives with
+      # empty added and modified lists, so selecting from them makes the workflow a silent no-op
+      # for its own audience. More than one request is refused rather than picked alphabetically.
+      - name: Choose the request
+        id: request
+        env:
+          DISPATCH_REQUEST: ${{ inputs.request }}
+        run: |
+          set -euo pipefail
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            request="$DISPATCH_REQUEST"
+          else
+            mapfile -t requests < <(find .ai/edits -maxdepth 1 -type f -name '*.json' 2>/dev/null | sort)
+            if [ "${#requests[@]}" -gt 1 ]; then
+              printf 'This directory holds %s requests, and this workflow applies one at a time:\n' "${#requests[@]}" >&2
+              printf '%s\n' "${requests[@]}" >&2
+              exit 1
+            fi
+            request="${requests[0]-}"
+          fi
+          if [ -z "$request" ] || [ ! -f "$request" ]; then
+            echo "No pending request file. Nothing to do."
+            echo "found=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          case "$request" in
+            .ai/edits/*.json) ;;
+            *)
+              echo "A request must live at .ai/edits/*.json, and this one is $request."
+              exit 1
+              ;;
+          esac
+          echo "found=true" >> "$GITHUB_OUTPUT"
+          echo "path=$request" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        if: steps.request.outputs.found == 'true'
+        with:
+          node-version: 24
+
+      # A refused request exits non-zero here, which skips the two steps below and leaves the
+      # request file in place for a corrected push. The report still reaches the comment.
+      - name: Apply the request
+        id: apply
+        if: steps.request.outputs.found == 'true'
+        env:
+          REQUEST: ${{ steps.request.outputs.path }}
+        run: node scripts/apply-ai-edit.mjs "$REQUEST" "$REPORT" "$TOUCHED"
+
+      # The pinned version and nothing else. This job deliberately does not run npm ci or the
+      # suite: CI owns correctness on the resulting commit, and duplicating it here doubles the
+      # bill for no new information.
+      - name: Format what changed
+        if: steps.request.outputs.found == 'true' && steps.apply.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+          version="$(jq -r '.devDependencies.prettier' package.json)"
+          npm install --no-save --no-package-lock --no-audit --no-fund "prettier@${version}"
+          if [ -s "$TOUCHED" ]; then
+            xargs -a "$TOUCHED" -r npx prettier --write --ignore-unknown
+          fi
+
+      - name: Commit the bounded file list
+        if: steps.request.outputs.found == 'true'
+        env:
+          REQUEST: ${{ steps.request.outputs.path }}
+          MESSAGE: ${{ steps.apply.outputs.message }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -q --ignore-unmatch "$REQUEST"
+          git add -A
+          allowed="${RUNNER_TEMP}/allowed.txt"
+          staged="${RUNNER_TEMP}/staged.txt"
+          { cat "$TOUCHED" 2>/dev/null || true; echo "$REQUEST"; } | sort -u > "$allowed"
+          git diff --cached --name-only | sort -u > "$staged"
+          unexpected="$(comm -13 "$allowed" "$staged")"
+          if [ -n "$unexpected" ]; then
+            echo "Refusing to commit files the request did not name:"
+            echo "$unexpected"
+            exit 1
+          fi
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+            exit 0
+          fi
+          git commit -m "$MESSAGE" -m "AI-Edit-Request: ${REQUEST}"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Report back
+        if: always() && steps.request.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUEST: ${{ steps.request.outputs.path }}
+          TARGET: ${{ steps.apply.outputs.target }}
+        run: |
+          set -euo pipefail
+          comment="${RUNNER_TEMP}/comment.md"
+          {
+            echo "### AI edit request \`${REQUEST}\`"
+            echo ""
+            cat "$REPORT" 2>/dev/null || echo "The apply step produced no report."
+            echo ""
+            echo "[Actions run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
+          } > "$comment"
+          cat "$comment" >> "$GITHUB_STEP_SUMMARY"
+          target="$TARGET"
+          if [ -z "$target" ]; then
+            target="$(gh pr list --head "$GITHUB_REF_NAME" --state open --json number \
+              --jq '.[0].number' || true)"
+          fi
+          if [ -z "$target" ]; then
+            echo "No issue or pull request to comment on. The report is in the job summary."
+            exit 0
+          fi
+          gh issue comment "$target" --body-file "$comment"

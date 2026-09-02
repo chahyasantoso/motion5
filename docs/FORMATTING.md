@@ -19,29 +19,35 @@ Run the formatter before pushing. Everything below exists for when you forget.
 
 This gate is the only formatting protection a fork pull request gets. Fix drift locally and push through your fork.
 
-## The write-enabled repair
+## Nothing in CI repairs drift
 
-The `format` job in the same workflow runs `prettier --write` and pushes a `chore: apply prettier` child commit to the pull request branch. It is constrained on purpose:
+`.github/workflows/ci.yml` holds six jobs (`quality`, `integration`, `boundaries`, `build`, `end-to-end`, `performance`), all of them on read-only repository permissions, and none of them writes to a branch. There is no `format` job in that workflow, no `chore: apply prettier` child commit pushed to your pull request, and nothing that runs once the behavioral checks are green.
 
-- pull requests only, and only when the head repository is this repository;
-- after `quality`, `integration`, `boundaries`, `build`, and `end-to-end` are all green, so nothing mechanical lands on top of a red behavioral run;
-- it needs `PERSONAL_ACCESS_TOKEN`. Without it the job prints the diff and fails rather than pushing with `GITHUB_TOKEN`, because a push made with that token triggers no new workflow run and would leave the new head with no checks attached.
+Earlier revisions of this document described exactly that job, down to the conditions it was constrained by. It never existed on that trigger. Waiting for it is how a red `format:check` sits unfixed, which is the same failure mode this document was written to clean up. Repair is manual, and it is the workflow below.
 
-Review that commit as mechanical-only and let it merge with your pull request. If it ever contains something that is not formatting, treat that as a bug in the formatter or in the source, never as a shortcut for a behavior change.
+## The manual repair
 
-## Manual runs
+`.github/workflows/format.yml` is named **Format manually**. Its only trigger is `workflow_dispatch` and it takes one input, `branch`, defaulting to `main`. It checks that branch out with `PERSONAL_ACCESS_TOKEN`, runs `npm run format`, and pushes one `chore: apply prettier` commit when anything changed. When nothing did, it reports `Already formatted.` and exits successfully.
 
-`.github/workflows/format-manual.yml` is dispatched against a branch and takes a `mode`:
+There is no `mode` input, and there is no `format-manual.yml`. An earlier revision of this document named that file and its `direct-commit`, `pull-request`, and `report` modes, and told you to prefer it. It is not in `.github/workflows`. `format.yml` is the whole of the write-enabled path.
 
-- `direct-commit` commits the reformat straight to the branch;
-- `pull-request` opens a formatting-only pull request from `chore/format-<run-id>`;
-- `report` prints the diff and fails, changing nothing.
+Three consequences follow from it being dispatch-only. It runs on no pull request event, so a green `CI` run repairs nothing. It is gated on no other job, so it can be dispatched against a branch whose tests are red. And because its input is a branch in this repository, a fork pull request head is not reachable by it at all: format in the fork and push from there.
 
-`.github/workflows/format.yml` is the older manual fallback. It formats a named branch and needs `PERSONAL_ACCESS_TOKEN` to push. Prefer `format-manual.yml`.
+The `main` default is for repairing the protected branch, which should never be routine, because `format:check` already gates every pull request that lands there.
+
+When the repair does run, review its commit as mechanical-only and let it merge with your pull request. If it ever contains something that is not formatting, treat that as a bug in the formatter or in the source, never as a shortcut for a behavior change.
+
+## When you cannot run prettier at all
+
+No working `npx`, no installed `node_modules`, or no network to install them is a normal condition here rather than a broken setup. `format:check` in `CI` is how you find out your output is unformatted, and **Format manually** is how you repair it.
+
+Both cost a round trip through Actions, so the cheaper discipline is writing output prettier would not change. Keep a paragraph on one line or break it yourself at or under 100 columns, match the surrounding TypeScript rather than guessing at its style, and author no markdown tables. [CI-WORKFLOW.md](./CI-WORKFLOW.md) owns the whole rule, including which code fences prettier formats.
+
+An implementor working through the GitHub API with no checkout at all has a third option: the **AI edit** workflow runs the pinned Prettier on the files a request touched, so that output does not have to be prettier-safe by hand. [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md) is its contract. It is not a general repair path and it does not replace either of the two above.
 
 ## Configuration
 
-The configuration is `.prettierrc.json`: 100-column lines, double quotes, trailing commas everywhere, and `proseWrap: preserve`. `.prettierignore` covers `node_modules`, `dist`, `coverage`, and `package-lock.json`.
+The configuration is `.prettierrc.json`: 100-column lines, double quotes, trailing commas everywhere, and `proseWrap: preserve`. `.prettierignore` covers `node_modules`, `dist`, `coverage`, `package-lock.json`, and `.ai`.
 
 Changing any of those, or the pinned Prettier version, is its own pull request. Apply the resulting reformat separately or in the same mechanical-only pull request, never alongside behavior.
 
