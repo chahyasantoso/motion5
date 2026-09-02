@@ -33,6 +33,8 @@ track.setKeyframeGroup("fk", { values: { length: 10 }, requires: { base: "walk/c
 track.removeKeyframeGroup("fk");
 track.setGoal("ik", "wrist", "walk/hand");
 track.removeGoal("ik", "wrist");
+track.setKeyframe("fk", "length", 12);
+track.removeKeyframe("fk", "length");
 track.remove();
 ```
 
@@ -47,6 +49,24 @@ All four are no-ops when nothing changes, and each refuses before writing anythi
 An observation carries `source` and nothing else, and the edge it declares is always an output edge: the source's contribution merges over this track's composed patch. `addObserve` throws for each of the three removed fields, `observation-target-unsupported`, `observation-role-unsupported`, and `observation-projection-unsupported`. There is no way to declare an input edge by hand: bind the dependency under the plugin group's `requires` section, which is the only way a value enters composition. See ADR-046 and ADR-047.
 
 Omit `motionId` to add a free track, which lands at `~/trackId` with no motion scheduling it.
+
+## Many edits, one transaction
+
+Every member above commits on its own. `handle.edit(recipe)` runs a batch of them as one transaction instead:
+
+```ts
+handle.edit((tx) => {
+  const rig = tx.addMotion({ id: "rig", trigger: { type: "manual" }, tracks: [] });
+  for (const bone of bones) rig.addTrack(bone);
+  tx.track("rig/forearm").setRequire("fk", "base", "rig/upperarm");
+});
+```
+
+`n` ops across `m` tracks cost one candidate build, one graph replacement, one `ObservationState` commit and one flush, where the same sequence outside a recipe costs all of that per op. Each op still validates on entry, so every step is individually correct exactly as before; what changes is that committing is a separate verb from editing.
+
+The recipe is handed a `SchemaTransaction`, which carries `addMotion`, `motion`, `tryMotion`, `addTrack`, `track` and `tryTrack` and nothing else: `mount`, `seek`, `subscribe` and `dispose` are not reachable through it. Reads inside it resolve against what it has staged, so a two-step edit sees its own first step, and the recipe's own return value is yours. A throw commits nothing, reaches no hook, and leaves every handle the recipe issued permanently not live.
+
+Two refusals name where a call was made rather than what it does. A recipe opened inside a recipe is `schema-transaction-nested`. A verb that applies immediately is `schema-transaction-immediate`, named at the verb, which covers `setTrigger` and `setStagger` on a `MotionHandle` and `overrideValues`, `setValues`, `setKeyframe` and `removeKeyframe` on a `TrackHandle`: a settle step cannot refuse, so deferring one of those into the transaction would move its failure to after the graph had committed. See ADR-064.
 
 ## Changing values without rebuilding the graph
 
@@ -95,9 +115,30 @@ The refusal set is contract, not a limitation. Each of these throws `LiveValueKe
 
 The last two are the interesting ones. A live write moves a value; it does not change what a leaf is, so a scalar for an animated key and a stop list for a static key are both recompiles of a different shape rather than writes. Use `replace()` for those. A prepared key is compiled from the plugin's value, and a write over it would invert that precedence and disagree with the next real recompile. A malformed stop list is refused too, by the same validator a whole definition goes through, because an authored stop list is definition-shaped input. See ADR-059 and ADR-060.
 
+## One property of a group, without naming the rest
+
+`overrideValues` and `setValues` take a record and answer for the whole node. To move one leaf of one plugin group, name the group:
+
+```ts
+track.setKeyframe("fk", "length", 12);
+track.setKeyframe("fk", "rotation", [
+  { p: 0, v: 0 },
+  { p: 1, v: 45 },
+]);
+track.removeKeyframe("fk", "length");
+```
+
+Both are the value tier, so both return the `PatchBatch` of their one invalidation and neither rebuilds the graph, on any path. That holds because a leaf carries no edge and the plugin it belongs to is already in the chain: this pair only edits a group the node already authors, and `keyframe-group-unbound` is what you get for naming a plugin it does not. Originating a group is still `setKeyframeGroup`'s job, because a group holding only half its data may be transiently invalid.
+
+A key the group already authors takes the path `setValues` takes, with the same per-key refusals in the same order. A key it does not author yet cannot be masked, because nothing compiled it, so the authored record is edited and the node is recompiled in place and re-seeked to the progress it had. That new leaf is the one thing this pair can do that the record-shaped members cannot.
+
+The leaf-kind crossing is still refused, and that is a decision rather than an unfinished edge. This verb rewrites the authored record, so it could have compiled a scalar over an animated key, and it does not: which kind of leaf a key is authored as is a whole-definition question that `replace()` owns. An animated key itself is fine, exactly as it is through `setValues`.
+
+`removeKeyframe` takes the empty shapes with it. The values section goes when its last leaf does, the group goes when it names no section, and the definition loses its `keyframes` key when it holds nothing, so dropping the only leaf of a group that binds nothing removes the group and the plugin leaves the chain with it. That is what an author writing the same document would have written. A key the group does not author is a no-op. See ADR-065.
+
 ## A stale handle refuses, and `live` asks without throwing
 
-A handle carries a private token, so it can never affect a later track that reuses the same id. Once that token is no longer current the handle is stale, and every member of it fails the same way: `definition`, `requires`, `remove()`, `replace()`, `addObserve()`, `removeObserve()`, `setRequire()`, `removeRequire()`, `setKeyframeGroup()`, `removeKeyframeGroup()`, `setGoal()`, `removeGoal()`, `overrideValues()`, and `setValues()` all throw `StaleTrackHandleError`. Four of them used to return silently, which reported success for doing nothing. See ADR-056.
+A handle carries a private token, so it can never affect a later track that reuses the same id. Once that token is no longer current the handle is stale, and every member of it fails the same way: `definition`, `requires`, `remove()`, `replace()`, `addObserve()`, `removeObserve()`, `setRequire()`, `removeRequire()`, `setKeyframeGroup()`, `removeKeyframeGroup()`, `setGoal()`, `removeGoal()`, `setKeyframe()`, `removeKeyframe()`, `overrideValues()`, and `setValues()` all throw `StaleTrackHandleError`. Four of them used to return silently, which reported success for doing nothing. See ADR-056.
 
 The error extends `TypeError` and keeps the message `Track "<id>" is no longer live.` verbatim, so an existing `instanceof TypeError` narrowing keeps matching. Branch on `ruleId`, which is `stale-track-handle`, rather than on the message; `nodeId` carries the node the refused handle was captured against.
 
