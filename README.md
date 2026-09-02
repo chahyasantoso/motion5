@@ -8,6 +8,8 @@ motion5 is a renderer-neutral, transactional dataflow animation runtime. It eval
 
 > **Contributing?** Read [the PR workflow](docs/PR-WORKFLOW.md), [the CI workflow](docs/CI-WORKFLOW.md), and [formatting](docs/FORMATTING.md) first. Failed CI and recovery-audit runs are archived on the separate `ci-logs` branch under `logs/<run-id>/`.
 
+> **An AI implementor?** [AGENTS.md](AGENTS.md) is your entry point. With no local checkout, [the AI edit workflow](docs/AI-EDIT-WORKFLOW.md) is how you make a large-file edit and reach Prettier.
+
 > **Lineage:** motion5 is a clean-room successor to [motionpath](https://github.com/chahyasantoso/motionpath), a data-first animation runtime built on GSAP. motionpath is the behavioral oracle for what these animations should do. motion5 is a different answer to how the runtime should own that behavior.
 
 ## Why motion5 exists
@@ -57,7 +59,7 @@ npm test
 
 ## Documentation map
 
-Users read [the guide](docs/guide/README.md). Implementors read, in this order: [Session status](docs/SESSION-STATUS.md), [PRD](docs/PRD.md), [TRD](docs/TRD.md), [Architecture](docs/ARCHITECTURE.md), [Authored schema](docs/AUTHORED-SCHEMA.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md), [Phase 5 detailed plan](docs/PHASE5-DETAILED-PLAN.md), [Testing strategy](docs/TESTING-STRATEGY.md), [PR workflow](docs/PR-WORKFLOW.md), [CI workflow](docs/CI-WORKFLOW.md), [Formatting](docs/FORMATTING.md), and [Decision records](docs/DECISIONS.md).
+Users read [the guide](docs/guide/README.md). Implementors read, in this order: [Session status](docs/SESSION-STATUS.md), [PRD](docs/PRD.md), [TRD](docs/TRD.md), [Architecture](docs/ARCHITECTURE.md), [Authored schema](docs/AUTHORED-SCHEMA.md), [Implementation plan](docs/IMPLEMENTATION-PLAN.md), [Phase 5 detailed plan](docs/PHASE5-DETAILED-PLAN.md), [Testing strategy](docs/TESTING-STRATEGY.md), [PR workflow](docs/PR-WORKFLOW.md), [CI workflow](docs/CI-WORKFLOW.md), [Formatting](docs/FORMATTING.md), [AI edit workflow](docs/AI-EDIT-WORKFLOW.md), and [Decision records](docs/DECISIONS.md).
 
 ## Contributing rule of thumb
 
