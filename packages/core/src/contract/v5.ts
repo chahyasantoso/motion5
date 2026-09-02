@@ -239,11 +239,19 @@ export interface MotionDefinition {
   readonly tracks: readonly TrackDefinition[];
   readonly stagger?: number;
 }
+/**
+ * The authored project.
+ *
+ * There is no `templates`. It promised reusable keyframe bundles, nothing ever read one, and the
+ * runtime's project snapshot carried it through every graph rebuild untouched, so it is removed and
+ * then refused rather than left declared: `validate-v5.ts` reports `project-templates-unsupported`.
+ * A documented feature that does not exist is the one documentation failure ADR-053 calls worse
+ * than none.
+ */
 export interface ProjectDefinition {
   readonly schemaVersion: 5;
   readonly projectId?: string;
   readonly perspective?: number;
-  readonly templates?: readonly Record<string, unknown>[];
   readonly motions: readonly MotionDefinition[];
   readonly freeTracks?: readonly TrackDefinition[];
 }
