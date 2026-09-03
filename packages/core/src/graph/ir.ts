@@ -85,7 +85,7 @@ export interface GraphIR {
    * reason it lives beside them: a solver reads its members through `solves` and no edge points that
    * way, so a reverse walk built from edges would miss every member of every chain.
    */
-  readonly dependents: Readonly<Record<string, readonly string[]>>;
+  readonly dependants: Readonly<Record<string, readonly string[]>>;
   readonly order: readonly string[];
   readonly diagnostics: readonly Diagnostic[];
 }
@@ -867,7 +867,7 @@ export function resolveSolvers(
  * collapsed, because a consumer walking this guards on its own visited set, and collapsing them
  * would be a second decision inside a function whose only job is to state what the graph says.
  */
-export function deriveDependents(
+export function deriveDependants(
   nodes: readonly GraphNode[],
 ): Readonly<Record<string, readonly string[]>> {
   const collected = new Map<string, string[]>();
@@ -878,9 +878,9 @@ export function deriveDependents(
       for (const member of node.solves) collected.get(member.id)?.push(node.id);
     }
   }
-  const dependents: Record<string, readonly string[]> = {};
-  for (const [id, readers] of collected) dependents[id] = freeze(readers);
-  return freeze(dependents);
+  const dependants: Record<string, readonly string[]> = {};
+  for (const [id, readers] of collected) dependants[id] = freeze(readers);
+  return freeze(dependants);
 }
 
 /**
@@ -957,7 +957,7 @@ export function finalizeGraph(
     graph: freeze({
       nodes: freeze(resolvedNodes),
       nodeById: freeze(nodeById),
-      dependents: deriveDependents(resolvedNodes),
+      dependants: deriveDependants(resolvedNodes),
       order: ordering.order,
       diagnostics: freeze(diagnostics),
     }),

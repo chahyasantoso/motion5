@@ -6,14 +6,14 @@ import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 /**
  * Issue #223, finding 2 of the re-review: reverse topology has one owner and two derivations.
  *
- * 7a's whole invariant is that `finalizeGraph` derives `GraphIR.dependents` once per graph, from the
+ * 7a's whole invariant is that `finalizeGraph` derives `GraphIR.dependants` once per graph, from the
  * walk that already had the solver fan-in in hand, and that every consumer reads it instead of
  * walking for it. `GraphPublisher` reads it. `ProjectRuntime.dependantsOf` does not: it filters
  * `graph.nodes` on `node.edges.some((edge) => edge.sourceId === nodeId)`, one property access away
  * from the frozen answer.
  *
  * That is not only a duplicate, it is a weaker one, and that is the part these cases are about.
- * `deriveDependents` names both kinds of reader, because only one of them is an edge: a node reads
+ * `deriveDependants` names both kinds of reader, because only one of them is an edge: a node reads
  * every source it names an edge for, and a solver reads every member `resolveSolvers` derived onto
  * its `solves`, which no edge points at. A reverse walk over edges alone misses every member of
  * every chain, so for any solver in the project the two mechanisms answer one question differently
@@ -104,11 +104,11 @@ describe("one owner of reverse topology, read rather than rederived", () => {
     const project = runtime();
 
     // The derivation says so, and it is the one this project already ships: `resolveSolvers` puts
-    // both members on the solver's `solves`, and `deriveDependents` walks that beside the edges for
+    // both members on the solver's `solves`, and `deriveDependants` walks that beside the edges for
     // exactly this reason. A member's own value marks its solver dirty, so a caller asking who reads
     // this node before deleting it is owed the solver.
-    expect(project.graph.graph.dependents[UPPER]).toContain(RIG);
-    expect(project.graph.graph.dependents[LOWER]).toEqual([RIG]);
+    expect(project.graph.graph.dependants[UPPER]).toContain(RIG);
+    expect(project.graph.graph.dependants[LOWER]).toEqual([RIG]);
 
     // The public query has to agree with it. An edge walk answers `[LOWER]` here and `[]` below,
     // which is a preflight telling an editor that deleting the leaf of a live chain breaks nothing.
@@ -125,7 +125,7 @@ describe("one owner of reverse topology, read rather than rederived", () => {
     // on its own visited set, and collapsing duplicates there would be a second decision inside a
     // function whose only job is to state what the graph says. This query answers a set of readers,
     // so the collapse belongs here and nowhere else.
-    expect(project.graph.graph.dependents[UPPER]).toEqual([LOWER, LOWER, RIG]);
+    expect(project.graph.graph.dependants[UPPER]).toEqual([LOWER, LOWER, RIG]);
 
     const readers = project.dependantsOf(UPPER);
 

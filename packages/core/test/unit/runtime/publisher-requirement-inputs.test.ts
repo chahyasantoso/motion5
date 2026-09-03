@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deriveDependents, type GraphIR } from "../../../src/graph/ir";
+import { deriveDependants, type GraphIR } from "../../../src/graph/ir";
 import {
   GraphPublisher,
   type PublisherNode,
@@ -27,7 +27,7 @@ function pair(source: PublisherNode, observer: PublisherNode): PublisherSnapshot
   return {
     nodes: [source, observer],
     nodeById: { [source.id]: source, [observer.id]: observer },
-    dependents: deriveDependents([source, observer]),
+    dependants: deriveDependants([source, observer]),
     order: [source.id, observer.id],
     diagnostics: [],
   };

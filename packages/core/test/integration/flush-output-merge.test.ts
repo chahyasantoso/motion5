@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { GraphEdge } from "../../src/graph/ir";
-import { compareEdges, deriveDependents } from "../../src/graph/ir";
+import { compareEdges, deriveDependants } from "../../src/graph/ir";
 import {
   GraphPublisher,
   type PublisherNode,
@@ -11,7 +11,7 @@ import { PatchRegistry } from "../../src/runtime/patch-registry";
 const snapshot = (nodes: readonly PublisherNode[]): PublisherSnapshot => ({
   nodes,
   nodeById: Object.freeze(Object.fromEntries(nodes.map((node) => [node.id, node]))),
-  dependents: deriveDependents(nodes),
+  dependants: deriveDependants(nodes),
   order: Object.freeze(nodes.map(({ id }) => id)),
   diagnostics: Object.freeze([]),
 });

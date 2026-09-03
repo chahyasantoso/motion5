@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { PluginRegistry } from "../../../src/domain/plugins";
 import { Engine } from "../../../src/engine";
-import { deriveDependents, type GraphIR } from "../../../src/graph/ir";
+import { deriveDependants, type GraphIR } from "../../../src/graph/ir";
 import { createManualClock } from "../../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 import {
@@ -28,7 +28,7 @@ const node = (
 const snapshot = (nodes: readonly PublisherNode[]): PublisherSnapshot => ({
   nodes,
   nodeById: Object.freeze(Object.fromEntries(nodes.map((item) => [item.id, item]))),
-  dependents: deriveDependents(nodes),
+  dependants: deriveDependants(nodes),
   order: Object.freeze(nodes.map(({ id }) => id)),
   diagnostics: Object.freeze([]),
 });

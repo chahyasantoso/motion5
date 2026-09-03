@@ -18,7 +18,7 @@ import { ProjectRuntime } from "../../../src/runtime/project-runtime";
  * already found one member over. `finalizeGraph` walks every edge of every node and refuses a source
  * the candidate does not contain, so every reader that is an **edge** is caught, and `RA-98` is that
  * direction. But a solver reads every member `resolveSolvers` derived onto its `solves`, and no edge
- * points that way. `deriveDependents` names both kinds of reader for exactly that reason. `RA-99` is
+ * points that way. `deriveDependants` names both kinds of reader for exactly that reason. `RA-99` is
  * the reader that is not an edge.
  *
  * `RA-10` in `structural-commit-flush.test.ts` owns that a commit with nothing to seed does not call
@@ -134,7 +134,7 @@ describe("what a removal owes the nodes that read it", () => {
 
     // The reader, and the reason it is the one the premise misses. Nothing in the rig names `LOWER`
     // as an edge source: it is read only because `resolveSolvers` derived it onto the solver's
-    // `solves`, and `deriveDependents` walks that beside the edges for exactly this case.
+    // `solves`, and `deriveDependants` walks that beside the edges for exactly this case.
     expect(runtime.dependantsOf(LOWER)).toEqual([RIG]);
     expect(membersOf(runtime, RIG)).toEqual([UPPER, LOWER]);
 

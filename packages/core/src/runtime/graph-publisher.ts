@@ -60,7 +60,7 @@ export interface PublisherNode extends GraphNode {
  *
  * `nodeById` narrows too, and that narrowing is what lets the publisher stop rebuilding it. The
  * runtime already assembles that map from the very nodes it puts in `nodes`, so the publisher was
- * walking `nodes` once per tick to recover types the snapshot could simply carry. `dependents` comes
+ * walking `nodes` once per tick to recover types the snapshot could simply carry. `dependants` comes
  * from `GraphIR` unchanged, derived once per graph by `finalizeGraph`.
  */
 export interface PublisherSnapshot extends GraphIR {
@@ -191,14 +191,14 @@ export class GraphPublisher {
     // changes at most once between ticks. `finalizeGraph` owns both now, so the two walks below cost
     // O(affected) instead of O(V+E) and a steady-state tick allocates nothing for graph shape.
     const byId = snapshot.nodeById;
-    const dependents = snapshot.dependents;
+    const dependants = snapshot.dependants;
     const affected = new Set<string>();
     const queue = [...seeds];
     for (let index = 0; index < queue.length; index += 1) {
       const id = queue[index];
       if (id === undefined || affected.has(id)) continue;
       affected.add(id);
-      queue.push(...(dependents[id] ?? []));
+      queue.push(...(dependants[id] ?? []));
     }
     const isMember = (nodeId: string) =>
       snapshot.members ? snapshot.members.has(nodeId) : Object.hasOwn(byId, nodeId);

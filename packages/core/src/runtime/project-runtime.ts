@@ -480,7 +480,7 @@ export class ProjectRuntime {
   }
 
   #readersOf(nodeId: string): readonly string[] {
-    const readers: readonly string[] | undefined = this.#graph.graph.dependents[nodeId];
+    const readers: readonly string[] | undefined = this.#graph.graph.dependants[nodeId];
     return Object.freeze(readers === undefined ? [] : [...new Set(readers)]);
   }
   #addTrack(track: TrackDefinition, owner: object, options?: { motionId?: string }): TrackHandle {
@@ -836,7 +836,7 @@ export class ProjectRuntime {
           revert: () => this.#replaceMotionTrack?.(motionId, nodeId, previous.duration),
         });
       settle.push(() => staged?.commit());
-      // The edited node, and only it: the publisher walks dependents from the seed, so naming it is
+      // The edited node, and only it: the publisher walks dependants from the seed, so naming it is
       // sufficient. `addObserve` and `removeObserve` route through here, which makes them publish.
       touched.push(nodeId);
     }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ProjectDefinition } from "../../../src/contract/v5";
-import { deriveDependents } from "../../../src/graph/ir";
+import { deriveDependants } from "../../../src/graph/ir";
 import { createManualClock } from "../../../src/ports/clock";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
 import {
@@ -39,7 +39,7 @@ const soleSnapshot = (id: string): PublisherSnapshot => {
   return {
     nodes: [node],
     nodeById: Object.freeze({ [id]: node }),
-    dependents: deriveDependents([node]),
+    dependants: deriveDependants([node]),
     order: Object.freeze([id]),
     diagnostics: Object.freeze([]),
   };

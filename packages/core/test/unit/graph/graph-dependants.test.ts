@@ -13,7 +13,7 @@ import { PatchRegistry } from "../../../src/runtime/patch-registry";
  * Issue #223, optimisation 7a.
  *
  * `GraphPublisher.flush` rebuilds its whole graph shape on every tick: one map from node id to node
- * and one map of dependents, both recomputed from `snapshot.nodes` per flush, over a graph that
+ * and one map of dependants, both recomputed from `snapshot.nodes` per flush, over a graph that
  * changed at most once between ticks. Both are pure functions of the `GraphIR`, and `finalizeGraph`
  * already walks every edge of every node for the duplicate, unknown-source and self-reference
  * rules, and it ran `resolveSolvers` immediately before, so the solver fan-in is in hand there too.
@@ -69,7 +69,7 @@ const WALKER: ProjectDefinition = {
  * solver through `solves` and the forearm through its `base` edge, and the solver's entry is first
  * because the solver is the earlier node rather than because membership outranks an edge.
  */
-const EXPECTED: GraphIR["dependents"] = {
+const EXPECTED: GraphIR["dependants"] = {
   "walker/shoulder": ["walker/arm-solve", "walker/upper-arm"],
   "walker/hand-target": ["walker/arm-solve"],
   "walker/arm-solve": ["walker/upper-arm", "walker/forearm"],
@@ -111,7 +111,7 @@ function inputEdge(observerId: string, sourceId: string): GraphEdge {
  */
 function snapshot(
   nodes: readonly PublisherNode[],
-  dependents: GraphIR["dependents"],
+  dependants: GraphIR["dependants"],
   nodeById: Readonly<Record<string, PublisherNode>> = Object.fromEntries(
     nodes.map((entry) => [entry.id, entry]),
   ),
@@ -119,7 +119,7 @@ function snapshot(
   return {
     nodes,
     nodeById,
-    dependents,
+    dependants,
     order: nodes.map((entry) => entry.id),
     diagnostics: [],
   };
@@ -127,26 +127,26 @@ function snapshot(
 
 describe("reverse topology is derived once, by the graph that owns every other edge rule", () => {
   it("RA-18 names every reader of every node, edges and solver membership alike", () => {
-    expect(walkerGraph(buildGraphIR).dependents).toEqual(EXPECTED);
+    expect(walkerGraph(buildGraphIR).dependants).toEqual(EXPECTED);
   });
 
   it("RA-19 answers for every node, frozen, including the ones nothing reads", () => {
     const graph = walkerGraph(buildGraphIR);
-    const dependents = graph.dependents;
+    const dependants = graph.dependants;
 
     // Total rather than sparse. A missing key and an empty list are the same answer to a consumer
     // that spells `?? []`, and one of them makes the map's own shape depend on the rig.
-    expect(Object.keys(dependents).sort()).toEqual(graph.nodes.map(({ id }) => id).sort());
-    expect(Object.isFrozen(dependents)).toBe(true);
-    for (const [id, readers] of Object.entries(dependents))
+    expect(Object.keys(dependants).sort()).toEqual(graph.nodes.map(({ id }) => id).sort());
+    expect(Object.isFrozen(dependants)).toBe(true);
+    for (const [id, readers] of Object.entries(dependants))
       expect(Object.isFrozen(readers), `readers of ${id} frozen`).toBe(true);
-    expect(dependents["~/hud"]).toEqual([]);
+    expect(dependants["~/hud"]).toEqual([]);
   });
 
   it("RA-20 answers identically from both builders, which finalize through one owner", () => {
     const builder = new IncrementalGraphBuilder();
-    const incremental = walkerGraph((project) => builder.build(project)).dependents;
-    expect(incremental).toEqual(walkerGraph(buildGraphIR).dependents);
+    const incremental = walkerGraph((project) => builder.build(project)).dependants;
+    expect(incremental).toEqual(walkerGraph(buildGraphIR).dependants);
   });
 });
 
