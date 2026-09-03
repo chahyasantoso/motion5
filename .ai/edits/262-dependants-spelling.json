@@ -1,0 +1,309 @@
+{
+  "message": "chore(graph): spell reverse topology dependants everywhere",
+  "target": 262,
+  "edits": [
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "  readonly dependents: Readonly<Record<string, readonly string[]>>;",
+      "replace": "  readonly dependants: Readonly<Record<string, readonly string[]>>;"
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "export function deriveDependents(",
+      "replace": "export function deriveDependants("
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "  const dependents: Record<string, readonly string[]> = {};",
+      "replace": "  const dependants: Record<string, readonly string[]> = {};"
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "  for (const [id, readers] of collected) dependents[id] = freeze(readers);",
+      "replace": "  for (const [id, readers] of collected) dependants[id] = freeze(readers);"
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "  return freeze(dependents);",
+      "replace": "  return freeze(dependants);"
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "      dependents: deriveDependents(resolvedNodes),",
+      "replace": "      dependants: deriveDependants(resolvedNodes),"
+    },
+    {
+      "path": "packages/core/src/graph/order.ts",
+      "find": "  dependents: ReadonlyMap<string, readonly string[]>,",
+      "replace": "  dependants: ReadonlyMap<string, readonly string[]>,"
+    },
+    {
+      "path": "packages/core/src/graph/order.ts",
+      "find": "    for (const next of dependents.get(current) ?? []) {",
+      "replace": "    for (const next of dependants.get(current) ?? []) {"
+    },
+    {
+      "path": "packages/core/src/graph/order.ts",
+      "find": "  const dependents = new Map<string, string[]>();",
+      "replace": "  const dependants = new Map<string, string[]>();"
+    },
+    {
+      "path": "packages/core/src/graph/order.ts",
+      "find": "    dependents.set(node.id, []);",
+      "replace": "    dependants.set(node.id, []);"
+    },
+    {
+      "path": "packages/core/src/graph/order.ts",
+      "find": "      const downstream = dependents.get(edge.sourceId);",
+      "replace": "      const downstream = dependants.get(edge.sourceId);"
+    },
+    {
+      "path": "packages/core/src/graph/order.ts",
+      "find": "  for (const downstream of dependents.values()) downstream.sort(compareCodeUnits);",
+      "replace": "  for (const downstream of dependants.values()) downstream.sort(compareCodeUnits);"
+    },
+    {
+      "path": "packages/core/src/graph/order.ts",
+      "find": "    for (const dependent of dependents.get(next.id) ?? []) {\n      const remaining = (indegree.get(dependent) ?? 0) - 1;\n      indegree.set(dependent, remaining);\n      const slot = slots.get(dependent);",
+      "replace": "    for (const dependant of dependants.get(next.id) ?? []) {\n      const remaining = (indegree.get(dependant) ?? 0) - 1;\n      indegree.set(dependant, remaining);\n      const slot = slots.get(dependant);"
+    },
+    {
+      "path": "packages/core/src/graph/order.ts",
+      "find": "    const path = shortestCycleFrom(start, live, dependents);",
+      "replace": "    const path = shortestCycleFrom(start, live, dependants);"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-publisher.ts",
+      "find": "recover types the snapshot could simply carry. `dependents` comes",
+      "replace": "recover types the snapshot could simply carry. `dependants` comes"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-publisher.ts",
+      "find": "    const dependents = snapshot.dependents;",
+      "replace": "    const dependants = snapshot.dependants;"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-publisher.ts",
+      "find": "      queue.push(...(dependents[id] ?? []));",
+      "replace": "      queue.push(...(dependants[id] ?? []));"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "   * `nodes`, `nodeById` and `dependents` are all pure functions of the `GraphIR` identity.",
+      "replace": "   * `nodes`, `nodeById` and `dependants` are all pure functions of the `GraphIR` identity."
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "    const readers: readonly string[] | undefined = this.#graph.graph.dependents[nodeId];",
+      "replace": "    const readers: readonly string[] | undefined = this.#graph.graph.dependants[nodeId];"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "      // The edited node, and only it: the publisher walks dependents from the seed, so naming it is",
+      "replace": "      // The edited node, and only it: the publisher walks dependants from the seed, so naming it is"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.md",
+      "find": "Read from `GraphIR.dependents`, never rederived",
+      "replace": "Read from `GraphIR.dependants`, never rederived"
+    },
+    {
+      "path": "packages/core/test/unit/graph/graph-dependents.test.ts",
+      "delete": true
+    },
+    {
+      "path": "packages/core/test/unit/graph/graph-dependants.test.ts",
+      "create": "import { describe, expect, it } from \"vitest\";\nimport { IncrementalGraphBuilder } from \"../../../src/adapters/graph-builder/incremental\";\nimport type { ProjectDefinition } from \"../../../src/contract/v5\";\nimport { buildGraphIR, type GraphEdge, type GraphIR } from \"../../../src/graph/ir\";\nimport {\n  GraphPublisher,\n  type PublisherNode,\n  type PublisherSnapshot,\n} from \"../../../src/runtime/graph-publisher\";\nimport { PatchRegistry } from \"../../../src/runtime/patch-registry\";\n\n/**\n * Issue #223, optimisation 7a.\n *\n * `GraphPublisher.flush` rebuilds its whole graph shape on every tick: one map from node id to node\n * and one map of dependants, both recomputed from `snapshot.nodes` per flush, over a graph that\n * changed at most once between ticks. Both are pure functions of the `GraphIR`, and `finalizeGraph`\n * already walks every edge of every node for the duplicate, unknown-source and self-reference\n * rules, and it ran `resolveSolvers` immediately before, so the solver fan-in is in hand there too.\n *\n * So reverse topology gets one owner, in the file that already owns `compareEdges` and delegates to\n * `orderGraph`, and the publisher reads graph shape instead of deriving it. Its two walks then cost\n * O(affected) rather than O(V+E), which is what the authoring surface makes worth doing: a\n * structural edit lands once between ticks and steady-state ticking pays for it every frame.\n *\n * ADR-051's walker is the rig, because it is the one shape whose reverse topology edges cannot\n * answer on their own: a solver reads its members through `solves`, and no edge points that way.\n */\nconst WALKER: ProjectDefinition = {\n  schemaVersion: 5,\n  projectId: \"ra-7a\",\n  motions: [\n    {\n      id: \"walker\",\n      trigger: { type: \"manual\" },\n      tracks: [\n        { id: \"shoulder\", keyframes: { transform: { values: { x: 200, y: 300, rotation: 0 } } } },\n        {\n          id: \"hand-target\",\n          keyframes: { transform: { values: { x: 320, y: 340, rotation: 0 } } },\n        },\n        {\n          id: \"arm-solve\",\n          keyframes: { ik: { requires: { root: \"shoulder\", target: \"hand-target\" } } },\n        },\n        {\n          id: \"upper-arm\",\n          keyframes: {\n            fk: { values: { length: 80 }, requires: { base: \"shoulder\", solver: \"arm-solve\" } },\n          },\n        },\n        {\n          id: \"forearm\",\n          keyframes: {\n            fk: { values: { length: 60 }, requires: { base: \"upper-arm\", solver: \"arm-solve\" } },\n          },\n        },\n      ],\n    },\n  ],\n  freeTracks: [{ id: \"hud\", keyframes: { transform: { values: { x: 5 } } } }],\n};\n\n/**\n * Every reader of every node of the rig above, in node order.\n *\n * `walker/forearm` is the entry edges cannot answer: nothing observes it and nothing bases on it,\n * and its only reader is the solver that solves it. `walker/upper-arm` carries one of each, the\n * solver through `solves` and the forearm through its `base` edge, and the solver's entry is first\n * because the solver is the earlier node rather than because membership outranks an edge.\n */\nconst EXPECTED: GraphIR[\"dependants\"] = {\n  \"walker/shoulder\": [\"walker/arm-solve\", \"walker/upper-arm\"],\n  \"walker/hand-target\": [\"walker/arm-solve\"],\n  \"walker/arm-solve\": [\"walker/upper-arm\", \"walker/forearm\"],\n  \"walker/upper-arm\": [\"walker/arm-solve\", \"walker/forearm\"],\n  \"walker/forearm\": [\"walker/arm-solve\"],\n  \"~/hud\": [],\n};\n\nfunction walkerGraph(build: (project: ProjectDefinition) => ReturnType<typeof buildGraphIR>) {\n  const built = build(WALKER);\n  expect(built.diagnostics).toEqual([]);\n  expect(built.graph).toBeDefined();\n  return built.graph!;\n}\n\nfunction node(\n  id: string,\n  edges: readonly GraphEdge[],\n  values: Readonly<Record<string, unknown>>,\n): PublisherNode {\n  return Object.freeze({\n    id,\n    owner: \"motion\",\n    authoredIndex: 0,\n    track: { id },\n    edges: Object.freeze(edges),\n    compose: () => ({ values, sourceProgress: 0, sourceRevisions: {} }),\n  }) as PublisherNode;\n}\n\nfunction inputEdge(observerId: string, sourceId: string): GraphEdge {\n  return { observerId, sourceId, role: \"input\", requirement: { plugin: \"p\", slot: \"s\" } };\n}\n\n/**\n * A snapshot whose graph shape is stated rather than derived, which is what makes the two publisher\n * cases below discriminating: a publisher that recomputes either map from `nodes` cannot see what\n * this hands it, and one that reads the snapshot cannot see anything else.\n */\nfunction snapshot(\n  nodes: readonly PublisherNode[],\n  dependants: GraphIR[\"dependants\"],\n  nodeById: Readonly<Record<string, PublisherNode>> = Object.fromEntries(\n    nodes.map((entry) => [entry.id, entry]),\n  ),\n): PublisherSnapshot {\n  return {\n    nodes,\n    nodeById,\n    dependants,\n    order: nodes.map((entry) => entry.id),\n    diagnostics: [],\n  };\n}\n\ndescribe(\"reverse topology is derived once, by the graph that owns every other edge rule\", () => {\n  it(\"RA-18 names every reader of every node, edges and solver membership alike\", () => {\n    expect(walkerGraph(buildGraphIR).dependants).toEqual(EXPECTED);\n  });\n\n  it(\"RA-19 answers for every node, frozen, including the ones nothing reads\", () => {\n    const graph = walkerGraph(buildGraphIR);\n    const dependants = graph.dependants;\n\n    // Total rather than sparse. A missing key and an empty list are the same answer to a consumer\n    // that spells `?? []`, and one of them makes the map's own shape depend on the rig.\n    expect(Object.keys(dependants).sort()).toEqual(graph.nodes.map(({ id }) => id).sort());\n    expect(Object.isFrozen(dependants)).toBe(true);\n    for (const [id, readers] of Object.entries(dependants))\n      expect(Object.isFrozen(readers), `readers of ${id} frozen`).toBe(true);\n    expect(dependants[\"~/hud\"]).toEqual([]);\n  });\n\n  it(\"RA-20 answers identically from both builders, which finalize through one owner\", () => {\n    const builder = new IncrementalGraphBuilder();\n    const incremental = walkerGraph((project) => builder.build(project)).dependants;\n    expect(incremental).toEqual(walkerGraph(buildGraphIR).dependants);\n  });\n});\n\ndescribe(\"the publisher reads graph shape rather than deriving it per flush\", () => {\n  it(\"RA-21 walks the reverse topology the snapshot carries, not one built from edges\", () => {\n    const source = node(\"source\", [], { x: 1 });\n    const consumer = node(\"consumer\", [inputEdge(\"consumer\", \"source\")], { y: 2 });\n\n    // Honest first: a reader the map names is reached, so this case cannot pass by the publisher\n    // ignoring the map altogether.\n    const reached = new PatchRegistry();\n    new GraphPublisher(reached).flush(\n      snapshot([source, consumer], { source: [\"consumer\"], consumer: [] }),\n      [\"source\"],\n      1,\n    );\n    expect(reached.get(\"source\")?.values).toEqual({ x: 1 });\n    expect(reached.get(\"consumer\")?.values).toEqual({ y: 2 });\n\n    // And a reader the map does not name is not reached, even though the edge that would have\n    // derived it is right there on the node. Deriving one per flush is what this refuses.\n    const skipped = new PatchRegistry();\n    new GraphPublisher(skipped).flush(\n      snapshot([source, consumer], { source: [], consumer: [] }),\n      [\"source\"],\n      1,\n    );\n    expect(skipped.get(\"source\")?.values).toEqual({ x: 1 });\n    expect(skipped.get(\"consumer\")).toBeUndefined();\n  });\n\n  it(\"RA-22 resolves a node through the snapshot's nodeById, not a map rebuilt per flush\", () => {\n    const source = node(\"source\", [], { x: 1 });\n    const consumer = node(\"consumer\", [inputEdge(\"consumer\", \"source\")], { y: 2 });\n    const registry = new PatchRegistry();\n\n    // `nodeById` omits the consumer while `nodes` and `order` still carry it, which no builder can\n    // produce and no runtime can hand over. It is a lie detector, and the only thing it detects is\n    // the publisher answering \"which node is this\" from somewhere other than the graph's own map.\n    new GraphPublisher(registry).flush(\n      snapshot([source, consumer], { source: [\"consumer\"], consumer: [] }, { source }),\n      [\"source\"],\n      1,\n    );\n    expect(registry.get(\"source\")?.values).toEqual({ x: 1 });\n    expect(registry.get(\"consumer\")).toBeUndefined();\n  });\n});\n"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/dependants-of-reverse-topology.test.ts",
+      "find": "derives `GraphIR.dependents` once per graph",
+      "replace": "derives `GraphIR.dependants` once per graph"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/dependants-of-reverse-topology.test.ts",
+      "find": " * `deriveDependents` names both kinds of reader, because only one of them is an edge",
+      "replace": " * `deriveDependants` names both kinds of reader, because only one of them is an edge"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/dependants-of-reverse-topology.test.ts",
+      "find": "    // both members on the solver's `solves`, and `deriveDependents` walks that beside the edges for",
+      "replace": "    // both members on the solver's `solves`, and `deriveDependants` walks that beside the edges for"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/dependants-of-reverse-topology.test.ts",
+      "find": "    expect(project.graph.graph.dependents[UPPER]).toContain(RIG);\n    expect(project.graph.graph.dependents[LOWER]).toEqual([RIG]);",
+      "replace": "    expect(project.graph.graph.dependants[UPPER]).toContain(RIG);\n    expect(project.graph.graph.dependants[LOWER]).toEqual([RIG]);"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/dependants-of-reverse-topology.test.ts",
+      "find": "    expect(project.graph.graph.dependents[UPPER]).toEqual([LOWER, LOWER, RIG]);",
+      "replace": "    expect(project.graph.graph.dependants[UPPER]).toEqual([LOWER, LOWER, RIG]);"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/removal-flush-seed.test.ts",
+      "find": " * points that way. `deriveDependents` names both kinds of reader for exactly that reason.",
+      "replace": " * points that way. `deriveDependants` names both kinds of reader for exactly that reason."
+    },
+    {
+      "path": "packages/core/test/unit/runtime/removal-flush-seed.test.ts",
+      "find": "    // `solves`, and `deriveDependents` walks that beside the edges for exactly this case.",
+      "replace": "    // `solves`, and `deriveDependants` walks that beside the edges for exactly this case."
+    },
+    {
+      "path": "packages/core/test/integration/graph-publisher.test.ts",
+      "find": "import { deriveDependents, type GraphEdge } from \"../../src/graph/ir\";",
+      "replace": "import { deriveDependants, type GraphEdge } from \"../../src/graph/ir\";"
+    },
+    {
+      "path": "packages/core/test/integration/graph-publisher.test.ts",
+      "find": "  dependents: deriveDependents(nodes),",
+      "replace": "  dependants: deriveDependants(nodes),"
+    },
+    {
+      "path": "packages/core/test/integration/p2-runtime-smells.test.ts",
+      "find": "import { deriveDependents, type GraphEdge } from \"../../src/graph/ir\";",
+      "replace": "import { deriveDependants, type GraphEdge } from \"../../src/graph/ir\";"
+    },
+    {
+      "path": "packages/core/test/integration/p2-runtime-smells.test.ts",
+      "find": "  dependents: deriveDependents(nodes),",
+      "replace": "  dependants: deriveDependants(nodes),"
+    },
+    {
+      "path": "packages/core/test/integration/flush-output-merge.test.ts",
+      "find": "import { compareEdges, deriveDependents } from \"../../src/graph/ir\";",
+      "replace": "import { compareEdges, deriveDependants } from \"../../src/graph/ir\";"
+    },
+    {
+      "path": "packages/core/test/integration/flush-output-merge.test.ts",
+      "find": "  dependents: deriveDependents(nodes),",
+      "replace": "  dependants: deriveDependants(nodes),"
+    },
+    {
+      "path": "packages/core/test/integration/partial-seed-inputs.test.ts",
+      "find": "import { deriveDependents, type GraphEdge } from \"../../src/graph/ir\";",
+      "replace": "import { deriveDependants, type GraphEdge } from \"../../src/graph/ir\";"
+    },
+    {
+      "path": "packages/core/test/integration/partial-seed-inputs.test.ts",
+      "find": "  dependents: deriveDependents(nodes),",
+      "replace": "  dependants: deriveDependants(nodes),"
+    },
+    {
+      "path": "packages/core/test/integration/publisher-output-merge-consistency.test.ts",
+      "find": "import { deriveDependents, type GraphEdge } from \"../../src/graph/ir\";",
+      "replace": "import { deriveDependants, type GraphEdge } from \"../../src/graph/ir\";"
+    },
+    {
+      "path": "packages/core/test/integration/publisher-output-merge-consistency.test.ts",
+      "find": "  dependents: deriveDependents(nodes),",
+      "replace": "  dependants: deriveDependants(nodes),"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/publisher-reentrancy.test.ts",
+      "find": "import { deriveDependents } from \"../../../src/graph/ir\";",
+      "replace": "import { deriveDependants } from \"../../../src/graph/ir\";"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/publisher-reentrancy.test.ts",
+      "find": "    dependents: deriveDependents([node]),",
+      "replace": "    dependants: deriveDependants([node]),"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts",
+      "find": "import { deriveDependents, type GraphIR } from \"../../../src/graph/ir\";",
+      "replace": "import { deriveDependants, type GraphIR } from \"../../../src/graph/ir\";"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts",
+      "find": "    dependents: deriveDependents([source, observer]),",
+      "replace": "    dependants: deriveDependants([source, observer]),"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/publisher-snapshot-memo.test.ts",
+      "find": " * cached per graph node, `dependents` is derived once per graph by `finalizeGraph` since 7a, and the",
+      "replace": " * cached per graph node, `dependants` is derived once per graph by `finalizeGraph` since 7a, and the"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/publisher-snapshot-memo.test.ts",
+      "find": "    expect(second?.dependents).toBe(runtime.graph.dependents);",
+      "replace": "    expect(second?.dependants).toBe(runtime.graph.dependants);"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/composition-output-shape.test.ts",
+      "find": "import { deriveDependents, type GraphIR } from \"../../../src/graph/ir\";",
+      "replace": "import { deriveDependants, type GraphIR } from \"../../../src/graph/ir\";"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/composition-output-shape.test.ts",
+      "find": "  dependents: deriveDependents(nodes),",
+      "replace": "  dependants: deriveDependants(nodes),"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts",
+      "find": "import { deriveDependents } from \"../../../src/graph/ir\";",
+      "replace": "import { deriveDependants } from \"../../../src/graph/ir\";"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts",
+      "find": "    dependents: deriveDependents([node]),",
+      "replace": "    dependants: deriveDependants([node]),"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/publisher-solver-members.test.ts",
+      "find": "import { deriveDependents, type GraphEdge } from \"../../../src/graph/ir\";",
+      "replace": "import { deriveDependants, type GraphEdge } from \"../../../src/graph/ir\";"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/publisher-solver-members.test.ts",
+      "find": "// `deriveDependents` rather than a reverse walk written here",
+      "replace": "// `deriveDependants` rather than a reverse walk written here"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/publisher-solver-members.test.ts",
+      "find": "    dependents: deriveDependents(nodes),",
+      "replace": "    dependants: deriveDependants(nodes),"
+    },
+    {
+      "path": "docs/ADR-051-derived-solver-membership.md",
+      "find": "`ProjectRuntime.#readersOf` reads `GraphIR.dependents`, which is frozen onto the `GraphIR` once per graph",
+      "replace": "`ProjectRuntime.#readersOf` reads `GraphIR.dependants`, which is frozen onto the `GraphIR` once per graph"
+    },
+    {
+      "path": "docs/ADR-051-derived-solver-membership.md",
+      "find": "`deriveDependents` names both kinds of reader because only one of them is an edge.",
+      "replace": "`deriveDependants` names both kinds of reader because only one of them is an edge."
+    },
+    {
+      "path": "docs/ADR-051-derived-solver-membership.md",
+      "find": "`deriveDependents` keeps a reader once per dependency deliberately",
+      "replace": "`deriveDependants` keeps a reader once per dependency deliberately"
+    },
+    {
+      "path": "docs/ADR-051-derived-solver-membership.md",
+      "find": "solver members register their solver as a dependent.",
+      "replace": "solver members register their solver as a dependant."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "`RA-18` through `RA-22` in `packages/core/test/unit/graph/graph-dependents.test.ts`",
+      "replace": "`RA-18` through `RA-22` in `packages/core/test/unit/graph/graph-dependants.test.ts`"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "read from the same `GraphIR.dependents` the public query reads",
+      "replace": "read from the same `GraphIR.dependants` the public query reads"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "`#derive` reading `dependents` itself is a second derivation",
+      "replace": "`#derive` reading `dependants` itself is a second derivation"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "## Where the work is\n\n- **Landed after that closure, and it is debt rather than a slice.**",
+      "replace": "## Where the work is\n\n- **Just landed.** One spelling for reverse topology, [issue #262](https://github.com/chahyasantoso/motion5/issues/262). The internal field was `GraphIR.dependents` and the public query has always been `dependantsOf`: two spellings of one word, one letter apart, in one codebase, which is what makes two things look like they might be different concepts when they are not. The internal spelling moves to the public one rather than the other way around, and the reason is ownership rather than taste: `dependantsOf` on `ProjectHandle` is the only half with callers outside this package, because `index.ts` keeps graph internals private, so renaming it would break a contract to tidy one that nobody can see, and every ADR, guide, evidence-case file name and paragraph of prose in this tree already says dependant. So `deriveDependents` is `deriveDependants`, `GraphIR.dependents` is `GraphIR.dependants`, `PublisherSnapshot` inherits the renamed field, and the reverse-topology locals in `graph/order.ts` follow, singular included. No behaviour moves, no test is added, and nothing is deleted: `typecheck` is what a rename is proved by rather than a case that could only assert the suite is still green, every identifier is the same length so the formatter sees no reflow and no file changes size, and the existing suite is the regression. `packages/core/test/unit/graph/graph-dependents.test.ts` becomes `graph-dependants.test.ts` with `RA-18` through `RA-22` unchanged inside it, and the citation above moves with it. Archived documents under `docs/archived/` keep the spelling they shipped with.\n- **Landed after that closure, and it is debt rather than a slice.**"
+    }
+  ]
+}
