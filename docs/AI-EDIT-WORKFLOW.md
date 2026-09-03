@@ -36,7 +36,7 @@ One request at a time. The workflow applies the single `.json` file it finds in 
 
 Each entry in `edits` names a `path` and exactly one of three modes: `find` with `replace` to rewrite an anchor, `create` with the full content of a new file, or `delete` set to `true`. Naming two modes is refused rather than guessed at.
 
-A request carries at most **50 edits**, and a fifty-first is a refusal naming the count it found. That is a ceiling on one request rather than on one slice: a larger batch splits into two requests applied one after the other, and the second is written once the commit that consumed the first has removed it. The batch-first rule below is unchanged by that, because two requests for one slice is still nothing like one request per edit.
+`dry_run` is optional and defaults to `false`. With `true`, the request is validated and nothing is written, which is the section below.
 
 ## The anchor rule
 
@@ -48,33 +48,21 @@ So read the region before you write the request, and quote enough of it to be un
 
 A request is all or nothing. Every edit is validated against the file content as the earlier edits in the same request left it, and nothing is written unless all of them pass. A partially applied request is the one outcome this workflow will not produce.
 
-## Reading the region, and the asymmetry this contract has
+## Checking an anchor without applying it
 
-The rule above says read the region before you write the anchor, and it does not say how a region is read, because there is no way to read one. A contents read is whole-file or prefix: no offset, no line window, and no second call that returns the part the first one dropped. A file past the response cap arrives truncated, and its tail is not late, it is unreachable.
+Setting `dry_run` to `true` runs the validation pass and stops one line above the write pass. Nothing is written, the formatter never runs, and the report tells you what a real run would have done.
 
-That is the asymmetry, and it is the whole of why this section exists. The write side is size-independent by construction, because you never write the file back. The read side is size-bound with no lever except the size of the file itself, which is the one variable in the loop that anybody controls.
+It exists for one property, and it is the one the anchor rule already needs. An anchor must be unique in the file, and a file large enough to truncate on read cannot be checked for that: you verify uniqueness across the prefix you received and then assert it over bytes you never saw. The count reported here is taken against the file on disk, so a dry run answers the question your own read cannot. Spend the round trip on any request whose anchors came out of a read you are not certain was complete.
 
-Code search is a locator rather than a reader, and it does not close the gap. It will tell you a symbol exists and print a few lines around it, and it will not hand you the region: it caps fragments per file and answers against the indexed default branch, so on the working branch you are editing it is stale or blind.
+The report names the anchor count per file and the size each file would end up at, measured before the formatter. Those sizes are what let you check a change against a byte budget before you spend the write.
 
-The consequence for the anchor rule is exact. An anchor must match exactly once **in the file**, and a truncated read cannot establish that. It can only establish uniqueness across the prefix that arrived. An anchor unique in the prefix and repeated in the invisible tail comes back as the two-match refusal, which fails safe and costs one round trip. An anchor that genuinely is unique applies cleanly, all-or-nothing, exactly as designed, while the reasoning behind the edit was checked against a prefix. The write pass validates the anchor against the whole file, and nothing validates the edit against the part you never read, so every safety property here stays intact while checking a different thing.
+Everything else refuses exactly as it would on a real run: a path this workflow may not touch, two modes on one edit, a `create` over a file that exists, a `delete` of a file that is not there, a `message` that is not a single line. A clean dry run means the request is valid, not merely that its anchors are unique.
 
-**A file that does not survive one read may not be edited by anchor. Split it first.** `npm run test:read-budget` is how you find out which side of that line a file is on, and `scripts/read-budget-scan.mjs` carries the measured numbers, the budget they justify, and every file still over it.
+Two things about it are easy to get wrong. A dry run **consumes its request**, the same as an apply, because it succeeded and because a request left in the directory is what makes the next push refuse for holding two: re-upload it without the flag to apply it. And its commit carries `chore(ai-edit): dry run, nothing applied [skip ci]` rather than your `message`, because a commit named after a change it did not make is a lie in the log. The `AI-Edit-Request:` trailer still names the request that was consumed.
 
-## The sister doc
+The `[skip ci]` on that subject is honest for the same reason the subject is fixed. The only path in a dry run's commit is the request it consumed, so the content diff is empty by construction, and every `CI` job would install a toolchain to re-verify a tree it has already verified. Because the subject is not yours, no request can put the directive on a commit that does change files. One consequence to know rather than discover: if a dry run is the last commit before a merge, the required contexts never report on that head and the pull request sits. `ci.yml` has `workflow_dispatch`, so dispatch `CI` by hand from the Actions tab.
 
-A source file over 30,000 bytes keeps its private reasoning in a sibling document rather than in docblocks. `packages/core/src/runtime/project-runtime.ts` implies `packages/core/src/runtime/project-runtime.md`, by swapping one extension, so a reader holding a source path already holds the document path. No index, no registry, no naming decision per file.
-
-**Read the document first and the source second.** The document is the map: it hands over the member list in one call, which is what makes a source read that truncates afterwards recoverable rather than silently dangerous. The lookup is unconditional and absence is an answer: derive the path, look, and if there is no document then the source carries its own docs.
-
-What moves is every docblock on a declaration the file keeps to itself: a private member, a file-local type, and a `function` or `const` the module does not export, including one a single function owns as a closure, which is where a module's densest reasoning actually sits. What stays is the docblock on anything **exported**, because TypeScript carries those into the declaration file and into editor hover, so moving one deletes an API doc rather than relocating it; a long one leaves its summary line behind and moves only the argument. What also stays is a comment explaining the statement on the next line, which is not a docblock and which no heading owns.
-
-An ADR still owns anything an ADR owns. The precedence is ADR first, sister doc second, comment last: a statement a record owns collapses to `See ADR-064.` and that pointer lives in the document now. A document never restates an ADR's content, because that is the second copy this convention exists to avoid.
-
-The mirror is mechanical, so a script can check it. One `##` heading per documented declaration, named exactly as the source declares it, in **source declaration order**; a preamble uses `###` and claims nothing. The source names its document on line one as `// Docs: ./<name>.md`, and the document names the source in its `H1`. No code blocks reproducing an implementation, because a document that quotes a body is a copy with a staleness window.
-
-Both halves are budgeted. `scripts/read-budget-scan.mjs` holds `READ_BUDGET_BYTES` and scans markdown under `packages/core/src` for exactly that reason: a pair whose document loses its tail is the original bug with an extra file in it. It also refuses a mirrored source that still carries a private docblock, which is the check that makes the move total rather than partial. What it deliberately does not check is whether the prose is still true, and that is the residual risk of the convention rather than something it claims away.
-
-One warning about writing the move. Create the document complete in the first request and delete the docblocks in later ones, so the transient state across a slice is duplication rather than absence. Two copies for three commits is a non-event; zero copies for one commit is how reasoning dies.
+One trap. A branch whose `scripts/apply-ai-edit.mjs` predates this flag ignores unknown request keys, so `dry_run` there is silently a real apply. Read the report and confirm it says dry run before you believe nothing was written.
 
 ## What it will not do
 
@@ -92,17 +80,23 @@ Put every edit for a slice in one request. One request per edit is what turns a 
 
 Read the file before you write the anchor. A refused request costs exactly as much as an applied one.
 
+A dry run is a second run rather than a free one. It is worth its round trip on anchors you could not fully verify, and a waste of one on a file you have whole in front of you.
+
 ## Reading the result
 
 The comment names the files written, the state each one was left in, and the exact reason for any refusal. It is the only channel an API-only implementor can actually read: a job summary and an uploaded artifact are both invisible to you, so a workflow that reported only there would leave you guessing whether your own edit landed.
 
-A refusal fails the run, so nothing is committed and your request file stays exactly where you put it. Correct that same path and push it again. An applied request is removed by the commit that consumed it, which is how you tell the two outcomes apart from the tree alone.
+A refusal fails the run, so nothing is committed and your request file stays exactly where you put it. Correct that same path and push it again. An applied request is removed by the commit that consumed it, which is how you tell the two outcomes apart from the tree alone. A dry run is consumed the same way, so the tree does not distinguish it from an apply, and the report and the commit subject are what do.
 
 The commit is made with `PERSONAL_ACCESS_TOKEN` rather than `GITHUB_TOKEN` for the reason [FORMATTING.md](./FORMATTING.md) already gives: a push made with `GITHUB_TOKEN` triggers no new workflow run, so the new head would carry no checks. Verify your change through the `CI` run on that commit.
 
 ## Testing the workflow
 
 Exercised on the pull request that introduced it, with every report in that thread. A valid request applied its edits, formatted the touched files, committed with the repository PAT, removed the request, and commented back. Four refusals ran in the same pass, each one leaving the target file untouched and committing nothing: an anchor matching zero times, an anchor matching twice, a path under `.github/workflows/`, and a request whose second edit could not apply while its first could. That last one is the all-or-nothing rule, and it is the case to re-run by hand if you ever change the write pass.
+
+`dry_run` was exercised the same way, on the pull request that introduced it: a dry run of that pull request's own documentation edits reported its anchor counts and its resulting sizes and wrote nothing, and the identical request without the flag then applied them.
+
+The validation pass also has a unit test, the `AE-` cases in `packages/core/test/unit/scripts/apply-ai-edit.test.ts`. They run the shipped script as a subprocess against planted trees, which is how the workflow invokes it, and they assert what a live run can only demonstrate one outcome at a time: the anchor counts a dry run reports, the count named in each refusal, that a later edit is validated against what an earlier one staged, that a refusal leaves every file it named untouched, and that a dry run gets the fixed `[skip ci]` subject while a real run keeps your `message` verbatim. Run them with `npx vitest run packages/core/test/unit/scripts/apply-ai-edit.test.ts`. The live runs still carry what a subprocess cannot: the token, the formatter, the comment, and how the request is chosen.
 
 One refusal mode is invisible in a comment and has to be read in the job list: a request the workflow never saw. Any change to how the request is chosen needs a live run from an API-made commit, because that is the push shape that broke it once already.
 
