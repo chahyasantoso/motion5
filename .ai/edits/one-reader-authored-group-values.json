@@ -1,0 +1,60 @@
+{
+  "message": "fix(keyframes): give authored group values one reader",
+  "target": 255,
+  "edits": [
+    {
+      "path": "packages/core/src/contract/keyframe-shape.ts",
+      "find": "import type { AuthoredPluginGroup, PluginRequiresBinding } from \"./v5\";",
+      "replace": "import type { AuthoredPluginGroup, AuthoredProperty, PluginRequiresBinding } from \"./v5\";"
+    },
+    {
+      "path": "packages/core/src/contract/keyframe-shape.ts",
+      "find": " * reported by `validateKeyframes`, which owns shape. See ADR-049.\n */\nexport function readPluginValues(group: unknown): Readonly<Record<string, unknown>> {",
+      "replace": " * reported by `validateKeyframes`, which owns shape. See ADR-049.\n *\n * Two signatures over one body, so a caller that already proved the shape gets the authored leaf\n * type and a caller reading an unvalidated document keeps the tolerant one. Two functions would\n * have been two readers of one layout, which is the thing this owns; a cast at the authoring call\n * site would have put the claim where nothing enforces it. The section is written through\n * `PLUGIN_VALUES_SECTION` in one place and read through this in every other, which is what issue\n * #255 asked for. See `RA-106`.\n */\nexport function readPluginValues(\n  group: AuthoredPluginGroup,\n): Readonly<Record<string, AuthoredProperty>>;\nexport function readPluginValues(group: unknown): Readonly<Record<string, unknown>>;\nexport function readPluginValues(group: unknown): Readonly<Record<string, unknown>> {"
+    },
+    {
+      "path": "packages/core/src/domain/authoring/keyframes.ts",
+      "find": "  PLUGIN_VALUES_SECTION,\n} from \"../../contract/keyframe-shape\";",
+      "replace": "  PLUGIN_VALUES_SECTION,\n  readPluginValues,\n} from \"../../contract/keyframe-shape\";"
+    },
+    {
+      "path": "packages/core/src/domain/authoring/keyframes.ts",
+      "find": " * than a shape test written here.",
+      "replace": " * than a shape test written here. The values section is read through that module's\n * `readPluginValues`, on the same rule: a layout written through one constant and read through two\n * expressions has two readers, and the runtime's `#setKeyframe` was the second one. See issue #255\n * and `RA-106`."
+    },
+    {
+      "path": "packages/core/src/domain/authoring/keyframes.ts",
+      "find": "  const values = bound.group[PLUGIN_VALUES_SECTION] ?? {};\n  if (values[key] === value) return keyframes;",
+      "replace": "  const values = readPluginValues(bound.group);\n  if (values[key] === value) return keyframes;"
+    },
+    {
+      "path": "packages/core/src/domain/authoring/keyframes.ts",
+      "find": " * returning the record by identity, on the idempotence rule every editor here follows.",
+      "replace": " * returning the record by identity, on the idempotence rule every editor here follows.\n *\n * Membership is `Object.hasOwn` rather than `in`, which is the spelling the runtime path already\n * used and the only one that keeps that rule: `in` answers true for an inherited name, so removing\n * `toString` read a leaf no author wrote, rewrote the section and answered with a new record.\n * `RA-108`."
+    },
+    {
+      "path": "packages/core/src/domain/authoring/keyframes.ts",
+      "find": "  const values = bound.group[PLUGIN_VALUES_SECTION];\n  if (values === undefined || !(key in values)) return keyframes;",
+      "replace": "  const values = readPluginValues(bound.group);\n  if (!Object.hasOwn(values, key)) return keyframes;"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "} from \"../contract/v5\";\nimport { PLUGIN_GOALS_SLOT } from \"../contract/solver-slots\";",
+      "replace": "} from \"../contract/v5\";\nimport { readPluginValues } from \"../contract/keyframe-shape\";\nimport { PLUGIN_GOALS_SLOT } from \"../contract/solver-slots\";"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "    if (Object.hasOwn(bound.group.values ?? {}, key))",
+      "replace": "    // Asked through the one reader of the section rather than off the field, so this path and the\n    // pure editor cannot disagree about what the group authors. See `RA-106` and issue #255.\n    if (Object.hasOwn(readPluginValues(bound.group), key))"
+    },
+    {
+      "path": "packages/core/test/unit/domain/authored-group-values-one-reader.test.ts",
+      "create": "import { describe, expect, it } from \"vitest\";\nimport { readFileSync } from \"node:fs\";\nimport { fileURLToPath } from \"node:url\";\nimport { readPluginValues } from \"../../../src/contract/keyframe-shape\";\nimport type { AuthoredPluginGroup, AuthoredProperty } from \"../../../src/contract/v5\";\nimport {\n  readBoundGroup,\n  removeKeyframe,\n  setKeyframe,\n  type AuthoredKeyframes,\n} from \"../../../src/domain/authoring/keyframes\";\n\n// Issue #255, follow-up debt from slice E of issue #223. One owner for the question of what a\n// plugin group authors.\n//\n// `contract/keyframe-shape.ts` already declared `readPluginValues` the single reader of the\n// `values` section, and every validation-side consumer asked it. Two did not.\n// `ProjectRuntime.#setKeyframe` read the field off the group and the pure editors read it through\n// the reserved constant, so one authored layout had three readers. All three were typed and all\n// three agreed, which is exactly why no behavioural case in the suite could fail on it: a fourth\n// reader would pass every one of them on the day it was added. The gate is therefore on the source\n// as well, in the `LF-2` idiom.\n//\n// `RA-108` is the one place the three did not already agree, and it is a defect rather than a\n// tidiness argument. Membership was `Object.hasOwn` on the runtime path and `in` in the editor, and\n// an inherited name answers differently to those two.\n\nconst SOURCE_ROOT = fileURLToPath(new URL(\"../../../src/\", import.meta.url));\n\n/** Every file that reads a group's authored values rather than writing the section back. */\nconst READ_SITES = [\"domain/authoring/keyframes.ts\", \"runtime/project-runtime.ts\"];\n\n/**\n * The spellings the duplication used.\n *\n * Written to catch a read off the group rather than any mention of the constant: `withValues` still\n * writes the section through `PLUGIN_VALUES_SECTION`, which is that constant doing its job.\n */\nconst DUPLICATE_VALUE_READS = [\n  { what: \"a direct read of the values field\", pattern: /\\.group\\.values/ },\n  { what: \"a bracketed read of the section\", pattern: /\\.group\\[PLUGIN_VALUES_SECTION\\]/ },\n  { what: \"a local empty-values fallback\", pattern: /values\\s*\\?\\?\\s*\\{\\}/ },\n];\n\n/** A static leaf, so the identity assertions below compare a value rather than a reference. */\nconst LEAF: AuthoredProperty = 3;\n\nconst AUTHORED: AuthoredPluginGroup = Object.freeze({\n  values: Object.freeze({ length: LEAF }),\n  requires: Object.freeze({ base: \"root\" }),\n});\n\n/** The same group with no values section at all, which is how a group authors no property. */\nconst NO_SECTION: AuthoredPluginGroup = Object.freeze({\n  requires: Object.freeze({ base: \"root\" }),\n});\n\nconst WITH_LEAF: AuthoredKeyframes = Object.freeze({ fk: AUTHORED });\nconst WITHOUT_SECTION: AuthoredKeyframes = Object.freeze({ fk: NO_SECTION });\n\nfunction boundOf(keyframes: AuthoredKeyframes) {\n  const bound = readBoundGroup(keyframes, \"fk\");\n  if (bound === undefined) throw new Error(\"fixture authors no fk group\");\n  return bound;\n}\n\nfunction sourceOf(site: string): string {\n  return readFileSync(`${SOURCE_ROOT}${site}`, \"utf8\");\n}\n\ndescribe(\"one owner for authored group values\", () => {\n  it(\"RA-106 answers what a group authors from one reader, in both of its views\", () => {\n    // The typed view hands back the section itself, so a caller that already proved the shape\n    // needs no fallback and no cast of its own.\n    expect(readPluginValues(AUTHORED)).toBe(AUTHORED.values);\n\n    // Absent and malformed are one frozen empty answer, which is what lets every call site spell\n    // membership directly instead of carrying a fallback.\n    expect(readPluginValues(NO_SECTION)).toEqual({});\n    expect(readPluginValues({ values: 3 })).toEqual({});\n    expect(readPluginValues(undefined)).toEqual({});\n    expect(Object.isFrozen(readPluginValues(NO_SECTION))).toBe(true);\n\n    // One body under both signatures, asserted by identity: two readers agreeing today is the\n    // condition this closed, not the invariant it leaves behind.\n    const tolerant: unknown = AUTHORED;\n    expect(readPluginValues(tolerant)).toBe(readPluginValues(AUTHORED));\n  });\n\n  it(\"RA-107 leaves no consumer holding a second reader of the section\", () => {\n    const offenders: string[] = [];\n    for (const site of READ_SITES) {\n      const source = sourceOf(site);\n      for (const { what, pattern } of DUPLICATE_VALUE_READS)\n        if (pattern.test(source)) offenders.push(`${site} still holds ${what}`);\n      if (!source.includes(\"readPluginValues\"))\n        offenders.push(`${site} never reaches the shared reader`);\n    }\n    expect(offenders.sort()).toEqual([]);\n  });\n\n  it(\"RA-108 reads no inherited name as an authored leaf, on either path\", () => {\n    const bound = boundOf(WITH_LEAF);\n\n    // Red on the parent. An inherited name answers true to `in` for every object, so the editor\n    // rewrote the section for a leaf no author wrote and answered with a new record.\n    expect(removeKeyframe(WITH_LEAF, bound, \"toString\")).toBe(WITH_LEAF);\n    expect(Object.hasOwn(readPluginValues(bound.group), \"toString\")).toBe(false);\n\n    // A narrowing rather than a refusal: the leaf the group does author still goes.\n    expect(removeKeyframe(WITH_LEAF, bound, \"length\")).not.toBe(WITH_LEAF);\n\n    // A group with no section is the same no-op, through the same read and with no fallback.\n    const bare = boundOf(WITHOUT_SECTION);\n    expect(removeKeyframe(WITHOUT_SECTION, bare, \"length\")).toBe(WITHOUT_SECTION);\n\n    // The set direction reaches the reader for the other half of the question: a key the group\n    // does not author yet is written, and rewriting the value it already holds is identity.\n    expect(setKeyframe(WITHOUT_SECTION, bare, \"length\", LEAF)).not.toBe(WITHOUT_SECTION);\n    expect(setKeyframe(WITH_LEAF, bound, \"length\", LEAF)).toBe(WITH_LEAF);\n  });\n});\n"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- **Closed, on the state rather than ahead of it.** The runtime authoring surface,",
+      "replace": "- **Landed after that closure, and it is debt rather than a slice.** Authored group values have one reader. `readPluginValues` in `contract/keyframe-shape.ts` already said so and every validation-side consumer asked it, while `ProjectRuntime.#setKeyframe` read the field off the group and the pure editors read it through the reserved constant: one authored layout with three readers, all typed, all agreeing, which is why nothing in the suite could fail on it. The reader gains a typed signature over the same body rather than a second function, so a caller that already proved the shape gets the authored leaf type and the tolerant view stays for an unvalidated document. One place the three did not agree: membership was `Object.hasOwn` on the runtime path and `in` in the editor, so removing `toString` read an inherited name as an authored leaf, rewrote the section and answered with a new record, against the idempotence rule that module states once for every primitive. `RA-106` through `RA-108` are its evidence, the source gate among them for the reason `LF-2` exists, and it earns no ADR: ADR-049 already named the owner and this is the two call sites that did not ask it. [Issue #255](https://github.com/chahyasantoso/motion5/issues/255).\n- **Closed, on the state rather than ahead of it.** The runtime authoring surface,"
+    }
+  ]
+}
