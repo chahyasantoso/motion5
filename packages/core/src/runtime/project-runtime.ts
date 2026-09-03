@@ -8,6 +8,7 @@ import type {
   MotionDefinition,
   TriggerSignal,
 } from "../contract/v5";
+import { readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { StaleMotionHandleError, type MotionHandle } from "../contract/motion-handle";
 import type { SchemaTransaction } from "../contract/schema-transaction";
@@ -938,7 +939,9 @@ export class ProjectRuntime {
     const entry = this.#liveEntry(nodeId, token);
     this.#refuseInsideRecipe("setKeyframe");
     const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
-    if (Object.hasOwn(bound.group.values ?? {}, key))
+    // Asked through the one reader of the section rather than off the field, so this path and the
+    // pure editor cannot disagree about what the group authors. See `RA-106` and issue #255.
+    if (Object.hasOwn(readPluginValues(bound.group), key))
       return this.#writeValues(nodeId, entry, { [key]: value }, true);
     const edited = setAuthoredKeyframe(keyframes, bound, key, value);
     return this.#recompileKeyframes(nodeId, entry, edited, "setKeyframe");
