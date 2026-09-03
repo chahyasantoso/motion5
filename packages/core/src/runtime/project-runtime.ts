@@ -1,17 +1,12 @@
 import type {
-  AuthoredKeyframe,
   AuthoredPluginGroup,
   AuthoredProperty,
-  AuthoredStaticValue,
-  Diagnostic,
   ObservationDefinition,
   ProjectDefinition,
   TrackDefinition,
   MotionDefinition,
   TriggerSignal,
 } from "../contract/v5";
-import { readAuthoredLeaf } from "../contract/authored-leaf";
-import { readPluginBindings } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { StaleMotionHandleError, type MotionHandle } from "../contract/motion-handle";
 import type { SchemaTransaction } from "../contract/schema-transaction";
@@ -27,7 +22,6 @@ import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
 import type { LiveWriteResult } from "../domain/track";
 import type { ResolvedPlugins, TrackConfigView } from "../domain/plugins";
-import { flattenAuthoredKeyframes } from "../domain/keyframe-groups";
 import {
   readBoundGroup,
   readsAsProperty,
@@ -43,6 +37,26 @@ import {
 import { sameCompiledTrackInput } from "../domain/authoring/recompile";
 import { observationEdgeKey } from "../graph/ir";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
+import {
+  describeDiagnostics,
+  immediateInTransaction,
+  nestedTransaction,
+  propertyEntry,
+  reservedGoalSlot,
+  unboundGroup,
+} from "./schema-refusals";
+import { rejectAfterRollback, runRollbackSteps } from "./rollback";
+import {
+  EMPTY_KEYFRAMES,
+  NO_OVERLAY,
+  authoredValues,
+  requireViews,
+  sameTrigger,
+  splitAuthoredValues,
+  withAuthoredValues,
+  withKeyframes,
+  withStagger,
+} from "./authored-values";
 import { Diagnostics, type DiagnosticsSnapshot } from "./diagnostics";
 import { GraphRuntime, type ComposeResolver } from "./graph-runtime";
 import type { GraphNode } from "../graph/ir";
@@ -79,17 +93,6 @@ type MotionEntry = {
   definition: MotionDefinition;
   token: number;
 };
-/** No animated write. One frozen value, so the common entry allocates nothing. */
-const NO_OVERLAY: Readonly<Record<string, unknown>> = Object.freeze({});
-/**
- * No authored record. One frozen value, so a track that authors nothing allocates nothing.
- *
- * Stands in for an absent `keyframes` at the one place a group edit reads it, which is what lets
- * `setKeyframeGroup` originate on a track that authors nothing without a branch, and lets
- * `removeKeyframeGroup` answer by identity on one instead of committing an empty record on the way
- * to removing nothing from it.
- */
-const EMPTY_KEYFRAMES: AuthoredKeyframes = Object.freeze({});
 export interface StagedTrack {
   commit(): void;
   rollback(): void;
@@ -270,298 +273,6 @@ export interface ProjectRuntimeOptions {
   readonly disposeComposition?: () => void;
   readonly diagnosticsCapacity?: number;
   readonly graphBuilder?: GraphBuilder;
-}
-function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
-  return diagnostics
-    .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
-    .join(" ");
-}
-function describeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
-}
-function runRollbackSteps(steps: readonly (() => void)[]): void {
-  const failures: unknown[] = [];
-  for (const step of steps) {
-    try {
-      step();
-    } catch (error) {
-      failures.push(error);
-    }
-  }
-  if (failures.length === 0) return;
-  if (failures.length === 1) throw failures[0];
-  throw new AggregateError(failures, "Track replacement rollback failed.");
-}
-/**
- * Refuses a recipe opened inside a recipe.
- *
- * Joining the open one silently would mean the inner `edit` returns before anything it asked for has
- * committed, so a helper's cost and its guarantees would depend on whether something above it had
- * opened a transaction. That is the invisible-context shape that cut `setMotion`, cut `setTrack` and
- * kept `setKeyframe` separate from `setKeyframeGroup`. See ADR-064.
- */
-function nestedTransaction(): never {
-  const use = "Finish it before opening another.";
-  throw new TypeError(`schema-transaction-nested: A recipe is already open. ${use}`);
-}
-/**
- * Refuses an edit that applies immediately from inside a recipe.
- *
- * Neither tier this reaches is a structural commit: tier 0 reaches the layer that owns the created
- * trigger and the clock consumer, and tier 2 ends at its own `invalidate`. Both therefore apply
- * immediately and would survive an abort. Deferring them into the settle steps was read and refused,
- * because a settle step cannot refuse: it would move `setTrigger`'s failure to after the graph
- * committed and after the retained definition moved, which is the opposite of the contract `RA-35`
- * pins. One condition has one failure contract, so the verb is refused by name inside a recipe
- * rather than given a second, weaker one outside it. See ADR-064.
- */
-function immediateInTransaction(verb: string): never {
-  const detail = `"${verb}" applies immediately and cannot travel with a recipe.`;
-  throw new TypeError(`schema-transaction-immediate: ${detail} Call it outside edit().`);
-}
-/**
- * Refuses a binding edit addressed at a plugin this node authors no group for.
- *
- * The boundary between this tier's two levels, and it is a refusal rather than a creation on
- * purpose. Originating a binding is `setKeyframeGroup`'s job, because a plugin group holding only
- * half its data may be transiently invalid, and one verb whose cost and refusal set depend on
- * whether the group already existed is the shape this project has declined to build three times.
- *
- * Answered from the retained record on this node, so it stays a different question from anything
- * `PluginRegistry` answers about a candidate: whether the plugin exists at all, and whether it
- * declares the slot, belong to the registry and arrive from it at the recompile. See ADR-062.
- */
-function unboundGroup(nodeId: string, plugin: string): never {
-  const use = "Use setKeyframeGroup to originate one.";
-  throw new TypeError(`keyframe-group-unbound: "${nodeId}" authors no "${plugin}" group. ${use}`);
-}
-/**
- * Refuses a binding edit addressed at a solver's goals slot by name.
- *
- * That slot holds one source per chain leaf, and both spellings a caller could reach it with through
- * `setRequire` are wrong in a way this layer can see. Without a member key the verb can only write a
- * scalar there, which `keyframes-targets-shape` refuses at load, so the candidate would be a record
- * the loader rejects. With one it writes the right shape through the wrong verb, and then one
- * question has two mechanisms: `setGoal` is the owner, so the weaker spelling is deleted rather than
- * documented as discouraged.
- *
- * Scoped to the slot rather than to the plugin that happens to own it, because the reservation is
- * about what the slot holds. Every other slot of that same group stays reachable through
- * `setRequire`. See ADR-057 and ADR-063.
- */
-function reservedGoalSlot(plugin: string, slot: string): never {
-  const use = "Use setGoal to bind one entry of it, or removeGoal to drop one.";
-  throw new TypeError(
-    `keyframe-goal-slot-reserved: Slot "${slot}" of "${plugin}" holds a solver's goals. ${use}`,
-  );
-}
-/**
- * Refuses a group edit addressed at a name this node authors as an ordinary property.
- *
- * The entry-level twin of `keyframe-require-shape`, and the primitive's own for the same reason: a
- * plugin name and a keyframe name share one namespace, both shapes are legal there, and nothing
- * below this layer can catch either direction. Writing a group over a property drops every stop the
- * author wrote; removing one deletes a property the caller never named. Crossing an entry's shape is
- * a `replace()`, where a whole definition is validated. See ADR-063.
- */
-function propertyEntry(nodeId: string, plugin: string): never {
-  const use = "Use replace() to change an entry's shape.";
-  throw new TypeError(
-    `keyframe-entry-shape: "${nodeId}" authors "${plugin}" as a property, not a group. ${use}`,
-  );
-}
-/**
- * One derived require list per retained definition, and the residency rule that makes it safe.
- *
- * `handle.requires` derived and froze the whole list on every access, on a getter a devtool polls:
- * reading it n times over one unchanged definition read the authored record n times and allocated n
- * lists that are all the same answer. Keyed on the definition object rather than on the handle, so
- * two handles to one node share one list and no list outlives the definition it came from.
- *
- * Sound on identity because a retained definition never moves in place. `validateTrackDefinition`
- * answers with a deep-frozen clone, every authored edit commits a fresh frozen object, and
- * `IncrementalGraphBuilder` already treats a definition as immutable when it cache-hits on
- * `cached.track === track`, so a memo keyed on anything weaker would be a second opinion about
- * immutability rather than a use of the one this project already holds.
- *
- * Weak, so it retains nothing this runtime has dropped: a cache's residency belongs to the layer
- * that holds it rather than to callers staying in step. See `RA-96` and ADR-058.
- */
-const REQUIRE_VIEWS = new WeakMap<TrackDefinition, readonly RequireView[]>();
-/**
- * The bindings `track` authored, as a handle reports them.
- *
- * `readPluginBindings` is the one reader of the authored group shape and stays the one reader, so
- * this derives nothing: it drops the diagnostics path, which belongs to the layer that cites it, and
- * keeps everything that identifies the binding, `memberKey` included. Total by construction, because
- * that reader answers with an empty list for a record that authors no group. See ADR-044 and ADR-057.
- */
-function requireViews(track: TrackDefinition): readonly RequireView[] {
-  const memo = REQUIRE_VIEWS.get(track);
-  if (memo !== undefined) return memo;
-  const views = Object.freeze(
-    readPluginBindings(track.keyframes ?? {}).map(({ plugin, slot, source, memberKey }) =>
-      Object.freeze({ plugin, slot, source, ...(memberKey === undefined ? {} : { memberKey }) }),
-    ),
-  );
-  REQUIRE_VIEWS.set(track, views);
-  return views;
-}
-/**
- * The authored static values of `track`, flattened, and nothing else.
- *
- * The mask a live write applies is derived from the retained definition rather than accumulated
- * across calls, and that is what makes `handle.definition` and the composition unable to disagree:
- * every static leaf is masked with exactly what the definition says it is, so the key a caller named
- * is the only one that differs, an override cannot outlive the authored value it masked, and an empty
- * record is a clear back to authored truth rather than a hole.
- *
- * An animated leaf is absent by construction, and that is unchanged by the animated key being
- * writable: the mask is still closed to static values, and an animated write travels as an overlay
- * to the interpolator instead.
- *
- * `flattenAuthoredKeyframes` and `readAuthoredLeaf` answer both halves, so nothing here re-derives
- * what a group is or what shape a leaf has. See ADR-049, ADR-050, ADR-059, and ADR-060.
- */
-function authoredValues(track: TrackDefinition): Record<string, AuthoredStaticValue> {
-  const flattened = flattenAuthoredKeyframes(track.keyframes ?? {});
-  const values: Record<string, AuthoredStaticValue> = {};
-  for (const [key, property] of Object.entries(flattened.keyframes)) {
-    const leaf = readAuthoredLeaf(property);
-    if (leaf.kind === "static") values[key] = leaf.value;
-  }
-  return values;
-}
-/**
- * One live write, split into the half a mask can carry and the half only the timeline can.
- *
- * Split by leaf shape, through the one function allowed to answer what shape a leaf has, so this
- * layer holds no second opinion about it. The static half is typed as `LiveValues` because that is
- * what a mask may hold; the animated half travels exactly as authored, because filtering it here
- * would make this a second owner of leaf shape and `contract/authored-leaf` is the only one.
- * See ADR-060.
- */
-interface LiveWriteHalves {
-  readonly statics: LiveValues;
-  readonly animated: Readonly<Record<string, unknown>>;
-}
-function splitAuthoredValues(values: AuthoredValues): LiveWriteHalves {
-  const statics: Record<string, AuthoredStaticValue> = {};
-  const animated: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(values)) {
-    const leaf = readAuthoredLeaf(value);
-    if (leaf.kind === "static") statics[key] = leaf.value;
-    else animated[key] = value;
-  }
-  return { statics, animated };
-}
-/**
- * `track` with `values` written back into the authored record each key came from.
- *
- * The flattened entry carries the group that claimed a leaf, so a grouped value is rewritten inside
- * that group's `values` section and a flat one at the top level. There is no second answer about
- * where an authored key lives: the function that flattened it says so.
- *
- * A key with no flattened entry is skipped rather than invented. It cannot be reached in practice,
- * because `Track` refuses a key that is absent from the resolved authored record before this runs,
- * and inventing a leaf here would make this layer the author.
- */
-function withAuthoredValues(track: TrackDefinition, values: AuthoredValues): TrackDefinition {
-  const flattened = flattenAuthoredKeyframes(track.keyframes ?? {});
-  // Indexed once rather than searched once per written key. The flatten answers with a list because
-  // order is what makes a collision decidable one layer down, and this searched that list per key,
-  // so a three-key write over a thirty-leaf group walked ninety entries to place three. Which record
-  // a key came from is still the flatten's answer: this indexes it rather than re-deriving it. See
-  // `RA-94`.
-  const sources = new Map(
-    flattened.entries.map((candidate) => [candidate.key, candidate] as const),
-  );
-  const keyframes: Record<string, AuthoredKeyframe> = { ...track.keyframes };
-  for (const [key, value] of Object.entries(values)) {
-    const entry = sources.get(key);
-    if (entry === undefined) continue;
-    if (entry.group === undefined) {
-      keyframes[key] = value;
-      continue;
-    }
-    const group = keyframes[entry.group] as AuthoredPluginGroup;
-    keyframes[entry.group] = Object.freeze({
-      ...group,
-      values: Object.freeze({ ...group.values, [key]: value }),
-    });
-  }
-  return Object.freeze({ ...track, keyframes: Object.freeze(keyframes) });
-}
-/** One retained Motion definition, writable, for the two fields a tier 0 edit moves. */
-type MutableMotion = { -readonly [K in keyof MotionDefinition]: MotionDefinition[K] };
-/** One retained track definition, writable, for the one field an authored edit moves. */
-type MutableTrack = { -readonly [K in keyof TrackDefinition]: TrackDefinition[K] };
-/** Builds a track with an edited authored keyframe record, omitting an empty record. */
-function withKeyframes(track: TrackDefinition, keyframes: AuthoredKeyframes): TrackDefinition {
-  const next: MutableTrack = { ...track };
-  if (Object.keys(keyframes).length === 0) delete next.keyframes;
-  else next.keyframes = keyframes;
-  return Object.freeze(next);
-}
-/**
- * Whether two authored triggers are the same trigger.
- *
- * Field by field with `Object.is`, because `MotionDefinition.trigger` is structurally open by design
- * and a caller that rebuilt the record it already had is asking for nothing. Reference equality
- * alone would make a redundant edit depend on whether the caller kept its object, and a deep walk
- * would be a second opinion about a shape whose fields are the primitives `validateMotionTrigger`
- * has just accepted. An extension key holding an object therefore reads as a change, which is the
- * safe direction: the edit runs rather than being skipped.
- */
-function sameTrigger(
-  current: MotionDefinition["trigger"],
-  next: MotionDefinition["trigger"],
-): boolean {
-  const fields = new Map<string, unknown>(Object.entries(next));
-  const entries = Object.entries(current);
-  if (entries.length !== fields.size) return false;
-  return entries.every(([key, value]) => fields.has(key) && Object.is(fields.get(key), value));
-}
-/**
- * `definition` with its stagger at `stagger`, and with the field absent when that is undefined.
- *
- * A cleared stagger leaves no key behind, because the authored field is optional and a Motion
- * reporting `stagger: undefined` would answer a shape no author can write. Copied and deleted from
- * rather than rebuilt out of named fields, so a definition carrying anything else keeps it.
- */
-function withStagger(definition: MotionDefinition, stagger: number | undefined): MotionDefinition {
-  const next: MutableMotion = { ...definition };
-  if (stagger === undefined) delete next.stagger;
-  else next.stagger = stagger;
-  return Object.freeze(next);
-}
-/**
- * Rejects an operation whose rollback can fail on its own.
- *
- * Every structural commit rolls back through hooks that reach application code: the `destroyMotion`
- * hook disposes a `CreatedTrigger` whose `dispose` closes over a host-owned `ScrollSource`
- * unsubscribe, and `disposeTrack` disposes a compiled `Track`. A host whose teardown throws must
- * not be able to replace the diagnosis with its own unrelated failure.
- *
- * Suppress and attach, never suppress and drop. When the rollback succeeds the rejection is
- * rethrown untouched, so every existing message and error type contract holds, including the two
- * categories that have nothing to revert at all. When it fails, one error carries both, which is
- * the collect-then-report-once shape `Engine`'s clock consumer fanout already uses, so no new
- * failure shape is invented here. See ADR-035.
- */
-function rejectAfterRollback(rejection: unknown, rollback: () => void): never {
-  try {
-    rollback();
-  } catch (rollbackFailure) {
-    // The rejection's message comes first, verbatim, so a caller that anchored on it before a
-    // rollback could fail still matches it. Both facts stay first-class in `errors`, in the order
-    // they happened, and the rejection itself is not mutated: it is thrown from the graph layer,
-    // which does not own this failure and should not look like it does.
-    const errors = [rejection, rollbackFailure];
-    const detail = describeError(rollbackFailure);
-    throw new AggregateError(errors, `${describeError(rejection)} Rollback failed: ${detail}`);
-  }
-  throw rejection;
 }
 export class ProjectRuntime {
   readonly #project: ProjectDefinition;

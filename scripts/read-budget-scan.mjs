@@ -13,7 +13,9 @@ const scannedExtensions = [".ts", ".tsx"];
  * `8b17cce` bound that cap: `docs/IMPLEMENTATION-PLAN.md` at 46,466 bytes and
  * `docs/SESSION-STATUS.md` at 77,978 both arrived whole, and
  * `packages/core/src/runtime/project-runtime.ts` at 103,657 truncated inside a docblock, taking
- * `#assertLive` with it. The cap therefore sits above 77,978 and at or below 103,657.
+ * `#assertLive` with it. A fourth read, after slice 2 split that file, asked for it again at 87,615
+ * bytes and it arrived whole, so the cap sits above 87,615 and at or below 103,657. The floor is
+ * measured on source rather than on prose now, which is the side of it this budget is about.
  *
  * The number is bounded from both sides rather than chosen. It is below the largest size measured
  * to survive a read, because the cap is a response limit rather than a byte limit and dense
@@ -45,7 +47,7 @@ export const READ_BUDGET_BYTES = 60_000;
 export const READ_BUDGET_EXCEPTIONS = [
   {
     path: "packages/core/src/runtime/project-runtime.ts",
-    ceiling: 103_657,
+    ceiling: 87_615,
     issue: 267,
   },
 ];
