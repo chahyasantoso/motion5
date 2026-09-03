@@ -46,6 +46,18 @@ So read the region before you write the request, and quote enough of it to be un
 
 A request is all or nothing. Every edit is validated against the file content as the earlier edits in the same request left it, and nothing is written unless all of them pass. A partially applied request is the one outcome this workflow will not produce.
 
+## Reading the region, and the asymmetry this contract has
+
+The rule above says read the region before you write the anchor, and it does not say how a region is read, because there is no way to read one. A contents read is whole-file or prefix: no offset, no line window, and no second call that returns the part the first one dropped. A file past the response cap arrives truncated, and its tail is not late, it is unreachable.
+
+That is the asymmetry, and it is the whole of why this section exists. The write side is size-independent by construction, because you never write the file back. The read side is size-bound with no lever except the size of the file itself, which is the one variable in the loop that anybody controls.
+
+Code search is a locator rather than a reader, and it does not close the gap. It will tell you a symbol exists and print a few lines around it, and it will not hand you the region: it caps fragments per file and answers against the indexed default branch, so on the working branch you are editing it is stale or blind.
+
+The consequence for the anchor rule is exact. An anchor must match exactly once **in the file**, and a truncated read cannot establish that. It can only establish uniqueness across the prefix that arrived. An anchor unique in the prefix and repeated in the invisible tail comes back as the two-match refusal, which fails safe and costs one round trip. An anchor that genuinely is unique applies cleanly, all-or-nothing, exactly as designed, while the reasoning behind the edit was checked against a prefix. The write pass validates the anchor against the whole file, and nothing validates the edit against the part you never read, so every safety property here stays intact while checking a different thing.
+
+**A file that does not survive one read may not be edited by anchor. Split it first.** `npm run test:read-budget` is how you find out which side of that line a file is on, and `scripts/read-budget-scan.mjs` carries the measured numbers, the budget they justify, and every file still over it.
+
 ## What it will not do
 
 It refuses any path under `.git/`, `node_modules/`, `.ai/`, and `.github/workflows/`. A workflow with repository-write power that can rewrite workflows is a different and much larger permission, so an edit to CI is a normal pull request reviewed by a human.

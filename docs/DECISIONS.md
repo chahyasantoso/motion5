@@ -98,6 +98,10 @@ Before introducing a flag, alias, facade, second owner, compatibility path, new 
 
 **Consequences.** Review must explain architecture, while tests prove behavior. A banned symbol scan may enforce a boundary, but it cannot replace an integration test.
 
+**Amended, 2026-09-03 (issue #267).** A byte budget on a source file belongs to the allowed family above rather than being an exception to it, and the amendment is recorded here because the context above names a non-shrinking file allowlist as one of the things this record refuses. Neither hazard that sentence describes reaches a read budget. It cannot be green while the runtime is wrong, because it makes no claim about the runtime at all, and it cannot block a legitimate deletion, because every deletion moves a file the way the budget wants. What it measures is not a proxy for correctness: it is the toolchain precondition an anchor-based edit already depends on, which puts it beside import boundaries and mechanical formatting rather than beside a comment ratio. The measured evidence is that `packages/core/src/runtime/project-runtime.ts` truncates on a single contents read, so an implementor with no local checkout can edit a method by anchor without ever seeing an invariant written earlier in the same file.
+
+**The warning about allowlists is kept rather than argued with.** A waiver in `scripts/read-budget-scan.mjs` carries the file's exact current size as a ceiling it may not exceed, so the list can only shrink, and an expiry date the scan fails on by itself, so a waiver is deleted by a check rather than renewed by silence. A waiver with neither property is the gate this record was right to refuse. A comment ratio stays refused outright and is not what this measures: 43 percent of that file being comment is a symptom, and a percentage adopted as a target is met by deleting whichever comments are easiest rather than whichever are redundant.
+
 ## ADR-009: No demos in this repository
 
 **Status:** Accepted, 2026-08-10

@@ -277,10 +277,20 @@ import { fileURLToPath } from "node:url";
 // under the policy the `P-` paragraph sets, and `R-` alone is the progress range fix. It sorts
 // before `R` in the pattern below, because an alternation that offered `R` first would match `R`
 // and then fail on the `A`.
+//
+// `RB-` belongs to the read budget on a source file, issue #267: that a file over the measured
+// budget is refused, that a file carrying a recorded waiver is held to its own ceiling instead,
+// that the waiver expires on a date rather than by review, and that a scan which found nothing
+// says so rather than answering clean. Every series above owns something the runtime does or
+// something a caller is told; `RB-` owns whether the file that states an invariant can be read at
+// all by the implementor about to edit it, which is a question none of them ask. It is the
+// eighteenth two-letter series, under the policy the `P-` paragraph sets, and `R-` alone is the
+// progress range fix. It sorts before `R` in the pattern below, because an alternation that
+// offered `R` first would match `R` and then fail on the `B`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const CASE_TITLE =
-  /it\(\s*"((?:CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PK|PV|RA|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PK|PV|RA|RB|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
