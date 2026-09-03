@@ -1013,18 +1013,16 @@ export class ProjectRuntime {
           },
           revert: () => staged?.rollback(),
         });
-      // Republish the displaced compiled Track before restoring Motion: its restore call resolves
-      // and seeds by id, so the old instance must already be live. Reverts run in apply order,
-      // which is what puts the staging rollback above ahead of this one. See ADR-031 and ADR-045.
+      // Republish the displaced compiled Track before restoring Motion, which is what reverts
+      // running in apply order buys. See ADR-031 and ADR-045.
       if (motionId !== undefined)
         effects.push({
           apply: () => this.#replaceMotionTrack?.(motionId, nodeId, next.duration),
           revert: () => this.#replaceMotionTrack?.(motionId, nodeId, previous.duration),
         });
       settle.push(() => staged?.commit());
-      // The edited node, and only it. Every node whose incoming edge set moved is downstream of
-      // this one, and the publisher walks dependents from the seed, so naming it is sufficient.
-      // `addObserve` and `removeObserve` route through here, which is what makes them publish.
+      // The edited node, and only it: the publisher walks dependents from the seed, so naming it is
+      // sufficient. `addObserve` and `removeObserve` route through here, which makes them publish.
       touched.push(nodeId);
     }
     return { effects, settle, touched };
@@ -1044,37 +1042,29 @@ export class ProjectRuntime {
   /**
    * The one live-value write path.
    *
-   * `rebase` is the only difference between the two entry points: an override leaves the retained
-   * definition alone and a `setValues` rewrites it, and the same boolean is what makes the animated
-   * half sticky or revertible at the interpolator. Which keys are legal, what the live Track is
-   * written with, when the graph is invalidated, and where the diagnostics go are all shared, so the
-   * two cannot answer differently, invalidate twice, or record in two places. It is also what names
-   * the verb in the recipe refusal, so the two entry points refuse under their own names without a
-   * second guard.
+   * `rebase` is the only difference between the two entry points, which is ADR-060's decision: an
+   * override leaves the retained definition alone and a `setValues` rewrites it, and at the compiled
+   * Track it is one boolean. Everything else is shared, so the two cannot answer differently,
+   * invalidate twice, or record in two places, and the same boolean names the verb in the recipe
+   * refusal.
    *
    * Tier 2, and refused inside a recipe for the reason tier 0 is: it ends at its own `invalidate`,
-   * so it publishes inside the recipe and would survive an abort. See `RA-68` and ADR-064.
+   * so it would survive an abort. See `RA-68` and ADR-064.
    *
    * Order, and it is load-bearing. Validate the rewritten definition when an animated key is named,
-   * because an authored stop list is definition-shaped input and `validateKeyframes` owns its shape.
-   * Then write through the one hook, which is where every key is classified and refused, so a
-   * refusal throws from the layer holding the resolved plugins with nothing written here. Then
-   * rewrite the retained entry and its overlay, escalate if the hook declined, and end at one
-   * `invalidate`. Nothing can observe the gap, because no flush happens until that invalidate.
+   * then write through the one hook, which is where every key is classified and refused, then rewrite
+   * the retained entry and its overlay, escalate if the hook declined, and end at one `invalidate`.
+   * Nothing can observe the gap, because no flush happens until that invalidate.
    *
    * Not a `#commit` caller, and it must not become one: topology did not change, so there is no
-   * candidate graph to accept and nothing to roll back. It reaches the same `invalidate` a commit
-   * now ends at, from the other tier, which is the one thing the two paths have ever shared.
-   *
-   * A static-only write validates nothing and builds nothing, which keeps its cost exactly what it
-   * was. No `replaceGraph` on either path. See ADR-059 and ADR-060.
+   * candidate graph to accept and nothing to roll back. A static-only write validates nothing and
+   * builds nothing. No `replaceGraph` on either path. See ADR-059 and ADR-060.
    */
   #writeValues(nodeId: string, entry: TrackEntry, values: AuthoredValues, rebase: boolean) {
     this.#refuseInsideRecipe(rebase ? "setValues" : "overrideValues");
     const { statics, animated } = splitAuthoredValues(values);
     // An animated key is involved when this call names one, and also when the last one did: a
-    // revert names no key at all, so the retained overlay is what keeps `overrideValues({})` from
-    // being read as a static-only write that leaves a patched timeline patched.
+    // revert names no key at all, which is what the retained overlay is for. See ADR-060.
     const involved = Object.keys(animated).length > 0 || Object.keys(entry.overlay).length > 0;
     const rewritten = rebase || involved ? withAuthoredValues(entry.track, values) : entry.track;
     if (involved) {
@@ -1088,11 +1078,9 @@ export class ProjectRuntime {
       track: rebase ? rewritten : entry.track,
       overlay: animated,
     });
-    // The escalation, and it is neither `#replaceTrack` nor `replaceGraph`. Topology did not change,
-    // and the compiled definition is allowed to differ from the retained one, which is what an
-    // override already is. A fresh Track starts at progress 0 and nothing in this path re-seeks, so
-    // the one line that restores it is here, in the only path that escalates, rather than bolted on
-    // top of a path that resets it. See ADR-060.
+    // The escalation, and it is neither `#replaceTrack` nor `replaceGraph`: topology did not change
+    // and the compiled definition is allowed to differ from the retained one. The re-seek is here
+    // because this is the only path that escalates. See ADR-060.
     if (written !== undefined && !written.patched) {
       this.#stageTrack?.(rewritten, nodeId)?.commit();
       this.#setProgress(nodeId, written.progress);
@@ -1105,14 +1093,12 @@ export class ProjectRuntime {
    * The bound-group precondition every authored edit shares, and the one owner of it.
    *
    * A plugin this node authors no group for is `keyframe-group-unbound`, which is
-   * `setKeyframeGroup`'s job in the structural tier and is what buys the cheap price in the
-   * value tier: a bound group's plugin is already in the chain, so a leaf added to it can
-   * neither add a composer nor move one. A name this node authors as an ordinary property is
-   * not a group either, and that is `readBoundGroup`'s answer rather than a second shape check
-   * here.
+   * `setKeyframeGroup`'s job in the structural tier and is what buys the cheap price in the value
+   * tier, for ADR-065's reason. A name this node authors as an ordinary property is not a group
+   * either, and that is `readBoundGroup`'s answer rather than a second shape check here.
    *
-   * It answers with the record beside the group, so no caller re-reads `entry.track.keyframes`
-   * after the refusal has already proved it is there. See ADR-062 and ADR-063.
+   * It answers with the record beside the group, so no caller re-reads `entry.track.keyframes`.
+   * See ADR-062, ADR-063 and ADR-065.
    */
   #boundGroup(
     nodeId: string,
@@ -1133,9 +1119,9 @@ export class ProjectRuntime {
   /**
    * Recompiles one edited authored record in place, preserving this node's playhead.
    *
-   * Validation and the registry resolve both run before the live Track is touched. The read through
-   * `writeValues` then supplies the progress the existing Track owns, and the staged replacement is
-   * re-seeked after it becomes live. No graph operation is involved because a leaf carries no edge.
+   * Validation and the registry resolve both run before the live Track is touched, and the staged
+   * replacement is re-seeked to the progress the displaced one owned, which is ADR-065's. No graph
+   * operation is involved because a leaf carries no edge. See ADR-065.
    */
   #recompileKeyframes(
     nodeId: string,
@@ -1166,10 +1152,10 @@ export class ProjectRuntime {
   /**
    * Edits one property of a plugin group this node already authors.
    *
-   * An existing leaf goes through the live-write owner, preserving its per-key refusal ordering. A
-   * new or removed leaf cannot be expressed as a mask, so the authored candidate is validated,
-   * resolved, and recompiled in place instead. The bound-group precondition keeps every path in the
-   * value tier: the plugin is already in the chain and no edge can move.
+   * Two paths, chosen by whether the group already authors the key, which is ADR-065's: an existing
+   * leaf goes through the live-write owner, and a new or removed one cannot be expressed as a mask,
+   * so the authored candidate is validated, resolved and recompiled in place instead. The
+   * bound-group precondition keeps both in the value tier. See ADR-065.
    */
   #setKeyframe(
     nodeId: string,
@@ -1206,11 +1192,9 @@ export class ProjectRuntime {
     const index = observations.findIndex(
       (candidate) => observationEdgeKey(candidate, id, entry.motionId ?? "~") === key,
     );
-    // Idempotent observation semantics, not a stale guard. Adding an edge that is already declared
-    // and removing one that is not are both no-ops on a live handle, which is a different question
-    // from whether the handle is the live one at all: that was answered above. Nothing is committed
-    // on either no-op, so nothing is flushed either, and inside a recipe nothing is staged, which is
-    // what lets a recipe of nothing but no-ops end without a candidate build. See `RA-66`.
+    // Idempotent observation semantics rather than a stale guard, which was answered above. Neither
+    // no-op commits anything, so neither flushes and neither stages inside a recipe, which is what
+    // lets a recipe of nothing but no-ops end without a candidate build. See `RA-66`.
     if (add) {
       if (index >= 0) return;
       observations.push(observation);
@@ -1225,31 +1209,16 @@ export class ProjectRuntime {
    * verbs follow.
    *
    * Staleness first, through the resolver every member of the handle reads. Then the unbound-group
-   * refusal, which is answered from the retained record on this node and is a different question
-   * from anything the registry answers about a candidate. Then the edit, which is where a slot the
-   * caller named is checked against the one reservation this surface has and where the pure editor
-   * that knows the group layout runs. Then the redundant edit, by identity, because the pure layer
-   * returns the record it was given when nothing changed and comparing anything else would be a
-   * second opinion about whether an edit happened. Then the commit.
-   *
-   * The goals-slot reservation sits inside the edit rather than ahead of it, and that order is the
-   * honest one: it answers about a slot of a group this node authors, so the group has to exist for
-   * the question to be about anything at all. A `setRequire` at that slot on a node authoring no
-   * such group is `keyframe-group-unbound`, which names the primitive that would originate one.
+   * refusal, answered from the retained record on this node. Then the edit, where the one reservation
+   * this surface has is checked and the pure editor runs. Then the redundant edit, by identity,
+   * because the pure layer returns the record it was given when nothing changed. Then the commit.
+   * Why the reservation sits inside the edit rather than ahead of it is ADR-063's.
    *
    * `#replaceTrack` rather than a plan of its own, for the reason `#replaceWithObservation` already
    * routes there: a binding edit is a candidate the graph accepts or refuses, which is exactly the
-   * transaction `#commit` owns, and a sixth copy of that ordering is what A1 deleted. What this
-   * primitive is not is `replace()` at the call site, where a caller hands in a whole definition and
-   * has to have decided every other field of it already.
-   *
-   * So the price is one candidate build, one edge delta and one flush, and there is no fast lane
-   * missing: a binding adds, removes or redirects a `GraphEdge`, which is the boundary the value tier
-   * is forbidden to cross. What it no longer pays is the timeline build on the far side of that
-   * boundary, because a binding edit changes no compiled property; the resolve it does pay is the
-   * validation rather than an expense, because `compileTrack` reuses a live entry and never asks the
-   * registry. Inside a recipe it is structural, so it travels with the transaction and costs its
-   * share of one commit. See ADR-045, ADR-062 and ADR-064.
+   * transaction `#commit` owns. So the price is one candidate build, one edge delta and one flush,
+   * and there is no fast lane missing, which is ADR-062's amendment. Inside a recipe it is
+   * structural, so it travels with the transaction. See ADR-045, ADR-062 and ADR-063.
    */
   #editRequire(
     id: string,
@@ -1292,15 +1261,12 @@ export class ProjectRuntime {
    * Binds one entry of a solver's goals slot, addressed by the member id it is authored under.
    *
    * The same tier, the same owner of order and the same pure editor as `setRequire`, with the slot
-   * fixed rather than named. That is the whole of what the verb buys: the caller cannot reach the
-   * scalar spelling of the slot, which the loader refuses as `keyframes-targets-shape`, and one slot
-   * has one verb rather than two that would have to stay in agreement. No editor of its own, because
-   * a dict entry is a dict entry and `setRequire` already owns what one is. See ADR-057 and ADR-063.
+   * fixed rather than named, which is the whole of what the verb buys and is ADR-063's. No editor of
+   * its own, because a dict entry is a dict entry and `setRequire` already owns what one is.
    *
-   * Whether the member id names a leaf of this solver's chain, whether two spellings name one
-   * member, and whether the solver also bound the bare goal slot are all `resolveSolvers`' questions.
-   * They arrive from the candidate graph and roll the commit back, rather than being asked here,
-   * because a per-primitive copy of them is a second owner that can disagree with the loader.
+   * Whether the member id names a leaf of this solver's chain is `resolveSolvers`' question, asked
+   * of the candidate graph rather than here, because a per-primitive copy is a second owner that can
+   * disagree with the loader. See ADR-057 and ADR-063.
    */
   #setGoal(id: string, token: number, plugin: string, memberId: string, source: string): void {
     this.#editRequire(id, token, plugin, (keyframes, bound) =>
@@ -1316,21 +1282,14 @@ export class ProjectRuntime {
    * One whole-group edit, and the one owner of the order both group verbs follow.
    *
    * Staleness first, through the resolver every member of the handle reads. Then the property-entry
-   * refusal, which is answered from the retained record on this node and is the only thing about a
-   * group edit that no other layer can see: a plugin name and a keyframe name share one namespace,
-   * so writing a group over an authored property would drop every stop the author wrote and removing
-   * one would delete a property the caller never named. Then the pure edit, which is the only thing
-   * that knows the group layout and which refuses `keyframe-group-shape` rather than committing a
-   * husk. Then the redundant edit, by identity. Then the commit.
+   * refusal, which is the only thing about a group edit no other layer can see, because a plugin name
+   * and a keyframe name share one namespace. Then the pure edit, which knows the group layout and
+   * refuses `keyframe-group-shape` rather than committing a husk. Then the redundant edit, by
+   * identity. Then the commit. Both refusals are ADR-063's.
    *
-   * An absent record reads as one frozen empty one, which is what lets `setKeyframeGroup` originate
-   * on a track that authors nothing with no branch here, and lets `removeKeyframeGroup` answer by
-   * identity on it rather than committing an empty record on the way to removing nothing.
-   *
-   * No registry question is asked and none is missing: whether the plugin exists, whether it claims
-   * each leaf of the group's `values`, and whether it declares each bound slot all arrive from
-   * `PluginRegistry` at the resolve this commit pays, which is where a candidate is validated
-   * rather than where an expense is incurred. See ADR-062.
+   * An absent record reads as one frozen empty one, which lets `setKeyframeGroup` originate on a
+   * track that authors nothing with no branch here. No registry question is asked and none is
+   * missing: they all arrive at the resolve this commit pays. See ADR-062 and ADR-063.
    */
   #editGroup(
     id: string,
@@ -1355,11 +1314,9 @@ export class ProjectRuntime {
    * Writes an edited authored record back onto `track` and commits it as a replacement.
    *
    * The one owner of what an authored edit leaves behind, so the six verbs in this tier cannot
-   * disagree about it. A record that ends up holding nothing loses the key rather than being
-   * committed as `{}`, on the rule the pure layer already follows two levels down: omitting a slot is
-   * how a section binds nothing, omitting the section is how a group binds nothing, and omitting
-   * `keyframes` is how a track authors nothing. An edit may not leave behind a shape that is legal
-   * only because nothing refuses it. See ADR-063.
+   * disagree about it: a record that ends up holding nothing loses the key rather than being
+   * committed as `{}`, which is ADR-063's one rule at four levels. An edit may not leave behind a
+   * shape that is legal only because nothing refuses it. See ADR-063.
    */
   #writeKeyframes(
     id: string,
