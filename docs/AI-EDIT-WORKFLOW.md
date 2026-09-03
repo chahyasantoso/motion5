@@ -54,7 +54,7 @@ Setting `dry_run` to `true` runs the validation pass and stops one line above th
 
 It exists for one property, and it is the one the anchor rule already needs. An anchor must be unique in the file, and a file large enough to truncate on read cannot be checked for that: you verify uniqueness across the prefix you received and then assert it over bytes you never saw. The count reported here is taken against the file on disk, so a dry run answers the question your own read cannot. Spend the round trip on any request whose anchors came out of a read you are not certain was complete.
 
-The report names the anchor count per file and the size each file would end up at, measured before the formatter. Those sizes are what let you check a change against a byte budget before you spend the write.
+The report names the anchor count per file and the size each file would end up at, measured before the formatter. Those sizes are what let you check a change against the read budget below before you spend the write.
 
 Everything else refuses exactly as it would on a real run: a path this workflow may not touch, two modes on one edit, a `create` over a file that exists, a `delete` of a file that is not there, a `message` that is not a single line. A clean dry run means the request is valid, not merely that its anchors are unique.
 
@@ -63,6 +63,32 @@ Two things about it are easy to get wrong. A dry run **consumes its request**, t
 The `[skip ci]` on that subject is honest for the same reason the subject is fixed. The only path in a dry run's commit is the request it consumed, so the content diff is empty by construction, and every `CI` job would install a toolchain to re-verify a tree it has already verified. Because the subject is not yours, no request can put the directive on a commit that does change files. One consequence to know rather than discover: if a dry run is the last commit before a merge, the required contexts never report on that head and the pull request sits. `ci.yml` has `workflow_dispatch`, so dispatch `CI` by hand from the Actions tab.
 
 One trap. A branch whose `scripts/apply-ai-edit.mjs` predates this flag ignores unknown request keys, so `dry_run` there is silently a real apply. Read the report and confirm it says dry run before you believe nothing was written.
+
+## The read budget
+
+This document owns the rule, `scripts/read-budget-scan.mjs` owns the numbers and the check, and the `read-budget` job in `CI` is what runs it. The amendment to ADR-008 in [DECISIONS.md](./DECISIONS.md) records why a gate of this shape is allowed at all.
+
+**No file under `packages/core/src` may exceed 60,000 bytes, markdown included.** The rule that follows is the one that concerns you directly: a file that does not survive one contents read may not be edited by anchor. Not because the anchor is likely to be wrong, but because you cannot tell whether it is. A truncated read carries no error and no marker, so a prefix is handed to you as though it were the file, and the primitive has no offset and no line window that would let you ask for the rest. Code search does not close the gap either, because it answers against the indexed default branch rather than the branch you are editing, so it locates a symbol and cannot hand over a region.
+
+That is the whole of the motivation, and it is a correctness property rather than a style rule. The measured case is `packages/core/src/runtime/project-runtime.ts` at 103,657 bytes, which truncated inside a docblock and took `#assertLive` with it, the private guard every public verb in that class calls first. An implementor could have rewritten a method by anchor without ever seeing it.
+
+**A source over 30,000 bytes keeps its private reasoning in a sibling document, `x.ts` beside `x.md`.** The trigger is half the budget, which is headroom rather than a second measurement: a file at the trigger can double its prose before it reaches the budget, and one over the budget has nowhere to put it. The path is derived by swapping one extension, so a reader holding a source path already holds the document path, with no index and no naming decision per file. Read the document before the source rather than after it: it hands over the member list in declaration order, which is what makes a source read that truncates later merely inconvenient instead of dangerous.
+
+Four conventions make the pair checkable, and the scan fails a violation of any of them. The source names its document, as a `// Docs: ./x.md` line. Every level-two heading in the document names something the source declares. Those headings are in declaration order. And the mirrored source carries no private docblock at all, which is the one-directional half that makes the move total: with no second place for the reasoning to sit, there is nothing for the document to drift against.
+
+What stays in the source is as deliberate as what leaves it. A docblock on the exported surface stays, because TypeScript carries it into the declaration file and into editor hover, so moving one deletes an API doc rather than relocating it. A comment explaining the statement on the next line stays too. Only the private surface moves: `#` members, file-local types, and a `function` or `const` the module does not export, including one a single function owns as a closure.
+
+Be clear about what the gate proves, because it is less than it looks. It proves the source is empty, not that the document is complete. Completeness needs a judgement about which member deserves prose and is not decidable by a scan, while a mirrored source carrying no private docblock is total and mechanical. A heading whose prose quietly stopped being true is the residual risk, and it is written down here rather than claimed away.
+
+A file over budget today gets a waiver with a ceiling rather than a bare path, so it may shrink and may not grow, and the slice that splits it lowers the number in the same commit. A source that owes a document and does not have one yet gets an entry in the pending list, and that list has teeth in the other direction: an entry the tree no longer needs is itself a violation, so a file that gained its document, shrank under the trigger, or stopped existing fails the scan by carrying a stale entry. Neither list carries a removal date. A date does not shrink a file, it fails the build on a morning nobody picked, and it is satisfied by editing the date. Both lists are empty right now, which means the next file to cross a line gets an entry rather than a new mechanism, and raising the budget to make a file fit is not one of your options.
+
+## What this asks of you, given that you cannot run it
+
+You cannot run `npm run test:read-budget`, and you cannot detect the condition it measures, which is the reason the numbers are written into prose here and in [AGENTS.md](../AGENTS.md) instead of living only in the script. The gate runs where there is a checkout. Acting on the rule before it fires is your half.
+
+Three things follow, and all of them are cheap. Check the size of a file before you anchor into it, because a read that arrived at or near the budget is a read you should not trust for uniqueness. Keep the split or the sister doc in the same request as the slice that pushes a file past a line, rather than leaving a follow-up nobody scheduled. And when a document and its source both change, remember the scan reads markdown under the scanned root too: a pair whose document loses its tail is the original bug with an extra file in it.
+
+A member moving to a new file takes its section into that file's sister document. That is the same rule one indirection out, and it is the one a mechanical extraction breaks most often, because a docblock is part of the thing it sits above: a request that moves a member either moves the prose with it or leaves the member where it is.
 
 ## What it will not do
 
