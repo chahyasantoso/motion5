@@ -1,3 +1,4 @@
+// Docs: ./validate-v5.md
 import {
   AUTHORED_SCHEMA_VERSION,
   type Diagnostic,

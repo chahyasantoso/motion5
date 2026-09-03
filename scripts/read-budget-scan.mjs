@@ -76,7 +76,6 @@ export const READ_BUDGET_EXCEPTIONS = [];
  * it is stronger than a date, because a date cannot tell whether the work happened.
  */
 export const SISTER_DOC_PENDING = [
-  { path: "packages/core/src/contract/validate-v5.ts", issue: 267 },
   { path: "packages/core/src/domain/plugins.ts", issue: 267 },
   { path: "packages/core/src/engine.ts", issue: 267 },
   { path: "packages/core/src/graph/ir.ts", issue: 267 },
