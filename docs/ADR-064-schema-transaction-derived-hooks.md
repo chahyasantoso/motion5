@@ -65,3 +65,17 @@ Every case failed on an assertion in the red run rather than on a call that coul
 ## Follow-up
 
 `docs/guide/api-reference.md` names no `edit(recipe)` and no `SchemaTransaction`, and `docs/guide/errors-and-diagnostics.md` enumerates neither `schema-transaction-nested` nor `schema-transaction-immediate`. Both join the guide debt `docs/SESSION-STATUS.md` already tracks.
+
+## Amendment, 2026-09-02: the narrowing was never the enforcement
+
+One sentence of the decision above is wrong about the run, and it is the one saying that `mount`, `seek`, `subscribe` and `dispose` "are not reachable through it". They are not members of `SchemaTransaction`, which is all a narrowing can say. A recipe closes over the `ProjectHandle` its caller called `edit` on, so the same caller reaches every one of them from inside the recipe, and `#refuseInsideRecipe` was asked by tier 0 and tier 2 alone.
+
+`seek`, `mount`, `unmount`, `invalidate` and `signal` all publish or mount immediately and survive an abort, which is the shape `schema-transaction-immediate` exists for, so all five refuse by name now. The refusal, the rule id and the mechanism are unchanged. What changes is who asks.
+
+Deferring them was refused a second time, on a reason the original decision did not need. `mount` answers with the instance, `seek` and `invalidate` answer with the `PatchBatch` the caller reads, and `signal` refuses an unknown motion id, so a deferred call would have to answer with a batch describing a publication that has not happened, which is one boolean meaning two incompatible things one level up. `unmount` is the single member of the five that could be deferred honestly, and deferring one of five is the two-failure-contracts defect this amendment closes.
+
+Two consequences. `#mountNode` becomes the one owner of attaching a member, because the settle step mounted through the public verb and stayed outside its guard only by the ordering of the `finally` in `edit`, and an internal caller kept out of a public refusal by the ordering of a `finally` in another method is not a thing to leave standing. And `signal` moves onto `ProjectRuntimeOptions.signalMotion`, beside `replaceMotionTrigger` and `setMotionStagger`, because it lived in a closure over the engine's Motion map where the owner of this rule cannot be asked; the unknown-motion refusal stays in that layer verbatim, and `createHandle` loses the parameter that carried it.
+
+`subscribe`, `get`, `adopt`, `destroyAdopted` and `dispose` stay reachable, each for its own reason. A listener is the caller's own object and taken inside a recipe it receives the commit's flush. A read of the last published patch is truthful while a recipe is open, because nothing has published. The two structural verbs compose into the one commit exactly as `addTrack` does, which is what shows the narrowing was documentation rather than a fence. Teardown has to be reachable from a `catch`. And a host clock ticked from inside a recipe still publishes, which is out of reach rather than allowed: this slice refuses what the handle can reach.
+
+Evidence `RA-79` through `RA-85` in `packages/core/test/unit/runtime/immediate-verb-refusal.test.ts`, with the accepting direction asserted in the same rig for every refusal.

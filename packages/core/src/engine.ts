@@ -48,10 +48,11 @@ export interface ProjectHandle {
    * `n` of each. A throw inside the recipe commits nothing, reaches no hook, and issues no live
    * handle, because only the commit registers a handle's token; the throw travels verbatim.
    *
-   * `SchemaTransaction` is the narrowed surface the recipe is handed, and the narrowing is the point:
-   * `mount`, `seek`, `subscribe` and `dispose` are not reachable through it, because none of them is
-   * a structural change and none of them can be undone by a recipe that throws. A tier 0 or tier 2
-   * edit reached through a handle refuses by name inside a recipe for the same reason.
+   * `SchemaTransaction` is the narrowed surface the recipe is handed, and it is a surface rather than
+   * a fence: the recipe closes over this handle too. So a verb that applies immediately and would
+   * survive an abort refuses by name with `schema-transaction-immediate` while a recipe is open,
+   * whether it is reached through a handle or through this object. That is both in-place tiers, plus
+   * `mount`, `unmount`, `seek`, `invalidate` and `signal`.
    * See ADR-064.
    */
   edit<T>(recipe: (transaction: SchemaTransaction) => T): T;
@@ -86,15 +87,12 @@ interface CompilableTrack {
   readonly keyframes?: Readonly<Record<string, unknown>>;
 }
 type RuntimeLike = ProjectRuntime;
-function createHandle(
-  runtime: RuntimeLike,
-  signal: (motionId: string, signal: TriggerSignal) => void,
-): ProjectHandle {
+function createHandle(runtime: RuntimeLike): ProjectHandle {
   const handle: ProjectHandle = {
     mount: (nodeId, instance = {}) => runtime.mount(nodeId, instance),
     unmount: (nodeId) => runtime.unmount(nodeId),
     seek: (nodeId, progress) => runtime.seek(nodeId, progress),
-    signal,
+    signal: (motionId, value) => runtime.signal(motionId, value),
     addMotion: (definition) => runtime.addMotion(definition),
     destroyMotion: (motionId) => runtime.destroyMotion(motionId),
     edit: <T>(recipe: (transaction: SchemaTransaction) => T) => runtime.edit(recipe),
@@ -534,6 +532,14 @@ export class Engine {
           // function. `ProjectRuntime` asks no copy of it.
           motion.setStagger(stagger);
         },
+        // Moved off a closure over this map and onto the runtime, so the one owner of the recipe
+        // refusal is asked before a signal can reach a live trigger port. Nothing else about it
+        // moves: an unknown motion id is refused here, verbatim, by the layer that owns the Motion.
+        signalMotion: (motionId, signal) => {
+          const motion = motions.get(motionId);
+          if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
+          motion.signal(signal);
+        },
         createMotion: (definition) => motions.set(definition.id, buildMotion(definition, [])),
         destroyMotion: (motionId) => {
           const motion = motions.get(motionId);
@@ -572,11 +578,7 @@ export class Engine {
         });
         motions.set(motionDefinition.id, buildMotion(motionDefinition, entries));
       }
-      return createHandle(created, (motionId, signal) => {
-        const motion = motions.get(motionId);
-        if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
-        motion.signal(signal);
-      });
+      return createHandle(created);
     } catch (error) {
       throw afterCleanup(error, () => {
         // `load()` owns everything it created, including the runtime. `GraphRuntime` takes the

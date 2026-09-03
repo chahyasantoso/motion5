@@ -8,6 +8,7 @@ import type {
   ProjectDefinition,
   TrackDefinition,
   MotionDefinition,
+  TriggerSignal,
 } from "../contract/v5";
 import { readAuthoredLeaf } from "../contract/authored-leaf";
 import { readPluginBindings } from "../contract/keyframe-shape";
@@ -236,6 +237,16 @@ export interface ProjectRuntimeOptions {
    */
   readonly replaceMotionTrigger?: (motionId: string, definition: MotionDefinition) => void;
   readonly setMotionStagger?: (motionId: string, stagger?: number) => void;
+  /**
+   * The signal a live Motion's trigger takes, and the third seam this layer holds for one reason.
+   *
+   * It reaches the created trigger port, which plays the Motion and publishes, so it applies
+   * immediately and survives an abort exactly as the two above do. It lived in a closure over the
+   * engine's Motion map, where the owner of the recipe refusal cannot be asked, so it is a hook
+   * here instead: the refusal keeps one owner, and an unknown motion id is still refused by the
+   * layer that owns the Motion. See ADR-064.
+   */
+  readonly signalMotion?: (motionId: string, signal: TriggerSignal) => void;
   readonly createMotion?: (definition: MotionDefinition) => void;
   readonly destroyMotion?: (motionId: string) => void;
   readonly onClockTick?: (event: ClockTick) => void;
@@ -539,6 +550,7 @@ export class ProjectRuntime {
     | ((motionId: string, definition: MotionDefinition) => void)
     | undefined;
   readonly #setMotionStagger: ((motionId: string, stagger?: number) => void) | undefined;
+  readonly #signalMotion: ((motionId: string, signal: TriggerSignal) => void) | undefined;
   readonly #createMotion: ((definition: MotionDefinition) => void) | undefined;
   readonly #destroyMotion: ((motionId: string) => void) | undefined;
   readonly #disposeComposition: () => void;
@@ -574,6 +586,7 @@ export class ProjectRuntime {
     this.#removeMotionTrack = options.removeMotionTrack;
     this.#replaceMotionTrigger = options.replaceMotionTrigger;
     this.#setMotionStagger = options.setMotionStagger;
+    this.#signalMotion = options.signalMotion;
     this.#createMotion = options.createMotion;
     this.#destroyMotion = options.destroyMotion;
     this.#disposeComposition = options.disposeComposition ?? (() => undefined);
@@ -622,6 +635,19 @@ export class ProjectRuntime {
   }
   mount(nodeId: string, instance: object = {}): object {
     this.#assertLive();
+    this.#refuseInsideRecipe("mount");
+    return this.#mountNode(nodeId, instance);
+  }
+  /**
+   * Attaches one member, and the one owner of mounting.
+   *
+   * Split from the public verb because a commit mounts too. That settle step mounted through the
+   * public member and stayed outside its guard only because `edit` clears the open transaction in a
+   * `finally` before `#apply` runs, which is correct and invisible: an internal caller kept out of a
+   * public refusal by the ordering of a `finally` in another method is not a thing to leave
+   * standing. The public member owns the contract, this owns the attach. See `RA-80`.
+   */
+  #mountNode(nodeId: string, instance: object = {}): object {
     if (this.#instances.has(nodeId)) throw new TypeError(`Node "${nodeId}" is already mounted.`);
     this.#graph.attach(nodeId);
     this.#instances.set(nodeId, instance);
@@ -629,6 +655,7 @@ export class ProjectRuntime {
   }
   unmount(nodeId: string): void {
     this.#assertLive();
+    this.#refuseInsideRecipe("unmount");
     if (!this.#instances.has(nodeId)) return;
     this.#instances.delete(nodeId);
     this.#graph.detach(nodeId);
@@ -674,9 +701,11 @@ export class ProjectRuntime {
    *
    * Every member forwards to the member this class already has, deliberately: a second `addTrack`
    * would be a second owner of what an add costs, and the whole point of this slice is that there is
-   * one. What the object buys is the narrowing -- `mount`, `seek`, `subscribe` and `dispose` are not
-   * reachable through it, because none of them is a structural change and none of them can be undone
-   * by a recipe that throws. `addMotion` resolves the handle it returns through `motion` for the
+   * one. What the object buys is the narrowing, and only that: `mount`, `seek`, `subscribe` and
+   * `dispose` are not members of it. That is a statement about what a recipe is handed and never one
+   * about what it can reach, because the recipe closes over the `ProjectHandle` the caller called
+   * `edit` on, so every verb that applies immediately refuses at itself rather than by being absent
+   * from here. `addMotion` resolves the handle it returns through `motion` for the
    * same reason: the id is what the entry point answers and the handle is what one lookup makes of
    * it. See ADR-064.
    */
@@ -717,6 +746,19 @@ export class ProjectRuntime {
     this.#assertLive();
     if (!this.#readMotions().has(motionId)) throw new TypeError(`Unknown motion "${motionId}".`);
     this.#removeMotion(motionId);
+  }
+  /**
+   * Hands one signal to the layer that owns this Motion's trigger.
+   *
+   * Tier 0's twin, and refused inside a recipe on the one rule every immediate verb shares: it
+   * reaches no node and no edge, plays a live Motion through its created port, and publishes, so it
+   * would survive an abort. The hook keeps its own refusal for an unknown motion id, because that
+   * answer belongs to the map that holds them rather than to this layer.
+   */
+  signal(motionId: string, signal: TriggerSignal): void {
+    this.#assertLive();
+    this.#refuseInsideRecipe("signal");
+    this.#signalMotion?.(motionId, signal);
   }
   /**
    * The resolver for one Motion, refusing an id this project never had.
@@ -1278,7 +1320,7 @@ export class ProjectRuntime {
         });
         if (motionId !== undefined)
           settle.push(() => this.#addMotionTrack?.(motionId, nodeId, added.duration));
-        settle.push(() => this.mount(nodeId));
+        settle.push(() => this.#mountNode(nodeId));
         // The new node publishes, which it never did before. A node whose sources have not published
         // yet lands on blocked with a pending diagnostic rather than on nothing at all, and that is
         // the whole of what building a structure up incrementally requires. See `RA-9`.
@@ -1677,6 +1719,7 @@ export class ProjectRuntime {
   }
   seek(nodeId: string, progress: number) {
     this.#assertLive();
+    this.#refuseInsideRecipe("seek");
     this.#setProgress(nodeId, progress);
     const batch = this.#graph.invalidate([nodeId]);
     this.#diagnostics.recordAll(batch.diagnostics);
@@ -1706,6 +1749,7 @@ export class ProjectRuntime {
   }
   invalidate(nodeIds: readonly string[]) {
     this.#assertLive();
+    this.#refuseInsideRecipe("invalidate");
     const batch = this.#graph.invalidate(nodeIds);
     this.#diagnostics.recordAll(batch.diagnostics);
     return batch;
