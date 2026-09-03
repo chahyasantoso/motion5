@@ -3,6 +3,10 @@
 // the exact text it replaces, an anchor that does not match exactly once is refused, and no file is
 // written until every edit has validated.
 //
+// `dry_run` stops after that validation pass and reports what it learned without writing anything.
+// The counts are taken against the file on disk, so a dry run is how an implementor that cannot
+// read a whole file establishes that its anchors are unique in the whole file.
+//
 // Usage: node scripts/apply-ai-edit.mjs <request.json> <report.md> <touched.txt>
 // Contract: docs/AI-EDIT-WORKFLOW.md
 
@@ -12,6 +16,12 @@ import path from "node:path";
 
 const MAX_EDITS = 50;
 const FORBIDDEN_PREFIXES = [".git/", ".github/workflows/", ".ai/", "node_modules/"];
+
+// A dry run still consumes its request, so the workflow still needs a commit subject for the
+// removal. It gets this one rather than the request's own `message`, because a commit named after a
+// change it did not make is a lie in the log. The `AI-Edit-Request:` trailer still names the
+// request that was consumed, so the two are still traceable to each other.
+const DRY_RUN_SUBJECT = "chore(ai-edit): dry run, nothing applied";
 
 const [requestPath, reportPath, touchedPath] = process.argv.slice(2);
 
@@ -110,11 +120,16 @@ async function main() {
     return;
   }
 
+  if (request.dry_run !== undefined && typeof request.dry_run !== "boolean") {
+    refuse("`dry_run` must be `true` or `false`");
+  }
+  const dryRun = request.dry_run === true;
+
   const message = typeof request.message === "string" ? request.message.trim() : "";
   if (message === "" || message.includes("\n")) {
     refuse("`message` must be a single non-empty line, used verbatim as the commit subject");
   } else {
-    await emitOutput("message", message);
+    await emitOutput("message", dryRun ? DRY_RUN_SUBJECT : message);
   }
 
   if (request.target !== undefined) {
@@ -140,6 +155,7 @@ async function main() {
   const staged = new Map();
   const removed = new Set();
   const created = new Set();
+  const anchored = [];
 
   for (const [index, edit] of edits.entries()) {
     const label = `edit ${index + 1}`;
@@ -226,6 +242,7 @@ async function main() {
       continue;
     }
 
+    anchored.push(target);
     staged.set(
       target,
       current.replace(edit.find, () => edit.replace),
@@ -233,6 +250,72 @@ async function main() {
   }
 
   if (problems.length > 0) return;
+
+  // A dry run stops here, one line above the write pass, and reports what the validation pass
+  // already knows. The anchor counts are the point of it: they were taken against the real file, so
+  // this is the only way a reader that saw a truncated prefix can establish the exactly-once
+  // property over the whole file before spending a write.
+  if (dryRun) {
+    await emitOutput("changed", "false");
+    if (touchedPath) {
+      await writeFile(touchedPath, "", "utf8");
+    }
+
+    const plural = edits.length === 1 ? "" : "s";
+    say(`**Dry run.** Validated ${edits.length} edit${plural} from \`${requestPath}\`.`);
+    say("");
+    say("No file was written and the tree is unchanged.");
+
+    if (anchored.length > 0) {
+      const counts = new Map();
+      for (const target of anchored) {
+        counts.set(target, (counts.get(target) ?? 0) + 1);
+      }
+      say("");
+      say("Anchors, counted against the file rather than against a prefix of it:");
+      say("");
+      for (const [target, count] of counts) {
+        const noun = count === 1 ? "1 anchor" : `${count} anchors`;
+        say(`- \`${target}\`: ${noun}, each matching exactly once`);
+      }
+    }
+
+    const planned = [];
+    for (const [target, content] of staged) {
+      const before = existsSync(target) ? await readFile(target, "utf8") : null;
+      if (before === content) {
+        planned.push({ target, note: "already satisfied, so nothing would be written" });
+        continue;
+      }
+      const state = created.has(target) ? "created" : "edited";
+      const after = Buffer.byteLength(content, "utf8");
+      if (before === null) {
+        planned.push({ target, note: `${state}, ${after} bytes` });
+        continue;
+      }
+      const size = `${Buffer.byteLength(before, "utf8")} -> ${after} bytes`;
+      planned.push({ target, note: `${state}, ${size}` });
+    }
+    for (const target of removed) {
+      if (!existsSync(target)) continue;
+      planned.push({ target, note: "deleted" });
+    }
+    planned.sort((left, right) => left.target.localeCompare(right.target));
+
+    say("");
+    if (planned.length === 0) {
+      say("Every edit is already satisfied, so a real run would write nothing.");
+      return;
+    }
+    say("What a real run would write:");
+    say("");
+    for (const entry of planned) {
+      say(`- \`${entry.target}\` ${entry.note}`);
+    }
+    say("");
+    say("Sizes are measured before the formatter runs, so read them as close rather than exact.");
+    return;
+  }
 
   // Write pass. Nothing above this line has touched the working tree.
   const touched = [];
