@@ -94,6 +94,10 @@ function thrownBy(operation: () => unknown): unknown {
   }
   throw new Error("Expected the operation to throw.");
 }
+/** The committed node order, filtered to one id set: what "graph order" means, read off the graph. */
+function inNodeOrder(project: ProjectRuntime, ids: readonly string[]): readonly string[] {
+  return project.graph.graph.nodes.map((node) => node.id).filter((id) => ids.includes(id));
+}
 
 describe("one owner of reverse topology, read rather than rederived", () => {
   it("RA-86 names the solver that reads a node as a chain member", () => {
@@ -127,9 +131,9 @@ describe("one owner of reverse topology, read rather than rederived", () => {
 
     expect(readers).toEqual([LOWER, RIG]);
     expect(readers.filter((id) => id === LOWER)).toHaveLength(1);
-    // First occurrence wins, which is the node order the edge walk this replaces produced. Order is
-    // a pure function of the graph either way, and a caller listing dependants in a dialog reads it.
-    expect([...readers]).toEqual([...readers].slice().sort((a, b) => (a < b ? -1 : 1)));
+    // First occurrence wins, which is the committed node order the edge walk this replaces produced.
+    // Order is a pure function of the graph either way, and a caller listing dependants reads it.
+    expect([...readers]).toEqual(inNodeOrder(project, readers));
     expect(Object.isFrozen(readers)).toBe(true);
 
     project.dispose();
