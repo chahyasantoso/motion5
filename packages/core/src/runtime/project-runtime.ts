@@ -70,6 +70,20 @@ type TrackEntry = {
   motionId?: string;
   token: number;
   overlay: Readonly<Record<string, unknown>>;
+  /**
+   * Whether a live value write is in force on this node's compiled `Track`.
+   *
+   * The compiled Track carries a mask, a patched timeline, or both, and the retained definition may
+   * not say so: that gap is what an override is. A fresh Track is built from a definition and
+   * carries neither, so the timeline build is what dropped a write, and it was the only thing that
+   * did. C3 made that build conditional, so the four binding verbs stopped dropping one, and this
+   * is the fact the predicate reads to keep paying for it. See ADR-066.
+   *
+   * Recorded from the write being asked for rather than from what the backend answered, which is
+   * the conservative direction the predicate already commits to: a write that reached no compiled
+   * Track costs one build it does not strictly need, and nothing can under-report.
+   */
+  liveWrite: boolean;
 };
 
 type MotionEntry = {
@@ -224,6 +238,7 @@ export class ProjectRuntime {
           motionId: motion.id,
           token: this.#nextToken++,
           overlay: NO_OVERLAY,
+          liveWrite: false,
         });
     }
     for (const track of project.freeTracks ?? [])
@@ -232,6 +247,7 @@ export class ProjectRuntime {
         owner: this.#schemaOwner,
         token: this.#nextToken++,
         overlay: NO_OVERLAY,
+        liveWrite: false,
       });
     this.#setProgress = options.setProgress ?? (() => undefined);
     this.#writeValuesHook = options.writeValues ?? (() => undefined);
@@ -299,6 +315,15 @@ export class ProjectRuntime {
   mount(nodeId: string, instance: object = {}): object {
     this.#assertLive();
     this.#refuseInsideRecipe("mount");
+    // Seeds no flush, deliberately, and measured where the reason is written. A member arrives here
+    // and nothing publishes, which looks like the asymmetry A2 left behind: a node mounted by a
+    // commit is seeded by `#apply` and a node mounted by a caller is seeded by nobody. A seed here
+    // was drafted, implemented and refused on three measurements. `T-1` owns the asymmetry as real
+    // rather than pending, `trigger-time` owns that a time Motion does not emit before its first
+    // tick and a mount precedes every tick, and `PatchRegistry.publish` drops a candidate through
+    // `samePatch`, so this flush would not add a publication but take the next one: the `seek` that
+    // follows would publish nothing and hand its caller an empty batch. Run 33712936651 is the 21
+    // cases that says so, `RA-8` among them. See `RA-100`, `RA-101` and ADR-066.
     return this.#mountNode(nodeId, instance);
   }
 
@@ -473,9 +498,19 @@ export class ProjectRuntime {
     const accepted = validation.value;
     const token = this.#nextToken++;
     const tracks = this.#stageTracks();
-    tracks.set(id, { track: accepted, owner, motionId, token, overlay: NO_OVERLAY });
-    // A map builder and nothing else: the compile, the Motion registration and the mount are
-    // `#derive`'s answer, derived from this id being absent from the retained pair.
+    tracks.set(id, {
+      track: accepted,
+      owner,
+      motionId,
+      token,
+      overlay: NO_OVERLAY,
+      liveWrite: false,
+    });
+    // A map builder and nothing else. That the compile runs before the graph is asked, that the
+    // Motion entry is written after it because Motion resolves by id against the live compiled map,
+    // and that the mount settles last are all `#derive`'s answer now, derived from the fact that
+    // this id is absent from the retained pair. That is also what makes an add-then-remove inside
+    // one recipe cost nothing at all rather than mounting a node the committed graph lacks.
     // See ADR-031 and ADR-064.
     this.#commit({ tracks });
     return this.#handle(id, token);
@@ -677,7 +712,15 @@ export class ProjectRuntime {
     if (!validation.valid || !validation.value)
       throw new TypeError(describeDiagnostics(validation.diagnostics));
     const tracks = this.#stageTracks();
-    tracks.set(id, { ...entry, track: validation.value, overlay: NO_OVERLAY });
+    // No overlay and no live write, which is the same claim at two levels: a replacement builds a
+    // fresh Track, and the predicate above is what keeps that true when the compiled input did not
+    // move. See ADR-066.
+    tracks.set(id, {
+      ...entry,
+      track: validation.value,
+      overlay: NO_OVERLAY,
+      liveWrite: false,
+    });
     this.#commit({ tracks });
   }
 
@@ -769,7 +812,15 @@ export class ProjectRuntime {
       // Conditional, and nothing else about the transaction moves: there is no fast lane for an
       // edge. A skipped build leaves `staged` undefined, so the settle step below is the no-op it
       // already was for a caller that wired no staging seam at all. See ADR-062.
-      if (this.#needsTimelineBuild(nodeId, previous, next))
+      // The resolve is asked unconditionally and the build additionally runs when a live write is
+      // in force, and that order is the whole correctness of it. Spelled
+      // `retained.liveWrite || needsBuild` it short-circuits, so the resolve never runs, and the
+      // resolve is the only place a registry sees an already-compiled node's candidate: skipping it
+      // deletes a validator rather than a cost, which is the defect C1 refused to ship. The build
+      // is also the only thing that dropped a live value write, so it is paid for that too rather
+      // than leaving an override the documentation says is gone. See `RA-103`, `RA-105`, ADR-066.
+      const needsBuild = this.#needsTimelineBuild(nodeId, previous, next);
+      if (needsBuild || retained.liveWrite)
         effects.push({
           apply: () => {
             staged = this.#stageTrack?.(next, nodeId);
@@ -813,6 +864,8 @@ export class ProjectRuntime {
       ...entry,
       track: rebase ? rewritten : entry.track,
       overlay: animated,
+      // In force from here until something builds a fresh Track for this node. See ADR-066.
+      liveWrite: true,
     });
     // The escalation, and it is neither `#replaceTrack` nor `replaceGraph`: topology did not change
     // and the compiled definition is allowed to differ from the retained one. The re-seek is here
@@ -864,7 +917,12 @@ export class ProjectRuntime {
       true,
     );
     const staged = this.#stageTrack?.(accepted, nodeId);
-    this.#tracks.set(nodeId, { ...entry, track: accepted, overlay: NO_OVERLAY });
+    this.#tracks.set(nodeId, {
+      ...entry,
+      track: accepted,
+      overlay: NO_OVERLAY,
+      liveWrite: false,
+    });
     staged?.commit();
     if (written !== undefined) this.#setProgress(nodeId, written.progress);
     return this.#invalidateOne(nodeId);
