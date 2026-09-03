@@ -30,7 +30,7 @@ A declared subpath is not automatically production API. The tier says who may im
 - `tryTrack(nodeId)` and `tryMotion(motionId)` return `undefined` for an expected miss; `motion(motionId)` resolves a `MotionHandle`.
 - `edit(recipe)` runs one `SchemaTransaction` and commits what it staged exactly once, answering with whatever the recipe returned.
 - A `MotionHandle` exposes `id`, `live`, `definition`, `trackIds`, `setTrigger`, `setStagger`, `addTrack`, `track`, `tryTrack`, `signal`, and `destroy`.
-- `dependantsOf(nodeId)` lists observers for editor preflight.
+- `dependantsOf(nodeId)` lists every reader of a node for editor preflight: the observer of an edge, and a solver that reads it as a chain member.
 - `adopt(track, owner, options?)` and `destroyAdopted(nodeId, owner)` are the superseded owner-based API.
 - `dispose()` releases the project, motions, triggers, and compiled tracks.
 
