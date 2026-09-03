@@ -15,13 +15,19 @@ CI is an executable version of the project's evidence model. It checks every pul
 
 ## Live jobs
 
-Six jobs, and they are the whole of `.github/workflows/ci.yml`. Each one checks out the pull request head sha, installs with `npm ci --ignore-scripts --no-audit --no-fund`, and holds read-only permissions. None of them writes to a branch.
+Seven jobs, and they are the whole of `.github/workflows/ci.yml`. Each one checks out the pull request head sha, installs with `npm ci --ignore-scripts --no-audit --no-fund`, and holds read-only permissions. None of them writes to a branch.
 
 **quality:** `npm run typecheck`, then `npm run format:check` as a read-only gate, then `npm test`. Required. Formatting is checked here and repaired nowhere in this workflow.
 
 **integration:** deterministic graph/runtime integration tests. Required, but currently limited by the implemented runtime surface.
 
 **boundaries:** rejects renderer imports in core, banned compatibility symbols, and forbidden public exports. Required. The planted consumer self-test still needs the recovery-plan repair.
+
+**read-budget:** `npm run test:read-budget`, which runs `scripts/read-budget-scan.mjs` over `packages/core/src` and then the `RB-` cases that cover the scanner itself. Required. It fails a file over the 60,000 byte budget, a source over the 30,000 byte sister doc trigger with no sibling document, a mirrored pair that has drifted, and a waiver or pending entry the tree no longer needs.
+
+This is the one job whose subject cannot check itself. A truncated contents read is indistinguishable from a whole one, so an implementor working through the API has no way to learn that the file it just anchored into arrived short, and **AI edit** deliberately runs no part of the suite. The scan therefore has to run somewhere with a checkout or it does not run at all, which is what this job is for rather than a second opinion on a rule the author could have verified. `docs/AI-EDIT-WORKFLOW.md` owns the rule and the amendment to ADR-008 in `docs/DECISIONS.md` records why a byte gate is allowed.
+
+The `RB-` cases also run inside `quality`, because `npm test` is the whole suite. That is the same overlap `boundaries` already has, and it is not what makes this job worth its minutes: the unit cases plant temporary trees and prove the scanner behaves, while only the scan step measures this repository.
 
 **build:** compiles TypeScript and verifies public artifact files exist. Required.
 
@@ -74,6 +80,7 @@ Use the original Actions URL as the primary citation and the archive as durable 
   "test": "vitest run",
   "test:integration": "vitest run packages/core/test/integration",
   "test:boundaries": "node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts",
+  "test:read-budget": "node scripts/read-budget-scan.mjs && vitest run packages/core/test/unit/scripts/read-budget-scan.test.ts",
   "benchmark": "node performance/graph-benchmark.mjs"
 }
 ```
@@ -84,8 +91,12 @@ Copied from the root `package.json` rather than paraphrased, because a contract 
 
 P0-02 made installs reproducible. P0-05 added the required integration job. P2-07 added boundaries. P3-07 adds performance as advisory calibration. Phase 4 is currently reopened for Phase 0R/1R value-pipeline recovery. P4-05 adds build and end-to-end after the fixture and public runtime surface are stable. P6-02 adds package consumer verification.
 
+Issue #267 added the read budget scan and the sister doc rule, and #278 added the `read-budget` job that runs them, because until then the only enforcement was a human remembering the command.
+
 Until a job's owning phase lands, this document describes the target, not a live check.
 
 ## Required versus advisory
 
 Required jobs block merges. Performance is advisory only while its baseline is calibrated, but it must run on every pull request, upload its report, name its expiry in session status, and be promoted or deleted by that date. "Continue on error forever" is not a policy.
+
+A new required job is not required until branch protection says so. `read-budget` is required in the sense this document means it, which is that it runs on every pull request and a red run blocks the merge, and adding it to the protected branch's required contexts is a repository setting rather than a change to this file.
