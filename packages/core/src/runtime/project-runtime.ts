@@ -119,6 +119,14 @@ interface SchemaEffect {
  * because a fresh definition object for an untouched entry is exactly what costs the incremental
  * builder its cache hit. See ADR-058.
  *
+ * Adopted by pointer, and each half is optional, which is the ownership statement this pair carries
+ * now. A half a commit did not move is absent rather than handed back, so this class keeps the map
+ * it already held: a commit that moved one entry stops clearing both maps and re-writing V of them,
+ * including the half no entry point touched. What that costs is that a `Map` a plan builder made
+ * becomes the map this class holds and mutates, so the retained fields are no longer `readonly` and
+ * a builder may not keep what it handed over. `#stageTracks` and `#stageMotions` are the only two
+ * things that make one, and therefore the only two allowed to fill this. See `RA-92`.
+ *
  * What a plan no longer carries is a hook list. A1 gave every entry point one transaction owner and
  * left each of them assembling its own effects, settle steps and seeds, and those lists compose only
  * while a commit carries exactly one change. A recipe that adds a track and then edits it would
@@ -130,8 +138,8 @@ interface SchemaEffect {
  * See ADR-064.
  */
 interface SchemaPlan {
-  readonly tracks: ReadonlyMap<string, TrackEntry>;
-  readonly motions: ReadonlyMap<string, MotionEntry>;
+  readonly tracks?: Map<string, TrackEntry>;
+  readonly motions?: Map<string, MotionEntry>;
 }
 /**
  * What one accepted pair costs, and the only thing in this file that names a hook.
@@ -155,13 +163,18 @@ interface SchemaCommit {
 /**
  * The pending pair one open recipe is staging, and the whole of the transaction owner's state.
  *
- * Mutable in exactly its two fields, because `#commit` merges into it rather than queueing an op:
- * every entry point builds its candidate pair from whatever is open, so the pair that is open is
- * always the answer the recipe has produced so far, and there is no op log to replay. See ADR-064.
+ * Mutable in exactly its two fields, because every entry point builds its candidate pair from
+ * whatever is open, so the pair that is open is always the answer the recipe has produced so far and
+ * there is no op log to replay. See ADR-064.
+ *
+ * Each half starts as the retained map by identity and is replaced by a copy the first time an op
+ * stages something into it, by `#stageTracks` or `#stageMotions`, after which every later op writes
+ * into that same copy. So the identity of a half is still the whole answer to whether the recipe
+ * staged anything, and the copy is paid once per recipe rather than once per op. See `RA-93`.
  */
 interface OpenTransaction {
-  tracks: ReadonlyMap<string, TrackEntry>;
-  motions: ReadonlyMap<string, MotionEntry>;
+  tracks: Map<string, TrackEntry>;
+  motions: Map<string, MotionEntry>;
 }
 /**
  * The one seam by which a live value reaches the compiled Track this runtime does not own.
@@ -354,6 +367,24 @@ function propertyEntry(nodeId: string, plugin: string): never {
   );
 }
 /**
+ * One derived require list per retained definition, and the residency rule that makes it safe.
+ *
+ * `handle.requires` derived and froze the whole list on every access, on a getter a devtool polls:
+ * reading it n times over one unchanged definition read the authored record n times and allocated n
+ * lists that are all the same answer. Keyed on the definition object rather than on the handle, so
+ * two handles to one node share one list and no list outlives the definition it came from.
+ *
+ * Sound on identity because a retained definition never moves in place. `validateTrackDefinition`
+ * answers with a deep-frozen clone, every authored edit commits a fresh frozen object, and
+ * `IncrementalGraphBuilder` already treats a definition as immutable when it cache-hits on
+ * `cached.track === track`, so a memo keyed on anything weaker would be a second opinion about
+ * immutability rather than a use of the one this project already holds.
+ *
+ * Weak, so it retains nothing this runtime has dropped: a cache's residency belongs to the layer
+ * that holds it rather than to callers staying in step. See `RA-96` and ADR-058.
+ */
+const REQUIRE_VIEWS = new WeakMap<TrackDefinition, readonly RequireView[]>();
+/**
  * The bindings `track` authored, as a handle reports them.
  *
  * `readPluginBindings` is the one reader of the authored group shape and stays the one reader, so
@@ -362,11 +393,15 @@ function propertyEntry(nodeId: string, plugin: string): never {
  * that reader answers with an empty list for a record that authors no group. See ADR-044 and ADR-057.
  */
 function requireViews(track: TrackDefinition): readonly RequireView[] {
-  return Object.freeze(
+  const memo = REQUIRE_VIEWS.get(track);
+  if (memo !== undefined) return memo;
+  const views = Object.freeze(
     readPluginBindings(track.keyframes ?? {}).map(({ plugin, slot, source, memberKey }) =>
       Object.freeze({ plugin, slot, source, ...(memberKey === undefined ? {} : { memberKey }) }),
     ),
   );
+  REQUIRE_VIEWS.set(track, views);
+  return views;
 }
 /**
  * The authored static values of `track`, flattened, and nothing else.
@@ -429,9 +464,17 @@ function splitAuthoredValues(values: AuthoredValues): LiveWriteHalves {
  */
 function withAuthoredValues(track: TrackDefinition, values: AuthoredValues): TrackDefinition {
   const flattened = flattenAuthoredKeyframes(track.keyframes ?? {});
+  // Indexed once rather than searched once per written key. The flatten answers with a list because
+  // order is what makes a collision decidable one layer down, and this searched that list per key,
+  // so a three-key write over a thirty-leaf group walked ninety entries to place three. Which record
+  // a key came from is still the flatten's answer: this indexes it rather than re-deriving it. See
+  // `RA-94`.
+  const sources = new Map(
+    flattened.entries.map((candidate) => [candidate.key, candidate] as const),
+  );
   const keyframes: Record<string, AuthoredKeyframe> = { ...track.keyframes };
   for (const [key, value] of Object.entries(values)) {
-    const entry = flattened.entries.find((candidate) => candidate.key === key);
+    const entry = sources.get(key);
     if (entry === undefined) continue;
     if (entry.group === undefined) {
       keyframes[key] = value;
@@ -520,8 +563,17 @@ export class ProjectRuntime {
   readonly #project: ProjectDefinition;
   readonly #graph: GraphRuntime;
   readonly #instances = new Map<string, object>();
-  readonly #tracks = new Map<string, TrackEntry>();
-  readonly #motions = new Map<string, MotionEntry>();
+  /**
+   * The retained pair, and the two fields a commit adopts rather than rewrites.
+   *
+   * Not `readonly`, because a commit replaces the map object instead of clearing it and re-`set`ing
+   * every entry back into it. The map it adopts was made by `#stageTracks` or `#stageMotions`, which
+   * are the only two things in this class that make one, and nothing holds it after `#commit` has
+   * been handed it. Every reader still goes through `#readTracks` and `#readMotions`, which answer a
+   * `ReadonlyMap`, and both in-place tiers still write through these by id. See `RA-92`, `RA-97`.
+   */
+  #tracks = new Map<string, TrackEntry>();
+  #motions = new Map<string, MotionEntry>();
   readonly #schemaOwner = {};
   #nextToken = 1;
   /**
@@ -633,6 +685,40 @@ export class ProjectRuntime {
   #readMotions(): ReadonlyMap<string, MotionEntry> {
     return this.#open?.motions ?? this.#motions;
   }
+  /**
+   * The track map this commit will hand over, mutable, and copied once rather than once per op.
+   *
+   * Outside a recipe it is a copy of the retained map, and that copy is the floor rather than an
+   * expense to remove: `#derive` reads the retained pair to decide what a commit costs, and a
+   * candidate the graph refuses has to leave it exactly as it was, so the pair the graph is asked
+   * about cannot be the pair this class is still holding.
+   *
+   * Inside one it is the pair the recipe is staging, made once by the first op that stages anything
+   * and written into in place by every op after that. Every entry point used to build its candidate
+   * with `new Map(this.#readTracks())`, so a 200-op recipe over 600 tracks took 200 full copies,
+   * `O(n x V)`, and the one thing `edit` collapsed to one was the thing `RA-65` counts. `RA-93`
+   * counts this one.
+   *
+   * A half starts as the retained map by identity and is replaced by a copy here, which is what
+   * keeps a recipe that staged nothing answered by identity on the pair rather than by a dirty flag.
+   * So this is called after an entry point's last refusal and never before it: a copy made for an op
+   * that then refused would leave the recipe on a pair that differs from the retained one while
+   * holding exactly the same entries, and `edit` would spend a candidate build and a flush
+   * committing it. `RA-95` is that case, in both directions.
+   */
+  #stageTracks(): Map<string, TrackEntry> {
+    const open = this.#open;
+    if (open === undefined) return new Map(this.#tracks);
+    if (open.tracks === this.#tracks) open.tracks = new Map(this.#tracks);
+    return open.tracks;
+  }
+  /** The same question about the other map, and the same reason. */
+  #stageMotions(): Map<string, MotionEntry> {
+    const open = this.#open;
+    if (open === undefined) return new Map(this.#motions);
+    if (open.motions === this.#motions) open.motions = new Map(this.#motions);
+    return open.motions;
+  }
   mount(nodeId: string, instance: object = {}): object {
     this.#assertLive();
     this.#refuseInsideRecipe("mount");
@@ -675,9 +761,10 @@ export class ProjectRuntime {
    * failure is the reason the caller can act on.
    *
    * A recipe that staged nothing commits nothing, answered by identity on the pair rather than by a
-   * dirty flag: an op that was a no-op hands the map it was given straight back, so the pair a
-   * recipe ends on is the pair it opened with and there is nothing to spend a candidate build on.
-   * See `RA-66` and ADR-064.
+   * dirty flag: a half is replaced by a copy on the first op that stages into it and by nothing at
+   * all otherwise, so the pair a recipe ends on is the pair it opened with and there is nothing to
+   * spend a candidate build on. That is also why the copy is taken after an entry point's last
+   * refusal rather than before it. See `RA-66`, `RA-95` and ADR-064.
    */
   edit<T>(recipe: (transaction: SchemaTransaction) => T): T {
     this.#assertLive();
@@ -734,12 +821,13 @@ export class ProjectRuntime {
     if (this.#readMotions().has(definition.id))
       throw new TypeError(`Motion "${definition.id}" already exists.`);
     const accepted = { ...definition, tracks: [] };
-    const motions = new Map(this.#readMotions());
+    const motions = this.#stageMotions();
     motions.set(accepted.id, { definition: accepted, token: this.#nextToken++ });
     // A map builder and nothing else. Which hooks a created Motion costs, and that the driver is
     // built before the graph is asked so a trigger that cannot be created leaves no definition and
-    // no node behind, are `#derive`'s answer now. See ADR-032 and ADR-064.
-    this.#commit({ tracks: this.#readTracks(), motions });
+    // no node behind, are `#derive`'s answer now. The track half is absent rather than handed back,
+    // because this commit did not move it. See ADR-032 and ADR-064.
+    this.#commit({ motions });
     return Object.freeze({ id: accepted.id });
   }
   destroyMotion(motionId: string): void {
@@ -856,7 +944,7 @@ export class ProjectRuntime {
       throw new TypeError(describeDiagnostics(validation.diagnostics));
     const accepted = validation.value;
     const token = this.#nextToken++;
-    const tracks = new Map(this.#readTracks());
+    const tracks = this.#stageTracks();
     tracks.set(id, { track: accepted, owner, motionId, token, overlay: NO_OVERLAY });
     // A map builder and nothing else. That the compile runs before the graph is asked, that the
     // Motion entry is written after it because Motion resolves by id against the live compiled map,
@@ -864,16 +952,18 @@ export class ProjectRuntime {
     // this id is absent from the retained pair. That is also what makes an add-then-remove inside
     // one recipe cost nothing at all rather than mounting a node the committed graph lacks.
     // See ADR-031 and ADR-064.
-    this.#commit({ tracks, motions: this.#readMotions() });
+    this.#commit({ tracks });
     return this.#handle(id, token);
   }
   /**
    * Every readable track a motion owns, in commit order, and the one owner of that question.
    *
-   * Four readers ask it: the committed snapshot, the count in the destroy refusal, and both
-   * `MotionHandle.definition` and `MotionHandle.trackIds`. Each carried its own filter before, which
-   * is how a motion could report `tracks: []` while owning three, or a refusal could name a count no
-   * handle agreed with. It takes the map explicitly because a plan builder asks about the tracks it
+   * Three readers ask it: the count in the destroy refusal, and both `MotionHandle.definition` and
+   * `MotionHandle.trackIds`. Each carried its own filter before, which is how a motion could
+   * report `tracks: []` while owning three, or a refusal could name a count no handle agreed with.
+   * The committed snapshot was the fourth and is not: asking a question about one motion once per
+   * motion is how a walk of one map became a walk per motion of it, so the snapshot buckets by the
+   * same stored field in one pass and this stays the owner of the single-motion question. It takes the map explicitly because a plan builder asks about the tracks it
    * is about to commit while a handle asks about the readable ones, and reading `#tracks` here would
    * make that difference invisible at the call site.
    */
@@ -982,9 +1072,9 @@ export class ProjectRuntime {
       throw new TypeError(
         `Motion "${motionId}" still has ${owned.length} track(s). Remove them before destroying it.`,
       );
-    const motions = new Map(this.#readMotions());
+    const motions = this.#stageMotions();
     motions.delete(motionId);
-    this.#commit({ tracks: this.#readTracks(), motions });
+    this.#commit({ motions });
   }
   /**
    * Refuses `verb` while a recipe is open.
@@ -1130,9 +1220,9 @@ export class ProjectRuntime {
   #removeTrack(id: string, token: number): void {
     this.#assertLive();
     this.#liveEntry(id, token);
-    const tracks = new Map(this.#readTracks());
+    const tracks = this.#stageTracks();
     tracks.delete(id);
-    this.#commit({ tracks, motions: this.#readMotions() });
+    this.#commit({ tracks });
   }
   /**
    * The registry's answer about one authored record, or nothing when no registry was injected.
@@ -1204,25 +1294,22 @@ export class ProjectRuntime {
     const validation = validateTrackDefinition(next, `replaceTrack(${id})`);
     if (!validation.valid || !validation.value)
       throw new TypeError(describeDiagnostics(validation.diagnostics));
-    const tracks = new Map(this.#readTracks());
+    const tracks = this.#stageTracks();
     tracks.set(id, { ...entry, track: validation.value, overlay: NO_OVERLAY });
-    this.#commit({ tracks, motions: this.#readMotions() });
+    this.#commit({ tracks });
   }
   /**
    * The one path by which a structural change reaches the graph, or the open transaction.
    *
-   * While a recipe is open the accepted pair is merged into it and nothing else happens: every entry
-   * point built its candidate pair from that pair, so merging is adopting, and there is no op log to
-   * replay and no compensation to record. With none open the pair is applied immediately, which is
-   * what every caller outside a recipe has always done. See ADR-064.
+   * While a recipe is open there is nothing to do here at all: every entry point built its candidate
+   * pair by writing into the pair `#stageTracks` handed it, which is the open pair itself, so the
+   * merge this used to perform was assigning a map the open transaction was already holding. What
+   * that pair holds is still the answer the recipe has produced so far, and `edit` is still the one
+   * thing that applies it. With none open the pair is applied immediately, which is what every
+   * caller outside a recipe has always done. See ADR-064.
    */
   #commit(plan: SchemaPlan): void {
-    const open = this.#open;
-    if (open !== undefined) {
-      open.tracks = plan.tracks;
-      open.motions = plan.motions;
-      return;
-    }
+    if (this.#open !== undefined) return;
     this.#apply(plan);
   }
   /**
@@ -1252,14 +1339,20 @@ export class ProjectRuntime {
    * to publish and must not spend a frame's worth of machinery saying so. See `RA-10`.
    */
   #apply(plan: SchemaPlan): void {
-    const commit = this.#derive(plan);
+    // An absent half is a half this commit did not move, so it resolves to the map this class is
+    // already holding: the derivation compares against it, the snapshot walks it, and the adoption
+    // assigns it back to itself. The retained fields are read directly rather than through the two
+    // accessors, because this is never reached while a recipe is open.
+    const tracks = plan.tracks ?? this.#tracks;
+    const motions = plan.motions ?? this.#motions;
+    const commit = this.#derive(tracks, motions);
     const applied: SchemaEffect[] = [];
     try {
       for (const effect of commit.effects) {
         effect.apply();
         applied.push(effect);
       }
-      this.#graph.replaceGraph(this.#snapshot(plan.tracks, plan.motions));
+      this.#graph.replaceGraph(this.#snapshot(tracks, motions));
     } catch (error) {
       const steps: (() => void)[] = [];
       for (const effect of applied) {
@@ -1267,7 +1360,7 @@ export class ProjectRuntime {
       }
       rejectAfterRollback(error, () => runRollbackSteps(steps));
     }
-    this.#adoptMaps(plan);
+    this.#adoptMaps(tracks, motions);
     for (const step of commit.settle) step();
     if (commit.touched.length === 0) return;
     const batch = this.#graph.invalidate(commit.touched);
@@ -1301,11 +1394,14 @@ export class ProjectRuntime {
    * to it. Effects are reverted in apply order, so a replacement's staging rollback still runs
    * before its Motion entry is restored. See ADR-045 and ADR-064.
    */
-  #derive(plan: SchemaPlan): SchemaCommit {
+  #derive(
+    tracks: ReadonlyMap<string, TrackEntry>,
+    motions: ReadonlyMap<string, MotionEntry>,
+  ): SchemaCommit {
     const effects: SchemaEffect[] = [];
     const settle: (() => void)[] = [];
     const touched: string[] = [];
-    for (const [motionId, entry] of plan.motions) {
+    for (const [motionId, entry] of motions) {
       if (this.#motions.has(motionId)) continue;
       const definition = entry.definition;
       effects.push({
@@ -1314,7 +1410,7 @@ export class ProjectRuntime {
       });
     }
     for (const [nodeId, entry] of this.#tracks) {
-      if (plan.tracks.has(nodeId)) continue;
+      if (tracks.has(nodeId)) continue;
       const motionId = entry.motionId;
       settle.push(() => {
         this.#instances.delete(nodeId);
@@ -1324,8 +1420,8 @@ export class ProjectRuntime {
       });
     }
     for (const motionId of this.#motions.keys())
-      if (!plan.motions.has(motionId)) settle.push(() => this.#destroyMotion?.(motionId));
-    for (const [nodeId, entry] of plan.tracks) {
+      if (!motions.has(motionId)) settle.push(() => this.#destroyMotion?.(motionId));
+    for (const [nodeId, entry] of tracks) {
       const retained = this.#tracks.get(nodeId);
       const motionId = entry.motionId;
       if (retained === undefined) {
@@ -1376,19 +1472,24 @@ export class ProjectRuntime {
     return { effects, settle, touched };
   }
   /**
-   * Adopts the accepted maps wholesale, from the same pair that built the accepted snapshot.
+   * Adopts the accepted pair, which is a pointer move rather than a rewrite.
    *
-   * The pair is read out before anything is cleared, because a plan builder hands its own live map
-   * straight through for the half of the schema that did not move, and clearing the source
-   * mid-iteration would empty it.
+   * It used to read both maps out, clear both retained ones and `set` every entry back, so a commit
+   * that moved one entry paid `O(V)` map writes and paid them for the half of the schema that did
+   * not move at all: a one-track edit on a rig of 600 tracks rewrote 600 track entries and every
+   * motion beside them. The read-out existed because a plan builder hands its own live map straight
+   * through for an untouched half, and clearing the source mid-iteration would have emptied it.
+   * Adopting the object answers that hazard by construction instead: an untouched half is the map
+   * this class is already holding, so its assignment is a no-op, and a half that moved is a map one
+   * of the two staging accessors made for this commit and nothing else holds.
+   *
+   * What it costs is that the retained fields are not `readonly` and a plan builder may not keep
+   * what it handed over. That is the ownership change, stated where the assignment is. It is also
+   * why this stays a named member rather than two lines inside `#apply`. See `RA-92` and `RA-97`.
    */
-  #adoptMaps(plan: SchemaPlan): void {
-    const tracks = [...plan.tracks];
-    const motions = [...plan.motions];
-    this.#tracks.clear();
-    for (const [id, entry] of tracks) this.#tracks.set(id, entry);
-    this.#motions.clear();
-    for (const [id, motion] of motions) this.#motions.set(id, motion);
+  #adoptMaps(tracks: Map<string, TrackEntry>, motions: Map<string, MotionEntry>): void {
+    this.#tracks = tracks;
+    this.#motions = motions;
   }
   /**
    * The one live-value write path.
@@ -1718,19 +1819,52 @@ export class ProjectRuntime {
   ): void {
     this.#replaceTrack(id, token, withKeyframes(track, keyframes));
   }
+  /**
+   * The committed pair as one authored document, walked once.
+   *
+   * `#ownedBy` above answers about one motion by materialising the whole track map, so asking it
+   * per motion made this `O(M x V)` in time and M arrays of length V in allocation, to place V
+   * definitions. Every structural commit paid it, in front of a candidate build the incremental
+   * builder cache-hits for every untouched node, which is what kept it invisible: the four measured
+   * wins in slice 7 were all about the tick, and this is the authoring side. See `RA-89`.
+   *
+   * One walk instead, bucketed by the owner each entry already names, with the free tracks falling
+   * out of the same pass rather than out of a second one. A bucket fills in map order, so each
+   * motion's list is the list the per-motion filter produced, and a motion that owns nothing
+   * answers with an empty list rather than with no key, because that is the document a loader
+   * accepts and what a runtime-added Motion starts as.
+   *
+   * Not a second derivation of the same fact, which is the objection worth answering rather than
+   * waving at. Which motion owns a track is a stored field on the entry, so neither spelling
+   * derives anything, and both read that field in the same map order: `#ownedBy` stays the owner of
+   * the single-motion question and cannot answer this one differently. `RA-91` asserts that against
+   * all three of its remaining readers anyway.
+   *
+   * Every untouched entry's definition is handed through by identity, because moving it is what
+   * costs `IncrementalGraphBuilder` its `cached.track === track` hit. See `RA-90`, ADR-058.
+   */
   #snapshot(
     tracks: ReadonlyMap<string, TrackEntry>,
     motions: ReadonlyMap<string, MotionEntry>,
   ): ProjectDefinition {
+    const owned = new Map<string, TrackDefinition[]>();
+    const freeTracks: TrackDefinition[] = [];
+    for (const entry of tracks.values()) {
+      if (entry.motionId === undefined) {
+        freeTracks.push(entry.track);
+        continue;
+      }
+      const bucket = owned.get(entry.motionId);
+      if (bucket === undefined) owned.set(entry.motionId, [entry.track]);
+      else bucket.push(entry.track);
+    }
     return {
       ...this.#project,
       motions: [...motions.values()].map((entry) => ({
         ...entry.definition,
-        tracks: this.#ownedBy(tracks, entry.definition.id).map(([, owned]) => owned.track),
+        tracks: owned.get(entry.definition.id) ?? [],
       })),
-      freeTracks: [...tracks.values()]
-        .filter((entry) => entry.motionId === undefined)
-        .map((entry) => entry.track),
+      freeTracks,
     };
   }
   seek(nodeId: string, progress: number) {
