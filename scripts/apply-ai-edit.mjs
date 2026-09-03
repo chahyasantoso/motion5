@@ -9,6 +9,7 @@
 //
 // Usage: node scripts/apply-ai-edit.mjs <request.json> <report.md> <touched.txt>
 // Contract: docs/AI-EDIT-WORKFLOW.md
+// Tests: packages/core/test/unit/scripts/apply-ai-edit.test.ts, the `AE-` cases
 
 import { existsSync } from "node:fs";
 import { appendFile, readFile, unlink, writeFile } from "node:fs/promises";
@@ -21,7 +22,14 @@ const FORBIDDEN_PREFIXES = [".git/", ".github/workflows/", ".ai/", "node_modules
 // removal. It gets this one rather than the request's own `message`, because a commit named after a
 // change it did not make is a lie in the log. The `AI-Edit-Request:` trailer still names the
 // request that was consumed, so the two are still traceable to each other.
-const DRY_RUN_SUBJECT = "chore(ai-edit): dry run, nothing applied";
+//
+// It carries `[skip ci]` because the content diff of a dry run is empty by construction: the only
+// path in that commit is the request file it consumed, so every CI job would install a toolchain to
+// re-verify a tree it has already verified. The subject being fixed rather than author-supplied is
+// what makes the directive safe to hard-code here, since no request can put it on a commit that
+// does change files. One consequence to know rather than discover: if a dry run is the last commit
+// before a merge, the required contexts never report on that head, so dispatch `CI` by hand.
+const DRY_RUN_SUBJECT = "chore(ai-edit): dry run, nothing applied [skip ci]";
 
 const [requestPath, reportPath, touchedPath] = process.argv.slice(2);
 
