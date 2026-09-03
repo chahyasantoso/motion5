@@ -74,8 +74,13 @@ export const READ_BUDGET_EXCEPTIONS = [];
  * file that gained its document, shrank under the trigger, or stopped existing fails the scan by
  * carrying a stale entry. That is what ADR-008's objection to an allowlist actually asks for, and
  * it is stronger than a date, because a date cannot tell whether the work happened.
+ *
+ * Empty, and kept rather than deleted with its last entry, exactly as `READ_BUDGET_EXCEPTIONS` is.
+ * Every source that predated the rule now keeps its private reasoning in a sibling document, which
+ * is issue #267's stated exit condition, and the next file to cross the trigger gets an entry here
+ * rather than a new mechanism.
  */
-export const SISTER_DOC_PENDING = [{ path: "packages/core/src/graph/ir.ts", issue: 267 }];
+export const SISTER_DOC_PENDING = [];
 const MEMBER_DECLARATION = /^[ \t]*(?:readonly[ \t]+)?(#[A-Za-z][\w$]*)\b/;
 const TYPE_DECLARATION = /^[ \t]*(?:export[ \t]+)?(?:type|interface)[ \t]+([A-Za-z][\w$]*)\b/;
 const LOCAL_TYPE_DECLARATION = /^[ \t]*(?:type|interface)[ \t]+([A-Za-z][\w$]*)\b/;
@@ -143,11 +148,11 @@ export function checkSize(file, size, exceptions = READ_BUDGET_EXCEPTIONS) {
  * `#mountNode` is the member that proves the difference: `mount` calls it one line above its own
  * declaration.
  *
- * A `#` member and a type are not the whole of what a file declares, and not one of the four sources
- * still owed a document declares a `#` member at all. A module keeps its reasoning on plain
- * `function` and `const` declarations, at the top level and inside the one function that owns them,
- * so those are declarations here too. Exported or not, because a heading may name an exported member
- * that left its summary line in the source and moved only the argument.
+ * A `#` member and a type are not the whole of what a file declares, and the four sources that were
+ * still owed a document kept most of their reasoning on plain `function` and `const` declarations
+ * rather than on `#` members: at the top level, and inside the one function that owns them, so those
+ * are declarations here too. Exported or not, because a heading may name an exported member that
+ * left its summary line in the source and moved only the argument.
  */
 export function declarations(source) {
   const found = new Map();
