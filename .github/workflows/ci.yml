@@ -65,6 +65,24 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm run test:boundaries
 
+  # The one gate the implementor this repository is written for cannot run and cannot self-check: a
+  # truncated contents read is indistinguishable from a whole one, so the tree has to be measured
+  # somewhere that has a checkout. See docs/AI-EDIT-WORKFLOW.md.
+  read-budget:
+    name: read-budget (node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run test:read-budget
+
   build:
     name: build (node 24)
     runs-on: ubuntu-latest
