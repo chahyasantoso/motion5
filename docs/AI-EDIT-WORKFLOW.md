@@ -36,6 +36,8 @@ One request at a time. The workflow applies the single `.json` file it finds in 
 
 Each entry in `edits` names a `path` and exactly one of three modes: `find` with `replace` to rewrite an anchor, `create` with the full content of a new file, or `delete` set to `true`. Naming two modes is refused rather than guessed at.
 
+A request carries at most **50 edits**, and a fifty-first is a refusal naming the count it found. That is a ceiling on one request rather than on one slice: a larger batch splits into two requests applied one after the other, and the second is written once the commit that consumed the first has removed it. The batch-first rule below is unchanged by that, because two requests for one slice is still nothing like one request per edit.
+
 ## The anchor rule
 
 An anchor must match **exactly once** in the file. Zero matches and more than one match are both refusals, and the report tells you the count it actually found.

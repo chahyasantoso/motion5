@@ -43,17 +43,11 @@ export interface ProjectHandle {
   /**
    * Runs `recipe` as one transaction and commits what it staged exactly once.
    *
-   * `n` authored ops across `m` tracks cost one candidate build, one graph replacement, one
-   * `ObservationState` commit and one flush, where the same sequence spelled one op at a time costs
-   * `n` of each. A throw inside the recipe commits nothing, reaches no hook, and issues no live
-   * handle, because only the commit registers a handle's token; the throw travels verbatim.
-   *
-   * `SchemaTransaction` is the narrowed surface the recipe is handed, and it is a surface rather than
-   * a fence: the recipe closes over this handle too. So a verb that applies immediately and would
-   * survive an abort refuses by name with `schema-transaction-immediate` while a recipe is open,
-   * whether it is reached through a handle or through this object. That is both in-place tiers, plus
-   * `mount`, `unmount`, `seek`, `invalidate` and `signal`.
-   * See ADR-064.
+   * `SchemaTransaction` is the narrowed surface the recipe is handed, and it is a surface rather
+   * than a fence: the recipe closes over this handle too, so a verb that applies immediately
+   * refuses by name with `schema-transaction-immediate` while a recipe is open, whether it is
+   * reached through a handle or through this object. What one costs, what a throw inside it commits,
+   * and which verbs refuse are ADR-064's. See ADR-064.
    */
   edit<T>(recipe: (transaction: SchemaTransaction) => T): T;
   addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle;
