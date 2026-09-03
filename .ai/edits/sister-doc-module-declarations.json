@@ -1,0 +1,26 @@
+{
+  "message": "feat(scripts): read what a module declares, not only what a class does",
+  "target": 267,
+  "edits": [
+    {
+      "path": "scripts/read-budget-scan.mjs",
+      "find": "const LOCAL_TYPE_DECLARATION = /^[ \\t]*(?:type|interface)[ \\t]+([A-Za-z][\\w$]*)\\b/;",
+      "replace": "const LOCAL_TYPE_DECLARATION = /^[ \\t]*(?:type|interface)[ \\t]+([A-Za-z][\\w$]*)\\b/;\nconst VALUE_DECLARATION =\n  /^[ \\t]*(?:export[ \\t]+)?(?:default[ \\t]+)?(?:async[ \\t]+)?(?:function|class|const|let|var|enum)[ \\t]+([A-Za-z][\\w$]*)\\b/;"
+    },
+    {
+      "path": "scripts/read-budget-scan.mjs",
+      "find": " * `#mountNode` is the member that proves the difference: `mount` calls it one line above its own\n * declaration.\n */",
+      "replace": " * `#mountNode` is the member that proves the difference: `mount` calls it one line above its own\n * declaration.\n *\n * A `#` member and a type are not the whole of what a file declares, and not one of the four sources\n * still owed a document declares a `#` member at all. A module keeps its reasoning on plain\n * `function` and `const` declarations, at the top level and inside the one function that owns them,\n * so those are declarations here too. Exported or not, because a heading may name an exported member\n * that left its summary line in the source and moved only the argument.\n */"
+    },
+    {
+      "path": "scripts/read-budget-scan.mjs",
+      "find": "    const match = MEMBER_DECLARATION.exec(line) ?? TYPE_DECLARATION.exec(line);",
+      "replace": "    const match =\n      MEMBER_DECLARATION.exec(line) ??\n      TYPE_DECLARATION.exec(line) ??\n      VALUE_DECLARATION.exec(line);"
+    },
+    {
+      "path": "packages/core/test/unit/scripts/read-budget-scan.test.ts",
+      "find": "    const stale = await withPlanted(files, (p) => scan(p, [], pending));\n    expect(stale).toEqual([expect.stringContaining(\"no longer needs its pending entry\")]);\n  });\n});",
+      "replace": "    const stale = await withPlanted(files, (p) => scan(p, [], pending));\n    expect(stale).toEqual([expect.stringContaining(\"no longer needs its pending entry\")]);\n  });\n\n  // Every source still owed a document is a module rather than a class, so a mirror that reads only\n  // `#` members and types answers that each heading in a module's document names nothing declared.\n  // The heading set is what a file declares, and a module declares functions and consts, including\n  // the ones a single function owns, which is where a module's densest reasoning actually sits.\n  it(\"RB-17: names what a module declares, not only what a class does\", () => {\n    const source = [\n      \"// Docs: ./graph-runtime.md\",\n      \"const LIMIT = 1;\",\n      \"export function run(): void {\",\n      \"  const step = (): void => {};\",\n      \"  step();\",\n      \"}\",\n      \"\",\n    ].join(\"\\n\");\n    expect(checkMirror(ORDINARY, source, doc(\"LIMIT\", \"run\", \"step\"))).toEqual([]);\n    const reversed = checkMirror(ORDINARY, source, doc(\"run\", \"LIMIT\"));\n    expect(reversed).toEqual([expect.stringContaining(\"breaks the declaration order\")]);\n    expect(checkMirror(ORDINARY, source, doc(\"absent\"))).toEqual([\n      expect.stringContaining(\"names nothing the source declares\"),\n    ]);\n  });\n});"
+    }
+  ]
+}
