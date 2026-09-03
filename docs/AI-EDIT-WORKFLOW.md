@@ -60,6 +60,22 @@ The consequence for the anchor rule is exact. An anchor must match exactly once 
 
 **A file that does not survive one read may not be edited by anchor. Split it first.** `npm run test:read-budget` is how you find out which side of that line a file is on, and `scripts/read-budget-scan.mjs` carries the measured numbers, the budget they justify, and every file still over it.
 
+## The sister doc
+
+A source file over 30,000 bytes keeps its private reasoning in a sibling document rather than in docblocks. `packages/core/src/runtime/project-runtime.ts` implies `packages/core/src/runtime/project-runtime.md`, by swapping one extension, so a reader holding a source path already holds the document path. No index, no registry, no naming decision per file.
+
+**Read the document first and the source second.** The document is the map: it hands over the member list in one call, which is what makes a source read that truncates afterwards recoverable rather than silently dangerous. The lookup is unconditional and absence is an answer: derive the path, look, and if there is no document then the source carries its own docs.
+
+What moves is every docblock on a private member and on a file-local type. What stays is the docblock on anything **exported**, because TypeScript carries those into the declaration file and into editor hover, so moving one deletes an API doc rather than relocating it; a long one leaves its summary line behind and moves only the argument. What also stays is a comment explaining the statement on the next line, which is not a docblock and which no heading owns.
+
+An ADR still owns anything an ADR owns. The precedence is ADR first, sister doc second, comment last: a statement a record owns collapses to `See ADR-064.` and that pointer lives in the document now. A document never restates an ADR's content, because that is the second copy this convention exists to avoid.
+
+The mirror is mechanical, so a script can check it. One `##` heading per documented declaration, named exactly as the source declares it, in **source declaration order**; a preamble uses `###` and claims nothing. The source names its document on line one as `// Docs: ./<name>.md`, and the document names the source in its `H1`. No code blocks reproducing an implementation, because a document that quotes a body is a copy with a staleness window.
+
+Both halves are budgeted. `scripts/read-budget-scan.mjs` holds `READ_BUDGET_BYTES` and scans markdown under `packages/core/src` for exactly that reason: a pair whose document loses its tail is the original bug with an extra file in it. It also refuses a mirrored source that still carries a private docblock, which is the check that makes the move total rather than partial. What it deliberately does not check is whether the prose is still true, and that is the residual risk of the convention rather than something it claims away.
+
+One warning about writing the move. Create the document complete in the first request and delete the docblocks in later ones, so the transient state across a slice is duplication rather than absence. Two copies for three commits is a non-event; zero copies for one commit is how reasoning dies.
+
 ## What it will not do
 
 It refuses any path under `.git/`, `node_modules/`, `.ai/`, and `.github/workflows/`. A workflow with repository-write power that can rewrite workflows is a different and much larger permission, so an edit to CI is a normal pull request reviewed by a human.
