@@ -47,7 +47,7 @@ export const READ_BUDGET_BYTES = 60_000;
 export const READ_BUDGET_EXCEPTIONS = [
   {
     path: "packages/core/src/runtime/project-runtime.ts",
-    ceiling: 87_615,
+    ceiling: 66_019,
     issue: 267,
   },
 ];
