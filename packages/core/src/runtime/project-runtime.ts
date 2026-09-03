@@ -152,8 +152,12 @@ interface SchemaPlan {
  *
  * `touched` names the nodes this transaction changed, and it is seeded into one flush once the
  * commit settled. Empty is a real answer rather than a default: a motion add or destroy derives no
- * node and no edge at all, and a removal's node is gone with nothing left depending on it, because
- * `finalizeGraph` would have refused the candidate otherwise.
+ * node and no edge at all, and a removal names the nodes that were reading the removed one, which
+ * is empty for most removals and is a different claim from naming nothing. `finalizeGraph` refuses
+ * a candidate whose removed node is still named by an edge, so a reader that is an edge never
+ * reaches here; a solver reads its chain members through `solves` with no edge pointing that way,
+ * and that candidate is accepted. The premise this replaces read the first half as the whole rule.
+ * See `RA-98` and `RA-99`.
  */
 interface SchemaCommit {
   readonly effects: readonly SchemaEffect[];
@@ -908,24 +912,46 @@ export class ProjectRuntime {
   /**
    * Every node that reads this one, for an editor's preflight rather than for enforcement.
    *
-   * Read from `GraphIR.dependents`, which is the one derivation of reverse topology, and it names
-   * both kinds of reader: the observer of an edge, and a solver that reads this node as a chain
-   * member. Enforcement stays where ADR-050 put it, in the candidate graph, which refuses a removal
-   * that would orphan a live dependant; this answers what a caller is told before it tries, and a
+   * Enforcement stays where ADR-050 put it, in the candidate graph, which refuses a removal that
+   * would orphan a live dependant; this answers what a caller is told before it tries, and a
    * preflight that is wrong in the permissive direction is worse than none, because it is read.
+   *
+   * A projection of `#readersOf` and nothing else. What this member owns is the public contract: the
+   * live gate, and an id this project never had answered rather than refused, because a preflight
+   * that refused an unknown id would make an editor ask twice. The question itself belongs below.
    */
   dependantsOf(nodeId: string): readonly string[] {
     this.#assertLive();
-    // Read, never rederived. `finalizeGraph` freezes `dependents` onto the `GraphIR` once per
-    // graph, from the walk that already had the solver fan-in in hand, so the filter this replaces
-    // was both a duplicate and the weaker of the two derivations: it saw `edges` alone, and a solver
-    // reads its members through `solves` with no edge pointing that way, so every member of every
-    // chain was missing from the one query an editor asks before it deletes a node.
-    //
-    // Deduplicated here rather than in the derivation. `deriveDependents` keeps a reader once per
-    // dependency deliberately, because a consumer walking it guards on its own visited set; this
-    // answers a set of readers, so the collapse belongs to the consumer that wants a set. First
-    // occurrence wins, which is the committed node order the filter produced. See `RA-86`, `RA-87`.
+    return this.#readersOf(nodeId);
+  }
+  /**
+   * Which nodes read one node, and the one owner of that question.
+   *
+   * Read from `GraphIR.dependents`, never rederived. `finalizeGraph` freezes it onto the `GraphIR`
+   * once per graph, from the walk that already had the solver fan-in in hand, so it names both kinds
+   * of reader: the observer of an edge, and a solver that reads this node as a chain member. The
+   * filter this replaced saw `edges` alone, which is why every member of every chain was missing
+   * from the one query an editor asks before it deletes a node.
+   *
+   * Two callers ask it, for two purposes, and it is one question rather than two: what a caller is
+   * told before it removes a node, and which nodes have to publish once it did. Those two coincide
+   * by construction only while one mechanism answers both, and this file has already paid once for
+   * two derivations of exactly this fact, so the second consumer reads this rather than the graph.
+   *
+   * Private, and `#derive` deliberately does not call `dependantsOf` instead. That member owns a
+   * public contract, which is about a caller from outside, so binding a commit's own invariant to it
+   * would make the seed depend on a preflight's promises and point the dependency at this class's
+   * surface rather than away from it. It is not passed in as a third parameter either: `#derive`
+   * already reads the retained pair off this class under the same ordering rule, so a parameter for
+   * one of two identically ordered reads would claim the two are different.
+   *
+   * Deduplicated and frozen here, so the public member has nothing left to do. `deriveDependents`
+   * keeps a reader once per dependency deliberately, because a consumer walking it guards on its own
+   * visited set; both consumers here want a set, so the collapse belongs to them and this is where
+   * they both are. First occurrence wins, which is the committed node order the filter produced.
+   * See `RA-86`, `RA-87` and `RA-99`.
+   */
+  #readersOf(nodeId: string): readonly string[] {
     const readers: readonly string[] | undefined = this.#graph.graph.dependents[nodeId];
     return Object.freeze(readers === undefined ? [] : [...new Set(readers)]);
   }
@@ -1382,7 +1408,8 @@ export class ProjectRuntime {
    * created Motion is built before the graph is asked and destroyed if it refuses, so a driver that
    * cannot be created leaves no definition and no node behind (ADR-032). A removed track settles its
    * eviction, its dispose and its deregistration as one step, because its entry is already gone by
-   * the time any of them runs. A destroyed Motion settles after that, with nothing to revert, so a
+   * the time any of them runs, and seeds every node that was reading it. A destroyed Motion settles
+   * after that, with nothing to revert, so a
    * Motion whose last track the same commit removed is destroyed after that track deregistered from
    * it. An added track compiles before the graph is asked, then registers with its Motion and mounts
    * after it accepted, in that order because Motion resolves by id against the live compiled map
@@ -1418,6 +1445,24 @@ export class ProjectRuntime {
         this.#disposeTrack?.(nodeId);
         if (motionId !== undefined) this.#removeMotionTrack?.(motionId, nodeId);
       });
+      // Not the removed node, which is gone, but every node that was reading it. A removal seeded
+      // nothing at all, on the premise that `finalizeGraph` would have refused a candidate anything
+      // still depended on. That holds for every reader which is an edge and fails for the one that
+      // is not: a solver reads its members through `solves`, no edge points that way, and under the
+      // bare goal slot a chain that loses its leaf still has exactly one, so the candidate is
+      // accepted and the solver's member set moves with nobody told. See `RA-98` and `RA-99`.
+      //
+      // Read here rather than after the graph is replaced, and that ordering is the whole
+      // correctness of it: `#apply` derives before it asks, so this reads the graph the removal is
+      // replacing, which is the only one that still knows who read a node it no longer contains.
+      // `RA-99` fails if it moves after `replaceGraph`, because the answer becomes empty.
+      //
+      // A reader this same commit also removed is seeded and harmless rather than filtered out: the
+      // publisher walks the committed order, so a seed the graph does not contain publishes nothing,
+      // and a membership test here would be a second opinion about what the pair holds. A reader a
+      // replacement in this same commit already seeded is seeded twice and harmless too, because
+      // `flush` collapses its seeds.
+      touched.push(...this.#readersOf(nodeId));
     }
     for (const motionId of this.#motions.keys())
       if (!motions.has(motionId)) settle.push(() => this.#destroyMotion?.(motionId));
