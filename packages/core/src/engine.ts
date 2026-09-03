@@ -1,3 +1,4 @@
+// Docs: ./engine.md
 import type {
   MotionDefinition,
   Patch,
@@ -43,17 +44,11 @@ export interface ProjectHandle {
   /**
    * Runs `recipe` as one transaction and commits what it staged exactly once.
    *
-   * `n` authored ops across `m` tracks cost one candidate build, one graph replacement, one
-   * `ObservationState` commit and one flush, where the same sequence spelled one op at a time costs
-   * `n` of each. A throw inside the recipe commits nothing, reaches no hook, and issues no live
-   * handle, because only the commit registers a handle's token; the throw travels verbatim.
-   *
-   * `SchemaTransaction` is the narrowed surface the recipe is handed, and it is a surface rather than
-   * a fence: the recipe closes over this handle too. So a verb that applies immediately and would
-   * survive an abort refuses by name with `schema-transaction-immediate` while a recipe is open,
-   * whether it is reached through a handle or through this object. That is both in-place tiers, plus
-   * `mount`, `unmount`, `seek`, `invalidate` and `signal`.
-   * See ADR-064.
+   * `SchemaTransaction` is the narrowed surface the recipe is handed, and it is a surface rather
+   * than a fence: the recipe closes over this handle too, so a verb that applies immediately
+   * refuses by name with `schema-transaction-immediate` while a recipe is open, whether it is
+   * reached through a handle or through this object. What one costs, what a throw inside it commits,
+   * and which verbs refuse are ADR-064's. See ADR-064.
    */
   edit<T>(recipe: (transaction: SchemaTransaction) => T): T;
   addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle;
@@ -127,25 +122,9 @@ function assertValidProject(project: unknown): ProjectDefinition {
     );
   return result.value;
 }
-// Local on purpose. ProjectRuntime formats its own errors for its own layer, and promoting a shared
-// formatter into the contract module would widen the package's declaration surface, which a
-// governance gate scans, for two call sites.
 function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
-/**
- * Runs every step, then reports once.
- *
- * Teardown has no partial success worth keeping. A step that throws leaves the steps behind it
- * unrun, and those are the ones that dispose the Motion, drop the map entry, and release the
- * compiled Track, so stopping early converts one host failure into a leak. Every step is therefore
- * attempted and the failures are collected. Issues #143 and #145.
- *
- * A lone failure is rethrown verbatim rather than wrapped. `ProjectRuntime.rejectAfterRollback`
- * attaches whatever a rollback hook threw to its own `AggregateError`, and callers assert on that
- * value's identity and message, so renaming a single host failure here would break the precedence
- * contract this is meant to support. See ADR-035.
- */
 function runAllAndReportOnce(steps: readonly (() => void)[], context: string): void {
   const failures: unknown[] = [];
   for (const step of steps) {
@@ -158,15 +137,6 @@ function runAllAndReportOnce(steps: readonly (() => void)[], context: string): v
   if (failures.length === 0) return;
   throw failures.length === 1 ? failures[0] : new AggregateError(failures, context);
 }
-/**
- * Returns the error to throw for `failure`, after running `cleanup`.
- *
- * A cleanup failure is attached, never substituted. The reason an operation was refused outranks
- * anything its teardown reports, because the caller can act on the first and not on the second.
- * Same rule and same shape as `ProjectRuntime.rejectAfterRollback`, applied at the owner that
- * created the things being released. Returns rather than throws so control flow at each call site
- * is a plain `throw`, with no reliance on never-returning call analysis.
- */
 function afterCleanup(failure: unknown, cleanup: () => void): unknown {
   try {
     cleanup();
@@ -190,9 +160,6 @@ export class Engine {
   }
   load(project: ProjectDefinition): ProjectHandle {
     const acceptedProject = assertValidProject(project);
-    // Named once, because two things ask it now: the load-time compile below, and the seam that hands
-    // `ProjectRuntime` the registry's answer about a candidate. One reference, so the compile and the
-    // predicate cannot end up asking different registries. See ADR-062.
     const registry = this.#plugins;
     const tracks = new Map<string, Track>();
     const nodes = new Map<string, CompilableTrack>();
@@ -205,9 +172,6 @@ export class Engine {
     }
     for (const track of acceptedProject.freeTracks ?? [])
       nodes.set(qualifyFreeTrack(track.id).value, { ...track, id: track.id });
-    // One owner for resolve, prepare, compile, and construct. Both entry points below reached the
-    // same four steps in their own copy, which is how the authored keyframes could be flattened for
-    // plugin resolution on one path and reach the interpolator still grouped on the other.
     const compileTrack = (trackDef: CompilableTrack, nodeId: string): Track => {
       const existing = tracks.get(nodeId);
       if (existing) return existing;
@@ -290,19 +254,12 @@ export class Engine {
     const consumers = new Map<string, ClockConsumer>();
     const triggerFactory = this.#options.triggerFactory ?? createDefaultTriggerFactory();
     let runtime: ProjectRuntime | undefined;
-    // Drops both registrations before disposing, so a created trigger has exactly one owner even
-    // when a host `dispose` throws: the entry is already gone, so no later teardown can reach it a
-    // second time and no caller can reach a released driver by id. Issue #145.
     const releaseMotion = (motionId: string): void => {
       const created = createdTriggers.get(motionId);
       consumers.delete(motionId);
       createdTriggers.delete(motionId);
       created?.dispose();
     };
-    // Hoisted out of the runtime options because the failed-load path needs it too: when `load()`
-    // throws before the runtime exists, there is no `runtime.dispose()` to route through. Emptying
-    // the maps before disposing anything also makes this idempotent, which it must be, because
-    // `ProjectRuntime`'s constructor already calls it when `GraphRuntime` throws. Issue #143.
     const disposeComposition = (): void => {
       const built = [...motions.values()];
       const triggers = [...createdTriggers.values()];
@@ -323,11 +280,6 @@ export class Engine {
         "Composition disposal failed.",
       );
     };
-    // One owner of the registration, because the trigger swap below has to make exactly the decision
-    // the build made, and two copies of an exhaustive switch is how they end up disagreeing about a
-    // binding kind. Total and exhaustive, with no `??` fallback, so a push-driven trigger cannot
-    // silently inherit motion.onTick, and no Motion can ever hold both a driver and its own clock
-    // advance.
     const bindClock = (motionId: string, motion: Motion, created: CreatedTrigger): void => {
       const binding = created.clockBinding;
       switch (binding.kind) {
@@ -406,11 +358,6 @@ export class Engine {
     };
     try {
       for (const nodeId of nodes.keys()) compile(nodeId);
-      // The only seam between the publisher's edge resolution and `Track.compose`, and it forwards
-      // one argument because there is only one to forward. The flat input bag that used to travel
-      // beside the scoped requirement inputs is gone with the channel that filled it, so this seam
-      // can no longer undo the namespace separation the publisher established: there is no
-      // parameter here to merge an upstream value into. See ADR-044 and ADR-047.
       const compose =
         (node: {
           id: string;

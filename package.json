@@ -23,6 +23,7 @@
     "test:ports": "vitest run packages/core/test/contract/ports.test.ts",
     "test:integration": "vitest run packages/core/test/integration",
     "test:boundaries": "node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts",
+    "test:read-budget": "node scripts/read-budget-scan.mjs && vitest run packages/core/test/unit/scripts/read-budget-scan.test.ts",
     "benchmark": "node performance/graph-benchmark.mjs",
     "test:watch": "vitest",
     "dev": "npm run dev --workspace=@motion5/react-demo",
