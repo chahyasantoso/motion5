@@ -85,6 +85,8 @@ const TYPE_DECLARATION = /^[ \t]*(?:export[ \t]+)?(?:type|interface)[ \t]+([A-Za
 const LOCAL_TYPE_DECLARATION = /^[ \t]*(?:type|interface)[ \t]+([A-Za-z][\w$]*)\b/;
 const VALUE_DECLARATION =
   /^[ \t]*(?:export[ \t]+)?(?:default[ \t]+)?(?:async[ \t]+)?(?:function|class|const|let|var|enum)[ \t]+([A-Za-z][\w$]*)\b/;
+const LOCAL_VALUE_DECLARATION =
+  /^[ \t]*(?:async[ \t]+)?(?:function|class|const|let|var|enum)[ \t]+([A-Za-z][\w$]*)\b/;
 const MEMBER_HEADING = /^## (.+?)[ \t]*$/;
 export async function walk(directory) {
   let entries;
@@ -172,12 +174,26 @@ export function headings(doc) {
   return named;
 }
 /**
- * Every private member and file-local type in this source that still carries a docblock.
+ * Every declaration this source keeps to itself that still carries a docblock.
+ *
+ * A private member, a file-local type, and a `function` or `const` the module does not export,
+ * including one a single function owns as a closure, which is where a module's densest reasoning
+ * actually sits. Without that third question the check was class-shaped, and a mirrored module that
+ * kept every docblock in place passed the one check bought to prove the source is empty, which is
+ * the proxy ADR-008 refuses: green while the thing it exists to catch is untouched.
  *
  * The exported surface is deliberately not here. TypeScript carries an exported docblock into the
  * declaration file and into editor hover, so moving one would delete an API doc rather than
- * relocate it. A comment explaining the statement on the next line is not a docblock either, and
- * no heading in the mirror owns one.
+ * relocate it. That is why this asks `LOCAL_VALUE_DECLARATION` rather than the export-tolerant
+ * `VALUE_DECLARATION` that `declarations` asks, which is the same split `LOCAL_TYPE_DECLARATION`
+ * already draws for a type: a heading may name an exported member, and an exported member may still
+ * keep its docblock.
+ *
+ * A comment explaining the statement on the next line is not a docblock either, and no heading in
+ * the mirror owns one. A `//` block above a declaration is invisible here for the same reason, and
+ * that is a named gap rather than a claim: widening this to leading `//` runs would flag every
+ * `eslint-disable`-shaped line in the tree, and a check total on the shape it claims is worth more
+ * than one noisy on two.
  */
 export function docblocked(source) {
   const members = [];
@@ -185,7 +201,10 @@ export function docblocked(source) {
   for (let index = 1; index < lines.length; index += 1) {
     if (!lines[index - 1].trimEnd().endsWith("*/")) continue;
     const line = lines[index];
-    const match = MEMBER_DECLARATION.exec(line) ?? LOCAL_TYPE_DECLARATION.exec(line);
+    const match =
+      MEMBER_DECLARATION.exec(line) ??
+      LOCAL_TYPE_DECLARATION.exec(line) ??
+      LOCAL_VALUE_DECLARATION.exec(line);
     if (match !== null) members.push(match[1]);
   }
   return members;

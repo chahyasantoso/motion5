@@ -252,4 +252,34 @@ describe("read budget scan", () => {
       expect.stringContaining("names nothing the source declares"),
     ]);
   });
+
+  // RB-13's one-directional half, asked of a module. Reading only `#` members and file-local types
+  // made that check vacuous for every source still owed a document, so a mirrored module could keep
+  // every docblock it had and pass. The exported declaration is what proves the widening did not
+  // eat the partition: it keeps its docblock, because TypeScript carries that one into the
+  // declaration file and into editor hover.
+  it("RB-18: refuses a module declaration carrying a docblock, and keeps the exported one", () => {
+    const source = [
+      "// Docs: ./graph-runtime.md",
+      "/** Why. */",
+      "const LIMIT = 1;",
+      "export function run(): void {",
+      "  /** Why. */",
+      "  const step = (): void => {};",
+      "  step();",
+      "}",
+      "",
+    ].join("\n");
+    const violations = checkMirror(ORDINARY, source, doc("LIMIT", "run", "step"));
+    expect(violations).toHaveLength(2);
+    expect(violations[0]).toContain("LIMIT");
+    expect(violations[1]).toContain("step");
+    const exported = [
+      "// Docs: ./graph-runtime.md",
+      "/** Kept, because a consumer reads it. */",
+      "export function run(): void {}",
+      "",
+    ].join("\n");
+    expect(checkMirror(ORDINARY, exported, doc("run"))).toEqual([]);
+  });
 });
