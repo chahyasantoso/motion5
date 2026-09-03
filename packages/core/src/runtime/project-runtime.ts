@@ -69,25 +69,18 @@ type TrackEntry = {
   motionId?: string;
   token: number;
   /**
-   * The animated half of the last live write, and nothing else.
-   *
-   * Retained here rather than inside the compiled Track because the retained definition
-   * deliberately does not move for an override, so this is what tells a later write that the
-   * animated path still has to run: a revert names no key at all, and without this an
-   * `overrideValues({})` would be indistinguishable from a static-only write and would leave a
-   * patched timeline patched. A private map entry; no public surface carries it. See ADR-060.
+   * The animated half of the last live write, and nothing else. A private map entry, carried by no
+   * public surface, and why an override needs one is ADR-060's. See ADR-060.
    */
   overlay: Readonly<Record<string, unknown>>;
 };
 /**
  * One retained Motion, and the token every handle to it captures.
  *
- * The token is drawn from the same `#nextToken` the track entries use, because the staleness
- * machinery here is per-entry rather than per-track-ness: `#liveOf` below answers for both maps, so a
- * motion handle needed a token and a noun rather than a second token policy. See ADR-056.
- *
- * `definition.tracks` is empty for a runtime add by construction and authoritative for a loaded one,
- * which is why no reader trusts it: `#ownedBy` is the one owner of which tracks a motion has.
+ * The token comes from the same `#nextToken` the track entries use, because the staleness machinery
+ * is per-entry rather than per-track-ness, which is ADR-061's. No reader trusts `definition.tracks`,
+ * because it is empty for a runtime add and authoritative for a loaded one: `#ownedBy` is the one
+ * owner of which tracks a motion has. See ADR-056 and ADR-061.
  */
 type MotionEntry = {
   definition: MotionDefinition;
@@ -100,14 +93,9 @@ export interface StagedTrack {
 /**
  * One side effect a structural commit needs in place before the graph is asked to accept it.
  *
- * `revert` is the inverse, and it is optional because two of the categories have nothing to undo:
- * a removal and a motion destroy reach the candidate graph with no hook applied yet, and an empty
- * revert set is what keeps their failures byte-identical to the raw `replaceGraph` throw they used
- * to be.
- *
- * An effect counts as applied only once its `apply` returned. A hook that refused before it wrote
- * anything must not be restored, which is the behaviour `U-7` pins on `replaceMotionTrack` and
- * `RA-2` pins on `createMotion`.
+ * `revert` is the inverse, and it is optional because a removal and a motion destroy reach the
+ * candidate graph with no hook applied yet. An effect counts as applied only once its `apply`
+ * returned, which is `#apply`'s own. See `U-7` and `RA-2`.
  */
 interface SchemaEffect {
   readonly apply: () => void;
@@ -117,18 +105,13 @@ interface SchemaEffect {
  * One structural transaction, as data, and now only the pair the graph is asked to accept.
  *
  * `tracks` and `motions` are what the graph is asked to accept and, once it has, what the retained
- * maps become. They are adopted from the same pair that built the snapshot rather than rewritten
- * beside it, so the committed graph and the maps cannot drift: `RA-7` compares them by identity,
- * because a fresh definition object for an untouched entry is exactly what costs the incremental
- * builder its cache hit. See ADR-058.
+ * maps become, adopted from the same pair that built the snapshot so the committed graph and the maps
+ * cannot drift. Why an untouched entry is handed through by identity is ADR-058's, and `RA-7`
+ * compares them that way.
  *
- * Adopted by pointer, and each half is optional, which is the ownership statement this pair carries
- * now. A half a commit did not move is absent rather than handed back, so this class keeps the map
- * it already held: a commit that moved one entry stops clearing both maps and re-writing V of them,
- * including the half no entry point touched. What that costs is that a `Map` a plan builder made
- * becomes the map this class holds and mutates, so the retained fields are no longer `readonly` and
- * a builder may not keep what it handed over. `#stageTracks` and `#stageMotions` are the only two
- * things that make one, and therefore the only two allowed to fill this. See `RA-92`.
+ * Each half is optional: a half this commit did not move is absent rather than handed back, and what
+ * pointer adoption buys and costs is ADR-064's third amendment. `#stageTracks` and `#stageMotions`
+ * are the only two things that make one, and therefore the only two allowed to fill this. `RA-92`.
  *
  * What a plan no longer carries is a hook list: a commit's hooks are derived from what it commits,
  * by `#derive` below, and every entry point is a map builder that names no hook at all. Why a hook
@@ -143,15 +126,13 @@ interface SchemaPlan {
  * What one accepted pair costs, and the only thing in this file that names a hook.
  *
  * `effects` are applied before the graph sees the candidate and reverted in **apply order** when it
- * refuses. Apply order rather than reverse, and that is load-bearing rather than incidental: a
- * replacement republishes the displaced compiled Track before restoring the Motion entry, because
- * the restore resolves and seeds by id. `settle` runs only after acceptance.
- * See ADR-031 and ADR-045.
+ * refuses, which is ADR-045's republish-before-restore rule rather than an incidental ordering.
+ * `settle` runs only after acceptance. See ADR-031 and ADR-045.
  *
- * `touched` names the nodes this transaction changed, and it is seeded into one flush once the
- * commit settled. Empty is a real answer rather than a default, and why a commit that derives no
- * node does not flush at all is ADR-064's amendment. Which nodes a removal names, and why a solver
- * is the reader an edge test misses, is `#derive`'s own comment, with `RA-98` and `RA-99`.
+ * `touched` names the nodes this transaction changed and is seeded into one flush once the commit
+ * settled. Empty is a real answer rather than a default, and why a commit that derives no node does
+ * not flush at all is ADR-064's amendment. Which nodes a removal names, and why a solver is the
+ * reader an edge test misses, is ADR-051's amendment. See `RA-98` and `RA-99`.
  */
 interface SchemaCommit {
   readonly effects: readonly SchemaEffect[];
@@ -172,11 +153,10 @@ interface OpenTransaction {
 /**
  * The one seam by which a live value reaches the compiled Track this runtime does not own.
  *
- * One hook rather than one per entry point, and that is the ownership statement restored rather than
- * reversed: there is one mechanism, so there is one hook. What separates `setValues` from
- * `overrideValues` is the retained definition, which is this runtime's own, and at the compiled
- * Track it is one boolean. `undefined` for the overlay is a write no animated key is involved in,
- * which is what keeps a static-only write on the path it was already on. See ADR-059 and ADR-060.
+ * One hook, because there is one mechanism, and what separates `setValues` from `overrideValues` is
+ * the retained definition, which is ADR-060's. `undefined` for the overlay is a write no animated key
+ * is involved in, which keeps a static-only write on the path it was already on. See ADR-059,
+ * ADR-060.
  */
 export type LiveValueWriter = (
   nodeId: string,
@@ -187,10 +167,9 @@ export type LiveValueWriter = (
 /**
  * How this layer asks what an authored record resolves to.
  *
- * One hook, one implementation. `PluginRegistry.resolveForKeyframes` is the only thing that answers
- * it, and it stays the only owner of key ownership, slot declaration and the plugin chain; this
- * runtime depends on a function so that it can read that answer without holding a registry it has no
- * other reason to hold. See ADR-062.
+ * One hook, one implementation: `PluginRegistry.resolveForKeyframes` stays the only owner of key
+ * ownership, slot declaration and the plugin chain, and this runtime depends on a function rather
+ * than on a registry it has no other reason to hold. See ADR-062.
  */
 export type KeyframeResolver = (
   keyframes: Readonly<Record<string, unknown>>,
@@ -204,9 +183,8 @@ export interface ProjectRuntimeOptions {
   /**
    * How one node's interpolated state is read, forwarded to `GraphRuntime` untouched.
    *
-   * Total, for the reason the option it forwards to gives: the supplier may not answer "this node
-   * has none", because the publisher's report for a member with no such function names the seam
-   * rather than the node. The function it returns resolves the compiled Track per call.
+   * Total, for the reason the option it forwards to gives. The function it returns resolves the
+   * compiled Track per call.
    */
   readonly interpolated?: (node: GraphNode) => () => MemberState;
   readonly setProgress?: (nodeId: string, progress: number) => void;
@@ -218,15 +196,9 @@ export interface ProjectRuntimeOptions {
    * The registry's own answer about one authored record, as data rather than as a refusal.
    *
    * Optional, because a project may be loaded with no `PluginRegistry` at all, and total when it is
-   * present: a supplier allowed to answer "I have nothing for this record" would make the predicate
-   * that reads it depend on which of two absences it was handed. With no seam every replacement
-   * builds, exactly as it did before the predicate existed, which is what keeps every prior
-   * registry-free rig byte-identical.
-   *
-   * The second parameter is a diagnostics path rather than a node id, and that is the one thing
-   * about this signature worth stating: `engine.ts` already asks the registry with
-   * `<node>.keyframes` there, so an option declared to take an id would either mis-cite every
-   * diagnostic it produced or force a second normalization at the wiring site. See ADR-062.
+   * present. With no seam every replacement builds, which keeps every prior registry-free rig
+   * byte-identical. The second parameter is a diagnostics path rather than a node id, spelled exactly
+   * as `compileTrack` spells it, which is the signature ADR-062 named. See ADR-062.
    */
   readonly resolveKeyframes?: KeyframeResolver;
   readonly addMotionTrack?: (motionId: string, trackId: string, duration?: number) => void;
@@ -235,11 +207,9 @@ export interface ProjectRuntimeOptions {
   /**
    * The two tier 0 seams: a Motion's trigger and its stagger, neither of which any node carries.
    *
-   * Two hooks rather than one, because which one an edit asks is half of what the edit claims. A
-   * stagger routed through the trigger hook would dispose a live driver and resubscribe a host
-   * source for a field no driver reads, and one hook taking both fields could not tell that from a
-   * correct edit. Named beside the `addMotionTrack` family, and named for what they do: a trigger
-   * carries a disposable resource behind it, a stagger is a bare field.
+   * Two hooks rather than one, because which one an edit asks is half of what the edit claims, and
+   * why is ADR-061's amendment. Named beside the `addMotionTrack` family, and named for what they do:
+   * a trigger carries a disposable resource behind it, a stagger is a bare field. See ADR-061.
    */
   readonly replaceMotionTrigger?: (motionId: string, definition: MotionDefinition) => void;
   readonly setMotionStagger?: (motionId: string, stagger?: number) => void;
@@ -265,11 +235,11 @@ export class ProjectRuntime {
   /**
    * The retained pair, and the two fields a commit adopts rather than rewrites.
    *
-   * Not `readonly`, because a commit replaces the map object instead of clearing it and re-`set`ing
-   * every entry back into it. The map it adopts was made by `#stageTracks` or `#stageMotions`, which
-   * are the only two things in this class that make one, and nothing holds it after `#commit` has
-   * been handed it. Every reader still goes through `#readTracks` and `#readMotions`, which answer a
-   * `ReadonlyMap`, and both in-place tiers still write through these by id. See `RA-92`, `RA-97`.
+   * Not `readonly`, because a commit replaces the map object rather than rewriting its entries, which
+   * is ADR-064's third amendment. The map it adopts was made by `#stageTracks` or `#stageMotions` and
+   * nothing holds it afterwards. Every reader still goes through `#readTracks` and `#readMotions`,
+   * which answer a `ReadonlyMap`, and both in-place tiers still write through these by id.
+   * See `RA-92` and `RA-97`.
    */
   #tracks = new Map<string, TrackEntry>();
   #motions = new Map<string, MotionEntry>();
@@ -383,23 +353,14 @@ export class ProjectRuntime {
   /**
    * The track map this commit will hand over, mutable, and copied once rather than once per op.
    *
-   * Outside a recipe it is a copy of the retained map, and that copy is the floor rather than an
-   * expense to remove: `#derive` reads the retained pair to decide what a commit costs, and a
-   * candidate the graph refuses has to leave it exactly as it was, so the pair the graph is asked
-   * about cannot be the pair this class is still holding.
+   * Outside a recipe it is a copy of the retained map. Inside one it is the pair the recipe is
+   * staging, made once by the first op that stages anything and written into in place by every op
+   * after that, so n ops cost one copy. Why the copy outside a recipe is the floor rather than an
+   * expense to remove is ADR-064's third amendment.
    *
-   * Inside one it is the pair the recipe is staging, made once by the first op that stages anything
-   * and written into in place by every op after that. Every entry point used to build its candidate
-   * with `new Map(this.#readTracks())`, so a 200-op recipe over 600 tracks took 200 full copies,
-   * `O(n x V)`, and the one thing `edit` collapsed to one was the thing `RA-65` counts. `RA-93`
-   * counts this one.
-   *
-   * A half starts as the retained map by identity and is replaced by a copy here, which is what
-   * keeps a recipe that staged nothing answered by identity on the pair rather than by a dirty flag.
-   * So this is called after an entry point's last refusal and never before it: a copy made for an op
-   * that then refused would leave the recipe on a pair that differs from the retained one while
-   * holding exactly the same entries, and `edit` would spend a candidate build and a flush
-   * committing it. `RA-95` is that case, in both directions.
+   * Called after an entry point's last refusal and never before it, because a half that is still the
+   * retained map by identity is the whole answer to whether the recipe staged anything. That
+   * ordering rule is the same amendment's. See `RA-93` and `RA-95`.
    */
   #stageTracks(): Map<string, TrackEntry> {
     const open = this.#open;
@@ -498,10 +459,8 @@ export class ProjectRuntime {
     const accepted = { ...definition, tracks: [] };
     const motions = this.#stageMotions();
     motions.set(accepted.id, { definition: accepted, token: this.#nextToken++ });
-    // A map builder and nothing else. Which hooks a created Motion costs, and that the driver is
-    // built before the graph is asked so a trigger that cannot be created leaves no definition and
-    // no node behind, are `#derive`'s answer now. The track half is absent rather than handed back,
-    // because this commit did not move it. See ADR-032 and ADR-064.
+    // A map builder and nothing else. Which hooks a created Motion costs is `#derive`'s answer, and
+    // the track half is absent because this commit did not move it. See ADR-032 and ADR-064.
     this.#commit({ motions });
     return Object.freeze({ id: accepted.id });
   }
@@ -522,11 +481,8 @@ export class ProjectRuntime {
     this.#signalMotion?.(motionId, signal);
   }
   /**
-   * The resolver for one Motion, refusing an id this project never had.
-   *
-   * Separate from `tryMotion` below for the reason `#entryOf` is separate from `#entryIfLive`: this
-   * one refuses and that one answers, so a caller whose miss is expected rather than mistaken guards
-   * instead of catching, and neither grows a copy of the other's lookup.
+   * The resolver for one Motion, refusing an id this project never had. Separate from `tryMotion`
+   * for the reason `#entryOf` is separate from `#entryIfLive`: this one refuses and that one answers.
    */
   motion(motionId: string): MotionHandle {
     this.#assertLive();
@@ -548,11 +504,9 @@ export class ProjectRuntime {
     return this.#handle(nodeId, entry.token);
   }
   /**
-   * The same resolution as `track` above without the refusal.
-   *
-   * The probe an upsert is written with: a caller branches on the answer at its own call site, which
-   * is what keeps a single `setTrack` verb -- whose cost and refusal set would depend on whether the
-   * node already exists -- out of this surface.
+   * The same resolution as `track` above without the refusal, and the probe an upsert is written
+   * with: a caller branches on the answer at its own call site. Why a single `setTrack` verb is not
+   * on this surface is ADR-063's. See ADR-063.
    */
   tryTrack(nodeId: string): TrackHandle | undefined {
     this.#assertLive();
@@ -581,13 +535,10 @@ export class ProjectRuntime {
   /**
    * Every node that reads this one, for an editor's preflight rather than for enforcement.
    *
-   * Enforcement stays where ADR-050 put it, in the candidate graph, which refuses a removal that
-   * would orphan a live dependant; this answers what a caller is told before it tries, and a
-   * preflight that is wrong in the permissive direction is worse than none, because it is read.
-   *
-   * A projection of `#readersOf` and nothing else. What this member owns is the public contract: the
-   * live gate, and an id this project never had answered rather than refused, because a preflight
-   * that refused an unknown id would make an editor ask twice. The question itself belongs below.
+   * Enforcement stays where ADR-050 put it, in the candidate graph. What this member owns is the
+   * public contract: the live gate, and an id this project never had answered rather than refused,
+   * because a preflight that refused an unknown id would make an editor ask twice. A projection of
+   * `#readersOf`, which owns the question. See ADR-050 and ADR-051.
    */
   dependantsOf(nodeId: string): readonly string[] {
     this.#assertLive();
@@ -596,29 +547,13 @@ export class ProjectRuntime {
   /**
    * Which nodes read one node, and the one owner of that question.
    *
-   * Read from `GraphIR.dependents`, never rederived. `finalizeGraph` freezes it onto the `GraphIR`
-   * once per graph, from the walk that already had the solver fan-in in hand, so it names both kinds
-   * of reader: the observer of an edge, and a solver that reads this node as a chain member. The
-   * filter this replaced saw `edges` alone, which is why every member of every chain was missing
-   * from the one query an editor asks before it deletes a node.
+   * Read from `GraphIR.dependents`, never rederived, so it names both kinds of reader: the observer
+   * of an edge, and a solver that reads this node as a chain member. Why an edge walk misses the
+   * second, why two consumers share one mechanism, and why `#derive` calls neither `dependantsOf`
+   * nor a parameter of its own are all ADR-051's amendment.
    *
-   * Two callers ask it, for two purposes, and it is one question rather than two: what a caller is
-   * told before it removes a node, and which nodes have to publish once it did. Those two coincide
-   * by construction only while one mechanism answers both, and this file has already paid once for
-   * two derivations of exactly this fact, so the second consumer reads this rather than the graph.
-   *
-   * Private, and `#derive` deliberately does not call `dependantsOf` instead. That member owns a
-   * public contract, which is about a caller from outside, so binding a commit's own invariant to it
-   * would make the seed depend on a preflight's promises and point the dependency at this class's
-   * surface rather than away from it. It is not passed in as a third parameter either: `#derive`
-   * already reads the retained pair off this class under the same ordering rule, so a parameter for
-   * one of two identically ordered reads would claim the two are different.
-   *
-   * Deduplicated and frozen here, so the public member has nothing left to do. `deriveDependents`
-   * keeps a reader once per dependency deliberately, because a consumer walking it guards on its own
-   * visited set; both consumers here want a set, so the collapse belongs to them and this is where
-   * they both are. First occurrence wins, which is the committed node order the filter produced.
-   * See `RA-86`, `RA-87` and `RA-99`.
+   * Deduplicated and frozen here, so the public member has nothing left to do, and first occurrence
+   * wins, which is the committed node order. See `RA-86`, `RA-87` and `RA-99`.
    */
   #readersOf(nodeId: string): readonly string[] {
     const readers: readonly string[] | undefined = this.#graph.graph.dependents[nodeId];
@@ -641,11 +576,8 @@ export class ProjectRuntime {
     const token = this.#nextToken++;
     const tracks = this.#stageTracks();
     tracks.set(id, { track: accepted, owner, motionId, token, overlay: NO_OVERLAY });
-    // A map builder and nothing else. That the compile runs before the graph is asked, that the
-    // Motion entry is written after it because Motion resolves by id against the live compiled map,
-    // and that the mount settles last are all `#derive`'s answer now, derived from the fact that
-    // this id is absent from the retained pair. That is also what makes an add-then-remove inside
-    // one recipe cost nothing at all rather than mounting a node the committed graph lacks.
+    // A map builder and nothing else: the compile, the Motion registration and the mount are
+    // `#derive`'s answer, derived from this id being absent from the retained pair.
     // See ADR-031 and ADR-064.
     this.#commit({ tracks });
     return this.#handle(id, token);
@@ -654,13 +586,13 @@ export class ProjectRuntime {
    * Every readable track a motion owns, in commit order, and the one owner of that question.
    *
    * Three readers ask it: the count in the destroy refusal, and both `MotionHandle.definition` and
-   * `MotionHandle.trackIds`. Each carried its own filter before, which is how a motion could
-   * report `tracks: []` while owning three, or a refusal could name a count no handle agreed with.
-   * The committed snapshot was the fourth and is not: asking a question about one motion once per
-   * motion is how a walk of one map became a walk per motion of it, so the snapshot buckets by the
-   * same stored field in one pass and this stays the owner of the single-motion question. It takes the map explicitly because a plan builder asks about the tracks it
-   * is about to commit while a handle asks about the readable ones, and reading `#tracks` here would
-   * make that difference invisible at the call site.
+   * `MotionHandle.trackIds`. Each carried its own filter before, which is how a motion could report
+   * `tracks: []` while owning three, and ADR-061 records why they share this one. The committed
+   * snapshot was the fourth and is not, for ADR-064's third amendment's reason.
+   *
+   * It takes the map explicitly because a plan builder asks about the tracks it is about to commit
+   * while a handle asks about the readable ones, and reading `#tracks` here would make that
+   * difference invisible at the call site. See ADR-061.
    */
   #ownedBy(
     tracks: ReadonlyMap<string, TrackEntry>,
@@ -669,11 +601,9 @@ export class ProjectRuntime {
     return [...tracks.entries()].filter(([, entry]) => entry.motionId === motionId);
   }
   /**
-   * The entry for a node id, or the refusal for an id this project never had.
-   *
-   * Separate from `#liveEntry` below on purpose: this answers about an id, which is what the public
-   * members that take one ask, and that one answers about a captured token. Both are one lookup
-   * with one message rather than a copy per caller.
+   * The entry for a node id, or the refusal for an id this project never had. Separate from
+   * `#liveEntry` below, which answers about a captured token rather than about an id, and both are
+   * one lookup with one message rather than a copy per caller.
    */
   #entryOf(nodeId: string): TrackEntry {
     const entry = this.#readTracks().get(nodeId);
@@ -681,12 +611,10 @@ export class ProjectRuntime {
     return entry;
   }
   /**
-   * The one place in this file that compares a captured token against the live one.
-   *
-   * Generic over the entry rather than over the map it came from, because both retained kinds carry a
-   * token and the comparison is the same question about either. The track probe and the motion probe
-   * below are two names for two maps, not two copies of the rule: `SH-7` measures the number of
-   * comparisons in this module, and a second one here is what it exists to fail on. See ADR-056.
+   * The one place in this file that compares a captured token against the live one, generic over the
+   * entry rather than over the map it came from because the comparison is the same question about
+   * either. The two probes below are two names for two maps rather than two copies of the rule, which
+   * `SH-7` measures as a count. See ADR-056 and ADR-061.
    */
   #liveOf<E extends { readonly token: number }>(
     entries: ReadonlyMap<string, E>,
@@ -700,21 +628,16 @@ export class ProjectRuntime {
    * The probe every `live` getter reads, so `TrackHandle.live` and every throwing member answer the
    * same question about the same handle.
    *
-   * The `definition` getter and the three private mutators each carried their own comparison, which
-   * is how one condition ended up with two public failure contracts; the copies are deleted rather
-   * than joined by a fifth. Asked of the pending pair while a recipe is open, which is what makes a
-   * handle issued inside one live for the rest of the recipe and never live after an abort.
-   * See ADR-056 and ADR-064.
+   * One comparison with two readers rather than a copy per member, which is ADR-056's. Asked of the
+   * pending pair while a recipe is open, so a handle issued inside one is live for the rest of it and
+   * never live after an abort. See ADR-056 and ADR-064.
    */
   #entryIfLive(id: string, token: number): TrackEntry | undefined {
     return this.#liveOf(this.#readTracks(), id, token);
   }
   /**
-   * The resolver every handle member and every private mutation path goes through.
-   *
-   * A stale mutator used to report success by doing nothing while the getter failed loudly. Both
-   * now arrive here, so the contract is uniform by construction rather than by four call sites
-   * agreeing. See ADR-056.
+   * The resolver every handle member and every private mutation path goes through, so the contract
+   * is uniform by construction rather than by four call sites agreeing. See ADR-056.
    */
   #liveEntry(id: string, token: number): TrackEntry {
     const entry = this.#entryIfLive(id, token);
@@ -730,22 +653,15 @@ export class ProjectRuntime {
     return entry;
   }
   /**
-   * This handle's motion id, once the handle is known to be live.
-   *
-   * One owner, because four members of the handle need exactly this and each spelling of it is also
-   * the staleness check: reading the id and refusing a stale handle are the same call, so there is no
-   * order for a member to get wrong and no member that can forget.
+   * This handle's motion id, once the handle is known to be live. Reading the id and refusing a
+   * stale handle are the same call, so there is no order for a member to get wrong.
    */
   #liveId(motionId: string, token: number): string {
     return this.#liveMotion(motionId, token).definition.id;
   }
   /**
-   * The Motion definition as it currently stands, tracks included.
-   *
-   * Projected through `#ownedBy` rather than answered from the entry, because the entry a runtime add
-   * accepted carries an empty list by construction: a handle answering with it would report no tracks
-   * for a motion that owns three. Same owner the committed snapshot reads, so the two cannot
-   * disagree.
+   * The Motion definition as it currently stands, tracks included, projected through `#ownedBy`
+   * rather than answered from the entry, for the reason ADR-061 records. See ADR-061.
    */
   #motionDefinition(entry: MotionEntry): MotionDefinition {
     const id = entry.definition.id;
@@ -757,9 +673,9 @@ export class ProjectRuntime {
   /**
    * Destroys a Motion that owns no tracks, from the id or from a live handle.
    *
-   * The refusal counts through `#ownedBy`, so the number it names is the list `MotionHandle.trackIds`
-   * shows, and inside a recipe it counts the tracks that recipe has staged rather than the retained
-   * ones: a Motion whose last track the same recipe removed is destroyable in it.
+   * The refusal counts through `#ownedBy`, so it names the list `MotionHandle.trackIds` shows, and
+   * inside a recipe it counts what that recipe staged: a Motion whose last track the same recipe
+   * removed is destroyable in it.
    */
   #removeMotion(motionId: string): void {
     const owned = this.#ownedBy(this.#readTracks(), motionId);
@@ -782,21 +698,14 @@ export class ProjectRuntime {
    * Installs a Motion's trigger, and reaches no node and no edge doing it.
    *
    * Tier 0, which is a claim about the mechanism rather than about the cost: `trigger` appears in no
-   * `GraphNode`, so there is no candidate graph for a commit to accept and `#commit` is the wrong
-   * path rather than an expensive one. `RA-33` measures that as a `replaceGraph` call count. It is
-   * also why the verb is refused inside a recipe: an edit that reaches the driver layer immediately
-   * cannot be undone by a recipe that throws. See `RA-68`.
+   * `GraphNode`, so `#commit` is the wrong path rather than an expensive one, and `RA-33` measures
+   * that as a `replaceGraph` call count. It is refused inside a recipe because an edit that reaches
+   * the driver layer immediately cannot be undone by one that throws. See `RA-68`.
    *
-   * The order is the whole contract. The recipe refusal first, because it is about whether the verb
-   * is reachable at all. Then staleness, through the one resolver every member of the handle reads.
-   * Then the trigger's own validity, asked of `validateMotionTrigger`, which is the owner `addMotion`
-   * already asks rather than a copy of it, so a refusal costs no teardown at all: a verb that
-   * released the live driver and then refused the replacement would leave the Motion with none and
-   * no way back. Then the redundant edit, which asks the seam nothing, because installing the trigger
-   * the Motion already has means disposing a live driver and resubscribing a host source the caller
-   * cannot see and did not ask for. Then the seam itself, whose failure is reported verbatim rather
-   * than wrapped. The retained definition moves last, once nothing that can refuse is left.
-   * See ADR-035 and ADR-061.
+   * The order is the whole contract, and ADR-061's amendment owns why: the recipe refusal, then
+   * staleness, then `validateMotionTrigger`, which is the owner `addMotion` already asks, then the
+   * redundant edit, then the seam, whose failure is reported verbatim, and the retained definition
+   * last, once nothing that can refuse is left. See ADR-035 and ADR-061.
    */
   #setTrigger(id: string, token: number, trigger: MotionDefinition["trigger"]): void {
     this.#refuseInsideRecipe("setTrigger");
@@ -814,10 +723,9 @@ export class ProjectRuntime {
    * Moves a Motion's stagger, which no driver reads.
    *
    * The same tier and the same order as the trigger above, with one difference: there is no contract
-   * rule to ask. `validateV5` has never had one for `stagger`, and `Motion` refuses a value that is
-   * not finite and non-negative at construction, so the seam is where that refusal already lives and
-   * a copy here would be a second owner of it. The seam is therefore asked before the retained
-   * definition moves, which is what keeps a refused edit from being recorded as one.
+   * rule to ask, because the seam is where that refusal already lives and a copy here would be a
+   * second owner of it. The seam is therefore asked before the retained definition moves, which is
+   * what keeps a refused edit from being recorded as one.
    *
    * An unchanged value asks the seam nothing, and a cleared one leaves no key behind. See ADR-061.
    */
@@ -830,12 +738,9 @@ export class ProjectRuntime {
     this.#motions.set(motionId, { ...entry, definition: withStagger(entry.definition, stagger) });
   }
   /**
-   * Every member resolves the entry before it reads an argument, which is what makes staleness the
-   * first answer rather than a second one.
-   *
-   * `tryTrack` refuses here as well, and that is deliberate. The probe never throws about an id it
-   * cannot find, but whether this handle is the live one at all is a different question, and it is
-   * answered before any id is looked at.
+   * Every member resolves the entry before it reads an argument, which makes staleness the first
+   * answer rather than a second one. `tryTrack` refuses here as well, for the reason ADR-061 records:
+   * whether this handle is the live one at all is a different question from an id it cannot find.
    */
   #motionHandle(id: string, token: number): MotionHandle {
     const runtime = this;
@@ -903,11 +808,9 @@ export class ProjectRuntime {
     });
   }
   /**
-   * Drops one node from the pair, and names no hook.
-   *
-   * The eviction, the dispose and the Motion deregistration are one settle step derived from the id
-   * being absent from the committed pair, because the order inside that step is not a sequence of
-   * independent commitments: the entry is already gone by the time any of them runs. See ADR-064.
+   * Drops one node from the pair, and names no hook. The eviction, the dispose and the Motion
+   * deregistration are one settle step `#derive` owns, derived from the id being absent from the
+   * committed pair. See ADR-064.
    */
   #removeTrack(id: string, token: number): void {
     this.#assertLive();
@@ -920,9 +823,7 @@ export class ProjectRuntime {
    * The registry's answer about one authored record, or nothing when no registry was injected.
    *
    * The diagnostics path is spelled exactly as `compileTrack` spells it, because the seam's second
-   * parameter is a path rather than a node id: a refusal citing a bare node id where the compile
-   * path cites `<node>.keyframes` would be two spellings of one location, and an author cannot look
-   * up the second one.
+   * parameter is a path rather than a node id. See ADR-062.
    */
   #resolve(nodeId: string, track: TrackDefinition): ResolvedPlugins | undefined {
     return this.#resolveKeyframes?.(track.keyframes ?? {}, `${nodeId}.keyframes`, {
@@ -933,26 +834,15 @@ export class ProjectRuntime {
   /**
    * Whether a replacement has to build a new timeline, and the one place a candidate is resolved.
    *
-   * The resolve is validation and is never skipped. `compileTrack` reuses a live entry and returns
-   * early, so the staging seam is the only path on which a `PluginRegistry` ever sees an
-   * already-compiled node's candidate record, and a predicate that skipped the resolve would delete
-   * a validator rather than a cost: an undeclared slot would ship a real `GraphEdge` into a consumer
-   * that does not exist, refused by name only when someone reloaded the document that same record
-   * now fails to load, which is the symptomless misconfiguration this project refuses at load time.
-   * So the candidate is resolved here, refused here, and only then read as data. See ADR-062.
+   * The resolve is validation and is never skipped, and only the timeline build is skippable, which
+   * is ADR-062's amendment: a predicate that skipped the resolve would delete a validator rather than
+   * a cost. So the candidate is resolved here, refused here, and only then read as data. The retained
+   * record is resolved beside it rather than kept anywhere, on the same record's reason.
    *
-   * Asked from `#derive` now rather than from `#replaceTrack`, which moves it from once per op to
-   * once per committed replacement and leaves it exactly where it was for every caller outside a
-   * recipe: before any effect is applied and before anything retained has moved, so a candidate the
-   * registry refuses still costs no teardown and reads the same message.
-   *
-   * The retained record is resolved beside it rather than kept anywhere. A kept plugin chain would
-   * be a cache whose key is the registry's own contents, held by a layer that owns neither, and a
-   * resolve is the pure and cheap half of the compile this declines to pay.
-   *
-   * What the answer is compared with is `sameCompiledTrackInput`'s question rather than this one's:
-   * a plugin list is one of the things a compiled Track is built from rather than all of them, and
-   * that module is the one owner of which.
+   * Asked from `#derive` rather than from `#replaceTrack`, which moves it from once per op to once
+   * per committed replacement and leaves it exactly where it was for every caller outside a recipe.
+   * What the answer is compared with is `sameCompiledTrackInput`'s question rather than this one's.
+   * See ADR-062 and ADR-064.
    */
   #needsTimelineBuild(
     nodeId: string,
@@ -971,10 +861,8 @@ export class ProjectRuntime {
   /**
    * Replaces one node's definition in the pair, preserving its node id and its token.
    *
-   * A map builder. The staging effect, its rollback, the Motion republish and its restore, and the
-   * staging commit are `#derive`'s answer, derived from the retained definition and the committed
-   * one, which is what lets an add followed by a replacement in one recipe cost what one add costs.
-   * See `RA-65` and ADR-064.
+   * A map builder: the staging, the Motion republish and their reverts are `#derive`'s answer,
+   * derived from the retained definition and the committed one. See `RA-65` and ADR-064.
    */
   #replaceTrack(id: string, token: number, next: TrackDefinition): void {
     const entry = this.#liveEntry(id, token);
@@ -1008,26 +896,20 @@ export class ProjectRuntime {
    * ADR-035 for rollback precedence, ADR-045 for republish-before-restore. `replaceGraph` and
    * `rejectAfterRollback` have one call site each, and so does every hook.
    *
-   * The derivation runs before the try, so a candidate the registry refuses inside it costs no
-   * teardown at all: nothing has been applied and nothing retained has moved when it throws.
-   *
-   * The effects are applied inside the try, so a hook that throws is rolled back exactly as a
-   * refused candidate is. Each one is recorded only after its `apply` returned, because a hook that
-   * refused before writing anything must not be restored.
+   * The derivation runs before the try, so a candidate refused inside it costs no teardown at all.
+   * The effects are applied inside it, so a hook that throws is rolled back exactly as a refused
+   * candidate is, and each is recorded only after its `apply` returned.
    *
    * One flush ends it, seeded with `touched`, and it runs after the settle steps rather than before
-   * them: a new node is mounted by one of those steps, and seeding earlier would flush a node the
-   * members do not contain yet. `replaceGraph` seeds nothing itself, which is why `addObserve` on a
-   * manual clock with no tick used to be invisible forever. See `RA-8`.
+   * them, because a new node is mounted by one of those steps. `replaceGraph` seeds nothing itself,
+   * which is why `addObserve` on a manual clock with no tick used to be invisible forever. `RA-8`.
    *
    * An empty `touched` returns without calling `invalidate`, for the reason ADR-064's amendment
    * records. See `RA-10`.
    */
   #apply(plan: SchemaPlan): void {
-    // An absent half is a half this commit did not move, so it resolves to the map this class is
-    // already holding: the derivation compares against it, the snapshot walks it, and the adoption
-    // assigns it back to itself. The retained fields are read directly rather than through the two
-    // accessors, because this is never reached while a recipe is open.
+    // An absent half resolves to the map this class already holds, so the adoption assigns it back
+    // to itself. Read directly rather than through the accessors: a recipe is never open here.
     const tracks = plan.tracks ?? this.#tracks;
     const motions = plan.motions ?? this.#motions;
     const commit = this.#derive(tracks, motions);
@@ -1092,23 +974,10 @@ export class ProjectRuntime {
         this.#disposeTrack?.(nodeId);
         if (motionId !== undefined) this.#removeMotionTrack?.(motionId, nodeId);
       });
-      // Not the removed node, which is gone, but every node that was reading it. A removal seeded
-      // nothing at all, on the premise that `finalizeGraph` would have refused a candidate anything
-      // still depended on. That holds for every reader which is an edge and fails for the one that
-      // is not: a solver reads its members through `solves`, no edge points that way, and under the
-      // bare goal slot a chain that loses its leaf still has exactly one, so the candidate is
-      // accepted and the solver's member set moves with nobody told. See `RA-98` and `RA-99`.
-      //
-      // Read here rather than after the graph is replaced, and that ordering is the whole
-      // correctness of it: `#apply` derives before it asks, so this reads the graph the removal is
-      // replacing, which is the only one that still knows who read a node it no longer contains.
-      // `RA-99` fails if it moves after `replaceGraph`, because the answer becomes empty.
-      //
-      // A reader this same commit also removed is seeded and harmless rather than filtered out: the
-      // publisher walks the committed order, so a seed the graph does not contain publishes nothing,
-      // and a membership test here would be a second opinion about what the pair holds. A reader a
-      // replacement in this same commit already seeded is seeded twice and harmless too, because
-      // `flush` collapses its seeds.
+      // Not the removed node, which is gone, but every node that was reading it. Why an edge test
+      // misses a solver reading its chain members, why this is read here rather than after
+      // `replaceGraph`, and why a seed the committed graph does not contain is harmless rather than
+      // filtered are all ADR-051's amendment. See `RA-98` and `RA-99`.
       touched.push(...this.#readersOf(nodeId));
     }
     for (const motionId of this.#motions.keys())
@@ -1125,9 +994,8 @@ export class ProjectRuntime {
         if (motionId !== undefined)
           settle.push(() => this.#addMotionTrack?.(motionId, nodeId, added.duration));
         settle.push(() => this.#mountNode(nodeId));
-        // The new node publishes, which it never did before. A node whose sources have not published
-        // yet lands on blocked with a pending diagnostic rather than on nothing at all, and that is
-        // the whole of what building a structure up incrementally requires. See `RA-9`.
+        // The new node publishes, which it never did before, and one whose sources have not
+        // published yet lands on blocked with a pending diagnostic. See `RA-9`.
         touched.push(nodeId);
         continue;
       }
@@ -1135,10 +1003,8 @@ export class ProjectRuntime {
       const previous = retained.track;
       const next = entry.track;
       let staged: StagedTrack | undefined;
-      // Conditional, and that is C3's slice rather than this one's. Nothing else about the
-      // transaction moves: the graph is still asked to accept a candidate, the edge delta is still
-      // paid and the flush is still seeded, because an edge changed and there is no fast lane for
-      // that. A skipped build leaves `staged` undefined, so the settle step below is the no-op it
+      // Conditional, and nothing else about the transaction moves: there is no fast lane for an
+      // edge. A skipped build leaves `staged` undefined, so the settle step below is the no-op it
       // already was for a caller that wired no staging seam at all. See ADR-062.
       if (this.#needsTimelineBuild(nodeId, previous, next))
         effects.push({
@@ -1166,18 +1032,10 @@ export class ProjectRuntime {
   /**
    * Adopts the accepted pair, which is a pointer move rather than a rewrite.
    *
-   * It used to read both maps out, clear both retained ones and `set` every entry back, so a commit
-   * that moved one entry paid `O(V)` map writes and paid them for the half of the schema that did
-   * not move at all: a one-track edit on a rig of 600 tracks rewrote 600 track entries and every
-   * motion beside them. The read-out existed because a plan builder hands its own live map straight
-   * through for an untouched half, and clearing the source mid-iteration would have emptied it.
-   * Adopting the object answers that hazard by construction instead: an untouched half is the map
-   * this class is already holding, so its assignment is a no-op, and a half that moved is a map one
-   * of the two staging accessors made for this commit and nothing else holds.
-   *
-   * What it costs is that the retained fields are not `readonly` and a plan builder may not keep
-   * what it handed over. That is the ownership change, stated where the assignment is. It is also
-   * why this stays a named member rather than two lines inside `#apply`. See `RA-92` and `RA-97`.
+   * A named member rather than two lines inside `#apply`, because the ownership change is the thing
+   * worth stating where the assignment is: the retained fields are not `readonly` and a plan builder
+   * may not keep what it handed over. What the rewrite this replaced cost, and which hazard the
+   * read-out existed for, are ADR-064's third amendment. See `RA-92` and `RA-97`.
    */
   #adoptMaps(tracks: Map<string, TrackEntry>, motions: Map<string, MotionEntry>): void {
     this.#tracks = tracks;
@@ -1514,26 +1372,14 @@ export class ProjectRuntime {
   /**
    * The committed pair as one authored document, walked once.
    *
-   * `#ownedBy` above answers about one motion by materialising the whole track map, so asking it
-   * per motion made this `O(M x V)` in time and M arrays of length V in allocation, to place V
-   * definitions. Every structural commit paid it, in front of a candidate build the incremental
-   * builder cache-hits for every untouched node, which is what kept it invisible: the four measured
-   * wins in slice 7 were all about the tick, and this is the authoring side. See `RA-89`.
+   * One walk, bucketed by the owner each entry already names, with the free tracks falling out of
+   * the same pass. A bucket fills in map order, so each motion's list is the list a per-motion filter
+   * produced, and a motion that owns nothing answers with an empty list rather than with no key.
+   * What asking `#ownedBy` per motion used to cost, and why this is not a second derivation of the
+   * fact that member owns, are both ADR-064's third amendment. See `RA-89` and `RA-91`.
    *
-   * One walk instead, bucketed by the owner each entry already names, with the free tracks falling
-   * out of the same pass rather than out of a second one. A bucket fills in map order, so each
-   * motion's list is the list the per-motion filter produced, and a motion that owns nothing
-   * answers with an empty list rather than with no key, because that is the document a loader
-   * accepts and what a runtime-added Motion starts as.
-   *
-   * Not a second derivation of the same fact, which is the objection worth answering rather than
-   * waving at. Which motion owns a track is a stored field on the entry, so neither spelling
-   * derives anything, and both read that field in the same map order: `#ownedBy` stays the owner of
-   * the single-motion question and cannot answer this one differently. `RA-91` asserts that against
-   * all three of its remaining readers anyway.
-   *
-   * Every untouched entry's definition is handed through by identity, because moving it is what
-   * costs `IncrementalGraphBuilder` its `cached.track === track` hit. See `RA-90`, ADR-058.
+   * Every untouched entry's definition is handed through by identity, for ADR-058's reason.
+   * See `RA-90` and ADR-058.
    */
   #snapshot(
     tracks: ReadonlyMap<string, TrackEntry>,
