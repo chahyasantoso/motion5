@@ -136,7 +136,7 @@ describe("what a removal owes the nodes that read it", () => {
     // as an edge source: it is read only because `resolveSolvers` derived it onto the solver's
     // `solves`, and `deriveDependents` walks that beside the edges for exactly this case.
     expect(runtime.dependantsOf(LOWER)).toEqual([RIG]);
-    expect(membersOf(runtime, LOWER === RIG ? LOWER : RIG)).toEqual([UPPER, LOWER]);
+    expect(membersOf(runtime, RIG)).toEqual([UPPER, LOWER]);
 
     const before = runtime.graph.sequence;
     runtime.track(LOWER).remove();
