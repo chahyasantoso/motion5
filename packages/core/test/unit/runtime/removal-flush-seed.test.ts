@@ -61,8 +61,6 @@ const EDGE_PROJECT: ProjectDefinition = {
 
 /* RA-99: a real chain, because a chain is the only shape that derives `solves` at all. */
 const MOTION = "hero";
-const ROOT = "hero/root";
-const GOAL = "hero/goal";
 const UPPER = "hero/upper";
 const LOWER = "hero/lower";
 const RIG = "hero/rig";
@@ -118,9 +116,9 @@ describe("what a removal owes the nodes that read it", () => {
 
     // Refused, so the empty seed is sound for every reader that is an edge. `finalizeGraph` walks
     // every edge of every node rather than only the observation ones, and a plugin requirement is an
-    // edge, so it is caught by the same check. The rule id says "observation" while the edge is a
-    // requirement, which is a diagnostic misnaming what it refuses rather than a hole in the refusal;
-    // it is a shipped public rule id and is deliberately not renamed here.
+    // edge, so it is caught by the same check. The rule id says "observation" while the edge it
+    // refuses is a requirement, which is a diagnostic misnaming what it caught rather than a hole in
+    // the refusal; it is a shipped public rule id and is deliberately not renamed here.
     expect(() => runtime.track(SOURCE).remove()).toThrow(/^observation-unknown-source at /);
 
     // And a refused candidate leaves the removal undone, which is what makes the empty seed correct
@@ -138,7 +136,7 @@ describe("what a removal owes the nodes that read it", () => {
     // as an edge source: it is read only because `resolveSolvers` derived it onto the solver's
     // `solves`, and `deriveDependents` walks that beside the edges for exactly this case.
     expect(runtime.dependantsOf(LOWER)).toEqual([RIG]);
-    expect(membersOf(runtime, RIG)).toEqual([UPPER, LOWER]);
+    expect(membersOf(runtime, LOWER === RIG ? LOWER : RIG)).toEqual([UPPER, LOWER]);
 
     const before = runtime.graph.sequence;
     runtime.track(LOWER).remove();
@@ -146,7 +144,11 @@ describe("what a removal owes the nodes that read it", () => {
     // Accepted, which is the half of the premise that does not hold. Every rule in `resolveSolvers`
     // still passes: the solver keeps a root, keeps a member, and the bare `target` still addresses a
     // single leaf, so no diagnostic refuses the candidate and the commit lands.
-    expect(runtime.track(LOWER).live).toBe(false);
+    //
+    // Read through the probe rather than through `track`, because `track` is the resolver and refuses
+    // an id the project no longer holds. A removed node has no handle to answer `live` at all, which
+    // is the distinction `tryTrack` exists for.
+    expect(runtime.tryTrack(LOWER)).toBeUndefined();
     expect(membersOf(runtime, RIG)).toEqual([UPPER]);
 
     // So the solver's member set moved underneath it, and it is owed a flush. A removal seeds the
