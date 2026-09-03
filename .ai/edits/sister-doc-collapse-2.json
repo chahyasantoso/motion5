@@ -1,0 +1,81 @@
+{
+  "message": "docs(runtime): move the commit path and authoring tier docblocks to the sister doc",
+  "target": 267,
+  "edits": [
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /**\n   * Replaces one node's definition in the pair, preserving its node id and its token.\n   *\n   * A map builder: the staging, the Motion republish and their reverts are `#derive`'s answer,\n   * derived from the retained definition and the committed one. See `RA-65` and ADR-064.\n   */\n",
+      "replace": "\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /**\n   * The one path by which a structural change reaches the graph, or the open transaction.\n   *\n   * While a recipe is open there is nothing to do here: every entry point already wrote into the\n   * open pair, and `edit` is the one thing that applies it. With none open the pair is applied\n   * immediately. See ADR-064.\n   */\n",
+      "replace": "\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /**\n   * Applies one accepted pair: derive, apply the effects, ask the graph, settle, and flush once.\n   *\n   * The one owner of an ordering three records make load-bearing: ADR-031 for the compiled map,\n   * ADR-035 for rollback precedence, ADR-045 for republish-before-restore. `replaceGraph` and\n   * `rejectAfterRollback` have one call site each, and so does every hook.\n   *\n   * The derivation runs before the try, so a candidate refused inside it costs no teardown at all.\n   * The effects are applied inside it, so a hook that throws is rolled back exactly as a refused\n   * candidate is, and each is recorded only after its `apply` returned.\n   *\n   * One flush ends it, seeded with `touched`, and it runs after the settle steps rather than before\n   * them, because a new node is mounted by one of those steps. `replaceGraph` seeds nothing itself,\n   * which is why `addObserve` on a manual clock with no tick used to be invisible forever. `RA-8`.\n   *\n   * An empty `touched` returns without calling `invalidate`, for the reason ADR-064's amendment\n   * records. See `RA-10`.\n   */\n",
+      "replace": "\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /**\n   * What one accepted pair costs, read against the retained pair.\n   *\n   * A hook list assembled by the entry point is correct for one change and cannot compose two,\n   * which is the correction ADR-064 records and `RA-65` is the first case to tell apart.\n   *\n   * Four categories, each of them the hook set its own entry point used to name, unchanged: a\n   * created Motion built before the graph is asked and destroyed if it refuses (ADR-032), a removed\n   * track settling its eviction, dispose and deregistration as one step, a destroyed Motion\n   * settling after that with nothing to revert, and an added or replaced track compiling before the\n   * graph is asked and registering with its Motion after it accepted (ADR-031), with the staging\n   * build skipped when the compiled input provably did not move (ADR-062).\n   *\n   * Motions are created before any track compiles, because one commit may add a Motion and a track\n   * to it. Effects are reverted in apply order, so a replacement's staging rollback still runs\n   * before its Motion entry is restored. See ADR-045 and ADR-064.\n   */\n",
+      "replace": "\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /**\n   * Adopts the accepted pair, which is a pointer move rather than a rewrite.\n   *\n   * A named member rather than two lines inside `#apply`, because the ownership change is the thing\n   * worth stating where the assignment is: the retained fields are not `readonly` and a plan builder\n   * may not keep what it handed over. What the rewrite this replaced cost, and which hazard the\n   * read-out existed for, are ADR-064's third amendment. See `RA-92` and `RA-97`.\n   */\n",
+      "replace": "\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /**\n   * The one live-value write path.\n   *\n   * `rebase` is the only difference between the two entry points, which is ADR-060's decision: an\n   * override leaves the retained definition alone and a `setValues` rewrites it, and at the compiled\n   * Track it is one boolean. Everything else is shared, so the two cannot answer differently,\n   * invalidate twice, or record in two places, and the same boolean names the verb in the recipe\n   * refusal.\n   *\n   * Tier 2, and refused inside a recipe for the reason tier 0 is: it ends at its own `invalidate`,\n   * so it would survive an abort. See `RA-68` and ADR-064.\n   *\n   * Order, and it is load-bearing. Validate the rewritten definition when an animated key is named,\n   * then write through the one hook, which is where every key is classified and refused, then rewrite\n   * the retained entry and its overlay, escalate if the hook declined, and end at one `invalidate`.\n   * Nothing can observe the gap, because no flush happens until that invalidate.\n   *\n   * Not a `#commit` caller, and it must not become one: topology did not change, so there is no\n   * candidate graph to accept and nothing to roll back. A static-only write validates nothing and\n   * builds nothing. No `replaceGraph` on either path. See ADR-059 and ADR-060.\n   */\n",
+      "replace": "\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /**\n   * The bound-group precondition every authored edit shares, and the one owner of it.\n   *\n   * A plugin this node authors no group for is `keyframe-group-unbound`, which is\n   * `setKeyframeGroup`'s job in the structural tier and is what buys the cheap price in the value\n   * tier, for ADR-065's reason. A name this node authors as an ordinary property is not a group\n   * either, and that is `readBoundGroup`'s answer rather than a second shape check here.\n   *\n   * It answers with the record beside the group, so no caller re-reads `entry.track.keyframes`.\n   * See ADR-062, ADR-063 and ADR-065.\n   */\n",
+      "replace": "\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /** One value-tier flush, shared by authored-property recompiles and no-ops. */\n",
+      "replace": "\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /**\n   * Recompiles one edited authored record in place, preserving this node's playhead.\n   *\n   * Validation and the registry resolve both run before the live Track is touched, and the staged\n   * replacement is re-seeked to the progress the displaced one owned, which is ADR-065's. No graph\n   * operation is involved because a leaf carries no edge. See ADR-065.\n   */\n",
+      "replace": "\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /**\n   * Edits one property of a plugin group this node already authors.\n   *\n   * Two paths, chosen by whether the group already authors the key, which is ADR-065's: an existing\n   * leaf goes through the live-write owner, and a new or removed one cannot be expressed as a mask,\n   * so the authored candidate is validated, resolved and recompiled in place instead. The\n   * bound-group precondition keeps both in the value tier. See ADR-065.\n   */\n",
+      "replace": "\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /**\n   * One binding edit on an already-bound plugin, and the one owner of the order all four binding\n   * verbs follow.\n   *\n   * Staleness first, through the resolver every member of the handle reads. Then the unbound-group\n   * refusal, answered from the retained record on this node. Then the edit, where the one reservation\n   * this surface has is checked and the pure editor runs. Then the redundant edit, by identity,\n   * because the pure layer returns the record it was given when nothing changed. Then the commit.\n   * Why the reservation sits inside the edit rather than ahead of it is ADR-063's.\n   *\n   * `#replaceTrack` rather than a plan of its own, for the reason `#replaceWithObservation` already\n   * routes there: a binding edit is a candidate the graph accepts or refuses, which is exactly the\n   * transaction `#commit` owns. So the price is one candidate build, one edge delta and one flush,\n   * and there is no fast lane missing, which is ADR-062's amendment. Inside a recipe it is\n   * structural, so it travels with the transaction. See ADR-045, ADR-062 and ADR-063.\n   */\n",
+      "replace": "\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /**\n   * Binds one entry of a solver's goals slot, addressed by the member id it is authored under.\n   *\n   * The same tier, the same owner of order and the same pure editor as `setRequire`, with the slot\n   * fixed rather than named, which is the whole of what the verb buys and is ADR-063's. No editor of\n   * its own, because a dict entry is a dict entry and `setRequire` already owns what one is.\n   *\n   * Whether the member id names a leaf of this solver's chain is `resolveSolvers`' question, asked\n   * of the candidate graph rather than here, because a per-primitive copy is a second owner that can\n   * disagree with the loader. See ADR-057 and ADR-063.\n   */\n",
+      "replace": "\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /**\n   * One whole-group edit, and the one owner of the order both group verbs follow.\n   *\n   * Staleness first, through the resolver every member of the handle reads. Then the property-entry\n   * refusal, which is the only thing about a group edit no other layer can see, because a plugin name\n   * and a keyframe name share one namespace. Then the pure edit, which knows the group layout and\n   * refuses `keyframe-group-shape` rather than committing a husk. Then the redundant edit, by\n   * identity. Then the commit. Both refusals are ADR-063's.\n   *\n   * An absent record reads as one frozen empty one, which lets `setKeyframeGroup` originate on a\n   * track that authors nothing with no branch here. No registry question is asked and none is\n   * missing: they all arrive at the resolve this commit pays. See ADR-062 and ADR-063.\n   */\n",
+      "replace": "\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /**\n   * Writes an edited authored record back onto `track` and commits it as a replacement.\n   *\n   * The one owner of what an authored edit leaves behind, so the six verbs in this tier cannot\n   * disagree about it: a record that ends up holding nothing loses the key rather than being\n   * committed as `{}`, which is ADR-063's one rule at four levels. An edit may not leave behind a\n   * shape that is legal only because nothing refuses it. See ADR-063.\n   */\n",
+      "replace": "\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  /**\n   * The committed pair as one authored document, walked once.\n   *\n   * One walk, bucketed by the owner each entry already names, with the free tracks falling out of\n   * the same pass. A bucket fills in map order, so each motion's list is the list a per-motion filter\n   * produced, and a motion that owns nothing answers with an empty list rather than with no key.\n   * What asking `#ownedBy` per motion used to cost, and why this is not a second derivation of the\n   * fact that member owns, are both ADR-064's third amendment. See `RA-89` and `RA-91`.\n   *\n   * Every untouched entry's definition is handed through by identity, for ADR-058's reason.\n   * See `RA-90` and ADR-058.\n   */\n",
+      "replace": "\n"
+    }
+  ]
+}
