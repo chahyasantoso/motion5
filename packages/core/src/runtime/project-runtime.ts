@@ -665,12 +665,7 @@ export class ProjectRuntime {
       { definition: candidate, resolved },
     );
   }
-  /**
-   * Replaces one node's definition in the pair, preserving its node id and its token.
-   *
-   * A map builder: the staging, the Motion republish and their reverts are `#derive`'s answer,
-   * derived from the retained definition and the committed one. See `RA-65` and ADR-064.
-   */
+
   #replaceTrack(id: string, token: number, next: TrackDefinition): void {
     const entry = this.#liveEntry(id, token);
     const expected =
@@ -685,35 +680,12 @@ export class ProjectRuntime {
     tracks.set(id, { ...entry, track: validation.value, overlay: NO_OVERLAY });
     this.#commit({ tracks });
   }
-  /**
-   * The one path by which a structural change reaches the graph, or the open transaction.
-   *
-   * While a recipe is open there is nothing to do here: every entry point already wrote into the
-   * open pair, and `edit` is the one thing that applies it. With none open the pair is applied
-   * immediately. See ADR-064.
-   */
+
   #commit(plan: SchemaPlan): void {
     if (this.#open !== undefined) return;
     this.#apply(plan);
   }
-  /**
-   * Applies one accepted pair: derive, apply the effects, ask the graph, settle, and flush once.
-   *
-   * The one owner of an ordering three records make load-bearing: ADR-031 for the compiled map,
-   * ADR-035 for rollback precedence, ADR-045 for republish-before-restore. `replaceGraph` and
-   * `rejectAfterRollback` have one call site each, and so does every hook.
-   *
-   * The derivation runs before the try, so a candidate refused inside it costs no teardown at all.
-   * The effects are applied inside it, so a hook that throws is rolled back exactly as a refused
-   * candidate is, and each is recorded only after its `apply` returned.
-   *
-   * One flush ends it, seeded with `touched`, and it runs after the settle steps rather than before
-   * them, because a new node is mounted by one of those steps. `replaceGraph` seeds nothing itself,
-   * which is why `addObserve` on a manual clock with no tick used to be invisible forever. `RA-8`.
-   *
-   * An empty `touched` returns without calling `invalidate`, for the reason ADR-064's amendment
-   * records. See `RA-10`.
-   */
+
   #apply(plan: SchemaPlan): void {
     // An absent half resolves to the map this class already holds, so the adoption assigns it back
     // to itself. Read directly rather than through the accessors: a recipe is never open here.
@@ -740,23 +712,7 @@ export class ProjectRuntime {
     const batch = this.#graph.invalidate(commit.touched);
     this.#diagnostics.recordAll(batch.diagnostics);
   }
-  /**
-   * What one accepted pair costs, read against the retained pair.
-   *
-   * A hook list assembled by the entry point is correct for one change and cannot compose two,
-   * which is the correction ADR-064 records and `RA-65` is the first case to tell apart.
-   *
-   * Four categories, each of them the hook set its own entry point used to name, unchanged: a
-   * created Motion built before the graph is asked and destroyed if it refuses (ADR-032), a removed
-   * track settling its eviction, dispose and deregistration as one step, a destroyed Motion
-   * settling after that with nothing to revert, and an added or replaced track compiling before the
-   * graph is asked and registering with its Motion after it accepted (ADR-031), with the staging
-   * build skipped when the compiled input provably did not move (ADR-062).
-   *
-   * Motions are created before any track compiles, because one commit may add a Motion and a track
-   * to it. Effects are reverted in apply order, so a replacement's staging rollback still runs
-   * before its Motion entry is restored. See ADR-045 and ADR-064.
-   */
+
   #derive(
     tracks: ReadonlyMap<string, TrackEntry>,
     motions: ReadonlyMap<string, MotionEntry>,
@@ -834,39 +790,12 @@ export class ProjectRuntime {
     }
     return { effects, settle, touched };
   }
-  /**
-   * Adopts the accepted pair, which is a pointer move rather than a rewrite.
-   *
-   * A named member rather than two lines inside `#apply`, because the ownership change is the thing
-   * worth stating where the assignment is: the retained fields are not `readonly` and a plan builder
-   * may not keep what it handed over. What the rewrite this replaced cost, and which hazard the
-   * read-out existed for, are ADR-064's third amendment. See `RA-92` and `RA-97`.
-   */
+
   #adoptMaps(tracks: Map<string, TrackEntry>, motions: Map<string, MotionEntry>): void {
     this.#tracks = tracks;
     this.#motions = motions;
   }
-  /**
-   * The one live-value write path.
-   *
-   * `rebase` is the only difference between the two entry points, which is ADR-060's decision: an
-   * override leaves the retained definition alone and a `setValues` rewrites it, and at the compiled
-   * Track it is one boolean. Everything else is shared, so the two cannot answer differently,
-   * invalidate twice, or record in two places, and the same boolean names the verb in the recipe
-   * refusal.
-   *
-   * Tier 2, and refused inside a recipe for the reason tier 0 is: it ends at its own `invalidate`,
-   * so it would survive an abort. See `RA-68` and ADR-064.
-   *
-   * Order, and it is load-bearing. Validate the rewritten definition when an animated key is named,
-   * then write through the one hook, which is where every key is classified and refused, then rewrite
-   * the retained entry and its overlay, escalate if the hook declined, and end at one `invalidate`.
-   * Nothing can observe the gap, because no flush happens until that invalidate.
-   *
-   * Not a `#commit` caller, and it must not become one: topology did not change, so there is no
-   * candidate graph to accept and nothing to roll back. A static-only write validates nothing and
-   * builds nothing. No `replaceGraph` on either path. See ADR-059 and ADR-060.
-   */
+
   #writeValues(nodeId: string, entry: TrackEntry, values: AuthoredValues, rebase: boolean) {
     this.#refuseInsideRecipe(rebase ? "setValues" : "overrideValues");
     const { statics, animated } = splitAuthoredValues(values);
@@ -896,17 +825,7 @@ export class ProjectRuntime {
     this.#diagnostics.recordAll(batch.diagnostics);
     return batch;
   }
-  /**
-   * The bound-group precondition every authored edit shares, and the one owner of it.
-   *
-   * A plugin this node authors no group for is `keyframe-group-unbound`, which is
-   * `setKeyframeGroup`'s job in the structural tier and is what buys the cheap price in the value
-   * tier, for ADR-065's reason. A name this node authors as an ordinary property is not a group
-   * either, and that is `readBoundGroup`'s answer rather than a second shape check here.
-   *
-   * It answers with the record beside the group, so no caller re-reads `entry.track.keyframes`.
-   * See ADR-062, ADR-063 and ADR-065.
-   */
+
   #boundGroup(
     nodeId: string,
     entry: TrackEntry,
@@ -917,19 +836,13 @@ export class ProjectRuntime {
     if (keyframes === undefined || bound === undefined) unboundGroup(nodeId, plugin);
     return { keyframes, bound };
   }
-  /** One value-tier flush, shared by authored-property recompiles and no-ops. */
+
   #invalidateOne(nodeId: string) {
     const batch = this.#graph.invalidate([nodeId]);
     this.#diagnostics.recordAll(batch.diagnostics);
     return batch;
   }
-  /**
-   * Recompiles one edited authored record in place, preserving this node's playhead.
-   *
-   * Validation and the registry resolve both run before the live Track is touched, and the staged
-   * replacement is re-seeked to the progress the displaced one owned, which is ADR-065's. No graph
-   * operation is involved because a leaf carries no edge. See ADR-065.
-   */
+
   #recompileKeyframes(
     nodeId: string,
     entry: TrackEntry,
@@ -956,14 +869,7 @@ export class ProjectRuntime {
     if (written !== undefined) this.#setProgress(nodeId, written.progress);
     return this.#invalidateOne(nodeId);
   }
-  /**
-   * Edits one property of a plugin group this node already authors.
-   *
-   * Two paths, chosen by whether the group already authors the key, which is ADR-065's: an existing
-   * leaf goes through the live-write owner, and a new or removed one cannot be expressed as a mask,
-   * so the authored candidate is validated, resolved and recompiled in place instead. The
-   * bound-group precondition keeps both in the value tier. See ADR-065.
-   */
+
   #setKeyframe(
     nodeId: string,
     token: number,
@@ -1011,22 +917,7 @@ export class ProjectRuntime {
     }
     this.#replaceTrack(id, token, { ...entry.track, observes: observations });
   }
-  /**
-   * One binding edit on an already-bound plugin, and the one owner of the order all four binding
-   * verbs follow.
-   *
-   * Staleness first, through the resolver every member of the handle reads. Then the unbound-group
-   * refusal, answered from the retained record on this node. Then the edit, where the one reservation
-   * this surface has is checked and the pure editor runs. Then the redundant edit, by identity,
-   * because the pure layer returns the record it was given when nothing changed. Then the commit.
-   * Why the reservation sits inside the edit rather than ahead of it is ADR-063's.
-   *
-   * `#replaceTrack` rather than a plan of its own, for the reason `#replaceWithObservation` already
-   * routes there: a binding edit is a candidate the graph accepts or refuses, which is exactly the
-   * transaction `#commit` owns. So the price is one candidate build, one edge delta and one flush,
-   * and there is no fast lane missing, which is ADR-062's amendment. Inside a recipe it is
-   * structural, so it travels with the transaction. See ADR-045, ADR-062 and ADR-063.
-   */
+
   #editRequire(
     id: string,
     token: number,
@@ -1064,17 +955,7 @@ export class ProjectRuntime {
       return removeRequire(keyframes, bound, slot, memberKey);
     });
   }
-  /**
-   * Binds one entry of a solver's goals slot, addressed by the member id it is authored under.
-   *
-   * The same tier, the same owner of order and the same pure editor as `setRequire`, with the slot
-   * fixed rather than named, which is the whole of what the verb buys and is ADR-063's. No editor of
-   * its own, because a dict entry is a dict entry and `setRequire` already owns what one is.
-   *
-   * Whether the member id names a leaf of this solver's chain is `resolveSolvers`' question, asked
-   * of the candidate graph rather than here, because a per-primitive copy is a second owner that can
-   * disagree with the loader. See ADR-057 and ADR-063.
-   */
+
   #setGoal(id: string, token: number, plugin: string, memberId: string, source: string): void {
     this.#editRequire(id, token, plugin, (keyframes, bound) =>
       setRequire(keyframes, bound, PLUGIN_GOALS_SLOT, source, memberId),
@@ -1085,19 +966,7 @@ export class ProjectRuntime {
       removeRequire(keyframes, bound, PLUGIN_GOALS_SLOT, memberId),
     );
   }
-  /**
-   * One whole-group edit, and the one owner of the order both group verbs follow.
-   *
-   * Staleness first, through the resolver every member of the handle reads. Then the property-entry
-   * refusal, which is the only thing about a group edit no other layer can see, because a plugin name
-   * and a keyframe name share one namespace. Then the pure edit, which knows the group layout and
-   * refuses `keyframe-group-shape` rather than committing a husk. Then the redundant edit, by
-   * identity. Then the commit. Both refusals are ADR-063's.
-   *
-   * An absent record reads as one frozen empty one, which lets `setKeyframeGroup` originate on a
-   * track that authors nothing with no branch here. No registry question is asked and none is
-   * missing: they all arrive at the resolve this commit pays. See ADR-062 and ADR-063.
-   */
+
   #editGroup(
     id: string,
     token: number,
@@ -1117,14 +986,7 @@ export class ProjectRuntime {
   #removeKeyframeGroup(id: string, token: number, plugin: string): void {
     this.#editGroup(id, token, plugin, (keyframes) => removeGroup(keyframes, plugin));
   }
-  /**
-   * Writes an edited authored record back onto `track` and commits it as a replacement.
-   *
-   * The one owner of what an authored edit leaves behind, so the six verbs in this tier cannot
-   * disagree about it: a record that ends up holding nothing loses the key rather than being
-   * committed as `{}`, which is ADR-063's one rule at four levels. An edit may not leave behind a
-   * shape that is legal only because nothing refuses it. See ADR-063.
-   */
+
   #writeKeyframes(
     id: string,
     token: number,
@@ -1133,18 +995,7 @@ export class ProjectRuntime {
   ): void {
     this.#replaceTrack(id, token, withKeyframes(track, keyframes));
   }
-  /**
-   * The committed pair as one authored document, walked once.
-   *
-   * One walk, bucketed by the owner each entry already names, with the free tracks falling out of
-   * the same pass. A bucket fills in map order, so each motion's list is the list a per-motion filter
-   * produced, and a motion that owns nothing answers with an empty list rather than with no key.
-   * What asking `#ownedBy` per motion used to cost, and why this is not a second derivation of the
-   * fact that member owns, are both ADR-064's third amendment. See `RA-89` and `RA-91`.
-   *
-   * Every untouched entry's definition is handed through by identity, for ADR-058's reason.
-   * See `RA-90` and ADR-058.
-   */
+
   #snapshot(
     tracks: ReadonlyMap<string, TrackEntry>,
     motions: ReadonlyMap<string, MotionEntry>,
