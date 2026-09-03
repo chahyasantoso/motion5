@@ -1,0 +1,41 @@
+{
+  "message": "refactor(runtime): move the definition rewriters beside the authored value functions",
+  "target": 267,
+  "edits": [
+    {
+      "path": "packages/core/src/runtime/authored-values.ts",
+      "find": "  AuthoredStaticValue,\n  TrackDefinition,\n} from \"../contract/v5\";",
+      "replace": "  AuthoredStaticValue,\n  MotionDefinition,\n  TrackDefinition,\n} from \"../contract/v5\";"
+    },
+    {
+      "path": "packages/core/src/runtime/authored-values.ts",
+      "find": "  return Object.freeze({ ...track, keyframes: Object.freeze(keyframes) });\n}\n",
+      "replace": "  return Object.freeze({ ...track, keyframes: Object.freeze(keyframes) });\n}\n/** One retained Motion definition, writable, for the two fields a tier 0 edit moves. */\ntype MutableMotion = { -readonly [K in keyof MotionDefinition]: MotionDefinition[K] };\n/** One retained track definition, writable, for the one field an authored edit moves. */\ntype MutableTrack = { -readonly [K in keyof TrackDefinition]: TrackDefinition[K] };\n/** Builds a track with an edited authored keyframe record, omitting an empty record. */\nexport function withKeyframes(\n  track: TrackDefinition,\n  keyframes: AuthoredKeyframes,\n): TrackDefinition {\n  const next: MutableTrack = { ...track };\n  if (Object.keys(keyframes).length === 0) delete next.keyframes;\n  else next.keyframes = keyframes;\n  return Object.freeze(next);\n}\n/**\n * Whether two authored triggers are the same trigger.\n *\n * Field by field with `Object.is`, because `MotionDefinition.trigger` is structurally open by design\n * and a caller that rebuilt the record it already had is asking for nothing. Reference equality\n * alone would make a redundant edit depend on whether the caller kept its object, and a deep walk\n * would be a second opinion about a shape whose fields are the primitives `validateMotionTrigger`\n * has just accepted. An extension key holding an object therefore reads as a change, which is the\n * safe direction: the edit runs rather than being skipped.\n */\nexport function sameTrigger(\n  current: MotionDefinition[\"trigger\"],\n  next: MotionDefinition[\"trigger\"],\n): boolean {\n  const fields = new Map<string, unknown>(Object.entries(next));\n  const entries = Object.entries(current);\n  if (entries.length !== fields.size) return false;\n  return entries.every(([key, value]) => fields.has(key) && Object.is(fields.get(key), value));\n}\n/**\n * `definition` with its stagger at `stagger`, and with the field absent when that is undefined.\n *\n * A cleared stagger leaves no key behind, because the authored field is optional and a Motion\n * reporting `stagger: undefined` would answer a shape no author can write. Copied and deleted from\n * rather than rebuilt out of named fields, so a definition carrying anything else keeps it.\n */\nexport function withStagger(\n  definition: MotionDefinition,\n  stagger: number | undefined,\n): MotionDefinition {\n  const next: MutableMotion = { ...definition };\n  if (stagger === undefined) delete next.stagger;\n  else next.stagger = stagger;\n  return Object.freeze(next);\n}\n"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "/** One retained Motion definition, writable, for the two fields a tier 0 edit moves. */\ntype MutableMotion = { -readonly [K in keyof MotionDefinition]: MotionDefinition[K] };\n/** One retained track definition, writable, for the one field an authored edit moves. */\ntype MutableTrack = { -readonly [K in keyof TrackDefinition]: TrackDefinition[K] };\n/** Builds a track with an edited authored keyframe record, omitting an empty record. */\nfunction withKeyframes(track: TrackDefinition, keyframes: AuthoredKeyframes): TrackDefinition {\n  const next: MutableTrack = { ...track };\n  if (Object.keys(keyframes).length === 0) delete next.keyframes;\n  else next.keyframes = keyframes;\n  return Object.freeze(next);\n}\n/**\n * Whether two authored triggers are the same trigger.\n *\n * Field by field with `Object.is`, because `MotionDefinition.trigger` is structurally open by design\n * and a caller that rebuilt the record it already had is asking for nothing. Reference equality\n * alone would make a redundant edit depend on whether the caller kept its object, and a deep walk\n * would be a second opinion about a shape whose fields are the primitives `validateMotionTrigger`\n * has just accepted. An extension key holding an object therefore reads as a change, which is the\n * safe direction: the edit runs rather than being skipped.\n */\nfunction sameTrigger(\n  current: MotionDefinition[\"trigger\"],\n  next: MotionDefinition[\"trigger\"],\n): boolean {\n  const fields = new Map<string, unknown>(Object.entries(next));\n  const entries = Object.entries(current);\n  if (entries.length !== fields.size) return false;\n  return entries.every(([key, value]) => fields.has(key) && Object.is(fields.get(key), value));\n}\n/**\n * `definition` with its stagger at `stagger`, and with the field absent when that is undefined.\n *\n * A cleared stagger leaves no key behind, because the authored field is optional and a Motion\n * reporting `stagger: undefined` would answer a shape no author can write. Copied and deleted from\n * rather than rebuilt out of named fields, so a definition carrying anything else keeps it.\n */\nfunction withStagger(definition: MotionDefinition, stagger: number | undefined): MotionDefinition {\n  const next: MutableMotion = { ...definition };\n  if (stagger === undefined) delete next.stagger;\n  else next.stagger = stagger;\n  return Object.freeze(next);\n}\n",
+      "replace": ""
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  authoredValues,\n  requireViews,\n  splitAuthoredValues,\n  withAuthoredValues,\n} from \"./authored-values\";",
+      "replace": "  authoredValues,\n  requireViews,\n  sameTrigger,\n  splitAuthoredValues,\n  withAuthoredValues,\n  withKeyframes,\n  withStagger,\n} from \"./authored-values\";"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "  AuthoredKeyframe,\n  AuthoredPluginGroup,\n  AuthoredProperty,\n  AuthoredStaticValue,\n  Diagnostic,\n  ObservationDefinition,",
+      "replace": "  AuthoredPluginGroup,\n  AuthoredProperty,\n  ObservationDefinition,"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "import { readAuthoredLeaf } from \"../contract/authored-leaf\";\nimport { readPluginBindings } from \"../contract/keyframe-shape\";\n",
+      "replace": ""
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "import { flattenAuthoredKeyframes } from \"../domain/keyframe-groups\";\n",
+      "replace": ""
+    }
+  ]
+}
