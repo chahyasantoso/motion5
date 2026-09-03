@@ -1,0 +1,16 @@
+{
+  "message": "docs(ai-edit): record the skip-ci subject and the AE- case set",
+  "target": 276,
+  "edits": [
+    {
+      "path": "docs/AI-EDIT-WORKFLOW.md",
+      "find": "And its commit carries `chore(ai-edit): dry run, nothing applied` rather than your `message`, because a commit named after a change it did not make is a lie in the log. The `AI-Edit-Request:` trailer still names the request that was consumed.",
+      "replace": "And its commit carries `chore(ai-edit): dry run, nothing applied [skip ci]` rather than your `message`, because a commit named after a change it did not make is a lie in the log. The `AI-Edit-Request:` trailer still names the request that was consumed.\n\nThe `[skip ci]` on that subject is honest for the same reason the subject is fixed. The only path in a dry run's commit is the request it consumed, so the content diff is empty by construction, and every `CI` job would install a toolchain to re-verify a tree it has already verified. Because the subject is not yours, no request can put the directive on a commit that does change files. One consequence to know rather than discover: if a dry run is the last commit before a merge, the required contexts never report on that head and the pull request sits. `ci.yml` has `workflow_dispatch`, so dispatch `CI` by hand from the Actions tab."
+    },
+    {
+      "path": "docs/AI-EDIT-WORKFLOW.md",
+      "find": "`dry_run` was exercised the same way, on the pull request that introduced it: a dry run of that pull request's own documentation edits reported its anchor counts and its resulting sizes and wrote nothing, and the identical request without the flag then applied them.",
+      "replace": "`dry_run` was exercised the same way, on the pull request that introduced it: a dry run of that pull request's own documentation edits reported its anchor counts and its resulting sizes and wrote nothing, and the identical request without the flag then applied them.\n\nThe validation pass also has a unit test, the `AE-` cases in `packages/core/test/unit/scripts/apply-ai-edit.test.ts`. They run the shipped script as a subprocess against planted trees, which is how the workflow invokes it, and they assert what a live run can only demonstrate one outcome at a time: the anchor counts a dry run reports, the count named in each refusal, that a later edit is validated against what an earlier one staged, that a refusal leaves every file it named untouched, and that a dry run gets the fixed `[skip ci]` subject while a real run keeps your `message` verbatim. Run them with `npx vitest run packages/core/test/unit/scripts/apply-ai-edit.test.ts`. The live runs still carry what a subprocess cannot: the token, the formatter, the comment, and how the request is chosen."
+    }
+  ]
+}
