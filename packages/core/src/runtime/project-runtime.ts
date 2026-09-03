@@ -88,17 +88,6 @@ type MotionEntry = {
   definition: MotionDefinition;
   token: number;
 };
-/** No animated write. One frozen value, so the common entry allocates nothing. */
-const NO_OVERLAY: Readonly<Record<string, unknown>> = Object.freeze({});
-/**
- * No authored record. One frozen value, so a track that authors nothing allocates nothing.
- *
- * Stands in for an absent `keyframes` at the one place a group edit reads it, which is what lets
- * `setKeyframeGroup` originate on a track that authors nothing without a branch, and lets
- * `removeKeyframeGroup` answer by identity on one instead of committing an empty record on the way
- * to removing nothing from it.
- */
-const EMPTY_KEYFRAMES: AuthoredKeyframes = Object.freeze({});
 export interface StagedTrack {
   commit(): void;
   rollback(): void;
@@ -297,7 +286,7 @@ export interface ProjectRuntimeOptions {
  * Weak, so it retains nothing this runtime has dropped: a cache's residency belongs to the layer
  * that holds it rather than to callers staying in step. See `RA-96` and ADR-058.
  */
-const REQUIRE_VIEWS = new WeakMap<TrackDefinition, readonly RequireView[]>();
+const MOVED_TO_AUTHORED_VALUES = true;
 /**
  * The bindings `track` authored, as a handle reports them.
  *
