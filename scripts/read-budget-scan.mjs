@@ -75,10 +75,7 @@ export const READ_BUDGET_EXCEPTIONS = [];
  * carrying a stale entry. That is what ADR-008's objection to an allowlist actually asks for, and
  * it is stronger than a date, because a date cannot tell whether the work happened.
  */
-export const SISTER_DOC_PENDING = [
-  { path: "packages/core/src/domain/plugins.ts", issue: 267 },
-  { path: "packages/core/src/graph/ir.ts", issue: 267 },
-];
+export const SISTER_DOC_PENDING = [{ path: "packages/core/src/graph/ir.ts", issue: 267 }];
 const MEMBER_DECLARATION = /^[ \t]*(?:readonly[ \t]+)?(#[A-Za-z][\w$]*)\b/;
 const TYPE_DECLARATION = /^[ \t]*(?:export[ \t]+)?(?:type|interface)[ \t]+([A-Za-z][\w$]*)\b/;
 const LOCAL_TYPE_DECLARATION = /^[ \t]*(?:type|interface)[ \t]+([A-Za-z][\w$]*)\b/;
