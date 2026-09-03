@@ -5,7 +5,7 @@ import {
   type PublisherNode,
   type PublisherSnapshot,
 } from "../../../src/runtime/graph-publisher";
-import { deriveDependents } from "../../../src/graph/ir";
+import { deriveDependants } from "../../../src/graph/ir";
 
 const soleNode = (id: string): PublisherNode =>
   Object.freeze({
@@ -22,7 +22,7 @@ const soleSnapshot = (id: string): PublisherSnapshot => {
   return {
     nodes: [node],
     nodeById: Object.freeze({ [id]: node }),
-    dependents: deriveDependents([node]),
+    dependants: deriveDependants([node]),
     order: Object.freeze([id]),
     diagnostics: Object.freeze([]),
   };

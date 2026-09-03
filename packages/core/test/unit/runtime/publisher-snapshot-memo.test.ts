@@ -10,7 +10,7 @@ import { GraphPublisher } from "../../../src/runtime/graph-publisher";
  * `GraphRuntime.flush` rebuilds the whole snapshot on every tick: it maps every graph node to a
  * publisher node, builds an id map from the result, and freezes a fresh object around them. Every
  * part of that is now a pure function of the `GraphIR` identity. The publisher nodes were already
- * cached per graph node, `dependents` is derived once per graph by `finalizeGraph` since 7a, and the
+ * cached per graph node, `dependants` is derived once per graph by `finalizeGraph` since 7a, and the
  * closures a publisher node carries resolve the compiled map per call since A3, so an entry that
  * survives a recompile is not stale.
  *
@@ -125,7 +125,7 @@ describe("the snapshot a flush runs over is memoised per graph", () => {
     expect(second).not.toBe(first);
     expect(second?.nodes.map(({ id }) => id)).toEqual(["hero/arm"]);
     expect(second?.nodeById["hero/hand"]).toBeUndefined();
-    expect(second?.dependents).toBe(runtime.graph.dependents);
+    expect(second?.dependants).toBe(runtime.graph.dependants);
     // Residency, which the clear inside `replaceGraph` owns: a publisher node the rebuild displaced
     // is not reused, so the memo cannot become the thing that retains it.
     expect(second?.nodes[0]).not.toBe(first?.nodes[0]);
