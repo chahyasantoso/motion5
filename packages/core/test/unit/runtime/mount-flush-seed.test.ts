@@ -8,29 +8,40 @@ import { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 
 /**
- * Issue #223, part 6 of the re-review: the deferral with no owner.
+ * Issue #223, part 6 of the re-review: the deferral with no owner, decided as a refusal.
  *
  * A2 made every structural commit seed one flush, so a node added at runtime publishes at rest. A
- * loaded project publishes nothing until something ticks, and whether `Engine.load()` should seed a
- * flush too was recorded as unasked and stayed unasked. The reason given for not deciding was that
- * load has no members yet when it would seed, and that reason is about ordering rather than about
- * whether the answer should be yes, which is what made it a deferral rather than a refusal.
+ * loaded project publishes nothing until something ticks. Whether `Engine.load()` should seed a
+ * flush too was recorded as unasked, and part 6 asked for that sentence to become either its own
+ * issue or an explicit refusal. It is the refusal, and both halves of it are here.
  *
- * Decided here, and the ordering is the answer rather than the obstacle. Load genuinely has nothing
- * to publish to: `#members` is empty until something mounts, and A2 already established that an
- * empty seed set is not a cheap flush, so a seed at load would open a batch, notify every batch
- * subscriber and move the sequence to say nothing. The member arrives at `mount`, so that is where
- * the seed belongs, and the asymmetry was never about load at all: it was that a node mounted by a
- * commit is seeded by `#apply` while a node mounted by a caller is seeded by nobody.
+ * The reason is not the one this slice first wrote down. It prescribed a seed at the mount, on the
+ * argument that a node mounted by a commit is seeded by `#apply` while a node mounted by a caller
+ * is seeded by nobody, and that the asymmetry was a defect. That prescription was implemented and
+ * measured, and the measurement refused it: run 33712936651 turned 21 cases red across 12 files.
+ * Three of those are the answer.
  *
- * The evidence that this is the real shape of it is already in the suite. Every rig that loads a
- * project and reads a patch calls `seek` first, `RA-59`'s oracle included, and that `seek` is not
- * about scrubbing: it is there because a mounted node publishes nothing on its own.
+ * First, `T-1` asserts that a loaded project publishes nothing before its driver has run, and
+ * `SESSION-STATUS.md` records that asymmetry as real and owned rather than pending. A seed at the
+ * mount contradicts an owned decision rather than completing one.
  *
- * `RA-8` through `RA-13` own that a structural commit seeds one flush and that a commit with
- * nothing to publish seeds none. Neither is restated here. What these add is the one mount that a
- * commit does not perform, and `RA-102` is the case that fails if the seed is put at the attach
- * rather than at the public verb, which would give every structural add two flushes.
+ * Second, `trigger-time.test.ts` owns "does not emit before the first tick", which is a promise
+ * about drivers rather than about publication: a mount happens before any tick, so a time Motion
+ * that published at its mount would emit a progress its driver never produced.
+ *
+ * Third, and the finding that settles it, a seed at the mount does not add a publication. It
+ * **steals the next one**. `PatchRegistry.publish` drops a candidate through `samePatch`, so the `seek`
+ * that follows a mount publishes nothing new and the batch its caller reads is empty.
+ * Eighteen of the 21 failures are exactly that, `RA-8` among them, which is A2's own evidence. A
+ * caller that mounts and then seeks would silently lose the patch it used to be handed.
+ *
+ * So load seeds nothing because there is no member to publish to and an empty seed set is not a
+ * cheap flush, and the mount seeds nothing because the first real operation on a node is what
+ * carries its first patch. `RA-101` is the case that fails if either half is added back, and it
+ * fails on the theft rather than on the publication, which no counter would have caught.
+ *
+ * `RA-8` through `RA-13` own what a structural commit seeds. Nothing here restates them: what these
+ * three add is what a mount and a load deliberately do not owe.
  */
 
 const NODE = "~/a";
@@ -56,7 +67,7 @@ const HIP_TRACK: TrackDefinition = {
   id: "hip",
   keyframes: { transform: { values: { x: 100, y: 200, rotation: 0 } } },
 };
-/** A real load, because the parity this decides is between a loaded node and an added one. */
+/** A real load, because what the refusal is about is the node a document brought with it. */
 function load(): ProjectHandle {
   const plugins = new PluginRegistry();
   plugins.register(transformPlugin);
@@ -71,43 +82,49 @@ function load(): ProjectHandle {
   });
 }
 
-describe("a node publishes at rest whichever way it arrived", () => {
-  it("RA-100 seeds one flush at the mount and none at the load", () => {
+describe("what a load and a mount deliberately do not publish", () => {
+  it("RA-100 seeds no flush at the load and none at the mount", () => {
     const project = runtime();
 
-    // Load seeds nothing, and that is the refusal half of this decision rather than an omission.
-    // There is no member to publish to yet, and an empty seed set still opens a batch and moves the
-    // sequence, so a commit with nothing to publish does not call `invalidate` at all. See `RA-10`.
+    // Load seeds nothing, and that is a refusal rather than an omission: there is no member to
+    // publish to yet, and an empty seed set still opens a batch, notifies every batch subscriber
+    // and moves the sequence, which is why a commit with nothing to publish does not call
+    // `invalidate` at all. See `RA-10`.
     expect(project.graph.sequence).toBe(0);
     expect(project.graph.memberCount).toBe(0);
     expect(project.graph.registry.get(NODE)).toBeUndefined();
 
     project.mount(NODE);
 
-    // One flush, seeded with the node that just became a member. No tick has happened and the clock
-    // is manual, so a published patch here can only have come from the mount.
-    expect(project.graph.sequence).toBe(1);
-    expect(project.graph.registry.get(NODE)).toBeDefined();
+    // And the mount seeds nothing either. A member now exists, so this is the half that looked like
+    // a defect and is not: the first operation on this node is what publishes it, and a flush here
+    // would take that publication rather than add one. See `RA-101`.
+    expect(project.graph.memberCount).toBe(1);
+    expect(project.graph.sequence).toBe(0);
+    expect(project.graph.registry.get(NODE)).toBeUndefined();
 
     project.dispose();
   });
 
-  it("RA-101 publishes the same patch a seek used to be needed to produce", () => {
+  it("RA-101 hands the first patch to the first operation rather than to the mount", () => {
     const handle = load();
-
     handle.mount(HIP);
 
-    // The oracle rather than a counter. A sequence that moved proves a flush happened; only the
-    // patch proves the flush was about this node and carried the values it composes. Every rig in
-    // this suite that loads and reads has a `seek` in front of it for exactly this reason.
-    const mounted = handle.get(HIP);
-    expect(mounted?.status).toBe("ready");
-    expect(mounted?.values).toMatchObject({ x: 100, y: 200 });
+    // Nothing yet, which `T-1` owns as parity of the progression a driver produced rather than of
+    // the batches it arrived in, and which `trigger-time.test.ts` owns as a promise that a time
+    // Motion does not emit before its first tick.
+    expect(handle.get(HIP)).toBeUndefined();
 
-    // And the seek is now redundant rather than load-bearing: it publishes the same values, so
-    // nothing that already calls it changes behaviour and no existing expectation moves.
-    handle.seek(HIP, 0);
-    expect(handle.get(HIP)?.values).toEqual(mounted?.values);
+    const batch = handle.seek(HIP, 0);
+    const published = batch.patches.find(({ nodeId }) => nodeId === HIP);
+
+    // The theft case, and the one that decided this refusal. `PatchRegistry.publish` drops a
+    // candidate through `samePatch`, so a mount that published these same values first would leave
+    // this batch empty and the caller reading `undefined` where it used to read its patch. That is
+    // silent, it is public, and 18 of the 21 cases a mount seed turned red are this shape.
+    expect(published?.status).toBe("ready");
+    expect(published?.values).toMatchObject({ x: 100, y: 200 });
+    expect(handle.get(HIP)?.values).toEqual(published?.values);
 
     handle.dispose();
   });
@@ -119,11 +136,10 @@ describe("a node publishes at rest whichever way it arrived", () => {
 
     project.addTrack(ADDED);
 
-    // One, not two. A commit mounts the node it added through `#mountNode`, and `#apply` already
-    // seeds that node into the single flush the commit ends at, so the seed belongs at the public
-    // verb and never at the attach. Putting it at the attach is the named mutation target for this
-    // slice: it goes green on `RA-100` and red here, and it would give every structural add in the
-    // project a second flush nothing asked for.
+    // One, and this is the half of the original prescription that survives as a guard. A commit
+    // mounts the node it added through `#mountNode` and `#apply` already seeds that node into the
+    // single flush the commit ends at, so a seed placed at the attach would give every structural
+    // add in the project a second flush. Nothing else in the suite counts this.
     expect(project.graph.sequence).toBe(before + 1);
     expect(project.graph.registry.get(OTHER)).toBeDefined();
 
