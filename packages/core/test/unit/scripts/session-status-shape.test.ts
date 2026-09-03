@@ -57,7 +57,7 @@ describe("session status shape", () => {
     expect(headings).toEqual(SECTIONS);
   });
 
-  it("stays under a ceiling a file stating current state has no honest reason to cross", async () => {
+  it("stays under a ceiling current state has no honest reason to cross", async () => {
     const { size } = await stat(STATUS);
     expect(size).toBeGreaterThan(0);
     expect(size).toBeLessThanOrEqual(CEILING);
