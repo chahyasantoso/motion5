@@ -84,6 +84,8 @@ export const SISTER_DOC_PENDING = [
 const MEMBER_DECLARATION = /^[ \t]*(?:readonly[ \t]+)?(#[A-Za-z][\w$]*)\b/;
 const TYPE_DECLARATION = /^[ \t]*(?:export[ \t]+)?(?:type|interface)[ \t]+([A-Za-z][\w$]*)\b/;
 const LOCAL_TYPE_DECLARATION = /^[ \t]*(?:type|interface)[ \t]+([A-Za-z][\w$]*)\b/;
+const VALUE_DECLARATION =
+  /^[ \t]*(?:export[ \t]+)?(?:default[ \t]+)?(?:async[ \t]+)?(?:function|class|const|let|var|enum)[ \t]+([A-Za-z][\w$]*)\b/;
 const MEMBER_HEADING = /^## (.+?)[ \t]*$/;
 export async function walk(directory) {
   let entries;
@@ -143,13 +145,20 @@ export function checkSize(file, size, exceptions = READ_BUDGET_EXCEPTIONS) {
  * That is what makes the answer a declaration order rather than a first-mention order, and
  * `#mountNode` is the member that proves the difference: `mount` calls it one line above its own
  * declaration.
+ *
+ * A `#` member and a type are not the whole of what a file declares, and not one of the four sources
+ * still owed a document declares a `#` member at all. A module keeps its reasoning on plain
+ * `function` and `const` declarations, at the top level and inside the one function that owns them,
+ * so those are declarations here too. Exported or not, because a heading may name an exported member
+ * that left its summary line in the source and moved only the argument.
  */
 export function declarations(source) {
   const found = new Map();
   const lines = source.split("\n");
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
-    const match = MEMBER_DECLARATION.exec(line) ?? TYPE_DECLARATION.exec(line);
+    const match =
+      MEMBER_DECLARATION.exec(line) ?? TYPE_DECLARATION.exec(line) ?? VALUE_DECLARATION.exec(line);
     if (match !== null && !found.has(match[1])) found.set(match[1], index);
   }
   return found;

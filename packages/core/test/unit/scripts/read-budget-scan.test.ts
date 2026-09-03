@@ -230,4 +230,26 @@ describe("read budget scan", () => {
     const stale = await withPlanted(files, (p) => scan(p, [], pending));
     expect(stale).toEqual([expect.stringContaining("no longer needs its pending entry")]);
   });
+
+  // Every source still owed a document is a module rather than a class, so a mirror that reads only
+  // `#` members and types answers that each heading in a module's document names nothing declared.
+  // The heading set is what a file declares, and a module declares functions and consts, including
+  // the ones a single function owns, which is where a module's densest reasoning actually sits.
+  it("RB-17: names what a module declares, not only what a class does", () => {
+    const source = [
+      "// Docs: ./graph-runtime.md",
+      "const LIMIT = 1;",
+      "export function run(): void {",
+      "  const step = (): void => {};",
+      "  step();",
+      "}",
+      "",
+    ].join("\n");
+    expect(checkMirror(ORDINARY, source, doc("LIMIT", "run", "step"))).toEqual([]);
+    const reversed = checkMirror(ORDINARY, source, doc("run", "LIMIT"));
+    expect(reversed).toEqual([expect.stringContaining("breaks the declaration order")]);
+    expect(checkMirror(ORDINARY, source, doc("absent"))).toEqual([
+      expect.stringContaining("names nothing the source declares"),
+    ]);
+  });
 });
