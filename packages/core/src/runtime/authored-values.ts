@@ -2,6 +2,7 @@ import type {
   AuthoredKeyframe,
   AuthoredPluginGroup,
   AuthoredStaticValue,
+  MotionDefinition,
   TrackDefinition,
 } from "../contract/v5";
 import { readAuthoredLeaf } from "../contract/authored-leaf";
@@ -157,4 +158,53 @@ export function withAuthoredValues(
     });
   }
   return Object.freeze({ ...track, keyframes: Object.freeze(keyframes) });
+}
+/** One retained Motion definition, writable, for the two fields a tier 0 edit moves. */
+type MutableMotion = { -readonly [K in keyof MotionDefinition]: MotionDefinition[K] };
+/** One retained track definition, writable, for the one field an authored edit moves. */
+type MutableTrack = { -readonly [K in keyof TrackDefinition]: TrackDefinition[K] };
+/** Builds a track with an edited authored keyframe record, omitting an empty record. */
+export function withKeyframes(
+  track: TrackDefinition,
+  keyframes: AuthoredKeyframes,
+): TrackDefinition {
+  const next: MutableTrack = { ...track };
+  if (Object.keys(keyframes).length === 0) delete next.keyframes;
+  else next.keyframes = keyframes;
+  return Object.freeze(next);
+}
+/**
+ * Whether two authored triggers are the same trigger.
+ *
+ * Field by field with `Object.is`, because `MotionDefinition.trigger` is structurally open by design
+ * and a caller that rebuilt the record it already had is asking for nothing. Reference equality
+ * alone would make a redundant edit depend on whether the caller kept its object, and a deep walk
+ * would be a second opinion about a shape whose fields are the primitives `validateMotionTrigger`
+ * has just accepted. An extension key holding an object therefore reads as a change, which is the
+ * safe direction: the edit runs rather than being skipped.
+ */
+export function sameTrigger(
+  current: MotionDefinition["trigger"],
+  next: MotionDefinition["trigger"],
+): boolean {
+  const fields = new Map<string, unknown>(Object.entries(next));
+  const entries = Object.entries(current);
+  if (entries.length !== fields.size) return false;
+  return entries.every(([key, value]) => fields.has(key) && Object.is(fields.get(key), value));
+}
+/**
+ * `definition` with its stagger at `stagger`, and with the field absent when that is undefined.
+ *
+ * A cleared stagger leaves no key behind, because the authored field is optional and a Motion
+ * reporting `stagger: undefined` would answer a shape no author can write. Copied and deleted from
+ * rather than rebuilt out of named fields, so a definition carrying anything else keeps it.
+ */
+export function withStagger(
+  definition: MotionDefinition,
+  stagger: number | undefined,
+): MotionDefinition {
+  const next: MutableMotion = { ...definition };
+  if (stagger === undefined) delete next.stagger;
+  else next.stagger = stagger;
+  return Object.freeze(next);
 }
