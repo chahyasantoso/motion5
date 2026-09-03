@@ -130,15 +130,10 @@ interface SchemaEffect {
  * a builder may not keep what it handed over. `#stageTracks` and `#stageMotions` are the only two
  * things that make one, and therefore the only two allowed to fill this. See `RA-92`.
  *
- * What a plan no longer carries is a hook list. A1 gave every entry point one transaction owner and
- * left each of them assembling its own effects, settle steps and seeds, and those lists compose only
- * while a commit carries exactly one change. A recipe that adds a track and then edits it would
- * accumulate an `addMotionTrack` in the settle steps, from the add, and a `replaceMotionTrack` in
- * the effects, from the edit; effects run before the graph is asked and settle steps run after it
- * accepted, so the Motion would be asked to replace a track it has not been told about yet. So a
- * commit's hooks are derived from what it commits, by `#derive` below, and every entry point is a
- * map builder that names no hook at all. `RA-65` is the first case that can tell the two apart.
- * See ADR-064.
+ * What a plan no longer carries is a hook list: a commit's hooks are derived from what it commits,
+ * by `#derive` below, and every entry point is a map builder that names no hook at all. Why a hook
+ * list assembled per op cannot compose two is ADR-064's, and `RA-65` is the first case that can
+ * tell the two apart. See ADR-064.
  */
 interface SchemaPlan {
   readonly tracks?: Map<string, TrackEntry>;
@@ -154,13 +149,9 @@ interface SchemaPlan {
  * See ADR-031 and ADR-045.
  *
  * `touched` names the nodes this transaction changed, and it is seeded into one flush once the
- * commit settled. Empty is a real answer rather than a default: a motion add or destroy derives no
- * node and no edge at all, and a removal names the nodes that were reading the removed one, which
- * is empty for most removals and is a different claim from naming nothing. `finalizeGraph` refuses
- * a candidate whose removed node is still named by an edge, so a reader that is an edge never
- * reaches here; a solver reads its chain members through `solves` with no edge pointing that way,
- * and that candidate is accepted. The premise this replaces read the first half as the whole rule.
- * See `RA-98` and `RA-99`.
+ * commit settled. Empty is a real answer rather than a default, and why a commit that derives no
+ * node does not flush at all is ADR-064's amendment. Which nodes a removal names, and why a solver
+ * is the reader an edge test misses, is `#derive`'s own comment, with `RA-98` and `RA-99`.
  */
 interface SchemaCommit {
   readonly effects: readonly SchemaEffect[];
@@ -170,14 +161,9 @@ interface SchemaCommit {
 /**
  * The pending pair one open recipe is staging, and the whole of the transaction owner's state.
  *
- * Mutable in exactly its two fields, because every entry point builds its candidate pair from
- * whatever is open, so the pair that is open is always the answer the recipe has produced so far and
- * there is no op log to replay. See ADR-064.
- *
- * Each half starts as the retained map by identity and is replaced by a copy the first time an op
- * stages something into it, by `#stageTracks` or `#stageMotions`, after which every later op writes
- * into that same copy. So the identity of a half is still the whole answer to whether the recipe
- * staged anything, and the copy is paid once per recipe rather than once per op. See `RA-93`.
+ * Mutable in exactly its two fields, and no op log beside them. Each half starts as the retained
+ * map by identity and is replaced by a copy on the first op that stages into it, which is
+ * `#stageTracks`'s own. See ADR-064 and `RA-93`.
  */
 interface OpenTransaction {
   tracks: Map<string, TrackEntry>;
@@ -260,11 +246,9 @@ export interface ProjectRuntimeOptions {
   /**
    * The signal a live Motion's trigger takes, and the third seam this layer holds for one reason.
    *
-   * It reaches the created trigger port, which plays the Motion and publishes, so it applies
-   * immediately and survives an abort exactly as the two above do. It lived in a closure over the
-   * engine's Motion map, where the owner of the recipe refusal cannot be asked, so it is a hook
-   * here instead: the refusal keeps one owner, and an unknown motion id is still refused by the
-   * layer that owns the Motion. See ADR-064.
+   * A hook here rather than a closure over the engine's Motion map, so the one owner of the recipe
+   * refusal can be asked before a signal reaches a live port. An unknown motion id is still refused
+   * by the layer that owns the Motion. See ADR-064's amendment.
    */
   readonly signalMotion?: (motionId: string, signal: TriggerSignal) => void;
   readonly createMotion?: (definition: MotionDefinition) => void;
@@ -294,9 +278,8 @@ export class ProjectRuntime {
   /**
    * The open transaction, and the one piece of state `edit` adds to this class.
    *
-   * Present exactly while a recipe is running. Nothing else about the runtime is duplicated for it:
-   * the pending pair is the same shape the retained maps are, so every entry point reads it through
-   * the two accessors below and no verb learns that it is inside a recipe. See ADR-064.
+   * Present exactly while a recipe is running, and the same shape the retained maps are, read
+   * through the two accessors below so no verb learns it is inside a recipe. See ADR-064.
    */
   #open: OpenTransaction | undefined;
   readonly #diagnostics: Diagnostics;
@@ -387,11 +370,8 @@ export class ProjectRuntime {
    * The retained tracks, or the pending ones while a recipe is open.
    *
    * Every structural read in this class goes through this rather than reaching `#tracks` directly,
-   * which is what makes a two-step edit possible at all: the second step resolves against what the
-   * first staged, and a handle issued inside the recipe answers `live` truthfully on both sides of
-   * an abort, because its entry is in the pending pair and never in the retained one. The two
-   * in-place tiers keep reading the retained maps, and they are refused by name inside a recipe
-   * rather than allowed to write through the open one. See ADR-064.
+   * which is the one accessor ADR-064 puts in front of the pair. The two in-place tiers keep
+   * reading the retained maps and refuse by name inside a recipe instead. See ADR-064.
    */
   #readTracks(): ReadonlyMap<string, TrackEntry> {
     return this.#open?.tracks ?? this.#tracks;
@@ -442,11 +422,8 @@ export class ProjectRuntime {
   /**
    * Attaches one member, and the one owner of mounting.
    *
-   * Split from the public verb because a commit mounts too. That settle step mounted through the
-   * public member and stayed outside its guard only because `edit` clears the open transaction in a
-   * `finally` before `#apply` runs, which is correct and invisible: an internal caller kept out of a
-   * public refusal by the ordering of a `finally` in another method is not a thing to leave
-   * standing. The public member owns the contract, this owns the attach. See `RA-80`.
+   * Split from the public verb because a commit mounts too, for the reason ADR-064's amendment
+   * records. The public member owns the contract, this owns the attach. See `RA-80`.
    */
   #mountNode(nodeId: string, instance: object = {}): object {
     if (this.#instances.has(nodeId)) throw new TypeError(`Node "${nodeId}" is already mounted.`);
@@ -464,22 +441,9 @@ export class ProjectRuntime {
   /**
    * Runs `recipe` as one transaction and commits what it staged exactly once.
    *
-   * The verb issue #223 says has no vocabulary: build a project's structure up incrementally from
-   * nothing, driven by runtime code, with each step individually correct and the whole thing
-   * committed once. `n` authored ops across `m` tracks cost one candidate build, one
-   * `GraphBinding.replace`, one `ObservationState.commit`, one side-effect ordering with one
-   * rollback, and one flush, where the same sequence spelled one op at a time costs `n` of each.
-   *
-   * Abort semantics come free from A1 rather than from a compensation path: only `#commit` registers
-   * a token and only a commit applies an effect, so a throw inside the recipe commits nothing,
-   * reaches no hook, and issues no live handle. The throw travels verbatim, because the recipe's own
-   * failure is the reason the caller can act on.
-   *
-   * A recipe that staged nothing commits nothing, answered by identity on the pair rather than by a
-   * dirty flag: a half is replaced by a copy on the first op that stages into it and by nothing at
-   * all otherwise, so the pair a recipe ends on is the pair it opened with and there is nothing to
-   * spend a candidate build on. That is also why the copy is taken after an entry point's last
-   * refusal rather than before it. See `RA-66`, `RA-95` and ADR-064.
+   * What one costs, why an abort needs no compensation path, and why a recipe that staged nothing
+   * commits nothing are ADR-064's. That the copy is taken after an entry point's last refusal
+   * rather than before it is `#stageTracks`'s own. See `RA-66`, `RA-95` and ADR-064.
    */
   edit<T>(recipe: (transaction: SchemaTransaction) => T): T {
     this.#assertLive();
@@ -501,15 +465,11 @@ export class ProjectRuntime {
   /**
    * The narrowed surface one recipe is handed, and a projection rather than a second author.
    *
-   * Every member forwards to the member this class already has, deliberately: a second `addTrack`
-   * would be a second owner of what an add costs, and the whole point of this slice is that there is
-   * one. What the object buys is the narrowing, and only that: `mount`, `seek`, `subscribe` and
-   * `dispose` are not members of it. That is a statement about what a recipe is handed and never one
-   * about what it can reach, because the recipe closes over the `ProjectHandle` the caller called
-   * `edit` on, so every verb that applies immediately refuses at itself rather than by being absent
-   * from here. `addMotion` resolves the handle it returns through `motion` for the
-   * same reason: the id is what the entry point answers and the handle is what one lookup makes of
-   * it. See ADR-064.
+   * Every member forwards to the member this class already has, so there is one owner of what an op
+   * costs. The narrowing is a statement about what a recipe is handed and never one about what it
+   * can reach, and every immediate verb refuses at itself instead, which is ADR-064's amendment.
+   * `addMotion` resolves the handle it returns through `motion`, because the id is what the entry
+   * point answers. See ADR-064.
    */
   #transaction(): SchemaTransaction {
     const runtime = this;
@@ -553,10 +513,8 @@ export class ProjectRuntime {
   /**
    * Hands one signal to the layer that owns this Motion's trigger.
    *
-   * Tier 0's twin, and refused inside a recipe on the one rule every immediate verb shares: it
-   * reaches no node and no edge, plays a live Motion through its created port, and publishes, so it
-   * would survive an abort. The hook keeps its own refusal for an unknown motion id, because that
-   * answer belongs to the map that holds them rather than to this layer.
+   * Tier 0's twin, refused inside a recipe on the rule every immediate verb shares, and the hook
+   * keeps its own refusal for an unknown motion id. See ADR-064's amendment.
    */
   signal(motionId: string, signal: TriggerSignal): void {
     this.#assertLive();
@@ -814,11 +772,8 @@ export class ProjectRuntime {
     this.#commit({ motions });
   }
   /**
-   * Refuses `verb` while a recipe is open.
-   *
-   * One guard for both in-place tiers, because both are refused for one reason rather than two: the
-   * edit applies immediately and would survive an abort. Named at the verb rather than at the tier,
-   * so the message tells a caller which call to move out of the recipe. See ADR-064.
+   * Refuses `verb` while a recipe is open, named at the verb rather than at the tier so the message
+   * tells a caller which call to move out. See ADR-064.
    */
   #refuseInsideRecipe(verb: string): void {
     if (this.#open !== undefined) immediateInTransaction(verb);
@@ -1038,12 +993,9 @@ export class ProjectRuntime {
   /**
    * The one path by which a structural change reaches the graph, or the open transaction.
    *
-   * While a recipe is open there is nothing to do here at all: every entry point built its candidate
-   * pair by writing into the pair `#stageTracks` handed it, which is the open pair itself, so the
-   * merge this used to perform was assigning a map the open transaction was already holding. What
-   * that pair holds is still the answer the recipe has produced so far, and `edit` is still the one
-   * thing that applies it. With none open the pair is applied immediately, which is what every
-   * caller outside a recipe has always done. See ADR-064.
+   * While a recipe is open there is nothing to do here: every entry point already wrote into the
+   * open pair, and `edit` is the one thing that applies it. With none open the pair is applied
+   * immediately. See ADR-064.
    */
   #commit(plan: SchemaPlan): void {
     if (this.#open !== undefined) return;
@@ -1052,11 +1004,9 @@ export class ProjectRuntime {
   /**
    * Applies one accepted pair: derive, apply the effects, ask the graph, settle, and flush once.
    *
-   * Five transactions used to carry their own copy of this, each with its own hook ordering and its
-   * own rollback ordering, and the ordering comments explained that the sequence was load-bearing
-   * in three different ways: ADR-031 for the compiled map, ADR-035 for rollback precedence, and
-   * ADR-045 for republish-before-restore. `replaceGraph` and `rejectAfterRollback` have had one call
-   * site each since A1, and every hook has one now too.
+   * The one owner of an ordering three records make load-bearing: ADR-031 for the compiled map,
+   * ADR-035 for rollback precedence, ADR-045 for republish-before-restore. `replaceGraph` and
+   * `rejectAfterRollback` have one call site each, and so does every hook.
    *
    * The derivation runs before the try, so a candidate the registry refuses inside it costs no
    * teardown at all: nothing has been applied and nothing retained has moved when it throws.
@@ -1070,10 +1020,8 @@ export class ProjectRuntime {
    * members do not contain yet. `replaceGraph` seeds nothing itself, which is why `addObserve` on a
    * manual clock with no tick used to be invisible forever. See `RA-8`.
    *
-   * An empty `touched` returns without calling `invalidate`, because an empty seed set is not a
-   * cheap flush: it still opens a batch, notifies every batch subscriber, moves the sequence, and
-   * drains whatever seeds a deferred flush had carried. A commit that derives no node has nothing
-   * to publish and must not spend a frame's worth of machinery saying so. See `RA-10`.
+   * An empty `touched` returns without calling `invalidate`, for the reason ADR-064's amendment
+   * records. See `RA-10`.
    */
   #apply(plan: SchemaPlan): void {
     // An absent half is a half this commit did not move, so it resolves to the map this class is
@@ -1104,28 +1052,17 @@ export class ProjectRuntime {
     this.#diagnostics.recordAll(batch.diagnostics);
   }
   /**
-   * What one accepted pair costs, read against the retained pair, and the correction this slice
-   * found.
+   * What one accepted pair costs, read against the retained pair.
    *
-   * A hook list assembled by the entry point is correct for one change and cannot compose two. An
-   * add contributes an `addMotionTrack` to the settle steps and an edit contributes a
-   * `replaceMotionTrack` to the effects; effects run before the graph is asked and settle steps run
-   * after it accepted, so a track added and then edited in one recipe would have the Motion asked to
-   * replace a track it has not been told about yet. Add-then-remove is the same shape one level
-   * worse: a mount settles for a node the committed graph does not contain, and here it derives
-   * nothing at all, because the node is absent from both pairs.
+   * A hook list assembled by the entry point is correct for one change and cannot compose two,
+   * which is the correction ADR-064 records and `RA-65` is the first case to tell apart.
    *
-   * Four categories, each of them the hook set its own entry point used to name, unchanged. A
-   * created Motion is built before the graph is asked and destroyed if it refuses, so a driver that
-   * cannot be created leaves no definition and no node behind (ADR-032). A removed track settles its
-   * eviction, its dispose and its deregistration as one step, because its entry is already gone by
-   * the time any of them runs, and seeds every node that was reading it. A destroyed Motion settles
-   * after that, with nothing to revert, so a Motion whose last track the same commit removed is
-   * destroyed after that track deregistered from it. An added track compiles before the graph is asked, then registers with its Motion and mounts
-   * after it accepted, in that order because Motion resolves by id against the live compiled map
-   * (ADR-031). A replaced one stages, republishes its Motion entry, and commits the staging on
-   * acceptance, with the staging build skipped when the whole compiled input provably did not move
-   * (ADR-062).
+   * Four categories, each of them the hook set its own entry point used to name, unchanged: a
+   * created Motion built before the graph is asked and destroyed if it refuses (ADR-032), a removed
+   * track settling its eviction, dispose and deregistration as one step, a destroyed Motion
+   * settling after that with nothing to revert, and an added or replaced track compiling before the
+   * graph is asked and registering with its Motion after it accepted (ADR-031), with the staging
+   * build skipped when the compiled input provably did not move (ADR-062).
    *
    * Motions are created before any track compiles, because one commit may add a Motion and a track
    * to it. Effects are reverted in apply order, so a replacement's staging rollback still runs
