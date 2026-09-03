@@ -160,7 +160,7 @@ Remove children before parents so every intermediate graph stays valid. When you
 for (const track of [...handles].reverse()) track.remove();
 ```
 
-`handle.dependantsOf(nodeId)` is a read-only query for editor preflight: it tells you who observes a node before you try to delete it. It is not the enforcement. Graph validation rejects a deletion that would orphan a live dependant, and there is no cascade delete.
+`handle.dependantsOf(nodeId)` is a read-only query for editor preflight: it tells you who reads a node before you try to delete it, which is every observer of an edge plus any solver that reads it as a chain member. It is not the enforcement. Graph validation rejects a deletion that would orphan a live dependant, and there is no cascade delete.
 
 ## What atomicity guarantees you get
 

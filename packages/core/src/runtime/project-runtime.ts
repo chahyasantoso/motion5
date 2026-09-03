@@ -775,13 +775,29 @@ export class ProjectRuntime {
       );
     this.#removeTrack(nodeId, entry.token);
   }
+  /**
+   * Every node that reads this one, for an editor's preflight rather than for enforcement.
+   *
+   * Read from `GraphIR.dependents`, which is the one derivation of reverse topology, and it names
+   * both kinds of reader: the observer of an edge, and a solver that reads this node as a chain
+   * member. Enforcement stays where ADR-050 put it, in the candidate graph, which refuses a removal
+   * that would orphan a live dependant; this answers what a caller is told before it tries, and a
+   * preflight that is wrong in the permissive direction is worse than none, because it is read.
+   */
   dependantsOf(nodeId: string): readonly string[] {
     this.#assertLive();
-    return Object.freeze(
-      this.#graph.graph.nodes
-        .filter((node) => node.edges.some((edge) => edge.sourceId === nodeId))
-        .map((node) => node.id),
-    );
+    // Read, never rederived. `finalizeGraph` freezes `dependents` onto the `GraphIR` once per
+    // graph, from the walk that already had the solver fan-in in hand, so the filter this replaces
+    // was both a duplicate and the weaker of the two derivations: it saw `edges` alone, and a solver
+    // reads its members through `solves` with no edge pointing that way, so every member of every
+    // chain was missing from the one query an editor asks before it deletes a node.
+    //
+    // Deduplicated here rather than in the derivation. `deriveDependents` keeps a reader once per
+    // dependency deliberately, because a consumer walking it guards on its own visited set; this
+    // answers a set of readers, so the collapse belongs to the consumer that wants a set. First
+    // occurrence wins, which is the committed node order the filter produced. See `RA-86`, `RA-87`.
+    const readers: readonly string[] | undefined = this.#graph.graph.dependents[nodeId];
+    return Object.freeze(readers === undefined ? [] : [...new Set(readers)]);
   }
   #addTrack(track: TrackDefinition, owner: object, options?: { motionId?: string }): TrackHandle {
     this.#assertLive();
