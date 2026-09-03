@@ -42,10 +42,14 @@ jobs:
           fetch-depth: 1
           token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
 
+      # TOUCHED is every path the request changed and is what the commit allow-list reads. FORMAT is
+      # the subset that still exists, and it is what the formatter reads: a path a `delete` edit
+      # removed belongs on the first list and not on the second. See docs/AI-EDIT-WORKFLOW.md.
       - name: Name the scratch files
         run: |
           echo "REPORT=${RUNNER_TEMP}/ai-edit-report.md" >> "$GITHUB_ENV"
           echo "TOUCHED=${RUNNER_TEMP}/ai-edit-touched.txt" >> "$GITHUB_ENV"
+          echo "FORMAT=${RUNNER_TEMP}/ai-edit-format.txt" >> "$GITHUB_ENV"
 
       # The directory is the source of truth, never the push payload. A commit created through the
       # Git data API, which is the only way the reader of this contract can push, arrives with
@@ -95,22 +99,30 @@ jobs:
         if: steps.request.outputs.found == 'true'
         env:
           REQUEST: ${{ steps.request.outputs.path }}
-        run: node scripts/apply-ai-edit.mjs "$REQUEST" "$REPORT" "$TOUCHED"
+        run: node scripts/apply-ai-edit.mjs "$REQUEST" "$REPORT" "$TOUCHED" "$FORMAT"
 
       # The pinned version and nothing else. This job deliberately does not run npm ci or the
       # suite: CI owns correctness on the resulting commit, and duplicating it here doubles the
       # bill for no new information.
+      #
+      # It reads FORMAT rather than TOUCHED because Prettier exits non-zero on a path that no longer
+      # exists, and this step failing after the apply step has written the tree is what left a
+      # request applied, unformatted and uncommitted. A request whose every changed path was deleted
+      # by it has nothing to format and does not pay for the install either.
       - name: Format what changed
         if: steps.request.outputs.found == 'true' && steps.apply.outputs.changed == 'true'
         run: |
           set -euo pipefail
+          if [ ! -s "$FORMAT" ]; then
+            echo "Nothing to format: every path this request changed was deleted by it."
+            exit 0
+          fi
           version="$(jq -r '.devDependencies.prettier' package.json)"
           npm install --no-save --no-package-lock --no-audit --no-fund "prettier@${version}"
-          if [ -s "$TOUCHED" ]; then
-            xargs -a "$TOUCHED" -r npx prettier --write --ignore-unknown
-          fi
+          xargs -a "$FORMAT" -r npx prettier --write --ignore-unknown
 
       - name: Commit the bounded file list
+        id: commit
         if: steps.request.outputs.found == 'true'
         env:
           REQUEST: ${{ steps.request.outputs.path }}
@@ -138,18 +150,31 @@ jobs:
           git commit -m "$MESSAGE" -m "AI-Edit-Request: ${REQUEST}"
           git push origin "HEAD:${GITHUB_REF_NAME}"
 
+      # The report is what the apply step wrote, and on its own it describes the runner's working
+      # tree rather than the branch. So when the apply step succeeded and the commit step did not,
+      # the comment says that first: otherwise `Applied ... edits` reads as landed when a formatter
+      # failure has left the request pending and the tree thrown away with the runner.
       - name: Report back
         if: always() && steps.request.outputs.found == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           REQUEST: ${{ steps.request.outputs.path }}
           TARGET: ${{ steps.apply.outputs.target }}
+          APPLIED: ${{ steps.apply.outcome }}
+          COMMITTED: ${{ steps.commit.outcome }}
         run: |
           set -euo pipefail
           comment="${RUNNER_TEMP}/comment.md"
           {
             echo "### AI edit request \`${REQUEST}\`"
             echo ""
+            if [ "$APPLIED" = "success" ] && [ "$COMMITTED" != "success" ]; then
+              echo "**Nothing was committed.** A step after the apply step failed, so the edits below"
+              echo "exist only in the runner's working tree and \`${REQUEST}\` is still pending. Read the"
+              echo "report as what was attempted rather than what landed, then push a corrected request"
+              echo "to the same path."
+              echo ""
+            fi
             cat "$REPORT" 2>/dev/null || echo "The apply step produced no report."
             echo ""
             echo "[Actions run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
