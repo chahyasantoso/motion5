@@ -1,0 +1,11 @@
+{
+  "message": "docs(status): seven checks gate a merge, read-budget among them",
+  "target": 279,
+  "edits": [
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- Six checks gate a merge: `quality`, `integration`, `boundaries`, `build`, `end-to-end`, and the advisory `performance`. Squash merge once they are green.",
+      "replace": "- Seven checks gate a merge: `quality`, `integration`, `boundaries`, `read-budget`, `build`, `end-to-end`, and the advisory `performance`. Squash merge once they are green. `read-budget` runs `npm run test:read-budget`, and it is in `CI` because the implementor the budget protects cannot run it and cannot see a truncated read."
+    }
+  ]
+}
