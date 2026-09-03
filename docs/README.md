@@ -8,9 +8,14 @@ If you want to drive the runtime rather than build it, read the [user guide](./g
 
 ## Current reality
 
-Start with [SESSION-STATUS.md](./SESSION-STATUS.md). It is the only document allowed to claim what has landed. Plans, architecture, and ADRs describe intended behavior unless they explicitly say otherwise.
+Start with [SESSION-STATUS.md](./SESSION-STATUS.md). It is the only document allowed to claim what has landed, and it states current state only: what just landed, what is next in line, and what is open. Plans, architecture, and ADRs describe intended behavior unless they explicitly say otherwise.
 
-The runtime mutation model, the trigger drivers, and compiled Track ownership have landed on `feat/adopt-motion-track`. Phase 5 membership work and Phase 6 packaging work remain.
+Do not restate its claims here or anywhere else. A second copy of the state is a second owner of it, and this section carried one for long enough to go stale about which branch the work was on.
+
+Two documents hold what a status file is not allowed to accumulate:
+
+- [GUARDRAILS.md](./GUARDRAILS.md): the standing rules a slice is held to, and the working constraints the pipeline enforces.
+- [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md): what a caller may do to a loaded project, and what each edit pays for.
 
 ## Product and contracts
 
@@ -30,7 +35,7 @@ The runtime mutation model, the trigger drivers, and compiled Track ownership ha
 - [PHASE5-DETAILED-PLAN.md](./PHASE5-DETAILED-PLAN.md): the detailed contract for the current phase.
 - [TESTING-STRATEGY.md](./TESTING-STRATEGY.md): test tiers, determinism rules, migration evidence, invariant evidence, and prohibited evidence.
 - [CI-WORKFLOW.md](./CI-WORKFLOW.md): workflow rules, job contracts, artifacts, required versus advisory gates, and rollout schedule.
-- [PR-WORKFLOW.md](./PR-WORKFLOW.md): branch naming, commit style, pull request contents, review order, merge policy, and reverts.
+- [PR-WORKFLOW.md](./PR-WORKFLOW.md): branch naming, commit style, pull request contents, review order, merge policy, reverts, and the status discipline every slice owes.
 - [FORMATTING.md](./FORMATTING.md): Prettier configuration, the read-only gate, why nothing in CI repairs drift, and the manual repair.
 - [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md): the request contract for an implementor with no local checkout, the anchor rule, the bounded file list, and the cost of a round trip. [AGENTS.md](../AGENTS.md) in the repository root is that reader's entry point.
 
@@ -40,7 +45,7 @@ motion5 is a clean-room successor to [motionpath](https://github.com/chahyasanto
 
 ## How the documents fit together
 
-PRD says why and what. TRD says what "correct" means, in testable terms. ARCHITECTURE says who owns what. IMPLEMENTATION-PLAN says in what order, and names the evidence for each slice. SESSION-STATUS says what is actually true today. DECISIONS and the numbered ADRs say what not to re-litigate. The guide says how to use the result.
+PRD says why and what. TRD says what "correct" means, in testable terms. ARCHITECTURE says who owns what. IMPLEMENTATION-PLAN says in what order, and names the evidence for each slice. SESSION-STATUS says what is actually true today, and only today. GUARDRAILS says what not to get wrong again. LIVE-EDIT-COST says what the shipped runtime charges for an edit. DECISIONS and the numbered ADRs say what not to re-litigate. The guide says how to use the result.
 
 ## Locked scope decisions
 
@@ -48,7 +53,7 @@ Four scope questions are closed and should not be reopened in review: qualified 
 
 ## Documentation rules
 
-1. Reality belongs in one status file. Do not create parallel handoffs, review logs, or completion matrices.
+1. Reality belongs in one status file, and that file states current state only. Do not create parallel handoffs, review logs, or completion matrices, and do not append to the status file: a rule that outlives the slice which earned it belongs in GUARDRAILS.md, and a slice's run ids belong in its pull request.
 2. Intent documents must label themselves as intent when code does not exist yet.
 3. Every new public behavior needs schema/type/API documentation and a test plan in the same pull request.
 4. A decision reversal updates the original record or clearly supersedes it; contradictory records are not left behind.

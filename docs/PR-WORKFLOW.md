@@ -28,7 +28,7 @@ Every PR states:
 3. **Ownership:** which object gained or lost responsibility, and why no second owner exists.
 4. **Public surface:** changed exports, schema, or types.
 5. **Deletions:** compatibility code, tests, docs, or flags removed.
-6. **Status:** update to `SESSION-STATUS.md`.
+6. **Status:** the rewrite of `SESSION-STATUS.md` this slice owes. Replace the entry your slice makes stale rather than adding one beside it, and keep your narrative and your run ids in this body, where they already belong.
 
 ## Sizing and review
 
@@ -125,3 +125,7 @@ Test cases that a plan, ADR, or PR body cites by id use a single flat series per
 ## Status discipline
 
 There is one status file. Do not create parallel handoff notes or completion matrices. Update status in the PR that changes the project state.
+
+That update is a rewrite, not an append. `docs/SESSION-STATUS.md` states current state only and carries four sections: **Now**, **Next in line**, **Open, and not scheduled**, and **Where the rest of it lives**. Your entry replaces the entry it makes stale. `packages/core/test/unit/scripts/session-status-shape.test.ts` holds the file to that section list and to a byte ceiling, so a returning log fails `CI` on its heading before it fails on its size.
+
+Three things do not go in it, because each already has an owner. Your slice's narrative and its red and green run ids belong in this pull request body and in the ADR that decided the slice. A standing rule you earned belongs in [GUARDRAILS.md](./GUARDRAILS.md). A fact about what an edit costs a caller belongs in [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md). The status file reached 99,180 bytes by taking all three, one slice at a time, while its own first sentence called it deliberately small, which is the whole of why the gate exists. See issue #284.
