@@ -36,6 +36,8 @@ One request at a time. The workflow applies the single `.json` file it finds in 
 
 Each entry in `edits` names a `path` and exactly one of three modes: `find` with `replace` to rewrite an anchor, `create` with the full content of a new file, or `delete` set to `true`. Naming two modes is refused rather than guessed at.
 
+A request carries at most **50 edits**, and a fifty-first is a refusal naming the count it found. That is a ceiling on one request rather than on one slice: a larger batch splits into two requests applied one after the other, and the second is written once the commit that consumed the first has removed it. The batch-first rule below is unchanged by that, because two requests for one slice is still nothing like one request per edit.
+
 ## The anchor rule
 
 An anchor must match **exactly once** in the file. Zero matches and more than one match are both refusals, and the report tells you the count it actually found.
@@ -45,6 +47,34 @@ This is why the contract is anchors and not `git apply`. A patch is addressed by
 So read the region before you write the request, and quote enough of it to be unique. One short sentence that appears in three sections is a refusal you will have to pay another round trip to learn about.
 
 A request is all or nothing. Every edit is validated against the file content as the earlier edits in the same request left it, and nothing is written unless all of them pass. A partially applied request is the one outcome this workflow will not produce.
+
+## Reading the region, and the asymmetry this contract has
+
+The rule above says read the region before you write the anchor, and it does not say how a region is read, because there is no way to read one. A contents read is whole-file or prefix: no offset, no line window, and no second call that returns the part the first one dropped. A file past the response cap arrives truncated, and its tail is not late, it is unreachable.
+
+That is the asymmetry, and it is the whole of why this section exists. The write side is size-independent by construction, because you never write the file back. The read side is size-bound with no lever except the size of the file itself, which is the one variable in the loop that anybody controls.
+
+Code search is a locator rather than a reader, and it does not close the gap. It will tell you a symbol exists and print a few lines around it, and it will not hand you the region: it caps fragments per file and answers against the indexed default branch, so on the working branch you are editing it is stale or blind.
+
+The consequence for the anchor rule is exact. An anchor must match exactly once **in the file**, and a truncated read cannot establish that. It can only establish uniqueness across the prefix that arrived. An anchor unique in the prefix and repeated in the invisible tail comes back as the two-match refusal, which fails safe and costs one round trip. An anchor that genuinely is unique applies cleanly, all-or-nothing, exactly as designed, while the reasoning behind the edit was checked against a prefix. The write pass validates the anchor against the whole file, and nothing validates the edit against the part you never read, so every safety property here stays intact while checking a different thing.
+
+**A file that does not survive one read may not be edited by anchor. Split it first.** `npm run test:read-budget` is how you find out which side of that line a file is on, and `scripts/read-budget-scan.mjs` carries the measured numbers, the budget they justify, and every file still over it.
+
+## The sister doc
+
+A source file over 30,000 bytes keeps its private reasoning in a sibling document rather than in docblocks. `packages/core/src/runtime/project-runtime.ts` implies `packages/core/src/runtime/project-runtime.md`, by swapping one extension, so a reader holding a source path already holds the document path. No index, no registry, no naming decision per file.
+
+**Read the document first and the source second.** The document is the map: it hands over the member list in one call, which is what makes a source read that truncates afterwards recoverable rather than silently dangerous. The lookup is unconditional and absence is an answer: derive the path, look, and if there is no document then the source carries its own docs.
+
+What moves is every docblock on a declaration the file keeps to itself: a private member, a file-local type, and a `function` or `const` the module does not export, including one a single function owns as a closure, which is where a module's densest reasoning actually sits. What stays is the docblock on anything **exported**, because TypeScript carries those into the declaration file and into editor hover, so moving one deletes an API doc rather than relocating it; a long one leaves its summary line behind and moves only the argument. What also stays is a comment explaining the statement on the next line, which is not a docblock and which no heading owns.
+
+An ADR still owns anything an ADR owns. The precedence is ADR first, sister doc second, comment last: a statement a record owns collapses to `See ADR-064.` and that pointer lives in the document now. A document never restates an ADR's content, because that is the second copy this convention exists to avoid.
+
+The mirror is mechanical, so a script can check it. One `##` heading per documented declaration, named exactly as the source declares it, in **source declaration order**; a preamble uses `###` and claims nothing. The source names its document on line one as `// Docs: ./<name>.md`, and the document names the source in its `H1`. No code blocks reproducing an implementation, because a document that quotes a body is a copy with a staleness window.
+
+Both halves are budgeted. `scripts/read-budget-scan.mjs` holds `READ_BUDGET_BYTES` and scans markdown under `packages/core/src` for exactly that reason: a pair whose document loses its tail is the original bug with an extra file in it. It also refuses a mirrored source that still carries a private docblock, which is the check that makes the move total rather than partial. What it deliberately does not check is whether the prose is still true, and that is the residual risk of the convention rather than something it claims away.
+
+One warning about writing the move. Create the document complete in the first request and delete the docblocks in later ones, so the transient state across a slice is duplication rather than absence. Two copies for three commits is a non-event; zero copies for one commit is how reasoning dies.
 
 ## What it will not do
 
