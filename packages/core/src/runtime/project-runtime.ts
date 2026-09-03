@@ -870,10 +870,12 @@ export class ProjectRuntime {
   /**
    * Every readable track a motion owns, in commit order, and the one owner of that question.
    *
-   * Four readers ask it: the committed snapshot, the count in the destroy refusal, and both
-   * `MotionHandle.definition` and `MotionHandle.trackIds`. Each carried its own filter before, which
-   * is how a motion could report `tracks: []` while owning three, or a refusal could name a count no
-   * handle agreed with. It takes the map explicitly because a plan builder asks about the tracks it
+   * Three readers ask it: the count in the destroy refusal, and both `MotionHandle.definition` and
+   * `MotionHandle.trackIds`. Each carried its own filter before, which is how a motion could
+   * report `tracks: []` while owning three, or a refusal could name a count no handle agreed with.
+   * The committed snapshot was the fourth and is not: asking a question about one motion once per
+   * motion is how a walk of one map became a walk per motion of it, so the snapshot buckets by the
+   * same stored field in one pass and this stays the owner of the single-motion question. It takes the map explicitly because a plan builder asks about the tracks it
    * is about to commit while a handle asks about the readable ones, and reading `#tracks` here would
    * make that difference invisible at the call site.
    */
@@ -1718,19 +1720,52 @@ export class ProjectRuntime {
   ): void {
     this.#replaceTrack(id, token, withKeyframes(track, keyframes));
   }
+  /**
+   * The committed pair as one authored document, walked once.
+   *
+   * `#ownedBy` above answers about one motion by materialising the whole track map, so asking it
+   * per motion made this `O(M x V)` in time and M arrays of length V in allocation, to place V
+   * definitions. Every structural commit paid it, in front of a candidate build the incremental
+   * builder cache-hits for every untouched node, which is what kept it invisible: the four measured
+   * wins in slice 7 were all about the tick, and this is the authoring side. See `RA-89`.
+   *
+   * One walk instead, bucketed by the owner each entry already names, with the free tracks falling
+   * out of the same pass rather than out of a second one. A bucket fills in map order, so each
+   * motion's list is the list the per-motion filter produced, and a motion that owns nothing
+   * answers with an empty list rather than with no key, because that is the document a loader
+   * accepts and what a runtime-added Motion starts as.
+   *
+   * Not a second derivation of the same fact, which is the objection worth answering rather than
+   * waving at. Which motion owns a track is a stored field on the entry, so neither spelling
+   * derives anything, and both read that field in the same map order: `#ownedBy` stays the owner of
+   * the single-motion question and cannot answer this one differently. `RA-91` asserts that against
+   * all three of its remaining readers anyway.
+   *
+   * Every untouched entry's definition is handed through by identity, because moving it is what
+   * costs `IncrementalGraphBuilder` its `cached.track === track` hit. See `RA-90`, ADR-058.
+   */
   #snapshot(
     tracks: ReadonlyMap<string, TrackEntry>,
     motions: ReadonlyMap<string, MotionEntry>,
   ): ProjectDefinition {
+    const owned = new Map<string, TrackDefinition[]>();
+    const freeTracks: TrackDefinition[] = [];
+    for (const entry of tracks.values()) {
+      if (entry.motionId === undefined) {
+        freeTracks.push(entry.track);
+        continue;
+      }
+      const bucket = owned.get(entry.motionId);
+      if (bucket === undefined) owned.set(entry.motionId, [entry.track]);
+      else bucket.push(entry.track);
+    }
     return {
       ...this.#project,
       motions: [...motions.values()].map((entry) => ({
         ...entry.definition,
-        tracks: this.#ownedBy(tracks, entry.definition.id).map(([, owned]) => owned.track),
+        tracks: owned.get(entry.definition.id) ?? [],
       })),
-      freeTracks: [...tracks.values()]
-        .filter((entry) => entry.motionId === undefined)
-        .map((entry) => entry.track),
+      freeTracks,
     };
   }
   seek(nodeId: string, progress: number) {
