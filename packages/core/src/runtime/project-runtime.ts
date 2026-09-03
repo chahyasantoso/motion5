@@ -1409,9 +1409,8 @@ export class ProjectRuntime {
    * cannot be created leaves no definition and no node behind (ADR-032). A removed track settles its
    * eviction, its dispose and its deregistration as one step, because its entry is already gone by
    * the time any of them runs, and seeds every node that was reading it. A destroyed Motion settles
-   * after that, with nothing to revert, so a
-   * Motion whose last track the same commit removed is destroyed after that track deregistered from
-   * it. An added track compiles before the graph is asked, then registers with its Motion and mounts
+   * after that, with nothing to revert, so a Motion whose last track the same commit removed is
+   * destroyed after that track deregistered from it. An added track compiles before the graph is asked, then registers with its Motion and mounts
    * after it accepted, in that order because Motion resolves by id against the live compiled map
    * (ADR-031). A replaced one stages, republishes its Motion entry, and commits the staging on
    * acceptance, with the staging build skipped when the whole compiled input provably did not move
