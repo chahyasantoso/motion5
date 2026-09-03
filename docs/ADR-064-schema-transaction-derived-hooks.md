@@ -79,3 +79,13 @@ Two consequences. `#mountNode` becomes the one owner of attaching a member, beca
 `subscribe`, `get`, `adopt`, `destroyAdopted` and `dispose` stay reachable, each for its own reason. A listener is the caller's own object and taken inside a recipe it receives the commit's flush. A read of the last published patch is truthful while a recipe is open, because nothing has published. The two structural verbs compose into the one commit exactly as `addTrack` does, which is what shows the narrowing was documentation rather than a fence. Teardown has to be reachable from a `catch`. And a host clock ticked from inside a recipe still publishes, which is out of reach rather than allowed: this slice refuses what the handle can reach.
 
 Evidence `RA-79` through `RA-85` in `packages/core/test/unit/runtime/immediate-verb-refusal.test.ts`, with the accepting direction asserted in the same rig for every refusal.
+
+## Amendment, 2026-09-03: a commit that derives no node does not flush
+
+The decision above ends a commit at one flush seeded with what it committed, and it leaves one property of that flush unrecorded: an empty seed set is not a cheap flush, so `#apply` returns without asking `invalidate` at all when the derivation named no node. Recorded here as the promotion half of the read-budget audit in #267, because the reasoning lived in one docblock above `#apply` and nowhere else, and the audit that shrinks that file would otherwise have removed the only record of it along with the comment that held it.
+
+An empty `invalidate` is not a no-op and it is not cheap. It opens a batch, notifies every batch subscriber, moves the sequence, and drains whatever seeds a deferred flush had been carrying, so a subscriber is handed a frame that published nothing and a deferred flush loses the seeds it was holding to a batch with nothing in it. A commit that derives no node has nothing to publish and must not spend a frame's worth of machinery saying so.
+
+Empty is a real answer here rather than a default, which is why the guard belongs to the commit path rather than to the seam it calls. A Motion add and a Motion destroy derive no node and no edge at all: a runtime Motion may only be created empty and may only be destroyed empty, so the pair the graph accepted moved while nothing in it publishes. A removal is the other shape, and it seeds every node that was reading the removed one, which is empty for most removals; naming nothing is a different claim from having nothing to name. See `RA-98` and `RA-99` for that second half.
+
+The behaviour is unchanged and has been pinned by `RA-10` since A1. What this amendment adds is the why, so the docblock above `#apply` collapses to a pointer like every other one in that file and loses nothing.
