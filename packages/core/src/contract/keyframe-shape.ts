@@ -1,5 +1,5 @@
 import { readAuthoredLeaf } from "./authored-leaf";
-import type { AuthoredPluginGroup, PluginRequiresBinding } from "./v5";
+import type { AuthoredPluginGroup, AuthoredProperty, PluginRequiresBinding } from "./v5";
 
 /**
  * The reserved bindings section of a plugin-named keyframe group.
@@ -104,7 +104,18 @@ export function looksLikeLegacyGroup(value: unknown): boolean {
  * 3D detection all ask one function rather than three that can disagree about what an author wrote.
  * Tolerant by design, exactly like `readPluginBindings`: a malformed section is empty here and
  * reported by `validateKeyframes`, which owns shape. See ADR-049.
+ *
+ * Two signatures over one body, so a caller that already proved the shape gets the authored leaf
+ * type and a caller reading an unvalidated document keeps the tolerant one. Two functions would
+ * have been two readers of one layout, which is the thing this owns; a cast at the authoring call
+ * site would have put the claim where nothing enforces it. The section is written through
+ * `PLUGIN_VALUES_SECTION` in one place and read through this in every other, which is what issue
+ * #255 asked for. See `RA-106`.
  */
+export function readPluginValues(
+  group: AuthoredPluginGroup,
+): Readonly<Record<string, AuthoredProperty>>;
+export function readPluginValues(group: unknown): Readonly<Record<string, unknown>>;
 export function readPluginValues(group: unknown): Readonly<Record<string, unknown>> {
   if (!isObject(group)) return EMPTY_VALUES;
   const values = group[PLUGIN_VALUES_SECTION];

@@ -3,6 +3,7 @@ import {
   PLUGIN_GROUP_SECTIONS,
   PLUGIN_REQUIRES_SECTION,
   PLUGIN_VALUES_SECTION,
+  readPluginValues,
 } from "../../contract/keyframe-shape";
 import type {
   AuthoredKeyframe,
@@ -31,7 +32,10 @@ import type {
  *
  * Every section is spelled through the reserved constant in `contract/keyframe-shape`, which stays
  * the one owner of the group layout, and group detection is that module's `isKeyframeGroup` rather
- * than a shape test written here.
+ * than a shape test written here. The values section is read through that module's
+ * `readPluginValues`, on the same rule: a layout written through one constant and read through two
+ * expressions has two readers, and the runtime's `#setKeyframe` was the second one. See issue #255
+ * and `RA-106`.
  *
  * Idempotence is stated once, here, rather than once per primitive: an edit that changes nothing
  * returns the record it was given, by identity. The caller's no-op check is therefore a `===` and
@@ -293,7 +297,7 @@ export function setKeyframe(
   key: string,
   value: AuthoredProperty,
 ): AuthoredKeyframes {
-  const values = bound.group[PLUGIN_VALUES_SECTION] ?? {};
+  const values = readPluginValues(bound.group);
   if (values[key] === value) return keyframes;
   return withValues(keyframes, bound, { ...values, [key]: value });
 }
@@ -303,6 +307,11 @@ export function setKeyframe(
  *
  * The inverse of `setKeyframe` and the same shape of edit. A leaf that is not authored is a no-op,
  * returning the record by identity, on the idempotence rule every editor here follows.
+ *
+ * Membership is `Object.hasOwn` rather than `in`, which is the spelling the runtime path already
+ * used and the only one that keeps that rule: `in` answers true for an inherited name, so removing
+ * `toString` read a leaf no author wrote, rewrote the section and answered with a new record.
+ * `RA-108`.
  *
  * The section goes when its last leaf does, and the group goes when it names no section at all,
  * which is the cascade `withValues` reaches rather than a rule restated here. So removing the only
@@ -315,8 +324,8 @@ export function removeKeyframe(
   bound: BoundGroup,
   key: string,
 ): AuthoredKeyframes {
-  const values = bound.group[PLUGIN_VALUES_SECTION];
-  if (values === undefined || !(key in values)) return keyframes;
+  const values = readPluginValues(bound.group);
+  if (!Object.hasOwn(values, key)) return keyframes;
   const next: Record<string, AuthoredProperty> = { ...values };
   delete next[key];
   return withValues(keyframes, bound, Object.keys(next).length === 0 ? undefined : next);
