@@ -2,7 +2,7 @@
 
 The reasoning this file's private surface used to carry as docblocks, moved here rather than deleted. A source file that does not survive one read through the contents API cannot be safely edited by anchor, and this file is the primary edit target of the AI implementor workflow, so its size is a correctness property rather than a preference. `docs/AI-EDIT-WORKFLOW.md` owns the rule and `scripts/read-budget-scan.mjs` owns the budget.
 
-## How to read this
+### How to read this
 
 Read this before the source rather than after it. It is the map: every private member with reasoning behind it has a section here, in the order the source declares it, so the member list arrives whole in one read even on a day the source does not.
 
