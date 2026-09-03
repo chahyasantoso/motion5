@@ -102,7 +102,7 @@ Every member forwards to the member this class already has, so there is one owne
 
 Which nodes read one node, and the one owner of that question.
 
-Read from `GraphIR.dependents`, never rederived, so it names both kinds of reader: the observer of an edge, and a solver that reads this node as a chain member. Why an edge walk misses the second, why two consumers share one mechanism, and why `#derive` calls neither `dependantsOf` nor a parameter of its own are all ADR-051's amendment.
+Read from `GraphIR.dependants`, never rederived, so it names both kinds of reader: the observer of an edge, and a solver that reads this node as a chain member. Why an edge walk misses the second, why two consumers share one mechanism, and why `#derive` calls neither `dependantsOf` nor a parameter of its own are all ADR-051's amendment.
 
 Deduplicated and frozen here, so the public member has nothing left to do, and first occurrence wins, which is the committed node order. See `RA-86`, `RA-87` and `RA-99`.
 

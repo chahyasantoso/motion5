@@ -54,7 +54,7 @@ function canonicalCycle(path: readonly string[]): readonly string[] {
 function shortestCycleFrom(
   start: string,
   live: ReadonlySet<string>,
-  dependents: ReadonlyMap<string, readonly string[]>,
+  dependants: ReadonlyMap<string, readonly string[]>,
 ): readonly string[] | undefined {
   const previous = new Map<string, string>();
   const visited = new Set<string>([start]);
@@ -62,7 +62,7 @@ function shortestCycleFrom(
   for (let head = 0; head < queue.length; head += 1) {
     const current = queue[head];
     if (current === undefined) continue;
-    for (const next of dependents.get(current) ?? []) {
+    for (const next of dependants.get(current) ?? []) {
       if (next === start) {
         const path: string[] = [current];
         let cursor = current;
@@ -105,22 +105,22 @@ function cycleDiagnostic(cycle: readonly string[]): Diagnostic {
  */
 export function orderGraph(nodes: readonly GraphNode[]): GraphOrderResult {
   const slots = new Map<string, OrderSlot>();
-  const dependents = new Map<string, string[]>();
+  const dependants = new Map<string, string[]>();
   const indegree = new Map<string, number>();
   for (const node of nodes) {
     slots.set(node.id, { id: node.id, authoredIndex: node.authoredIndex });
-    dependents.set(node.id, []);
+    dependants.set(node.id, []);
     indegree.set(node.id, 0);
   }
 
   for (const node of nodes)
     for (const edge of node.edges) {
-      const downstream = dependents.get(edge.sourceId);
+      const downstream = dependants.get(edge.sourceId);
       if (downstream === undefined) continue;
       downstream.push(node.id);
       indegree.set(node.id, (indegree.get(node.id) ?? 0) + 1);
     }
-  for (const downstream of dependents.values()) downstream.sort(compareCodeUnits);
+  for (const downstream of dependants.values()) downstream.sort(compareCodeUnits);
 
   const ready: OrderSlot[] = [];
   for (const node of nodes) {
@@ -133,10 +133,10 @@ export function orderGraph(nodes: readonly GraphNode[]): GraphOrderResult {
     const next = ready.shift();
     if (next === undefined) break;
     order.push(next.id);
-    for (const dependent of dependents.get(next.id) ?? []) {
-      const remaining = (indegree.get(dependent) ?? 0) - 1;
-      indegree.set(dependent, remaining);
-      const slot = slots.get(dependent);
+    for (const dependant of dependants.get(next.id) ?? []) {
+      const remaining = (indegree.get(dependant) ?? 0) - 1;
+      indegree.set(dependant, remaining);
+      const slot = slots.get(dependant);
       if (remaining === 0 && slot !== undefined) insertReady(ready, slot);
     }
   }
@@ -150,7 +150,7 @@ export function orderGraph(nodes: readonly GraphNode[]): GraphOrderResult {
 
   const cycles = new Map<string, readonly string[]>();
   for (const start of [...live].sort(compareCodeUnits)) {
-    const path = shortestCycleFrom(start, live, dependents);
+    const path = shortestCycleFrom(start, live, dependants);
     if (path === undefined) continue;
     const cycle = canonicalCycle(path);
     const key = cycle.join(" -> ");

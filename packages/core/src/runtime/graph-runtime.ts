@@ -214,7 +214,7 @@ export class GraphRuntime {
   /**
    * The frozen snapshot every flush runs over, derived once and reused until something in it moved.
    *
-   * `nodes`, `nodeById` and `dependents` are all pure functions of the `GraphIR` identity. Publisher
+   * `nodes`, `nodeById` and `dependants` are all pure functions of the `GraphIR` identity. Publisher
    * nodes are cached per graph node, `finalizeGraph` derives reverse topology once per graph, and
    * every closure a publisher node carries resolves the compiled map when the publisher calls it, so
    * an entry that survives a recompile is not stale. A second tick over a graph that did not move
