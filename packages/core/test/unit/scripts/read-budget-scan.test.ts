@@ -230,4 +230,56 @@ describe("read budget scan", () => {
     const stale = await withPlanted(files, (p) => scan(p, [], pending));
     expect(stale).toEqual([expect.stringContaining("no longer needs its pending entry")]);
   });
+
+  // Every source still owed a document is a module rather than a class, so a mirror that reads only
+  // `#` members and types answers that each heading in a module's document names nothing declared.
+  // The heading set is what a file declares, and a module declares functions and consts, including
+  // the ones a single function owns, which is where a module's densest reasoning actually sits.
+  it("RB-17: names what a module declares, not only what a class does", () => {
+    const source = [
+      "// Docs: ./graph-runtime.md",
+      "const LIMIT = 1;",
+      "export function run(): void {",
+      "  const step = (): void => {};",
+      "  step();",
+      "}",
+      "",
+    ].join("\n");
+    expect(checkMirror(ORDINARY, source, doc("LIMIT", "run", "step"))).toEqual([]);
+    const reversed = checkMirror(ORDINARY, source, doc("run", "LIMIT"));
+    expect(reversed).toEqual([expect.stringContaining("breaks the declaration order")]);
+    expect(checkMirror(ORDINARY, source, doc("absent"))).toEqual([
+      expect.stringContaining("names nothing the source declares"),
+    ]);
+  });
+
+  // RB-13's one-directional half, asked of a module. Reading only `#` members and file-local types
+  // made that check vacuous for every source still owed a document, so a mirrored module could keep
+  // every docblock it had and pass. The exported declaration is what proves the widening did not
+  // eat the partition: it keeps its docblock, because TypeScript carries that one into the
+  // declaration file and into editor hover.
+  it("RB-18: refuses a module declaration carrying a docblock, and keeps the exported one", () => {
+    const source = [
+      "// Docs: ./graph-runtime.md",
+      "/** Why. */",
+      "const LIMIT = 1;",
+      "export function run(): void {",
+      "  /** Why. */",
+      "  const step = (): void => {};",
+      "  step();",
+      "}",
+      "",
+    ].join("\n");
+    const violations = checkMirror(ORDINARY, source, doc("LIMIT", "run", "step"));
+    expect(violations).toHaveLength(2);
+    expect(violations[0]).toContain("LIMIT");
+    expect(violations[1]).toContain("step");
+    const exported = [
+      "// Docs: ./graph-runtime.md",
+      "/** Kept, because a consumer reads it. */",
+      "export function run(): void {}",
+      "",
+    ].join("\n");
+    expect(checkMirror(ORDINARY, exported, doc("run"))).toEqual([]);
+  });
 });

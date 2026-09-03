@@ -76,7 +76,6 @@ export const READ_BUDGET_EXCEPTIONS = [];
  * it is stronger than a date, because a date cannot tell whether the work happened.
  */
 export const SISTER_DOC_PENDING = [
-  { path: "packages/core/src/contract/validate-v5.ts", issue: 267 },
   { path: "packages/core/src/domain/plugins.ts", issue: 267 },
   { path: "packages/core/src/engine.ts", issue: 267 },
   { path: "packages/core/src/graph/ir.ts", issue: 267 },
@@ -84,6 +83,10 @@ export const SISTER_DOC_PENDING = [
 const MEMBER_DECLARATION = /^[ \t]*(?:readonly[ \t]+)?(#[A-Za-z][\w$]*)\b/;
 const TYPE_DECLARATION = /^[ \t]*(?:export[ \t]+)?(?:type|interface)[ \t]+([A-Za-z][\w$]*)\b/;
 const LOCAL_TYPE_DECLARATION = /^[ \t]*(?:type|interface)[ \t]+([A-Za-z][\w$]*)\b/;
+const VALUE_DECLARATION =
+  /^[ \t]*(?:export[ \t]+)?(?:default[ \t]+)?(?:async[ \t]+)?(?:function|class|const|let|var|enum)[ \t]+([A-Za-z][\w$]*)\b/;
+const LOCAL_VALUE_DECLARATION =
+  /^[ \t]*(?:async[ \t]+)?(?:function|class|const|let|var|enum)[ \t]+([A-Za-z][\w$]*)\b/;
 const MEMBER_HEADING = /^## (.+?)[ \t]*$/;
 export async function walk(directory) {
   let entries;
@@ -143,13 +146,20 @@ export function checkSize(file, size, exceptions = READ_BUDGET_EXCEPTIONS) {
  * That is what makes the answer a declaration order rather than a first-mention order, and
  * `#mountNode` is the member that proves the difference: `mount` calls it one line above its own
  * declaration.
+ *
+ * A `#` member and a type are not the whole of what a file declares, and not one of the four sources
+ * still owed a document declares a `#` member at all. A module keeps its reasoning on plain
+ * `function` and `const` declarations, at the top level and inside the one function that owns them,
+ * so those are declarations here too. Exported or not, because a heading may name an exported member
+ * that left its summary line in the source and moved only the argument.
  */
 export function declarations(source) {
   const found = new Map();
   const lines = source.split("\n");
   for (let index = 0; index < lines.length; index += 1) {
     const line = lines[index];
-    const match = MEMBER_DECLARATION.exec(line) ?? TYPE_DECLARATION.exec(line);
+    const match =
+      MEMBER_DECLARATION.exec(line) ?? TYPE_DECLARATION.exec(line) ?? VALUE_DECLARATION.exec(line);
     if (match !== null && !found.has(match[1])) found.set(match[1], index);
   }
   return found;
@@ -164,12 +174,26 @@ export function headings(doc) {
   return named;
 }
 /**
- * Every private member and file-local type in this source that still carries a docblock.
+ * Every declaration this source keeps to itself that still carries a docblock.
+ *
+ * A private member, a file-local type, and a `function` or `const` the module does not export,
+ * including one a single function owns as a closure, which is where a module's densest reasoning
+ * actually sits. Without that third question the check was class-shaped, and a mirrored module that
+ * kept every docblock in place passed the one check bought to prove the source is empty, which is
+ * the proxy ADR-008 refuses: green while the thing it exists to catch is untouched.
  *
  * The exported surface is deliberately not here. TypeScript carries an exported docblock into the
  * declaration file and into editor hover, so moving one would delete an API doc rather than
- * relocate it. A comment explaining the statement on the next line is not a docblock either, and
- * no heading in the mirror owns one.
+ * relocate it. That is why this asks `LOCAL_VALUE_DECLARATION` rather than the export-tolerant
+ * `VALUE_DECLARATION` that `declarations` asks, which is the same split `LOCAL_TYPE_DECLARATION`
+ * already draws for a type: a heading may name an exported member, and an exported member may still
+ * keep its docblock.
+ *
+ * A comment explaining the statement on the next line is not a docblock either, and no heading in
+ * the mirror owns one. A `//` block above a declaration is invisible here for the same reason, and
+ * that is a named gap rather than a claim: widening this to leading `//` runs would flag every
+ * `eslint-disable`-shaped line in the tree, and a check total on the shape it claims is worth more
+ * than one noisy on two.
  */
 export function docblocked(source) {
   const members = [];
@@ -177,7 +201,10 @@ export function docblocked(source) {
   for (let index = 1; index < lines.length; index += 1) {
     if (!lines[index - 1].trimEnd().endsWith("*/")) continue;
     const line = lines[index];
-    const match = MEMBER_DECLARATION.exec(line) ?? LOCAL_TYPE_DECLARATION.exec(line);
+    const match =
+      MEMBER_DECLARATION.exec(line) ??
+      LOCAL_TYPE_DECLARATION.exec(line) ??
+      LOCAL_VALUE_DECLARATION.exec(line);
     if (match !== null) members.push(match[1]);
   }
   return members;
