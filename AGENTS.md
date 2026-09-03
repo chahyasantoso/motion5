@@ -29,4 +29,14 @@ Drop one JSON request at `.ai/edits/<name>.json` on your branch. It names the ex
 
 Read [docs/AI-EDIT-WORKFLOW.md](docs/AI-EDIT-WORKFLOW.md) before you write one. It is the whole contract, including the anchor rule that decides whether your request is applied or refused, and the reasons to batch a slice into a single request rather than sending one edit at a time.
 
+### Your read has a budget, and it fails silently
+
+A truncated contents read is indistinguishable from a whole one. There is no error, no marker, and no second call that returns the part the first one dropped, so a file past the response cap hands you a prefix and lets you believe it is the file. An anchor placed in that prefix can contradict an invariant written in the bytes you never received, which is the failure this budget exists to prevent rather than a readability preference.
+
+Two numbers follow from it, and both are checked. No file under `packages/core/src` may exceed **60,000 bytes**, markdown included. A source over **30,000 bytes** keeps its private reasoning in a sibling document, `x.ts` beside `x.md`, so the member list arrives whole in one read even on a day the source does not.
+
+The `read-budget` job in `CI` enforces them, and `npm run test:read-budget` is the command it runs. You cannot run it and you cannot detect the condition it measures, which is exactly why the numbers are written here instead of living only in `scripts/read-budget-scan.mjs`. What you can do is act on them before the gate does: a slice that pushes a file past either number owes the split or the sister doc in the same request, and a `dry_run` reports the size each file would end up at, measured before the formatter, so the check costs one round trip rather than a failed merge.
+
+[docs/AI-EDIT-WORKFLOW.md](docs/AI-EDIT-WORKFLOW.md) owns the rule, the mirror conventions a sister doc has to satisfy, and the one thing you may not do to a file that is over budget, which is edit it by anchor.
+
 Do not open a pull request that mixes that infrastructure with behavior, and do not widen a slice past the file count its own body claims.
