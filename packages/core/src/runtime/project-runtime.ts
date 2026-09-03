@@ -1,3 +1,4 @@
+// Docs: ./project-runtime.md
 import type {
   AuthoredPluginGroup,
   AuthoredProperty,
