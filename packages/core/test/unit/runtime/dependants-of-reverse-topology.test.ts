@@ -155,8 +155,12 @@ describe("one owner of reverse topology, read rather than rederived", () => {
 
     project.dispose();
 
-    // And it is still a live-project read. `#assertLive` stays ahead of the map, because a disposed
-    // runtime has no committed graph to answer from.
-    expect(thrownBy(() => project.dependantsOf(ROOT))).toBeInstanceOf(TypeError);
+    // And it is still a live-project read, with `#assertLive` ahead of the map. The refusal is the
+    // plain disposed-runtime error every read on a disposed project already throws, rather than a
+    // stale-handle `TypeError`: this query holds no token, so there is nothing here to go stale.
+    const thrown = thrownBy(() => project.dependantsOf(ROOT));
+
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as Error).message).toContain("disposed");
   });
 });
