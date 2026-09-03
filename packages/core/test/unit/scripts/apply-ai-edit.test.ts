@@ -20,6 +20,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 const runFile = promisify(execFile);
 const script = fileURLToPath(new URL("../../../../../scripts/apply-ai-edit.mjs", import.meta.url));
+const ARGV = [script, "request.json", "report.md", "touched.txt", "format.txt"];
 
 const DOC = "# Doc\n\nAlpha line.\n\nBeta line.\n\nBeta line.\n";
 const DRY_RUN_SUBJECT = "chore(ai-edit): dry run, nothing applied [skip ci]";
@@ -29,6 +30,7 @@ interface Outcome {
   code: number;
   report: string;
   touched: string | null;
+  format: string | null;
   outputs: Record<string, string>;
 }
 
@@ -51,9 +53,9 @@ async function plant(files: Record<string, string>): Promise<string> {
 }
 
 /**
- * Runs the shipped script the way the workflow does: the request, report and touched-file paths on
- * the command line, `GITHUB_OUTPUT` in the environment, and the planted tree as the working
- * directory. A refusal exits non-zero, so the exit code is part of what is asserted.
+ * Runs the shipped script the way the workflow does: the request, report, touched-file and
+ * format-file paths on the command line, `GITHUB_OUTPUT` in the environment, and the planted tree
+ * as the working directory. A refusal exits non-zero, so the exit code is part of what is asserted.
  */
 async function request(dir: string, body: unknown): Promise<Outcome> {
   await writeFile(join(dir, "request.json"), `${JSON.stringify(body, null, 2)}\n`, "utf8");
@@ -61,7 +63,7 @@ async function request(dir: string, body: unknown): Promise<Outcome> {
   await writeFile(outputPath, "", "utf8");
   let code = 0;
   try {
-    await runFile(process.execPath, [script, "request.json", "report.md", "touched.txt"], {
+    await runFile(process.execPath, ARGV, {
       cwd: dir,
       env: { ...process.env, GITHUB_OUTPUT: outputPath },
     });
@@ -75,10 +77,12 @@ async function request(dir: string, body: unknown): Promise<Outcome> {
     outputs[line.slice(0, split)] = line.slice(split + 1);
   }
   const touchedPath = join(dir, "touched.txt");
+  const formatPath = join(dir, "format.txt");
   return {
     code,
     report: await readFile(join(dir, "report.md"), "utf8"),
     touched: existsSync(touchedPath) ? await readFile(touchedPath, "utf8") : null,
+    format: existsSync(formatPath) ? await readFile(formatPath, "utf8") : null,
     outputs,
   };
 }
@@ -309,5 +313,62 @@ describe("apply-ai-edit dry run commit subject", () => {
     expect(outcome.code).toBe(1);
     expect(outcome.report).toContain("`dry_run` must be `true` or `false`");
     expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC);
+  });
+});
+
+/**
+ * Issue #281. The touched list answers the commit step's question, which is every path this
+ * request changed, and a deleted path belongs on it: without one, `git add -A` stages a removal
+ * the allow-list never authorised. Prettier is asking a different question and exits non-zero on
+ * a path that is no longer there, so it gets its own list. The two were one list, which is how a
+ * mixed request applied its edits, failed formatting, skipped the commit with the tree already
+ * written, and reported `Applied ... edits` with nothing behind it.
+ */
+describe("apply-ai-edit formatter input", () => {
+  it("AE-17: keeps a deleted path out of the format list and in the touched list", async () => {
+    const dir = await plant({ "docs/D.md": DOC, "docs/STALE.md": "gone\n" });
+    const outcome = await request(dir, {
+      message: "docs(d): create, edit and delete in one request",
+      edits: [
+        { path: "docs/NEW.md", create: "# New\n" },
+        { path: "docs/STALE.md", delete: true },
+        anchor("docs/D.md", "Alpha line, extended."),
+      ],
+    });
+    expect(outcome.code).toBe(0);
+    expect(outcome.touched).toBe("docs/D.md\ndocs/NEW.md\ndocs/STALE.md\n");
+    expect(outcome.format).toBe("docs/D.md\ndocs/NEW.md\n");
+    expect(existsSync(join(dir, "docs/STALE.md"))).toBe(false);
+    expect(existsSync(join(dir, "docs/NEW.md"))).toBe(true);
+  });
+
+  it("AE-18: gives the formatter nothing at all for a delete-only request", async () => {
+    const dir = await plant({ "docs/STALE.md": "gone\n" });
+    const outcome = await request(dir, {
+      message: "docs: drop a stale note",
+      edits: [{ path: "docs/STALE.md", delete: true }],
+    });
+    expect(outcome.code).toBe(0);
+    expect(outcome.outputs.changed).toBe("true");
+    expect(outcome.touched).toBe("docs/STALE.md\n");
+    expect(outcome.format).toBe("");
+    expect(existsSync(join(dir, "docs/STALE.md"))).toBe(false);
+  });
+
+  it("AE-19: writes both lists empty for a dry run, which formats nothing either", async () => {
+    const dir = await plant({ "docs/D.md": DOC, "docs/STALE.md": "gone\n" });
+    const outcome = await request(dir, {
+      message: "docs(d): a dry run formats nothing",
+      dry_run: true,
+      edits: [
+        { path: "docs/STALE.md", delete: true },
+        anchor("docs/D.md", "Alpha line, extended."),
+      ],
+    });
+    expect(outcome.code).toBe(0);
+    expect(outcome.outputs.changed).toBe("false");
+    expect(outcome.touched).toBe("");
+    expect(outcome.format).toBe("");
+    expect(existsSync(join(dir, "docs/STALE.md"))).toBe(true);
   });
 });

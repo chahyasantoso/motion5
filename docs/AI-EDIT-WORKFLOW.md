@@ -36,6 +36,8 @@ One request at a time. The workflow applies the single `.json` file it finds in 
 
 Each entry in `edits` names a `path` and exactly one of three modes: `find` with `replace` to rewrite an anchor, `create` with the full content of a new file, or `delete` set to `true`. Naming two modes is refused rather than guessed at.
 
+One request carries at most **50 edits**, and a request holding more is refused whole, with the count it held. The ceiling is on one request rather than on one slice, so a batch larger than that splits into two pushes and the batch-first rule below is untouched.
+
 `dry_run` is optional and defaults to `false`. With `true`, the request is validated and nothing is written, which is the section below.
 
 ## The anchor rule
@@ -96,6 +98,8 @@ It refuses any path under `.git/`, `node_modules/`, `.ai/`, and `.github/workflo
 
 Before committing, it compares the staged file list against the paths your request named, plus the request file itself, and fails if anything else appears. Least privilege applies to the file list, not only to the token.
 
+It formats the paths that still exist and no others. A path a `delete` edit removed stays in the commit allow-list, because `git add -A` would otherwise stage a removal nothing authorised, and it is kept out of the formatter's input, because Prettier exits non-zero on a path that is not there. Those are two questions about one set of paths, so the apply step answers them as two lists rather than one: a request whose every changed path it deleted formats nothing at all and does not install the formatter either. See issue #281.
+
 It never runs the suite or `npm ci`. It installs the pinned Prettier and nothing else. `CI` already owns correctness on the resulting commit, and re-running it here would double the cost for no new information.
 
 ## The cost, and how to keep it down
@@ -114,6 +118,8 @@ The comment names the files written, the state each one was left in, and the exa
 
 A refusal fails the run, so nothing is committed and your request file stays exactly where you put it. Correct that same path and push it again. An applied request is removed by the commit that consumed it, which is how you tell the two outcomes apart from the tree alone. A dry run is consumed the same way, so the tree does not distinguish it from an apply, and the report and the commit subject are what do.
 
+A step failing after the apply step is a third outcome and it reads differently again. The report describes what that step wrote to the runner's working tree, so a failure between there and the commit means none of it landed, and the comment says exactly that above the report: nothing was committed, and your request is still pending at the same path. Read `Applied ... edits` as attempted rather than landed whenever that prefix is there.
+
 The commit is made with `PERSONAL_ACCESS_TOKEN` rather than `GITHUB_TOKEN` for the reason [FORMATTING.md](./FORMATTING.md) already gives: a push made with `GITHUB_TOKEN` triggers no new workflow run, so the new head would carry no checks. Verify your change through the `CI` run on that commit.
 
 ## Testing the workflow
@@ -122,7 +128,7 @@ Exercised on the pull request that introduced it, with every report in that thre
 
 `dry_run` was exercised the same way, on the pull request that introduced it: a dry run of that pull request's own documentation edits reported its anchor counts and its resulting sizes and wrote nothing, and the identical request without the flag then applied them.
 
-The validation pass also has a unit test, the `AE-` cases in `packages/core/test/unit/scripts/apply-ai-edit.test.ts`. They run the shipped script as a subprocess against planted trees, which is how the workflow invokes it, and they assert what a live run can only demonstrate one outcome at a time: the anchor counts a dry run reports, the count named in each refusal, that a later edit is validated against what an earlier one staged, that a refusal leaves every file it named untouched, and that a dry run gets the fixed `[skip ci]` subject while a real run keeps your `message` verbatim. Run them with `npx vitest run packages/core/test/unit/scripts/apply-ai-edit.test.ts`. The live runs still carry what a subprocess cannot: the token, the formatter, the comment, and how the request is chosen.
+The validation pass also has a unit test, the `AE-` cases in `packages/core/test/unit/scripts/apply-ai-edit.test.ts`. They run the shipped script as a subprocess against planted trees, which is how the workflow invokes it, and they assert what a live run can only demonstrate one outcome at a time: the anchor counts a dry run reports, the count named in each refusal, that a later edit is validated against what an earlier one staged, that a refusal leaves every file it named untouched, that a dry run gets the fixed `[skip ci]` subject while a real run keeps your `message` verbatim, and that the formatter is handed only the paths that still exist while the commit allow-list keeps the ones a `delete` edit removed. Run them with `npx vitest run packages/core/test/unit/scripts/apply-ai-edit.test.ts`. The live runs still carry what a subprocess cannot: the token, the formatter, the comment, and how the request is chosen.
 
 One refusal mode is invisible in a comment and has to be read in the job list: a request the workflow never saw. Any change to how the request is chosen needs a live run from an API-made commit, because that is the push shape that broke it once already.
 

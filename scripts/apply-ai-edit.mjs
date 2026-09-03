@@ -7,7 +7,13 @@
 // The counts are taken against the file on disk, so a dry run is how an implementor that cannot
 // read a whole file establishes that its anchors are unique in the whole file.
 //
-// Usage: node scripts/apply-ai-edit.mjs <request.json> <report.md> <touched.txt>
+// Usage: node scripts/apply-ai-edit.mjs <request.json> <report.md> <touched.txt> [format.txt]
+//
+// The last two are both lists of paths and they are not the same list. `touched.txt` is every path
+// the request changed and is what the commit step's allow-list reads. `format.txt` is the subset
+// that still exists once the write pass is done, and it is what the formatter reads, because
+// Prettier exits non-zero on a path a `delete` edit removed. See issue #281.
+//
 // Contract: docs/AI-EDIT-WORKFLOW.md
 // Tests: packages/core/test/unit/scripts/apply-ai-edit.test.ts, the `AE-` cases
 
@@ -31,7 +37,7 @@ const FORBIDDEN_PREFIXES = [".git/", ".github/workflows/", ".ai/", "node_modules
 // before a merge, the required contexts never report on that head, so dispatch `CI` by hand.
 const DRY_RUN_SUBJECT = "chore(ai-edit): dry run, nothing applied [skip ci]";
 
-const [requestPath, reportPath, touchedPath] = process.argv.slice(2);
+const [requestPath, reportPath, touchedPath, formatPath] = process.argv.slice(2);
 
 const report = [];
 const problems = [];
@@ -42,6 +48,11 @@ function say(line) {
 
 function refuse(problem) {
   problems.push(problem);
+}
+
+/** One path per line with a trailing newline, and empty rather than a bare newline for none. */
+function listFile(paths) {
+  return paths.length > 0 ? `${paths.join("\n")}\n` : "";
 }
 
 function guardPath(target) {
@@ -262,11 +273,15 @@ async function main() {
   // A dry run stops here, one line above the write pass, and reports what the validation pass
   // already knows. The anchor counts are the point of it: they were taken against the real file, so
   // this is the only way a reader that saw a truncated prefix can establish the exactly-once
-  // property over the whole file before spending a write.
+  // property over the whole file before spending a write. Both list files are written empty, the
+  // format one included, because the formatter does not run on a dry run either.
   if (dryRun) {
     await emitOutput("changed", "false");
     if (touchedPath) {
       await writeFile(touchedPath, "", "utf8");
+    }
+    if (formatPath) {
+      await writeFile(formatPath, "", "utf8");
     }
 
     const plural = edits.length === 1 ? "" : "s";
@@ -326,12 +341,22 @@ async function main() {
   }
 
   // Write pass. Nothing above this line has touched the working tree.
+  //
+  // It produces two lists rather than one, because the commit step and the formatter are asking
+  // different questions of the same set of paths. The commit allow-list needs every path this
+  // request changed, a deletion included, or `git add -A` stages a removal nothing authorised.
+  // Prettier needs only the paths that still exist, because it exits non-zero on one that does not,
+  // and by the time it runs this script has already written the tree. One list serving both is what
+  // issue #281 was: a mixed or delete-only request applied its edits, failed formatting, skipped
+  // the commit, and still reported `Applied ... edits` with nothing behind it.
   const touched = [];
+  const formattable = [];
   for (const [target, content] of staged) {
     const before = existsSync(target) ? await readFile(target, "utf8") : null;
     if (before === content) continue;
     await writeFile(target, content, "utf8");
     touched.push(target);
+    formattable.push(target);
   }
   for (const target of removed) {
     if (!existsSync(target)) continue;
@@ -339,9 +364,13 @@ async function main() {
     touched.push(target);
   }
   touched.sort();
+  formattable.sort();
 
   if (touchedPath) {
-    await writeFile(touchedPath, touched.length > 0 ? `${touched.join("\n")}\n` : "", "utf8");
+    await writeFile(touchedPath, listFile(touched), "utf8");
+  }
+  if (formatPath) {
+    await writeFile(formatPath, listFile(formattable), "utf8");
   }
   await emitOutput("changed", touched.length > 0 ? "true" : "false");
 
