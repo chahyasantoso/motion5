@@ -1,0 +1,390 @@
+# CI log archive: 33816542542
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: fix/281-formatter-skips-deleted-paths
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/33816542542
+- Captured: 2026-09-03T23:13:05Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm test	﻿2026-09-03T23:12:28.7711258Z ##[group]Run npm test
+quality (node 24)	Run npm test	2026-09-03T23:12:28.7711594Z ^[[36;1mnpm test^[[0m
+quality (node 24)	Run npm test	2026-09-03T23:12:28.7757871Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm test	2026-09-03T23:12:28.7758205Z env:
+quality (node 24)	Run npm test	2026-09-03T23:12:28.7758446Z   NODE_VERSION: 24
+quality (node 24)	Run npm test	2026-09-03T23:12:28.7758694Z ##[endgroup]
+quality (node 24)	Run npm test	2026-09-03T23:12:28.8936646Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:28.8937734Z > motion5@0.0.0 test
+quality (node 24)	Run npm test	2026-09-03T23:12:29.2128174Z > vitest run
+quality (node 24)	Run npm test	2026-09-03T23:12:29.2128621Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:29.2128640Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:29.2156032Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:29.2157583Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:29.6059302Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/evidence-case-ids.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 29^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:29.6941480Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/pivot-offset-solve.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 44^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:29.9391495Z  ^[[32m✓^[[39m packages/core/test/unit/graph/resolve-solvers.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:30.0669956Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/keyframe-property-edit.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 70^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:30.1460970Z ^[[90mstderr^[[2m | packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22m^[[2mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m^[[2m9. Use React usePatch hook at the React boundary
+quality (node 24)	Run npm test	2026-09-03T23:12:30.1490255Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test	2026-09-03T23:12:30.1491805Z An update to Root inside a test was not wrapped in act(...).
+quality (node 24)	Run npm test	2026-09-03T23:12:30.1492648Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:30.1493709Z When testing, code that causes React state updates should be wrapped into act(...):
+quality (node 24)	Run npm test	2026-09-03T23:12:30.1508042Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:30.1508816Z act(() => {
+quality (node 24)	Run npm test	2026-09-03T23:12:30.1509652Z   /* fire events that update state */
+quality (node 24)	Run npm test	2026-09-03T23:12:30.1510497Z });
+quality (node 24)	Run npm test	2026-09-03T23:12:30.1511137Z /* assert on the output */
+quality (node 24)	Run npm test	2026-09-03T23:12:30.1511704Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:30.1517529Z This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+quality (node 24)	Run npm test	2026-09-03T23:12:30.1547836Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:30.1766229Z  ^[[32m✓^[[39m packages/core/test/integration/phase7-walker-demo.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[32m 117^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:30.2582062Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/plugin-group-edit.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 43^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:30.4419574Z  ^[[32m✓^[[39m packages/core/test/integration/bare-authored-leaf.test.ts ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[32m 53^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:30.4606059Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/plugin-require-edit.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 36^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:30.5270827Z  ^[[32m✓^[[39m packages/core/test/unit/domain/dict-valued-requirements.test.ts ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:30.7310150Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/schema-transaction.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 28^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:30.7362679Z  ^[[32m✓^[[39m packages/core/test/integration/t4-runtime-motion-parity.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 32^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:30.8350858Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/commit-write-cost.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 39^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:31.0123781Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/immediate-verb-refusal.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:31.0692338Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/fabrik-solve.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 34^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:31.3008759Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/recompile-predicate.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 52^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:31.3482744Z  ^[[32m✓^[[39m packages/core/test/integration/engine-teardown-ownership.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:31.5481876Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-solver-members.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:31.5758548Z  ^[[32m✓^[[39m packages/core/test/unit/graph/solver-goals.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:31.8563096Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-group-values-section.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[32m 41^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:31.8941456Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/live-value-updates.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 58^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1622229Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/read-budget-scan.test.ts ^[[2m(^[[22m^[[2m18 tests^[[22m^[[2m)^[[22m^[[32m 67^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1635109Z  ^[[31m❯^[[39m packages/core/test/unit/scripts/apply-ai-edit.test.ts ^[[2m(^[[22m^[[2m19 tests^[[22m^[[2m | ^[[22m^[[31m3 failed^[[39m^[[2m)^[[22m^[[33m 1146^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1637864Z      ^[[32m✓^[[39m AE-1: counts an anchor against the whole file and leaves the tree alone^[[32m 80^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1640066Z      ^[[32m✓^[[39m AE-2: reports create, delete and edit together without touching any of them^[[32m 63^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1648628Z      ^[[32m✓^[[39m AE-3: says an already-satisfied edit would write nothing^[[32m 59^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1650105Z      ^[[32m✓^[[39m AE-4: refuses an anchor that matches twice and names the count^[[32m 57^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1651602Z      ^[[32m✓^[[39m AE-5: refuses an anchor that matches zero times and names the count^[[32m 60^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1658786Z      ^[[32m✓^[[39m AE-6: validates a second anchor against what the first edit staged^[[32m 62^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1660858Z      ^[[32m✓^[[39m AE-7: counts the copy an earlier edit added, not only the ones on disk^[[32m 65^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1663646Z      ^[[32m✓^[[39m AE-8: leaves the first file untouched when a later edit cannot apply^[[32m 61^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1665369Z      ^[[32m✓^[[39m AE-9: refuses a path this workflow may not touch^[[32m 56^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1666792Z      ^[[32m✓^[[39m AE-10: refuses a path that escapes the repository^[[32m 50^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1668489Z      ^[[32m✓^[[39m AE-11: refuses an edit that names two modes^[[32m 45^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1670000Z      ^[[32m✓^[[39m AE-12: refuses create over a file that exists and delete of one that does not^[[32m 57^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1671523Z      ^[[32m✓^[[39m AE-13: refuses a multiline message before emitting any output^[[32m 54^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1673183Z      ^[[32m✓^[[39m AE-14: a dry run gets the fixed subject, and that subject skips CI^[[32m 49^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1674427Z      ^[[32m✓^[[39m AE-15: a real run keeps the request message verbatim and does not skip CI^[[32m 60^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1676046Z      ^[[32m✓^[[39m AE-16: refuses a non-boolean dry_run rather than applying the request^[[32m 65^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1678076Z ^[[31m     ^[[31m×^[[31m AE-17: keeps a deleted path out of the format list and in the touched list^[[39m^[[32m 57^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1680021Z ^[[31m     ^[[31m×^[[31m AE-18: gives the formatter nothing at all for a delete-only request^[[39m^[[32m 57^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.1681925Z ^[[31m     ^[[31m×^[[31m AE-19: writes both lists empty for a dry run, which formats nothing either^[[39m^[[32m 84^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.3036103Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-patch-keys.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 44^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.4201171Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugins.test.ts ^[[2m(^[[22m^[[2m19 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.4492238Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/handle-base.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.6090528Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-time-loop.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 46^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.6879143Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/stale-track-handle.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.6989778Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track-live-values.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.8910154Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/motion-driver-edit.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.9479660Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/snapshot-one-walk.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:32.9649290Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/structural-commit-path.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:33.1946754Z  ^[[32m✓^[[39m packages/core/test/integration/authored-leaf-reader.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:33.2587708Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/declined-build-write-drop.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:33.3106196Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/boundary-scan.test.ts ^[[2m(^[[22m^[[2m18 tests^[[22m^[[2m)^[[22m^[[32m 193^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:33.4098831Z  ^[[32m✓^[[39m packages/core/test/unit/graph/solved-pivot-offset.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:33.4836193Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion-track-resolution.test.ts ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:33.5515830Z  ^[[32m✓^[[39m packages/core/test/unit/graph/solved-rotation-weight.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:33.7329614Z  ^[[32m✓^[[39m packages/core/test/integration/solver-member-cache.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 38^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:33.7971636Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/clock-consumer-error-boundary.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:33.8324839Z  ^[[32m✓^[[39m packages/core/test/integration/ik-fabrik-chain.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 47^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:34.0449681Z  ^[[32m✓^[[39m packages/core/test/unit/graph/graph-dependants.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:34.0609492Z  ^[[32m✓^[[39m packages/core/test/integration/ik-two-bone.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 44^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:34.1018594Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/dependants-of-reverse-topology.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:34.3132914Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/removal-flush-seed.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:34.3245236Z  ^[[32m✓^[[39m packages/core/test/integration/rollback-error-precedence.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:34.3853126Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion-dispose-ownership.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:34.5338224Z  ^[[32m✓^[[39m packages/core/test/unit/graph/finalize-graph.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:34.5963932Z  ^[[32m✓^[[39m packages/core/test/unit/adapters/incremental-graph-builder-eviction.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:34.7142697Z  ^[[32m✓^[[39m packages/core/test/contract/microtask-scheduler.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:34.7934790Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion-track-mutation-atomicity.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:34.7992661Z  ^[[32m✓^[[39m packages/core/test/integration/adoption.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:34.9819591Z  ^[[32m✓^[[39m packages/core/test/contract/v5-validator.test.ts ^[[2m(^[[22m^[[2m14 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:35.0119414Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/fabrik-dispatch.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:35.0990064Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/mount-flush-seed.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 29^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:35.1943495Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/ik-solve.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:35.2932160Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-types.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:35.3721217Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/structural-commit-flush.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:35.4234710Z  ^[[32m✓^[[39m packages/core/test/unit/graph/incremental-cache.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:35.5759552Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-owned-requirements.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 38^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:35.6546628Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/fk-solved-weight.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:35.6629177Z  ^[[32m✓^[[39m packages/core/test/integration/phase0-red-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:35.8509908Z  ^[[32m✓^[[39m packages/core/test/integration/replace-track-transactionality.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 32^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:35.9120008Z  ^[[32m✓^[[39m packages/core/test/unit/graph/single-input-channel.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:35.9352987Z  ^[[32m✓^[[39m packages/core/test/integration/phase4-dynamic-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:36.1077994Z  ^[[32m✓^[[39m packages/core/test/contract/trigger-factory.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:36.1439801Z  ^[[32m✓^[[39m packages/core/test/unit/graph/arity-lift.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:36.1538892Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track-compose-from.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:36.3539439Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugin-contribution-contract.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:36.3640991Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/fk-pivot-offset.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:36.3799152Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:36.6056813Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/track-staging.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:36.6299425Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-one-tween.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:36.8634944Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-reentrancy.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:36.8851705Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-time.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:37.0790575Z  ^[[32m✓^[[39m packages/core/test/unit/domain/authored-group-values-one-reader.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:37.1184466Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:37.3384976Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:37.5026058Z  ^[[32m✓^[[39m packages/core/test/integration/ik-multi-goal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 49^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:37.6077032Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-state.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:37.8143541Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-scroll.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:37.9467710Z  ^[[32m✓^[[39m packages/core/test/integration/mutation-transactionality.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 43^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:38.1340559Z  ^[[32m✓^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 38^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:38.1949014Z  ^[[32m✓^[[39m packages/core/test/unit/adapters/time-loop-cycle.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:38.4601797Z  ^[[32m✓^[[39m packages/core/test/integration/per-plugin-key-ownership.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 38^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:38.5060487Z  ^[[32m✓^[[39m packages/core/test/integration/phase3-trigger-port.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:38.7067297Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-snapshot-memo.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:38.8636254Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/live-value-animated.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 37^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:38.9774748Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:39.1220435Z  ^[[32m✓^[[39m packages/core/test/unit/graph/solver-goal-required.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:39.2242656Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-target-removal.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:39.4689612Z  ^[[32m✓^[[39m packages/core/test/contract/validation-owner.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:39.4850286Z  ^[[32m✓^[[39m packages/core/test/integration/option-c-track-resolution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 38^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:39.7279762Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugin-requirements.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:39.7902759Z  ^[[32m✓^[[39m packages/core/test/integration/phase2-motion-scheduling.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:39.8941744Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/public-declaration-surface.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[33m 3326^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:39.8959012Z      ^[[33m^[[2m✓^[[22m^[[39m scans the emitted entry declaration closure, not just source strings ^[[33m 3323^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:39.9712446Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/angle-blend.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:40.0986630Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/fabrik-arity-one.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:40.1076283Z  ^[[32m✓^[[39m packages/core/test/integration/live-value-composition.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 44^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:40.2479912Z  ^[[32m✓^[[39m packages/core/test/integration/unified-mutation-surface.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 35^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:40.3629137Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/clock-tick-identity.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:40.3769413Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 29^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:40.5092770Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-equivalence.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:40.5646683Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-structural-change.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:40.6410652Z  ^[[32m✓^[[39m packages/core/test/integration/observation-identity.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:40.7629795Z  ^[[32m✓^[[39m packages/core/test/integration/cross-motion.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:40.8408676Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ir-validation.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:40.8689798Z  ^[[32m✓^[[39m packages/core/test/integration/issue-114-motion-track-regressions.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 35^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:40.9861595Z  ^[[32m✓^[[39m packages/core/test/unit/graph/order.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:41.0593432Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion-progress-range.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:41.2436798Z  ^[[32m✓^[[39m packages/core/test/integration/diagnostics.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:41.2630049Z  ^[[32m✓^[[39m packages/core/test/unit/adapters/trigger-factory-no-fallback.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:41.5007472Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-authored-duration.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:41.5269554Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/composition-output-shape.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:41.7539769Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/scheduler-reentrancy.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:41.7679363Z  ^[[32m✓^[[39m packages/core/test/contract/project-templates-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:41.9870052Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:42.0671401Z  ^[[32m✓^[[39m packages/core/test/integration/adopted-track-immutability.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:42.2218497Z  ^[[32m✓^[[39m packages/core/test/unit/adapters/scroll-trigger-gsap.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:42.3201346Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:42.4901082Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:42.6349771Z  ^[[32m✓^[[39m packages/core/test/integration/replace-motion-track.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 33^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:42.8080133Z  ^[[32m✓^[[39m packages/core/test/integration/keyframe-groups.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 37^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:42.9569278Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:43.1036525Z  ^[[32m✓^[[39m packages/core/test/integration/internal-key-strip.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:43.2647390Z  ^[[32m✓^[[39m packages/core/test/integration/handle-adoption.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 29^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:43.3723329Z  ^[[32m✓^[[39m packages/core/test/integration/remount.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:43.5050572Z  ^[[32m✓^[[39m packages/core/test/contract/ports.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:43.5959439Z  ^[[32m✓^[[39m packages/core/test/unit/graph/edge-order.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8240115Z  ^[[32m✓^[[39m packages/core/test/unit/graph/references.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8676860Z ^[[90mstderr^[[2m | packages/react/test/public-hook-render.test.ts^[[2m > ^[[22m^[[2mReact public hook render/update (C2)^[[2m > ^[[22m^[[2mrenders the current patch and updates after publication
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8695529Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8696791Z An update to Root inside a test was not wrapped in act(...).
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8697584Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8698201Z When testing, code that causes React state updates should be wrapped into act(...):
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8698794Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8698967Z act(() => {
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8699415Z   /* fire events that update state */
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8699896Z });
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8700280Z /* assert on the output */
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8700550Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8701557Z This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8702713Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8846057Z ^[[90mstderr^[[2m | packages/react/test/public-hook-render.test.ts^[[2m > ^[[22m^[[2mReact public hook render/update (C2)^[[2m > ^[[22m^[[2mH-4 hands a consumer the same stripped values the publisher retained
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8865517Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8871113Z An update to Root inside a test was not wrapped in act(...).
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8878111Z  ^[[32m✓^[[39m packages/react/test/public-hook-render.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 40^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8885129Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8886054Z When testing, code that causes React state updates should be wrapped into act(...):
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8886936Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8887480Z act(() => {
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8888116Z   /* fire events that update state */
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8888773Z });
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8897569Z /* assert on the output */
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8898123Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8899250Z This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+quality (node 24)	Run npm test	2026-09-03T23:12:43.8900369Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:44.0815671Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:44.1732310Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:44.3300321Z  ^[[32m✓^[[39m packages/core/test/contract/adapters.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:44.3972315Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:44.5582965Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:44.6568015Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-absolute-stops.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:44.8175796Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:44.8639766Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/fk-solver-override.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:45.0970444Z  ^[[32m✓^[[39m packages/core/test/migration/v4-to-v5.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:45.1559806Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 39^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:45.3751909Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:45.4465571Z  ^[[32m✓^[[39m packages/core/test/contract/graph-builder-incremental.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:45.6746357Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:45.6960991Z  ^[[32m✓^[[39m packages/core/test/integration/single-input-channel.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:45.8823584Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track-node-id.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:45.9318325Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:46.1041485Z  ^[[32m✓^[[39m packages/core/test/unit/domain/time-driver.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:46.2306322Z  ^[[32m✓^[[39m packages/core/test/integration/adopt-destroy-readopt.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:46.3415323Z  ^[[32m✓^[[39m packages/core/test/unit/graph/edge-key-separator.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:46.4389222Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/governance-gates.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:46.5568534Z  ^[[32m✓^[[39m packages/core/test/unit/graph/requirement-edge-construction.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:46.6720098Z ^[[90mstderr^[[2m | packages/react/test/public-package-surface.test.ts^[[2m > ^[[22m^[[2mReact public package surface (C2)^[[2m > ^[[22m^[[2mrenders and updates through the package entry alone
+quality (node 24)	Run npm test	2026-09-03T23:12:46.6769154Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test	2026-09-03T23:12:46.6770692Z An update to Root inside a test was not wrapped in act(...).
+quality (node 24)	Run npm test	2026-09-03T23:12:46.6771472Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:46.6778524Z When testing, code that causes React state updates should be wrapped into act(...):
+quality (node 24)	Run npm test	2026-09-03T23:12:46.6780587Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:46.6781417Z act(() => {
+quality (node 24)	Run npm test	2026-09-03T23:12:46.6782054Z   /* fire events that update state */
+quality (node 24)	Run npm test	2026-09-03T23:12:46.6782707Z });
+quality (node 24)	Run npm test	2026-09-03T23:12:46.6783932Z /* assert on the output */
+quality (node 24)	Run npm test	2026-09-03T23:12:46.6784401Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:46.6785657Z This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+quality (node 24)	Run npm test	2026-09-03T23:12:46.6787589Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:46.6791092Z  ^[[32m✓^[[39m packages/react/test/public-package-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:46.7883882Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:46.9074449Z  ^[[32m✓^[[39m packages/react/test/patch-store-lifecycle.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:47.0350629Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugin-contribution-completeness.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:47.1374465Z  ^[[32m✓^[[39m packages/core/test/unit/domain/s7-plugin-evidence.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:47.2689575Z  ^[[32m✓^[[39m packages/react/test/patch-store-destroy.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:47.4051108Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-sparse-percent-map.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:47.5310386Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:47.6894800Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-paused-timeline.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:47.8436637Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 18^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:47.9279674Z  ^[[32m✓^[[39m packages/core/test/unit/engine/motion-entry-shape.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.0911696Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.1247282Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/public-port-types.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[33m 7070^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.1249740Z      ^[[33m^[[2m✓^[[22m^[[39m K-9 names all five port contracts from the entry declarations ^[[33m 1893^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.1251724Z      ^[[33m^[[2m✓^[[22m^[[39m K-10 still cannot name a runtime internal through the same entry ^[[33m 1882^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.1549549Z  ^[[32m✓^[[39m packages/core/test/unit/graph/edge-key-canonical.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.3060980Z  ^[[32m✓^[[39m packages/core/test/unit/domain/lifecycle.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.3479714Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/acceptance-scan.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.3563278Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.5609149Z  ^[[32m✓^[[39m packages/core/test/unit/domain/values.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.5623684Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.5826921Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-retention.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.7674651Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/mutation-config.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.7805362Z  ^[[32m✓^[[39m packages/core/test/unit/adapters/scroll-trigger-range.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.7879089Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.9716871Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/s7-recovery-audit.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.9799098Z  ^[[32m✓^[[39m packages/core/test/contract/s4-validation-owner.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:48.9999190Z  ^[[32m✓^[[39m packages/react/test/patch-store.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.2031732Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.2232256Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-trigger-validation.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.2552719Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.4293095Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.4710968Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.4892594Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5811497Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5877850Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5878801Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 3 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5879361Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5889761Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/apply-ai-edit.test.ts^[[2m > ^[[22mapply-ai-edit formatter input^[[2m > ^[[22mAE-17: keeps a deleted path out of the format list and in the touched list
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5898989Z ^[[31m^[[1mAssertionError^[[22m: expected null to be 'docs/D.md\ndocs/NEW.md\n' // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5899576Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5899759Z ^[[32m- Expected:^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5900052Z "docs/D.md
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5900283Z docs/NEW.md
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5900519Z "
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5900648Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5900798Z ^[[31m+ Received:^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5901056Z null
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5901179Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5901697Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/apply-ai-edit.test.ts:^[[2m340:28^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5972682Z     ^[[90m338|^[[39m     ^[[34mexpect^[[39m(outcome^[[33m.^[[39mcode)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5974103Z     ^[[90m339|^[[39m     expect(outcome.touched).toBe("docs/D.md\ndocs/NEW.md\ndocs/STALE.m…
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5975716Z     ^[[90m340|^[[39m     ^[[34mexpect^[[39m(outcome^[[33m.^[[39mformat)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"docs/D.md\ndocs/NEW.md\n"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5976925Z     ^[[90m   |^[[39m                            ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5978660Z     ^[[90m341|^[[39m     ^[[34mexpect^[[39m(^[[34mexistsSync^[[39m(^[[34mjoin^[[39m(dir^[[33m,^[[39m ^[[32m"docs/STALE.md"^[[39m)))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mfalse^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5980658Z     ^[[90m342|^[[39m     ^[[34mexpect^[[39m(^[[34mexistsSync^[[39m(^[[34mjoin^[[39m(dir^[[33m,^[[39m ^[[32m"docs/NEW.md"^[[39m)))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5981531Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5982190Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5982658Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5984588Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/apply-ai-edit.test.ts^[[2m > ^[[22mapply-ai-edit formatter input^[[2m > ^[[22mAE-18: gives the formatter nothing at all for a delete-only request
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5986439Z ^[[31m^[[1mAssertionError^[[22m: expected null to be '' // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5986950Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5987583Z ^[[32m- Expected:^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5987982Z ""
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5988191Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5988434Z ^[[31m+ Received:^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5988817Z null
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5989013Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5990193Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/apply-ai-edit.test.ts:^[[2m354:28^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5991774Z     ^[[90m352|^[[39m     ^[[34mexpect^[[39m(outcome^[[33m.^[[39moutputs^[[33m.^[[39mchanged)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"true"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5993482Z     ^[[90m353|^[[39m     ^[[34mexpect^[[39m(outcome^[[33m.^[[39mtouched)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"docs/STALE.md\n"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5994975Z     ^[[90m354|^[[39m     ^[[34mexpect^[[39m(outcome^[[33m.^[[39mformat)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m""^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5996017Z     ^[[90m   |^[[39m                            ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5997729Z     ^[[90m355|^[[39m     ^[[34mexpect^[[39m(^[[34mexistsSync^[[39m(^[[34mjoin^[[39m(dir^[[33m,^[[39m ^[[32m"docs/STALE.md"^[[39m)))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mfalse^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5999283Z     ^[[90m356|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.5999591Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6000017Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6000416Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6002278Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/apply-ai-edit.test.ts^[[2m > ^[[22mapply-ai-edit formatter input^[[2m > ^[[22mAE-19: writes both lists empty for a dry run, which formats nothing either
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6004190Z ^[[31m^[[1mAssertionError^[[22m: expected null to be '' // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6004756Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6004997Z ^[[32m- Expected:^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6005405Z ""
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6005583Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6005823Z ^[[31m+ Received:^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6006194Z null
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6006384Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6007365Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/apply-ai-edit.test.ts:^[[2m371:28^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6008945Z     ^[[90m369|^[[39m     ^[[34mexpect^[[39m(outcome^[[33m.^[[39moutputs^[[33m.^[[39mchanged)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"false"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6010595Z     ^[[90m370|^[[39m     ^[[34mexpect^[[39m(outcome^[[33m.^[[39mtouched)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m""^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6012091Z     ^[[90m371|^[[39m     ^[[34mexpect^[[39m(outcome^[[33m.^[[39mformat)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m""^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6013092Z     ^[[90m   |^[[39m                            ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6014621Z     ^[[90m372|^[[39m     ^[[34mexpect^[[39m(^[[34mexistsSync^[[39m(^[[34mjoin^[[39m(dir^[[33m,^[[39m ^[[32m"docs/STALE.md"^[[39m)))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6015822Z     ^[[90m373|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6016133Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6016554Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6016934Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6016960Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6018035Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m183 passed^[[39m^[[22m^[[90m (184)^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6019488Z ^[[2m      Tests ^[[22m ^[[1m^[[31m3 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m926 passed^[[39m^[[22m^[[90m (929)^[[39m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6020453Z ^[[2m   Start at ^[[22m 23:12:29
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6021697Z ^[[2m   Duration ^[[22m 20.34s^[[2m (transform 2.85s, setup 1.19s, import 10.98s, tests 15.42s, environment 26ms)^[[22m
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6022434Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6044703Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6070114Z ##[error]AssertionError: expected null to be 'docs/D.md\ndocs/NEW.md\n' // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected:
+quality (node 24)	Run npm test	"docs/D.md
+quality (node 24)	Run npm test	docs/NEW.md
+quality (node 24)	Run npm test	"
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	+ Received:
+quality (node 24)	Run npm test	null
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/apply-ai-edit.test.ts:340:28
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6078812Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6080951Z ##[error]AssertionError: expected null to be '' // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected:
+quality (node 24)	Run npm test	""
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	+ Received:
+quality (node 24)	Run npm test	null
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/apply-ai-edit.test.ts:354:28
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6082166Z 
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6083816Z ##[error]AssertionError: expected null to be '' // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected:
+quality (node 24)	Run npm test	""
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	+ Received:
+quality (node 24)	Run npm test	null
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/apply-ai-edit.test.ts:371:28
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-03T23:12:49.6648532Z ##[error]Process completed with exit code 1.
+```
