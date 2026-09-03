@@ -742,17 +742,16 @@ export class ProjectRuntime {
   mount(nodeId: string, instance: object = {}): object {
     this.#assertLive();
     this.#refuseInsideRecipe("mount");
-    const mounted = this.#mountNode(nodeId, instance);
-    // The one mount a commit does not perform, and therefore the one nothing else seeds. A
-    // structural add mounts through `#mountNode` as a settle step and `#apply` seeds that node into
-    // the single flush the commit ends at, so this seed belongs at the public verb: at the attach
-    // it would give every structural add a second flush. `Engine.load()` seeds nothing, for the
-    // reason A2 already established, which is that there is no member to publish to yet and an
-    // empty seed set is not a cheap flush. The member arrives here. See `RA-100`, `RA-102`,
-    // ADR-066.
-    const batch = this.#graph.invalidate([nodeId]);
-    this.#diagnostics.recordAll(batch.diagnostics);
-    return mounted;
+    // Seeds no flush, deliberately, and measured where the reason is written. A member arrives here
+    // and nothing publishes, which looks like the asymmetry A2 left behind: a node mounted by a
+    // commit is seeded by `#apply` and a node mounted by a caller is seeded by nobody. A seed here
+    // was drafted, implemented and refused on three measurements. `T-1` owns the asymmetry as real
+    // rather than pending, `trigger-time` owns that a time Motion does not emit before its first
+    // tick and a mount precedes every tick, and `PatchRegistry.publish` drops a candidate through
+    // `samePatch`, so this flush would not add a publication but take the next one: the `seek` that
+    // follows would publish nothing and hand its caller an empty batch. Run 33712936651 is the 21
+    // cases that says so, `RA-8` among them. See `RA-100`, `RA-101` and ADR-066.
+    return this.#mountNode(nodeId, instance);
   }
   /**
    * Attaches one member, and the one owner of mounting.
