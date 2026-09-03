@@ -280,8 +280,8 @@ import { fileURLToPath } from "node:url";
 //
 // `RB-` belongs to the read budget on a source file, issue #267: that a file over the measured
 // budget is refused, that a file carrying a recorded waiver is held to its own ceiling instead,
-// that the waiver expires on a date rather than by review, and that a scan which found nothing
-// says so rather than answering clean. Every series above owns something the runtime does or
+// that the refusal a waiver produces names the ceiling it crossed rather than the budget, and that
+// a scan which found nothing says so rather than answering clean. Every series above owns something the runtime does or
 // something a caller is told; `RB-` owns whether the file that states an invariant can be read at
 // all by the implementor about to edit it, which is a question none of them ask. It is the
 // eighteenth two-letter series, under the policy the `P-` paragraph sets, and `R-` alone is the

@@ -27,20 +27,25 @@ const scannedExtensions = [".ts", ".tsx"];
  */
 export const READ_BUDGET_BYTES = 60_000;
 /**
- * Every file over budget today, with the size it may not exceed and the date its waiver dies.
+ * Every file over budget today, with the size it may not exceed and the issue that removes it.
  *
- * Two fields rather than one, because ADR-008 names a non-shrinking file allowlist as a gate that
- * can be green while the thing it exists to catch is still broken, and it is right about that.
- * `ceiling` is the file's exact size when it was recorded, so the file may shrink and may not grow,
- * and every slice that splits it lowers the number. `expires` fails this scan on its own once the
- * date passes, so the waiver is deleted by a check rather than renewed by silence, which is the
- * shape an advisory budget carrying a removal date already has in this repository.
+ * A ceiling rather than a bare path, because ADR-008 names a non-shrinking file allowlist as a gate
+ * that can be green while the thing it exists to catch is still broken, and it is right about that.
+ * `ceiling` is the file's exact size when it was recorded, so a waived file may shrink and may not
+ * grow, and the slice that splits it lowers the number in the same commit.
+ *
+ * There is no removal date, and that is a decision rather than an omission. A date does not shrink
+ * a file. It fails the build on a morning nobody picked, for a tree that may have been improving the
+ * whole time, and it is satisfied by editing the date, so it reports the calendar rather than the
+ * tree. What a date guards against is a waiver that stalls, and the honest statement is that this
+ * list does not prevent that: it prevents the file getting worse while it stalls, which is the part
+ * a check can see. The waiver is deleted by the commit that brings the file under
+ * `READ_BUDGET_BYTES`, and issue #267 is where that work is tracked.
  */
 export const READ_BUDGET_EXCEPTIONS = [
   {
     path: "packages/core/src/runtime/project-runtime.ts",
     ceiling: 103_657,
-    expires: "2026-10-01",
     issue: 267,
   },
 ];
@@ -69,25 +74,25 @@ export function findException(file) {
 /**
  * What one file of a known size costs, answered against the budget or against its own waiver.
  *
- * Pure, and separate from the walk, so a case can plant a size rather than a file: the expiry rule
- * is a question about a date and no tree can be made to hold one. An expired waiver is reported
- * before the ceiling is compared, because a file sitting exactly at its recorded ceiling is the one
- * case where the ceiling alone answers clean and the date is the whole finding.
+ * Pure, and separate from the walk, so a case can plant a size rather than a file: every question
+ * this answers is a question about a byte count, and a size is the one thing a walk of a real tree
+ * makes awkward to state exactly. It takes no clock, because nothing it decides depends on one.
+ *
+ * A waived file is held to its ceiling and never to the budget, and the refusal names the ceiling
+ * it crossed rather than the budget it has not reached yet. That is the message which tells a
+ * reader the file grew, and growing is the only thing a waiver forbids.
  */
-export function checkSize(file, size, now = new Date()) {
+export function checkSize(file, size) {
   const exception = findException(file);
   if (exception === undefined) {
     if (size <= READ_BUDGET_BYTES) return undefined;
     return `${file}: ${size} bytes is over the ${READ_BUDGET_BYTES} byte read budget`;
   }
-  if (Date.parse(exception.expires) <= now.getTime()) {
-    const detail = `expired on ${exception.expires}, see issue #${exception.issue}`;
-    return `${file}: read-budget waiver ${detail}`;
-  }
   if (size <= exception.ceiling) return undefined;
-  return `${file}: ${size} bytes is over its recorded ceiling of ${exception.ceiling} bytes`;
+  const detail = `over its recorded ceiling of ${exception.ceiling} bytes`;
+  return `${file}: ${size} bytes is ${detail}, see issue #${exception.issue}`;
 }
-export async function scan(scanRoot = root, now = new Date()) {
+export async function scan(scanRoot = root) {
   const base = join(scanRoot, "packages", "core", "src");
   const files = await walk(base);
   if (files.length === 0) return [`${scannedRoot}: the read budget scan found no source files`];
@@ -96,7 +101,7 @@ export async function scan(scanRoot = root, now = new Date()) {
   for (const path of files) {
     const file = `${scannedRoot}/${relative(path, base)}`;
     seen.add(file);
-    const violation = checkSize(file, (await stat(path)).size, now);
+    const violation = checkSize(file, (await stat(path)).size);
     if (violation !== undefined) violations.push(violation);
   }
   for (const exception of READ_BUDGET_EXCEPTIONS)
