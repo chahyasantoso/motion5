@@ -25,5 +25,5 @@ What this removes. Write "none" only if the phase exit gate does not include a r
 - [ ] Behavior and formatting are in separate commits.
 - [ ] Types, exports, and docs updated here, not promised in a follow-up.
 - [ ] `npm run check` passes locally.
-- [ ] `docs/SESSION-STATUS.md` updated if this changes the state of the project.
+- [ ] `docs/SESSION-STATUS.md` rewritten rather than appended to, if this changes the state of the project. A standing rule goes in `docs/GUARDRAILS.md`; the run ids stay in this body.
 - [ ] Nothing copied from the reference repository.

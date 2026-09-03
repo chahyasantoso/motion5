@@ -4,14 +4,17 @@ This file is for an AI implementor working on motion5. A human contributor wants
 
 ## Read these first, in this order
 
-1. [docs/SESSION-STATUS.md](docs/SESSION-STATUS.md) is the only document allowed to claim what has landed. Every plan, ADR, and architecture note describes intent unless it says otherwise.
-2. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for who owns what.
-3. [docs/PR-WORKFLOW.md](docs/PR-WORKFLOW.md) for what a complete change looks like: invariant, evidence, ownership, public surface, deletions, status.
-4. [docs/CI-WORKFLOW.md](docs/CI-WORKFLOW.md) and [docs/FORMATTING.md](docs/FORMATTING.md) for the gates you have to pass.
+1. [docs/SESSION-STATUS.md](docs/SESSION-STATUS.md) is the only document allowed to claim what has landed. Every plan, ADR, and architecture note describes intent unless it says otherwise. It states current state only, in four sections, and you **rewrite** it rather than appending to it: replace the entry your slice makes stale instead of adding one beside it. A gate holds it to that section list and to a byte ceiling, so a fifth section and a returning log both fail `CI`.
+2. [docs/GUARDRAILS.md](docs/GUARDRAILS.md) for the standing rules and the working constraints every slice is held to, and [docs/LIVE-EDIT-COST.md](docs/LIVE-EDIT-COST.md) for what a caller may do to a loaded project and what each edit pays for. The status file carried both until issue #284 and carries neither now.
+3. [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for who owns what.
+4. [docs/PR-WORKFLOW.md](docs/PR-WORKFLOW.md) for what a complete change looks like: invariant, evidence, ownership, public surface, deletions, status.
+5. [docs/CI-WORKFLOW.md](docs/CI-WORKFLOW.md) and [docs/FORMATTING.md](docs/FORMATTING.md) for the gates you have to pass.
 
 ## The rules that get broken most
 
 Write the invariant first, name the single owner, add the test that fails without the change, and keep the slice vertical. Two owners for one question is the defect this project cares about most.
+
+Status is replaced, never accumulated. `docs/SESSION-STATUS.md` is the file you are most likely to break that rule in, because every pull request is asked to update it, and the honest edit is usually a deletion and a rewrite rather than a new bullet. State the project as it is now and remove the entry that is no longer it. A rule you earned goes in `docs/GUARDRAILS.md`, a red or green run id goes in your pull request body, and neither goes in the status file. It reached 99,180 bytes the other way, while its own first sentence called it small.
 
 Formatting never shares a commit with behavior.
 
