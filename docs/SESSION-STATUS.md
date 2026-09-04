@@ -7,7 +7,7 @@ Current state only: where the work is, what the next implementor picks up, and w
 Nothing else in this repository may claim what has landed. A plan, an audit, or an ADR describes intent unless this file says it shipped.
 
 - **Captured:** 2026-09-04, Asia/Jakarta.
-- **Verified on:** `23e6afa` on `main`, which is [#286](https://github.com/chahyasantoso/motion5/pull/286) merged and two documentation corrections after it. Runtime behaviour is unchanged since `ebad1ab`, [#282](https://github.com/chahyasantoso/motion5/pull/282): the slices after it are this file's own shape, two evidence gates, and prose, and none of them reaches `packages/core/src`.
+- **Verified on:** `23e6afa` on `main`, which is [#286](https://github.com/chahyasantoso/motion5/pull/286) merged, plus the ordering correction for issue #294 on top of it. Runtime behaviour is unchanged since `ebad1ab`, [#282](https://github.com/chahyasantoso/motion5/pull/282): the slices after it are this file's own shape, two evidence gates, and prose, and none of them reaches `packages/core/src`.
 - **Phase:** live editing of a loaded project. Every decision ADR-028 through ADR-066 records is shipped. [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md) is what a caller may do with that and what each edit pays for, and [GUARDRAILS.md](./GUARDRAILS.md) is the standing rules a slice is held to.
 - **Earlier history:** the long-form narrative through 2026-09-03 is this path at `ebad1ab`. It is not copied into `archived/`, because git already holds it whole: read this path at that ref.
 
