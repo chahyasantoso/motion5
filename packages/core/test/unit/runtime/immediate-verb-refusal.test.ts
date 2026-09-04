@@ -69,8 +69,8 @@ const SIGNAL = { type: "play" } as unknown as TriggerSignal;
  * `ProjectRuntimeOptions.signalMotion` are both real members, so this takes the shipped type and
  * `typecheck` is what proves the signature rather than a local alias standing in front of it.
  *
- * The assertion stays, on `editing()`'s own rule: a bare call would
- * make `RA-83` fail with "signal is not a function", which is a call that could not run rather than
+ * The assertion stays, on `editing()`'s own rule: a bare call would make `RA-83` fail with
+ * "signal is not a function", which is a call that could not run rather than
  * an assertion that disagreed, and failing-first means failing assertions. Issue #260.
  */
 function signalling(runtime: ProjectRuntime): ProjectRuntime {
