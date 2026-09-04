@@ -1,0 +1,7 @@
+{
+"message": "docs(runtime): reflow the signalling docblock the seam removal left ragged",
+"target": 260,
+"edits": [
+{"path": "packages/core/test/unit/runtime/immediate-verb-refusal.test.ts", "find": ": a bare call would\n * make `RA-83` fail with ", "replace": ": a bare call would make `RA-83` fail with\n * "}
+]
+}
