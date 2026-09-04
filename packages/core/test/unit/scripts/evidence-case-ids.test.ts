@@ -289,6 +289,7 @@ import { fileURLToPath } from "node:url";
 // offered `R` first would match `R` and then fail on the `B`.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
+const AI_EDIT = "unit/scripts/apply-ai-edit.test.ts";
 const CASE_TITLE =
   /it\(\s*"((?:CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PK|PV|RA|RB|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
@@ -321,5 +322,11 @@ describe("evidence case ids", () => {
     const total = files.reduce((count, file) => count + declaredCaseIds(file).length, 0);
     expect(files.length).toBeGreaterThanOrEqual(3);
     expect(total).toBeGreaterThan(15);
+  });
+
+  it("reaches the AE- series, which was declared and cited and never scanned", () => {
+    const ids = declaredCaseIds(AI_EDIT);
+    expect(ids.length).toBeGreaterThan(0);
+    expect(ids.filter((id) => !/^AE-\d+$/.test(id))).toEqual([]);
   });
 });
