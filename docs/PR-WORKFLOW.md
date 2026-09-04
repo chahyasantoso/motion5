@@ -122,6 +122,8 @@ Archiving is deliberately not branch-filtered. `workflow_run` filters on the hea
 
 Test cases that a plan, ADR, or PR body cites by id use a single flat series per plan, for example `C-1` upward. An id names exactly one test in the whole suite; never restart the series per file or per tier. `packages/core/test/unit/scripts/evidence-case-ids.test.ts` enforces this, because an ambiguous citation is worse than no citation.
 
+The whole suite is the tree `vitest` walks, both packages included, and that gate also refuses a series-shaped title its alternation does not match, so a series joins the pattern when it is opened rather than when somebody remembers. Two id spaces reach the head of a title without declaring a case and are not gated as series: a plan slice id, which carries a digit in its prefix, such as `T4-3`; and an architecture invariant `I-n` from [ARCHITECTURE.md](./ARCHITECTURE.md), which several cases may cite for one invariant. See issue #289.
+
 ## Status discipline
 
 There is one status file. Do not create parallel handoff notes or completion matrices. Update status in the PR that changes the project state.

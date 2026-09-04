@@ -4,9 +4,13 @@ import { fileURLToPath } from "node:url";
 
 // The citation series are this project's evidence keys: implementation plans, ADRs, and every
 // pull request body name evidence by id rather than by test title. Two cases sharing one id makes
-// each of those citations ambiguous, so the gate is uniqueness across the whole suite, not within
-// a file. Titles are matched instead of bare ids so a comment referring to another case cannot
-// register as a second declaration.
+// each of those citations ambiguous, so the gate is uniqueness across the whole suite, not within a
+// file, and the whole suite is the tree `vitest` walks rather than the package this file sits in.
+// Titles are matched instead of bare ids so a comment referring to another case cannot register as
+// a second declaration. Uniqueness is half of it. An id the alternation below does not match is
+// ungated rather than absent, so the other half is that the alternation names every series the tree
+// declares, and issue #289 owns both. The rules that needed deciding are stated beside the
+// constants they govern rather than here, because all of them are about what the scan may read.
 //
 // `C-` belongs to the option C plan (ADR-031). `T-` belongs to the T4/T5 trigger parity plan,
 // which needed its own prefix because that plan already uses `T4-n` and `T5-n` for its locked
@@ -303,29 +307,83 @@ import { fileURLToPath } from "node:url";
 // not in the alternation and cannot be, by the `M-` paragraph's rule against a letter a plan uses
 // unhyphenated, so this is the one two-letter widening with no ordering hazard to avoid, and it
 // sorts first rather than ahead of its own initial.
-const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
-const SELF = "unit/scripts/evidence-case-ids.test.ts";
-const AI_EDIT = "unit/scripts/apply-ai-edit.test.ts";
+// The scan root is the repository rather than `packages/core/test`, because an id names one test in
+// the suite and the suite is not one package. `H-4` is declared in
+// `packages/react/test/public-hook-render.test.ts`, which the old root could not see, so one id
+// declared once in each package was two green files rather than one collision. What is walked is
+// what `vitest` walks: every directory except a dependency tree, a build output, and a dotted one.
+// A `.test.ts` under `oracle/` is in scope by that rule rather than by exception, because a
+// vendored snapshot that ships a case is a file this suite would run, whether or not anyone here
+// meant it to. The suffix is the one thing narrower than the walk, and it names the two spellings a
+// case can be written in rather than the one that exists today.
+//
+// A series prefix is one or two uppercase letters and nothing else. Two id spaces reach the head of
+// a title without declaring a case, and passing over them is a rule rather than an omission. A
+// prefix carrying a digit is a plan slice id: `T4-3` and `T5-5` are locked decisions of the T4/T5
+// trigger parity plan, and `A3`, `A5` and `X3` are named above as letters a series may not take,
+// for this reason. And `I-n` is an architecture invariant, declared in `docs/ARCHITECTURE.md` and
+// cited by `docs/TRD.md` and the implementation plan, so a title carrying one is evidence for an
+// invariant rather than a declaration of a case. `I-13` sits on two cases deliberately, which is
+// why uniqueness may not be asserted over that space at all.
+//
+// Nothing is hidden by either rule. `I` is already named above as a letter no series may use, and
+// the case below asserts that the alternation does not name it, so the carve-out cannot silence a
+// series that is gated. The other way to quieten both spaces was to add `I` and `T4` to the
+// alternation, which would gate two documents' id spaces as case series and make every citation of
+// them two-valued: the collision the `T-` paragraph exists to avoid. `FR-` and `TR-` are the same
+// kind of space and are not carved out, because no title cites one, and the `P-` paragraph's policy
+// is that nothing here is reserved for, or against, something that does not exist yet.
+//
+// The `I-` rule is measured rather than anticipated. The scan found those ids on its first red run,
+// eight of them across five files with three declared twice, at a point where this paragraph said
+// only that a plan id carries a digit. A letters-only prefix the alternation does not name was
+// going to be refused as an ungated series, and reading them is what turned a false refusal into
+// the second half of the rule.
+//
+// The scan reads a title and anchors at the start of one, for the reason the alternation already
+// does. `T5-5` sits in a comment inside a case body and the retired `SL-` sits in a comment in
+// `unit/graph/solver-goal-required.test.ts`, so a scan matching an id anywhere in a file would read
+// both as series the alternation cannot see, and refuse a tree that is correct.
+//
+// What is compared is the id rather than the prefix. The refusal then names the id and the file
+// that declares it, which is what an implementor acts on, and it needs no theory of why the
+// alternation missed it: a series nobody added, a letter an edit dropped, and a pattern that
+// matches something narrower than it reads all arrive as the same report.
+const REPO_ROOT = fileURLToPath(new URL("../../../../../", import.meta.url));
+const SELF = "packages/core/test/unit/scripts/evidence-case-ids.test.ts";
+const AI_EDIT = "packages/core/test/unit/scripts/apply-ai-edit.test.ts";
+const UNWALKED = new Set(["node_modules", "dist", "coverage"]);
+const TEST_FILE = /\.test\.tsx?$/;
 const CASE_TITLE =
   /it\(\s*"((?:AE|CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PK|PV|RA|RB|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 const REACT_RENDER = "packages/react/test/public-hook-render.test.ts";
 const SERIES_SHAPED_TITLE = /it\(\s*"([A-Z]{1,2}\d*)-(\d+)(?![\w-])/g;
 const SERIES_PREFIX = /^[A-Z]{1,2}$/;
+const INVARIANT_PREFIX = "I";
 
 interface SeriesShapedId {
   readonly id: string;
   readonly prefix: string;
 }
 
+function testFilesUnder(directory: string): readonly string[] {
+  const found: string[] = [];
+  for (const entry of readdirSync(`${REPO_ROOT}${directory}`, { withFileTypes: true })) {
+    const path = `${directory}${entry.name}`;
+    if (entry.isDirectory()) {
+      if (entry.name.startsWith(".") || UNWALKED.has(entry.name)) continue;
+      found.push(...testFilesUnder(`${path}/`));
+    } else if (TEST_FILE.test(entry.name) && path !== SELF) found.push(path);
+  }
+  return found;
+}
+
 function testFiles(): readonly string[] {
-  return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
-    .map((entry) => entry.split("\\").join("/"))
-    .filter((entry) => entry.endsWith(".test.ts") && entry !== SELF)
-    .sort();
+  return [...testFilesUnder("")].sort();
 }
 
 function sourceOf(relativePath: string): string {
-  return readFileSync(`${TEST_ROOT}${relativePath}`, "utf8");
+  return readFileSync(`${REPO_ROOT}${relativePath}`, "utf8");
 }
 
 function declaredCaseIds(relativePath: string): readonly string[] {
@@ -368,11 +426,13 @@ describe("evidence case ids", () => {
     for (const file of testFiles()) {
       const gated = new Set(declaredCaseIds(file));
       for (const { id, prefix } of seriesShapedIds(file)) {
-        if (!SERIES_PREFIX.test(prefix)) continue;
+        if (!SERIES_PREFIX.test(prefix) || prefix === INVARIANT_PREFIX) continue;
         found.push(id);
         if (!gated.has(id)) ungated.push(`${id} declared in ${file}`);
       }
     }
+    // Passing over an invariant citation cannot hide a series: `I` is not in the alternation.
+    expect([...'it("I-1 covers an invariant")'.matchAll(CASE_TITLE)]).toEqual([]);
     expect(found.length).toBeGreaterThan(15);
     expect(ungated.sort()).toEqual([]);
   });
