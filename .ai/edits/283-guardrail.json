@@ -1,0 +1,11 @@
+{
+  "message": "docs(guardrails): an allowlist is the thing that needs a gate",
+  "target": 286,
+  "edits": [
+    {
+      "path": "docs/GUARDRAILS.md",
+      "find": "[Issue #284](https://github.com/chahyasantoso/motion5/issues/284).",
+      "replace": "[Issue #284](https://github.com/chahyasantoso/motion5/issues/284).\n- A gate built on an allowlist is silent about everything the list omits, so the list is the thing that needs a gate. `evidence-case-ids.test.ts` names every citation series in one alternation, and its collision case iterates the ids that alternation found, so a series nobody added contributes no ids, produces no collision, and leaves the case green by construction rather than by being right. The `AE-` series was declared, cited by the document that owns the workflow and by the header of the script it covers, and ungated for as long as it existed, while the paragraph stating the policy that a series joins the pattern when it is opened sat a few lines above the alternation that had not been widened. A policy written inside the gate it governs is documentation, and the widening is what it took to notice. The general form is the rule: where a gate reads a hand-maintained list of subjects, a case asserts that the list covers the subjects actually present, or the gate only ever reports on the ones somebody remembered. [Issue #283](https://github.com/chahyasantoso/motion5/issues/283)."
+    }
+  ]
+}
