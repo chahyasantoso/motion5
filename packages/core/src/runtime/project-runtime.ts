@@ -573,6 +573,20 @@ export class ProjectRuntime {
     return this.#liveMotion(motionId, token).definition.id;
   }
 
+  #writableEntry(id: string, token: number): TrackEntry {
+    this.#assertLive();
+    return this.#liveEntry(id, token);
+  }
+
+  #writableMotion(id: string, token: number): MotionEntry {
+    this.#assertLive();
+    return this.#liveMotion(id, token);
+  }
+
+  #writableId(motionId: string, token: number): string {
+    return this.#writableMotion(motionId, token).definition.id;
+  }
+
   #motionDefinition(entry: MotionEntry): MotionDefinition {
     const id = entry.definition.id;
     return Object.freeze({
@@ -598,7 +612,7 @@ export class ProjectRuntime {
 
   #setTrigger(id: string, token: number, trigger: MotionDefinition["trigger"]): void {
     this.#refuseInsideRecipe("setTrigger");
-    const entry = this.#liveMotion(id, token);
+    const entry = this.#writableMotion(id, token);
     const motionId = entry.definition.id;
     const diagnostics = validateMotionTrigger(trigger, `setTrigger(${motionId}).trigger`);
     if (diagnostics.some(({ severity }) => severity === "error"))
@@ -611,7 +625,7 @@ export class ProjectRuntime {
 
   #setStagger(id: string, token: number, stagger: number | undefined): void {
     this.#refuseInsideRecipe("setStagger");
-    const entry = this.#liveMotion(id, token);
+    const entry = this.#writableMotion(id, token);
     const motionId = entry.definition.id;
     if (entry.definition.stagger === stagger) return;
     this.#setMotionStagger?.(motionId, stagger);
@@ -633,14 +647,16 @@ export class ProjectRuntime {
         return Object.freeze(runtime.#ownedBy(runtime.#readTracks(), owner).map(([node]) => node));
       },
       addTrack: (track: TrackDefinition) =>
-        runtime.#addTrack(track, runtime.#schemaOwner, { motionId: runtime.#liveId(id, token) }),
+        runtime.#addTrack(track, runtime.#schemaOwner, {
+          motionId: runtime.#writableId(id, token),
+        }),
       track: (trackId: string) =>
         runtime.track(qualifyMotionTrack(runtime.#liveId(id, token), trackId).value),
       tryTrack: (trackId: string) =>
         runtime.tryTrack(qualifyMotionTrack(runtime.#liveId(id, token), trackId).value),
       setTrigger: (next: MotionDefinition["trigger"]) => runtime.#setTrigger(id, token, next),
       setStagger: (stagger?: number) => runtime.#setStagger(id, token, stagger),
-      destroy: () => runtime.#removeMotion(runtime.#liveId(id, token)),
+      destroy: () => runtime.#removeMotion(runtime.#writableId(id, token)),
     });
   }
   #handle(id: string, token: number): TrackHandle {
@@ -678,15 +694,14 @@ export class ProjectRuntime {
       removeKeyframe: (plugin: string, key: string) =>
         runtime.#removeKeyframe(id, token, plugin, key),
       overrideValues: (next: AuthoredValues) =>
-        runtime.#writeValues(id, runtime.#liveEntry(id, token), next, false),
+        runtime.#writeValues(id, runtime.#writableEntry(id, token), next, false),
       setValues: (next: AuthoredValues) =>
-        runtime.#writeValues(id, runtime.#liveEntry(id, token), next, true),
+        runtime.#writeValues(id, runtime.#writableEntry(id, token), next, true),
     });
   }
 
   #removeTrack(id: string, token: number): void {
-    this.#assertLive();
-    this.#liveEntry(id, token);
+    this.#writableEntry(id, token);
     const tracks = this.#stageTracks();
     tracks.delete(id);
     this.#commit({ tracks });
@@ -715,7 +730,7 @@ export class ProjectRuntime {
   }
 
   #replaceTrack(id: string, token: number, next: TrackDefinition): void {
-    const entry = this.#liveEntry(id, token);
+    const entry = this.#writableEntry(id, token);
     const expected =
       entry.motionId !== undefined
         ? qualifyMotionTrack(entry.motionId, next.id).value
@@ -948,7 +963,7 @@ export class ProjectRuntime {
     key: string,
     value: AuthoredProperty,
   ) {
-    const entry = this.#liveEntry(nodeId, token);
+    const entry = this.#writableEntry(nodeId, token);
     this.#refuseInsideRecipe("setKeyframe");
     const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
     // Asked through the one reader of the section rather than off the field, so this path and the
@@ -959,7 +974,7 @@ export class ProjectRuntime {
     return this.#recompileKeyframes(nodeId, entry, edited, "setKeyframe");
   }
   #removeKeyframe(nodeId: string, token: number, plugin: string, key: string) {
-    const entry = this.#liveEntry(nodeId, token);
+    const entry = this.#writableEntry(nodeId, token);
     this.#refuseInsideRecipe("removeKeyframe");
     const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
     const edited = removeAuthoredKeyframe(keyframes, bound, key);
@@ -972,7 +987,7 @@ export class ProjectRuntime {
     observation: ObservationDefinition,
     add: boolean,
   ): void {
-    const entry = this.#liveEntry(id, token);
+    const entry = this.#writableEntry(id, token);
     const observations = [...(entry.track.observes ?? [])];
     const key = observationEdgeKey(observation, id, entry.motionId ?? "~");
     const index = observations.findIndex(
@@ -997,7 +1012,7 @@ export class ProjectRuntime {
     plugin: string,
     edit: (keyframes: AuthoredKeyframes, bound: BoundGroup) => AuthoredKeyframes,
   ): void {
-    const entry = this.#liveEntry(id, token);
+    const entry = this.#writableEntry(id, token);
     const { keyframes, bound } = this.#boundGroup(id, entry, plugin);
     const next = edit(keyframes, bound);
     if (next === keyframes) return;
@@ -1046,7 +1061,7 @@ export class ProjectRuntime {
     plugin: string,
     edit: (keyframes: AuthoredKeyframes) => AuthoredKeyframes,
   ): void {
-    const entry = this.#liveEntry(id, token);
+    const entry = this.#writableEntry(id, token);
     const keyframes = entry.track.keyframes ?? EMPTY_KEYFRAMES;
     if (readsAsProperty(keyframes, plugin)) propertyEntry(id, plugin);
     const next = edit(keyframes);

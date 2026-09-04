@@ -130,11 +130,29 @@ One comparison with two readers rather than a copy per member, which is ADR-056'
 
 ## #liveEntry
 
-The resolver every handle member and every private mutation path goes through, so the contract is uniform by construction rather than by four call sites agreeing. See ADR-056.
+The resolver every reading member of a track handle goes through, so the contract is uniform by construction rather than by four call sites agreeing. It was every private mutation path's resolver too, until a disposed runtime was found reported as a stale handle on seventeen of the eighteen members that write. That order is `#writableEntry`'s below: this member still owns the staleness and no longer owns which of the two questions is answered first. See ADR-056 and its amendment of 2026-09-04.
 
 ## #liveId
 
 This handle's motion id, once the handle is known to be live. Reading the id and refusing a stale handle are the same call, so there is no order for a member to get wrong.
+
+## #writableEntry
+
+The resolver every writing member of a track handle goes through, and the one owner of the order between two answers to one condition.
+
+A disposed runtime and a stale handle can both be true of one call, and `dispose` empties the retained maps, so the token lookup misses and staleness answers first unless something asks about the runtime before the lookup. Which of the two the caller is told is ADR-056's, and that record decided the runtime's lifecycle outranks one handle's. This is where the ordering lives, so it is asked once rather than at each writing member, and the deletion that proves it is `#removeTrack`'s own guard. See ADR-056's amendment of 2026-09-04 and `SH-8`.
+
+Beside `#liveEntry` rather than inside it, because a read is answered the other way round and deliberately: `definition` and `requires` still refuse under `StaleHandleError`, which is the family that record asked a caller to catch, and asking liveness in the shared resolver would push a bare `Error` past every one of those narrowings. So the ladder now has three rungs with three readerships: the probe `live` reads, the resolver a read goes through, and this.
+
+## #writableMotion
+
+The same question about the other map, and the same reason.
+
+Two members rather than one, for the reason `#liveEntry` and `#liveMotion` are already two: two maps and two refusals. `#assertLive` is therefore named twice in this file, which is the floor rather than a copy left to remove.
+
+## #writableId
+
+This handle's motion id, once the runtime is known to be live and the handle known to be current. The writing twin of `#liveId`, and it delegates to `#writableMotion` rather than asking `#assertLive` again, so the rung above stays the only place the order is stated.
 
 ## #motionDefinition
 
@@ -156,7 +174,7 @@ Installs a Motion's trigger, and reaches no node and no edge doing it.
 
 Tier 0, which is a claim about the mechanism rather than about the cost: `trigger` appears in no `GraphNode`, so `#commit` is the wrong path rather than an expensive one, and `RA-33` measures that as a `replaceGraph` call count. It is refused inside a recipe because an edit that reaches the driver layer immediately cannot be undone by one that throws. See `RA-68`.
 
-The order is the whole contract, and ADR-061's amendment owns why: the recipe refusal, then staleness, then `validateMotionTrigger`, which is the owner `addMotion` already asks, then the redundant edit, then the seam, whose failure is reported verbatim, and the retained definition last, once nothing that can refuse is left. See ADR-035 and ADR-061.
+The order is the whole contract, and ADR-061's amendment owns why: the recipe refusal, then the runtime's liveness and this handle's staleness together, then `validateMotionTrigger`, which is the owner `addMotion` already asks, then the redundant edit, then the seam, whose failure is reported verbatim, and the retained definition last, once nothing that can refuse is left. Liveness joined that sequence at the staleness step rather than as a step of its own, and no case can place it anywhere else: `dispose` clears `#open`, so the recipe refusal and the disposal never both have something to say. See ADR-035, ADR-056's amendment of 2026-09-04 and ADR-061.
 
 ## #setStagger
 
@@ -173,6 +191,8 @@ Every member resolves the entry before it reads an argument, which makes stalene
 ## #removeTrack
 
 Drops one node from the pair, and names no hook. The eviction, the dispose and the Motion deregistration are one settle step `#derive` owns, derived from the id being absent from the committed pair. See ADR-064.
+
+Its own `#assertLive` is deleted rather than kept beside `#writableEntry`'s. This was the one writing member that already reported a disposal instead of a staleness, which is why ADR-056's Consequences could name it as where that rule shows, and one owner of the rule is the whole of what its amendment buys. See ADR-056's amendment of 2026-09-04.
 
 ## #resolve
 
@@ -212,7 +232,7 @@ One flush ends it, seeded with `touched`, and it runs after the settle steps rat
 
 An empty `touched` returns without calling `invalidate`, for the reason ADR-064's amendment records. See `RA-10`.
 
-One call site of its own now, `#commit`, so this member has what `replaceGraph`, `rejectAfterRollback` and every hook already had. It never starts against a runtime its caller disposed, and the re-ask that guarantees that belongs to `edit` rather than here: a guard here could only ever fire for the one caller that can reach it while disposed, placed where all six pass, and it could not answer, which is the whole point. A hook applied inside the try is caller code too and could still dispose mid-commit, which is named and out of scope rather than covered. See ADR-064's amendment of 2026-09-04 and `RA-109`.
+One call site of its own now, `#commit`, so this member has what `replaceGraph`, `rejectAfterRollback` and every hook already had. It never starts against a runtime its caller disposed, and the re-ask that guarantees that belongs to `edit` rather than here. A guard here could fire for no caller at all: `addMotion` and `#addTrack` ask `#assertLive` themselves, `#removeTrack`, `#removeMotion` and `#replaceTrack` are reached through resolvers that ask it before they resolve, and `edit` re-asks after its recipe returned. It could not answer either, which is the whole point. The one caller that could reach this member while disposed arrived through a handle that answered staleness, and that is `#writableEntry`'s and `#writableMotion`'s now rather than a reason to guard here. A hook applied inside the try is caller code too and could still dispose mid-commit, which is named and out of scope rather than covered. See ADR-064's amendment of 2026-09-04 and `RA-109`.
 
 ## #derive
 
@@ -270,7 +290,7 @@ Two paths, chosen by whether the group already authors the key, which is ADR-065
 
 One binding edit on an already-bound plugin, and the one owner of the order all four binding verbs follow.
 
-Staleness first, through the resolver every member of the handle reads. Then the unbound-group refusal, answered from the retained record on this node. Then the edit, where the one reservation this surface has is checked and the pure editor runs. Then the redundant edit, by identity, because the pure layer returns the record it was given when nothing changed. Then the commit. Why the reservation sits inside the edit rather than ahead of it is ADR-063's.
+The runtime's liveness first and this handle's staleness with it, through the resolver every writing member goes through. Then the unbound-group refusal, answered from the retained record on this node. Then the edit, where the one reservation this surface has is checked and the pure editor runs. Then the redundant edit, by identity, because the pure layer returns the record it was given when nothing changed. Then the commit. Why the reservation sits inside the edit rather than ahead of it is ADR-063's.
 
 `#replaceTrack` rather than a plan of its own, for the reason `#replaceWithObservation` already routes there: a binding edit is a candidate the graph accepts or refuses, which is exactly the transaction `#commit` owns. So the price is one candidate build, one edge delta and one flush, and there is no fast lane missing, which is ADR-062's amendment. Inside a recipe it is structural, so it travels with the transaction. See ADR-045, ADR-062 and ADR-063.
 
@@ -286,7 +306,7 @@ Whether the member id names a leaf of this solver's chain is `resolveSolvers`' q
 
 One whole-group edit, and the one owner of the order both group verbs follow.
 
-Staleness first, through the resolver every member of the handle reads. Then the property-entry refusal, which is the only thing about a group edit no other layer can see, because a plugin name and a keyframe name share one namespace. Then the pure edit, which knows the group layout and refuses `keyframe-group-shape` rather than committing a husk. Then the redundant edit, by identity. Then the commit. Both refusals are ADR-063's.
+The runtime's liveness first and this handle's staleness with it, through the resolver every writing member goes through. Then the property-entry refusal, which is the only thing about a group edit no other layer can see, because a plugin name and a keyframe name share one namespace. Then the pure edit, which knows the group layout and refuses `keyframe-group-shape` rather than committing a husk. Then the redundant edit, by identity. Then the commit. Both refusals are ADR-063's.
 
 An absent record reads as one frozen empty one, which lets `setKeyframeGroup` originate on a track that authors nothing with no branch here. No registry question is asked and none is missing: they all arrive at the resolve this commit pays. See ADR-062 and ADR-063.
 
