@@ -9,19 +9,31 @@ const scannedExtensions = [".ts", ".tsx", ".md"];
  *
  * A contents read through the GitHub API is whole-file or prefix. There is no offset, no line
  * window, and no second call that returns the part the first one dropped, so a file past the
- * response cap loses its tail to every reader working without a local checkout. Four reads bound
- * that cap: `docs/IMPLEMENTATION-PLAN.md` at 46,466 bytes, `docs/SESSION-STATUS.md` at 83,883 and
- * `packages/core/src/runtime/project-runtime.ts` at 87,615 all arrived whole, and that same source
+ * response cap loses its tail to every reader working without a local checkout. Three reads bound
+ * that cap: `docs/IMPLEMENTATION-PLAN.md` at 46,466 bytes and
+ * `packages/core/src/runtime/project-runtime.ts` at 87,615 both arrived whole, and that same source
  * file at 103,657 truncated inside a docblock, taking `#assertLive` with it. So the cap sits above
- * 87,615 and at or below 103,657, and the floor is measured on dense source rather than on prose,
- * which is the side of it this budget is about.
+ * 87,615 and at or below 103,657 on dense source, which is the side of it this budget is about.
+ *
+ * The prose floor is higher than this docblock used to record. It named `docs/SESSION-STATUS.md` at
+ * 83,883; that file reached 99,180 bytes before issue #284 replaced it, and that revision arrived
+ * whole too, which `packages/core/test/unit/scripts/session-status-shape.test.ts` also records. It
+ * does not raise this number. Dense TypeScript spends more tokens per byte than prose, so a
+ * markdown read surviving at 99,180 is no evidence that a source file would, and moving the budget
+ * on evidence from the other side of it is the raise-it-to-make-a-file-fit refused below.
  *
  * The number is bounded from both sides rather than chosen. It is below the largest size measured
- * to survive a read, because the cap is a response limit rather than a byte limit and dense
- * TypeScript spends more tokens per byte than prose, so a source file's effective ceiling is lower
- * than a markdown file's. It is above the largest file in this tree that is not the outlier,
- * `packages/core/src/graph/ir.ts` at 45,240 bytes, because a budget that fails a file nobody has
- * trouble reading buys churn rather than readability.
+ * to survive a read, because the cap is a response limit rather than a byte limit and a source
+ * file's effective ceiling is therefore lower than a markdown file's. It is above the largest file
+ * in this tree, `packages/core/src/runtime/project-runtime.ts` at 47,200 bytes, because a budget
+ * that fails a file nobody has trouble reading buys churn rather than readability.
+ *
+ * Every size named above is measured, and none of them is gated. The two `project-runtime.ts`
+ * figures are historical: they bound the cap at the ref they were taken on, and #269, #270 and #271
+ * have since split that file to 47,200. The lower bound was `graph/ir.ts` at 45,240 until #275 took
+ * it to 40,538 and `project-runtime.ts` became the largest source here. Nothing checks a
+ * measurement written in prose against the tree it measures, which is how all three drifted without
+ * a red run, so a reader who needs a current size reads the tree rather than this paragraph.
  *
  * A sister doc is held to it too, and markdown under the scanned root is in scope for that reason:
  * a rule that moves a file's reasoning into a sibling and budgets one half of the pair relocates
