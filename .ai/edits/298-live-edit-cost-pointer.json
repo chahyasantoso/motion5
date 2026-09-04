@@ -1,0 +1,11 @@
+{
+  "message": "docs(live-edit-cost): put the handle bullet's record pointer at its end",
+  "target": 299,
+  "edits": [
+    {
+      "path": "docs/LIVE-EDIT-COST.md",
+      "find": "`if (handle.live) handle.write()` is correct on either side of that line. See ADR-056 and its amendment of 2026-09-04. The resolvers `track` and `motion` refuse an id the project never had, and `tryTrack` and `tryMotion` answer `undefined` instead, so an upsert is two lines with the branch at the call site rather than one verb whose cost depends on whether the node exists.",
+      "replace": "`if (handle.live) handle.write()` is correct on either side of that line. The resolvers `track` and `motion` refuse an id the project never had, and `tryTrack` and `tryMotion` answer `undefined` instead, so an upsert is two lines with the branch at the call site rather than one verb whose cost depends on whether the node exists. See ADR-056 and its amendment of 2026-09-04."
+    }
+  ]
+}
