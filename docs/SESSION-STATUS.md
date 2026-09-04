@@ -20,15 +20,12 @@ This section names the slice that just landed and the one before it. A third ent
 
 ## Next in line
 
-- **Clear `SISTER_DOC_PENDING`.** Four sources are over the 30,000-byte sister-doc trigger and predate the rule, so the read-budget scan names them instead of refusing them. The list is a ratchet: an entry the tree no longer needs is itself a violation, so it fails in both directions. The read-budget slice called this the next one.
 - **`edit(recipe)` skips the apply against a runtime the recipe disposed.** `dispose` inside a recipe clears the open transaction and empties the retained tracks, so the pair comparison in `edit` then differs and `#apply` runs against a disposed runtime, throwing from the liveness check after its effects have been applied. Found by the immediate-verb slice and deliberately not in it: a refusal and a skipped apply are two invariants with two cases.
 - **Make the evidence-id gate refuse what it cannot see.** Two halves, and both are decisions rather than widenings, which is why issue #283 did neither. The pattern is a hand-maintained alternation, so the honest gate finds every `PREFIX-n` title in the tree and refuses a prefix the pattern does not name; a naive scan of that shape reads `T4-n` and `T5-n` as ungated series, and those are the locked plan decisions the `T-` paragraph exists to avoid colliding with, so it needs a stated rule for what is a series and what is a plan id. Separately the scan root stops at `packages/core/test`, and `H-4` is declared in `packages/react/test/public-hook-render.test.ts`, so an id can be duplicated across the two packages without the gate seeing it.
 
 ## Open, and not scheduled
 
-- Issue #222's stateful-`Interpolator` alternative is read and refused rather than pending. A record-shaped member with a base and an overlay is further from that adapter than a per-key one was, because the state it keeps is two compiled records inside one `create()` closure, keyed by nothing.
 - Phase 6 packaging is the phase after this one. [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) owns its scope, and nothing here claims any of it has started.
-- The response cap this project's read budget is measured against has a higher floor than `scripts/read-budget-scan.mjs` records. It names 87,615 bytes of dense source as the largest read known to arrive whole; the 99,180-byte revision of this file also arrived whole, on prose. Nothing is acted on, because the slice that measured it is the one that deleted the file.
 
 ## Where the rest of it lives
 
