@@ -198,7 +198,7 @@ A map builder: the staging, the Motion republish and their reverts are `#derive`
 
 The one path by which a structural change reaches the graph, or the open transaction.
 
-While a recipe is open there is nothing to do here: every entry point already wrote into the open pair, and `edit` is the one thing that applies it. With none open the pair is applied immediately. See ADR-064.
+While a recipe is open there is nothing to do here: every entry point already wrote into the open pair. With none open the pair is applied immediately, and `edit` arrives here too, after its `finally` cleared the transaction and after the liveness re-ask that member owns. The sentence above was aspirational while `edit` called `#apply` directly, because there were two paths: the decision to apply now has one place, and therefore the liveness answer has exactly one reader. The guard is statically known at that call site rather than inapplicable to it, and it answers `none open, apply` for the right reason. See ADR-064 and its amendment of 2026-09-04.
 
 ## #apply
 
@@ -211,6 +211,8 @@ The derivation runs before the try, so a candidate refused inside it costs no te
 One flush ends it, seeded with `touched`, and it runs after the settle steps rather than before them, because a new node is mounted by one of those steps. `replaceGraph` seeds nothing itself, which is why `addObserve` on a manual clock with no tick used to be invisible forever. `RA-8`.
 
 An empty `touched` returns without calling `invalidate`, for the reason ADR-064's amendment records. See `RA-10`.
+
+One call site of its own now, `#commit`, so this member has what `replaceGraph`, `rejectAfterRollback` and every hook already had. It never starts against a runtime its caller disposed, and the re-ask that guarantees that belongs to `edit` rather than here: a guard here could only ever fire for the one caller that can reach it while disposed, placed where all six pass, and it could not answer, which is the whole point. A hook applied inside the try is caller code too and could still dispose mid-commit, which is named and out of scope rather than covered. See ADR-064's amendment of 2026-09-04 and `RA-109`.
 
 ## #derive
 

@@ -347,6 +347,11 @@ export class ProjectRuntime {
    * What one costs, why an abort needs no compensation path, and why a recipe that staged nothing
    * commits nothing are ADR-064's. That the copy is taken after an entry point's last refusal
    * rather than before it is `#stageTracks`'s own. See `RA-66`, `RA-95` and ADR-064.
+   *
+   * A recipe that disposed the runtime is answered with its own value and commits nothing. The
+   * liveness this member asserts on entry is stale by the time it decides to apply, because the
+   * recipe is allowed to invalidate it and ADR-064's amendment says so deliberately. See `RA-109`,
+   * `RA-110` and ADR-064's amendment of 2026-09-04.
    */
   edit<T>(recipe: (transaction: SchemaTransaction) => T): T {
     this.#assertLive();
@@ -361,8 +366,15 @@ export class ProjectRuntime {
       // retained pair and an `edit` after a throw finds no transaction open.
       this.#open = undefined;
     }
+    // The liveness asserted on entry is stale here. ADR-064's amendment leaves `dispose` reachable
+    // from inside a recipe, on the reason that teardown has to be reachable from a `catch`, so a
+    // precondition asked before the callback is not one on what follows it. Answered rather than
+    // refused, because a recipe that tore the project down from its own `catch` would lose its
+    // answer to a refusal about the teardown, and a disposed runtime has cleared its retained pair
+    // and disposed its graph, so there is nothing left for the staged pair to be committed to.
+    if (this.#disposed) return answer;
     if (open.tracks !== this.#tracks || open.motions !== this.#motions)
-      this.#apply({ tracks: open.tracks, motions: open.motions });
+      this.#commit({ tracks: open.tracks, motions: open.motions });
     return answer;
   }
 
