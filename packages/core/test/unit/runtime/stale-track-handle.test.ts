@@ -77,6 +77,38 @@ const MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
 };
 /** The two members that answer on a stale handle rather than refusing. */
 const NON_REFUSING = ["id", "live"] as const;
+/**
+ * The members that write, which are the ones a disposed runtime outranks.
+ *
+ * A partition of `MEMBER_ARGUMENTS` rather than a second list of members. `SH-8` asserts that this
+ * and the readers below cover that record's keys exactly, so a member added to the handle later has
+ * to be classified as one or the other rather than escaping the invariant by omission. That is
+ * issue #283's rule: where a gate reads a hand-maintained list of subjects, a case asserts the list
+ * covers the subjects actually present.
+ *
+ * Which side a member falls on is ADR-056's amendment rather than this file's. A write reported as
+ * staleness invites a caller to re-resolve and try again, which cannot work on a runtime that is
+ * gone; a read reported as staleness is true, and it is the family that record asked callers to
+ * catch.
+ */
+const WRITERS = [
+  "remove",
+  "replace",
+  "addObserve",
+  "removeObserve",
+  "overrideValues",
+  "setValues",
+  "setRequire",
+  "removeRequire",
+  "setKeyframeGroup",
+  "removeKeyframeGroup",
+  "setGoal",
+  "removeGoal",
+  "setKeyframe",
+  "removeKeyframe",
+] as const;
+/** The two members that refuse on a stale handle and keep refusing on a disposed one. */
+const READERS = ["definition", "requires"] as const;
 
 function runtime(): ProjectRuntime {
   return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
@@ -270,5 +302,44 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
     );
     expect(factory.match(/\bif\s*\(/g) ?? []).toEqual([]);
     expect(factory).not.toMatch(/\breturn;/);
+  });
+
+  it("SH-8 reports the disposal rather than the staleness on every writing member", () => {
+    const project = runtime();
+    const handle = handleFor(project);
+
+    // Derived from the argument record rather than from the assertions below, so a member added to
+    // the handle later fails here until it is classified as a writer or a reader.
+    expect([...WRITERS, ...READERS].sort()).toEqual(Object.keys(MEMBER_ARGUMENTS).sort());
+
+    project.dispose();
+
+    // Collected rather than asserted one by one, so a red run names every member that misreports.
+    // Thirteen of the fourteen do today: `dispose` empties the retained map, so the token lookup
+    // misses and the resolver answers staleness before anything asks about the runtime at all.
+    const misreported = WRITERS.filter((member) => {
+      const thrown = thrownBy(touch(handle, member));
+      return (
+        thrown instanceof StaleTrackHandleError ||
+        (thrown as Error).message !== "ProjectRuntime is disposed."
+      );
+    });
+    expect(misreported).toEqual([]);
+
+    // `remove` is the one that was already right, because `#removeTrack` asked `#assertLive` before
+    // it resolved. ADR-056's Consequences named it as the member showing that the runtime's own
+    // lifecycle outranks one handle's, and this slice is the other thirteen agreeing with it.
+    expect((thrownBy(() => handle.remove()) as Error).message).toBe("ProjectRuntime is disposed.");
+
+    // The read half is unchanged, stated rather than implied, so a later slice that widens the
+    // invariant to reads has to move these two rather than find them already green.
+    const escaped = READERS.filter(
+      (member) => !(thrownBy(touch(handle, member)) instanceof StaleTrackHandleError),
+    );
+    expect(escaped).toEqual([]);
+
+    // Neither non-refusing member learns about the disposal the hard way.
+    expect(handle.id).toBe(NODE_ID);
+    expect(handle.live).toBe(false);
   });
 });
