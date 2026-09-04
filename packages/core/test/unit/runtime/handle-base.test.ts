@@ -99,6 +99,22 @@ const MOTION_MEMBER_ARGUMENTS: Readonly<Record<string, readonly unknown[]>> = {
 };
 /** The two members that answer on a stale handle rather than refusing. */
 const NON_REFUSING = ["id", "live"] as const;
+/**
+ * The motion handle's writing members, which are the ones a disposed runtime outranks.
+ *
+ * A partition of `MOTION_MEMBER_ARGUMENTS` rather than a second list, for the reason `WRITERS` in
+ * `stale-track-handle.test.ts` gives: `RA-111` asserts that this and the readers below cover that
+ * record's keys exactly, so a member added later has to be classified rather than escaping the
+ * invariant by omission. See ADR-056's amendment.
+ */
+const MOTION_WRITERS = ["addTrack", "setTrigger", "setStagger", "destroy"] as const;
+/**
+ * The members that refuse on a stale handle and keep refusing on a disposed one.
+ *
+ * `track` and `tryTrack` are here rather than above because they resolve a handle instead of writing
+ * through one, which is the side of the line ADR-056's amendment leaves them on.
+ */
+const MOTION_READERS = ["definition", "trackIds", "track", "tryTrack"] as const;
 
 function runtime(): ProjectRuntime {
   return new ProjectRuntime(PROJECT, { clock: createManualClock(), compose });
@@ -272,5 +288,41 @@ describe("one handle base, one definition spelling, and one stale error family",
     expect(handle.live).toBe(false);
 
     project.dispose();
+  });
+
+  it("RA-111 reports the disposal rather than the staleness on every writing member", () => {
+    const project = runtime();
+    const handle = project.motion(MOTION);
+
+    // Derived from the argument record rather than from the assertions below, so a member added to
+    // the handle later fails here until it is classified as a writer or a reader.
+    expect([...MOTION_WRITERS, ...MOTION_READERS].sort()).toEqual(
+      Object.keys(MOTION_MEMBER_ARGUMENTS).sort(),
+    );
+
+    project.dispose();
+
+    // Collected rather than asserted one by one, so a red run names every member that misreports.
+    // All four do today: `dispose` empties the retained motions, so the token lookup misses and the
+    // resolver answers staleness before anything asks whether the runtime is still there.
+    const misreported = MOTION_WRITERS.filter((member) => {
+      const thrown = thrownBy(touch(handle, member));
+      return (
+        thrown instanceof StaleMotionHandleError ||
+        (thrown as Error).message !== "ProjectRuntime is disposed."
+      );
+    });
+    expect(misreported).toEqual([]);
+
+    // The read half is unchanged, stated rather than implied. `track` and `tryTrack` stay on this
+    // side for the reason `RA-32` gives: whether this handle is the live one at all is asked before
+    // any id is read, and resolving a handle is not writing through one.
+    const escaped = MOTION_READERS.filter(
+      (member) => !(thrownBy(touch(handle, member)) instanceof StaleMotionHandleError),
+    );
+    expect(escaped).toEqual([]);
+
+    expect(handle.id).toBe(MOTION);
+    expect(handle.live).toBe(false);
   });
 });
