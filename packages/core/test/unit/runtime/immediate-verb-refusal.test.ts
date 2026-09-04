@@ -63,26 +63,19 @@ const compose = (node: { id: string }) => () => ({
 const SIGNAL = { type: "play" } as unknown as TriggerSignal;
 
 /**
- * The two seams this slice adds, declared locally and deleted by the commit that lands the source.
- *
- * A test file naming a member the source has not landed fails `typecheck` and stops `quality` before
- * `npm test`, which is a broken file rather than evidence. `TierZeroEdits`, `RequireEdits`,
- * `GroupEdits` and `ResolveSeam` are the precedent, and the shipped file names the real members.
- */
-type SignalSeam = { signal(motionId: string, signal: TriggerSignal): void };
-type SignalMotionOption = { signalMotion?: (motionId: string, signal: TriggerSignal) => void };
-
-/**
  * The seam, asserted before it is used.
  *
- * The assertion stays when the local declaration goes, on `editing()`'s own rule: a cast alone would
+ * Nothing is declared locally any more. `ProjectRuntime.signal` and
+ * `ProjectRuntimeOptions.signalMotion` are both real members, so this takes the shipped type and
+ * `typecheck` is what proves the signature rather than a local alias standing in front of it.
+ *
+ * The assertion stays, on `editing()`'s own rule: a bare call would
  * make `RA-83` fail with "signal is not a function", which is a call that could not run rather than
- * an assertion that disagreed, and failing-first means failing assertions.
+ * an assertion that disagreed, and failing-first means failing assertions. Issue #260.
  */
-function signalling(runtime: ProjectRuntime): ProjectRuntime & SignalSeam {
-  const seam = runtime as ProjectRuntime & SignalSeam;
-  expect(typeof seam.signal).toBe("function");
-  return seam;
+function signalling(runtime: ProjectRuntime): ProjectRuntime {
+  expect(typeof runtime.signal).toBe("function");
+  return runtime;
 }
 /** Returns the thrown value, because each case asserts on more than one facet of it. */
 function thrownBy(operation: () => unknown): unknown {
@@ -151,7 +144,7 @@ function rig(): Rig {
     createMotion: (definition: MotionDefinition) => record(`motion-create ${definition.id}`),
     destroyMotion: (motionId: string) => record(`motion-destroy ${motionId}`),
     signalMotion: (motionId: string) => record(`signal ${motionId}`),
-  } as ProjectRuntimeOptions & SignalMotionOption;
+  } as ProjectRuntimeOptions;
   const runtime = new ProjectRuntime(PROJECT, options);
   return {
     runtime,
