@@ -308,6 +308,14 @@ const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const AI_EDIT = "unit/scripts/apply-ai-edit.test.ts";
 const CASE_TITLE =
   /it\(\s*"((?:AE|CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PK|PV|RA|RB|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+const REACT_RENDER = "packages/react/test/public-hook-render.test.ts";
+const SERIES_SHAPED_TITLE = /it\(\s*"([A-Z]{1,2}\d*)-(\d+)(?![\w-])/g;
+const SERIES_PREFIX = /^[A-Z]{1,2}$/;
+
+interface SeriesShapedId {
+  readonly id: string;
+  readonly prefix: string;
+}
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
@@ -316,9 +324,17 @@ function testFiles(): readonly string[] {
     .sort();
 }
 
+function sourceOf(relativePath: string): string {
+  return readFileSync(`${TEST_ROOT}${relativePath}`, "utf8");
+}
+
 function declaredCaseIds(relativePath: string): readonly string[] {
-  const source = readFileSync(`${TEST_ROOT}${relativePath}`, "utf8");
-  return [...source.matchAll(CASE_TITLE)].map((match) => match[1] as string);
+  return [...sourceOf(relativePath).matchAll(CASE_TITLE)].map((match) => match[1] as string);
+}
+
+function seriesShapedIds(relativePath: string): readonly SeriesShapedId[] {
+  const found = [...sourceOf(relativePath).matchAll(SERIES_SHAPED_TITLE)];
+  return found.map((match) => ({ id: `${match[1]}-${match[2]}`, prefix: match[1] as string }));
 }
 
 describe("evidence case ids", () => {
@@ -344,5 +360,27 @@ describe("evidence case ids", () => {
     const ids = declaredCaseIds(AI_EDIT);
     expect(ids.length).toBeGreaterThan(0);
     expect(ids.filter((id) => !/^AE-\d+$/.test(id))).toEqual([]);
+  });
+
+  it("names every series the tree declares, or refuses the id it cannot match", () => {
+    const found: string[] = [];
+    const ungated: string[] = [];
+    for (const file of testFiles()) {
+      const gated = new Set(declaredCaseIds(file));
+      for (const { id, prefix } of seriesShapedIds(file)) {
+        if (!SERIES_PREFIX.test(prefix)) continue;
+        found.push(id);
+        if (!gated.has(id)) ungated.push(`${id} declared in ${file}`);
+      }
+    }
+    expect(found.length).toBeGreaterThan(15);
+    expect(ungated.sort()).toEqual([]);
+  });
+
+  it("walks every package the suite runs, and no dependency tree", () => {
+    const files = testFiles();
+    expect(files).toContain(REACT_RENDER);
+    expect(declaredCaseIds(REACT_RENDER)).toContain("H-4");
+    expect(files.filter((file) => file.includes("node_modules"))).toEqual([]);
   });
 });
