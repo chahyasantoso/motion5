@@ -29,6 +29,12 @@ import {
  * list and a derived one are indistinguishable and a refactor shipped alone would have had no
  * evidence of its own to ship with.
  *
+ * `RA-109` and `RA-110` are the later addition, and they own a third subject: what one recipe may do
+ * to the runtime it is editing. `dispose` stays reachable from inside a recipe by ADR-064's
+ * amendment of 2026-09-02, on the reason that teardown has to be reachable from a `catch`, which
+ * makes `edit` the one verb in this class that asserts a precondition, hands control to arbitrary
+ * caller code, and then writes. Issue #288 and ADR-064's amendment of 2026-09-04.
+ *
  * The clock is manual and never ticks. A flush that only happened because a frame arrived would
  * prove nothing about a commit.
  */
@@ -79,6 +85,27 @@ function thrownBy(operation: () => unknown): unknown {
     return error;
   }
   throw new Error("Expected the operation to throw.");
+}
+
+interface Settled<T> {
+  readonly answer?: T;
+  readonly thrown?: unknown;
+}
+/**
+ * One recipe's outcome as data, and the mirror of `thrownBy` above.
+ *
+ * `RA-109` and `RA-110` both assert that nothing was thrown, which `thrownBy` cannot express: it
+ * refuses the direction they are about. A bare call would make `RA-109` fail with
+ * `Error: GraphRuntime is disposed.` escaping the case, which is a call that could not finish rather
+ * than an assertion that disagreed, and failing-first means failing assertions. So the outcome is
+ * captured and both facets of it are asserted, the same way every case here reads a refusal.
+ */
+function settled<T>(operation: () => T): Settled<T> {
+  try {
+    return { answer: operation() };
+  } catch (error) {
+    return { thrown: error };
+  }
 }
 
 interface Rig {
@@ -372,5 +399,77 @@ describe("one recipe is one transaction", () => {
     expect(test.runtime.setValues(ARM_ID, {}).diagnostics).toEqual([]);
 
     test.runtime.dispose();
+  });
+
+  it("RA-109 returns the recipe's answer when the recipe disposed the runtime", () => {
+    const test = rig();
+    const builds = test.builds;
+    const sequence = test.sequence;
+    const answer = { from: "the recipe" };
+
+    // Stage first, then tear down, and the order is the whole case. `#stageTracks` replaces the open
+    // pair's track half with a copy on the first op that writes into it, while `dispose` clears the
+    // retained map in place rather than replacing it, so the identity that answers `RA-110` no longer
+    // holds and `edit` decides it has something to commit.
+    const outcome = settled(() =>
+      editing(test.runtime).edit((tx) => {
+        tx.addTrack({ id: "hand", duration: 100 }, { motionId: MOTION_ID });
+        test.runtime.dispose();
+        return answer;
+      }),
+    );
+
+    // The recipe's own answer, and nothing thrown. Today the commit that follows the recipe is
+    // refused by the graph layer and the caller reads `Error: GraphRuntime is disposed.` instead,
+    // which names the layer that noticed rather than the recipe that decided.
+    expect(outcome.thrown).toBeUndefined();
+    expect(outcome.answer).toBe(answer);
+    // No hook at all, which is the half that says how much worse than a wrong message this is. The
+    // derivation reads the committed pair against a retained map `dispose` just emptied, so every
+    // entry in the project reads as newly added: today this journal is a compile for all three
+    // tracks and then, once `replaceGraph` refuses, a dispose for all three on the way out.
+    expect(test.journal).toEqual([]);
+    // Stated rather than implied, and green on both sides: `replaceGraph` refuses before
+    // `GraphBinding` is asked, so the candidate build and the flush were never the part that broke.
+    expect(test.builds).toBe(builds);
+    expect(test.sequence).toBe(sequence);
+    // And the teardown the recipe asked for stands. `edit` drops the staged pair rather than
+    // reviving the runtime to hold it, because a disposed runtime has cleared its retained pair and
+    // disposed its graph and there is nothing left for that pair to be committed to.
+    expect(() => test.runtime.mount(ARM_ID)).toThrow(/ProjectRuntime is disposed\./);
+    expect(() => test.runtime.track(HAND_ID)).toThrow(/ProjectRuntime is disposed\./);
+  });
+
+  it("RA-110 lets a recipe dispose without staging and commits nothing for it", () => {
+    const test = rig();
+    const builds = test.builds;
+    const sequence = test.sequence;
+    const answer = { from: "the recipe" };
+
+    const outcome = settled(() =>
+      editing(test.runtime).edit(() => {
+        test.runtime.dispose();
+        return answer;
+      }),
+    );
+
+    // Green before the fix and green after it, and it is here as a lie detector rather than as
+    // evidence. What it would fail without is the cheapest available fix for `RA-109`: routing
+    // `dispose` through `#refuseInsideRecipe` turns this answer into a `TypeError`, and a recipe that
+    // tore the project down from its own `catch` would lose the error it was handling behind a
+    // refusal about the teardown. ADR-064's amendment of 2026-09-02 lists `dispose` among the members
+    // that stay reachable for exactly that reason, so this case pins the amendment rather than the
+    // fix.
+    //
+    // The two sides are green for two different reasons, which is worth saying because only one of
+    // them is about this pair. Before the fix the answer comes from identity on the pair, since
+    // `dispose` clears the retained maps in place and the recipe staged nothing that would replace
+    // one. After it, the liveness re-ask in `edit` returns first and the comparison is never reached.
+    expect(outcome.thrown).toBeUndefined();
+    expect(outcome.answer).toBe(answer);
+    expect(test.journal).toEqual([]);
+    expect(test.builds).toBe(builds);
+    expect(test.sequence).toBe(sequence);
+    expect(() => test.runtime.mount(ARM_ID)).toThrow(/ProjectRuntime is disposed\./);
   });
 });
