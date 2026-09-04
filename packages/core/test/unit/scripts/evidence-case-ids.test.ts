@@ -287,11 +287,27 @@ import { fileURLToPath } from "node:url";
 // eighteenth two-letter series, under the policy the `P-` paragraph sets, and `R-` alone is the
 // progress range fix. It sorts before `R` in the pattern below, because an alternation that
 // offered `R` first would match `R` and then fail on the `B`.
+//
+// `AE-` belongs to the AI edit request validation pass, issue #281 and the contract in
+// `docs/AI-EDIT-WORKFLOW.md`: the anchor counts a dry run reports, the count each refusal names,
+// that a later edit is validated against what an earlier one staged, that a refusal leaves every
+// file it named untouched, which subject a dry run's commit carries and which a real run keeps,
+// and which of the touched and format lists a deleted path belongs on. `RB-` owns whether the file
+// stating an invariant can be read at all by the implementor about to edit it; `AE-` owns whether
+// the write that changes it lands as its own report describes. It is the nineteenth two-letter
+// series, under the policy the `P-` paragraph sets, and it is the first one to join the pattern
+// later than the slice that opened it. That lateness is issue #283 rather than a decision: the
+// series was declared, cited by the document owning the workflow and by the header of the script
+// it covers, and never gated for uniqueness, because a series the pattern cannot see contributes
+// no ids to the collision map and leaves the first case above green by construction. `A` alone is
+// not in the alternation and cannot be, by the `M-` paragraph's rule against a letter a plan uses
+// unhyphenated, so this is the one two-letter widening with no ordering hazard to avoid, and it
+// sorts first rather than ahead of its own initial.
 const TEST_ROOT = fileURLToPath(new URL("../../", import.meta.url));
 const SELF = "unit/scripts/evidence-case-ids.test.ts";
 const AI_EDIT = "unit/scripts/apply-ai-edit.test.ts";
 const CASE_TITLE =
-  /it\(\s*"((?:CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PK|PV|RA|RB|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
+  /it\(\s*"((?:AE|CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PK|PV|RA|RB|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 
 function testFiles(): readonly string[] {
   return readdirSync(TEST_ROOT, { recursive: true, encoding: "utf8" })
