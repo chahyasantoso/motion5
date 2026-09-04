@@ -136,16 +136,14 @@ import { fileURLToPath } from "node:url";
 // `S-` owns what a rejected timeline write leaves behind in `Track`'s progress bookkeeping; `CF-`
 // owns where the values a composition starts from come from, which is a different question about
 // the same object. It is the third two-letter series, under the policy the `P-` paragraph sets,
-// and `C-` alone is the option C plan. It sorts before `C` in the pattern below, because an
-// alternation that offered `C` first would match `C` and then fail on the `F`.
+// and `C-` alone is the option C plan.
 //
 // `CN-` belongs to the composer node id contract, slice C1 of issue #195: that a Track carries its
 // qualified node id, hands it to every composed plugin as the fourth PluginComposer parameter,
 // refuses an empty node id at construction, and leaves a three-argument composer assignable. `CF-`
 // owns where the seed comes from; `CN-` owns how a plugin identifies which node it is composing.
 // It is the fourth two-letter series, under the policy the `P-` paragraph sets, and `C-` alone is
-// the option C plan. It sorts before `C` in the pattern below, because an alternation that offered
-// `C` first would match `C` and then fail on the `N`.
+// the option C plan.
 //
 // `RS-` belongs to solver resolution in `graph/ir.ts`, slice C2 of issue #195: that solver nodes
 // derive their member list root-most first, that load-time validation enforces the six IK
@@ -154,8 +152,7 @@ import { fileURLToPath } from "node:url";
 // which bound the solver, and that a reference error is reported without a derived chain
 // diagnostic beside it. `Z-` owns edge-construction symmetry; `RS-` owns solver derivation.
 // It is the fifth two-letter series, under the policy the `P-` paragraph sets, and `R-` alone is
-// the progress range fix. It sorts before `R` in the pattern below, because an alternation that
-// offered `R` first would match `R` and then fail on the `S`.
+// the progress range fix.
 //
 // `IK-` belongs to the IK solver plugin and runtime wiring, slice C3 of issue #195: the analytic
 // two-bone inverse kinematics solve, FK solver override, upstream member delivery, dirty-check
@@ -176,9 +173,7 @@ import { fileURLToPath } from "node:url";
 // a conflicting pair of spellings and an ambiguous mode all report from the one owner that knows
 // the member set. `DV-` owns whether a slot may carry a dict at all; `MG-` owns whether the member
 // a key names exists and what the solve does with it. It is the eighth two-letter series, under the
-// policy the `P-` paragraph sets, and `M-` alone is the Motion mutation series. It sorts before `M`
-// in the pattern below, because an alternation that offered `M` first would match `M` and then fail
-// on the `G`.
+// policy the `P-` paragraph sets, and `M-` alone is the Motion mutation series.
 //
 // `FB-` belongs to the FABRIK solve, slice D2 of issue #195: that a chain past arity two reaches
 // its goal and keeps its segment lengths, that both elbow branches agree with the closed form at
@@ -187,8 +182,7 @@ import { fileURLToPath } from "node:url";
 // not converge says whether it stalled or ran out of iterations. `IK-` owns the analytic two-bone
 // solve and its runtime wiring; `FB-` owns the iterative one, which nothing wires yet. It is the
 // ninth two-letter series, under the policy the `P-` paragraph sets, and `F-` alone is the authored
-// keyframe group series. It sorts before `F` in the pattern below, because an alternation that
-// offered `F` first would match `F` and then fail on the `B`.
+// keyframe group series.
 //
 // `PV-` belongs to offset-aware solving, issue #214 and ADR-054: that both solves account for the
 // pivot offset `fk` applies, that the closed form survives it as a fixed base point and a rigid
@@ -198,8 +192,7 @@ import { fileURLToPath } from "node:url";
 // is unchanged; `IK-` owns the analytic solve and `FB-` owns the iterative one, and both keep every
 // number they pinned. This is the one contract that spans all three, which is why it extends none
 // of them. It is the tenth two-letter series, under the policy the `P-` paragraph sets, and `P-`
-// alone is the rollback error precedence series. It sorts before `P` in the pattern below, because
-// an alternation that offered `P` first would match `P` and then fail on the `V`.
+// alone is the rollback error precedence series.
 //
 // `WT-` belongs to the per-member solved-rotation blend, issue #211 and ADR-055: that one `clamp`
 // and one wrap-aware `lerpAngle` answer for both halves of the kinematic composition, that both
@@ -209,8 +202,7 @@ import { fileURLToPath } from "node:url";
 // override it publishes, which is unchanged; `FO-` and `PV-` own the offset; `WT-` owns how much of
 // a solved angle a bone actually composes with, which is a question none of them ask. It is the
 // eleventh two-letter series, under the policy the `P-` paragraph sets, and `W-` alone is the
-// entrypoint tier series. It sorts before `W` in the pattern below, because an alternation that
-// offered `W` first would match `W` and then fail on the `T`.
+// entrypoint tier series.
 //
 // `SH-` belongs to the stale `TrackHandle` contract, issue #217 and ADR-056: that every member of
 // a handle whose token is no longer current refuses with one named error rather than half of them
@@ -220,9 +212,7 @@ import { fileURLToPath } from "node:url";
 // compiled map and the Motion entry may disagree during a replacement, and `P-` owns which error
 // a caller sees once a rollback can fail; `SH-` owns what a caller is told when the thing it holds
 // is no longer the live one. It is the twelfth two-letter series, under the policy the `P-`
-// paragraph sets, and `S-` alone is the progress state commit series. It sorts before `S` in the
-// pattern below, because an alternation that offered `S` first would match `S` and then fail on
-// the `H`.
+// paragraph sets, and `S-` alone is the progress state commit series.
 //
 // `DV-` belongs to dict-valued requirement slots, issue #220 and ADR-057: that a slot whose
 // authored value is a record expands to one binding per key under any name, that whether a slot may
@@ -232,8 +222,7 @@ import { fileURLToPath } from "node:url";
 // does and `J-` owns that it is the only input channel; `SL-` owned how many slots a plugin may
 // accept, and this replaces that question rather than extending it, which is why that series
 // retires above. It is the thirteenth two-letter series, under the policy the `P-` paragraph sets,
-// and `D-` alone is the teardown ownership series. It sorts before `D` in the pattern below,
-// because an alternation that offered `D` first would match `D` and then fail on the `V`.
+// and `D-` alone is the teardown ownership series.
 //
 // `EV-` belongs to cache residency in `IncrementalGraphBuilder`, issue #225 and ADR-058: that a
 // completed build leaves an entry for exactly the tracks it walked, that removal, `destroyMotion`
@@ -242,8 +231,7 @@ import { fileURLToPath } from "node:url";
 // two projects costs. Every series above owns something an author writes or a caller is told; `EV-`
 // owns what an adapter retains after nobody is looking at it, which is why it extends none of them.
 // It is the fourteenth two-letter series, under the policy the `P-` paragraph sets, and `E-` alone
-// is the edge identity series. It sorts before `E` in the pattern below, because an alternation
-// that offered `E` first would match `E` and then fail on the `V`.
+// is the edge identity series.
 //
 // `LV-` belongs to live value updates, issue #218 and ADR-059: that one immutable overlay inside
 // `Track` reaches ordinary composition and the publisher-delivered `MemberState` through the same
@@ -253,9 +241,7 @@ import { fileURLToPath } from "node:url";
 // the `Interpolator` port grows a per-key write. `CF-` owns where the values a composition starts
 // from come from and `SH-` owns what a caller is told when its handle is stale; `LV-` owns what may
 // mask those values at all, which is a question neither asks. It is the fifteenth two-letter
-// series, under the policy the `P-` paragraph sets, and `L-` alone is the time loop series. It
-// sorts before `L` in the pattern below, because an alternation that offered `L` first would match
-// `L` and then fail on the `V`.
+// series, under the policy the `P-` paragraph sets, and `L-` alone is the time loop series.
 //
 // `PK-` belongs to the record-shaped per-key timeline write, issue #231 and ADR-060: that an
 // animated key's tweens are replaced on the still-live timeline against a retained base record,
@@ -266,9 +252,7 @@ import { fileURLToPath } from "node:url";
 // this series deletes. `LV-` owns what may mask a track's values at all and retires `LV-11` and
 // `LV-12` to this series; `PK-` owns whether a value the interpolator drives can be written live,
 // which is the question `LV-` answered with a refusal. It is the sixteenth two-letter series, under
-// the policy the `P-` paragraph sets, and `P-` alone is the rollback error precedence series. It
-// sorts before `P` in the pattern below, because an alternation that offered `P` first would match
-// `P` and then fail on the `K`.
+// the policy the `P-` paragraph sets, and `P-` alone is the rollback error precedence series.
 //
 // `RA-` belongs to the runtime authoring surface, issue #223: that a structural change has one
 // transaction owner rather than one copy of the ordering per entry point, that the hooks a commit
@@ -278,9 +262,7 @@ import { fileURLToPath } from "node:url";
 // entry may disagree during one Track replacement, and `SH-` owns what a caller is told when the
 // handle it holds is no longer live; `RA-` owns how many places are allowed to run a structural
 // transaction at all, which is a question neither asks. It is the seventeenth two-letter series,
-// under the policy the `P-` paragraph sets, and `R-` alone is the progress range fix. It sorts
-// before `R` in the pattern below, because an alternation that offered `R` first would match `R`
-// and then fail on the `A`.
+// under the policy the `P-` paragraph sets, and `R-` alone is the progress range fix.
 //
 // `RB-` belongs to the read budget on a source file, issue #267: that a file over the measured
 // budget is refused, that a file carrying a recorded waiver is held to its own ceiling instead,
@@ -289,8 +271,7 @@ import { fileURLToPath } from "node:url";
 // something a caller is told; `RB-` owns whether the file that states an invariant can be read at
 // all by the implementor about to edit it, which is a question none of them ask. It is the
 // eighteenth two-letter series, under the policy the `P-` paragraph sets, and `R-` alone is the
-// progress range fix. It sorts before `R` in the pattern below, because an alternation that
-// offered `R` first would match `R` and then fail on the `B`.
+// progress range fix.
 //
 // `AE-` belongs to the AI edit request validation pass, issue #281 and the contract in
 // `docs/AI-EDIT-WORKFLOW.md`: the anchor counts a dry run reports, the count each refusal names,
@@ -305,8 +286,8 @@ import { fileURLToPath } from "node:url";
 // it covers, and never gated for uniqueness, because a series the pattern cannot see contributes
 // no ids to the collision map and leaves the first case above green by construction. `A` alone is
 // not in the alternation and cannot be, by the `M-` paragraph's rule against a letter a plan uses
-// unhyphenated, so this is the one two-letter widening with no ordering hazard to avoid, and it
-// sorts first rather than ahead of its own initial.
+// unhyphenated, so this is the one two-letter series with no single-letter neighbour, and it
+// sorts first rather than ahead of an initial the pattern does not carry.
 // The scan root is the repository rather than `packages/core/test`, because an id names one test in
 // the suite and the suite is not one package. `H-4` is declared in
 // `packages/react/test/public-hook-render.test.ts`, which the old root could not see, so one id
@@ -354,6 +335,20 @@ const SELF = "packages/core/test/unit/scripts/evidence-case-ids.test.ts";
 const AI_EDIT = "packages/core/test/unit/scripts/apply-ai-edit.test.ts";
 const UNWALKED = new Set(["node_modules", "dist", "coverage"]);
 const TEST_FILE = /\.test\.tsx?$/;
+// Two-letter prefixes are listed before the single letters, and that order is a reading
+// convention rather than a correctness requirement. Every alternative here is followed by the
+// same hyphen-and-digits suffix, so a `C` that matched the head of `CF-3` fails on the `F` and
+// the engine retries the next alternative at the same position. `C` before `CF` and `CF` before
+// `C` both match `CF-3`, and so does every one of the sixteen two-letter-and-initial pairs this
+// pattern carries.
+//
+// Fourteen series paragraphs used to give the opposite reason, each claiming its own place in
+// the order was forced because an alternation offering the single letter first would match it
+// and then fail, and `AE-` inherited the claim by calling itself the one widening with no
+// ordering hazard to avoid. The reason was wrong in all fifteen places: it describes an engine
+// that gives up at the first alternative that fails, which this one does not. One fact about
+// this pattern belongs beside the pattern rather than once per series, so those paragraphs now
+// say what a series owns and this one says where it sorts. Issue #294.
 const CASE_TITLE =
   /it\(\s*"((?:AE|CF|CN|DV|EV|FB|FO|IK|LF|LV|MG|PK|PV|RA|RB|RS|SH|WT|B|C|D|E|F|G|H|J|K|L|M|N|P|Q|R|S|T|U|V|W|Y|Z)-\d+)/g;
 const REACT_RENDER = "packages/react/test/public-hook-render.test.ts";
