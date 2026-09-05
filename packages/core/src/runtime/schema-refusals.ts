@@ -47,6 +47,24 @@ export function immediateInTransaction(verb: string): never {
   throw new TypeError(`schema-transaction-immediate: ${detail} Call it outside edit().`);
 }
 /**
+ * Refuses a structural commit asked for while one is already in flight.
+ *
+ * Its own family rather than the immediate-verb one above, because the condition differs and so does
+ * the remedy. That one names the verb, because the caller wrote both the `edit()` and the call and has
+ * to know which of the two to move. This one refuses every structural verb equally, at the one member
+ * all of them reach, and the caller wrote no transaction at all: it wrote a hook, which a commit
+ * called. So the message names the condition, and a per-verb spelling would cost a string literal at
+ * six call sites to say what the stack already does.
+ *
+ * A refusal rather than a nested commit, because a commit in flight holds its pair in a local and has
+ * already applied effects derived from it, so it cannot honour what an open transaction means. See
+ * ADR-068.
+ */
+export function commitInFlight(): never {
+  const use = "Ask for it once this one has returned.";
+  throw new TypeError(`schema-commit-reentrant: A structural commit is already in flight. ${use}`);
+}
+/**
  * Refuses a binding edit addressed at a plugin this node authors no group for.
  *
  * The boundary between this tier's two levels, and it is a refusal rather than a creation on
