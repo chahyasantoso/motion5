@@ -1,0 +1,155 @@
+{
+  "message": "fix(test): address a source region by its own subject",
+  "target": 315,
+  "edits": [
+    {
+      "path": "packages/core/test/helpers/source-region.ts",
+      "create": "import { readFileSync } from \"node:fs\";\nimport { expect } from \"vitest\";\n\n/**\n * One owner for every source-text assertion in the suite.\n *\n * Four test files declared `code` byte-identically and three of them declared a two-bound `region`\n * beside it, so issue #314's rule about what a region may be bounded by was a rule about four copies\n * of two functions. Declared here once, so it changes once.\n *\n * The rule: a region's bounds belong to the claim's subject. A declaration is addressed by its own\n * opening and its own terminator, never by the name of whatever happens to be declared next to it,\n * because a neighbour's name is part of no claim about its neighbour. `docs/TESTING-STRATEGY.md`\n * owns it, including which claims a source region may carry at all.\n */\n\n/**\n * A source file with its whole-line comments removed.\n *\n * Whole-line only, deliberately: a commented-out statement can neither satisfy a `toContain` nor\n * defeat a `not.toContain`, which is the direction every claim in the suite needs. A trailing\n * comment on a code line survives, so a `toContain` claim names a statement rather than a phrase\n * that could be written in prose.\n */\nexport function code(path: string): string {\n  return readFileSync(path, \"utf8\")\n    .split(\"\\n\")\n    .filter((line) => !/^(?:\\/\\/|\\/\\*|\\*)/.test(line.trim()))\n    .join(\"\\n\");\n}\n\n/**\n * The source of one declaration, bounded by its own signature and its own closing brace.\n *\n * The retired spelling sliced from one member's name to the *next* member's name, which made three\n * edits that change no behaviour able to turn a case red or, worse, widen its window in silence:\n * declaring anything between the two, renaming the neighbour, or moving either one.\n *\n * Anchored on the signature at a known indent rather than on the first occurrence of a name, which\n * is the half that had already fired. A private name matches every call site as well as its\n * declaration, `#handle` calls `#writeValues` and is declared earlier in the file, so a window\n * opened on the bare name began inside the handle factory and ran fifteen members. Requiring the\n * newline and the indent is what makes a call site unmatchable, and asserting that the opening is\n * unique is what makes the match a decision rather than a coincidence of declaration order.\n *\n * `indent` is the declaration's own column, so `\"\"` addresses a module-level function and the\n * default addresses a class member. Issue #314.\n */\nexport function member(source: string, signature: string, indent = \"  \"): string {\n  const opening = `\\n${indent}${signature}`;\n  const start = source.indexOf(opening);\n  expect(start, `nothing is declared as \"${signature}\" at indent ${indent.length}`).toBeGreaterThan(\n    -1,\n  );\n  const again = source.indexOf(opening, start + opening.length);\n  expect(again, `\"${signature}\" opens more than one declaration`).toBe(-1);\n  const close = source.indexOf(`\\n${indent}}`, start + opening.length);\n  expect(close, `\"${signature}\" is not closed at indent ${indent.length}`).toBeGreaterThan(start);\n  return source.slice(start, close);\n}\n\n/**\n * The source of one declaration whose own syntax carries its terminator: `}` for an interface, `;`\n * for a type alias.\n *\n * `PK-18`'s two regions were already sound by the rule above, because both of their bounds belong to\n * the declaration they name. They are re-expressed through this function so the brace and the\n * semicolon are matched by one owner rather than assumed at two call sites, which is what makes a\n * later change to the rule reach them.\n */\nexport function declaration(source: string, opening: string, terminator: \"}\" | \";\"): string {\n  const start = source.indexOf(opening);\n  expect(start, `no declaration opens with \"${opening}\"`).toBeGreaterThan(-1);\n  const end = source.indexOf(terminator, start + opening.length);\n  expect(end, `\"${opening}\" is not terminated by \"${terminator}\"`).toBeGreaterThan(start);\n  return source.slice(start, end);\n}\n"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/live-value-updates.test.ts",
+      "find": "import { readFileSync } from \"node:fs\";\nimport { fileURLToPath } from \"node:url\";\nimport type { AuthoredStop, ProjectDefinition, TrackDefinition } from \"../../../src/contract/v5\";",
+      "replace": "import { fileURLToPath } from \"node:url\";\nimport type { AuthoredStop, ProjectDefinition, TrackDefinition } from \"../../../src/contract/v5\";"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/live-value-updates.test.ts",
+      "find": "import { createFakeInterpolator, createFakeScheduler } from \"../../../src/testing/fakes\";",
+      "replace": "import { createFakeInterpolator, createFakeScheduler } from \"../../../src/testing/fakes\";\nimport { code, member } from \"../../helpers/source-region\";"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/live-value-updates.test.ts",
+      "find": "function code(path: string): string {\n  return readFileSync(path, \"utf8\")\n    .split(\"\\n\")\n    .filter((line) => !/^(?:\\/\\/|\\/\\*|\\*)/.test(line.trim()))\n    .join(\"\\n\");\n}\nfunction region(source: string, from: string, until: string): string {\n  const start = source.indexOf(from);\n  expect(start).toBeGreaterThan(-1);\n  const end = source.indexOf(until, start + from.length);\n  expect(end).toBeGreaterThan(start);\n  return source.slice(start, end);\n}\nfunction values(handle: ProjectHandle, id: string): Readonly<Record<string, unknown>> {",
+      "replace": "function values(handle: ProjectHandle, id: string): Readonly<Record<string, unknown>> {"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/live-value-updates.test.ts",
+      "find": "    // One invalidate owner and one diagnostics channel, which is a claim about the code and is\n    // asserted as one: a healthy flush has nothing to record.\n    const write = region(code(RUNTIME_SOURCE), \"#writeValues(\", \"#replaceWithObservation(\");",
+      "replace": "    // One invalidate owner and one diagnostics channel, which is a claim about the code and is\n    // asserted as one: a healthy flush has nothing to record. Addressed by the member that owns the\n    // claim rather than by the next member's name, and that is not a tidy-up: the retired bounds\n    // read from the `#writeValues(` call inside `#handle`, which is declared earlier, to the\n    // `#replaceWithObservation` declaration, so this one-owner claim was being measured over a\n    // fifteen-member window containing `#apply` and `#invalidateOne`. See issue #314.\n    const write = member(code(RUNTIME_SOURCE), \"#writeValues(\");"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/live-value-updates.test.ts",
+      "find": "    arm.setValues({ x: 260 });\n    expect(invalidate).toHaveBeenCalledTimes(1);\n    const write = region(code(RUNTIME_SOURCE), \"#writeValues(\", \"#replaceWithObservation(\");",
+      "replace": "    arm.setValues({ x: 260 });\n    expect(invalidate).toHaveBeenCalledTimes(1);\n    // Bounded by the member the claim is about rather than by a neighbour's name. See issue #314.\n    const write = member(code(RUNTIME_SOURCE), \"#writeValues(\");"
+    },
+    {
+      "path": "packages/core/test/unit/domain/track-live-values.test.ts",
+      "find": "import { readFileSync } from \"node:fs\";\nimport { fileURLToPath } from \"node:url\";",
+      "replace": "import { fileURLToPath } from \"node:url\";"
+    },
+    {
+      "path": "packages/core/test/unit/domain/track-live-values.test.ts",
+      "find": "import { createPlugin, resolveAuthored } from \"../../helpers/resolved-plugins\";",
+      "replace": "import { createPlugin, resolveAuthored } from \"../../helpers/resolved-plugins\";\nimport { code, declaration, member } from \"../../helpers/source-region\";"
+    },
+    {
+      "path": "packages/core/test/unit/domain/track-live-values.test.ts",
+      "find": "/** Strips whole-line comments before a source assertion. A gate reads code, never prose. */\nfunction code(path: string): string {\n  return readFileSync(path, \"utf8\")\n    .split(\"\\n\")\n    .filter((line) => !/^(?:\\/\\/|\\/\\*|\\*)/.test(line.trim()))\n    .join(\"\\n\");\n}\nfunction region(source: string, from: string, until: string): string {\n  const start = source.indexOf(from);\n  expect(start).toBeGreaterThan(-1);\n  const end = source.indexOf(until, start + from.length);\n  expect(end).toBeGreaterThan(start);\n  return source.slice(start, end);\n}\n\ndescribe(\"a live value masks the interpolated state, and nothing else\", () => {",
+      "replace": "\ndescribe(\"a live value masks the interpolated state, and nothing else\", () => {"
+    },
+    {
+      "path": "packages/core/test/unit/domain/track-live-values.test.ts",
+      "find": "    const timeline = region(code(PORT_SOURCE), \"export interface InterpolationTimeline {\", \"}\");",
+      "replace": "    const timeline = declaration(\n      code(PORT_SOURCE),\n      \"export interface InterpolationTimeline {\",\n      \"}\",\n    );"
+    },
+    {
+      "path": "packages/core/test/unit/domain/track-live-values.test.ts",
+      "find": "    const refusal = region(code(TRACK_SOURCE), \"export type LiveValueRefusal\", \";\");",
+      "replace": "    const refusal = declaration(code(TRACK_SOURCE), \"export type LiveValueRefusal\", \";\");"
+    },
+    {
+      "path": "packages/core/test/unit/domain/track-live-values.test.ts",
+      "find": "    expect(region(code(TRACK_SOURCE), \"interpolated(): ImmutableRecord {\", \"compose(\")).toContain(\n      \"this.#values\",\n    );",
+      "replace": "    // Bounded by the member's own closing brace rather than by `compose(`, which is the name of\n    // the member declared after it: moving either one changes no behaviour and would have decided\n    // this case. See issue #314.\n    expect(member(code(TRACK_SOURCE), \"interpolated(): ImmutableRecord {\")).toContain(\n      \"this.#values\",\n    );"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/stale-track-handle.test.ts",
+      "find": "import { readFileSync } from \"node:fs\";\nimport { fileURLToPath } from \"node:url\";",
+      "replace": "import { fileURLToPath } from \"node:url\";"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/stale-track-handle.test.ts",
+      "find": "import { ProjectRuntime } from \"../../../src/runtime/project-runtime\";",
+      "replace": "import { ProjectRuntime } from \"../../../src/runtime/project-runtime\";\nimport { code, member } from \"../../helpers/source-region\";"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/stale-track-handle.test.ts",
+      "find": "/**\n * Strips whole-line comments before a source assertion. A gate reads code, never prose, and the\n * resolver's own doc comment necessarily describes the comparison it owns. Line-wise is enough\n * because every comment in that module occupies its own line.\n */\nfunction code(path: string): string {\n  return readFileSync(path, \"utf8\")\n    .split(\"\\n\")\n    .filter((line) => !/^(?:\\/\\/|\\/\\*|\\*)/.test(line.trim()))\n    .join(\"\\n\");\n}\nfunction region(source: string, from: string, until: string): string {\n  const start = source.indexOf(from);\n  expect(start).toBeGreaterThan(-1);\n  const end = source.indexOf(until, start + from.length);\n  expect(end).toBeGreaterThan(start);\n  return source.slice(start, end);\n}\n\ndescribe(",
+      "replace": "\ndescribe("
+    },
+    {
+      "path": "packages/core/test/unit/runtime/stale-track-handle.test.ts",
+      "find": "    const factory = region(\n      source,\n      \"#handle(id: string, token: number): TrackHandle {\",\n      \"#removeTrack(id: string, token: number): void {\",\n    );",
+      "replace": "    // The member's own closing brace, not the next member's name. `#removeTrack` is in no part of\n    // what this case claims, so renaming it or declaring anything between the two would have\n    // decided a claim about the factory. See issue #314.\n    const factory = member(source, \"#handle(id: string, token: number): TrackHandle {\");"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/handle-base.test.ts",
+      "find": "import { readFileSync } from \"node:fs\";\nimport { fileURLToPath } from \"node:url\";",
+      "replace": "import { fileURLToPath } from \"node:url\";"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/handle-base.test.ts",
+      "find": "import { ProjectRuntime } from \"../../../src/runtime/project-runtime\";",
+      "replace": "import { ProjectRuntime } from \"../../../src/runtime/project-runtime\";\nimport { code, member } from \"../../helpers/source-region\";"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/handle-base.test.ts",
+      "find": "    const source = readFileSync(RUNTIME_SOURCE, \"utf8\");",
+      "replace": "    const source = code(RUNTIME_SOURCE);"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/handle-base.test.ts",
+      "find": "    const from = source.indexOf(\"#motionIfLive(id: string, token: number)\");\n    const until = source.indexOf(\"#writableEntry(id: string, token: number): TrackEntry {\");\n    expect(from).toBeGreaterThan(-1);\n    expect(until).toBeGreaterThan(from);\n    const ladder = source.slice(from, until);\n    expect(ladder).toContain(\"#liveChildNode(\");\n    expect(ladder).not.toContain(\"#assertLive\");",
+      "replace": "    //\n    // Asked of each rung by name rather than of a span bounded by the first writing rung's, which\n    // is what issue #314 owns. The retired bound was `#writableEntry`, a member this claim is not\n    // about, so moving either end changed no behaviour and decided the case; and a span has no\n    // bound that belongs to it, so the claim is spelled once per rung instead. The accepting\n    // direction the span form left implied is asserted here too, in the same rig.\n    const CHILD = \"#liveChildNode(motionId: string, token: number, trackId: string): string {\";\n    const rungs = [\n      \"#motionIfLive(id: string, token: number): MotionEntry | undefined {\",\n      \"#liveMotion(id: string, token: number): MotionEntry {\",\n      \"#liveId(motionId: string, token: number): string {\",\n      CHILD,\n    ];\n    expect(rungs.filter((rung) => member(source, rung).includes(\"#assertLive\"))).toEqual([]);\n    expect(member(source, CHILD)).toContain(\"qualifyMotionTrack(\");\n    expect(member(source, \"#writableMotion(id: string, token: number): MotionEntry {\")).toContain(\n      \"#assertLive\",\n    );"
+    },
+    {
+      "path": "packages/core/test/contract/gsap-patch-keys.test.ts",
+      "find": "import { readFileSync } from \"node:fs\";\nimport { fileURLToPath } from \"node:url\";",
+      "replace": "import { fileURLToPath } from \"node:url\";"
+    },
+    {
+      "path": "packages/core/test/contract/gsap-patch-keys.test.ts",
+      "find": "import { readNumber } from \"../support/real-gsap\";",
+      "replace": "import { readNumber } from \"../support/real-gsap\";\nimport { code, member } from \"../helpers/source-region\";"
+    },
+    {
+      "path": "packages/core/test/contract/gsap-patch-keys.test.ts",
+      "find": "function code(path: string): string {\n  return readFileSync(path, \"utf8\")\n    .split(\"\\n\")\n    .filter((line) => !/^(?:\\/\\/|\\/\\*|\\*)/.test(line.trim()))\n    .join(\"\\n\");\n}\n\ndescribe(",
+      "replace": "\ndescribe("
+    },
+    {
+      "path": "packages/core/test/contract/gsap-patch-keys.test.ts",
+      "find": "    const source = code(ADAPTER_SOURCE);\n    const start = source.indexOf(\"export function createGsapOneTweenInterpolator\");\n    expect(start).toBeGreaterThan(-1);\n    expect(source.slice(start)).not.toMatch(/patchKeys/);",
+      "replace": "    // Bounded by the factory's own closing brace rather than by end of file, which is bounded by\n    // whatever happens to be declared last: the claim is about this function. See issue #314.\n    const factory = member(\n      code(ADAPTER_SOURCE),\n      \"export function createGsapOneTweenInterpolator\",\n      \"\",\n    );\n    expect(factory).not.toMatch(/patchKeys/);"
+    },
+    {
+      "path": "docs/TESTING-STRATEGY.md",
+      "find": "No comment-density gates, non-shrinking file allowlists, source-text scans presented as behavioral tests, snapshots of private object graphs, or value-only parity tests that ignore payload shape. Boundary scans are allowed as mechanical enforcement; they complement, never replace, runtime tests.\n\n## Failure hygiene",
+      "replace": "No comment-density gates, non-shrinking file allowlists, source-text scans presented as behavioral tests, snapshots of private object graphs, or value-only parity tests that ignore payload shape. Boundary scans are allowed as mechanical enforcement; they complement, never replace, runtime tests. A source-text claim inside a behavioral case is neither of those things, and the section below is what it is held to instead.\n\n## Source-text claims\n\nA source-text assertion is allowed, and it is bounded by its own subject. Some claims are mutant killers no behavioral rig can replace: a spy on `invalidate` counts calls, so it cannot see a second diagnostics channel on the same batch, a second flush statement on a branch the case does not drive, or a cost the case exists to prove is skipped being paid anyway. Those claims stay. What is refused is the address, because an assertion's address is part of the assertion.\n\nTwo rules follow, and `packages/core/test/unit/scripts/source-region-anchors.test.ts` enforces both.\n\n**A region is bounded by the declaration it is about.** A class member is addressed by its own signature and its own closing brace, and a top-level declaration by its own terminator. Never by the name of the next member: a neighbour's name is part of no claim about its neighbour, so a rename, a reorder, or a member declared between the two turns the case red for no behavioral reason, or widens its window in silence, which is the worse direction. The lower bound is the same rule and the easier half to get wrong, because a private name matches every call site as well as its declaration and a call site declared earlier in the file wins. Issue #314 is the whole of the reason: two cases reading a fifteen-member window that both of their claims happened to be true of, one of them a claim about a single owner measured across two of them. Where the subject genuinely is a span of several declarations, the claim is spelled once per declaration, because a span has no bound that belongs to it.\n\n**A `toContain` claim names a statement, not a phrase.** `code()` strips whole-line comments only, so a commented-out statement can neither satisfy a `toContain` nor defeat a `not.toContain`; a trailing comment on a code line survives, and prose is not evidence.\n\nOne owner does the reading. `packages/core/test/helpers/source-region.ts` exports `code`, `member` and `declaration`, and a case that reads source imports them rather than declaring its own copy. The retired two-bound `region(from, until)` is deleted rather than discouraged, because its second parameter is the affordance that produced every one of these defects, and one of them was hand-rolled with `indexOf` after the helper already existed.\n\n## Failure hygiene"
+    },
+    {
+      "path": "docs/GUARDRAILS.md",
+      "find": "it needs a second field and makes the contract depend on which hook the host wired. [Issue #307](https://github.com/chahyasantoso/motion5/issues/307).",
+      "replace": "it needs a second field and makes the contract depend on which hook the host wired. [Issue #307](https://github.com/chahyasantoso/motion5/issues/307).\n- An assertion's address is part of the assertion, so a region of source is bounded by the declaration it is about rather than by the name of whatever is declared next to it. Two cases pinned `#writeValues` by slicing between `\"#writeValues(\"` and `\"#replaceWithObservation(\"`, a member neither claim mentions, so a rename or a reorder would have turned them red for no behavioral reason and a member declared between the two would have widened the window instead, silently. The lower bound was the half that had already fired: a private name matches every call site as well as its declaration, `#handle` calls `#writeValues` and is declared earlier, so the window actually read began inside the handle factory and covered fifteen members including `#apply` and `#invalidateOne`. A claim about one invalidate owner was being measured across two of them, and both assertions were true of that window independently of the member they name, which is the general form: a green case is only evidence of what it would fail without, and an address nobody checked is a way for it to be neither. The same shape sat in three more places and one of them had been hand-rolled with `indexOf` after the shared helper already existed, so the parameter that allows the wrong address is deleted rather than documented as discouraged. Where the subject is genuinely a span of several declarations, the claim is spelled once per declaration, because a span has no bound that belongs to it. [Issue #314](https://github.com/chahyasantoso/motion5/issues/314)."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- **Verified on:** `e3ee26f` on `main`, which is [#304](https://github.com/chahyasantoso/motion5/pull/304) merged, plus this slice on top of it. It is the fifth slice in a row to change `packages/core/src`.",
+      "replace": "- **Verified on:** `766580f` on `main`, which is [#311](https://github.com/chahyasantoso/motion5/pull/311) merged, plus this slice on top of it. It is the first slice in six to change no file under `packages/core/src` at all."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- **Just landed.** One commit at a time, [issue #307](https://github.com/chahyasantoso/motion5/issues/307) and ADR-068. Every composition hook is caller code, so one can call a structural entry point on the runtime whose commit it is part of. `#commit` found no open transaction, applied immediately nested inside the outer `#apply`, and staged from the retained pair, which does not carry the outer commit's staged change: both commits adopted their own pair, the outer one won, and the inner change was lost from the graph and from both maps while its Track stayed compiled, registered with its Motion and mounted, with nothing left that would ever dispose it. Refused rather than merged: a commit in flight holds its pair in a local and has already applied effects derived from it, so it cannot honour what `#open` means, and reusing that field would give one accessor two incompatible meanings. One guard, in the one member every structural verb reaches, read after the recipe check so a recipe opened inside a hook stages as usual and is refused once when it applies. `#committing` stays a depth. `RA-118` through `RA-121` are red, `RA-122` is the accepting direction and green on both sides.",
+      "replace": "- **Just landed.** A source region is addressed by its own subject, [issue #314](https://github.com/chahyasantoso/motion5/issues/314). Five evidence cases pinned a member by slicing from its name to the *next* member's name, so a rename or a reorder that changes no behaviour would have turned them red, and a member declared between the two would have widened the window in silence. The lower bound had already fired: a private name matches every call site too, and `#handle` calls `#writeValues` while being declared earlier, so `LV-5` and `PK-17` were reading a fifteen-member window that contained `#apply` and `#invalidateOne` -- a claim about one invalidate owner, measured across two. `code` was declared four times and `region` three, so `packages/core/test/helpers/source-region.ts` is now the one owner and `region`'s second bound is deleted rather than discouraged. `LV-5`, `PK-17`, `PK-18`, `LV-14`, `SH-7`, `PK-10` and `RA-113` keep every claim and change only their address; `RA-113`'s span becomes one assertion per rung and gains the accepting direction it implied. No file under `packages/core/src` changes. The gate is `source-region-anchors.test.ts`, and the rule is in [TESTING-STRATEGY.md](./TESTING-STRATEGY.md).\n- **Landed before it.** A commit in flight refuses re-entry, [issue #307](https://github.com/chahyasantoso/motion5/issues/307) and ADR-068. Every composition hook is caller code, so one can call a structural entry point on the runtime whose commit it is part of: `#commit` found no open transaction, staged from a retained pair that does not carry the outer commit's change, and had its adoption overwritten, leaving a compiled, registered and mounted node that no map and no graph node referred to and nothing would ever dispose. Refused at the one member every structural verb reaches, read after the recipe check, because a commit in flight has already applied effects derived from its pair and cannot honour what `#open` means. `#committing` stays a depth. `RA-118` through `RA-122`."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "\n- **Landed before it.** A commit boundary owns the teardown a hook asked for, [issue #303](https://github.com/chahyasantoso/motion5/issues/303) and ADR-067. `dispose()` released the graph and the composition where it was called, so a hook that disposed mid-commit left the rollback handing a torn-down host the inverses of effects it had just applied, and `Error: GraphRuntime is disposed.` reached the caller. It now owns the decision to release rather than the release: it refuses from the line it was called on, and `#teardown` runs once at `#apply`'s `finally`, after the rollback and after the settle phase, which is deliberately unguarded because half a phase with no revert leaks a staged Track. `RA-114` through `RA-117`.\n\n## Next in line",
+      "replace": "\n\n## Next in line"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "Captured 2026-09-05, verified on `b1f9e59` plus this slice.",
+      "replace": "Re-verified on `766580f`, and it lands on top of the slice above: #314 re-anchored the two cases whose address it moves a statement inside of, so it edits a claim rather than an address."
+    }
+  ]
+}
