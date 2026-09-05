@@ -229,7 +229,7 @@ export class ProjectRuntime {
   readonly #destroyMotion: ((motionId: string) => void) | undefined;
   readonly #disposeComposition: () => void;
   #disposed = false;
-  #committing = 0;
+  #inFlight = 0;
   #pendingTeardown = false;
   constructor(project: ProjectDefinition, options: ProjectRuntimeOptions) {
     this.#project = project;
@@ -628,24 +628,37 @@ export class ProjectRuntime {
 
   #setTrigger(id: string, token: number, trigger: MotionDefinition["trigger"]): void {
     this.#refuseInsideRecipe("setTrigger");
-    const entry = this.#writableMotion(id, token);
-    const motionId = entry.definition.id;
-    const diagnostics = validateMotionTrigger(trigger, `setTrigger(${motionId}).trigger`);
-    if (diagnostics.some(({ severity }) => severity === "error"))
-      throw new TypeError(describeDiagnostics(diagnostics));
-    if (sameTrigger(entry.definition.trigger, trigger)) return;
-    const definition = Object.freeze({ ...entry.definition, trigger });
-    this.#replaceMotionTrigger?.(motionId, this.#motionDefinition({ ...entry, definition }));
-    this.#motions.set(motionId, { ...entry, definition });
+    this.#boundary(() => {
+      const entry = this.#writableMotion(id, token);
+      const motionId = entry.definition.id;
+      const diagnostics = validateMotionTrigger(trigger, `setTrigger(${motionId}).trigger`);
+      if (diagnostics.some(({ severity }) => severity === "error"))
+        throw new TypeError(describeDiagnostics(diagnostics));
+      if (sameTrigger(entry.definition.trigger, trigger)) return;
+      const definition = Object.freeze({ ...entry.definition, trigger });
+      this.#replaceMotionTrigger?.(motionId, this.#motionDefinition({ ...entry, definition }));
+      this.#motions.set(motionId, { ...entry, definition });
+      // No flush on this tier, so the report has nowhere else to live. Asked last rather than
+      // between the seam and the write, for the same reason the write itself completes: a refusal in
+      // the middle leaves the driver layer holding a trigger no retained definition names. Tier 2's
+      // `#invalidateOne` answers the same condition with the same string. See ADR-069.
+      this.#assertLive();
+    });
   }
 
   #setStagger(id: string, token: number, stagger: number | undefined): void {
     this.#refuseInsideRecipe("setStagger");
-    const entry = this.#writableMotion(id, token);
-    const motionId = entry.definition.id;
-    if (entry.definition.stagger === stagger) return;
-    this.#setMotionStagger?.(motionId, stagger);
-    this.#motions.set(motionId, { ...entry, definition: withStagger(entry.definition, stagger) });
+    this.#boundary(() => {
+      const entry = this.#writableMotion(id, token);
+      const motionId = entry.definition.id;
+      if (entry.definition.stagger === stagger) return;
+      this.#setMotionStagger?.(motionId, stagger);
+      this.#motions.set(motionId, {
+        ...entry,
+        definition: withStagger(entry.definition, stagger),
+      });
+      this.#assertLive();
+    });
   }
 
   #motionHandle(id: string, token: number): MotionHandle {
@@ -770,8 +783,18 @@ export class ProjectRuntime {
     if (this.#open !== undefined) return;
     // Read after the recipe check and never before it, so a recipe opened from inside a hook stages
     // as usual and is refused once, at the moment it would apply, by the one owner of this refusal.
-    if (this.#committing > 0) commitInFlight();
+    if (this.#inFlight > 0) commitInFlight();
     this.#apply(plan);
+  }
+
+  #boundary<T>(body: () => T): T {
+    this.#inFlight++;
+    try {
+      return body();
+    } finally {
+      this.#inFlight--;
+      if (this.#inFlight === 0 && this.#pendingTeardown) this.#teardown();
+    }
   }
 
   #apply(plan: SchemaPlan): void {
@@ -780,11 +803,11 @@ export class ProjectRuntime {
     const tracks = plan.tracks ?? this.#tracks;
     const motions = plan.motions ?? this.#motions;
     // Raised ahead of the derivation rather than ahead of the effect loop, because `#derive` asks
-    // `resolveKeyframes`, which is caller code and can dispose from there too. A depth rather than a
-    // flag, so a hook that re-enters this member cannot have its inner `finally` release the
-    // resources the outer commit is still unwinding through. See ADR-064's amendment of 2026-09-05.
-    this.#committing++;
-    try {
+    // `resolveKeyframes`, which is caller code and can dispose from there too. The raise, the
+    // decrement and the drain are `#boundary`'s rather than this member's: four direct writes need
+    // the same three statements, and an ordering enforced at five call sites is enforced at the
+    // first of them. See ADR-064's amendment of 2026-09-05 and ADR-069.
+    this.#boundary(() => {
       const commit = this.#derive(tracks, motions);
       // Nothing has been applied yet, so a disposal asked for during the derivation refuses with
       // nothing to roll back.
@@ -822,10 +845,7 @@ export class ProjectRuntime {
       if (this.#disposed || commit.touched.length === 0) return;
       const batch = this.#graph.invalidate(commit.touched);
       this.#diagnostics.recordAll(batch.diagnostics);
-    } finally {
-      this.#committing--;
-      if (this.#committing === 0 && this.#pendingTeardown) this.#teardown();
-    }
+    });
   }
 
   #derive(
@@ -921,34 +941,36 @@ export class ProjectRuntime {
 
   #writeValues(nodeId: string, entry: TrackEntry, values: AuthoredValues, rebase: boolean) {
     this.#refuseInsideRecipe(rebase ? "setValues" : "overrideValues");
-    const { statics, animated } = splitAuthoredValues(values);
-    // An animated key is involved when this call names one, and also when the last one did: a
-    // revert names no key at all, which is what the retained overlay is for. See ADR-060.
-    const involved = Object.keys(animated).length > 0 || Object.keys(entry.overlay).length > 0;
-    const rewritten = rebase || involved ? withAuthoredValues(entry.track, values) : entry.track;
-    if (involved) {
-      const validation = validateTrackDefinition(rewritten, `writeValues(${nodeId})`);
-      if (!validation.valid) throw new TypeError(describeDiagnostics(validation.diagnostics));
-    }
-    const mask = { ...authoredValues(entry.track), ...statics };
-    const written = this.#writeValuesHook(nodeId, mask, involved ? animated : undefined, rebase);
-    this.#tracks.set(nodeId, {
-      ...entry,
-      track: rebase ? rewritten : entry.track,
-      overlay: animated,
-      // In force from here until something builds a fresh Track for this node. See ADR-066.
-      liveWrite: true,
+    // The refusal stays outside the boundary, because a refused call is not inside a callback and
+    // has nothing to survive. See ADR-069.
+    return this.#boundary(() => {
+      const { statics, animated } = splitAuthoredValues(values);
+      // An animated key is involved when this call names one, and also when the last one did: a
+      // revert names no key at all, which is what the retained overlay is for. See ADR-060.
+      const involved = Object.keys(animated).length > 0 || Object.keys(entry.overlay).length > 0;
+      const rewritten = rebase || involved ? withAuthoredValues(entry.track, values) : entry.track;
+      if (involved) {
+        const validation = validateTrackDefinition(rewritten, `writeValues(${nodeId})`);
+        if (!validation.valid) throw new TypeError(describeDiagnostics(validation.diagnostics));
+      }
+      const mask = { ...authoredValues(entry.track), ...statics };
+      const written = this.#writeValuesHook(nodeId, mask, involved ? animated : undefined, rebase);
+      this.#tracks.set(nodeId, {
+        ...entry,
+        track: rebase ? rewritten : entry.track,
+        overlay: animated,
+        // In force from here until something builds a fresh Track for this node. See ADR-066.
+        liveWrite: true,
+      });
+      // The escalation, and it is neither `#replaceTrack` nor `replaceGraph`: topology did not change
+      // and the compiled definition is allowed to differ from the retained one. The re-seek is here
+      // because this is the only path that escalates. See ADR-060.
+      if (written !== undefined && !written.patched) {
+        this.#stageTrack?.(rewritten, nodeId)?.commit();
+        this.#setProgress(nodeId, written.progress);
+      }
+      return this.#invalidateOne(nodeId);
     });
-    // The escalation, and it is neither `#replaceTrack` nor `replaceGraph`: topology did not change
-    // and the compiled definition is allowed to differ from the retained one. The re-seek is here
-    // because this is the only path that escalates. See ADR-060.
-    if (written !== undefined && !written.patched) {
-      this.#stageTrack?.(rewritten, nodeId)?.commit();
-      this.#setProgress(nodeId, written.progress);
-    }
-    const batch = this.#graph.invalidate([nodeId]);
-    this.#diagnostics.recordAll(batch.diagnostics);
-    return batch;
   }
 
   #boundGroup(
@@ -963,6 +985,7 @@ export class ProjectRuntime {
   }
 
   #invalidateOne(nodeId: string) {
+    this.#assertLive();
     const batch = this.#graph.invalidate([nodeId]);
     this.#diagnostics.recordAll(batch.diagnostics);
     return batch;
@@ -974,30 +997,32 @@ export class ProjectRuntime {
     keyframes: AuthoredKeyframes,
     verb: string,
   ) {
-    const next = withKeyframes(entry.track, keyframes);
-    const validation = validateTrackDefinition(next, `${verb}(${nodeId})`);
-    if (!validation.valid || !validation.value)
-      throw new TypeError(describeDiagnostics(validation.diagnostics));
-    const accepted = validation.value;
-    const resolved = this.#resolve(nodeId, accepted);
-    if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
-      throw new TypeError(describeDiagnostics(resolved.diagnostics));
-    const written = this.#writeValuesHook(
-      nodeId,
-      authoredValues(entry.track),
-      Object.keys(entry.overlay).length === 0 ? undefined : NO_OVERLAY,
-      true,
-    );
-    const staged = this.#stageTrack?.(accepted, nodeId);
-    this.#tracks.set(nodeId, {
-      ...entry,
-      track: accepted,
-      overlay: NO_OVERLAY,
-      liveWrite: false,
+    return this.#boundary(() => {
+      const next = withKeyframes(entry.track, keyframes);
+      const validation = validateTrackDefinition(next, `${verb}(${nodeId})`);
+      if (!validation.valid || !validation.value)
+        throw new TypeError(describeDiagnostics(validation.diagnostics));
+      const accepted = validation.value;
+      const resolved = this.#resolve(nodeId, accepted);
+      if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
+        throw new TypeError(describeDiagnostics(resolved.diagnostics));
+      const written = this.#writeValuesHook(
+        nodeId,
+        authoredValues(entry.track),
+        Object.keys(entry.overlay).length === 0 ? undefined : NO_OVERLAY,
+        true,
+      );
+      const staged = this.#stageTrack?.(accepted, nodeId);
+      this.#tracks.set(nodeId, {
+        ...entry,
+        track: accepted,
+        overlay: NO_OVERLAY,
+        liveWrite: false,
+      });
+      staged?.commit();
+      if (written !== undefined) this.#setProgress(nodeId, written.progress);
+      return this.#invalidateOne(nodeId);
     });
-    staged?.commit();
-    if (written !== undefined) this.#setProgress(nodeId, written.progress);
-    return this.#invalidateOne(nodeId);
   }
 
   #setKeyframe(
@@ -1202,7 +1227,7 @@ export class ProjectRuntime {
     // this member from inside the commit it is part of, and releasing the graph and the composition
     // here would hand that commit's rollback the inverse of effects it can no longer apply. Every
     // member refuses from the line above onward, and `#apply`'s `finally` releases exactly once.
-    if (this.#committing > 0) {
+    if (this.#inFlight > 0) {
       this.#pendingTeardown = true;
       return;
     }
