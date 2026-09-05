@@ -6,7 +6,11 @@ import { PluginRegistry } from "../../../src/domain/plugins";
 import { Engine, type ProjectHandle } from "../../../src/engine";
 import { transformPlugin } from "../../../src/plugins/transform";
 import { createManualClock } from "../../../src/ports/clock";
-import type { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import {
+  ProjectRuntime,
+  type ProjectRuntimeOptions,
+  type StagedTrack,
+} from "../../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 import { code, member } from "../../helpers/source-region";
 
@@ -103,6 +107,90 @@ function values(handle: ProjectHandle, id: string): Readonly<Record<string, unkn
 function retained(handle: TrackHandle): unknown {
   return handle.definition.keyframes?.transform;
 }
+/** Returns the thrown value, because each case below asserts on more than one facet of it. */
+function thrownBy(operation: () => unknown): unknown {
+  try {
+    operation();
+  } catch (error) {
+    return error;
+  }
+  throw new Error("Expected the operation to throw.");
+}
+/**
+ * The bare-runtime rig for a seam that disposes the runtime that called it. Issue #305.
+ *
+ * `Engine` wires its own hooks, so a disposing seam cannot be spied into the composition-backed rig
+ * above: it has to be injected at construction. That costs the real composition and buys the only
+ * thing these three cases are about, which is what this class does when the caller code it is in the
+ * middle of calling tears it down. `declined-build-write-drop.test.ts` drives `#writeValues` on a
+ * bare runtime the same way and for the same reason.
+ *
+ * One ordered journal rather than a counter per seam, because every claim here is an ordering: the
+ * release has to arrive after the write has finished rather than in the middle of it, and two
+ * counters cannot tell those apart. `release` is `disposeComposition`, which `#teardown` calls last,
+ * so its position in this list is the whole teardown's position.
+ *
+ * No `resolveKeyframes` and no registry, deliberately. `#writeValues` never asks one, and
+ * `#recompileKeyframes` asks `#resolve`, which answers nothing when no seam was injected, so this rig
+ * has no second layer that could refuse and the refusal these cases read can only be the runtime's.
+ */
+const DIRECT_PROJECT: ProjectDefinition = {
+  schemaVersion: 5,
+  motions: [
+    {
+      id: "hero",
+      trigger: { type: "manual" },
+      tracks: [{ id: "arm", duration: 400, keyframes: { fk: { values: { x: 200 } } } }],
+    },
+  ],
+};
+interface DirectRig {
+  readonly runtime: ProjectRuntime;
+  readonly entries: readonly string[];
+}
+function directRig(disposeFrom: "writeValues" | "stageTrack", declined = false): DirectRig {
+  const entries: string[] = [];
+  let runtime: ProjectRuntime | undefined;
+  const options: ProjectRuntimeOptions = {
+    clock: createManualClock(),
+    compose: (node) => () => ({
+      values: { node: node.id },
+      sourceProgress: 0,
+      sourceRevisions: {},
+    }),
+    disposeComposition: () => {
+      entries.push("release");
+    },
+    setProgress: (nodeId) => {
+      entries.push(`progress ${nodeId}`);
+    },
+    stageTrack: (_track, nodeId): StagedTrack => {
+      entries.push(`stage ${nodeId}`);
+      if (disposeFrom === "stageTrack") runtime?.dispose();
+      return {
+        commit: () => {
+          entries.push(`commit ${nodeId}`);
+        },
+        rollback: () => {
+          entries.push(`rollback ${nodeId}`);
+        },
+      };
+    },
+    writeValues: (nodeId) => {
+      entries.push(`write ${nodeId}`);
+      if (disposeFrom === "writeValues") runtime?.dispose();
+      return declined ? { patched: false, progress: 0.5 } : undefined;
+    },
+  };
+  const created = new ProjectRuntime(DIRECT_PROJECT, options);
+  runtime = created;
+  return {
+    runtime: created,
+    get entries() {
+      return [...entries];
+    },
+  };
+}
 
 describe("live values reach the graph without replacing it", () => {
   it("LV-4 never reaches replace(), and a real replace() drops the mask", () => {
@@ -146,9 +234,21 @@ describe("live values reach the graph without replacing it", () => {
     // read from the `#writeValues(` call inside `#handle`, which is declared earlier, to the
     // `#replaceWithObservation` declaration, so this one-owner claim was being measured over a
     // fifteen-member window containing `#apply` and `#invalidateOne`. See issue #314.
+    // Strictly stronger than the form this replaces, and the reason #314 landed first. The claim was
+    // always "one invalidate owner and one diagnostics channel"; it used to be asserted as two
+    // presences inside the caller, which a second flush statement elsewhere in the same member would
+    // have satisfied just as well. Now that the flush has a named owner it is asserted as an absence
+    // at the caller and a presence at the owner, which is unwritable against a region bounded by a
+    // neighbour because both members would sit in one window. See ADR-069.
     const write = member(code(RUNTIME_SOURCE), "#writeValues(");
-    expect(write).toContain("this.#graph.invalidate([nodeId])");
-    expect(write).toContain("this.#diagnostics.recordAll(batch.diagnostics)");
+    const flush = member(code(RUNTIME_SOURCE), "#invalidateOne(");
+    expect(write).not.toContain("this.#graph.invalidate(");
+    expect(write).not.toContain("this.#diagnostics.recordAll(");
+    expect(flush).toContain("this.#graph.invalidate([nodeId])");
+    expect(flush).toContain("this.#diagnostics.recordAll(batch.diagnostics)");
+    // The report lives in the same member as the flush, which is what makes skipping and reporting
+    // one statement rather than two that could disagree.
+    expect(flush).toContain("this.#assertLive()");
     handle.dispose();
   });
 
@@ -316,5 +416,67 @@ describe("live values reach the graph without replacing it", () => {
     // leaves the graph alone.
     expect(handle.dependantsOf(ARM)).toEqual([]);
     handle.dispose();
+  });
+
+  it("LV-15 reports the disposal from the owner that decided it, and publishes nothing", () => {
+    const rig = directRig("writeValues");
+    const invalidate = vi.spyOn(rig.runtime.graph, "invalidate");
+
+    const thrown = thrownBy(() => rig.runtime.setValues(ARM, { x: 260 }));
+
+    // The layer that owns project lifecycle rather than the one that noticed. Today this reads
+    // `Error: GraphRuntime is disposed.`, because `#writeValues` ends at an inline
+    // `this.#graph.invalidate` that reaches `GraphRuntime`'s own liveness check, and it gets there
+    // after the retained entry has been written back into a map the teardown already cleared. Issue
+    // #288 corrected exactly this for `edit` and #303 for a commit; this is where it survived.
+    expect((thrown as Error).message).toBe("ProjectRuntime is disposed.");
+    // Nothing published. A batch nobody can read still opens one, notifies every subscriber, moves
+    // the sequence and drains whatever a deferred flush was holding, which is why the flush is the
+    // one thing a disposal skips rather than completes.
+    expect(invalidate).not.toHaveBeenCalled();
+    // The phase itself completed rather than being abandoned part-way, and that is the deferral's
+    // whole point: this path has no revert, so a guard between the seam and the retained write would
+    // leave the mask on the compiled Track with no retained definition naming it. Green on both
+    // sides of the slice, and said so.
+    expect(rig.entries).toEqual([`write ${ARM}`, "release"]);
+    // Exactly once, and a second explicit `dispose()` adds no second teardown.
+    rig.runtime.dispose();
+    expect(rig.entries.filter((entry) => entry === "release")).toHaveLength(1);
+  });
+
+  it("LV-16 finishes the escalation against a live host before the release runs", () => {
+    const rig = directRig("writeValues", true);
+
+    const thrown = thrownBy(() => rig.runtime.setValues(ARM, { x: 260 }));
+
+    expect((thrown as Error).message).toBe("ProjectRuntime is disposed.");
+    // The leak, measured as an ordering rather than as a counter. The declining backend makes this
+    // path build, commit and re-seek a staged Track after the seam has already disposed the runtime,
+    // and today the release has returned by then: the build runs against a composition
+    // `disposeComposition` finished tearing down, and nothing will ever release what it produced,
+    // because `dispose()` returns early on its own flag ever after. Deferred, every one of those
+    // reaches a live host and the release that follows cleans up after them.
+    expect(rig.entries).toEqual([
+      `write ${ARM}`,
+      `stage ${ARM}`,
+      `commit ${ARM}`,
+      `progress ${ARM}`,
+      "release",
+    ]);
+  });
+
+  it("LV-17 defers the release past a recompile that built after its seam disposed", () => {
+    const rig = directRig("stageTrack");
+
+    // `y` is a key the authored group does not carry, so this is the recompile rather than the mask:
+    // `#recompileKeyframes` stages before it writes the retained entry and commits the staged Track
+    // after it, which makes it the sharpest of the four paths. It both writes a map after caller code
+    // and builds a resource after it.
+    const thrown = thrownBy(() => rig.runtime.track(ARM).setKeyframe("fk", "y", 300));
+
+    expect((thrown as Error).message).toBe("ProjectRuntime is disposed.");
+    // `commit` before `release` is the claim. Today the release sits between the stage and the
+    // commit, so the Track is committed to a composition that has already been released.
+    expect(rig.entries).toEqual([`write ${ARM}`, `stage ${ARM}`, `commit ${ARM}`, "release"]);
   });
 });

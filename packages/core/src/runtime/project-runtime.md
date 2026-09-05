@@ -70,13 +70,17 @@ Present exactly while a recipe is running, and the same shape the retained maps 
 
 No longer cleared by `dispose()` on every path, and it does not need to be. `#commit` returns early whenever this is set, so it is always `undefined` inside `#apply`, which means a deferred teardown's window can only ever exist while no recipe is open. ADR-056's measured claim that a disposed runtime never has an open recipe therefore survives, and `#assertLive` and `#refuseInsideRecipe` still cannot both have something to say. See ADR-067.
 
-## #committing
+## #inFlight
 
-How many commits are in flight, and the one thing `dispose()` reads to decide whether it may release anything.
+How deeply this class is currently inside caller code it has to survive, and the one thing `dispose()` reads to decide whether it may release anything.
 
-A depth rather than a flag, and that is a correctness choice rather than defensiveness. A hook is caller code and can re-enter `#apply` through a public entry point, so a flag cleared by the inner `finally` would release the graph and the composition while the outer commit was still unwinding through them. That reentrancy is refused now, by `#commit`, so this depth is provably zero or one: `#apply` has one call site and that call site refuses a second entry. It stays a depth rather than becoming the flag that bound makes sufficient, because the bound is the guard's rather than this field's. A counter is correct at any depth, a flag is correct only while the guard above it holds, and narrowing state to the weaker thing a fix makes sufficient is how a later hole becomes silent. See ADR-068.
+Named for what it counts rather than for the first thing that counted, which is the whole of the rename. A commit raises it, and so does every direct write, because what makes a release unsafe is that a seam is on the stack and not that a graph is being replaced. A live value write is not a commit and must never become one -- this document states that as a rule under `## #writeValues` -- so a field read by both cannot be called `#committing` without lying to one of its two readers. The depth stays a depth for the reason below, unchanged. See ADR-069.
 
-Raised ahead of `#derive` rather than ahead of the effect loop, because `#needsTimelineBuild` asks `resolveKeyframes`, which is caller code too. See ADR-067.
+A depth rather than a flag, and that is a correctness choice rather than defensiveness. A hook is caller code and can re-enter this class through a public entry point, so a flag cleared by the inner `finally` would release the graph and the composition while the outer boundary was still unwinding through them.
+
+The bound is no longer one, and the argument for the old bound is retired rather than left standing. While `#apply` was the only member that raised this, `#commit`'s refusal of a re-entrant commit made the depth provably zero or one. There are five raisers now, and a commit hook that calls a direct write is not refused by that guard: `compileTrack` calling `setValues` reaches `#writeValues`, which raises this a second time inside the commit's own window. So a depth of two is reachable, deliberately, and the counter is what makes the drain correct at either. That reachable path is issue #310 rather than something this field decides, and it is named here because a bound stated in prose and no longer true is the shape a later hole hides in.
+
+Raised ahead of `#derive` rather than ahead of the effect loop, because `#needsTimelineBuild` asks `resolveKeyframes`, which is caller code too. See ADR-067 and ADR-069.
 
 ## #pendingTeardown
 
@@ -210,7 +214,7 @@ Tier 0, which is a claim about the mechanism rather than about the cost: `trigge
 
 The order is the whole contract, and ADR-061's amendment owns why: the recipe refusal, then the runtime's liveness and this handle's staleness together, then `validateMotionTrigger`, which is the owner `addMotion` already asks, then the redundant edit, then the seam, whose failure is reported verbatim, and the retained definition last, once nothing that can refuse is left. Liveness joined that sequence at the staleness step rather than as a step of its own, and no case can place it anywhere else: `dispose` clears `#open`, so the recipe refusal and the disposal never both have something to say. See ADR-035, ADR-056's amendment of 2026-09-04 and ADR-061.
 
-The seam is caller code and the retained definition moves after it, so a hook that disposes from here leaves this class holding a Motion entry a teardown has already cleared. That is not this member's to answer and it is not ADR-067's either, because this path never reaches `#commit`: it is issue #305.
+The seam is caller code, so a hook called from here may dispose this runtime, and the retained definition moves after it. This member runs inside `#boundary` for that reason, so the release is deferred past the whole write and the entry it wrote is cleared by the teardown that follows rather than surviving it. The report is the last statement rather than a guard between the seam and the write, on the same reason the write completes: a refusal in the middle would leave the driver layer holding a trigger no retained definition names, and this tier has no flush to carry the answer, so `#assertLive` is asked here and answers the string tier 2's `#invalidateOne` answers. See ADR-069.
 
 ## #setStagger
 
@@ -218,7 +222,7 @@ Moves a Motion's stagger, which no driver reads.
 
 The same tier and the same order as the trigger above, with one difference: there is no contract rule to ask, because the seam is where that refusal already lives and a copy here would be a second owner of it. The seam is therefore asked before the retained definition moves, which is what keeps a refused edit from being recorded as one.
 
-An unchanged value asks the seam nothing, and a cleared one leaves no key behind. See ADR-061. The same open question about a seam that disposes applies here, and it is issue #305's.
+An unchanged value asks the seam nothing, and a cleared one leaves no key behind. See ADR-061. A seam that disposes is answered the same way the trigger above answers it, through the same boundary and the same last statement, which is the whole of why one condition does not get a second contract on this tier. See ADR-069.
 
 ## #motionHandle
 
@@ -246,7 +250,7 @@ The resolve is validation and is never skipped, and only the timeline build is s
 
 Asked from `#derive` rather than from `#replaceTrack`, which moves it from once per op to once per committed replacement and leaves it exactly where it was for every caller outside a recipe. What the answer is compared with is `sameCompiledTrackInput`'s question rather than this one's. See ADR-062 and ADR-064.
 
-The resolve is a seam, so this member is the first caller code a commit reaches and it runs before any effect. That is why `#committing` is raised ahead of `#derive` rather than ahead of the effect loop. See ADR-067.
+The resolve is a seam, so this member is the first caller code a commit reaches and it runs before any effect. That is why the boundary is entered ahead of `#derive` rather than ahead of the effect loop. See ADR-067.
 
 ## #replaceTrack
 
@@ -268,6 +272,16 @@ Refused rather than merged, and the merge is the direction issue #307 asked to b
 
 Read after the recipe check and never before it. A recipe opened from inside a hook stages into its own pair as usual and is refused once, when it tries to apply, which keeps one owner of this refusal rather than a second copy in `edit`. Both phases refuse, and the message names neither: a settle-phase re-entry would stage from the adopted pair and lose nothing, and it is refused because the settle steps still queued were derived against the pair it would replace, in the one phase with no revert list. See ADR-068 and `RA-118` through `RA-122`.
 
+## #boundary
+
+Runs one body inside the window during which a release is owed rather than taken, and the one owner of the depth, the decrement and the drain.
+
+Every seam this class calls is caller code, so every one of them may call `dispose()`. Releasing from inside that call hands whatever is still unwinding -- a rollback list, an escalation, a staged Track waiting to be committed -- a disposed graph and a released composition. So the release is deferred to the outermost boundary and taken exactly once, there.
+
+One member rather than the same three statements at five call sites. The drain is an ordering, and an ordering enforced at n call sites is enforced at the first of them; four more copies of `#apply`'s `finally` is the shape issue #298 deleted seventeen of. `#apply` wraps its whole body in it, and so do all four direct writes, at the outermost of the two so nothing double-raises: `#setKeyframe` reaches either `#writeValues` or `#recompileKeyframes` and never both, no direct write calls another, and none of them reaches `#commit`.
+
+Sharing one counter with the commit boundary widens `schema-commit-reentrant`, and that widening is owned rather than discovered. A structural verb called from inside a `writeValues`, `stageTrack`, `replaceMotionTrigger` or `setMotionStagger` seam is refused now, where it used to apply, and it is ADR-068's lost update one indirection out: `#writeValues` resolves its entry from the retained pair, calls the seam, and writes that entry back, so a commit made from inside the seam has its change to that node overwritten by the `set` that follows. `RA-125` pins it. A second depth field so the two conditions stayed separate was refused: two pieces of state for one condition, and two owners of when a release may happen. See ADR-069.
+
 ## #apply
 
 Applies one accepted pair: derive, apply the effects, ask the graph, settle, and flush once.
@@ -288,7 +302,7 @@ The settle loop is deliberately unguarded, and that asymmetry is the decision ra
 
 The `finally` drains the release, once, at depth zero. That is why `dispose()` may be called from inside any hook here without the rollback being handed a graph and a composition that no longer exist, and it is what makes `Error: GraphRuntime is disposed.` unreachable through a commit. See ADR-067, `RA-114`, `RA-115` and `RA-117`.
 
-The depth it counts can only ever be one now, because the member above refuses a re-entry into this one, so the pair this member holds in a local cannot be adopted over by a second commit running inside it. See ADR-068.
+The depth is no longer this member's to own. `#boundary` holds the raise, the decrement and the drain, and this member wraps its whole body in one call, which keeps the raise ahead of `#derive` and costs one closure per commit. The pair it holds in a local still cannot be adopted over by a second commit running inside it, because `#commit` refuses that re-entry. What is reachable is a direct write inside one of these hooks, which raises the depth to two and is issue #310's rather than this member's. One consequence to know rather than discover: the two early returns in the flush phase return from the closure rather than from this member, which is identical in effect while this member answers `void`. See ADR-068 and ADR-069.
 
 ## #derive
 
@@ -320,7 +334,7 @@ Order, and it is load-bearing. Validate the rewritten definition when an animate
 
 Not a `#commit` caller, and it must not become one: topology did not change, so there is no candidate graph to accept and nothing to roll back. A static-only write validates nothing and builds nothing. No `replaceGraph` on either path. See ADR-059 and ADR-060.
 
-Because it is not a `#commit` caller, ADR-067's boundary does not see it, and the hook it writes through is caller code. A hook that disposes leaves the retained entry written back into a map the teardown has already cleared, and the `invalidate` at the end then reports the graph layer's own refusal to the caller. That is issue #305 rather than a property of this order.
+It is not a `#commit` caller and it is a boundary anyway, which is ADR-069's whole decision. The hook it writes through is caller code, so a disposal asked for from inside one used to leave the retained entry written back into a map the teardown had already cleared, with the graph layer reporting its own refusal to the caller afterwards. The body runs inside `#boundary` now, so the release is owed rather than taken, the phase completes against a live host, and the flush at the end is `#invalidateOne`'s rather than an inline copy of it -- which is what makes the skip and the report one statement owned in one place. The refusal stays outside the boundary, because a refused call is not inside a callback and has nothing to survive. See ADR-069.
 
 ## #boundGroup
 
@@ -332,7 +346,9 @@ It answers with the record beside the group, so no caller re-reads `entry.track.
 
 ## #invalidateOne
 
-One value-tier flush, shared by authored-property recompiles and no-ops.
+The value tier's one flush, and the one place a direct write reports a disposal.
+
+The assert ahead of the call is the skip and the report in one statement: a disposed runtime never reaches `invalidate`, so nothing publishes -- a batch nobody can read still opens, notifies every subscriber, moves the sequence and drains whatever a deferred flush was holding -- and the caller is told by the owner that decided rather than by the graph that noticed. The write that got here has already completed its phase, on purpose. Both track paths end here rather than one of them ending at an inline copy, which is why the report has one owner. `LV-5` measures that as an absence at the caller and a presence here. See ADR-064's amendment of 2026-09-03 and ADR-069.
 
 ## #recompileKeyframes
 
@@ -340,7 +356,7 @@ Recompiles one edited authored record in place, preserving this node's playhead.
 
 Validation and the registry resolve both run before the live Track is touched, and the staged replacement is re-seeked to the progress the displaced one owned, which is ADR-065's. No graph operation is involved because a leaf carries no edge. See ADR-065.
 
-Two seams run before the retained entry moves, so this path carries issue #305's open question in its sharpest form: it both writes the map after caller code and builds a compiled Track after it.
+Two seams run before the retained entry moves, which made this the sharpest of the four direct writes: it both writes the map after caller code and builds a compiled Track after it. The whole body is inside `#boundary`, including the `#resolve` call, because `resolveKeyframes` is caller code too and can dispose from there -- ADR-067's own reason for raising ahead of `#derive`, read one tier down. So the stage, its commit and the re-seek all reach a live composition, and the release that follows cleans up what they produced instead of arriving between them. See ADR-069.
 
 ## #setKeyframe
 
@@ -396,4 +412,4 @@ Why it may not run where `dispose()` was called is the whole of ADR-067, and it 
 
 Exactly once, by construction rather than by two guards agreeing: `dispose()` returns early on its own flag, and this clears `#pendingTeardown` before it does anything, so neither path can reach it twice. `disposeComposition` is therefore called once, after the unwind rather than in the middle of it, which is what `RA-114` and `RA-117` both count.
 
-It still detaches before it disposes the graph, and it still empties both retained maps, which is what `edit` cites when it drops a staged pair rather than committing it. Four write paths outside `#commit` can leave an entry behind after this ran; that is issue #305 and not something this member can answer. See ADR-067.
+It still detaches before it disposes the graph, and it still empties both retained maps, which is what `edit` cites when it drops a staged pair rather than committing it. That claim is now true of every path rather than of commits alone: the four direct writes outside `#commit` used to be able to write an entry back after this ran, and they run inside `#boundary` now, so this member is the last thing that touches either map on every path a seam can dispose from. See ADR-067 and ADR-069.
