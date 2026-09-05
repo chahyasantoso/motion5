@@ -234,9 +234,21 @@ describe("live values reach the graph without replacing it", () => {
     // read from the `#writeValues(` call inside `#handle`, which is declared earlier, to the
     // `#replaceWithObservation` declaration, so this one-owner claim was being measured over a
     // fifteen-member window containing `#apply` and `#invalidateOne`. See issue #314.
+    // Strictly stronger than the form this replaces, and the reason #314 landed first. The claim was
+    // always "one invalidate owner and one diagnostics channel"; it used to be asserted as two
+    // presences inside the caller, which a second flush statement elsewhere in the same member would
+    // have satisfied just as well. Now that the flush has a named owner it is asserted as an absence
+    // at the caller and a presence at the owner, which is unwritable against a region bounded by a
+    // neighbour because both members would sit in one window. See ADR-069.
     const write = member(code(RUNTIME_SOURCE), "#writeValues(");
-    expect(write).toContain("this.#graph.invalidate([nodeId])");
-    expect(write).toContain("this.#diagnostics.recordAll(batch.diagnostics)");
+    const flush = member(code(RUNTIME_SOURCE), "#invalidateOne(");
+    expect(write).not.toContain("this.#graph.invalidate(");
+    expect(write).not.toContain("this.#diagnostics.recordAll(");
+    expect(flush).toContain("this.#graph.invalidate([nodeId])");
+    expect(flush).toContain("this.#diagnostics.recordAll(batch.diagnostics)");
+    // The report lives in the same member as the flush, which is what makes skipping and reporting
+    // one statement rather than two that could disagree.
+    expect(flush).toContain("this.#assertLive()");
     handle.dispose();
   });
 
