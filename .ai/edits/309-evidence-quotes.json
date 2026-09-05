@@ -1,0 +1,16 @@
+{
+  "message": "docs(runtime): quote the red run rather than summarising it",
+  "target": 322,
+  "edits": [
+    {
+      "path": "packages/core/test/unit/runtime/structural-commit-path.test.ts",
+      "find": "    // the reason the call may not run.",
+      "replace": "    // the reason the call may not run. The red run reads exactly that, and it is quoted here rather\n    // than summarised: `adding Unknown graph node \"hero/hand\".`, then `stale Track \"hero/arm\" is no\n    // longer live.` and `keyframe Track \"hero/arm\" is no longer live.` -- one false absence and two\n    // true answers to a question nobody asked."
+    },
+    {
+      "path": "docs/ADR-070-one-reentrancy-rung.md",
+      "find": "`RA-139` is the accepting direction, and it shows both thunks resolving rather than merely deferring.",
+      "replace": "`RA-139` is the accepting direction, and it shows both thunks resolving rather than merely deferring.\n\nOne of four red, measured rather than predicted: run [33968574989](https://github.com/chahyasantoso/motion5/actions/runs/33968574989), archived at `logs/33968574989/` on `ci-logs`, reports 1 failed and 967 passed across 186 files, with `typecheck` and `format:check` green ahead of it, so the failure is an assertion that disagreed rather than a file that would not compile. `RA-138` fails on all three of its shapes in one diff: `adding Unknown graph node \"hero/hand\".`, which is the false absence this amendment exists for, and `stale Track \"hero/arm\" is no longer live.` twice, once through the handle's live-write member and once through `#setKeyframe` one line earlier. `RA-136`, `RA-137` and `RA-139` are green in that same run, which is the measurement behind the paragraph above rather than a claim about it. Run [33968799301](https://github.com/chahyasantoso/motion5/actions/runs/33968799301) is green on all seven required checks."
+    }
+  ]
+}
