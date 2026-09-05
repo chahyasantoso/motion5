@@ -70,9 +70,11 @@ Present exactly while a recipe is running, and the same shape the retained maps 
 
 No longer cleared by `dispose()` on every path, and it does not need to be. `#commit` returns early whenever this is set, so it is always `undefined` inside `#apply`, which means a deferred teardown's window can only ever exist while no recipe is open. ADR-056's measured claim that a disposed runtime never has an open recipe therefore survives, and `#assertLive` and `#refuseInsideRecipe` still cannot both have something to say. See ADR-067.
 
-## #committing
+## #inFlight
 
-How many commits are in flight, and the one thing `dispose()` reads to decide whether it may release anything.
+How deeply this class is currently inside caller code it has to survive, and the one thing `dispose()` reads to decide whether it may release anything.
+
+Named for what it counts rather than for the first thing that counted, which is the whole of the rename. A commit raises it, and so does every direct write, because what makes a release unsafe is that a seam is on the stack and not that a graph is being replaced. A live value write is not a commit and must never become one -- this document states that as a rule under `## #writeValues` -- so a field read by both cannot be called `#committing` without lying to one of its two readers. The depth stays a depth for the reason below, unchanged. See ADR-069.
 
 A depth rather than a flag, and that is a correctness choice rather than defensiveness. A hook is caller code and can re-enter `#apply` through a public entry point, so a flag cleared by the inner `finally` would release the graph and the composition while the outer commit was still unwinding through them. That reentrancy is refused now, by `#commit`, so this depth is provably zero or one: `#apply` has one call site and that call site refuses a second entry. It stays a depth rather than becoming the flag that bound makes sufficient, because the bound is the guard's rather than this field's. A counter is correct at any depth, a flag is correct only while the guard above it holds, and narrowing state to the weaker thing a fix makes sufficient is how a later hole becomes silent. See ADR-068.
 
@@ -267,6 +269,16 @@ It also answers whether it may be entered while a commit is already in flight, a
 Refused rather than merged, and the merge is the direction issue #307 asked to be measured first because it is the DRY one. It cannot be built. This member's callee holds the pair it is committing in a local rather than in a field, so there is nothing for a reader to resolve against, and `#open` means a recipe may stage into this pair, which a commit that has already applied effects derived from a comparison of two pairs cannot honour. Reusing that field would give one accessor two incompatible meanings depending on which member set it, which is the invisible-context shape ADR-064 cut two verbs for.
 
 Read after the recipe check and never before it. A recipe opened from inside a hook stages into its own pair as usual and is refused once, when it tries to apply, which keeps one owner of this refusal rather than a second copy in `edit`. Both phases refuse, and the message names neither: a settle-phase re-entry would stage from the adopted pair and lose nothing, and it is refused because the settle steps still queued were derived against the pair it would replace, in the one phase with no revert list. See ADR-068 and `RA-118` through `RA-122`.
+
+## #boundary
+
+Runs one body inside the window during which a release is owed rather than taken, and the one owner of the depth, the decrement and the drain.
+
+Every seam this class calls is caller code, so every one of them may call `dispose()`. Releasing from inside that call hands whatever is still unwinding -- a rollback list, an escalation, a staged Track waiting to be committed -- a disposed graph and a released composition. So the release is deferred to the outermost boundary and taken exactly once, there.
+
+One member rather than the same three statements at five call sites. The drain is an ordering, and an ordering enforced at n call sites is enforced at the first of them; four more copies of `#apply`'s `finally` is the shape issue #298 deleted seventeen of. `#apply` wraps its whole body in it, and so do all four direct writes, at the outermost of the two so nothing double-raises: `#setKeyframe` reaches either `#writeValues` or `#recompileKeyframes` and never both, no direct write calls another, and none of them reaches `#commit`.
+
+Sharing one counter with the commit boundary widens `schema-commit-reentrant`, and that widening is owned rather than discovered. A structural verb called from inside a `writeValues`, `stageTrack`, `replaceMotionTrigger` or `setMotionStagger` seam is refused now, where it used to apply, and it is ADR-068's lost update one indirection out: `#writeValues` resolves its entry from the retained pair, calls the seam, and writes that entry back, so a commit made from inside the seam has its change to that node overwritten by the `set` that follows. `RA-125` pins it. A second depth field so the two conditions stayed separate was refused: two pieces of state for one condition, and two owners of when a release may happen. See ADR-069.
 
 ## #apply
 
