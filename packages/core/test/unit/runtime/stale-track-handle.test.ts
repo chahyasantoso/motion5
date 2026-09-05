@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type {
   AuthoredPluginGroup,
@@ -10,6 +9,7 @@ import type {
 import { StaleTrackHandleError, type TrackHandle } from "../../../src/contract/track-handle";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { code, member } from "../../helpers/source-region";
 
 /**
  * Issue #217, split from #212.
@@ -145,24 +145,6 @@ function touch(handle: TrackHandle, member: string): () => unknown {
   const args = [...(MEMBER_ARGUMENTS[member] ?? [])];
   return () => call.apply(handle, args);
 }
-/**
- * Strips whole-line comments before a source assertion. A gate reads code, never prose, and the
- * resolver's own doc comment necessarily describes the comparison it owns. Line-wise is enough
- * because every comment in that module occupies its own line.
- */
-function code(path: string): string {
-  return readFileSync(path, "utf8")
-    .split("\n")
-    .filter((line) => !/^(?:\/\/|\/\*|\*)/.test(line.trim()))
-    .join("\n");
-}
-function region(source: string, from: string, until: string): string {
-  const start = source.indexOf(from);
-  expect(start).toBeGreaterThan(-1);
-  const end = source.indexOf(until, start + from.length);
-  expect(end).toBeGreaterThan(start);
-  return source.slice(start, end);
-}
 
 describe("a stale TrackHandle refuses uniformly, and `live` asks without throwing", () => {
   it("SH-1 refuses on every member of the enumerated public handle surface", () => {
@@ -295,11 +277,10 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
 
     // The factory decides nothing. Every member delegates, so there is no place left for a guard
     // to grow back into.
-    const factory = region(
-      source,
-      "#handle(id: string, token: number): TrackHandle {",
-      "#removeTrack(id: string, token: number): void {",
-    );
+    // The member's own closing brace, not the next member's name. `#removeTrack` is in no part of
+    // what this case claims, so renaming it or declaring anything between the two would have
+    // decided a claim about the factory. See issue #314.
+    const factory = member(source, "#handle(id: string, token: number): TrackHandle {");
     expect(factory.match(/\bif\s*\(/g) ?? []).toEqual([]);
     expect(factory).not.toMatch(/\breturn;/);
   });

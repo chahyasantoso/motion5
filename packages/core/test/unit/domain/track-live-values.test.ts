@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { LiveValues } from "../../../src/contract/track-handle";
 import type { PluginComposer } from "../../../src/domain/plugins";
 import { LiveValueKeyError, Track } from "../../../src/domain/track";
 import { createPlugin, resolveAuthored } from "../../helpers/resolved-plugins";
+import { code, declaration, member } from "../../helpers/source-region";
 
 /**
  * Issue #218, part B of #212, extended by issue #231.
@@ -96,20 +96,6 @@ function overlayRefusalFor(key: string, prepared: readonly string[] = []): LiveV
     throw error;
   }
   throw new Error(`Expected overlay key "${key}" to be refused.`);
-}
-/** Strips whole-line comments before a source assertion. A gate reads code, never prose. */
-function code(path: string): string {
-  return readFileSync(path, "utf8")
-    .split("\n")
-    .filter((line) => !/^(?:\/\/|\/\*|\*)/.test(line.trim()))
-    .join("\n");
-}
-function region(source: string, from: string, until: string): string {
-  const start = source.indexOf(from);
-  expect(start).toBeGreaterThan(-1);
-  const end = source.indexOf(until, start + from.length);
-  expect(end).toBeGreaterThan(start);
-  return source.slice(start, end);
 }
 
 describe("a live value masks the interpolated state, and nothing else", () => {
@@ -209,7 +195,11 @@ describe("a live value masks the interpolated state, and nothing else", () => {
   });
 
   it("PK-18 declares the port capability and no longer declares the animated reason", () => {
-    const timeline = region(code(PORT_SOURCE), "export interface InterpolationTimeline {", "}");
+    const timeline = declaration(
+      code(PORT_SOURCE),
+      "export interface InterpolationTimeline {",
+      "}",
+    );
     const declared = [...timeline.matchAll(/^ {2}(?:readonly )?([A-Za-z]\w*)/gm)].map(
       (match) => match[1],
     );
@@ -226,7 +216,7 @@ describe("a live value masks the interpolated state, and nothing else", () => {
     expect(timeline).toMatch(/patchKeys\?\(/);
 
     // The retired reason cannot come back as a silent branch.
-    const refusal = region(code(TRACK_SOURCE), "export type LiveValueRefusal", ";");
+    const refusal = declaration(code(TRACK_SOURCE), "export type LiveValueRefusal", ";");
     expect(refusal).toContain('"unknown" | "kind" | "prepared"');
     expect(refusal).not.toMatch(/"animated"/);
   });
@@ -243,7 +233,10 @@ describe("a live value masks the interpolated state, and nothing else", () => {
     // read the publisher's `MemberState` and every composition share.
     expect(track.interpolated()).not.toEqual(before);
     expect(track.compose().values).not.toEqual(before);
-    expect(region(code(TRACK_SOURCE), "interpolated(): ImmutableRecord {", "compose(")).toContain(
+    // Bounded by the member's own closing brace rather than by `compose(`, which is the name of
+    // the member declared after it: moving either one changes no behaviour and would have decided
+    // this case. See issue #314.
+    expect(member(code(TRACK_SOURCE), "interpolated(): ImmutableRecord {")).toContain(
       "this.#values",
     );
   });

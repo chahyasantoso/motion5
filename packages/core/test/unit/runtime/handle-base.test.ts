@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type {
   MotionDefinition,
@@ -12,6 +11,7 @@ import { StaleMotionHandleError, type MotionHandle } from "../../../src/contract
 import { StaleTrackHandleError } from "../../../src/contract/track-handle";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { code, member } from "../../helpers/source-region";
 
 /**
  * Slice B1 of issue #223, on top of A1 through A3, 7a and 7c.
@@ -384,7 +384,7 @@ describe("one handle base, one definition spelling, and one stale error family",
   });
 
   it("RA-113 resolves both child lookups through one rung rather than one order each", () => {
-    const source = readFileSync(RUNTIME_SOURCE, "utf8");
+    const source = code(RUNTIME_SOURCE);
 
     // `SH-7`'s claim about the track factory, asked of the motion one: the DRY half as a number.
     // The resolve, the qualification and the delegate were one nested expression in each of the two
@@ -402,12 +402,23 @@ describe("one handle base, one definition spelling, and one stale error family",
     // And it is a rung on the reading ladder rather than a disposal check. `live` reads
     // `#motionIfLive` through the same members and may never throw, which is why the guard sits on
     // the writing rungs that follow instead. See ADR-056's amendment of 2026-09-04.
-    const from = source.indexOf("#motionIfLive(id: string, token: number)");
-    const until = source.indexOf("#writableEntry(id: string, token: number): TrackEntry {");
-    expect(from).toBeGreaterThan(-1);
-    expect(until).toBeGreaterThan(from);
-    const ladder = source.slice(from, until);
-    expect(ladder).toContain("#liveChildNode(");
-    expect(ladder).not.toContain("#assertLive");
+    //
+    // Asked of each rung by name rather than of a span bounded by the first writing rung's, which
+    // is what issue #314 owns. The retired bound was `#writableEntry`, a member this claim is not
+    // about, so moving either end changed no behaviour and decided the case; and a span has no
+    // bound that belongs to it, so the claim is spelled once per rung instead. The accepting
+    // direction the span form left implied is asserted here too, in the same rig.
+    const CHILD = "#liveChildNode(motionId: string, token: number, trackId: string): string {";
+    const rungs = [
+      "#motionIfLive(id: string, token: number): MotionEntry | undefined {",
+      "#liveMotion(id: string, token: number): MotionEntry {",
+      "#liveId(motionId: string, token: number): string {",
+      CHILD,
+    ];
+    expect(rungs.filter((rung) => member(source, rung).includes("#assertLive"))).toEqual([]);
+    expect(member(source, CHILD)).toContain("qualifyMotionTrack(");
+    expect(member(source, "#writableMotion(id: string, token: number): MotionEntry {")).toContain(
+      "#assertLive",
+    );
   });
 });

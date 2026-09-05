@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { AuthoredStop, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { StaleTrackHandleError, type TrackHandle } from "../../../src/contract/track-handle";
@@ -9,6 +8,7 @@ import { transformPlugin } from "../../../src/plugins/transform";
 import { createManualClock } from "../../../src/ports/clock";
 import type { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
+import { code, member } from "../../helpers/source-region";
 
 /**
  * Issue #218, part B of #212, extended by issue #231. The two runtime entry points, neither of which
@@ -94,19 +94,6 @@ function load(): ProjectHandle {
 function runtimeOf(handle: ProjectHandle): ProjectRuntime {
   return (handle as unknown as { _runtime: ProjectRuntime })._runtime;
 }
-function code(path: string): string {
-  return readFileSync(path, "utf8")
-    .split("\n")
-    .filter((line) => !/^(?:\/\/|\/\*|\*)/.test(line.trim()))
-    .join("\n");
-}
-function region(source: string, from: string, until: string): string {
-  const start = source.indexOf(from);
-  expect(start).toBeGreaterThan(-1);
-  const end = source.indexOf(until, start + from.length);
-  expect(end).toBeGreaterThan(start);
-  return source.slice(start, end);
-}
 function values(handle: ProjectHandle, id: string): Readonly<Record<string, unknown>> {
   const patch = handle.get(id);
   expect(patch).toBeDefined();
@@ -154,8 +141,12 @@ describe("live values reach the graph without replacing it", () => {
     expect(batch.seeds).toEqual([ARM]);
 
     // One invalidate owner and one diagnostics channel, which is a claim about the code and is
-    // asserted as one: a healthy flush has nothing to record.
-    const write = region(code(RUNTIME_SOURCE), "#writeValues(", "#replaceWithObservation(");
+    // asserted as one: a healthy flush has nothing to record. Addressed by the member that owns the
+    // claim rather than by the next member's name, and that is not a tidy-up: the retired bounds
+    // read from the `#writeValues(` call inside `#handle`, which is declared earlier, to the
+    // `#replaceWithObservation` declaration, so this one-owner claim was being measured over a
+    // fifteen-member window containing `#apply` and `#invalidateOne`. See issue #314.
+    const write = member(code(RUNTIME_SOURCE), "#writeValues(");
     expect(write).toContain("this.#graph.invalidate([nodeId])");
     expect(write).toContain("this.#diagnostics.recordAll(batch.diagnostics)");
     handle.dispose();
@@ -282,7 +273,8 @@ describe("live values reach the graph without replacing it", () => {
     // cost exactly what it was.
     arm.setValues({ x: 260 });
     expect(invalidate).toHaveBeenCalledTimes(1);
-    const write = region(code(RUNTIME_SOURCE), "#writeValues(", "#replaceWithObservation(");
+    // Bounded by the member the claim is about rather than by a neighbour's name. See issue #314.
+    const write = member(code(RUNTIME_SOURCE), "#writeValues(");
     expect(write).toContain("if (involved)");
     expect(write).toContain("validateTrackDefinition(rewritten");
     handle.dispose();
