@@ -28,6 +28,8 @@ One side effect a structural commit needs in place before the graph is asked to 
 
 `revert` is the inverse, and it is optional because a removal and a motion destroy reach the candidate graph with no hook applied yet. An effect counts as applied only once its `apply` returned, which is `#apply`'s own. See `U-7` and `RA-2`.
 
+Every one of these inverses reaches the composition, which is why a teardown may not run between an `apply` and its `revert`. That is ADR-067's, and it is the reason `#teardown` is deferred rather than called where `dispose()` was.
+
 ## SchemaPlan
 
 One structural transaction, as data, and now only the pair the graph is asked to accept.
@@ -43,6 +45,8 @@ What a plan no longer carries is a hook list: a commit's hooks are derived from 
 What one accepted pair costs, and the only declaration in this file that names a hook.
 
 `effects` are applied before the graph sees the candidate and reverted in **apply order** when it refuses, which is ADR-045's republish-before-restore rule rather than an incidental ordering. `settle` runs only after acceptance. See ADR-031 and ADR-045.
+
+`settle` carries no inverse, and that absence is load-bearing rather than an omission: the graph has already accepted, so a settle step is not allowed to fail. `#apply` depends on that, which is why it never abandons the phase halfway. Nothing enforces it, and that is issue #306 rather than a property of this declaration.
 
 `touched` names the nodes this transaction changed and is seeded into one flush once the commit settled. Empty is a real answer rather than a default, and why a commit that derives no node does not flush at all is ADR-064's amendment. Which nodes a removal names, and why a solver is the reader an edge test misses, is ADR-051's amendment. See `RA-98` and `RA-99`.
 
@@ -63,6 +67,20 @@ Not `readonly`, because a commit replaces the map object rather than rewriting i
 The open transaction, and the one piece of state `edit` adds to this class.
 
 Present exactly while a recipe is running, and the same shape the retained maps are, read through the two accessors so no verb learns it is inside a recipe. See ADR-064.
+
+No longer cleared by `dispose()` on every path, and it does not need to be. `#commit` returns early whenever this is set, so it is always `undefined` inside `#apply`, which means a deferred teardown's window can only ever exist while no recipe is open. ADR-056's measured claim that a disposed runtime never has an open recipe therefore survives, and `#assertLive` and `#refuseInsideRecipe` still cannot both have something to say. See ADR-067.
+
+## #committing
+
+How many commits are in flight, and the one thing `dispose()` reads to decide whether it may release anything.
+
+A depth rather than a flag, and that is a correctness choice rather than defensiveness. A hook is caller code and can re-enter `#apply` through a public entry point, so a flag cleared by the inner `finally` would release the graph and the composition while the outer commit was still unwinding through them. That reentrancy is a defect of its own and it is issue #307's, but the counter refuses to add a second one on top of it.
+
+Raised ahead of `#derive` rather than ahead of the effect loop, because `#needsTimelineBuild` asks `resolveKeyframes`, which is caller code too. See ADR-067.
+
+## #pendingTeardown
+
+That a release was asked for and has not happened yet. Set only by `dispose()` and cleared only by `#teardown`, which is what makes the release exactly-once by construction rather than by two guards agreeing on a condition. See ADR-067.
 
 ## #readTracks
 
@@ -91,6 +109,8 @@ The same question about the other map, and the same reason.
 Attaches one member, and the one owner of mounting.
 
 Split from the public verb because a commit mounts too, for the reason ADR-064's amendment records. The public member owns the contract, this owns the attach. See `RA-80`.
+
+Reached from a settle step, which is why the teardown is deferred past that phase rather than into it: `GraphRuntime.attach` asserts liveness, so a release that ran when a settle hook disposed would make this throw on the next step with the commit already adopted and nothing left to unwind it. See ADR-067 and `RA-117`.
 
 ## #transaction
 
@@ -121,6 +141,10 @@ The entry for a node id, or the refusal for an id this project never had. Separa
 ## #liveOf
 
 The one place in this file that compares a captured token against the live one, generic over the entry rather than over the map it came from because the comparison is the same question about either. The two probes below it are two names for two maps rather than two copies of the rule, which `SH-7` measures as a count. See ADR-056 and ADR-061.
+
+A disposed runtime has no live entry, and that is decided here rather than left to the fact that `#teardown` empties both maps. Those two used to be simultaneous, which is why ADR-064's amendment of 2026-09-04 could state the mechanism as "staleness answered only because `dispose` empties the retained maps and the token lookup misses". The teardown is deferrable past a commit now, so they are not: a settle-phase hook runs after `dispose()` returned and before anything is cleared, and a handle answering `live` in that window would be reporting a project whose disposal the caller has already been told happened.
+
+Not a throw, which is the whole reason the term belongs here rather than one rung up. `live` reads this and may never throw, so ADR-056's refusal of `#assertLive` inside the reading ladder is untouched: a read still refuses under the stale family and a write still reports the disposal, because `#writableEntry` and `#writableMotion` ask liveness before they resolve. See ADR-067 and `RA-116`.
 
 ## #entryIfLive
 
@@ -186,13 +210,15 @@ Tier 0, which is a claim about the mechanism rather than about the cost: `trigge
 
 The order is the whole contract, and ADR-061's amendment owns why: the recipe refusal, then the runtime's liveness and this handle's staleness together, then `validateMotionTrigger`, which is the owner `addMotion` already asks, then the redundant edit, then the seam, whose failure is reported verbatim, and the retained definition last, once nothing that can refuse is left. Liveness joined that sequence at the staleness step rather than as a step of its own, and no case can place it anywhere else: `dispose` clears `#open`, so the recipe refusal and the disposal never both have something to say. See ADR-035, ADR-056's amendment of 2026-09-04 and ADR-061.
 
+The seam is caller code and the retained definition moves after it, so a hook that disposes from here leaves this class holding a Motion entry a teardown has already cleared. That is not this member's to answer and it is not ADR-067's either, because this path never reaches `#commit`: it is issue #305.
+
 ## #setStagger
 
 Moves a Motion's stagger, which no driver reads.
 
 The same tier and the same order as the trigger above, with one difference: there is no contract rule to ask, because the seam is where that refusal already lives and a copy here would be a second owner of it. The seam is therefore asked before the retained definition moves, which is what keeps a refused edit from being recorded as one.
 
-An unchanged value asks the seam nothing, and a cleared one leaves no key behind. See ADR-061.
+An unchanged value asks the seam nothing, and a cleared one leaves no key behind. See ADR-061. The same open question about a seam that disposes applies here, and it is issue #305's.
 
 ## #motionHandle
 
@@ -220,6 +246,8 @@ The resolve is validation and is never skipped, and only the timeline build is s
 
 Asked from `#derive` rather than from `#replaceTrack`, which moves it from once per op to once per committed replacement and leaves it exactly where it was for every caller outside a recipe. What the answer is compared with is `sameCompiledTrackInput`'s question rather than this one's. See ADR-062 and ADR-064.
 
+The resolve is a seam, so this member is the first caller code a commit reaches and it runs before any effect. That is why `#committing` is raised ahead of `#derive` rather than ahead of the effect loop. See ADR-067.
+
 ## #replaceTrack
 
 Replaces one node's definition in the pair, preserving its node id and its token.
@@ -231,6 +259,10 @@ A map builder: the staging, the Motion republish and their reverts are `#derive`
 The one path by which a structural change reaches the graph, or the open transaction.
 
 While a recipe is open there is nothing to do here: every entry point already wrote into the open pair. With none open the pair is applied immediately, and `edit` arrives here too, after its `finally` cleared the transaction and after the liveness re-ask that member owns. The sentence above was aspirational while `edit` called `#apply` directly, because there were two paths: the decision to apply now has one place, and therefore the liveness answer has exactly one reader. The guard is statically known at that call site rather than inapplicable to it, and it answers `none open, apply` for the right reason. See ADR-064 and its amendment of 2026-09-04.
+
+It is not where a deferred teardown is drained, and it may not become that. This member returns early while a recipe is open, so a release drained here would never run for the `edit` path and would run at the wrong depth for a nested commit. The boundary belongs to the member below, which is the one that has the `try`. See ADR-067.
+
+What it does not answer is whether it may be entered while a commit is already in flight. A hook that calls a structural entry point re-enters this member, finds no open transaction, and applies against a retained pair that lacks the outer commit's change. That is issue #307, and `#committing` is the state it will read.
 
 ## #apply
 
@@ -244,7 +276,13 @@ One flush ends it, seeded with `touched`, and it runs after the settle steps rat
 
 An empty `touched` returns without calling `invalidate`, for the reason ADR-064's amendment records. See `RA-10`.
 
-One call site of its own now, `#commit`, so this member has what `replaceGraph`, `rejectAfterRollback` and every hook already had. It never starts against a runtime its caller disposed, and the re-ask that guarantees that belongs to `edit` rather than here. A guard here could fire for no caller at all: `addMotion` and `#addTrack` ask `#assertLive` themselves, `#removeTrack`, `#removeMotion` and `#replaceTrack` are reached through resolvers that ask it before they resolve, and `edit` re-asks after its recipe returned. It could not answer either, which is the whole point. The one caller that could reach this member while disposed arrived through a handle that answered staleness, and that is `#writableEntry`'s and `#writableMotion`'s now rather than a reason to guard here. A hook applied inside the try is caller code too and could still dispose mid-commit, which is named and out of scope rather than covered. See ADR-064's amendment of 2026-09-04 and `RA-109`.
+One call site of its own now, `#commit`, so this member has what `replaceGraph`, `rejectAfterRollback` and every hook already had. It never starts against a runtime its caller disposed, and the re-ask that guarantees that belongs to `edit` rather than here. A guard on entry could fire for no caller at all: `addMotion` and `#addTrack` ask `#assertLive` themselves, `#removeTrack`, `#removeMotion` and `#replaceTrack` are reached through resolvers that ask it before they resolve, and `edit` re-asks after its recipe returned. See ADR-064's amendment of 2026-09-04 and `RA-109`.
+
+And it is the owner of the commit boundary, which is what makes a runtime one of its own hooks disposed survivable rather than merely named. Every hook it reaches is caller code, so the liveness whichever entry point got here asserted is stale from the first one onward, and this member re-asks rather than trusting it. `#assertLive` is asked in three places and the count is the design. After `#derive`, because `#needsTimelineBuild` asks a seam and nothing has been applied yet, so that refusal costs no rollback. After every `effect.apply()`, which is issue #288's rule one indirection out, landing in the existing `catch` so the existing rollback list and precedence do the work unchanged. And before the flush, where it skips rather than refuses.
+
+The settle loop is deliberately unguarded, and that asymmetry is the decision rather than an omission. A settle step has no `revert` because it is not allowed to fail, so abandoning the phase halfway would leave a staged Track neither committed nor rolled back and a Motion registered against a node that never mounted. The teardown is deferred past the whole phase instead, so `#mountNode`, `evictNode` and both Motion hooks still reach a live graph, and the release that follows cleans up what they produced. The flush is the one thing skipped, on the same reason an empty seed set is: a batch nobody can read still moves the sequence and drains a deferred flush's seeds.
+
+The `finally` drains the release, once, at depth zero. That is why `dispose()` may be called from inside any hook here without the rollback being handed a graph and a composition that no longer exist, and it is what makes `Error: GraphRuntime is disposed.` unreachable through a commit. See ADR-067, `RA-114`, `RA-115` and `RA-117`.
 
 ## #derive
 
@@ -262,6 +300,8 @@ Adopts the accepted pair, which is a pointer move rather than a rewrite.
 
 A named member rather than two lines inside `#apply`, because the ownership change is the thing worth stating where the assignment is: the retained fields are not `readonly` and a plan builder may not keep what it handed over. What the rewrite this replaced cost, and which hazard the read-out existed for, are ADR-064's third amendment. See `RA-92` and `RA-97`.
 
+It is also the line a mid-commit disposal is never allowed to reach when the effect phase aborted, which is where `RA-114` measures that the pair was never partially adopted. See ADR-067.
+
 ## #writeValues
 
 The one live-value write path.
@@ -273,6 +313,8 @@ Tier 2, and refused inside a recipe for the reason tier 0 is: it ends at its own
 Order, and it is load-bearing. Validate the rewritten definition when an animated key is named, then write through the one hook, which is where every key is classified and refused, then rewrite the retained entry and its overlay, escalate if the hook declined, and end at one `invalidate`. Nothing can observe the gap, because no flush happens until that invalidate.
 
 Not a `#commit` caller, and it must not become one: topology did not change, so there is no candidate graph to accept and nothing to roll back. A static-only write validates nothing and builds nothing. No `replaceGraph` on either path. See ADR-059 and ADR-060.
+
+Because it is not a `#commit` caller, ADR-067's boundary does not see it, and the hook it writes through is caller code. A hook that disposes leaves the retained entry written back into a map the teardown has already cleared, and the `invalidate` at the end then reports the graph layer's own refusal to the caller. That is issue #305 rather than a property of this order.
 
 ## #boundGroup
 
@@ -291,6 +333,8 @@ One value-tier flush, shared by authored-property recompiles and no-ops.
 Recompiles one edited authored record in place, preserving this node's playhead.
 
 Validation and the registry resolve both run before the live Track is touched, and the staged replacement is re-seeked to the progress the displaced one owned, which is ADR-065's. No graph operation is involved because a leaf carries no edge. See ADR-065.
+
+Two seams run before the retained entry moves, so this path carries issue #305's open question in its sharpest form: it both writes the map after caller code and builds a compiled Track after it.
 
 ## #setKeyframe
 
@@ -335,3 +379,15 @@ The committed pair as one authored document, walked once.
 One walk, bucketed by the owner each entry already names, with the free tracks falling out of the same pass. A bucket fills in map order, so each motion's list is the list a per-motion filter produced, and a motion that owns nothing answers with an empty list rather than with no key. What asking `#ownedBy` per motion used to cost, and why this is not a second derivation of the fact that member owns, are both ADR-064's third amendment. See `RA-89` and `RA-91`.
 
 Every untouched entry's definition is handed through by identity, for ADR-058's reason. See `RA-90` and ADR-058.
+
+## #teardown
+
+Releases everything this runtime holds, exactly once, and the half of `dispose()` that is allowed to be late.
+
+A refusal and a release are two questions, and only the first may be answered inside a callback this class is still inside. `dispose()` owns the decision and sets the flag, so every member refuses and every handle answers stale from that line onward; this owns the release, and `#apply` may hold it back until the commit it is running has finished unwinding. Nothing about what it does changed when it was split out: the body is `dispose()`'s previous body, moved rather than rewritten.
+
+Why it may not run where `dispose()` was called is the whole of ADR-067, and it is one measurement rather than a preference. Every `SchemaEffect.revert` reaches the composition, because they are the inverses of `compileTrack`, `createMotion` and `stageTrack`, so a release that ran inside a hook would leave the rollback handing a torn-down host the inverse of effects it can no longer apply, and every effect after the disposing one building against a host that will never be asked to release it again. The choice that forces is between double-freeing what the applied effects built and leaking it, and neither is a contract.
+
+Exactly once, by construction rather than by two guards agreeing: `dispose()` returns early on its own flag, and this clears `#pendingTeardown` before it does anything, so neither path can reach it twice. `disposeComposition` is therefore called once, after the unwind rather than in the middle of it, which is what `RA-114` and `RA-117` both count.
+
+It still detaches before it disposes the graph, and it still empties both retained maps, which is what `edit` cites when it drops a staged pair rather than committing it. Four write paths outside `#commit` can leave an entry behind after this ran; that is issue #305 and not something this member can answer. See ADR-067.
