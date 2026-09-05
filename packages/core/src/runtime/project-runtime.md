@@ -218,6 +218,10 @@ Ten call sites and no more, which is the check a later member repeats rather tha
 
 Asked outside `#boundary` at all four direct writes, and that ordering is what keeps a write from refusing itself: the rung is asked before the depth is raised, and the tail of the write asks no rung at all. A refused call is not inside a callback and has nothing to survive, which is the same reason `#writeValues` puts its refusal outside the boundary. See ADR-069 and ADR-070.
 
+It also out-ranks the resolution of whatever the verb was handed, and that order has one owner rather than one per member. Tier 0 always had it: `#setTrigger` and `#setStagger` ask this rung and resolve inside `#boundary` afterwards, which is ADR-061's order and `RA-36` pins it there. Tier 2 did not, because `#writeValues` took a resolved entry and an argument expression is evaluated before the member that would refuse it, so the order was a property of how four call sites happened to nest two expressions rather than something anything owned. The entry arrives as a thunk now, and `#setKeyframe` and `#removeKeyframe` ask this rung one line above their own resolve, which is the same call moved rather than a second one. What that buys is a true diagnosis instead of a false one: a write aimed at the node an in-flight commit is compiling answers `schema-commit-reentrant` rather than `Unknown graph node`, which is false, because that node exists and is compiled in a map the caller cannot see. See ADR-070's amendment.
+
+Asked twice on one path, and that is the cheaper guarantee rather than sloppiness. `#setKeyframe` asks it and may then reach `#writeValues`, which asks it again. Both asks are a pair of field reads with no side effect on either branch, and nothing between them can change either field, so the second cannot answer differently. A variant of `#writeValues` that skipped the rung for an internal caller would be one member with two contracts, and the first caller to pick the wrong one would get no refusal at all. Neither call is dead, stated here so a later reader does not delete one, and `#recompileKeyframes` asks no rung for the same reason read the other way round: both of its callers just did, and it is a tail rather than an entry point.
+
 ## #setTrigger
 
 Installs a Motion's trigger, and reaches no node and no edge doing it.
@@ -338,6 +342,8 @@ A named member rather than two lines inside `#apply`, because the ownership chan
 
 It is also the line a mid-commit disposal is never allowed to reach when the effect phase aborted, which is where `RA-114` measures that the pair was never partially adopted. See ADR-067.
 
+The assignment is unconditional, and it is safe to be unconditional only because nothing can have written the retained pair since `#derive` read it. Every in-place write is refused while the depth is up, so the four members that reach `#tracks.set` and `#motions.set` outside a commit are unreachable from inside one. Without that refusal this assignment silently deletes an `overlay` and a `liveWrite` the composition is still honouring, along with the retained definition a `setValues` rewrote beside them, which is the defect issue #309 owns. Merging the two pairs instead was refused rather than unconsidered: a merge preserves those fields while the definition they describe is the commit's, so `liveWrite` would claim a write against a Track built from a definition that never took it, which is the opposite of the conservative direction ADR-066 chose for that field. See ADR-070's amendment and ADR-066.
+
 ## #writeValues
 
 The one live-value write path.
@@ -351,6 +357,8 @@ Order, and it is load-bearing. Validate the rewritten definition when an animate
 Not a `#commit` caller, and it must not become one: topology did not change, so there is no candidate graph to accept and nothing to roll back. A static-only write validates nothing and builds nothing. No `replaceGraph` on either path. See ADR-059 and ADR-060.
 
 It is not a `#commit` caller and it is a boundary anyway, which is ADR-069's whole decision. The hook it writes through is caller code, so a disposal asked for from inside one used to leave the retained entry written back into a map the teardown had already cleared, with the graph layer reporting its own refusal to the caller afterwards. The body runs inside `#boundary` now, so the release is owed rather than taken, the phase completes against a live host, and the flush at the end is `#invalidateOne`'s rather than an inline copy of it -- which is what makes the skip and the report one statement owned in one place. The refusal stays outside the boundary, because a refused call is not inside a callback and has nothing to survive. See ADR-069.
+
+The entry arrives as a thunk rather than as a value, and the two are not interchangeable. An argument expression is evaluated before this member is entered, so a resolved entry means the retained pair was read before the rung was asked, and inside a commit that read is wrong twice over: it resolves against a pair the commit is about to replace, and for a node the commit is adding it answers `Unknown graph node`, which is false. The thunk is what makes the order this member's own rather than a property of how its four call sites nest two expressions, and the two resolutions stay different on purpose: a handle resolves by id and token through `#writableEntry` and refuses a stale handle, a public verb resolves by id through `#entryOf` and refuses an unknown one. Neither rung moves, and the rule that the `#writable` rungs are not in the handle factory is untouched, because the factory still names `#writableEntry` and only names it lazily. `## #refuseReentrant` owns the order. See ADR-070's amendment.
 
 ## #boundGroup
 
@@ -379,6 +387,8 @@ Two seams run before the retained entry moves, which made this the sharpest of t
 Edits one property of a plugin group this node already authors.
 
 Two paths, chosen by whether the group already authors the key, which is ADR-065's: an existing leaf goes through the live-write owner, and a new or removed one cannot be expressed as a mask, so the authored candidate is validated, resolved and recompiled in place instead. The bound-group precondition keeps both in the value tier. See ADR-065.
+
+It cannot take a thunk, and the reason is worth stating rather than working around: it needs `entry.track.keyframes` through `#boundGroup` before either of its two paths is describable at all, so deferring the resolve would defer a read it immediately has to perform. The refusal moves above the resolve instead, which is the same call one line up rather than a second one, and `#removeKeyframe` is the same shape for the same reason and has no section of its own because the rule has one owner. `## #refuseReentrant` owns it for all four write paths. See ADR-070's amendment.
 
 ## #editRequire
 
