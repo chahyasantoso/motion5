@@ -136,6 +136,16 @@ The resolver every reading member of a track handle goes through, so the contrac
 
 This handle's motion id, once the handle is known to be live. Reading the id and refusing a stale handle are the same call, so there is no order for a member to get wrong.
 
+## #liveChildNode
+
+The node id one child track name resolves to on a Motion handle, and the one owner of the order between three refusals.
+
+Three things can be wrong about `handle.track("leg")` at once, and only one of them is reported: the Motion this handle captured may be gone, the child name may be ill-formed, and the child may not exist. The captured Motion is resolved first, so a disposed runtime answers `StaleMotionHandleError` before `qualifyMotionTrack` reads the name and before `track` or `tryTrack` looks it up, which makes that `TypeError` reachable only on a live handle. Which of the three a caller is told is ADR-056's second amendment, and a read reports the staleness rather than the disposal.
+
+A rung rather than an expression at each call site. The two callbacks that need it wrote the resolve, the qualification and the delegate as one nested expression, twice, so their order was a fact about argument evaluation rather than a decision anything owned: a slice rewriting one of them changed half the contract while the half it did not touch stayed green. This resolves into a local instead, so the ordering is a statement here and both callbacks are one call each. `RA-113` measures that as a count.
+
+Not a disposal check, and it may not become one. `live` reads `#motionIfLive` through this same ladder and may never throw, so the guard belongs on the writing rungs below rather than in any resolver a probe shares. See ADR-056's amendment of 2026-09-04 and its second amendment.
+
 ## #writableEntry
 
 The resolver every writing member of a track handle goes through, and the one owner of the order between two answers to one condition.
@@ -187,6 +197,8 @@ An unchanged value asks the seam nothing, and a cleared one leaves no key behind
 ## #motionHandle
 
 Every member resolves the entry before it reads an argument, which makes staleness the first answer rather than a second one. `tryTrack` refuses here as well, for the reason ADR-061 records: whether this handle is the live one at all is a different question from an id it cannot find.
+
+The factory decides nothing, which was `#handle`'s rule and is this one's too. `definition` and `trackIds` delegate to `#liveMotion` and `#liveId`, the two child lookups delegate to `#liveChildNode`, and every writing member delegates to a `#writable` rung, so no member here states an order and there is nowhere for one to grow back into. `RA-112` owns what the four reading members answer and `RA-113` owns that each answers it from one rung.
 
 ## #removeTrack
 

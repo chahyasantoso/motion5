@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import type {
   MotionDefinition,
   ProjectDefinition,
@@ -42,6 +44,9 @@ const LEG = "hero/leg";
 const ARM = "hero/arm";
 const HAND = "hero/hand";
 const EXTRA = "extra";
+const RUNTIME_SOURCE = fileURLToPath(
+  new URL("../../../src/runtime/project-runtime.ts", import.meta.url),
+);
 /**
  * The one track that authors bindings, and it authors both shapes of one.
  *
@@ -112,7 +117,12 @@ const MOTION_WRITERS = ["addTrack", "setTrigger", "setStagger", "destroy"] as co
  * The members that refuse on a stale handle and keep refusing on a disposed one.
  *
  * `track` and `tryTrack` are here rather than above because they resolve a handle instead of writing
- * through one, which is the side of the line ADR-056's amendment leaves them on.
+ * through one, which is the side of the line ADR-056's amendment leaves them on. Its second
+ * amendment is where that line stops being implied, and it also decides which of three reachable
+ * refusals a lookup answers first.
+ *
+ * `RA-111` reads this partition for the writers' half and `RA-112` for this one, so the two cases
+ * cannot drift about which members are reads.
  */
 const MOTION_READERS = ["definition", "trackIds", "track", "tryTrack"] as const;
 
@@ -324,5 +334,80 @@ describe("one handle base, one definition spelling, and one stale error family",
 
     expect(handle.id).toBe(MOTION);
     expect(handle.live).toBe(false);
+  });
+
+  it("RA-112 keeps a disposed read inside the stale family, `tryTrack` included", () => {
+    const project = runtime();
+    const handle = project.motion(MOTION);
+
+    // The live-runtime directions first, so the answers after the disposal are a change rather than
+    // the only thing this case ever measured. A known child resolves, an unknown one is refused by
+    // the member that owns node ids, and the probe answers about it without throwing.
+    expect(handle.track("leg").id).toBe(LEG);
+    expect(handle.tryTrack("leg")?.id).toBe(LEG);
+    expect(() => handle.track("nope")).toThrow('Unknown graph node "hero/nope".');
+    expect(handle.tryTrack("nope")).toBeUndefined();
+
+    // The third refusal reachable from one lookup, and the reason the order needs an owner rather
+    // than a convention: an ill-formed child name belongs to the id qualifier, not to this runtime.
+    expect(() => handle.track("hero/leg")).toThrow("Track id cannot contain '/'.");
+
+    project.dispose();
+
+    // The same partition `RA-111` asserts covers the member record exactly, read here for the half
+    // that record states rather than measures. Collected, so a red run names every member that
+    // escaped, and the motion id is asserted beside the family: an error carrying the right message
+    // and nothing a caller can branch on would otherwise pass.
+    const escaped = MOTION_READERS.filter((member) => {
+      const thrown = thrownBy(touch(handle, member));
+      return (
+        !(thrown instanceof StaleMotionHandleError) ||
+        (thrown as StaleMotionHandleError).motionId !== MOTION
+      );
+    });
+    expect(escaped).toEqual([]);
+    expect((thrownBy(() => handle.definition) as Error).message).toBe(
+      `Motion "${MOTION}" is no longer live.`,
+    );
+
+    // `tryTrack` is the one member whose signature can absorb the refusal instead of reporting it,
+    // and `undefined` is not free of meaning here: it already says this child is absent from a live
+    // Motion, which is a different fact from a project that no longer exists.
+    expect(thrownBy(() => handle.tryTrack("leg"))).toBeInstanceOf(StaleHandleError);
+
+    // Staleness outranks the name check too, which is what one rung buys: the malformed child that
+    // was refused above is never read here.
+    expect(thrownBy(() => handle.track("hero/leg"))).toBeInstanceOf(StaleMotionHandleError);
+
+    expect(handle.id).toBe(MOTION);
+    expect(handle.live).toBe(false);
+  });
+
+  it("RA-113 resolves both child lookups through one rung rather than one order each", () => {
+    const source = readFileSync(RUNTIME_SOURCE, "utf8");
+
+    // `SH-7`'s claim about the track factory, asked of the motion one: the DRY half as a number.
+    // The resolve, the qualification and the delegate were one nested expression in each of the two
+    // callbacks, so which of the three refusals above answered first was a fact about argument
+    // evaluation rather than a decision, and a slice rewriting one callback would have changed half
+    // of `RA-112`'s contract with the other half still green.
+    expect(source).toContain(
+      "#liveChildNode(motionId: string, token: number, trackId: string): string {",
+    );
+    expect(source.match(/#liveChildNode\(id, token, trackId\)/g) ?? []).toHaveLength(2);
+
+    // Neither callback qualifies a child name itself, so the rung is the only reader of the order.
+    expect(source.match(/qualifyMotionTrack\(runtime\./g) ?? []).toEqual([]);
+
+    // And it is a rung on the reading ladder rather than a disposal check. `live` reads
+    // `#motionIfLive` through the same members and may never throw, which is why the guard sits on
+    // the writing rungs that follow instead. See ADR-056's amendment of 2026-09-04.
+    const from = source.indexOf("#motionIfLive(id: string, token: number)");
+    const until = source.indexOf("#writableEntry(id: string, token: number): TrackEntry {");
+    expect(from).toBeGreaterThan(-1);
+    expect(until).toBeGreaterThan(from);
+    const ladder = source.slice(from, until);
+    expect(ladder).toContain("#liveChildNode(");
+    expect(ladder).not.toContain("#assertLive");
   });
 });
