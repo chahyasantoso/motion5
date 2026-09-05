@@ -838,13 +838,15 @@ describe("a structural change runs one transaction, in one order", () => {
 
     const outcome = outcomeOf(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
 
-    // Issue #310's second consequence, and the one that is not about publication. `mount` attaches
-    // against the pre-commit graph, so the same one condition refuses it, and the settle phase is left
-    // as the only owner of mounting this node. What the pre-slice run reports is read from the run
-    // rather than predicted here: the hook either attaches and leaves the settle step's own
-    // `#mountNode` to throw `already mounted` in the one phase with no error boundary, or it is refused
-    // by `GraphRuntime.attach` for a node the committed graph does not carry yet. Both are red on the
-    // `reentry` line, and only the first is also red on the thrown value.
+    // Issue #310's second consequence, and the one that is not about publication. `mount` reaches the
+    // pre-commit graph, so the same one condition refuses it, and the settle phase is left as the only
+    // owner of mounting this node. Which failure the pre-slice run reports was read from the run
+    // rather than predicted here, and it is not the one the issue named: the journal reads
+    // `reentry Unknown graph node "hero/hand".`, because the verb reaches `GraphRuntime.attach` and
+    // the candidate graph does not carry this node yet, so the settle step's `already mounted` is
+    // never reached. That is the layer that noticed answering in place of the owner that decided,
+    // which is the same defect #288, #303 and #305 each corrected one tier out. ADR-070's Context
+    // owns the correction.
     expect(outcome.thrown).toBeUndefined();
     expect(outcome.value?.live).toBe(true);
     expect(journal.entries).toEqual([
