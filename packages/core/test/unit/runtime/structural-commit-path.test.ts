@@ -5,6 +5,7 @@ import type {
   TrackDefinition,
 } from "../../../src/contract/v5";
 import { StaleMotionHandleError, type MotionHandle } from "../../../src/contract/motion-handle";
+import type { TrackHandle } from "../../../src/contract/track-handle";
 import { createManualClock } from "../../../src/ports/clock";
 import {
   ProjectRuntime,
@@ -59,6 +60,22 @@ import { describeError } from "../../../src/runtime/schema-refusals";
  * than in `structural-commit-flush.test.ts`, because what it costs is a settle step rather than a
  * publication. `RA-135` is the accepting direction for both subjects at once: a hook that only reads
  * is untouched, and one commit publishes exactly once with the seeds `#derive` chose. See ADR-070.
+ *
+ * `RA-136` through `RA-139` are issue #309's, and they own a fourth subject on the same sequence:
+ * what one of those hooks may do to the retained pair, rather than to the commit or to the runtime.
+ * All four in-place write paths call a seam and then mutate that pair by id, and none of them
+ * reaches `#commit`, so a write made from inside a commit landed in a map `#adoptMaps` was about to
+ * replace, with the mask, the patched timeline and the seam call all standing.
+ *
+ * Two of the four are green on both sides of that slice, and the file says so rather than letting it
+ * be counted. ADR-070's rung already refuses all four paths, so `RA-136` and `RA-137` pin what that
+ * record bought, measured on the write path #309 owns rather than on the publishing verbs #310 was
+ * about: the seam is never called, so `overlay`, `liveWrite` and the patched timeline are
+ * unreachable rather than repaired and there is no partial state left to reconcile. `RA-138` is this
+ * slice's own and the only red one, and its subject is the order between the refusal and the entry
+ * resolution rather than the refusal: a write aimed at the node the commit is compiling read
+ * `Unknown graph node`, which is false, because that node exists and is compiled in a map the caller
+ * cannot see. `RA-139` is the accepting direction. See ADR-070's amendment.
  */
 
 const MOTION_ID = "hero";
@@ -261,6 +278,21 @@ function recorder(behaviour: Behaviour = {}): Recorder {
       // step and every settle step above reaches a composition, so a journal that records this can
       // say whether they reached a live one.
       disposeComposition: () => record("composition-dispose"),
+      // The two seams issue #309's subject needs, wired unconditionally rather than behind a flag
+      // the way `stageTrack` is, and the difference is which cases the wiring can reach. `#derive`
+      // calls `stageTrack` on every replacement, so `RA-1` through `RA-7` measure a rig without one
+      // and wiring it always would change what they measure. These two are reached only from
+      // `#writeValues`, `#recompileKeyframes` and `#setStagger`, and no case above calls a verb that
+      // reaches any of the three, so the journal only grows when one of them is called and a case
+      // that reached one silently fails on the new line rather than staying green.
+      writeValues: (nodeId, _values, overlay, rebase) => {
+        const masked = overlay === undefined ? "no-overlay" : "overlay";
+        record(`write ${nodeId} ${String(rebase)} ${masked}`);
+        return undefined;
+      },
+      setMotionStagger: (motionId, stagger) => {
+        record(`stagger-set ${motionId} ${String(stagger)}`);
+      },
       ...(staging
         ? {
             stageTrack: (_track: TrackDefinition, nodeId: string): StagedTrack => {
@@ -916,6 +948,194 @@ describe("a structural change runs one transaction, in one order", () => {
     // reach fails the four reads above, and one that refused by seam rather than by verb fails all of
     // them. A refusal is only evidence beside its accepting direction, and this is that direction in
     // the same rig. The guardrail against padding a red count is why that is stated here.
+    runtime.dispose();
+  });
+
+  it("RA-136 refuses a live write from inside a commit before its seam is reached", () => {
+    const host: Host = {};
+    const journal = recorder({
+      reenter: { from: "compileTrack", call: (runtime) => runtime.setValues(NODE_ID, { x: 1 }) },
+      host,
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+    const retained = runtime.track(NODE_ID).definition;
+
+    const outcome = outcomeOf(() =>
+      runtime.addTrack({ id: "hand", duration: 250 }, { motionId: MOTION_ID }),
+    );
+
+    // Tier 2 on a node that is already loaded, which is this issue's reproduction steps 1 to 4.
+    // Green on both sides of this slice and stated as such: ADR-070's rung already refuses this
+    // call, and what is new is that the path #309 owns is measured at all.
+    expect(describeError(outcome.thrown)).toBe(REENTRANT);
+    expect(journal.entries).toEqual(["compile hero/hand", `reentry ${REENTRANT}`]);
+
+    // The seam is the whole measurement, and it is why all three of this issue's consequences are
+    // unreachable rather than repaired. `overlay`, `liveWrite` and the patched timeline are private
+    // and none of them can move without this line, so its absence answers for all three at once.
+    expect(journal.entries.filter((entry) => entry.startsWith("write "))).toEqual([]);
+
+    // The same object rather than an equal one. A rebase replaces the retained definition, so
+    // identity is what tells a write that never happened from one that happened and was adopted
+    // over: the second leaves `handle.definition` equal to what it was and the composition ahead of
+    // it, which is the disagreement ADR-060 says the rebase exists to prevent.
+    expect(runtime.track(NODE_ID).definition).toBe(retained);
+    expect(runtime.tryTrack(ADDED_ID)).toBeUndefined();
+
+    runtime.dispose();
+  });
+
+  it("RA-137 refuses a tier 0 edit from inside a commit that is moving the motions half", () => {
+    const host: Host = {};
+    let motion: MotionHandle | undefined;
+    const journal = recorder({
+      reenter: { from: "createMotion", call: () => motion?.setStagger(0.25) },
+      host,
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+    motion = runtime.motion(MOTION_ID);
+
+    const outcome = outcomeOf(() =>
+      runtime.addMotion({ id: "villain", trigger: { type: "manual" }, tracks: [] }),
+    );
+
+    // The same shape one map over, from a commit whose plan carries a motions half, so the adoption
+    // this issue names would have landed on `#motions`. `setStagger` rather than `setTrigger`
+    // because the two are one contract on this tier -- `project-runtime.md` says so under
+    // `## #setStagger` -- and a stagger is a bare number, so the case pins the order rather than a
+    // trigger shape it would also have to keep valid.
+    expect(describeError(outcome.thrown)).toBe(REENTRANT);
+    expect(journal.entries).toEqual(["motion-create villain", `reentry ${REENTRANT}`]);
+    expect(journal.entries.filter((entry) => entry.startsWith("stagger-set "))).toEqual([]);
+
+    // The driver layer holds nothing the retained definition does not name, which is the tier 0
+    // version of the disagreement above. Green on both sides too, and for a sharper reason than
+    // `RA-136`: this member has asked its rung before it resolved anything since ADR-061, which is
+    // the order the two track paths did not have and the one this slice gives them.
+    expect(runtime.motion(MOTION_ID).definition.stagger).toBeUndefined();
+    expect(runtime.tryMotion("villain")).toBeUndefined();
+
+    runtime.dispose();
+  });
+
+  it("RA-138 answers the condition that is true rather than an absence that is not", () => {
+    const observed: string[] = [];
+    const host: Host = {};
+    let stale: TrackHandle | undefined;
+    const journal = recorder({
+      reenter: {
+        from: "compileTrack",
+        call: (runtime) => {
+          // The node this hook is compiling. It is absent from the retained pair, so the false
+          // answer is the one available first, while the composition has already compiled it.
+          observed.push(
+            `adding ${describeError(thrownBy(() => runtime.setValues(ADDED_ID, { x: 1 })))}`,
+          );
+          // A handle the removal below retired, through the two entry points that resolved before
+          // they refused: the factory nests two expressions and `#setKeyframe` resolves one line
+          // early, so neither order was owned by anything.
+          observed.push(`stale ${describeError(thrownBy(() => stale?.setValues({ x: 1 })))}`);
+          observed.push(
+            `keyframe ${describeError(thrownBy(() => stale?.setKeyframe("fk", "x", 1)))}`,
+          );
+        },
+      },
+      host,
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+    // Retired without a commit this rig can see. A removal derives settle steps only, so it reaches
+    // `disposeTrack` and `removeMotionTrack` and never `compileTrack`, which is what leaves the
+    // re-entry latch armed for the add below.
+    stale = runtime.track(NODE_ID);
+    stale.remove();
+
+    const added = runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+
+    // This slice's own case, and the only red one. Three writes, three resolutions that out-ranked
+    // the rung, and one condition that is true of all three. Which failure the pre-slice run
+    // reports is read from the run rather than predicted here, per `RA-134`'s precedent, and what
+    // the issue names is a false `Unknown graph node "hero/hand"` for the first: the node exists,
+    // compiled, in a map the caller cannot see, so a caller told it is absent goes looking for a bug
+    // in id qualification. The other two report a staleness, which is true of the handle and is not
+    // the reason the call may not run.
+    expect(observed).toEqual([
+      `adding ${REENTRANT}`,
+      `stale ${REENTRANT}`,
+      `keyframe ${REENTRANT}`,
+    ]);
+
+    // None of the three reached a seam, which is `RA-136`'s measurement asked of the three shapes
+    // that refused for the wrong reason rather than for no reason.
+    expect(journal.entries).toEqual([
+      "dispose hero/arm",
+      "motion-remove hero/arm",
+      "compile hero/hand",
+      // This line describes the closure rather than the three writes. It caught all three itself,
+      // which is what `swallow` expresses for one call, and their outcomes are `observed` above: the
+      // latch allows one re-entry, so three of them are one closure by construction.
+      "reentry accepted",
+      "motion-add hero/hand undefined",
+    ]);
+    expect(journal.entries.filter((entry) => entry.startsWith("write "))).toEqual([]);
+
+    // And the commit the hook was part of is whole, because the hook kept all three refusals.
+    expect(added.live).toBe(true);
+    expect(runtime.instanceCount).toBe(1);
+
+    runtime.dispose();
+  });
+
+  it("RA-139 leaves every write path working outside a commit, and a reading hook untouched", () => {
+    const observed: string[] = [];
+    const host: Host = {};
+    const journal = recorder({
+      reenter: {
+        from: "compileTrack",
+        call: (runtime) => {
+          // Neither of these is a write, which is why the refusal is at the verb rather than at the
+          // seam: a host whose `compileTrack` reads the project is a substitutable implementation of
+          // that port rather than a broken one.
+          observed.push(`definition ${runtime.track(NODE_ID).definition.id}`);
+          observed.push(`readers ${runtime.dependantsOf(NODE_ID).length}`);
+        },
+      },
+      host,
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+
+    const handle = runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+
+    expect(observed).toEqual(["definition arm", "readers 0"]);
+    expect(journal.entries).toEqual([
+      "compile hero/hand",
+      "reentry accepted",
+      "motion-add hero/hand undefined",
+    ]);
+
+    // The accepting direction, and what makes the three cases above evidence rather than a rung that
+    // refuses a verb. Outside any commit all four paths still reach their seam: tier 2 twice, once
+    // through the public verb that resolves by id and once through a live handle that resolves by id
+    // and token, so both thunks are shown to resolve rather than merely to defer, and tier 0 once.
+    runtime.setValues(NODE_ID, { x: 1 });
+    handle.overrideValues({ x: 2 });
+    runtime.motion(MOTION_ID).setStagger(0.25);
+
+    expect(journal.entries.slice(3)).toEqual([
+      "write hero/arm true no-overlay",
+      "write hero/hand false no-overlay",
+      "stagger-set hero 0.25",
+    ]);
+    expect(runtime.motion(MOTION_ID).definition.stagger).toBe(0.25);
+    expect(handle.live).toBe(true);
+
+    // Green on both sides of this slice, deliberately, and the file says so rather than letting it be
+    // counted. It is a lie detector for the thunk: a resolver that is never called answers no write
+    // at all, so a slice that deferred a resolution and forgot to perform it fails here rather than
+    // in a rig nobody wired.
     runtime.dispose();
   });
 });
