@@ -1,0 +1,26 @@
+{
+  "message": "docs(runtime): cite ADR-067 rather than a non-existent ADR-064 amendment",
+  "target": 320,
+  "edits": [
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "// untouched. See ADR-064's amendment of 2026-09-05 and `RA-116`.",
+      "replace": "// untouched. See ADR-067 and `RA-116`."
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "// first of them. See ADR-064's amendment of 2026-09-05 and ADR-069.",
+      "replace": "// first of them. See ADR-067 and ADR-069."
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "// drains whatever a deferred flush was holding. See ADR-064's amendments of 2026-09-03 and\n      // 2026-09-05, and `RA-10`.",
+      "replace": "// drains whatever a deferred flush was holding. See ADR-064's amendment of 2026-09-03,\n      // ADR-067 and `RA-10`."
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "* refusal and the release are two things rather than one. See ADR-064's amendment of 2026-09-05.",
+      "replace": "* refusal and the release are two things rather than one. See ADR-067."
+    }
+  ]
+}
