@@ -1060,7 +1060,10 @@ describe("a structural change runs one transaction, in one order", () => {
     // the issue names is a false `Unknown graph node "hero/hand"` for the first: the node exists,
     // compiled, in a map the caller cannot see, so a caller told it is absent goes looking for a bug
     // in id qualification. The other two report a staleness, which is true of the handle and is not
-    // the reason the call may not run.
+    // the reason the call may not run. The red run reads exactly that, and it is quoted here rather
+    // than summarised: `adding Unknown graph node "hero/hand".`, then `stale Track "hero/arm" is no
+    // longer live.` and `keyframe Track "hero/arm" is no longer live.` -- one false absence and two
+    // true answers to a question nobody asked.
     expect(observed).toEqual([
       `adding ${REENTRANT}`,
       `stale ${REENTRANT}`,
