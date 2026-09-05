@@ -318,7 +318,7 @@ export class ProjectRuntime {
   }
   mount(nodeId: string, instance: object = {}): object {
     this.#assertLive();
-    this.#refuseInsideRecipe("mount");
+    this.#refuseReentrant("mount");
     // Seeds no flush, deliberately, and measured where the reason is written. A member arrives here
     // and nothing publishes, which looks like the asymmetry A2 left behind: a node mounted by a
     // commit is seeded by `#apply` and a node mounted by a caller is seeded by nobody. A seed here
@@ -339,7 +339,7 @@ export class ProjectRuntime {
   }
   unmount(nodeId: string): void {
     this.#assertLive();
-    this.#refuseInsideRecipe("unmount");
+    this.#refuseReentrant("unmount");
     if (!this.#instances.has(nodeId)) return;
     this.#instances.delete(nodeId);
     this.#graph.detach(nodeId);
@@ -426,7 +426,7 @@ export class ProjectRuntime {
    */
   signal(motionId: string, signal: TriggerSignal): void {
     this.#assertLive();
-    this.#refuseInsideRecipe("signal");
+    this.#refuseReentrant("signal");
     this.#signalMotion?.(motionId, signal);
   }
   /**
@@ -622,12 +622,13 @@ export class ProjectRuntime {
     this.#commit({ motions });
   }
 
-  #refuseInsideRecipe(verb: string): void {
+  #refuseReentrant(verb: string): void {
     if (this.#open !== undefined) immediateInTransaction(verb);
+    if (this.#inFlight > 0) commitInFlight();
   }
 
   #setTrigger(id: string, token: number, trigger: MotionDefinition["trigger"]): void {
-    this.#refuseInsideRecipe("setTrigger");
+    this.#refuseReentrant("setTrigger");
     this.#boundary(() => {
       const entry = this.#writableMotion(id, token);
       const motionId = entry.definition.id;
@@ -647,7 +648,7 @@ export class ProjectRuntime {
   }
 
   #setStagger(id: string, token: number, stagger: number | undefined): void {
-    this.#refuseInsideRecipe("setStagger");
+    this.#refuseReentrant("setStagger");
     this.#boundary(() => {
       const entry = this.#writableMotion(id, token);
       const motionId = entry.definition.id;
@@ -940,7 +941,7 @@ export class ProjectRuntime {
   }
 
   #writeValues(nodeId: string, entry: TrackEntry, values: AuthoredValues, rebase: boolean) {
-    this.#refuseInsideRecipe(rebase ? "setValues" : "overrideValues");
+    this.#refuseReentrant(rebase ? "setValues" : "overrideValues");
     // The refusal stays outside the boundary, because a refused call is not inside a callback and
     // has nothing to survive. See ADR-069.
     return this.#boundary(() => {
@@ -1033,7 +1034,7 @@ export class ProjectRuntime {
     value: AuthoredProperty,
   ) {
     const entry = this.#writableEntry(nodeId, token);
-    this.#refuseInsideRecipe("setKeyframe");
+    this.#refuseReentrant("setKeyframe");
     const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
     // Asked through the one reader of the section rather than off the field, so this path and the
     // pure editor cannot disagree about what the group authors. See `RA-106` and issue #255.
@@ -1044,7 +1045,7 @@ export class ProjectRuntime {
   }
   #removeKeyframe(nodeId: string, token: number, plugin: string, key: string) {
     const entry = this.#writableEntry(nodeId, token);
-    this.#refuseInsideRecipe("removeKeyframe");
+    this.#refuseReentrant("removeKeyframe");
     const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
     const edited = removeAuthoredKeyframe(keyframes, bound, key);
     if (edited === keyframes) return this.#invalidateOne(nodeId);
@@ -1179,7 +1180,7 @@ export class ProjectRuntime {
   }
   seek(nodeId: string, progress: number) {
     this.#assertLive();
-    this.#refuseInsideRecipe("seek");
+    this.#refuseReentrant("seek");
     this.#setProgress(nodeId, progress);
     const batch = this.#graph.invalidate([nodeId]);
     this.#diagnostics.recordAll(batch.diagnostics);
@@ -1209,7 +1210,7 @@ export class ProjectRuntime {
   }
   invalidate(nodeIds: readonly string[]) {
     this.#assertLive();
-    this.#refuseInsideRecipe("invalidate");
+    this.#refuseReentrant("invalidate");
     const batch = this.#graph.invalidate(nodeIds);
     this.#diagnostics.recordAll(batch.diagnostics);
     return batch;
