@@ -127,6 +127,73 @@ function declaring(project: ProjectRuntime): MotionHandle {
   return handle;
 }
 
+/**
+ * A runtime one of its own tier 0 seams disposes, with an ordered journal of both halves.
+ *
+ * `journal()` above cannot express this, because the hook needs the runtime it is about to tear down,
+ * and `runtimeWith` builds that runtime from the hooks. `release` is `disposeComposition`, which
+ * `#teardown` calls last, so its position in the journal is the whole teardown's position. Issue
+ * #305.
+ */
+interface DisposingRig {
+  readonly project: ProjectRuntime;
+  readonly entries: readonly string[];
+}
+function disposingRig(from: "trigger" | "stagger"): DisposingRig {
+  const entries: string[] = [];
+  let project: ProjectRuntime | undefined;
+  const created = new ProjectRuntime(PROJECT, {
+    clock: createManualClock(),
+    compose,
+    disposeComposition: () => {
+      entries.push("release");
+    },
+    replaceMotionTrigger: (motionId) => {
+      entries.push(`trigger ${motionId}`);
+      if (from === "trigger") project?.dispose();
+    },
+    setMotionStagger: (motionId) => {
+      entries.push(`stagger ${motionId}`);
+      if (from === "stagger") project?.dispose();
+    },
+  });
+  project = created;
+  return {
+    project: created,
+    get entries() {
+      return [...entries];
+    },
+  };
+}
+/**
+ * The same shape with a seam that starts a structural commit instead of disposing.
+ *
+ * Separate from the rig above rather than a flag on it, because what it measures is a different
+ * condition: sharing one in-flight depth between the commit boundary and a direct write widens
+ * ADR-068's refusal to reach a seam it did not name, and `RA-125` is the case that says that
+ * widening was a decision.
+ */
+function reentrantRig(): DisposingRig {
+  const entries: string[] = [];
+  let project: ProjectRuntime | undefined;
+  const created = new ProjectRuntime(PROJECT, {
+    clock: createManualClock(),
+    compose,
+    replaceMotionTrigger: (motionId) => {
+      entries.push(`trigger ${motionId}`);
+      project?.addTrack({ id: "tail" }, { motionId: MOTION });
+    },
+    setMotionStagger: () => undefined,
+  });
+  project = created;
+  return {
+    project: created,
+    get entries() {
+      return [...entries];
+    },
+  };
+}
+
 describe("a Motion's driver is editable in place, and that edit reaches no graph", () => {
   it("RA-33 moves the retained trigger and asks the driver layer once, with no graph work", () => {
     const hooks = journal();
@@ -246,5 +313,55 @@ describe("a Motion's driver is editable in place, and that edit reaches no graph
     expect(replaceGraph).not.toHaveBeenCalled();
 
     project.dispose();
+  });
+
+  it("RA-123 stops answering silently when the trigger seam disposes, in tier 2's words", () => {
+    const rig = disposingRig("trigger");
+    const handle = declaring(rig.project);
+
+    const thrown = thrownBy(() => handle.setTrigger(TIMED));
+
+    // Tier 0 is the silent half today. `#setTrigger` returns `void` and has no flush, so a caller
+    // whose hook tore the project down reads a successful edit and holds a disposed runtime with a
+    // Motion entry written back into a map the teardown had already cleared. Nothing will ever clear
+    // it, because `dispose()` returns early on its own flag from then on.
+    expect((thrown as Error).message).toBe("ProjectRuntime is disposed.");
+    // One condition, one failure contract. The string is the one `#invalidateOne` answers for both
+    // track paths rather than a second message for this tier, which is the rule ADR-061's amendment
+    // and ADR-056's amendment already hold this member to.
+    expect(rig.entries).toEqual([`trigger ${MOTION}`, "release"]);
+    expect(handle.live).toBe(false);
+  });
+
+  it("RA-124 answers the same way from the stagger seam, on the other field and order", () => {
+    const rig = disposingRig("stagger");
+    const handle = declaring(rig.project);
+
+    const thrown = thrownBy(() => handle.setStagger(0.25));
+
+    // The other map, a different order, and the same answer: uniformity is measured by both tiers
+    // reading one string rather than by this file asserting a second one.
+    expect((thrown as Error).message).toBe("ProjectRuntime is disposed.");
+    expect(rig.entries).toEqual([`stagger ${MOTION}`, "release"]);
+    expect(handle.live).toBe(false);
+  });
+
+  it("RA-125 refuses a structural commit started from inside a tier 0 seam", () => {
+    const rig = reentrantRig();
+    const handle = declaring(rig.project);
+
+    const thrown = thrownBy(() => handle.setTrigger(TIMED));
+
+    // The price of one in-flight depth answering for both boundaries, owned here rather than
+    // discovered later. It is ADR-068's lost update one indirection out: `#setTrigger` resolves its
+    // entry, calls the seam, and writes that entry back, so a commit made from inside the seam has
+    // its change to this Motion silently overwritten by the `set` that follows. Today it applies.
+    expect(thrown).toBeInstanceOf(TypeError);
+    expect((thrown as Error).message).toContain("schema-commit-reentrant");
+    // And it is the case a second depth field would fail, which is what makes the shared counter a
+    // decision rather than a convenience.
+    expect(rig.entries).toEqual([`trigger ${MOTION}`]);
+
+    rig.project.dispose();
   });
 });
