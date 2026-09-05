@@ -32,8 +32,24 @@ const TEST_FILE = /\.test\.tsx?$/;
 const HELPER_IMPORT = 'helpers/source-region"';
 /** The idiom that names a source file to read, which is what makes a file this gate's subject. */
 const SOURCE_CONSTANT = "_SOURCE = fileURLToPath(";
-/** A local redeclaration of anything the one owner exports, the retired `region` included. */
+/**
+ * A local redeclaration of anything the one owner exports, asked only of a file that reads source.
+ *
+ * Scoped rather than suite-wide, and the scope is a finding rather than a carve-out: `member` is a
+ * domain word in this suite. Three solver cases declare a local `member()` that builds a
+ * `MemberState` or a bone definition, and none of them is a second owner of anything this rule is
+ * about, so a gate refusing the spelling suite-wide would be measuring a name instead of a subject.
+ * This file's first run did exactly that and named all three, which is the measurement rather than
+ * the theory.
+ */
 const REDECLARED = /^\s*(?:export\s+)?function\s+(code|region|member|declaration)\s*\(/m;
+/**
+ * The retired helper's own declaration, refused suite-wide because that one name is not overloaded.
+ *
+ * Nothing in this tree calls a chain member, a bone or a published record a region, so a file
+ * declaring one is reintroducing the mechanism wherever it happens to sit.
+ */
+const RETIRED_HELPER = /^\s*(?:export\s+)?function\s+region\s*\(/m;
 /** A call to the retired two-bound helper, which no longer exists to be called. */
 const RETIRED_CALL = /(?<![.\w])region\s*\(/;
 /**
@@ -73,8 +89,14 @@ function sourceOf(relativePath: string): string {
 
 describe("source-region anchors", () => {
   it("declares the region helpers in one place and nowhere else", () => {
-    const offenders = testFiles().filter((file) => REDECLARED.test(sourceOf(file)));
-    expect(offenders.sort()).toEqual([]);
+    const readers = testFiles().filter((file) => sourceOf(file).includes(SOURCE_CONSTANT));
+    const shadowed = readers.filter((file) => REDECLARED.test(sourceOf(file)));
+    expect(shadowed.sort()).toEqual([]);
+
+    // The retired name is refused everywhere rather than only where source is read, for the reason
+    // stated beside it: it is the one of the four that cannot mean anything else here.
+    const retired = testFiles().filter((file) => RETIRED_HELPER.test(sourceOf(file)));
+    expect(retired.sort()).toEqual([]);
 
     // The owner exists and exports all three, so a green run above is one owner rather than none.
     const owner = sourceOf(HELPER);
