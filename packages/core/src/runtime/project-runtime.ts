@@ -40,6 +40,7 @@ import { sameCompiledTrackInput } from "../domain/authoring/recompile";
 import { observationEdgeKey } from "../graph/ir";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import {
+  commitInFlight,
   describeDiagnostics,
   immediateInTransaction,
   nestedTransaction,
@@ -767,6 +768,9 @@ export class ProjectRuntime {
 
   #commit(plan: SchemaPlan): void {
     if (this.#open !== undefined) return;
+    // Read after the recipe check and never before it, so a recipe opened from inside a hook stages
+    // as usual and is refused once, at the moment it would apply, by the one owner of this refusal.
+    if (this.#committing > 0) commitInFlight();
     this.#apply(plan);
   }
 

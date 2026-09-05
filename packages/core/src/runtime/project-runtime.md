@@ -74,7 +74,7 @@ No longer cleared by `dispose()` on every path, and it does not need to be. `#co
 
 How many commits are in flight, and the one thing `dispose()` reads to decide whether it may release anything.
 
-A depth rather than a flag, and that is a correctness choice rather than defensiveness. A hook is caller code and can re-enter `#apply` through a public entry point, so a flag cleared by the inner `finally` would release the graph and the composition while the outer commit was still unwinding through them. That reentrancy is a defect of its own and it is issue #307's, but the counter refuses to add a second one on top of it.
+A depth rather than a flag, and that is a correctness choice rather than defensiveness. A hook is caller code and can re-enter `#apply` through a public entry point, so a flag cleared by the inner `finally` would release the graph and the composition while the outer commit was still unwinding through them. That reentrancy is refused now, by `#commit`, so this depth is provably zero or one: `#apply` has one call site and that call site refuses a second entry. It stays a depth rather than becoming the flag that bound makes sufficient, because the bound is the guard's rather than this field's. A counter is correct at any depth, a flag is correct only while the guard above it holds, and narrowing state to the weaker thing a fix makes sufficient is how a later hole becomes silent. See ADR-068.
 
 Raised ahead of `#derive` rather than ahead of the effect loop, because `#needsTimelineBuild` asks `resolveKeyframes`, which is caller code too. See ADR-067.
 
@@ -96,7 +96,7 @@ The same question about the other map, and the same reason.
 
 The track map this commit will hand over, mutable, and copied once rather than once per op.
 
-Outside a recipe it is a copy of the retained map. Inside one it is the pair the recipe is staging, made once by the first op that stages anything and written into in place by every op after that, so n ops cost one copy. Why the copy outside a recipe is the floor rather than an expense to remove is ADR-064's third amendment.
+Outside a recipe it is a copy of the retained map, and a commit in flight is the one condition under which that copy would be wrong rather than merely fresh, because it would lack the change the commit is holding in a local; `#commit` refuses the re-entry that could ask for one, which is ADR-068's. Inside one it is the pair the recipe is staging, made once by the first op that stages anything and written into in place by every op after that, so n ops cost one copy. Why the copy outside a recipe is the floor rather than an expense to remove is ADR-064's third amendment.
 
 Called after an entry point's last refusal and never before it, because a half that is still the retained map by identity is the whole answer to whether the recipe staged anything. That ordering rule is the same amendment's. See `RA-93` and `RA-95`.
 
@@ -262,7 +262,11 @@ While a recipe is open there is nothing to do here: every entry point already wr
 
 It is not where a deferred teardown is drained, and it may not become that. This member returns early while a recipe is open, so a release drained here would never run for the `edit` path and would run at the wrong depth for a nested commit. The boundary belongs to the member below, which is the one that has the `try`. See ADR-067.
 
-What it does not answer is whether it may be entered while a commit is already in flight. A hook that calls a structural entry point re-enters this member, finds no open transaction, and applies against a retained pair that lacks the outer commit's change. That is issue #307, and `#committing` is the state it will read.
+It also answers whether it may be entered while a commit is already in flight, and the answer is no. A hook is caller code, so a structural entry point called from one re-enters this member, and it used to find no open transaction and apply immediately: nested inside the outer `#apply`, staged from a retained pair that does not carry the outer commit's change, and adopted over by whichever of the two finished last. A lost update, with a compiled, registered and mounted node that no map and no graph node refers to. The refusal is here rather than at the six entry points, because one condition has one owner and this is the one place all of them reach, and here rather than in `#apply`, which runs one commit and should not have to know whether it is the outer one.
+
+Refused rather than merged, and the merge is the direction issue #307 asked to be measured first because it is the DRY one. It cannot be built. This member's callee holds the pair it is committing in a local rather than in a field, so there is nothing for a reader to resolve against, and `#open` means a recipe may stage into this pair, which a commit that has already applied effects derived from a comparison of two pairs cannot honour. Reusing that field would give one accessor two incompatible meanings depending on which member set it, which is the invisible-context shape ADR-064 cut two verbs for.
+
+Read after the recipe check and never before it. A recipe opened from inside a hook stages into its own pair as usual and is refused once, when it tries to apply, which keeps one owner of this refusal rather than a second copy in `edit`. Both phases refuse, and the message names neither: a settle-phase re-entry would stage from the adopted pair and lose nothing, and it is refused because the settle steps still queued were derived against the pair it would replace, in the one phase with no revert list. See ADR-068 and `RA-118` through `RA-122`.
 
 ## #apply
 
@@ -283,6 +287,8 @@ And it is the owner of the commit boundary, which is what makes a runtime one of
 The settle loop is deliberately unguarded, and that asymmetry is the decision rather than an omission. A settle step has no `revert` because it is not allowed to fail, so abandoning the phase halfway would leave a staged Track neither committed nor rolled back and a Motion registered against a node that never mounted. The teardown is deferred past the whole phase instead, so `#mountNode`, `evictNode` and both Motion hooks still reach a live graph, and the release that follows cleans up what they produced. The flush is the one thing skipped, on the same reason an empty seed set is: a batch nobody can read still moves the sequence and drains a deferred flush's seeds.
 
 The `finally` drains the release, once, at depth zero. That is why `dispose()` may be called from inside any hook here without the rollback being handed a graph and a composition that no longer exist, and it is what makes `Error: GraphRuntime is disposed.` unreachable through a commit. See ADR-067, `RA-114`, `RA-115` and `RA-117`.
+
+The depth it counts can only ever be one now, because the member above refuses a re-entry into this one, so the pair this member holds in a local cannot be adopted over by a second commit running inside it. See ADR-068.
 
 ## #derive
 

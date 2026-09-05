@@ -11,6 +11,9 @@ import {
   type ProjectRuntimeOptions,
   type StagedTrack,
 } from "../../../src/runtime/project-runtime";
+// The project's own describer rather than a copy of it in this rig. The journal records what a
+// re-entry came back with, and how a thrown value that is not an `Error` reads already has an owner.
+import { describeError } from "../../../src/runtime/schema-refusals";
 
 /**
  * Issue #223, slice A1.
@@ -37,11 +40,33 @@ import {
  * answer is an ordering between the same hooks these seven cases already order, and because the
  * journal below is the instrument: a rollback step that reached a torn-down composition and one that
  * reached a live composition are indistinguishable by any counter and differ by one line here.
+ *
+ * `RA-118` through `RA-122` are issue #307's, and they own a third subject on the same sequence: what
+ * one of those hooks may do to the commit it is part of rather than to the runtime that is running
+ * it. A hook that calls a structural entry point re-enters `#commit`, which used to find no open
+ * transaction and apply immediately, nested inside the outer `#apply` and staged from a retained pair
+ * that does not carry the outer commit's change, so both commits adopted their own pair and the outer
+ * one won: a lost update, with a compiled and mounted node nothing refers to.
+ *
+ * The journal is the instrument here for a second reason. The refusal is recorded on the line the
+ * hook asked for it, so which phase the commit was in is a position rather than a second counter, and
+ * the accepting direction is the same journal with two more lines in it.
  */
 
 const MOTION_ID = "hero";
 const NODE_ID = "hero/arm";
 const ADDED_ID = "hero/hand";
+const SECOND_ID = "hero/second";
+/**
+ * The refusal a structural entry point re-entered from inside a commit answers with, whole.
+ *
+ * One constant, read by four cases and by every journal line they compare, so the message is pinned
+ * in one place and a refusal that changed its wording fails on the string rather than on a loose
+ * match. It names the condition and not the verb, because every structural verb is refused equally
+ * and the caller wrote a hook rather than a transaction.
+ */
+const REENTRANT =
+  "schema-commit-reentrant: A structural commit is already in flight. Ask for it once this one has returned.";
 const BASE_PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   motions: [{ id: MOTION_ID, trigger: { type: "manual" }, tracks: [{ id: "arm" }] }],
@@ -80,14 +105,18 @@ interface Host {
   runtime?: ProjectRuntime;
 }
 /**
- * Which hook tears the project down, named by hook rather than by phase.
+ * Which hook intrudes on the runtime, named by hook rather than by phase.
  *
- * Which hook disposes is what decides which phase the commit is in when it happens, and that is the
- * whole difference between a refusal and a completion: `compileTrack` and `replaceMotionTrack` are
- * effects, applied inside the try and covered by the rollback, while `addMotionTrack` is a settle
- * step, which runs after the graph accepted and has no revert at all.
+ * Which hook it is decides which phase the commit is in when it happens, and that is the whole
+ * difference between a refusal and a completion: `compileTrack` and `replaceMotionTrack` are effects,
+ * applied inside the try and covered by the rollback, while `addMotionTrack` is a settle step, which
+ * runs after the graph accepted and has no revert at all.
+ *
+ * One enum for both intrusions rather than one per behaviour. Which hooks are caller code is one fact
+ * about a commit, and a second list of the same five names is a second owner of it that can disagree
+ * about which phase a name belongs to. `disposeFrom` and `reenter.from` both read this.
  */
-type DisposingHook =
+type CommitHook =
   | "createMotion"
   | "compileTrack"
   | "stageTrack"
@@ -96,7 +125,7 @@ type DisposingHook =
 /** What one rig's hooks do beyond recording, and the whole of what a case configures. */
 interface Behaviour {
   readonly createMotion?: Error;
-  readonly disposeFrom?: DisposingHook;
+  readonly disposeFrom?: CommitHook;
   /**
    * Thrown by the disposing hook after it disposed, so the two facts can be measured apart.
    *
@@ -113,6 +142,24 @@ interface Behaviour {
    * would change the rig those seven cases measure, which is a licence this slice does not need.
    */
   readonly staging?: boolean;
+  /**
+   * The structural call one hook makes into the runtime whose commit it is part of, and whether it
+   * keeps what comes back to itself.
+   *
+   * A closure rather than a verb enum, because the shapes these cases need -- an add, a removal and a
+   * replacement -- differ in what they name rather than in what this rig has to do with them, and a
+   * rig that reproduced the verb list would be a second owner of it.
+   *
+   * `swallow` is the whole difference between the two contracts this subject has, and both are the
+   * hook's own choice rather than the runtime's. A hook that lets the refusal escape fails the effect
+   * it is part of, so the outer commit is rolled back and its caller reads the refusal; one that
+   * catches it has reported the refusal to itself, and the outer commit is untouched.
+   */
+  readonly reenter?: {
+    readonly from: CommitHook;
+    readonly call: (runtime: ProjectRuntime) => unknown;
+    readonly swallow?: boolean;
+  };
   readonly host?: Host;
 }
 /**
@@ -133,12 +180,44 @@ function recorder(behaviour: Behaviour = {}): Recorder {
    * After the record rather than before it, so the journal names the hook that disposed instead of
    * leaving the disposal to be inferred from whatever stopped happening after it.
    */
-  const disposing = (hook: DisposingHook): void => {
+  const disposing = (hook: CommitHook): void => {
     if (behaviour.disposeFrom !== hook) return;
     behaviour.host?.runtime?.dispose();
     if (behaviour.throwAfterDispose !== undefined) throw behaviour.throwAfterDispose;
   };
-  const staging = behaviour.staging === true || behaviour.disposeFrom === "stageTrack";
+  /**
+   * Once, which is the issue's own reproduction shape and not a convenience.
+   *
+   * Without it the re-entry is unbounded before the slice: the inner commit reaches the same hook,
+   * which re-enters again, and the red run ends on a stack overflow rather than on an assertion that
+   * disagreed. It also keeps the accepting direction readable, where the same verb is called again
+   * after the commit returned and must not intrude a second time.
+   */
+  let reentered = false;
+  /**
+   * The re-entry, and what came back from it, as one journal line.
+   *
+   * Recorded rather than returned, because where the refusal arrived is half of what these cases
+   * assert and no second instrument could order it against the hooks around it. The message is
+   * recorded whole and an accepted re-entry says so, so both directions read as one line each.
+   *
+   * Rethrown unless the case asked for it to be swallowed, which is what makes the hook's own two
+   * contracts expressible in one rig rather than in two.
+   */
+  const reentering = (hook: CommitHook): void => {
+    const reenter = behaviour.reenter;
+    const host = behaviour.host?.runtime;
+    if (reenter === undefined || reenter.from !== hook || host === undefined) return;
+    if (reentered) return;
+    reentered = true;
+    const outcome = outcomeOf(() => reenter.call(host));
+    record(`reentry ${outcome.thrown === undefined ? "accepted" : describeError(outcome.thrown)}`);
+    if (outcome.thrown !== undefined && reenter.swallow !== true) throw outcome.thrown;
+  };
+  const staging =
+    behaviour.staging === true ||
+    behaviour.disposeFrom === "stageTrack" ||
+    behaviour.reenter?.from === "stageTrack";
   return {
     get entries() {
       return [...entries];
@@ -149,21 +228,25 @@ function recorder(behaviour: Behaviour = {}): Recorder {
       compileTrack: (_track, nodeId) => {
         record(`compile ${String(nodeId)}`);
         disposing("compileTrack");
+        reentering("compileTrack");
       },
       disposeTrack: (nodeId) => record(`dispose ${nodeId}`),
       addMotionTrack: (_motionId, trackId, duration) => {
         record(`motion-add ${trackId} ${String(duration)}`);
         disposing("addMotionTrack");
+        reentering("addMotionTrack");
       },
       replaceMotionTrack: (_motionId, trackId, duration) => {
         record(`motion-replace ${trackId} ${String(duration)}`);
         disposing("replaceMotionTrack");
+        reentering("replaceMotionTrack");
       },
       removeMotionTrack: (_motionId, trackId) => record(`motion-remove ${trackId}`),
       createMotion: (definition) => {
         record(`motion-create ${definition.id}`);
         if (behaviour.createMotion) throw behaviour.createMotion;
         disposing("createMotion");
+        reentering("createMotion");
       },
       destroyMotion: (motionId) => record(`motion-destroy ${motionId}`),
       // The last line of a teardown, and the one the whole of issue #303 is about: every rollback
@@ -175,6 +258,7 @@ function recorder(behaviour: Behaviour = {}): Recorder {
             stageTrack: (_track: TrackDefinition, nodeId: string): StagedTrack => {
               record(`stage ${nodeId}`);
               disposing("stageTrack");
+              reentering("stageTrack");
               return {
                 commit: () => record(`stage-commit ${nodeId}`),
                 rollback: () => record(`stage-rollback ${nodeId}`),
@@ -522,5 +606,212 @@ describe("a structural change runs one transaction, in one order", () => {
     // it, which is what completing the phase before releasing anything buys.
     expect(runtime.instanceCount).toBe(0);
     expect(occurrences(journal, "composition-dispose")).toBe(1);
+  });
+
+  it("RA-118 refuses a structural entry point re-entered from inside a commit's effects", () => {
+    const host: Host = {};
+    const journal = recorder({
+      reenter: {
+        from: "compileTrack",
+        call: (runtime) => runtime.addTrack({ id: "second" }, { motionId: MOTION_ID }),
+      },
+      host,
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+
+    const outcome = outcomeOf(() =>
+      runtime.addTrack({ id: "hand", duration: 250 }, { motionId: MOTION_ID }),
+    );
+
+    // The owner that decided, at the moment it was asked, and not the immediate-verb refusal: that
+    // one names the verb because a caller wrote the `edit()` around it, and this caller wrote a hook
+    // that a commit called. One condition, one message, and it names the condition.
+    expect(outcome.thrown).toBeInstanceOf(TypeError);
+    expect(describeError(outcome.thrown)).toBe(REENTRANT);
+    expect(outcome.value).toBeUndefined();
+
+    // The refusal arrives inside the hook, so the journal orders it against the effect it is part of
+    // rather than leaving the phase to be inferred. Before this slice the inner add applies here,
+    // nested inside the outer `#apply`, and these two lines are four.
+    expect(journal.entries).toEqual(["compile hero/hand", `reentry ${REENTRANT}`]);
+    expect(journal.entries).not.toContain("compile hero/second");
+
+    // Not reverted, and that is `RA-2`'s rule rather than a leak this slice introduced: the hook threw
+    // before its effect returned, so the effect was never applied and the rollback list is empty.
+    expect(journal.entries).not.toContain("dispose hero/hand");
+
+    // Neither commit reached the graph or the retained pair, and neither node is mounted.
+    expect(runtime.instanceCount).toBe(0);
+    expect(() => runtime.track(ADDED_ID)).toThrow(/Unknown graph node/);
+    expect(() => runtime.track(SECOND_ID)).toThrow(/Unknown graph node/);
+    expect(runtime.graph.graph.nodes.map((node) => node.id)).toEqual([NODE_ID]);
+
+    runtime.dispose();
+  });
+
+  it("RA-119 leaves the calling commit whole when its hook keeps the refusal to itself", () => {
+    const host: Host = {};
+    const journal = recorder({
+      reenter: {
+        from: "compileTrack",
+        call: (runtime) => runtime.addTrack({ id: "second" }, { motionId: MOTION_ID }),
+        swallow: true,
+      },
+      host,
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+    const before = runtime.graph.sequence;
+
+    const handle = runtime.addTrack({ id: "hand", duration: 250 }, { motionId: MOTION_ID });
+
+    // A hook that caught the refusal has been told no and nothing else happened to it, so the commit
+    // it is part of finishes in exactly the order `RA-3` pins.
+    expect(journal.entries).toEqual([
+      "compile hero/hand",
+      `reentry ${REENTRANT}`,
+      "motion-add hero/hand 250",
+    ]);
+    expect(handle.live).toBe(true);
+    expect(runtime.track(ADDED_ID).definition).toEqual({ id: "hand", duration: 250 });
+
+    // The lost update, measured from the side that used to lose it. Before this slice the inner add
+    // reaches the composition and the graph, the outer adoption overwrites it, and `hero/second` ends
+    // up compiled and mounted with nothing in either map and no graph node referring to it, so
+    // nothing will ever dispose it.
+    expect(runtime.tryTrack(SECOND_ID)).toBeUndefined();
+    expect(runtime.graph.graph.nodes.map((node) => node.id)).toEqual([NODE_ID, ADDED_ID]);
+    expect(runtime.instanceCount).toBe(1);
+    expect(disagreeing(runtime)).toEqual([]);
+
+    // One commit, one flush. Two nested commits are two, each ending at its own `invalidate`, which
+    // is the other half of what the outer adoption used to hide.
+    expect(runtime.graph.sequence - before).toBe(1);
+
+    runtime.dispose();
+  });
+
+  it("RA-120 refuses a removal of the node the commit it re-entered is replacing", () => {
+    const host: Host = {};
+    const journal = recorder({
+      reenter: { from: "replaceMotionTrack", call: (runtime) => runtime.track(NODE_ID).remove() },
+      staging: true,
+      host,
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+
+    const outcome = outcomeOf(() => runtime.track(NODE_ID).replace({ id: "arm", duration: 500 }));
+
+    // The version where the two commits disagree about one node rather than about a set, and the
+    // refusal is the same one: the condition is that a commit is in flight, and which node either
+    // commit names is not part of it.
+    expect(describeError(outcome.thrown)).toBe(REENTRANT);
+    expect(journal.entries).toEqual([
+      "stage hero/arm",
+      "motion-replace hero/arm 500",
+      `reentry ${REENTRANT}`,
+      "stage-rollback hero/arm",
+    ]);
+    expect(journal.entries).not.toContain("stage-commit hero/arm");
+    expect(journal.entries).not.toContain("dispose hero/arm");
+    expect(journal.entries).not.toContain("motion-remove hero/arm");
+
+    // Rolled back whole. Before this slice the inner removal evicts the node, disposes its compiled
+    // Track and deregisters it from its Motion, and the outer `replaceGraph` then commits a snapshot
+    // that still carries it: a node in the committed graph whose compiled Track the composition was
+    // told to throw away.
+    expect(runtime.track(NODE_ID).live).toBe(true);
+    expect(runtime.track(NODE_ID).definition).toEqual({ id: "arm" });
+    expect(disagreeing(runtime)).toEqual([]);
+
+    runtime.dispose();
+  });
+
+  it("RA-121 refuses a re-entry from a settle step, and finishes the phase it interrupted", () => {
+    const host: Host = {};
+    const journal = recorder({
+      reenter: {
+        from: "addMotionTrack",
+        call: (runtime) => runtime.addTrack({ id: "second" }, { motionId: MOTION_ID }),
+        swallow: true,
+      },
+      host,
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+
+    const outcome = outcomeOf(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+
+    // A settle step runs after `#adoptMaps`, so an inner commit here stages from a pair that does
+    // carry the outer change and loses nothing. It is refused anyway, and not for symmetry: the
+    // settle steps still queued were derived against the pair the inner commit would replace, so an
+    // inner removal leaves the next `#mountNode` attaching a node the committed graph no longer has,
+    // in the one phase with no revert list and, as of #306, no error boundary. A condition that had
+    // to name a phase would not be one condition, so the message names none.
+    expect(outcome.thrown).toBeUndefined();
+    expect(outcome.value?.live).toBe(true);
+    expect(journal.entries).toEqual([
+      "compile hero/hand",
+      "motion-add hero/hand undefined",
+      `reentry ${REENTRANT}`,
+    ]);
+
+    // The phase completed past the refusal rather than being abandoned at it, and the mount is where
+    // that is measured, because it is the settle step after the one that was refused.
+    expect(runtime.instanceCount).toBe(1);
+    expect(runtime.tryTrack(SECOND_ID)).toBeUndefined();
+    expect(runtime.graph.graph.nodes.map((node) => node.id)).toEqual([NODE_ID, ADDED_ID]);
+
+    runtime.dispose();
+  });
+
+  it("RA-122 leaves a hook's reads answering, and its commit accepted once the commit returned", () => {
+    const observed: string[] = [];
+    const host: Host = {};
+    const journal = recorder({
+      reenter: {
+        from: "compileTrack",
+        call: (runtime) => {
+          // Reads are not refused, and they answer from the retained pair rather than from the pair
+          // being committed. That is the fact the refusal rests on: the candidate lives in a local
+          // inside `#apply`, so there is nothing for an inner commit to stage from and nothing for it
+          // to merge into. Pinned here rather than left as a side effect of where the accessor reads.
+          observed.push(`arm ${runtime.track(NODE_ID).definition.id}`);
+          observed.push(`candidate ${String(runtime.tryTrack(ADDED_ID))}`);
+          observed.push(`readers ${runtime.dependantsOf(NODE_ID).length}`);
+        },
+      },
+      host,
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+
+    const first = runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+
+    expect(observed).toEqual(["arm arm", "candidate undefined", "readers 0"]);
+    expect(journal.entries).toEqual([
+      "compile hero/hand",
+      "reentry accepted",
+      "motion-add hero/hand undefined",
+    ]);
+
+    // The same call the four cases above are refused for, made once the commit has returned rather
+    // than from inside it. Green on both sides of this slice, deliberately: it is the case a guard
+    // reading "this runtime has committed" rather than "a commit is in flight" fails, and the case a
+    // guard placed on the reading ladder fails. A refusal is only evidence beside its accepting
+    // direction, and this is that direction in the same rig.
+    const second = runtime.addTrack({ id: "second" }, { motionId: MOTION_ID });
+
+    expect(second.live).toBe(true);
+    expect(first.live).toBe(true);
+    expect(journal.entries.slice(3)).toEqual([
+      "compile hero/second",
+      "motion-add hero/second undefined",
+    ]);
+    expect(runtime.instanceCount).toBe(2);
+
+    runtime.dispose();
   });
 });
