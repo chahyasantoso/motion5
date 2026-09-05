@@ -51,6 +51,14 @@ import { describeError } from "../../../src/runtime/schema-refusals";
  * The journal is the instrument here for a second reason. The refusal is recorded on the line the
  * hook asked for it, so which phase the commit was in is a position rather than a second counter, and
  * the accepting direction is the same journal with two more lines in it.
+ *
+ * `RA-134` and `RA-135` are issue #310's, and they need no rig change at all, which is itself the
+ * shape of that slice: the same `reenter` config, pointed at a verb that mounts or reads rather than
+ * at one that commits. `RA-134` is that issue's fifth reproduction shape, a `mount` of the node the
+ * commit is adding, and it is the one consequence of the pre-commit window that belongs here rather
+ * than in `structural-commit-flush.test.ts`, because what it costs is a settle step rather than a
+ * publication. `RA-135` is the accepting direction for both subjects at once: a hook that only reads
+ * is untouched, and one commit publishes exactly once with the seeds `#derive` chose. See ADR-070.
  */
 
 const MOTION_ID = "hero";
@@ -812,6 +820,100 @@ describe("a structural change runs one transaction, in one order", () => {
     ]);
     expect(runtime.instanceCount).toBe(2);
 
+    runtime.dispose();
+  });
+
+  it("RA-134 refuses a mount of the node the commit is adding, so its settle step still owns it", () => {
+    const host: Host = {};
+    const journal = recorder({
+      reenter: {
+        from: "compileTrack",
+        call: (runtime) => runtime.mount(ADDED_ID),
+        swallow: true,
+      },
+      host,
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+
+    const outcome = outcomeOf(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+
+    // Issue #310's second consequence, and the one that is not about publication. `mount` attaches
+    // against the pre-commit graph, so the same one condition refuses it, and the settle phase is left
+    // as the only owner of mounting this node. What the pre-slice run reports is read from the run
+    // rather than predicted here: the hook either attaches and leaves the settle step's own
+    // `#mountNode` to throw `already mounted` in the one phase with no error boundary, or it is refused
+    // by `GraphRuntime.attach` for a node the committed graph does not carry yet. Both are red on the
+    // `reentry` line, and only the first is also red on the thrown value.
+    expect(outcome.thrown).toBeUndefined();
+    expect(outcome.value?.live).toBe(true);
+    expect(journal.entries).toEqual([
+      "compile hero/hand",
+      `reentry ${REENTRANT}`,
+      "motion-add hero/hand undefined",
+    ]);
+
+    // What the commit alone made it, which is the claim rather than the number: one mount, by the
+    // settle step, of the node this commit added.
+    expect(runtime.instanceCount).toBe(1);
+    expect(runtime.graph.graph.nodes.map((node) => node.id)).toEqual([NODE_ID, ADDED_ID]);
+    expect(disagreeing(runtime)).toEqual([]);
+
+    // Cross-referenced rather than claiming to close it. Issue #306 still owns a throwing settle step,
+    // because `#mountNode` can also throw on an id `GraphRuntime.attach` refuses and because
+    // `addMotionTrack`, `disposeTrack` and `staged.commit()` are caller code with no reentrancy in
+    // sight. This case removes one reachable cause of that throw and none of the others.
+    runtime.dispose();
+  });
+
+  it("RA-135 leaves a hook's reads answering, and publishes the commit's own flush exactly once", () => {
+    const observed: string[] = [];
+    const host: Host = {};
+    const journal = recorder({
+      reenter: {
+        from: "compileTrack",
+        call: (runtime) => {
+          // None of these four is a publication or an edit, which is the whole reason the refusal is
+          // at the verb rather than at the seam: a host whose `compileTrack` reads the project is a
+          // substitutable implementation of that port, not a broken one.
+          observed.push(`definition ${runtime.track(NODE_ID).definition.id}`);
+          observed.push(`readers ${runtime.dependantsOf(NODE_ID).length}`);
+          observed.push(`mounted ${runtime.instanceCount}`);
+          observed.push(`candidate ${String(runtime.tryTrack(ADDED_ID))}`);
+        },
+      },
+      host,
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+    runtime.mount(NODE_ID);
+    const before = runtime.graph.sequence;
+
+    const handle = runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+
+    // They answer from the retained pair, which is one commit behind, and that is a documented
+    // consequence of the pair being held in a local rather than a defect: `mounted` is what the settle
+    // phase has not done yet, and the node being added is not resolvable at all.
+    expect(observed).toEqual(["definition arm", "readers 0", "mounted 1", "candidate undefined"]);
+    expect(journal.entries).toEqual([
+      "compile hero/hand",
+      "reentry accepted",
+      "motion-add hero/hand undefined",
+    ]);
+    expect(handle.live).toBe(true);
+    expect(runtime.instanceCount).toBe(2);
+
+    // Exactly one batch, carrying what `#derive` seeded, rather than "a batch happened". Written that
+    // way deliberately and for two reasons: issue #306 makes this flush unconditional, so a case
+    // asserting only that the sequence moved would stay green while a second publication crept back in
+    // front of it, and a mount publishes nothing, so this count is the commit's alone.
+    expect(runtime.graph.sequence).toBe(before + 1);
+
+    // Green on both sides of this slice, deliberately, and the file says so rather than letting it be
+    // counted. It is a lie detector for the refusal's scope: a rung that refused everything a hook can
+    // reach fails the four reads above, and one that refused by seam rather than by verb fails all of
+    // them. A refusal is only evidence beside its accepting direction, and this is that direction in
+    // the same rig. The guardrail against padding a red count is why that is stated here.
     runtime.dispose();
   });
 });
