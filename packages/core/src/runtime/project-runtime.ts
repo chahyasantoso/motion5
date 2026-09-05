@@ -228,6 +228,8 @@ export class ProjectRuntime {
   readonly #destroyMotion: ((motionId: string) => void) | undefined;
   readonly #disposeComposition: () => void;
   #disposed = false;
+  #committing = 0;
+  #pendingTeardown = false;
   constructor(project: ProjectDefinition, options: ProjectRuntimeOptions) {
     this.#project = project;
     for (const motion of project.motions) {
@@ -547,6 +549,12 @@ export class ProjectRuntime {
     id: string,
     token: number,
   ): E | undefined {
+    // A disposed runtime has no live entry, stated here rather than left to the fact that the
+    // teardown empties both maps. Those two stopped being simultaneous when the teardown became
+    // deferrable past a commit, and a handle answering `live` inside that window would be reporting
+    // a project whose `dispose()` has already returned. Not a throw, so the reading ladder above is
+    // untouched. See ADR-064's amendment of 2026-09-05 and `RA-116`.
+    if (this.#disposed) return undefined;
     const entry = entries.get(id);
     return entry !== undefined && entry.token === token ? entry : undefined;
   }
@@ -767,26 +775,53 @@ export class ProjectRuntime {
     // to itself. Read directly rather than through the accessors: a recipe is never open here.
     const tracks = plan.tracks ?? this.#tracks;
     const motions = plan.motions ?? this.#motions;
-    const commit = this.#derive(tracks, motions);
-    const applied: SchemaEffect[] = [];
+    // Raised ahead of the derivation rather than ahead of the effect loop, because `#derive` asks
+    // `resolveKeyframes`, which is caller code and can dispose from there too. A depth rather than a
+    // flag, so a hook that re-enters this member cannot have its inner `finally` release the
+    // resources the outer commit is still unwinding through. See ADR-064's amendment of 2026-09-05.
+    this.#committing++;
     try {
-      for (const effect of commit.effects) {
-        effect.apply();
-        applied.push(effect);
+      const commit = this.#derive(tracks, motions);
+      // Nothing has been applied yet, so a disposal asked for during the derivation refuses with
+      // nothing to roll back.
+      this.#assertLive();
+      const applied: SchemaEffect[] = [];
+      try {
+        for (const effect of commit.effects) {
+          effect.apply();
+          applied.push(effect);
+          // Re-asked after every hook, because every one of them is caller code and a precondition
+          // asserted before a callback is not a precondition on what follows it. The teardown is
+          // deferred to this member's `finally`, so the rollback below still hands a live graph and
+          // a live composition the inverse of what these effects just built. That is the whole
+          // reason the deferral exists. See `RA-114`.
+          this.#assertLive();
+        }
+        this.#graph.replaceGraph(this.#snapshot(tracks, motions));
+      } catch (error) {
+        const steps: (() => void)[] = [];
+        for (const effect of applied) {
+          if (effect.revert !== undefined) steps.push(effect.revert);
+        }
+        rejectAfterRollback(error, () => runRollbackSteps(steps));
       }
-      this.#graph.replaceGraph(this.#snapshot(tracks, motions));
-    } catch (error) {
-      const steps: (() => void)[] = [];
-      for (const effect of applied) {
-        if (effect.revert !== undefined) steps.push(effect.revert);
-      }
-      rejectAfterRollback(error, () => runRollbackSteps(steps));
+      this.#adoptMaps(tracks, motions);
+      // Deliberately unguarded, unlike the loop above. A settle step has no revert because it is not
+      // allowed to fail, so abandoning this phase halfway leaves a staged Track neither committed
+      // nor rolled back and a Motion registered against a node that never mounted. The teardown
+      // follows this phase rather than interrupting it. See `RA-117`.
+      for (const step of commit.settle) step();
+      // The flush is the one thing a disposal skips rather than completes, on the same reason an
+      // empty seed set is skipped: a batch nobody can read still opens, moves the sequence and
+      // drains whatever a deferred flush was holding. See ADR-064's amendments of 2026-09-03 and
+      // 2026-09-05, and `RA-10`.
+      if (this.#disposed || commit.touched.length === 0) return;
+      const batch = this.#graph.invalidate(commit.touched);
+      this.#diagnostics.recordAll(batch.diagnostics);
+    } finally {
+      this.#committing--;
+      if (this.#committing === 0 && this.#pendingTeardown) this.#teardown();
     }
-    this.#adoptMaps(tracks, motions);
-    for (const step of commit.settle) step();
-    if (commit.touched.length === 0) return;
-    const batch = this.#graph.invalidate(commit.touched);
-    this.#diagnostics.recordAll(batch.diagnostics);
   }
 
   #derive(
@@ -1150,9 +1185,28 @@ export class ProjectRuntime {
     this.#diagnostics.recordAll(batch.diagnostics);
     return batch;
   }
+  /**
+   * Tears this project down, once, and refuses everything from the moment it is called.
+   *
+   * Reachable from caller code that this runtime is in the middle of calling, which is why the
+   * refusal and the release are two things rather than one. See ADR-064's amendment of 2026-09-05.
+   */
   dispose(): void {
     if (this.#disposed) return;
     this.#disposed = true;
+    // Deferred rather than refused, and answered rather than ignored. A composition hook reaches
+    // this member from inside the commit it is part of, and releasing the graph and the composition
+    // here would hand that commit's rollback the inverse of effects it can no longer apply. Every
+    // member refuses from the line above onward, and `#apply`'s `finally` releases exactly once.
+    if (this.#committing > 0) {
+      this.#pendingTeardown = true;
+      return;
+    }
+    this.#teardown();
+  }
+
+  #teardown(): void {
+    this.#pendingTeardown = false;
     for (const nodeId of [...this.#instances.keys()]) this.#graph.detach(nodeId);
     this.#instances.clear();
     this.#tracks.clear();
