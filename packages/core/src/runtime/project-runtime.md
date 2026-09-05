@@ -68,7 +68,7 @@ The open transaction, and the one piece of state `edit` adds to this class.
 
 Present exactly while a recipe is running, and the same shape the retained maps are, read through the two accessors so no verb learns it is inside a recipe. See ADR-064.
 
-No longer cleared by `dispose()` on every path, and it does not need to be. `#commit` returns early whenever this is set, so it is always `undefined` inside `#apply`, which means a deferred teardown's window can only ever exist while no recipe is open. ADR-056's measured claim that a disposed runtime never has an open recipe therefore survives, and `#assertLive` and `#refuseInsideRecipe` still cannot both have something to say. See ADR-067.
+No longer cleared by `dispose()` on every path, and it does not need to be. `#commit` returns early whenever this is set, so it is always `undefined` inside `#apply`, which means a deferred teardown's window can only ever exist while no recipe is open. ADR-056's measured claim that a disposed runtime never has an open recipe therefore survives, and `#assertLive` and `#refuseReentrant` still cannot both have something to say about the recipe half. That construction also decides the whole of issue #310, which is the sharper thing to know about it: it is the reason the recipe condition cannot see a commit, so a second condition had to be asked somewhere, and `## #refuseReentrant` is where it is asked. See ADR-067 and ADR-070.
 
 ## #inFlight
 
@@ -78,7 +78,9 @@ Named for what it counts rather than for the first thing that counted, which is 
 
 A depth rather than a flag, and that is a correctness choice rather than defensiveness. A hook is caller code and can re-enter this class through a public entry point, so a flag cleared by the inner `finally` would release the graph and the composition while the outer boundary was still unwinding through them.
 
-The bound is no longer one, and the argument for the old bound is retired rather than left standing. While `#apply` was the only member that raised this, `#commit`'s refusal of a re-entrant commit made the depth provably zero or one. There are five raisers now, and a commit hook that calls a direct write is not refused by that guard: `compileTrack` calling `setValues` reaches `#writeValues`, which raises this a second time inside the commit's own window. So a depth of two is reachable, deliberately, and the counter is what makes the drain correct at either. That reachable path is issue #310 rather than something this field decides, and it is named here because a bound stated in prose and no longer true is the shape a later hole hides in.
+The bound is one again, by a different guard, and the state is still not narrowed to it. Three revisions of this paragraph read as one argument. While `#apply` was the only raiser, `#commit`'s refusal of a re-entrant commit made the depth provably zero or one. ADR-069 added four raisers and withdrew that bound, because `compileTrack` calling `setValues` reached `#writeValues` and raised this a second time inside the commit's own window. `#refuseReentrant` refuses exactly that call, and it is asked before `#boundary` is entered at every one of the four direct writes, so all five raisers now sit behind a guard that reads this field first and a depth of two is unreachable.
+
+It stays a counter, and that is the decision rather than an oversight. The bound has been proved, withdrawn and re-proved across three slices without this field changing once, which is what a counter buys: a flag would have been right in the first slice, wrong in the second, right again in the third, and silently wrong for the whole of the middle. `docs/GUARDRAILS.md` carries the general rule and this field is what earned it. See ADR-069 and ADR-070.
 
 Raised ahead of `#derive` rather than ahead of the effect loop, because `#needsTimelineBuild` asks `resolveKeyframes`, which is caller code too. See ADR-067 and ADR-069.
 
@@ -113,6 +115,8 @@ The same question about the other map, and the same reason.
 Attaches one member, and the one owner of mounting.
 
 Split from the public verb because a commit mounts too, for the reason ADR-064's amendment records. The public member owns the contract, this owns the attach. See `RA-80`.
+
+That split stopped being a tidiness argument when the rung gained its second condition. `mount` now refuses from inside a commit, so a settle step calling the public verb would refuse the commit's own mount, and this member is the whole of what keeps the two apart. `## #refuseReentrant` states it as a rule rather than leaving it to this section. `RA-134` measures it from the direction that can fail: a hook's `mount` of the node this commit is adding is refused, and this member's mount of that same node is the one that happens. See ADR-070.
 
 Reached from a settle step, which is why the teardown is deferred past that phase rather than into it: `GraphRuntime.attach` asserts liveness, so a release that ran when a settle hook disposed would make this throw on the next step with the commit already adopted and nothing left to unwind it. See ADR-067 and `RA-117`.
 
@@ -202,9 +206,17 @@ Destroys a Motion that owns no tracks, from the id or from a live handle.
 
 The refusal counts through `#ownedBy`, so it names the list `MotionHandle.trackIds` shows, and inside a recipe it counts what that recipe staged: a Motion whose last track the same recipe removed is destroyable in it.
 
-## #refuseInsideRecipe
+## #refuseReentrant
 
-Refuses `verb` while a recipe is open, named at the verb rather than at the tier so the message tells a caller which call to move out. See ADR-064.
+The one rung for a verb that may not run from inside a callback this class is in the middle of.
+
+Two conditions, one question. A recipe is open when a caller's own recipe callback is on the stack; a commit is in flight when a seam this class called is. Both are "caller code is running inside an edit that has not finished", both are answered by one field read, and both are asked at the same ten verbs, so they are one rung rather than two. A second guard beside the first would be the same condition list copied at ten call sites, with an ordering repeated ten times and the eleventh verb getting one of the two, which is the shape issue #298 deleted seventeen of. See ADR-070.
+
+Ordered recipe-first, and the order is a contract rather than an accident. A recipe is something the caller wrote and can move, so its refusal names the verb and tells it which of the two to move out. A commit in flight is something the caller did not write -- it wrote a hook, which a commit called -- so its refusal names the condition and lets the stack name the verb. The two cannot both be true, because `edit` clears `#open` in its own `finally` before it commits, which this document states under `## #open`. So nothing observes the order today, and it is written down anyway: two conditions that cannot both be true are two conditions the next slice picks between by accident. See ADR-064 and ADR-068 for the two refusals it hands out.
+
+Ten call sites and no more, which is the check a later member repeats rather than assumes: **a commit's own work uses the private twin, never the public verb.** The settle phase calls `#mountNode` and not `mount`, `#apply`'s own flush calls `this.#graph.invalidate(commit.touched)` and not `invalidate`, and both in-place write paths end at `#invalidateOne` and not at `invalidate`. That is what keeps a commit's own mount and a commit's own flush legal while a hook's are refused, and it is why this rung's condition set grows by exactly the callback-reachable paths and by nothing else.
+
+Asked outside `#boundary` at all four direct writes, and that ordering is what keeps a write from refusing itself: the rung is asked before the depth is raised, and the tail of the write asks no rung at all. A refused call is not inside a callback and has nothing to survive, which is the same reason `#writeValues` puts its refusal outside the boundary. See ADR-069 and ADR-070.
 
 ## #setTrigger
 
@@ -272,6 +284,8 @@ Refused rather than merged, and the merge is the direction issue #307 asked to b
 
 Read after the recipe check and never before it. A recipe opened from inside a hook stages into its own pair as usual and is refused once, when it tries to apply, which keeps one owner of this refusal rather than a second copy in `edit`. Both phases refuse, and the message names neither: a settle-phase re-entry would stage from the adopted pair and lose nothing, and it is refused because the settle steps still queued were derived against the pair it would replace, in the one phase with no revert list. See ADR-068 and `RA-118` through `RA-122`.
 
+It is not the only rung that reads that field, and the pair is a floor rather than a duplication. This member is the one place every structural verb reaches and `#refuseReentrant` is the one place every immediate verb reaches, and no member sits on both paths, so there is no single rung all fifteen pass through. Two rungs, two verb families, one condition, and one refusal function: `commitInFlight` is the third member a reader would be tempted to add, and it already exists. See ADR-070.
+
 ## #boundary
 
 Runs one body inside the window during which a release is owed rather than taken, and the one owner of the depth, the decrement and the drain.
@@ -281,6 +295,8 @@ Every seam this class calls is caller code, so every one of them may call `dispo
 One member rather than the same three statements at five call sites. The drain is an ordering, and an ordering enforced at n call sites is enforced at the first of them; four more copies of `#apply`'s `finally` is the shape issue #298 deleted seventeen of. `#apply` wraps its whole body in it, and so do all four direct writes, at the outermost of the two so nothing double-raises: `#setKeyframe` reaches either `#writeValues` or `#recompileKeyframes` and never both, no direct write calls another, and none of them reaches `#commit`.
 
 Sharing one counter with the commit boundary widens `schema-commit-reentrant`, and that widening is owned rather than discovered. A structural verb called from inside a `writeValues`, `stageTrack`, `replaceMotionTrigger` or `setMotionStagger` seam is refused now, where it used to apply, and it is ADR-068's lost update one indirection out: `#writeValues` resolves its entry from the retained pair, calls the seam, and writes that entry back, so a commit made from inside the seam has its change to that node overwritten by the `set` that follows. `RA-125` pins it. A second depth field so the two conditions stayed separate was refused: two pieces of state for one condition, and two owners of when a release may happen. See ADR-069.
+
+It widens the refusal a second time now, in the other direction, and that widening is `#refuseReentrant`'s rather than this member's. A publishing verb called from inside any of these five windows reads the same `schema-commit-reentrant`, so the depth this member raises for a direct write is what makes a `seek` from inside a `writeValues` seam refuse as well as one from inside a commit hook. One counter, one condition, two rungs that read it -- `#commit` and `#refuseReentrant` -- and one refusal function they both hand out. See ADR-070.
 
 ## #apply
 
@@ -302,7 +318,7 @@ The settle loop is deliberately unguarded, and that asymmetry is the decision ra
 
 The `finally` drains the release, once, at depth zero. That is why `dispose()` may be called from inside any hook here without the rollback being handed a graph and a composition that no longer exist, and it is what makes `Error: GraphRuntime is disposed.` unreachable through a commit. See ADR-067, `RA-114`, `RA-115` and `RA-117`.
 
-The depth is no longer this member's to own. `#boundary` holds the raise, the decrement and the drain, and this member wraps its whole body in one call, which keeps the raise ahead of `#derive` and costs one closure per commit. The pair it holds in a local still cannot be adopted over by a second commit running inside it, because `#commit` refuses that re-entry. What is reachable is a direct write inside one of these hooks, which raises the depth to two and is issue #310's rather than this member's. One consequence to know rather than discover: the two early returns in the flush phase return from the closure rather than from this member, which is identical in effect while this member answers `void`. See ADR-068 and ADR-069.
+The depth is no longer this member's to own. `#boundary` holds the raise, the decrement and the drain, and this member wraps its whole body in one call, which keeps the raise ahead of `#derive` and costs one closure per commit. The pair it holds in a local still cannot be adopted over by a second commit running inside it, because `#commit` refuses that re-entry. What used to be reachable was a direct write inside one of these hooks, raising the depth to two; the rung refuses it now, so the depth is one again and this member did not change to make that true. One consequence to know rather than discover: the two early returns in the flush phase return from the closure rather than from this member, which is identical in effect while this member answers `void`. See ADR-068 and ADR-069.
 
 ## #derive
 
@@ -348,7 +364,7 @@ It answers with the record beside the group, so no caller re-reads `entry.track.
 
 The value tier's one flush, and the one place a direct write reports a disposal.
 
-The assert ahead of the call is the skip and the report in one statement: a disposed runtime never reaches `invalidate`, so nothing publishes -- a batch nobody can read still opens, notifies every subscriber, moves the sequence and drains whatever a deferred flush was holding -- and the caller is told by the owner that decided rather than by the graph that noticed. The write that got here has already completed its phase, on purpose. Both track paths end here rather than one of them ending at an inline copy, which is why the report has one owner. `LV-5` measures that as an absence at the caller and a presence here. See ADR-064's amendment of 2026-09-03 and ADR-069.
+The assert ahead of the call is the skip and the report in one statement: a disposed runtime never reaches `invalidate`, so nothing publishes -- a batch nobody can read still opens, notifies every subscriber, moves the sequence and drains whatever a deferred flush was holding -- and the caller is told by the owner that decided rather than by the graph that noticed. That a batch is never cheap is also why nothing may publish in front of a commit's own flush, which is `## #refuseReentrant`'s second condition read one tier down: this member is reached only through a verb that rung has already answered for. The write that got here has already completed its phase, on purpose. Both track paths end here rather than one of them ending at an inline copy, which is why the report has one owner. `LV-5` measures that as an absence at the caller and a presence here. See ADR-064's amendment of 2026-09-03 and ADR-069.
 
 ## #recompileKeyframes
 

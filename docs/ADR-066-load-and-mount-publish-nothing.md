@@ -84,6 +84,13 @@ shape, `RA-8` among them, which is A2's own evidence. A caller that mounts and t
 silently lose the patch it used to be handed, which is the "published-early and published-twice look
 the same" trap this project already has a guardrail for.
 
+That mechanism had one more reachable cause than this record knew about, and it has one fewer now.
+ADR-070 refuses a publication from inside a commit, which is this shape arriving from the other side:
+a hook's `seek` or `invalidate` placed a candidate in front of the commit's own flush and took it, so
+`addTrack`'s caller read a graph that changed and a `touched` list that published nothing. The dedupe
+is not what changed and is not what should have. Who is allowed to make a publication is, and that is
+ADR-070's rather than this record's.
+
 So the first real operation on a node is what carries its first patch, and the asymmetry between a
 runtime add and a load stays exactly where `T-1` put it.
 
