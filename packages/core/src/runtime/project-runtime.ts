@@ -573,6 +573,13 @@ export class ProjectRuntime {
     return this.#liveMotion(motionId, token).definition.id;
   }
 
+  #liveChildNode(motionId: string, token: number, trackId: string): string {
+    // Resolved into a local before the child name is qualified, so this order is stated here
+    // rather than left to how a call site happens to nest the two expressions. See ADR-056.
+    const owner = this.#liveId(motionId, token);
+    return qualifyMotionTrack(owner, trackId).value;
+  }
+
   #writableEntry(id: string, token: number): TrackEntry {
     this.#assertLive();
     return this.#liveEntry(id, token);
@@ -650,10 +657,8 @@ export class ProjectRuntime {
         runtime.#addTrack(track, runtime.#schemaOwner, {
           motionId: runtime.#writableId(id, token),
         }),
-      track: (trackId: string) =>
-        runtime.track(qualifyMotionTrack(runtime.#liveId(id, token), trackId).value),
-      tryTrack: (trackId: string) =>
-        runtime.tryTrack(qualifyMotionTrack(runtime.#liveId(id, token), trackId).value),
+      track: (trackId: string) => runtime.track(runtime.#liveChildNode(id, token, trackId)),
+      tryTrack: (trackId: string) => runtime.tryTrack(runtime.#liveChildNode(id, token, trackId)),
       setTrigger: (next: MotionDefinition["trigger"]) => runtime.#setTrigger(id, token, next),
       setStagger: (stagger?: number) => runtime.#setStagger(id, token, stagger),
       destroy: () => runtime.#removeMotion(runtime.#writableId(id, token)),
