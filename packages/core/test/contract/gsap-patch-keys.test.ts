@@ -1,6 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
 import { gsap } from "gsap";
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { compilePercentKeyframes } from "../../src/domain/keyframe-compiler";
 import {
@@ -11,6 +10,7 @@ import {
 } from "../../src/adapters/interpolator/gsap";
 import type { InterpolationTimeline, Interpolator } from "../../src/ports/interpolator";
 import { readNumber } from "../support/real-gsap";
+import { code, member } from "../helpers/source-region";
 
 /**
  * Issue #231, plan v3. One invariant: an animated key's tweens are replaced on the still-live
@@ -116,12 +116,6 @@ function tweensFor(timeline: RealTimeline, key: string): readonly unknown[] {
 function sample(timeline: InterpolationTimeline, key: string, at: number): number {
   timeline.progress(at);
   return readNumber(timeline.state, key);
-}
-function code(path: string): string {
-  return readFileSync(path, "utf8")
-    .split("\n")
-    .filter((line) => !/^(?:\/\/|\/\*|\*)/.test(line.trim()))
-    .join("\n");
 }
 
 describe("a record-shaped overlay patches a live timeline, or declines", () => {
@@ -282,10 +276,14 @@ describe("a record-shaped overlay patches a live timeline, or declines", () => {
     expect(tween.patchKeys).toBeUndefined();
 
     // Structural, so a later refactor cannot quietly add a stub that lies about per-key children.
-    const source = code(ADAPTER_SOURCE);
-    const start = source.indexOf("export function createGsapOneTweenInterpolator");
-    expect(start).toBeGreaterThan(-1);
-    expect(source.slice(start)).not.toMatch(/patchKeys/);
+    // Bounded by the factory's own closing brace rather than by end of file, which is bounded by
+    // whatever happens to be declared last: the claim is about this function. See issue #314.
+    const factory = member(
+      code(ADAPTER_SOURCE),
+      "export function createGsapOneTweenInterpolator",
+      "",
+    );
+    expect(factory).not.toMatch(/patchKeys/);
     tween.kill();
   });
 
