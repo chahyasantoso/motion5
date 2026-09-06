@@ -722,9 +722,9 @@ export class ProjectRuntime {
       removeKeyframe: (plugin: string, key: string) =>
         runtime.#removeKeyframe(id, token, plugin, key),
       overrideValues: (next: AuthoredValues) =>
-        runtime.#writeValues(id, runtime.#writableEntry(id, token), next, false),
+        runtime.#writeValues(id, () => runtime.#writableEntry(id, token), next, false),
       setValues: (next: AuthoredValues) =>
-        runtime.#writeValues(id, runtime.#writableEntry(id, token), next, true),
+        runtime.#writeValues(id, () => runtime.#writableEntry(id, token), next, true),
     });
   }
 
@@ -940,11 +940,19 @@ export class ProjectRuntime {
     this.#motions = motions;
   }
 
-  #writeValues(nodeId: string, entry: TrackEntry, values: AuthoredValues, rebase: boolean) {
+  #writeValues(
+    nodeId: string,
+    resolveEntry: () => TrackEntry,
+    values: AuthoredValues,
+    rebase: boolean,
+  ) {
     this.#refuseReentrant(rebase ? "setValues" : "overrideValues");
     // The refusal stays outside the boundary, because a refused call is not inside a callback and
     // has nothing to survive. See ADR-069.
     return this.#boundary(() => {
+      // Resolved here rather than by an argument expression, which is evaluated before this member
+      // is entered and therefore before the rung above. See ADR-070's amendment.
+      const entry = resolveEntry();
       const { statics, animated } = splitAuthoredValues(values);
       // An animated key is involved when this call names one, and also when the last one did: a
       // revert names no key at all, which is what the retained overlay is for. See ADR-060.
@@ -1033,19 +1041,22 @@ export class ProjectRuntime {
     key: string,
     value: AuthoredProperty,
   ) {
-    const entry = this.#writableEntry(nodeId, token);
+    // Asked before the entry is resolved, so a write aimed at a node an in-flight commit has
+    // already compiled reports the commit rather than a missing id or a stale handle, which is the
+    // order tier 0 has always had. See ADR-070's amendment.
     this.#refuseReentrant("setKeyframe");
+    const entry = this.#writableEntry(nodeId, token);
     const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
     // Asked through the one reader of the section rather than off the field, so this path and the
     // pure editor cannot disagree about what the group authors. See `RA-106` and issue #255.
     if (Object.hasOwn(readPluginValues(bound.group), key))
-      return this.#writeValues(nodeId, entry, { [key]: value }, true);
+      return this.#writeValues(nodeId, () => entry, { [key]: value }, true);
     const edited = setAuthoredKeyframe(keyframes, bound, key, value);
     return this.#recompileKeyframes(nodeId, entry, edited, "setKeyframe");
   }
   #removeKeyframe(nodeId: string, token: number, plugin: string, key: string) {
-    const entry = this.#writableEntry(nodeId, token);
     this.#refuseReentrant("removeKeyframe");
+    const entry = this.#writableEntry(nodeId, token);
     const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
     const edited = removeAuthoredKeyframe(keyframes, bound, key);
     if (edited === keyframes) return this.#invalidateOne(nodeId);
@@ -1195,7 +1206,7 @@ export class ProjectRuntime {
    */
   overrideValues(nodeId: string, values: AuthoredValues) {
     this.#assertLive();
-    return this.#writeValues(nodeId, this.#entryOf(nodeId), values, false);
+    return this.#writeValues(nodeId, () => this.#entryOf(nodeId), values, false);
   }
   /**
    * Rewrites `nodeId`'s authored values, topology untouched.
@@ -1206,7 +1217,7 @@ export class ProjectRuntime {
    */
   setValues(nodeId: string, values: AuthoredValues) {
     this.#assertLive();
-    return this.#writeValues(nodeId, this.#entryOf(nodeId), values, true);
+    return this.#writeValues(nodeId, () => this.#entryOf(nodeId), values, true);
   }
   invalidate(nodeIds: readonly string[]) {
     this.#assertLive();
