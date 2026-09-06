@@ -1,0 +1,11 @@
+{
+  "message": "test(runtime): keep the detach evidence journal exact",
+  "target": 324,
+  "edits": [
+    {
+      "path": "packages/core/test/unit/runtime/structural-commit-path.test.ts",
+      "find": "    expect(journal.entries).toEqual([\"composition-dispose\"]);\n    expect(runtime.instanceCount).toBe(0);\n    expect(runtime.diagnostics.entries).toHaveLength(2);",
+      "replace": "    expect(journal.entries).toEqual([\"compile ~/second\", \"composition-dispose\"]);\n    expect(runtime.instanceCount).toBe(0);\n    expect(runtime.diagnostics.entries).toHaveLength(2);"
+    }
+  ]
+}
