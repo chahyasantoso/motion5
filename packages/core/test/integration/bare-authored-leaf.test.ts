@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync } from "node:fs";
+import { code, codeOnly, declaration } from "../helpers/source-region";
 import { fileURLToPath } from "node:url";
 import { createGsapInterpolator, type GsapLike } from "../../src/adapters/interpolator/gsap";
 import { isKeyframeGroup } from "../../src/contract/keyframe-shape";
@@ -56,20 +57,16 @@ const SCANNED_EXTENSIONS = [".ts", ".tsx"];
 /** `stops:` followed by an array literal. The retired wrapper, and nothing else. */
 const WRAPPER_AUTHORING = /\bstops\s*:\s*\[/;
 
-/** The two comment forms, either of which may name the retired shape it documents. */
-const COMMENT = /\/\*[\s\S]*?\*\/|\/\/[^\n]*/.source;
-/** A quoted body, which is where a diagnostic message names the shape it refuses. */
-const QUOTED = /"(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'/.source;
-/** A template body. Interpolations go with it: no authored leaf has ever lived in one. */
-const TEMPLATE = /`(?:[^`\\]|\\.)*`/.source;
-/**
- * Every comment and every quoted body, matched left to right in one pass.
- *
- * Order inside the alternation is what makes the interleaving come out right. A `//` inside a string
- * is consumed as part of that string, because the opening quote matched first; an apostrophe inside a
- * comment is consumed as part of that comment, for the same reason.
- */
-const PROSE = new RegExp(`${COMMENT}|${QUOTED}|${TEMPLATE}`, "g");
+/** These assertions are shared with the adversarial fixture, not reimplemented by it. */
+function assertLeafDeclarations(source: string): void {
+  expect(codeOnly(declaration(source, "export type AuthoredStaticValue", ";"))).toMatch(
+    /=\s*number\s*\|\s*string\s*\|\s*boolean\s*$/,
+  );
+  expect(codeOnly(declaration(source, "export type AuthoredProperty", ";"))).toMatch(
+    /=\s*readonly\s+AuthoredStop\[\]\s*\|\s*AuthoredStaticValue\s*$/,
+  );
+  expect(codeOnly(source)).not.toMatch(/\binterface\s+AuthoredProperty\b/);
+}
 
 /**
  * `true` exactly when a bare static value is a legal authored leaf.
@@ -198,24 +195,6 @@ function scannedFiles(root: string): readonly string[] {
   return readdirSync(`${REPO_ROOT}${root}`, { recursive: true, encoding: "utf8" })
     .map((entry) => `${root}/${entry.split("\\").join("/")}`)
     .filter((entry) => SCANNED_EXTENSIONS.some((extension) => entry.endsWith(extension)));
-}
-
-/**
- * One file's source with its prose removed and its code left intact.
- *
- * The probe is a regex, and a regex cannot tell a schema from a sentence about one. Three modules own
- * the refusal of the retired form and every one of them has to be able to name it: `authored-leaf`
- * and `v5` in a doc comment, and `validate-v5` in the diagnostic message an author actually reads.
- * Scanning that prose left the gate unsatisfiable by exactly the code that satisfies it, and the
- * alternative was to reword a diagnostic to dodge a grep, which makes product text a function of an
- * assertion's imprecision.
- *
- * Same reasoning that puts `docs/` out of scope, applied one level down. An authored leaf is object
- * syntax, so it never lives inside a comment or a quoted body: what survives this is code, and code
- * is the only thing the gate was ever about.
- */
-function codeOnly(source: string): string {
-  return source.replace(PROSE, " ");
 }
 
 describe("the bare authored leaf", () => {
@@ -362,10 +341,33 @@ describe("the bare authored leaf", () => {
     expect(STATIC_IS_A_LEAF).toBe(true);
     expect(LEAF_IS_NOT_A_WRAPPER).toBe(true);
 
-    const v5 = readFileSync(V5_SOURCE, "utf8");
-    expect(v5).toContain("export type AuthoredStaticValue");
-    expect(v5).toContain("export type AuthoredProperty");
-    expect(v5).not.toContain("export interface AuthoredProperty");
+    assertLeafDeclarations(code(V5_SOURCE));
+  });
+
+  it("LF-17 requires real union declarations despite prose and literal decoys", () => {
+    const real =
+      "export type AuthoredStaticValue = number | string | boolean;\n" +
+      "export type AuthoredProperty = readonly AuthoredStop[] | AuthoredStaticValue;";
+    const decoy =
+      `/* ${real} export interface AuthoredProperty {} */\n` +
+      `const quoted = ${JSON.stringify(real)};\n`;
+    expect(() => assertLeafDeclarations(decoy + real)).not.toThrow();
+    expect(() => assertLeafDeclarations(decoy)).toThrow();
+    expect(() => assertLeafDeclarations(decoy + "export interface AuthoredProperty {}")).toThrow();
+    expect(() =>
+      assertLeafDeclarations(
+        real.replace(
+          "readonly AuthoredStop[] | AuthoredStaticValue",
+          '"readonly AuthoredStop[] | AuthoredStaticValue"',
+        ),
+      ),
+    ).toThrow();
+    expect(() => assertLeafDeclarations(real + "\ninterface AuthoredProperty {}")).toThrow();
+    expect(WRAPPER_AUTHORING.test(codeOnly('const text = "stops: [";'))).toBe(false);
+    expect(WRAPPER_AUTHORING.test(codeOnly("const leaf = { stops: [] };"))).toBe(true);
+    expect(
+      WRAPPER_AUTHORING.test(codeOnly("const text = `${JSON.stringify({ stops: [] })}`;")),
+    ).toBe(true);
   });
 
   it("LF-16 leaves no authored schema in the repository on the retired form", () => {
@@ -373,7 +375,7 @@ describe("the bare authored leaf", () => {
     for (const root of SCHEMA_ROOTS)
       for (const file of scannedFiles(root)) {
         if (file === SELF) continue;
-        if (WRAPPER_AUTHORING.test(codeOnly(readFileSync(`${REPO_ROOT}${file}`, "utf8"))))
+        if (WRAPPER_AUTHORING.test(codeOnly(code(`${REPO_ROOT}${file}`), file)))
           offenders.push(file);
       }
     // Migration completeness as a gate rather than as a promise in a review. The suite would already

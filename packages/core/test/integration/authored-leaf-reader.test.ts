@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { code } from "../helpers/source-region";
 import { fileURLToPath } from "node:url";
 import { readAuthoredLeaf, readCompilableStops } from "../../src/contract/authored-leaf";
 import type { Diagnostic } from "../../src/contract/v5";
@@ -167,7 +167,7 @@ const PARITY: readonly ParityCase[] = [
 ];
 
 function sourceOf(site: string): string {
-  return readFileSync(`${SOURCE_ROOT}${site}`, "utf8");
+  return code(`${SOURCE_ROOT}${site}`);
 }
 
 function compiledKeys(authored: Readonly<Record<string, unknown>>): readonly string[] {

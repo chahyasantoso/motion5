@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
+import { code, callSites } from "../../helpers/source-region";
 import { fileURLToPath } from "node:url";
 import { createTimeDriver } from "../../../src/adapters/trigger-factory/time-driver";
 
@@ -17,28 +18,49 @@ import { createTimeDriver } from "../../../src/adapters/trigger-factory/time-dri
 const FACTORY_DIR = new URL("../../../src/adapters/trigger-factory/", import.meta.url);
 const OWNED = new Set(["default.ts", "time-driver.ts"]);
 
-function read(url: URL): string {
-  return readFileSync(fileURLToPath(url), "utf8");
-}
-
 function manualPortCalls(source: string): number {
-  return [...source.matchAll(/createManualTriggerPort\(/g)].length;
+  return callSites(source, "createManualTriggerPort").length;
 }
 
 function buildsManualPort(entry: string): boolean {
-  return manualPortCalls(read(new URL(entry, FACTORY_DIR))) > 0;
+  return manualPortCalls(code(new URL(entry, FACTORY_DIR))) > 0;
 }
 
-const FACTORY_SOURCE = read(new URL("default.ts", FACTORY_DIR));
-const DRIVER_SOURCE = read(new URL("time-driver.ts", FACTORY_DIR));
-const ENGINE_SOURCE = read(new URL("../../../src/engine.ts", import.meta.url));
+const FACTORY_SOURCE = code(new URL("default.ts", FACTORY_DIR));
+const DRIVER_SOURCE = code(new URL("time-driver.ts", FACTORY_DIR));
+const ENGINE_SOURCE = code(new URL("../../../src/engine.ts", import.meta.url));
 
 describe("T5 no manual trigger fallback", () => {
+  it("T-13 counts executable calls rather than comments or literal spellings", () => {
+    const prose = [
+      "// createManualTriggerPort(",
+      "/** createManualTriggerPort() */",
+      'const quoted = "createManualTriggerPort(";',
+      "const template = `createManualTriggerPort()`;",
+      "const pattern = /createManualTriggerPort\\(/;",
+      "function createManualTriggerPort() {}",
+    ].join("\n");
+    expect(manualPortCalls(prose)).toBe(0);
+    // The old scan also caught namespace calls. The parser must not weaken that half.
+    expect(manualPortCalls("ports.createManualTriggerPort();")).toBe(1);
+    expect(manualPortCalls('ports["createManualTriggerPort"]();')).toBe(1);
+    expect(manualPortCalls("ports.other(); unrelated();")).toBe(0);
+    expect(manualPortCalls(prose + "\ncreateManualTriggerPort /* gap */ ();")).toBe(1);
+    expect(manualPortCalls(prose + "\nconst live = `${createManualTriggerPort()}`;")).toBe(1);
+    expect(manualPortCalls(prose + "\ncreateManualTriggerPort(); createManualTriggerPort();")).toBe(
+      2,
+    );
+    const source = prose + "\ncreateManualTriggerPort();";
+    expect(callSites(source, "createManualTriggerPort")).toEqual([
+      source.lastIndexOf("createManualTriggerPort"),
+    ]);
+  });
+
   it("T-8 reaches the manual port once in the factory, after both driver branches", () => {
     // Position is the assertion that matters. A manual port built before the time or scroll
     // branch returns is a fallback no matter how the branches below it read.
     expect(manualPortCalls(FACTORY_SOURCE)).toBe(1);
-    const call = FACTORY_SOURCE.indexOf("createManualTriggerPort()");
+    const call = callSites(FACTORY_SOURCE, "createManualTriggerPort")[0]!;
     // Anchored on the branch conditions, not whole statements. Prettier owns where a branch body
     // wraps, and it moved the time branch's `return` to its own line once ADR-040 gave
     // `createTimeDriver` a second argument. Position is the claim here; line breaks never were.

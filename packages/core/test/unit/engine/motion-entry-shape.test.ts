@@ -1,18 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { code } from "../../helpers/source-region";
 import { fileURLToPath } from "node:url";
 
 // Source guards, for the same reason C-3 in motion-track-resolution.test.ts is one. Both entry
 // construction paths already behave identically, so the shape difference between them is invisible
 // to behavioral tests right up until some consumer counts keys. Section 3.2 of the plan sanctions
 // the conditional-spread idiom; these assertions are what keep it applied everywhere.
-const ENGINE_SOURCE = readFileSync(
-  fileURLToPath(new URL("../../../src/engine.ts", import.meta.url)),
-  "utf8",
-);
-const MOTION_TEST_SOURCE = readFileSync(
+const ENGINE_SOURCE = code(fileURLToPath(new URL("../../../src/engine.ts", import.meta.url)));
+const MOTION_TEST_SOURCE = code(
   fileURLToPath(new URL("../domain/motion.test.ts", import.meta.url)),
-  "utf8",
 );
 const CONDITIONAL_DURATION = /\.\.\.\(duration === undefined \? \{\} : \{ duration \}\)/g;
 
