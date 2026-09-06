@@ -305,6 +305,72 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
     handle.dispose();
   });
 
+  it("reads fallible progress before either path acquires a stage", () => {
+    for (const recompile of [false, true]) {
+      const failure = new Error("progress result refused");
+      let refuse = true;
+      const commit = vi.fn();
+      const rollback = vi.fn();
+      const stageTrack = vi.fn(() => ({ commit, rollback }));
+      const runtime = new ProjectRuntime(DIRECT_PROJECT, {
+        clock: createManualClock(),
+        compose: () => () => ({ values: { x: 200 }, sourceProgress: 0.5, sourceRevisions: {} }),
+        stageTrack,
+        writeValues: () => ({
+          patched: false,
+          get progress() {
+            if (refuse) throw failure;
+            return 0.5;
+          },
+        }),
+      });
+      runtime.mount(ARM);
+      const arm = runtime.track(ARM);
+      const before = arm.definition;
+      const write = () => (recompile ? arm.setKeyframe("fk", "y", 300) : arm.setValues({ x: 260 }));
+      expect(thrownBy(write)).toBe(failure);
+      expect(stageTrack).not.toHaveBeenCalled();
+      expect(commit).not.toHaveBeenCalled();
+      expect(rollback).not.toHaveBeenCalled();
+      expect(arm.definition).toBe(before);
+      refuse = false;
+      expect(write().seeds).toEqual([ARM]);
+      expect(stageTrack).toHaveBeenCalledTimes(1);
+      expect(commit).toHaveBeenCalledTimes(1);
+      runtime.dispose();
+    }
+  });
+
+  it("attempts publication after a failed re-seek without rolling back accepted state", () => {
+    const failure = new Error("seek failed");
+    const commit = vi.fn();
+    const rollback = vi.fn();
+    let compiledX = 200;
+    const runtime = new ProjectRuntime(DIRECT_PROJECT, {
+      clock: createManualClock(),
+      compose: () => () => ({ values: { x: compiledX }, sourceProgress: 0, sourceRevisions: {} }),
+      writeValues: () => ({ patched: false, progress: 0.5 }),
+      stageTrack: () => {
+        compiledX = 260;
+        return { commit, rollback };
+      },
+      setProgress: () => {
+        throw failure;
+      },
+    });
+    runtime.mount(ARM);
+    const invalidate = vi.spyOn(runtime.graph, "invalidate");
+    const arm = runtime.track(ARM);
+    expect(thrownBy(() => arm.setValues({ x: 260 }))).toBe(failure);
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(rollback).not.toHaveBeenCalled();
+    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(runtime.graph.registry.get(ARM)?.values.x).toBe(260);
+    expect(runtime.graph.registry.get(ARM)?.sourceProgress).toBe(0);
+    expect(arm.definition.keyframes?.fk).toEqual({ values: { x: 260 } });
+    runtime.dispose();
+  });
+
   it("LV-21 conservatively rebuilds after a successful mask followed by a failed stage", () => {
     const registry = new PluginRegistry();
     registry.register({
@@ -335,6 +401,9 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
       },
     );
     runtime.mount(ARM);
+    runtime.mount("~/a");
+    runtime.mount("~/b");
+    runtime.invalidate([ARM, "~/a", "~/b"]);
     const arm = runtime.track(ARM);
     const before = arm.definition;
     expect(thrownBy(() => arm.setValues({ x: 260 }))).toBe(failure);

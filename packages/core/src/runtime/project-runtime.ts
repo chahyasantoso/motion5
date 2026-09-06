@@ -978,8 +978,8 @@ export class ProjectRuntime {
         // The mask succeeded and has no inverse. If staging refuses, keep the old definition and
         // overlay but conservatively require the next structural edit to drop that mask.
         this.#tracks.set(nodeId, { ...entry, liveWrite: true });
-        staged = this.#stageTrack?.(rewritten, nodeId);
         progress = written.progress;
+        staged = this.#stageTrack?.(rewritten, nodeId);
       }
       this.#tracks.set(nodeId, {
         ...entry,
@@ -1055,6 +1055,7 @@ export class ProjectRuntime {
       // The successful writer may have changed a mask even if staging now refuses. Recording
       // only that conservative fact keeps a later binding edit from skipping its repair build.
       this.#tracks.set(nodeId, { ...entry, liveWrite: true });
+      const progress = written?.progress;
       const staged = this.#stageTrack?.(accepted, nodeId);
       this.#tracks.set(nodeId, {
         ...entry,
@@ -1062,7 +1063,7 @@ export class ProjectRuntime {
         overlay: NO_OVERLAY,
         liveWrite: false,
       });
-      return this.#completeWrite(nodeId, staged, written?.progress);
+      return this.#completeWrite(nodeId, staged, progress);
     });
   }
 

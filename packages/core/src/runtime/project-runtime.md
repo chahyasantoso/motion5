@@ -374,11 +374,11 @@ The entry stays a thunk: argument evaluation must not resolve an id before `#ref
 
 ## #completeWrite
 
-Completes an accepted direct write: finalize its stage, re-seek when required, then ask the existing `#invalidateOne` for its batch. `runSettleSteps` attempts every step and reports failures once, preserving a lone thrown value by identity and multiple failures in occurrence order. A successful call returns the actual batch; a failing one throws rather than fabricating a batch. Static writes with no stage or seek use the existing flush directly. No graph rebuild is introduced.
+Completes an accepted direct write: finalize the stage, re-seek, then publish through `#invalidateOne`. The existing `runSettleSteps` attempts all three and reports failures in order, preserving a lone failure by identity. Success returns the actual batch. A static write with no stage or seek takes the original flush path. No graph rebuild.
 
-Issue #313's proposed commit-then-rollback was rejected against the actual Engine: `stageTrackDefinition` installs the replacement during staging, and `commit()` marks it settled before disposing the displaced Track. A cleanup throw therefore leaves an adopted replacement and a disposed old Track, and rollback is a no-op. Retaining the candidate and completing the re-seek and publication is truthful; claiming refusal would leave the retained definition describing the wrong compiled Track. `PK-20`, `PK-21` and `LV-20` inject real Engine timeline failures to prove it. A stage that throws before returning owns its own partial cleanup, as Engine's implementation already does.
+Issue #313's proposed rollback after a throwing commit is unsound: Engine installs during staging and marks settled before disposing the old Track. A cleanup failure leaves the replacement installed and rollback disabled. Keep the accepted definition and complete its remaining steps, as real Engine failures in `PK-20`, `PK-21` and `LV-20` prove. `StagedTrack` states that contract; a staging seam that throws before returning owns its own cleanup.
 
-The two callers still decide what to stage and retain; this member shares only their identical accepted-phase lifecycle. `StagedTrack` documents the distinction at its declaration. `LiveValueWriter` has no inverse, so this layer cannot promise restoration of arbitrary host mutations on a throw. Finalization, re-seek and publication guarantee attempts rather than successful host recovery. A failed re-seek can leave the accepted replacement at its actual progress, which the publication reports rather than inventing the old one.
+The callers own candidates and adoption; this member owns only their shared completion. Read a writer's progress before staging, since even a result getter can throw. The writer has no inverse, and host cleanup is not reversible: guarantee attempts, not recovery. A failed re-seek publishes actual progress, never an invented old value.
 
 ## #boundGroup
 
