@@ -31,6 +31,8 @@ Two documents hold what a status file is not allowed to accumulate:
 
 ## Delivery and evidence
 
+- [API-CAPABILITIES.md](./API-CAPABILITIES.md): concise API-only command and owner navigation, human-dispatch routes, and explicit activation gates.
+
 - [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md): phases, slice-level pull requests, dependencies, test obligations, exit gates, risk register, and the v1 checklist. Treat its completed-slice claims as intent until reconciled with SESSION-STATUS.
 - [PHASE5-DETAILED-PLAN.md](./PHASE5-DETAILED-PLAN.md): the detailed contract for the current phase.
 - [TESTING-STRATEGY.md](./TESTING-STRATEGY.md): test tiers, determinism rules, migration evidence, invariant evidence, and prohibited evidence.

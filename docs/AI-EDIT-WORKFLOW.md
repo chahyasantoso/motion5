@@ -6,7 +6,8 @@ This branch contains the gated, two-runner implementation of [AI edit](../.githu
 
 An attempted edit, a prepared candidate, a published commit, and verified CI are different facts. No comment may promote one into another.
 
-- [apply-ai-edit.mjs](../scripts/apply-ai-edit.mjs) owns protocol validation and staging before disposable filesystem writes.
+- [automation-operation.mjs](../scripts/automation-operation.mjs) owns the fail-closed operation schema, normalized preview preparation, targeted validation, and bounded operation evidence.
+- [apply-ai-edit.mjs](../scripts/apply-ai-edit.mjs) owns low-level edit validation and staging before disposable filesystem writes. The orchestrator hands it a normalized edit-only request; it is not a general operation CLI.
 - [automation-receipt.mjs](../scripts/automation-receipt.mjs) owns canonical request identity, receipt states, diagnostic limits, and rendering.
 - [automation-publish.mjs](../scripts/automation-publish.mjs) owns preparation orchestration, independent candidate validation, publication intent, and remote commit reconciliation.
 - [automation-report.mjs](../scripts/automation-report.mjs) owns GitHub metadata, immutable evidence persistence, diagnostic retrieval, and bot-owned comment projections.
@@ -17,7 +18,7 @@ The workflow owns credential placement and event routing. Candidate processing h
 
 Requests are JSON files under `.ai/edits/`. Unknown request and edit fields, unsupported versions, stale snapshots, ambiguous anchors, unsafe paths, and CI-skip subjects are refused.
 
-A request requires `version: 1`, `expected_head`, `expected_blobs`, `message`, and `edits`. `expected_head` is the full lowercase source commit SHA read before submission, not the future request commit. `expected_blobs` names every distinct edited path exactly once, using its original Git blob SHA or `null` for an absent file. A Git blob SHA is not a commit SHA or a plain content checksum.
+Every request requires `version: 1`, `expected_head`, `expected_blobs`, and `message`. Apply and preview additionally require `edits`; validation instead requires `paths` and `checks` and prohibits `edits`. `operation` is one of `apply`, `preview`, and `validate`. An omitted operation preserves apply, except the existing `dry_run: true` spelling selects preview. Never supply both `operation` and `dry_run`. Unknown operations, including maintenance and shell commands, are refused. `expected_head` is the full lowercase source commit SHA read before submission, not the future request commit. `expected_blobs` names every distinct edited path exactly once, using its original Git blob SHA or `null` for an absent file. A Git blob SHA is not a commit SHA or a plain content checksum.
 
 `edits` contains 1 through 50 entries. Each entry specifies `path` and exactly one operation: `find` plus `replace`, `create` with complete text, or `delete: true`. Anchors must be nonempty and occur exactly once. Multiple edits to one file share its original blob precondition and apply sequentially to staged content. Empty replacement removes an anchor. Creates cannot overwrite an existing or already-staged file.
 
@@ -43,7 +44,7 @@ The canonical request identity is bounded to 1,500,000 bytes and 32 nesting leve
 
 A refused request can be corrected in a new request-only commit after refreshing its source and blob preconditions. A consumed request has been removed, so a subsequent request starts from the new head. Never retry an uncertain publication by blindly applying its edits again.
 
-Manual dispatch names the sole pending request on the selected branch. It follows the same snapshot checks. Main, ci-logs, non-branch publication targets, and fork-origin runs are refused. The bot author plus `AI-Edit-Request:` trailer still prevents consumption pushes from recursively applying another request. Replacing this lifecycle classification belongs to the later API-loop slice; the subject is not evidence that CI completed.
+Manual dispatch names the sole pending request on the selected branch. It follows the same snapshot checks. Main, ci-logs, non-branch publication targets, and fork-origin runs are refused. The bot author plus `AI-Edit-Request:` trailer still prevents consumption pushes from recursively applying another request. This legacy recursion suppression is not a validation result; the subject is not evidence that CI completed.
 
 ## Isolated preparation
 
@@ -83,11 +84,48 @@ Failed-job log retrieval has three bounded attempts. Failure becomes `unavailabl
 
 The reporter maintains one bot-owned summary per PR, receipt kind, and workflow. Human comments with a matching marker are never updated. Run and attempt ordering prevent older completions from replacing newer same-head evidence. The current PR head is checked before and immediately before the comment write. Reporters are serialized. GitHub has no conditional comment-update API: a branch can still move during the write, so each comment identifies its exact commit and the reporter distinguishes historical completion rather than promising atomic head-and-comment updates.
 
-## Dry runs and remaining capabilities
+## Formatted preview and targeted validation
 
-Protocol-v1 dry runs validate without changing target files. They are not formatted-diff previews. They produce an empty candidate and consume the request with `chore(ai-edit): dry run, nothing applied`, without a CI-skip directive. Required PR evidence must still arrive on that final head.
+These operations require a reviewed and activated slice 4 runner. An older pin still implements the older dry-run contract; a passing PR does not change the pin. [API-CAPABILITIES.md](./API-CAPABILITIES.md) is the concise navigation map.
 
-Formatted previews, allowlisted targeted validation, dependency maintenance, and lifecycle redesign remain the later API-loop slice. No arbitrary command strings or privileged maintenance operations were added here. Touched-file normalization accompanies the requested change; unrelated formatting remains separate.
+A preview uses the same bounded edits and original blob preconditions as apply. It applies and formats in the disposable uncredentialed candidate tree, then emits an empty publication file list. The contributor branch receives only request cleanup. `operation.json` records the source and request SHAs, trusted runner, canonical request digest, proposed-content digest, final UTF-8 byte sizes, creates/deletes/modifications, and per-path checks. `tested_sha` is null for a proposed tree, not falsely set to a commit that lacks those changes.
+
+The final unified diff is bounded to 1,000,000 bytes; oversized output is refused, never presented as a complete prefix. Durable evidence splits the sanitized diff into UTF-8-safe chunks no larger than 24,000 bytes. `operation.json` lists every chunk, original and retained digests and byte counts, and whether redaction changed the bytes. Read all chunks. Retained redacted output is evidence, not a patch to apply verbatim. Redaction does not promise detection of arbitrary secrets.
+
+Validation accepts 1 through 50 unique existing paths and a nonempty unique `checks` array drawn from `format` and `read-budget`. Each path needs its source blob SHA. It executes no user-provided command, script, formatter configuration, or plugin. `format` uses reviewed built-in parser inference; unsupported file types are explicitly not applicable. `read-budget` checks targeted core file sizes and applicable source/sister-document structure through the trusted scanner policy. It is not the full repository scan. Paths outside core source and deleted preview files are explicitly not applicable, never called passed.
+
+Validation records `tested_sha` as the exact source commit. Failed targeted checks remain `failure` in the result even when preparation and request cleanup succeed. No target bytes are changed by validation. Both operations say `required_ci: "not_replaced"`: their results are fast feedback, not required CI or merge authorization. Inspect the cleanup receipt and the checks on that final head. Refresh the head and original blob preconditions before a separate apply request.
+
+Example templates below require real complete source and blob SHAs, not the placeholder strings.
+
+```text
+{
+  "version": 1,
+  "operation": "preview",
+  "expected_head": "<40-character source SHA>",
+  "expected_blobs": {"docs/example.md": "<original Git blob SHA>"},
+  "message": "docs(example): clarify usage",
+  "edits": [{"path": "docs/example.md", "find": "old text", "replace": "new text"}]
+}
+```
+
+```text
+{
+  "version": 1,
+  "operation": "validate",
+  "expected_head": "<40-character source SHA>",
+  "expected_blobs": {"packages/core/src/index.ts": "<original Git blob SHA>"},
+  "message": "chore(validation): inspect source checks",
+  "paths": ["packages/core/src/index.ts"],
+  "checks": ["format", "read-budget"]
+}
+```
+
+## Disabled maintenance and remaining lifecycle limits
+
+Dependency maintenance is refused even with a PAT. A future reviewed operation must bound package/version inputs, disable lifecycle scripts, allow only exact manifest-plus-lockfile outputs, preserve credential isolation, and prove CI on its generated commit. No arbitrary command interface or temporary privileged automation is introduced. Historical maintenance retirement belongs to slice 5.
+
+Request cleanup still uses the existing bot-author/trailer recursion suppression. This is not a CI-skip directive or a substitute for required evidence. Lifecycle redesign and the full failure/recovery activation matrix remain separate acceptance work under issue #328. Touched-file normalization accompanies the requested change; unrelated formatting stays separate.
 
 ## Activation gate
 
@@ -106,5 +144,7 @@ A temporary waiver carries a shrinking ceiling, not permission to grow. A pendin
 ## Regression evidence
 
 The AE cases in [apply-ai-edit.test.ts](../packages/core/test/unit/scripts/apply-ai-edit.test.ts), [automation-receipt.test.ts](../packages/core/test/unit/scripts/automation-receipt.test.ts), [automation-adapters.test.ts](../packages/core/test/unit/scripts/automation-adapters.test.ts), and [automation-recovery.test.ts](../packages/core/test/unit/scripts/automation-recovery.test.ts) cover their respective owners. Coverage includes injected publication/report failures, concrete API and evidence-storage checks, artifact-independent reconciliation, and disposable Git repositories using the installed formatter while candidate-owned scripts and configuration would throw if executed. Workflow-text assertions check configuration, not production event routing.
+
+[automation-operation.test.ts](../packages/core/test/unit/scripts/automation-operation.test.ts) proves the formatted-preview regression; [automation-operation-policy.test.ts](../packages/core/test/unit/scripts/automation-operation-policy.test.ts) covers allowlisted operations, exact-source validation, preview/apply equivalence, refusal boundaries, bounded diffs, and durable redacted evidence.
 
 Run the existing full Vitest suite with Node 24. Keep exact-SHA CI results and red/green limitations in the PR. Keep shipped project state only in `SESSION-STATUS.md`.
