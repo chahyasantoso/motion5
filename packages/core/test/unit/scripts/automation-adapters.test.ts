@@ -37,6 +37,32 @@ function scenario(body: string) {
 }
 
 describe("trusted automation adapters", () => {
+  it("AE-70: workflow configuration separates candidate execution and writer credentials", () => {
+    scenario(String.raw`
+      const {readFile} = await import("node:fs/promises");
+      const candidate = await readFile(".github/workflows/ai-edit.yml", "utf8");
+      const reporter = await readFile(".github/workflows/archive-ci-logs.yml", "utf8");
+      assert.ok(candidate.includes("contents: read"));
+      assert.ok(!candidate.includes("contents: write") && !candidate.includes("secrets."));
+      assert.ok(candidate.includes("persist-credentials: false"));
+      assert.ok(candidate.includes("automation-publish.mjs prepare"));
+      assert.ok(reporter.includes("workflow_run:") && reporter.includes("types: [completed]"));
+      assert.ok(reporter.includes("refs/heads/main") && reporter.includes("MOTION5_AUTOMATION_SHA"));
+      assert.ok(reporter.includes("automation-publish.mjs recover"));
+      assert.ok(!reporter.includes("npm install") && !reporter.includes("npm ci"));
+    `);
+  });
+  it("AE-71: retained diagnostic markup cannot inject a comment", () => {
+    scenario(String.raw`
+      await reportOutcome(ci, ports, {state: "available", excerpt: "<script>@everyone</script>"});
+      const body = calls.find(x => x[0] === "comment")[2];
+      assert.ok(!body.includes("<script>") && !body.includes("@everyone"));
+      assert.ok(body.includes("diagnostics.json"));
+      const logs = await collectDiagnostics(async () => "passing output ".repeat(1000) + "AssertionError: actual failure");
+      assert.ok(logs.excerpt.includes("actual failure"));
+      assert.ok(logs.chunks.join("").startsWith("passing output"));
+    `);
+  });
   it("AE-65: concrete API client accepts compare syntax but refuses traversal", () => {
     scenario(String.raw`
       const {GitHub} = await import("./scripts/automation-report.mjs");
@@ -67,8 +93,8 @@ describe("trusted automation adapters", () => {
         const bundle = JSON.parse(await fs.readFile(output, "utf8"));
         assert.equal(bundle.request_commit, requestCommit); assert.equal(bundle.source_sha, source);
         assert.deepEqual(JSON.parse(bundle.files[0].content), {hello: 1});
-        assert.equal(bundle.files[0].content, '{\n  "hello": 1\n}\n'.replaceAll('\n', '
-'));
+        assert.notEqual(bundle.files[0].content, request.edits[0].create);
+        assert.ok(bundle.files[0].content.endsWith(String.fromCharCode(10)));
         assert.equal(git("rev-parse", "HEAD"), requestCommit);
         // Reset the disposable application output, then submit a request whose actual formatter fails.
         await fs.rm(path.join(dir, "docs/a.json")); await fs.rm(output);

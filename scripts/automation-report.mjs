@@ -31,7 +31,15 @@ export function verifyRun(run, repository, id, attempt) {
 export async function collectDiagnostics(fetchLogs) {
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      return diagnostics({ exit_code: 0, text: await fetchLogs() });
+      const text = await fetchLogs();
+      const retained = diagnostics({ exit_code: 0, text });
+      const failure = text.search(/FAIL |AssertionError|Error \[|##\[error\]/i);
+      if (failure >= 0)
+        retained.excerpt = diagnostics({
+          exit_code: 0,
+          text: text.slice(failure, failure + 10000),
+        }).excerpt;
+      return retained;
     } catch {
       // A retrieval error is never passed off as test output.
     }
@@ -70,8 +78,16 @@ export async function reportOutcome(value, ports, detail = null, scope = "defaul
   // Reporters are serialized by the workflow. GitHub comments have no conditional update API.
   if ((await ports.currentHead()) !== head) return { comment: "stale" };
   const diagnosticLink = `https://github.com/${value.repository}/blob/ci-logs/${value.evidence_path.replace("receipt.json", "diagnostics.json")}`;
+  if (detail)
+    ensure(
+      ["available", "empty", "unavailable"].includes(detail.state) &&
+        typeof detail.excerpt === "string",
+      "Invalid retained diagnostics",
+    );
+  // Re-escape even retained evidence: stored data never becomes trusted markup.
+  const excerpt = detail ? diagnostics({ exit_code: 0, text: detail.excerpt }).excerpt : "";
   const details = detail
-    ? `\n\nDiagnostics: **${detail.state}**. [Retained evidence](${diagnosticLink}).\n<pre>${detail.excerpt}</pre>`
+    ? `\n\nDiagnostics: **${detail.state}**. [Retained evidence](${diagnosticLink}).\n<pre>${excerpt}</pre>`
     : "";
   const body = `${prefix}${head}:${value.run_id}:${value.run_attempt} -->\n${projection}${details}`;
   await ports.writeComment(previous?.id ?? null, body);
@@ -235,7 +251,7 @@ export async function persistOutcome(api, value, detail = null) {
   render(value);
   const directory = value.evidence_path.slice(0, -"receipt.json".length);
   const files = { [value.evidence_path]: `${JSON.stringify(value)}\n` };
-  if (detail) {
+  if (detail && Array.isArray(detail.chunks)) {
     const { chunks, ...metadata } = detail;
     const paths = chunks.map((text, index) => {
       const path = `${directory}log-${String(index).padStart(3, "0")}.txt`;
@@ -346,22 +362,7 @@ export async function reportCompletedRun(api, run, trustedSha) {
         ensure(result.status === 0 && !result.error, "Log retrieval failed");
         return result.stdout;
       });
-  if (exists) {
-    const ports = Object.create(api);
-    // Reuse the retained diagnostic projection without re-persisting its removed chunk array.
-    ports.persist = async (files) => {
-      const receiptOnly = Object.fromEntries(
-        Object.entries(files).filter(([key]) => key.endsWith("/receipt.json")),
-      );
-      await api.persist(receiptOnly);
-    };
-    return reportToPull(
-      ports,
-      run,
-      value,
-      retainedDetail ? { ...retainedDetail, chunks: [] } : null,
-    );
-  }
+  if (exists) return reportToPull(api, run, value, retainedDetail);
   return reportToPull(api, run, value, detail);
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
