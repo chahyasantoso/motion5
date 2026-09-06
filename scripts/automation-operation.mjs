@@ -66,7 +66,12 @@ export function operationSpec(request) {
     request.operation === undefined || request.dry_run === undefined,
     "operation and dry_run are mutually exclusive",
   );
-  const operation = request.operation ?? (request.dry_run === true ? "preview" : "apply");
+  const operation =
+    request.operation === undefined
+      ? request.dry_run === true
+        ? "preview"
+        : "apply"
+      : request.operation;
   ensure(
     ["apply", "preview", "validate"].includes(operation),
     "Unsupported operation; maintenance is not activated",

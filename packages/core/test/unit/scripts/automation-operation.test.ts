@@ -55,3 +55,22 @@ it("dry-run preparation reports the formatted transformation without publishing 
   );
   expect(result.status, result.stderr).toBe(0);
 });
+
+it("an explicit null operation is refused rather than defaulted to apply", () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      String.raw`
+    import assert from "node:assert/strict";
+    import {operationSpec} from "./scripts/automation-operation.mjs";
+    const request = {version: 1, expected_head: "a".repeat(40), expected_blobs: {"docs/new.md": null}, message: "docs(fixture): add", edits: [{path: "docs/new.md", create: "hello"}]};
+    assert.equal(operationSpec(request).operation, "apply");
+    for (const operation of [null, false, 0, "", {}, []]) assert.throws(() => operationSpec({...request, operation}), /Unsupported operation/);
+  `,
+    ],
+    { cwd: root, encoding: "utf8", timeout: 10000 },
+  );
+  expect(result.status, result.stderr).toBe(0);
+});
