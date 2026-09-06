@@ -20,11 +20,12 @@ A passed implementation PR does not change `MOTION5_AUTOMATION_SHA`. After revie
 
 - **Format manually**, [format.yml](../.github/workflows/format.yml), is the deliberate mechanical repair escape hatch. [FORMATTING.md](./FORMATTING.md) owns its use.
 - **Recovery audit**, [recovery-audit.yml](../.github/workflows/recovery-audit.yml), owns its additional mutation and acceptance evidence.
+- Historical lockfile bootstrap, GSAP dependency maintenance, and authored-leaf migration remain maintainer-dispatch routes. [MAINTENANCE-WORKFLOWS.md](./MAINTENANCE-WORKFLOWS.md) owns their distinct inputs/outputs, replacement requirements, trust limits, and separately confirmed retirement gates.
 - Reporter recovery dispatch requires an exact run and attempt. Repository variables, token scope, branch protection, and dispatch are maintainer actions when the connection does not expose them. Never paste the PAT into a request or comment.
 
 ## Maintenance not activated
 
-Dependency and general maintenance operations are refused, including when a PAT is configured. There is no arbitrary shell, npm argument, plugin, workflow-generation, or package-install request. The historical bootstrap-lockfile, GSAP maintenance, and authored-leaf migration routes are not retired by this slice; slice 5 must inventory their unique behavior and replacement evidence first.
+Dependency and general maintenance operations are refused, including when a PAT is configured. There is no arbitrary shell, npm argument, plugin, workflow-generation, or package-install request. [MAINTENANCE-WORKFLOWS.md](./MAINTENANCE-WORKFLOWS.md) documents the distinct bootstrap-lockfile, GSAP maintenance, and authored-leaf migration capabilities and the evidence required before any retirement. Keep those human-dispatch routes while usage or a working replacement cannot be verified; an inventory is not replacement validation.
 
 A future dependency operation needs a reviewed schema with bounded allowlisted package names and exact versions, lifecycle scripts disabled, immutable manifest inputs, an exact manifest-plus-lockfile output allow-list, isolated preparation, independent publication validation, and confirmed CI on the generated commit. The trusted-runner activation gate and live evidence must both be satisfied before that operation can be enabled. A secret existing is not that evidence.
 
