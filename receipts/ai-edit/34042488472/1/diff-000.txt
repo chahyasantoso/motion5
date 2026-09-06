@@ -1,0 +1,16 @@
+diff --git a/docs/API-CAPABILITIES.md b/docs/API-CAPABILITIES.md
+index c668654..5b4be51 100644
+--- a/docs/API-CAPABILITIES.md
++++ b/docs/API-CAPABILITIES.md
+@@ -1,5 +1,11 @@
+ # API-only capability map
+ 
++Live verification fixture, proposed only:
++
++```json
++{ "preview": true, "target_files_changed": false }
++```
++
+ This is navigation and an activation contract, not a second status file. [SESSION-STATUS.md](./SESSION-STATUS.md) owns shipped state. The implementation PR owns exact-SHA results and outstanding live exercises. Read the actual immutable runner revision before using an operation.
+ 
+ ## Supported through repository APIs
