@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "expected_head": "125d824179987724b49eb1a4a6d598d71f34afee",
+  "expected_blobs": {
+    "scripts/apply-ai-edit.mjs": "6aebe89b0a1007002d431d4a08bd7ee617902c4f",
+    "packages/core/test/unit/scripts/apply-ai-edit.test.ts": "0e0ff55b88011f3ceb31c564dca5ae124e6b4b12"
+  },
+  "message": "chore: apply pinned prettier to issue 328 slice 1",
+  "target": 329,
+  "edits": [
+    {
+      "path": "scripts/apply-ai-edit.mjs",
+      "find": "const MAX_EDITS = 50;",
+      "replace": "const MAX_EDITS  = 50;"
+    },
+    {
+      "path": "packages/core/test/unit/scripts/apply-ai-edit.test.ts",
+      "find": "const HEAD = \"a\".repeat(40);",
+      "replace": "const HEAD  = \"a\".repeat(40);"
+    }
+  ]
+}
