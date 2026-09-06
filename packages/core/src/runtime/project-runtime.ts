@@ -554,7 +554,7 @@ export class ProjectRuntime {
     // teardown empties both maps. Those two stopped being simultaneous when the teardown became
     // deferrable past a commit, and a handle answering `live` inside that window would be reporting
     // a project whose `dispose()` has already returned. Not a throw, so the reading ladder above is
-    // untouched. See ADR-064's amendment of 2026-09-05 and `RA-116`.
+    // untouched. See ADR-067 and `RA-116`.
     if (this.#disposed) return undefined;
     const entry = entries.get(id);
     return entry !== undefined && entry.token === token ? entry : undefined;
@@ -807,7 +807,7 @@ export class ProjectRuntime {
     // `resolveKeyframes`, which is caller code and can dispose from there too. The raise, the
     // decrement and the drain are `#boundary`'s rather than this member's: four direct writes need
     // the same three statements, and an ordering enforced at five call sites is enforced at the
-    // first of them. See ADR-064's amendment of 2026-09-05 and ADR-069.
+    // first of them. See ADR-067 and ADR-069.
     this.#boundary(() => {
       const commit = this.#derive(tracks, motions);
       // Nothing has been applied yet, so a disposal asked for during the derivation refuses with
@@ -841,8 +841,8 @@ export class ProjectRuntime {
       for (const step of commit.settle) step();
       // The flush is the one thing a disposal skips rather than completes, on the same reason an
       // empty seed set is skipped: a batch nobody can read still opens, moves the sequence and
-      // drains whatever a deferred flush was holding. See ADR-064's amendments of 2026-09-03 and
-      // 2026-09-05, and `RA-10`.
+      // drains whatever a deferred flush was holding. See ADR-064's amendment of 2026-09-03,
+      // ADR-067 and `RA-10`.
       if (this.#disposed || commit.touched.length === 0) return;
       const batch = this.#graph.invalidate(commit.touched);
       this.#diagnostics.recordAll(batch.diagnostics);
@@ -1219,7 +1219,7 @@ export class ProjectRuntime {
    * Tears this project down, once, and refuses everything from the moment it is called.
    *
    * Reachable from caller code that this runtime is in the middle of calling, which is why the
-   * refusal and the release are two things rather than one. See ADR-064's amendment of 2026-09-05.
+   * refusal and the release are two things rather than one. See ADR-067.
    */
   dispose(): void {
     if (this.#disposed) return;
