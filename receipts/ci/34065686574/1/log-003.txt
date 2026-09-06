@@ -1,0 +1,100 @@
+cccccccccccccccccccccccccc](https://github.com/chahyasantoso/motion5/commit/cccccccccccccccccccccccccccccccccccccccc).\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8311260Z +   'Publication: **not_attempted**. CI: **not_run**.\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8311566Z +   'Next action: inspect_evidence.\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8311866Z -   'Publication: **confirmed**. CI: **pending**.\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8312183Z -   'Next action: inspect_exact_commit_checks.\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8312412Z     '\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8312792Z +   '[Run 43, attempt 1](https://github.com/chahyasantoso/motion5/actions/runs/43/attempts/1)\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8313487Z +   '[Machine-readable receipt](https://github.com/chahyasantoso/motion5/blob/ci-logs/receipts/ai-edit/43/1/receipt.json)\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8314414Z -   '[Run 42, attempt 1](https://github.com/chahyasantoso/motion5/actions/runs/42/attempts/1)\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8315474Z -   '[Machine-readable receipt](https://github.com/chahyasantoso/motion5/blob/ci-logs/receipts/ai-edit/42/1/receipt.json)\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8315919Z     '\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8317175Z +   '[Operation evidence directory](https://github.com/chahyasantoso/motion5/tree/ci-logs/receipts/ai-edit/43/1/). For preview or validation requests, publication only consumes the request; inspect operation.json and retained diff chunks, not CI success. Required PR CI is separate.'
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8319593Z -   '[Operation evidence directory](https://github.com/chahyasantoso/motion5/tree/ci-logs/receipts/ai-edit/42/1/). For preview or validation requests, publication only consumes the request; inspect operation.json and retained diff chunks, not CI success. Required PR CI is separate.'
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8320398Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8320570Z     at file:///home/runner/work/motion5/motion5/[eval1]:57:14 {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8320871Z   generatedMessage: false,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8321074Z   code: 'ERR_ASSERTION',
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8321458Z   actual: '<!-- motion5-summary:ai-edit:7:cccccccccccccccccccccccccccccccccccccccc:43:1 -->\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8321883Z     '<!-- motion5-receipt:ai-edit:43:1 -->\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8322124Z     '### AI edit outcome\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8322312Z     '\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8322872Z     'Commit: [cccccccccccccccccccccccccccccccccccccccc](https://github.com/chahyasantoso/motion5/commit/cccccccccccccccccccccccccccccccccccccccc).\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8323496Z     'Publication: **not_attempted**. CI: **not_run**.\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8323965Z     'Next action: inspect_evidence.\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8324422Z     '\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8324907Z     '[Run 43, attempt 1](https://github.com/chahyasantoso/motion5/actions/runs/43/attempts/1)\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8325709Z     '[Machine-readable receipt](https://github.com/chahyasantoso/motion5/blob/ci-logs/receipts/ai-edit/43/1/receipt.json)\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8326432Z     '\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8327724Z     '[Operation evidence directory](https://github.com/chahyasantoso/motion5/tree/ci-logs/receipts/ai-edit/43/1/). For preview or validation requests, publication only consumes the request; inspect operation.json and retained diff chunks, not CI success. Required PR CI is separate.',
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8328941Z   expected: '<!-- motion5-summary:ai-edit:7:cccccccccccccccccccccccccccccccccccccccc:42:1 -->\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8329366Z     '<!-- motion5-receipt:ai-edit:42:1 -->\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8329609Z     '### AI edit outcome\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8329895Z     '\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8330833Z     'Commit: [cccccccccccccccccccccccccccccccccccccccc](https://github.com/chahyasantoso/motion5/commit/cccccccccccccccccccccccccccccccccccccccc).\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8331470Z     'Publication: **confirmed**. CI: **pending**.\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8331775Z     'Next action: inspect_exact_commit_checks.\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8332011Z     '\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8332343Z     '[Run 42, attempt 1](https://github.com/chahyasantoso/motion5/actions/runs/42/attempts/1)\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8333090Z     '[Machine-readable receipt](https://github.com/chahyasantoso/motion5/blob/ci-logs/receipts/ai-edit/42/1/receipt.json)\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8333529Z     '\n' +
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8335087Z     '[Operation evidence directory](https://github.com/chahyasantoso/motion5/tree/ci-logs/receipts/ai-edit/42/1/). For preview or validation requests, publication only consumes the request; inspect operation.json and retained diff chunks, not CI success. Required PR CI is separate.',
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8336568Z   operator: 'strictEqual',
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8336868Z   diff: 'simple'
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8337131Z }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8337256Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8337371Z Node.js v24.20.0
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8337861Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8338132Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8338246Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8338526Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8338682Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8338777Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8339051Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8339139Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8339846Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-cleanup.test.ts:^[[2m68:40^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8340751Z     ^[[90m 66|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8341272Z     ^[[90m 67|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8342174Z     ^[[90m 68|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8342761Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8343039Z     ^[[90m 69|^[[39m }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8343227Z     ^[[90m 70|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8343818Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-cleanup.test.ts:^[[2m75:7^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8344703Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8344965Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8345168Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8345203Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8345571Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m192 passed^[[39m^[[22m^[[90m (193)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8346196Z ^[[2m      Tests ^[[22m ^[[1m^[[31m2 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1088 passed^[[39m^[[22m^[[90m (1090)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8346607Z ^[[2m   Start at ^[[22m 23:02:42
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8347313Z ^[[2m   Duration ^[[22m 21.32s^[[2m (transform 2.19s, setup 966ms, import 12.04s, tests 25.62s, environment 20ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8347870Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T23:03:03.8999604Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-06T23:03:03.9056502Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T23:03:03.9056834Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T23:03:03.9088513Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T23:03:03.9088735Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T23:03:03.9088897Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T23:03:03.9089111Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T23:03:03.9089368Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T23:03:03.9488870Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T23:03:03.9489249Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T23:03:03.9489406Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T23:03:03.9489609Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T23:03:03.9530165Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-06T23:03:12.6246308Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-06T23:03:12.6247145Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-06T23:03:12.6273213Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-06T23:03:12.6274086Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-06T23:03:12.6274580Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-06T23:03:12.6275306Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-06T23:03:12.6275826Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-06T23:03:12.6397012Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-06T23:03:13.0196361Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-06T23:03:13.0197176Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-06T23:03:13.0241499Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-06T23:03:13.0242334Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-06T23:03:13.0242788Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-06T23:03:13.0243312Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-06T23:03:13.0243831Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-06T23:03:13.0384770Z ##[error]Process completed with exit code 1.
