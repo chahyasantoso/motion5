@@ -1,9 +1,7 @@
 name: AI edit
 
-# Applies one anchor-based edit request dropped at .ai/edits/*.json by an implementor that has no
-# local checkout, formats what it touched with the pinned Prettier, commits with the personal
-# access token, and reports the result back as a comment. Contract: docs/AI-EDIT-WORKFLOW.md
-
+# Activation requires a reviewed runner SHA and the default-branch reporter.
+# Candidate code has no writer token, persisted Git credential, or publication step.
 on:
   push:
     branches-ignore: [main, ci-logs]
@@ -11,182 +9,67 @@ on:
   workflow_dispatch:
     inputs:
       request:
-        description: Request file to apply, for example .ai/edits/my-slice.json
+        description: Sole pending request file
         required: true
         type: string
+
+permissions:
+  contents: read
 
 concurrency:
   group: ai-edit-${{ github.ref }}
   cancel-in-progress: false
 
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
-
 jobs:
-  apply:
-    name: apply one request
-    # A consumed request is removed by the workflow and carries this exact trailer. Restricting
-    # the gate to the bot author means prose mentioning the trailer cannot silence real requests.
+  prepare:
+    name: prepare isolated candidate
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      vars.MOTION5_AUTOMATION_SHA != '' &&
+      (github.event_name == 'workflow_dispatch' ||
       !(github.event.head_commit.author.username == 'github-actions[bot]' &&
-      contains(github.event.head_commit.message, 'AI-Edit-Request: .ai/edits/'))
+      contains(github.event.head_commit.message, 'AI-Edit-Request: .ai/edits/')))
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      TRUSTED_SHA: ${{ vars.MOTION5_AUTOMATION_SHA }}
     steps:
+      - name: Require an immutable reviewed runner
+        run: |
+          set -euo pipefail
+          [[ "$TRUSTED_SHA" =~ ^[a-f0-9]{40}$ ]]
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
-          fetch-depth: 1
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-
-      # TOUCHED is every path the request changed and is what the commit allow-list reads. FORMAT is
-      # the subset that still exists, and it is what the formatter reads: a path a `delete` edit
-      # removed belongs on the first list and not on the second. See docs/AI-EDIT-WORKFLOW.md.
-      - name: Name the scratch files
+          ref: ${{ vars.MOTION5_AUTOMATION_SHA }}
+          path: trusted
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          path: candidate
+          fetch-depth: 2
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install only the reviewed formatter outside the candidate tree
         run: |
-          echo "REPORT=${RUNNER_TEMP}/ai-edit-report.md" >> "$GITHUB_ENV"
-          echo "TOUCHED=${RUNNER_TEMP}/ai-edit-touched.txt" >> "$GITHUB_ENV"
-          echo "FORMAT=${RUNNER_TEMP}/ai-edit-format.txt" >> "$GITHUB_ENV"
-
-      # The directory is the source of truth, never the push payload. A commit created through the
-      # Git data API, which is the only way the reader of this contract can push, arrives with
-      # empty added and modified lists, so selecting from them makes the workflow a silent no-op
-      # for its own audience. More than one request is refused rather than picked alphabetically.
-      - name: Choose the request
-        id: request
+          set -euo pipefail
+          version="$(jq -r '.devDependencies.prettier' trusted/package.json)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          npm install --prefix "$RUNNER_TEMP/motion5-formatter" --ignore-scripts \
+            --no-package-lock --no-audit --no-fund "prettier@$version"
+      - name: Prepare with trusted code and configuration
         env:
           DISPATCH_REQUEST: ${{ inputs.request }}
         run: |
           set -euo pipefail
-          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            request="$DISPATCH_REQUEST"
-          else
-            mapfile -t requests < <(find .ai/edits -maxdepth 1 -type f -name '*.json' 2>/dev/null | sort)
-            if [ "${#requests[@]}" -gt 1 ]; then
-              printf 'This directory holds %s requests, and this workflow applies one at a time:\n' "${#requests[@]}" >&2
-              printf '%s\n' "${requests[@]}" >&2
-              exit 1
-            fi
-            request="${requests[0]-}"
-          fi
-          if [ -z "$request" ] || [ ! -f "$request" ]; then
-            echo "No pending request file. Nothing to do."
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          case "$request" in
-            .ai/edits/*.json) ;;
-            *)
-              echo "A request must live at .ai/edits/*.json, and this one is $request."
-              exit 1
-              ;;
-          esac
-          echo "found=true" >> "$GITHUB_OUTPUT"
-          echo "path=$request" >> "$GITHUB_OUTPUT"
-
-      - uses: actions/setup-node@v4
-        if: steps.request.outputs.found == 'true'
+          export CANDIDATE_ROOT="$GITHUB_WORKSPACE/candidate"
+          export FORMATTER_ROOT="$RUNNER_TEMP/motion5-formatter"
+          export CANDIDATE_OUTPUT="$RUNNER_TEMP/candidate.json"
+          node trusted/scripts/automation-publish.mjs prepare
+      - uses: actions/upload-artifact@v4
         with:
-          node-version: 24
-
-      # A refused request exits non-zero here, which skips the two steps below and leaves the
-      # request file in place for a corrected push. The report still reaches the comment.
-      - name: Apply the request
-        id: apply
-        if: steps.request.outputs.found == 'true'
-        env:
-          REQUEST: ${{ steps.request.outputs.path }}
-        run: node scripts/apply-ai-edit.mjs "$REQUEST" "$REPORT" "$TOUCHED" "$FORMAT"
-
-      # The pinned version and nothing else. This job deliberately does not run npm ci or the
-      # suite: CI owns correctness on the resulting commit, and duplicating it here doubles the
-      # bill for no new information.
-      #
-      # It reads FORMAT rather than TOUCHED because Prettier exits non-zero on a path that no longer
-      # exists, and this step failing after the apply step has written the tree is what left a
-      # request applied, unformatted and uncommitted. A request whose every changed path was deleted
-      # by it has nothing to format and does not pay for the install either.
-      - name: Format what changed
-        if: steps.request.outputs.found == 'true' && steps.apply.outputs.changed == 'true'
-        run: |
-          set -euo pipefail
-          if [ ! -s "$FORMAT" ]; then
-            echo "Nothing to format: every path this request changed was deleted by it."
-            exit 0
-          fi
-          version="$(jq -r '.devDependencies.prettier' package.json)"
-          npm install --no-save --no-package-lock --no-audit --no-fund "prettier@${version}"
-          xargs -a "$FORMAT" -r npx prettier --write --ignore-unknown
-
-      - name: Commit the bounded file list
-        id: commit
-        if: steps.request.outputs.found == 'true'
-        env:
-          REQUEST: ${{ steps.request.outputs.path }}
-          MESSAGE: ${{ steps.apply.outputs.message }}
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm -q --ignore-unmatch "$REQUEST"
-          git add -A
-          allowed="${RUNNER_TEMP}/allowed.txt"
-          staged="${RUNNER_TEMP}/staged.txt"
-          { cat "$TOUCHED" 2>/dev/null || true; echo "$REQUEST"; } | sort -u > "$allowed"
-          git diff --cached --name-only | sort -u > "$staged"
-          unexpected="$(comm -13 "$allowed" "$staged")"
-          if [ -n "$unexpected" ]; then
-            echo "Refusing to commit files the request did not name:"
-            echo "$unexpected"
-            exit 1
-          fi
-          if git diff --cached --quiet; then
-            echo "Nothing to commit."
-            exit 0
-          fi
-          git commit -m "$MESSAGE" -m "AI-Edit-Request: ${REQUEST}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
-
-      # The report is what the apply step wrote, and on its own it describes the runner's working
-      # tree rather than the branch. So when the apply step succeeded and the commit step did not,
-      # the comment says that first: otherwise `Applied ... edits` reads as landed when a formatter
-      # failure has left the request pending and the tree thrown away with the runner.
-      - name: Report back
-        if: always() && steps.request.outputs.found == 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REQUEST: ${{ steps.request.outputs.path }}
-          TARGET: ${{ steps.apply.outputs.target }}
-          APPLIED: ${{ steps.apply.outcome }}
-          COMMITTED: ${{ steps.commit.outcome }}
-        run: |
-          set -euo pipefail
-          comment="${RUNNER_TEMP}/comment.md"
-          {
-            echo "### AI edit request \`${REQUEST}\`"
-            echo ""
-            if [ "$APPLIED" = "success" ] && [ "$COMMITTED" != "success" ]; then
-              echo "**Nothing was committed.** A step after the apply step failed, so the edits below"
-              echo "exist only in the runner's working tree and \`${REQUEST}\` is still pending. Read the"
-              echo "report as what was attempted rather than what landed, then push a corrected request"
-              echo "to the same path."
-              echo ""
-            fi
-            cat "$REPORT" 2>/dev/null || echo "The apply step produced no report."
-            echo ""
-            echo "[Actions run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
-          } > "$comment"
-          cat "$comment" >> "$GITHUB_STEP_SUMMARY"
-          target="$TARGET"
-          if [ -z "$target" ]; then
-            target="$(gh pr list --head "$GITHUB_REF_NAME" --state open --json number \
-              --jq '.[0].number' || true)"
-          fi
-          if [ -z "$target" ]; then
-            echo "No issue or pull request to comment on. The report is in the job summary."
-            exit 0
-          fi
-          gh issue comment "$target" --body-file "$comment"
+          name: ai-edit-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/candidate.json
+          if-no-files-found: error
+          retention-days: 14

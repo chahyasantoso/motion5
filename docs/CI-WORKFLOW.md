@@ -1,102 +1,51 @@
 # CI workflow
 
-CI is an executable version of the project's evidence model. It checks every pull request, plus pushes to `main` and the few long-running recovery branches named in its trigger; it never rewrites contributor branches. Formatting is checked inside the quality job as a read-only gate, so drift fails that job. Repair is a separate, manually dispatched workflow and never an automatic step of `CI`.
+CI validates every pull request and the push branches named in [ci.yml](../.github/workflows/ci.yml). It checks the exact PR head rather than claiming to test its merge with the base. Ordinary CI has read-only repository permissions, disables persisted checkout credentials, installs with `npm ci --ignore-scripts --no-audit --no-fund`, and never repairs or publishes contributor changes.
 
-## Global rules
+## Invariant and ownership
 
-- Node 24 and a pinned lockfile.
-- `npm ci`, not an unconstrained install.
-- Read-only repository permissions for normal CI.
-- Concurrency cancellation per branch or pull request.
-- Same required matrix on pull requests and protected branch pushes.
-- Benchmark output and failure diagnostics are uploaded as artifacts.
-- No job exists merely to look complete; every job has a local command and a real assertion.
-- A passing test that asserts empty values or zero progress is not evidence of real interpolation.
+Removing duplicate execution must not remove assertions or turn missing evidence green. [ci-evidence.mjs](../scripts/ci-evidence.mjs) owns installed-Vitest discovery parity and consumption of the single full-suite result. The workflow owns scheduling, credentials, and dependencies. No runtime or test-discovery configuration is changed.
 
-## Live jobs
+The seven existing check names remain intact because branch-protection configuration is not available through the implementation connection. A YAML check name is not proof that repository settings require it. Exceptional push triggers remain unchanged until their consumers can be verified; no event deduplication is claimed.
 
-Seven jobs, and they are the whole of `.github/workflows/ci.yml`. Each one checks out the pull request head sha, installs with `npm ci --ignore-scripts --no-audit --no-fund`, and holds read-only permissions. None of them writes to a branch.
+## Quality and independent evidence
 
-**quality:** `npm run typecheck`, then `npm run format:check` as a read-only gate, then `npm test`. Required. Formatting is checked here and repaired nowhere in this workflow.
+`quality (node 24)` is the single full-suite execution owner. Typechecking, read-only formatting, discovery, and full-suite execution each run after a successful install even when an earlier check fails. Failures are not marked continue-on-error: the job remains failed. Cancellation does not become a successful result.
 
-**integration:** deterministic graph/runtime integration tests. Required, but currently limited by the implemented runtime surface.
+Discovery invokes the installed Vitest CLI with the repository configuration for the whole suite, the integration filter, and the end-to-end filter. These commands collect tests without executing test bodies. Their machine-readable inventories must be nonempty. Each filtered inventory must equal its projection from the full inventory, including duplicate-name multiplicity.
 
-**boundaries:** rejects renderer imports in core, banned compatibility symbols, and forbidden public exports. Required. The planted consumer self-test still needs the recovery-plan repair.
+The full suite runs once with the normal console reporter and a small evidence reporter. Verification matches every discovered runnable test to a passed execution result. It checks successful completion, module results, unhandled errors, immutable head, run ID, attempt, Node version, and a digest of the lockfile, Vitest configuration, and evidence implementation. A missing result or dynamically skipped expected test fails verification. Pre-existing statically skipped tests are not presented as executed assertions; integration and end-to-end evidence additionally refuses skipped results within its scope.
 
-**read-budget:** `npm run test:read-budget`, which runs `scripts/read-budget-scan.mjs` over `packages/core/src` and then the `RB-` cases that cover the scanner itself. Required. It fails a file over the 60,000 byte budget, a source over the 30,000 byte sister doc trigger with no sibling document, a mirrored pair that has drifted, and a waiver or pending entry the tree no longer needs.
+Evidence is uploaded under `ci-evidence-<run-id>-<attempt>` for 14 days. Inventories and execution results remain separate. Outputs live outside the checkout, so generated evidence cannot cause formatting drift. This artifact is read-only CI evidence, not authority for a privileged publisher.
 
-This is the one job whose subject cannot check itself. A truncated contents read is indistinguishable from a whole one, so an implementor working through the API has no way to learn that the file it just anchored into arrived short, and **AI edit** deliberately runs no part of the suite. The scan therefore has to run somewhere with a checkout or it does not run at all, which is what this job is for rather than a second opinion on a rule the author could have verified. `docs/AI-EDIT-WORKFLOW.md` owns the rule and the amendment to ADR-008 in `docs/DECISIONS.md` records why a byte gate is allowed.
+## Compatibility check names, not duplicate test runs
 
-The `RB-` cases also run inside `quality`, because `npm test` is the whole suite. That is the same overlap `boundaries` already has, and it is not what makes this job worth its minutes: the unit cases plant temporary trees and prove the scanner behaves, while only the scan step measures this repository.
+`integration (node 24)` and `end-to-end (node 24)` always evaluate their dependency result. They require successful quality completion, download the artifact from this same run and attempt, and independently verify its identity, discovery parity, and corresponding passed results. Absent artifacts, failed or cancelled producers, skipped evidence, and mismatched identities cannot produce a green placeholder. Neither job installs dependencies or executes the suite again.
 
-**build:** compiles TypeScript and verifies public artifact files exist. Required.
+These contexts intentionally depend on all quality evidence, including formatting and typechecking. Behavioral evidence is still collected when either fails, but a red quality job does not yield green compatibility contexts.
 
-**end-to-end:** runs the end-to-end integration fixture. Required.
+## Distinct assertions retained
 
-**performance:** runs the deterministic structural benchmark against versioned advisory budgets and uploads the report. Advisory until **2026-08-17**. The budget decision must be revisited after Phase 0R/1R restores real value composition; do not promote an empty-pipeline baseline blindly.
+`boundaries (node 24)` runs `node scripts/boundary-scan.mjs` against the actual repository. `read-budget (node 24)` runs `node scripts/read-budget-scan.mjs` against the actual core source and sister documents. Their scanner unit tests remain in the single full suite instead of running twice. The existing convenience package scripts still run scans plus their self-tests for manual use.
 
-## Formatting repair is manual, and it is a different workflow
+`build (node 24)` compiles declaration output and checks both `packages/core/dist/index.js` and `packages/core/dist/index.d.ts`. These assertions are unchanged.
 
-`.github/workflows/format.yml` is named **Format manually** and its only trigger is `workflow_dispatch`. It takes a `branch` input, defaulting to `main`, checks that branch out with a personal access token, runs `npm run format`, and pushes one `chore: apply prettier` commit when anything changed. It reports `Already formatted.` and exits successfully when nothing did.
+`performance (node 24)` runs the existing benchmark and uploads its report. The benchmark exits nonzero when its structural budgets fail, and the workflow does not use continue-on-error. The advisory label and 2026-08-17 expiry in historical budget metadata are not a current exemption from failure. This slice preserves behavior and does not claim to have inspected or changed branch protection, recalibrated the benchmark, or promoted the synthetic measurement into runtime performance evidence.
 
-Three consequences follow from it being dispatch-only, and earlier revisions of this document asserted the opposite of all three. It does not run on any pull request event and is not sequenced after behavioral green, so a green `CI` run never repairs drift and there is no child commit to wait for. It is gated on no other job, so it can be dispatched against a branch whose tests are red. And because its input is a branch in this repository, a fork pull request head is not reachable by it at all; a fork contributor formats in the fork and pushes.
+## Formatting and API-only contributions
 
-Dispatch it against your own branch. The `main` default is for repairing the protected branch, which should never be routine, because `format:check` already gates every pull request that lands there.
+Formatting is read-only in CI. [FORMATTING.md](./FORMATTING.md) owns the pinned formatter and manual repair contract. Touched-file normalization in the gated AI-edit route is described in [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md); its availability depends on actual activation, not on a passing PR.
 
-## When you cannot run prettier
+A contributor without the installed repository toolchain can submit direct API edits and use exact-head CI as verification. Do not claim local checks. The manual formatter requires workflow dispatch, which is not exposed by every connection. No temporary privileged formatter is introduced here.
 
-An implementor with no working `npx`, no installed `node_modules`, or no network to install them cannot run `npm run format` or `prettier` at all. That is a normal condition here rather than a broken setup, and it has exactly two answers. The read-only `format:check` step in the `quality` job is how you find out whether what you wrote is formatted, and the **Format manually** workflow, dispatched against your branch, is how you repair it. There is no third answer, and in particular there is no automatic repair arriving later.
+## Reporting and deployment
 
-Both answers cost a round trip through Actions, so the cheaper discipline is writing output prettier would not change. Prettier is pinned at `3.6.2` and `.prettierrc.json` sets `printWidth` 100, double quotes, trailing commas everywhere, and `proseWrap: preserve`. Prose is therefore never rewrapped, which is what makes hand-authored markdown safe: keep a paragraph on one line, or break it yourself at or under 100 columns, and prettier leaves it where you put it. In TypeScript, match the surrounding file rather than guessing, which means two-space indent, double quotes, semicolons, a trailing comma on every multi-line list, and no line over 100 columns including comments.
+The slice 2 reporting implementation retains run-and-attempt receipts and bounded diagnostics on `ci-logs`, with bot-owned SHA-aware comments. [AI-EDIT-WORKFLOW.md](./AI-EDIT-WORKFLOW.md) owns its activation requirements. A workflow_run reporter is read from the default branch: an implementation PR or integration-branch merge does not deploy it.
 
-Author no markdown tables. Prettier rewrites a table's pipe alignment and cell padding to its own widths, so a table is the one construct that is almost certain to be reformatted by the tool you cannot run, and the resulting drift is invisible to a reader while being fatal to `format:check`. Write the list or the short run of paragraphs the table was standing in for. This is a rule for authored documentation rather than a preference, and it is why no document under `docs/` has one.
+Until that rollout, the default branch can still use the legacy failed-log archive at `logs/<run-id>/failed-jobs.log`. Cite the original Actions run as primary evidence and read the actual deployed workflow before assuming a receipt exists. Never use `ci-logs` as a development branch.
 
-An embedded code fence is formatted too. Prettier formats the contents of a fence whose language it recognises, `json` and `ts` included, so a hand-written block in one of those is held to exactly the standard a real file is. A fence tagged `text` is left alone, which is the escape hatch for a block that genuinely is not source.
+## Measurements and limits
 
-## CI log archive
+PR bodies own exact-head checks, observable job durations, and failing-first evidence. Discovery adds collection work and compatibility checks add artifact transfer and scheduling. One execution owner does not by itself prove lower total job-minutes or faster feedback. Record available durations and do not invent savings from removed commands.
 
-`.github/workflows/archive-ci-logs.yml` archives failed `CI` and `Recovery audit` runs on the separate `ci-logs` branch under `logs/<run-id>/`. Each run has `README.md`, `run.json`, and `failed-jobs.log`. Those three are the only files the workflow writes; earlier revisions of this document named `run.log` and `jobs.json`, which never existed.
-
-Archiving is deliberately not branch-filtered. `workflow_run` filters on the head branch when a filter is declared, and for a pull-request-triggered run that head branch is the pull request head ref, so the earlier list of `main`, `rescue/**` and `fix/**` skipped archival for every `feat/**`, `phase*/**`, `chore/**` and `docs/**` pull request. The filter was removed rather than extended, because an archive that only covers some branches is not an archive. Earlier revisions of this document described that filter as a list to maintain, which is the stale claim `docs/PR-WORKFLOW.md` corrected first and this document was owed.
-
-What limits the work is the `if:` gate rather than a branch list. Only a `failure` or `timed_out` conclusion is archived, because `CI` cancels stale runs on every push and a cancelled run has no failed job to capture, so archiving one committed an empty log under a misleading message. A run the gate skipped is still reachable through `workflow_dispatch` with a run id. Because `workflow_run` workflows are read from the default branch, a change to that gate only takes effect once it lands on `main`.
-
-Every archive run commits to the same branch, so runs are serialized rather than raced and are never cancelled: a cancelled archive loses the only copy of a failed run's log. A push that lands beside a manual dispatch rebases and retries three times, then fails loudly rather than dropping the log.
-
-Use the original Actions URL as the primary citation and the archive as durable failure evidence. Never treat `ci-logs` as a development branch.
-
-## Planned jobs
-
-**package:** packs the repository, installs the tarball into a clean consumer, and imports only documented exports. Added by P6-02.
-
-## Command contract
-
-```json
-{
-  "check": "npm run format:check && npm run typecheck && npm test",
-  "format": "prettier . --write",
-  "format:check": "prettier . --check",
-  "typecheck": "tsc --noEmit -p tsconfig.json",
-  "test": "vitest run",
-  "test:integration": "vitest run packages/core/test/integration",
-  "test:boundaries": "node scripts/boundary-scan.mjs && vitest run packages/core/test/unit/scripts/boundary-scan.test.ts",
-  "test:read-budget": "node scripts/read-budget-scan.mjs && vitest run packages/core/test/unit/scripts/read-budget-scan.test.ts",
-  "benchmark": "node performance/graph-benchmark.mjs"
-}
-```
-
-Copied from the root `package.json` rather than paraphrased, because a contract a reader cannot paste is not one. Every CI step maps to one of these. If a step cannot, add the script before adding the job.
-
-## Rollout schedule
-
-P0-02 made installs reproducible. P0-05 added the required integration job. P2-07 added boundaries. P3-07 adds performance as advisory calibration. Phase 4 is currently reopened for Phase 0R/1R value-pipeline recovery. P4-05 adds build and end-to-end after the fixture and public runtime surface are stable. P6-02 adds package consumer verification.
-
-Issue #267 added the read budget scan and the sister doc rule, and #278 added the `read-budget` job that runs them, because until then the only enforcement was a human remembering the command.
-
-Until a job's owning phase lands, this document describes the target, not a live check.
-
-## Required versus advisory
-
-Required jobs block merges. Performance is advisory only while its baseline is calibrated, but it must run on every pull request, upload its report, name its expiry in session status, and be promoted or deleted by that date. "Continue on error forever" is not a policy.
-
-A new required job is not required until branch protection says so. `read-budget` is required in the sense this document means it, which is that it runs on every pull request and a red run blocks the merge, and adding it to the protected branch's required contexts is a repository setting rather than a change to this file.
+Recovery audit remains a separate manual workflow with distinct mutation and acceptance evidence. Its work is not described as ordinary PR overhead and is not removed here. Default-branch reporting, live activation exercises, and branch-protection review remain separate gates.

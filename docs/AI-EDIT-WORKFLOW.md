@@ -1,145 +1,110 @@
 # AI edit workflow
 
-This document is the contract for **AI edit**, `.github/workflows/ai-edit.yml`. It exists for one reader: an implementor working through the GitHub API with no local checkout, no `node_modules`, and no way to run `prettier` or the suite.
+This branch contains the gated, two-runner implementation of [AI edit](../.github/workflows/ai-edit.yml). It is not activated merely because its PR passes CI. The default-branch [reporter](../.github/workflows/archive-ci-logs.yml), a reviewed immutable runner revision, appropriate credentials, and live routing evidence are separate rollout requirements. Earlier branches can still contain the legacy privileged writer. Read the workflow at the exact branch you use.
 
-That implementor has two standing problems. Rewriting a large file through the contents API is slow enough to fail part-way through a session, and output has to be prettier-safe by hand because the formatter is unreachable. Both are solved the same way: write something small that describes the change, and let a runner do the parts that need a machine.
+## Ownership and invariant
 
-## The shape of it
+An attempted edit, a prepared candidate, a published commit, and verified CI are different facts. No comment may promote one into another.
 
-Drop one JSON file at `.ai/edits/<name>.json` on your working branch. The push is the trigger, because dispatching a workflow is not something every API-only implementor can do, while writing one small file always is. The workflow then applies the edits, runs the pinned Prettier on the files it touched, commits with `PERSONAL_ACCESS_TOKEN`, removes the request it consumed, and comments the outcome back.
+- [apply-ai-edit.mjs](../scripts/apply-ai-edit.mjs) owns protocol validation and staging before disposable filesystem writes.
+- [automation-receipt.mjs](../scripts/automation-receipt.mjs) owns canonical request identity, receipt states, diagnostic limits, and rendering.
+- [automation-publish.mjs](../scripts/automation-publish.mjs) owns preparation orchestration, independent candidate validation, publication intent, and remote commit reconciliation.
+- [automation-report.mjs](../scripts/automation-report.mjs) owns GitHub metadata, immutable evidence persistence, diagnostic retrieval, and bot-owned comment projections.
 
-The size of the file you are editing stops mattering, because you never write it back. You write the anchor and the replacement.
+The workflow owns credential placement and event routing. Candidate processing has read-only permissions and no writer secret. Publication runs separately from the default branch, executes only reviewed code, and treats candidate output as bounded data. This boundary covers this route, not every historical maintenance workflow in the repository.
 
-One request at a time. The workflow applies the single `.json` file it finds in `.ai/edits/`, and a directory holding two of them is refused rather than one being chosen for you. The directory is what it reads, never the file list on the push event: a commit created through the Git data API carries empty `added` and `modified` lists, so a workflow selecting from those would be a silent no-op for the one reader it is written for.
+## Protocol version 1
 
-## The request file
+Requests are JSON files under `.ai/edits/`. Unknown request and edit fields, unsupported versions, stale snapshots, ambiguous anchors, unsafe paths, and CI-skip subjects are refused.
 
-```json
-{
-  "message": "docs(architecture): name the single owner of track disposal",
-  "target": 250,
-  "edits": [
-    {
-      "path": "docs/ARCHITECTURE.md",
-      "find": "Disposal is shared between the engine and the runtime.",
-      "replace": "Disposal has one owner, and it is the engine."
-    },
-    { "path": "docs/NOTES.md", "create": "# Notes\n\nFirst line.\n" },
-    { "path": "docs/STALE.md", "delete": true }
-  ]
-}
-```
+A request requires `version: 1`, `expected_head`, `expected_blobs`, `message`, and `edits`. `expected_head` is the full lowercase source commit SHA read before submission, not the future request commit. `expected_blobs` names every distinct edited path exactly once, using its original Git blob SHA or `null` for an absent file. A Git blob SHA is not a commit SHA or a plain content checksum.
 
-`message` is used verbatim as the commit subject, so it obeys the conventional-commit rule in [PR-WORKFLOW.md](./PR-WORKFLOW.md). It must be a single line.
+`edits` contains 1 through 50 entries. Each entry specifies `path` and exactly one operation: `find` plus `replace`, `create` with complete text, or `delete: true`. Anchors must be nonempty and occur exactly once. Multiple edits to one file share its original blob precondition and apply sequentially to staged content. Empty replacement removes an anchor. Creates cannot overwrite an existing or already-staged file.
 
-`target` is the issue or pull request number to comment on. Omit it and the workflow falls back to the open pull request for your branch. With neither, the report only reaches the job summary, which you cannot read, so name it.
+`message` must be a nonempty single line without control characters or CI-skip directives. Real and dry-run requests both reject `[skip ci]`, `[ci skip]`, `[no ci]`, `[skip actions]`, `[actions skip]`, and `skip-checks:`, case-insensitively. Submission commits must not use those directives either.
 
-Each entry in `edits` names a `path` and exactly one of three modes: `find` with `replace` to rewrite an anchor, `create` with the full content of a new file, or `delete` set to `true`. Naming two modes is refused rather than guessed at.
+`dry_run` is an optional boolean. `target` remains an optional positive issue or PR number for schema compatibility, but the trusted reporter does not use it as publication authority. It resolves an open same-repository PR through verified GitHub run and commit metadata. Missing or ambiguous PR associations leave durable branch-run evidence instead of choosing an arbitrary destination.
 
-One request carries at most **50 edits**, and a request holding more is refused whole, with the count it held. The ceiling is on one request rather than on one slice, so a batch larger than that splits into two pushes and the batch-first rule below is untouched.
+## Bounded paths and data
 
-`dry_run` is optional and defaults to `false`. With `true`, the request is validated and nothing is written, which is the section below.
+Paths must be canonical relative file paths without whitespace, backslashes, control characters, empty/dot/parent components, or a leading hyphen. The publisher additionally bounds path length to 1,024 characters. Every existing component is checked without following symlinks. Parent directories must already exist. File symlinks, directory symlinks, dangling symlinks, and directory targets are refused. The protocol does not create directories or intentionally edit binary files.
 
-## The anchor rule
+The paths `.git`, `.ai`, `.github/workflows`, and `node_modules`, including everything beneath them, are forbidden edit targets. Workflow changes are authored directly for review, never transported as AI-edit operations. Whitespace paths are refused rather than ambiguously split by the line-oriented touched-file contract.
 
-An anchor must match **exactly once** in the file. Zero matches and more than one match are both refusals, and the report tells you the count it actually found.
+The canonical request identity is bounded to 1,500,000 bytes and 32 nesting levels. Candidate JSON is bounded to 1,800,000 bytes, each candidate text file to 1,500,000 bytes, and the artifact download to 2,000,000 bytes. Incomplete tree or content responses are refused; a prefix is not a validated snapshot.
 
-This is why the contract is anchors and not `git apply`. A patch is addressed by line number and surrounding context, neither of which you can verify without reading the whole file, and a diff that is off by one line fails as a unit with nothing useful to say about why. An anchor is addressed by content you copied out of the file you already read, and its failure mode is a number you can act on.
+## Submit one request-only commit
 
-So read the region before you write the request, and quote enough of it to be unique. One short sentence that appears in three sections is a refusal you will have to pay another round trip to learn about.
+1. Read the current head and complete files at that immutable revision. Record every original blob SHA. Read the relevant invariant, owner, tests, and sister documents before choosing anchors.
+2. Put the bounded edits in one request at `.ai/edits/<name>.json`. Names use letters, digits, dots, underscores, and hyphens, starting with a letter or digit. Only one pending JSON request is allowed.
+3. Commit only that request. Its sole parent must be `expected_head`. Do not combine source edits, workflow changes, or other requests with submission.
+4. Wait for the candidate run and the separate reporting run. Do not advance the branch while publication is pending. Snapshot checks are repeated independently before publication.
+5. Inspect the durable outcome and exact published commit. Check CI on that commit, not the submission commit or an older green head.
 
-A request is all or nothing. Every edit is validated against the file content as the earlier edits in the same request left it, and nothing is written unless all of them pass. A partially applied request is the one outcome this workflow will not produce.
+A refused request can be corrected in a new request-only commit after refreshing its source and blob preconditions. A consumed request has been removed, so a subsequent request starts from the new head. Never retry an uncertain publication by blindly applying its edits again.
 
-## Checking an anchor without applying it
+Manual dispatch names the sole pending request on the selected branch. It follows the same snapshot checks. Main, ci-logs, non-branch publication targets, and fork-origin runs are refused. The bot author plus `AI-Edit-Request:` trailer still prevents consumption pushes from recursively applying another request. Replacing this lifecycle classification belongs to the later API-loop slice; the subject is not evidence that CI completed.
 
-Setting `dry_run` to `true` runs the validation pass and stops one line above the write pass. Nothing is written, the formatter never runs, and the report tells you what a real run would have done.
+## Isolated preparation
 
-It exists for one property, and it is the one the anchor rule already needs. An anchor must be unique in the file, and a file large enough to truncate on read cannot be checked for that: you verify uniqueness across the prefix you received and then assert it over bytes you never saw. The count reported here is taken against the file on disk, so a dry run answers the question your own read cannot. Spend the round trip on any request whose anchors came out of a read you are not certain was complete.
+The candidate job checks out the reviewed runner and exact request commit into separate directories, with Git credential persistence disabled. It executes the validator from the reviewed revision, not the contributor tree. The validator receives no publication credential.
 
-The report names the anchor count per file and the size each file would end up at, measured before the formatter. Those sizes are what let you check a change against the read budget below before you spend the write.
+Prettier is installed outside the candidate tree at the exact version declared by the reviewed runner, with lifecycle scripts disabled. Formatting uses reviewed JSON options and built-in parser inference, never candidate-owned formatter configuration or plugins. Only surviving touched files are formatted. Deletions appear in the candidate allow-list but not the formatter input.
 
-Everything else refuses exactly as it would on a real run: a path this workflow may not touch, two modes on one edit, a `create` over a file that exists, a `delete` of a file that is not there, a `message` that is not a single line. A clean dry run means the request is valid, not merely that its anchors are unique.
+Validation completes before target writes begin. Filesystem writes in the disposable tree are sequential: an application failure can leave that tree partially changed. A formatter failure can likewise follow successful local writes. Neither failure produces a candidate artifact or published commit. This is publication atomicity, not a multi-file filesystem transaction.
 
-Two things about it are easy to get wrong. A dry run **consumes its request**, the same as an apply, because it succeeded and because a request left in the directory is what makes the next push refuse for holding two: re-upload it without the flag to apply it. And its commit carries `chore(ai-edit): dry run, nothing applied [skip ci]` rather than your `message`, because a commit named after a change it did not make is a lie in the log. The `AI-Edit-Request:` trailer still names the request that was consumed.
+Successful preparation uploads only `candidate.json`, named by run ID and attempt. Its versioned envelope records trusted runner SHA, source SHA, request commit, canonical request digest, and bounded file contents. It contains no shell commands, credentials, caller-selected branch, or comment destination. The publisher streams one bounded archive member rather than extracting arbitrary paths or executing artifact files.
 
-The `[skip ci]` on that subject is honest for the same reason the subject is fixed. The only path in a dry run's commit is the request it consumed, so the content diff is empty by construction, and every `CI` job would install a toolchain to re-verify a tree it has already verified. Because the subject is not yours, no request can put the directive on a commit that does change files. One consequence to know rather than discover: if a dry run is the last commit before a merge, the required contexts never report on that head and the pull request sits. `ci.yml` has `workflow_dispatch`, so dispatch `CI` by hand from the Actions tab.
+## Independent publication and recovery
 
-One trap. A branch whose `scripts/apply-ai-edit.mjs` predates this flag ignores unknown request keys, so `dry_run` there is silently a real apply. Read the report and confirm it says dry run before you believe nothing was written.
+The default-branch publisher verifies repository, workflow path, run, attempt, event, head SHA, and same-repository origin against GitHub metadata. For successful candidates, it also compares the candidate workflow blob with the reviewed runner, verifies the request-only tree change, reads the original request, and checks source blob preconditions, allowed paths, regular-file modes, and artifact identity.
+
+Publication creates a bounded Git tree and deterministic candidate commit whose sole parent is the request commit. It never checks out or executes candidate files in the credentialed job. The narrow ref update uses the publication PAT so a resulting push can trigger follow-on CI. PAT presence does not itself prove those checks were triggered.
+
+The publisher stores `intent.json` before attempting the non-force branch update. A divergent branch is refused, not force-pushed or semantically rebased. A failed response does not prove the push failed: the publisher re-reads the remote ref and checks whether it contains the candidate. Confirmed publication records that exact SHA with CI pending, never CI success.
+
+Evidence lives on `ci-logs` at `receipts/<kind>/<run-id>/<attempt>/`. An existing file is accepted only if its bytes match; conflicting history is refused. Separate attempts have separate paths. Evidence writes can retry after re-reading their branch; semantic edits are not replayed.
+
+`receipt.json` is the completed outcome. `intent.json` is the durable uncertain outcome when publication cannot be established. `manifest.json` is the fallback for an adapter failure before publication intent exists. These are operation records, not another project-status database.
+
+A failed comment after confirmed publication is recovered from the retained receipt without requiring the candidate artifact or publishing again. If only intent survived, recovery checks candidate reachability on the target branch, candidate and source parents, the original request bytes and canonical digest, and the commit trailers. Verified reachability can produce a confirmed receipt even after the artifact expires. Without that evidence, intent remains explicitly unconfirmed.
+
+Recovery never runs the formatter, creates a candidate, or updates a development ref. A fresh fallback job retries evidence recovery after early reporter setup or execution failure; it has no publication PAT. If a primary publication attempt failed but fallback reporting succeeds, the primary workflow failure remains visible rather than being converted to green.
+
+GitHub availability, the reviewed revision remaining readable, and working evidence-branch permissions are prerequisites. If both primary and fallback reporting fail, the workflow remains failed rather than inventing a durable-success claim. The run ID and attempt identify the expected evidence directory for investigation.
+
+## CI evidence and comments
+
+Completed CI and Recovery audit runs are reported for success, failure, cancellation, timeout, and other explicit conclusions. There is no branch filter silently excluding feature PRs. CI's tested head is populated only when its workflow matches the reviewed head-checkout configuration. Recovery audit can execute other trees, so its tested revision is not invented from its event head.
+
+Failed-job log retrieval has three bounded attempts. Failure becomes `unavailable`, not archived CLI error output. Successful empty output is `empty`. Retained diagnostics are sanitized, UTF-8-safe, split into 24,000-byte chunks, and limited to 1,000,000 retained bytes with explicit truncation metadata. A subprocess transport limit of 8,000,000 bytes can instead make diagnostics unavailable. Redaction recognizes common credential forms; it cannot guarantee detection of arbitrary secrets.
+
+`diagnostics.json` lists chunk paths and retains a standalone escaped excerpt. The comment links to it without duplicating complete logs. Failure markers are preferred over a prefix of passing output. Retained excerpts are escaped again before rendering, so stored text cannot inject markup or mentions.
+
+The reporter maintains one bot-owned summary per PR, receipt kind, and workflow. Human comments with a matching marker are never updated. Run and attempt ordering prevent older completions from replacing newer same-head evidence. The current PR head is checked before and immediately before the comment write. Reporters are serialized. GitHub has no conditional comment-update API: a branch can still move during the write, so each comment identifies its exact commit and the reporter distinguishes historical completion rather than promising atomic head-and-comment updates.
+
+## Dry runs and remaining capabilities
+
+Protocol-v1 dry runs validate without changing target files. They are not formatted-diff previews. They produce an empty candidate and consume the request with `chore(ai-edit): dry run, nothing applied`, without a CI-skip directive. Required PR evidence must still arrive on that final head.
+
+Formatted previews, allowlisted targeted validation, dependency maintenance, and lifecycle redesign remain the later API-loop slice. No arbitrary command strings or privileged maintenance operations were added here. Touched-file normalization accompanies the requested change; unrelated formatting remains separate.
+
+## Activation gate
+
+A reviewed rollout must merge the reporter to the default branch and set `MOTION5_AUTOMATION_SHA` to a full immutable commit containing the reviewed workflows, scripts, formatter version, and configuration. The candidate workflow must match that revision. An unset pin disables preparation and reporting; it does not fall back to the legacy privileged writer.
+
+Verify the existing `ci-logs` branch is writable by the reporter, the publication PAT is appropriately scoped, and a generated commit receives follow-on CI. Exercise successful apply, dry-run consumption, refusal, formatter failure, ambiguous publication, failed comment recovery, rerun, stale completion, and missing diagnostics through actual events. Record exact commit, run, and attempt links in the PR. Fixture tests do not substitute for these exercises, and passing PR CI does not mean default-branch activation occurred.
 
 ## The read budget
 
-This document owns the rule, `scripts/read-budget-scan.mjs` owns the numbers and the check, and the `read-budget` job in `CI` is what runs it. The amendment to ADR-008 in [DECISIONS.md](./DECISIONS.md) records why a gate of this shape is allowed at all.
+This document owns the source read-budget contract; [read-budget-scan.mjs](../scripts/read-budget-scan.mjs) owns its numbers and enforcement. No file under `packages/core/src`, including markdown, may exceed 60,000 bytes. An over-budget file may not be edited by anchor. A contents response can truncate without a reliable marker, and a matching anchor or exact blob SHA does not prove the missing invariant was read.
 
-**No file under `packages/core/src` may exceed 60,000 bytes, markdown included.** The rule that follows is the one that concerns you directly: a file that does not survive one contents read may not be edited by anchor. Not because the anchor is likely to be wrong, but because you cannot tell whether it is. A truncated read carries no error and no marker, so a prefix is handed to you as though it were the file, and the primitive has no offset and no line window that would let you ask for the rest. Code search does not close the gap either, because it answers against the indexed default branch rather than the branch you are editing, so it locates a symbol and cannot hand over a region.
+A source over 30,000 bytes keeps private reasoning in a sibling document, `x.ts` beside `x.md`. Read the document before the source. The source has a `// Docs: ./x.md` line; every level-two document heading names a source declaration; those headings follow declaration order; and mirrored source carries no private docblock. Exported API docblocks remain in source because declarations and editor hover consume them. Comments explaining the next statement remain too.
 
-That is the whole of the motivation, and it is a correctness property rather than a style rule. The measured case is `packages/core/src/runtime/project-runtime.ts` at 103,657 bytes, which truncated inside a docblock and took `#assertLive` with it, the private guard every public verb in that class calls first. An implementor could have rewritten a method by anchor without ever seeing it.
+A temporary waiver carries a shrinking ceiling, not permission to grow. A pending sister-document entry must disappear when no longer needed. A slice crossing a threshold owes its split or sister document in the same change. The scan measures structure, not semantic understanding of private reasoning.
 
-**A source over 30,000 bytes keeps its private reasoning in a sibling document, `x.ts` beside `x.md`.** The trigger is half the budget, which is headroom rather than a second measurement: a file at the trigger can double its prose before it reaches the budget, and one over the budget has nowhere to put it. The path is derived by swapping one extension, so a reader holding a source path already holds the document path, with no index and no naming decision per file. Read the document before the source rather than after it: it hands over the member list in declaration order, which is what makes a source read that truncates later merely inconvenient instead of dangerous.
+## Regression evidence
 
-Four conventions make the pair checkable, and the scan fails a violation of any of them. The source names its document, as a `// Docs: ./x.md` line. Every level-two heading in the document names something the source declares. Those headings are in declaration order. And the mirrored source carries no private docblock at all, which is the one-directional half that makes the move total: with no second place for the reasoning to sit, there is nothing for the document to drift against.
+The AE cases in [apply-ai-edit.test.ts](../packages/core/test/unit/scripts/apply-ai-edit.test.ts), [automation-receipt.test.ts](../packages/core/test/unit/scripts/automation-receipt.test.ts), [automation-adapters.test.ts](../packages/core/test/unit/scripts/automation-adapters.test.ts), and [automation-recovery.test.ts](../packages/core/test/unit/scripts/automation-recovery.test.ts) cover their respective owners. Coverage includes injected publication/report failures, concrete API and evidence-storage checks, artifact-independent reconciliation, and disposable Git repositories using the installed formatter while candidate-owned scripts and configuration would throw if executed. Workflow-text assertions check configuration, not production event routing.
 
-What stays in the source is as deliberate as what leaves it. A docblock on the exported surface stays, because TypeScript carries it into the declaration file and into editor hover, so moving one deletes an API doc rather than relocating it. A comment explaining the statement on the next line stays too. Only the private surface moves: `#` members, file-local types, and a `function` or `const` the module does not export, including one a single function owns as a closure.
-
-Be clear about what the gate proves, because it is less than it looks. It proves the source is empty, not that the document is complete. Completeness needs a judgement about which member deserves prose and is not decidable by a scan, while a mirrored source carrying no private docblock is total and mechanical. A heading whose prose quietly stopped being true is the residual risk, and it is written down here rather than claimed away.
-
-A file over budget today gets a waiver with a ceiling rather than a bare path, so it may shrink and may not grow, and the slice that splits it lowers the number in the same commit. A source that owes a document and does not have one yet gets an entry in the pending list, and that list has teeth in the other direction: an entry the tree no longer needs is itself a violation, so a file that gained its document, shrank under the trigger, or stopped existing fails the scan by carrying a stale entry. Neither list carries a removal date. A date does not shrink a file, it fails the build on a morning nobody picked, and it is satisfied by editing the date. Both lists are empty right now, which means the next file to cross a line gets an entry rather than a new mechanism, and raising the budget to make a file fit is not one of your options.
-
-## What this asks of you, given that you cannot run it
-
-You cannot run `npm run test:read-budget`, and you cannot detect the condition it measures, which is the reason the numbers are written into prose here and in [AGENTS.md](../AGENTS.md) instead of living only in the script. The gate runs where there is a checkout. Acting on the rule before it fires is your half.
-
-Three things follow, and all of them are cheap. Check the size of a file before you anchor into it, because a read that arrived at or near the budget is a read you should not trust for uniqueness. Keep the split or the sister doc in the same request as the slice that pushes a file past a line, rather than leaving a follow-up nobody scheduled. And when a document and its source both change, remember the scan reads markdown under the scanned root too: a pair whose document loses its tail is the original bug with an extra file in it.
-
-A member moving to a new file takes its section into that file's sister document. That is the same rule one indirection out, and it is the one a mechanical extraction breaks most often, because a docblock is part of the thing it sits above: a request that moves a member either moves the prose with it or leaves the member where it is.
-
-## What it will not do
-
-It refuses any path under `.git/`, `node_modules/`, `.ai/`, and `.github/workflows/`. A workflow with repository-write power that can rewrite workflows is a different and much larger permission, so an edit to CI is a normal pull request reviewed by a human.
-
-Before committing, it compares the staged file list against the paths your request named, plus the request file itself, and fails if anything else appears. Least privilege applies to the file list, not only to the token.
-
-It formats the paths that still exist and no others. A path a `delete` edit removed stays in the commit allow-list, because `git add -A` would otherwise stage a removal nothing authorised, and it is kept out of the formatter's input, because Prettier exits non-zero on a path that is not there. Those are two questions about one set of paths, so the apply step answers them as two lists rather than one: a request whose every changed path it deleted formats nothing at all and does not install the formatter either. See issue #281.
-
-It never runs the suite or `npm ci`. It installs the pinned Prettier and nothing else. `CI` already owns correctness on the resulting commit, and re-running it here would double the cost for no new information.
-
-## The cost, and how to keep it down
-
-One Actions run per request, one to two minutes of wall clock, plus however long you spend polling for the comment. That is the price of every round trip, and it is the reason the protocol is batch-first.
-
-Put every edit for a slice in one request. One request per edit is what turns a bounded ninety seconds into an afternoon, and it is entirely avoidable.
-
-Read the file before you write the anchor. A refused request costs exactly as much as an applied one.
-
-A dry run is a second run rather than a free one. It is worth its round trip on anchors you could not fully verify, and a waste of one on a file you have whole in front of you.
-
-## Reading the result
-
-The comment names the files written, the state each one was left in, and the exact reason for any refusal. It is the only channel an API-only implementor can actually read: a job summary and an uploaded artifact are both invisible to you, so a workflow that reported only there would leave you guessing whether your own edit landed.
-
-A refusal fails the run, so nothing is committed and your request file stays exactly where you put it. Correct that same path and push it again. An applied request is removed by the commit that consumed it, which is how you tell the two outcomes apart from the tree alone. A dry run is consumed the same way, so the tree does not distinguish it from an apply, and the report and the commit subject are what do.
-
-A step failing after the apply step is a third outcome and it reads differently again. The report describes what that step wrote to the runner's working tree, so a failure between there and the commit means none of it landed, and the comment says exactly that above the report: nothing was committed, and your request is still pending at the same path. Read `Applied ... edits` as attempted rather than landed whenever that prefix is there.
-
-The commit is made with `PERSONAL_ACCESS_TOKEN` rather than `GITHUB_TOKEN` for the reason [FORMATTING.md](./FORMATTING.md) already gives: a push made with `GITHUB_TOKEN` triggers no new workflow run, so the new head would carry no checks. Verify your change through the `CI` run on that commit.
-
-## Testing the workflow
-
-Exercised on the pull request that introduced it, with every report in that thread. A valid request applied its edits, formatted the touched files, committed with the repository PAT, removed the request, and commented back. Four refusals ran in the same pass, each one leaving the target file untouched and committing nothing: an anchor matching zero times, an anchor matching twice, a path under `.github/workflows/`, and a request whose second edit could not apply while its first could. That last one is the all-or-nothing rule, and it is the case to re-run by hand if you ever change the write pass.
-
-`dry_run` was exercised the same way, on the pull request that introduced it: a dry run of that pull request's own documentation edits reported its anchor counts and its resulting sizes and wrote nothing, and the identical request without the flag then applied them.
-
-The validation pass also has a unit test, the `AE-` cases in `packages/core/test/unit/scripts/apply-ai-edit.test.ts`. They run the shipped script as a subprocess against planted trees, which is how the workflow invokes it, and they assert what a live run can only demonstrate one outcome at a time: the anchor counts a dry run reports, the count named in each refusal, that a later edit is validated against what an earlier one staged, that a refusal leaves every file it named untouched, that a dry run gets the fixed `[skip ci]` subject while a real run keeps your `message` verbatim, and that the formatter is handed only the paths that still exist while the commit allow-list keeps the ones a `delete` edit removed. Run them with `npx vitest run packages/core/test/unit/scripts/apply-ai-edit.test.ts`. Their ids are held to the same uniqueness gate as every other citation series, in `packages/core/test/unit/scripts/evidence-case-ids.test.ts`, which is also the one owner of what each series covers. Issue #283 is why that gate arrived after the series was already being cited here. The live runs still carry what a subprocess cannot: the token, the formatter, the comment, and how the request is chosen.
-
-One refusal mode is invisible in a comment and has to be read in the job list: a request the workflow never saw. Any change to how the request is chosen needs a live run from an API-made commit, because that is the push shape that broke it once already.
-
-## Two traps
-
-The commit that consumes a request is itself a push to `.ai/edits/**`, because it removes the file. The job is skipped when the head commit was authored by `github-actions[bot]` and carries the `AI-Edit-Request:` trailer that the consuming commit is written with, so the workflow does not eat its own tail. The author is half of that gate on purpose: prose quoting the trailer cannot silence a real request. A push that leaves the directory empty exits cleanly and says nothing, which is also what editing `.ai/edits/README.md` does. Keep both if you touch the trigger.
-
-`.ai/` is in `.prettierignore`. Without that, a hand-written request file is unformatted JSON that fails `format:check` on your pull request before it is ever applied.
-
-## Standing infrastructure, not a temporary workflow
-
-[PR-WORKFLOW.md](./PR-WORKFLOW.md) allows a temporary workflow that removes itself after a one-off mechanical job, and that is the right pattern for a migration script that runs once. This is not that. The painpoint recurs every session, so creating and deleting the same workflow each time would need identical write power while adding two commits of churn per edit. It is reviewed once, permanently, and constrained in writing here instead.
-
-Everything else in that section still applies: narrow permissions, same-repository branches only, never fork pull requests, deterministic, a bounded file list, and a credential that is never printed. A personal access token does not make a workflow safe. The YAML and `scripts/apply-ai-edit.mjs` are code with repository-write power, and they are reviewed as such.
+Run the existing full Vitest suite with Node 24. Keep exact-SHA CI results and red/green limitations in the PR. Keep shipped project state only in `SESSION-STATUS.md`.
