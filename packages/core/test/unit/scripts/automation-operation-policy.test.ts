@@ -137,6 +137,97 @@ it("retained preview chunks are bounded, redacted, deterministic, and attempt-sp
   `);
 });
 
+it("publication consumes only the request after durable validated operation evidence", () => {
+  scenario(String.raw`
+    for (const operation of ["preview", "validate"]) await fixture(async ({dir, source, base, prepare}) => {
+      const request = operation === "preview" ? {...base, operation, edits: [{path: "docs/a.json", find: '"a":1', replace: '"a":2'}]} : {...base, operation, paths: ["docs/a.json"], checks: ["format"]};
+      const candidate = await prepare(request), requestCommit = candidate.request_commit;
+      const requestPath = ".ai/edits/test.json", directory = "receipts/ai-edit/42/1/";
+      const run = {id: 42, run_attempt: 1, head_sha: requestCommit, head_branch: "chore/fixture", path: ".github/workflows/ai-edit.yml", event: "push", conclusion: "success"};
+      for (const mode of ["success", "storage-failure", "tampered-artifact"]) {
+        const bundle = structuredClone(candidate);
+        if (mode === "tampered-artifact") bundle.files = [{path: "docs/a.json", content: "must not publish"}];
+        await fs.writeFile(path.join(dir, "candidate.json"), JSON.stringify(bundle));
+        execFileSync("zip", ["-q", "artifact.zip", "candidate.json"], {cwd: dir});
+        const archive = await fs.readFile(path.join(dir, "artifact.zip"));
+        let head = requestCommit; const calls = [], stored = new Map();
+        const missing = () => {const error = new Error("missing"); error.status = 404; throw error;};
+        const original = [{path: "docs/a.json", type: "blob", mode: "100644", sha: base.expected_blobs["docs/a.json"]}];
+        const api = {repository: "chahyasantoso/motion5", token: "fixture-read",
+          head: async branch => branch === "ci-logs" ? A : head,
+          content: async (file, ref) => {
+            if (file === directory + "receipt.json") return stored.has(file) ? {text: stored.get(file)} : missing();
+            if (file === run.path) return {sha: B};
+            assert.equal(file, requestPath); assert.equal(ref, requestCommit); return {text: JSON.stringify(request)};
+          },
+          request: async (method, endpoint) => {
+            assert.equal(method, "GET");
+            if (endpoint === "/git/commits/" + requestCommit) return {parents: [{sha: source}], tree: {sha: B}, committer: {date: "2026-09-06T00:00:00Z"}};
+            if (endpoint === "/git/commits/" + source) return {tree: {sha: A}};
+            if (endpoint === "/git/trees/" + A + "?recursive=1") return {truncated: false, tree: original};
+            if (endpoint === "/git/trees/" + B + "?recursive=1") return {truncated: false, tree: [...original, {path: requestPath, type: "blob", mode: "100644", sha: C}]};
+            if (endpoint.startsWith("/compare/")) return {status: "behind"};
+            assert.fail(endpoint);
+          },
+          list: async endpoint => endpoint.endsWith("/artifacts") ? [{id: 9, name: "ai-edit-candidate-42-1", size_in_bytes: archive.length, workflow_run: {head_sha: requestCommit}}] : [],
+          persist: async files => {
+            if (Object.hasOwn(files, directory + "operation.json")) {calls.push("operation"); if (mode === "storage-failure") throw new Error("storage unavailable");}
+            if (Object.hasOwn(files, directory + "intent.json")) calls.push("intent");
+            for (const [file, text] of Object.entries(files)) {if (stored.has(file)) assert.equal(stored.get(file), text); stored.set(file, text);}
+          },
+        };
+        const writer = {request: async (method, endpoint, body) => {
+          if (endpoint === "/git/trees") {calls.push("tree"); assert.deepEqual(body.tree, [{path: requestPath, mode: "100644", type: "blob", sha: null}]); return {sha: B};}
+          if (endpoint === "/git/commits") {assert.deepEqual(body.parents, [requestCommit]); assert.match(body.message, /target files unchanged/); return {sha: C};}
+          assert.equal(method, "PATCH"); assert.equal(body.force, false); calls.push("advance"); head = body.sha; return {};
+        }};
+        const savedFetch = globalThis.fetch;
+        globalThis.fetch = async (url, options) => {
+          if (String(url).includes("api.github.com")) return new Response(null, {status: 302, headers: {location: "https://fixture.invalid/candidate.zip"}});
+          assert.equal(options.headers, undefined, "reader credential must not reach blob storage");
+          return new Response(archive);
+        };
+        try {
+          if (mode === "success") {
+            await publishRun(api, writer, run, A);
+            assert.deepEqual(calls, ["operation", "tree", "intent", "advance"]);
+            const saved = JSON.parse(stored.get(directory + "receipt.json"));
+            assert.equal(saved.published_sha, C); assert.equal(saved.ci, "pending");
+            const evidence = JSON.parse(stored.get(directory + "operation.json"));
+            assert.equal(evidence.operation, operation);
+            if (operation === "validate") assert.equal(evidence.checks[0].state, "failure");
+            calls.length = 0; await publishRun(api, writer, run, A); assert.deepEqual(calls, [], "receipt recovery must not republish");
+          } else {
+            await assert.rejects(publishRun(api, writer, run, A), mode === "storage-failure" ? /storage unavailable/ : /must not modify/);
+            assert.equal(head, requestCommit); assert.ok(!calls.includes("tree") && !calls.includes("advance"));
+          }
+        } finally {globalThis.fetch = savedFetch;}
+      }
+    });
+  `);
+});
+
+it("a passing fail-closed test name does not hide the actual diagnostic", () => {
+  scenario(String.raw`
+    const {collectDiagnostics} = await import("./scripts/automation-report.mjs");
+    const result = await collectDiagnostics(async () => "PASS: operations fail closed\n" + "passing output\n".repeat(1000) + "AssertionError: formatted preview evidence is required");
+    assert.match(result.excerpt, /formatted preview evidence is required/);
+    assert.ok(result.chunks.join("").includes("operations fail closed"));
+  `);
+});
+
+it("empty-file creation and sister-document edits remain visible in preview evidence", () => {
+  scenario(String.raw`
+    await fixture(async ({base, prepare}) => {
+      const files = ["docs/empty.txt", "packages/core/src/a.md"];
+      const candidate = await prepare({...base, expected_blobs: Object.fromEntries(files.map(file => [file, null])), operation: "preview", edits: [{path: files[0], create: ""}, {path: files[1], create: "# Source reasoning\n\n## missingDeclaration\n"}]});
+      assert.match(candidate.operation_result.diff, /docs\/empty.txt/);
+      assert.equal(candidate.operation_result.files.find(file => file.path === files[0]).change, "create");
+      assert.equal(candidate.operation_result.checks.find(check => check.path === files[1] && check.check === "read-budget").state, "failure");
+    });
+  `);
+});
+
 it("oversized formatted diffs are refused instead of silently presenting a prefix", () => {
   scenario(String.raw`
     await fixture(async ({dir, base, prepare}) => {

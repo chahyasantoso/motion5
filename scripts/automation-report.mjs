@@ -33,7 +33,8 @@ export async function collectDiagnostics(fetchLogs) {
     try {
       const text = await fetchLogs();
       const retained = diagnostics({ exit_code: 0, text });
-      const failure = text.search(/FAIL |AssertionError|Error \[|##\[error\]/i);
+      let failure = text.search(/AssertionError(?:\s*\[|:)|Error \[|##\[error\]/i);
+      if (failure < 0) failure = text.search(/\bFAIL\s+[^\n]*\.(?:test|spec)\./);
       if (failure >= 0)
         retained.excerpt = diagnostics({
           exit_code: 0,

@@ -436,7 +436,7 @@ export async function publishRun(api, writer, run, trustedSha) {
     ...basic,
     source_sha: state.source_sha,
     request_digest: state.request_digest,
-    phase: "formatted",
+    phase: state.operation === "validate" ? "validated" : "formatted",
   };
   const tree = files.map((file) => ({
     path: file.path,

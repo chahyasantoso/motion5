@@ -173,16 +173,23 @@ async function textAt(root, file) {
   return text;
 }
 async function budgetResult(root, file, content) {
-  if (!file.startsWith("packages/core/src/") || content === null)
+  if (!file.startsWith("packages/core/src/") || (content === null && !file.endsWith(".md")))
     return { state: "not_applicable", detail: "No surviving core source file" };
   const problems = [];
   const tooLarge = checkSize(file, size(content));
   if (tooLarge) problems.push(tooLarge);
-  if (/\.(?:ts|tsx)$/.test(file)) {
+  if (/\.(?:ts|tsx)$/.test(file) && content !== null) {
     const sister = await textAt(root, sisterDocOf(file));
     if (size(content) > SISTER_DOC_TRIGGER_BYTES || sister !== null)
       problems.push(...checkMirror(file, content, sister ?? undefined));
   }
+  if (file.endsWith(".md"))
+    for (const extension of [".ts", ".tsx"]) {
+      const sourceFile = file.slice(0, -3) + extension;
+      const source = await textAt(root, sourceFile);
+      if (source !== null && (size(source) > SISTER_DOC_TRIGGER_BYTES || content !== null))
+        problems.push(...checkMirror(sourceFile, source, content ?? undefined));
+    }
   return {
     state: problems.length ? "failure" : "passed",
     detail: safeText(problems.join("\n")).slice(0, 4000),
