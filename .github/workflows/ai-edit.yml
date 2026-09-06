@@ -191,4 +191,3 @@ jobs:
             exit 0
           fi
           gh issue comment "$target" --repo "$GITHUB_REPOSITORY" --body-file "$comment"
-EOF
