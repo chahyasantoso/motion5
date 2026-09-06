@@ -4,8 +4,15 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtemp, readFile, writeFile, readdir, lstat, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 import { identity, receipt, render } from "./automation-receipt.mjs";
+import {
+  operationSpec,
+  safeRequestPath as safePath,
+  prepareOperation,
+  validateOperationResult,
+  persistOperation,
+} from "./automation-operation.mjs";
 import {
   GitHub,
   SHA,
@@ -22,23 +29,6 @@ function exactKeys(value, allowed) {
     "Unknown field",
   );
 }
-function safePath(value) {
-  ensure(
-    typeof value === "string" &&
-      value.length > 0 &&
-      value.length <= 1024 &&
-      !/[\s\\\x00-\x1f\x7f]/u.test(value) &&
-      !value.startsWith("-") &&
-      value.split("/").every((part) => part && part !== "." && part !== ".."),
-    "Unsafe candidate path",
-  );
-  ensure(
-    ![".git", ".ai", ".github/workflows", "node_modules"].some(
-      (prefix) => value === prefix || value.startsWith(`${prefix}/`),
-    ),
-    "Protected candidate path",
-  );
-}
 export function validateCandidate(candidate, expected) {
   exactKeys(candidate, [
     "version",
@@ -47,6 +37,7 @@ export function validateCandidate(candidate, expected) {
     "source_sha",
     "request_digest",
     "files",
+    "operation_result",
   ]);
   ensure(candidate.version === 1, "Unsupported candidate version");
   for (const key of ["trusted_sha", "request_commit", "source_sha", "request_digest"])
@@ -71,7 +62,12 @@ export function validateCandidate(candidate, expected) {
       "Candidate file exceeds byte limit",
     );
   }
-  ensure(!expected.dry_run || candidate.files.length === 0, "Dry run must not modify target files");
+  const readOnly = expected.dry_run || ["preview", "validate"].includes(expected.operation);
+  ensure(
+    !readOnly || candidate.files.length === 0,
+    "Read-only operation must not modify target files",
+  );
+  validateOperationResult(candidate.operation_result, expected);
   return candidate.files;
 }
 
@@ -159,70 +155,18 @@ export async function prepareCandidate(root, trustedSha, formatterRoot, output) 
     "Request-only commit required",
   );
   const request = JSON.parse(await regular(path.join(root, requestPath)));
-  const scratch = await mkdtemp(path.join(tmpdir(), "motion5-prepare-"));
-  try {
-    const report = path.join(scratch, "report.md"),
-      touched = path.join(scratch, "touched.txt"),
-      format = path.join(scratch, "format.txt");
-    const result = spawnSync(
-      process.execPath,
-      [
-        fileURLToPath(new URL("./apply-ai-edit.mjs", import.meta.url)),
-        requestPath,
-        report,
-        touched,
-        format,
-      ],
-      {
-        cwd: root,
-        encoding: "utf8",
-        timeout: 60000,
-        maxBuffer: 2000000,
-        env: { PATH: process.env.PATH, AI_EDIT_BASE_SHA: source },
-      },
-    );
-    ensure(
-      result.status === 0 && !result.error,
-      "Candidate application failed; disposable tree may be partially changed",
-    );
-    const paths = (await readFile(touched, "utf8")).split("\n").filter(Boolean);
-    const formattable = new Set((await readFile(format, "utf8")).split("\n").filter(Boolean));
-    const prettier = await import(
-      pathToFileURL(path.join(formatterRoot, "node_modules/prettier/index.mjs")).href
-    );
-    const options = JSON.parse(
-      await readFile(new URL("../.prettierrc.json", import.meta.url), "utf8"),
-    );
-    const files = [];
-    for (const file of paths) {
-      safePath(file);
-      if (!formattable.has(file)) {
-        files.push({ path: file, content: null });
-        continue;
-      }
-      let content = await regular(path.join(root, file));
-      const info = await prettier.getFileInfo(file, { resolveConfig: false });
-      if (info.inferredParser)
-        content = await prettier.format(content, { ...options, parser: info.inferredParser });
-      files.push({ path: file, content });
-    }
-    const candidate = {
-      version: 1,
-      trusted_sha: trustedSha,
-      request_commit: requestCommit,
-      source_sha: source,
-      request_digest: identity(request).digest,
-      files,
-    };
-    validateCandidate(candidate, {
-      ...candidate,
-      paths: request.edits.map((edit) => edit.path),
-      dry_run: request.dry_run === true,
-    });
-    await writeFile(output, `${JSON.stringify(candidate)}\n`);
-  } finally {
-    await rm(scratch, { recursive: true, force: true });
-  }
+  const spec = operationSpec(request);
+  const candidate = await prepareOperation(
+    root,
+    trustedSha,
+    formatterRoot,
+    requestPath,
+    requestCommit,
+    source,
+    request,
+  );
+  validateCandidate(candidate, { ...candidate, ...spec });
+  await writeFile(output, `${JSON.stringify(candidate)}\n`);
 }
 
 async function readCandidate(api, run) {
@@ -322,15 +266,9 @@ async function snapshot(api, run, trustedSha) {
     "Multiple pending requests",
   );
   const request = JSON.parse((await api.content(requestPath, run.head_sha)).text);
-  ensure(
-    request.version === 1 &&
-      request.expected_head === source &&
-      Array.isArray(request.edits) &&
-      request.edits.length > 0 &&
-      request.edits.length <= 50,
-    "Invalid source request",
-  );
-  const paths = [...new Set(request.edits.map((edit) => edit.path))];
+  const spec = operationSpec(request);
+  ensure(request.expected_head === source, "Invalid source request");
+  const paths = spec.paths;
   ensure(
     request.expected_blobs && Object.keys(request.expected_blobs).length === paths.length,
     "Invalid blob preconditions",
@@ -357,7 +295,9 @@ async function snapshot(api, run, trustedSha) {
     request_digest: identity(request).digest,
     request_path: requestPath,
     paths,
-    dry_run: request.dry_run === true,
+    dry_run: spec.operation === "preview",
+    operation: spec.operation,
+    checks: spec.checks,
     request,
     commit,
     original,
@@ -490,11 +430,13 @@ export async function publishRun(api, writer, run, trustedSha) {
   const state = await snapshot(api, run, trustedSha);
   const candidate = await readCandidate(api, run);
   const files = validateCandidate(candidate, state);
+  // Durable operation evidence precedes request consumption and survives report retries.
+  await persistOperation(api, run, candidate.operation_result);
   const facts = {
     ...basic,
     source_sha: state.source_sha,
     request_digest: state.request_digest,
-    phase: "formatted",
+    phase: state.operation === "validate" ? "validated" : "formatted",
   };
   const tree = files.map((file) => ({
     path: file.path,
@@ -516,9 +458,10 @@ export async function publishRun(api, writer, run, trustedSha) {
         email: "41898282+github-actions[bot]@users.noreply.github.com",
         date,
       };
-      const subject = state.dry_run
-        ? "chore(ai-edit): dry run, nothing applied"
-        : state.request.message;
+      const subject =
+        state.operation === "apply"
+          ? state.request.message
+          : `chore(ai-edit): ${state.operation} complete, target files unchanged`;
       ensure(
         typeof subject === "string" &&
           subject.length > 0 &&

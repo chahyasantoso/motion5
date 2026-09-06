@@ -22,8 +22,11 @@ What this removes. Write "none" only if the phase exit gate does not include a r
 ## Checklist
 
 - [ ] Under twenty semantic files.
-- [ ] Behavior and formatting are in separate commits.
+- [ ] Unrelated formatting is separate; touched-file normalization may accompany the requested change.
 - [ ] Types, exports, and docs updated here, not promised in a follow-up.
-- [ ] `npm run check` passes locally.
+- [ ] Verification is explicit: checks run locally, or not run locally and verified by linked CI on this exact head.
+- Local checks executed (or "not run locally"):
+- Exact tested SHA and CI link:
+- Checks requested but not executed, and remaining activation gates:
 - [ ] `docs/SESSION-STATUS.md` rewritten rather than appended to, if this changes the state of the project. A standing rule goes in `docs/GUARDRAILS.md`; the run ids stay in this body.
 - [ ] Nothing copied from the reference repository.
