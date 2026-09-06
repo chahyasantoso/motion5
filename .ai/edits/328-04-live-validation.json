@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "operation": "validate",
+  "expected_head": "cb8f01c97db7c692cc17a4111c8cdda71f878867",
+  "expected_blobs": {
+    "docs/API-CAPABILITIES.md": "c6686540c820d7b63afcffec0d61556372ff7879",
+    "packages/core/src/index.ts": "216c2724b1e73c5ad6d534cbc9442138efffa277"
+  },
+  "message": "test(automation): validate formatting and targeted read budget",
+  "paths": ["docs/API-CAPABILITIES.md", "packages/core/src/index.ts"],
+  "checks": ["format", "read-budget"]
+}
