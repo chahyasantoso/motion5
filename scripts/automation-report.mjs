@@ -89,7 +89,11 @@ export async function reportOutcome(value, ports, detail = null, scope = "defaul
   const details = detail
     ? `\n\nDiagnostics: **${detail.state}**. [Retained evidence](${diagnosticLink}).\n<pre>${excerpt}</pre>`
     : "";
-  const body = `${prefix}${head}:${value.run_id}:${value.run_attempt} -->\n${projection}${details}`;
+  const operationLink =
+    value.kind === "ai-edit"
+      ? `\n\n[Operation evidence directory](https://github.com/${value.repository}/tree/ci-logs/${value.evidence_path.replace("receipt.json", "")}). For preview or validation requests, publication only consumes the request; inspect operation.json and retained diff chunks, not CI success. Required PR CI is separate.`
+      : "";
+  const body = `${prefix}${head}:${value.run_id}:${value.run_attempt} -->\n${projection}${details}${operationLink}`;
   await ports.writeComment(previous?.id ?? null, body);
   return { comment: (await ports.currentHead()) === head ? "published" : "published_historical" };
 }
@@ -197,7 +201,7 @@ export class GitHub {
     ensure(entries.length > 0 && entries.length <= 60, "Invalid evidence file count");
     for (const [path, content] of entries) {
       ensure(
-        /^receipts\/(?:ci|ai-edit)\/[1-9]\d*\/[1-9]\d*\/(?:(?:receipt|intent|diagnostics|manifest)\.json|log-\d{3}\.txt)$/.test(
+        /^receipts\/(?:ci|ai-edit)\/[1-9]\d*\/[1-9]\d*\/(?:(?:receipt|intent|diagnostics|manifest|operation)\.json|(?:log|diff)-\d{3}\.txt)$/.test(
           path,
         ),
         "Invalid evidence destination",
