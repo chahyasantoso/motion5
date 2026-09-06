@@ -1,9 +1,7 @@
 name: AI edit
 
-# Applies one anchor-based edit request dropped at .ai/edits/*.json by an implementor that has no
-# local checkout, formats what it touched with the pinned Prettier, commits with the personal
-# access token, and reports the result back as a comment. Contract: docs/AI-EDIT-WORKFLOW.md
-
+# Protocol v1: an immutable, request-only commit with exact source/blob preconditions.
+# This is not yet a trusted-runner boundary: branch code still runs in this writer.
 on:
   push:
     branches-ignore: [main, ci-logs]
@@ -27,8 +25,6 @@ permissions:
 jobs:
   apply:
     name: apply one request
-    # A consumed request is removed by the workflow and carries this exact trailer. Restricting
-    # the gate to the bot author means prose mentioning the trailer cannot silence real requests.
     if: >-
       github.event_name == 'workflow_dispatch' ||
       !(github.event.head_commit.author.username == 'github-actions[bot]' &&
@@ -36,64 +32,74 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref_name }}
-          fetch-depth: 1
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-
-      # TOUCHED is every path the request changed and is what the commit allow-list reads. FORMAT is
-      # the subset that still exists, and it is what the formatter reads: a path a `delete` edit
-      # removed belongs on the first list and not on the second. See docs/AI-EDIT-WORKFLOW.md.
       - name: Name the scratch files
         run: |
           echo "REPORT=${RUNNER_TEMP}/ai-edit-report.md" >> "$GITHUB_ENV"
           echo "TOUCHED=${RUNNER_TEMP}/ai-edit-touched.txt" >> "$GITHUB_ENV"
           echo "FORMAT=${RUNNER_TEMP}/ai-edit-format.txt" >> "$GITHUB_ENV"
 
-      # The directory is the source of truth, never the push payload. A commit created through the
-      # Git data API, which is the only way the reader of this contract can push, arrives with
-      # empty added and modified lists, so selecting from them makes the workflow a silent no-op
-      # for its own audience. More than one request is refused rather than picked alphabetically.
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
       - name: Choose the request
         id: request
         env:
           DISPATCH_REQUEST: ${{ inputs.request }}
         run: |
           set -euo pipefail
-          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
-            request="$DISPATCH_REQUEST"
-          else
-            mapfile -t requests < <(find .ai/edits -maxdepth 1 -type f -name '*.json' 2>/dev/null | sort)
-            if [ "${#requests[@]}" -gt 1 ]; then
-              printf 'This directory holds %s requests, and this workflow applies one at a time:\n' "${#requests[@]}" >&2
-              printf '%s\n' "${requests[@]}" >&2
-              exit 1
-            fi
-            request="${requests[0]-}"
-          fi
-          if [ -z "$request" ] || [ ! -f "$request" ]; then
-            echo "No pending request file. Nothing to do."
+          case "$GITHUB_REF" in refs/heads/*) ;; *) echo "A branch is required." > "$REPORT"; exit 1 ;; esac
+          case "$GITHUB_REF_NAME" in main|ci-logs) echo "This branch is not an edit target." > "$REPORT"; exit 1 ;; esac
+          mapfile -t requests < <(find .ai/edits -maxdepth 1 -type f -name '*.json' 2>/dev/null | sort)
+          if [ "${#requests[@]}" -eq 0 ]; then
+            echo "No pending request file. Nothing to do." > "$REPORT"
             echo "found=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          case "$request" in
-            .ai/edits/*.json) ;;
-            *)
-              echo "A request must live at .ai/edits/*.json, and this one is $request."
-              exit 1
-              ;;
-          esac
+          if [ "${#requests[@]}" -ne 1 ]; then
+            echo "Expected one pending request; found ${#requests[@]}. Nothing applied." > "$REPORT"
+            exit 1
+          fi
+          request="${requests[0]}"
+          if [[ ! "$request" =~ ^\.ai/edits/[A-Za-z0-9][A-Za-z0-9._-]*\.json$ ]]; then
+            echo "Request filenames must use letters, digits, dots, underscores or hyphens." > "$REPORT"
+            exit 1
+          fi
+          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$DISPATCH_REQUEST" != "$request" ]; then
+            echo "Dispatch must name the sole pending request." > "$REPORT"
+            exit 1
+          fi
           echo "found=true" >> "$GITHUB_OUTPUT"
           echo "path=$request" >> "$GITHUB_OUTPUT"
+          target="$(jq -r '.target // empty' "$request" 2>/dev/null || true)"
+          if [[ "$target" =~ ^[1-9][0-9]{0,14}$ ]]; then
+            echo "target=$target" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Verify the request-only snapshot
+        if: steps.request.outputs.found == 'true'
+        env:
+          REQUEST: ${{ steps.request.outputs.path }}
+        run: |
+          set -euo pipefail
+          fail() { echo "$1 Nothing applied." > "$REPORT"; exit 1; }
+          read -r -a parents <<< "$(git rev-list --parents -n 1 HEAD)"
+          [ "${#parents[@]}" -eq 2 ] || fail "A request commit must have exactly one parent."
+          base="${parents[1]}"
+          mapfile -d '' -t changed < <(git diff --no-renames --name-only -z "$base" HEAD)
+          [ "${#changed[@]}" -eq 1 ] || fail "A request commit must change only its request file."
+          [ "${changed[0]}" = "$REQUEST" ] || fail "The request is not the only changed path."
+          remote="$(git ls-remote --exit-code origin "$GITHUB_REF" | cut -f1)"
+          [ "$remote" = "$GITHUB_SHA" ] || fail "The branch has advanced since this request."
+          echo "AI_EDIT_BASE_SHA=$base" >> "$GITHUB_ENV"
 
       - uses: actions/setup-node@v4
         if: steps.request.outputs.found == 'true'
         with:
           node-version: 24
 
-      # A refused request exits non-zero here, which skips the two steps below and leaves the
-      # request file in place for a corrected push. The report still reaches the comment.
       - name: Apply the request
         id: apply
         if: steps.request.outputs.found == 'true'
@@ -101,25 +107,19 @@ jobs:
           REQUEST: ${{ steps.request.outputs.path }}
         run: node scripts/apply-ai-edit.mjs "$REQUEST" "$REPORT" "$TOUCHED" "$FORMAT"
 
-      # The pinned version and nothing else. This job deliberately does not run npm ci or the
-      # suite: CI owns correctness on the resulting commit, and duplicating it here doubles the
-      # bill for no new information.
-      #
-      # It reads FORMAT rather than TOUCHED because Prettier exits non-zero on a path that no longer
-      # exists, and this step failing after the apply step has written the tree is what left a
-      # request applied, unformatted and uncommitted. A request whose every changed path was deleted
-      # by it has nothing to format and does not pay for the install either.
       - name: Format what changed
         if: steps.request.outputs.found == 'true' && steps.apply.outputs.changed == 'true'
         run: |
           set -euo pipefail
           if [ ! -s "$FORMAT" ]; then
-            echo "Nothing to format: every path this request changed was deleted by it."
+            echo "No surviving changed files to format."
             exit 0
           fi
           version="$(jq -r '.devDependencies.prettier' package.json)"
-          npm install --no-save --no-package-lock --no-audit --no-fund "prettier@${version}"
-          xargs -a "$FORMAT" -r npx prettier --write --ignore-unknown
+          npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund "prettier@${version}"
+          while IFS= read -r file; do
+            npx --no-install prettier --write --ignore-unknown -- "$file"
+          done < "$FORMAT"
 
       - name: Commit the bounded file list
         id: commit
@@ -131,62 +131,63 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm -q --ignore-unmatch "$REQUEST"
+          git rm -q -- "$REQUEST"
           git add -A
           allowed="${RUNNER_TEMP}/allowed.txt"
           staged="${RUNNER_TEMP}/staged.txt"
-          { cat "$TOUCHED" 2>/dev/null || true; echo "$REQUEST"; } | sort -u > "$allowed"
-          git diff --cached --name-only | sort -u > "$staged"
-          unexpected="$(comm -13 "$allowed" "$staged")"
+          { cat "$TOUCHED"; echo "$REQUEST"; } | LC_ALL=C sort -u > "$allowed"
+          git -c core.quotePath=false diff --cached --name-only | LC_ALL=C sort -u > "$staged"
+          unexpected="$(LC_ALL=C comm -13 "$allowed" "$staged")"
           if [ -n "$unexpected" ]; then
-            echo "Refusing to commit files the request did not name:"
-            echo "$unexpected"
+            printf 'Refusing unexpected staged paths:\n%s\n' "$unexpected"
             exit 1
           fi
-          if git diff --cached --quiet; then
-            echo "Nothing to commit."
-            exit 0
-          fi
+          remote="$(git ls-remote --exit-code origin "$GITHUB_REF" | cut -f1)"
+          [ "$remote" = "$GITHUB_SHA" ] || { echo "Stale branch; refusing publication."; exit 1; }
           git commit -m "$MESSAGE" -m "AI-Edit-Request: ${REQUEST}"
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          echo "candidate_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          # A racing push is rejected by normal fast-forward rules. Never force or rebase.
+          git push origin "HEAD:${GITHUB_REF}"
+          echo "published_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
-      # The report is what the apply step wrote, and on its own it describes the runner's working
-      # tree rather than the branch. So when the apply step succeeded and the commit step did not,
-      # the comment says that first: otherwise `Applied ... edits` reads as landed when a formatter
-      # failure has left the request pending and the tree thrown away with the runner.
       - name: Report back
-        if: always() && steps.request.outputs.found == 'true'
+        if: always()
         env:
           GH_TOKEN: ${{ github.token }}
           REQUEST: ${{ steps.request.outputs.path }}
-          TARGET: ${{ steps.apply.outputs.target }}
-          APPLIED: ${{ steps.apply.outcome }}
-          COMMITTED: ${{ steps.commit.outcome }}
+          TARGET: ${{ steps.request.outputs.target }}
+          FOUND: ${{ steps.request.outputs.found }}
+          PUBLISHED: ${{ steps.commit.outputs.published_sha }}
+          CANDIDATE: ${{ steps.commit.outputs.candidate_sha }}
         run: |
           set -euo pipefail
           comment="${RUNNER_TEMP}/comment.md"
           {
-            echo "### AI edit request \`${REQUEST}\`"
+            echo "### AI edit request ${REQUEST:-selection/setup failure}"
             echo ""
-            if [ "$APPLIED" = "success" ] && [ "$COMMITTED" != "success" ]; then
-              echo "**Nothing was committed.** A step after the apply step failed, so the edits below"
-              echo "exist only in the runner's working tree and \`${REQUEST}\` is still pending. Read the"
-              echo "report as what was attempted rather than what landed, then push a corrected request"
-              echo "to the same path."
-              echo ""
+            echo "Request commit: \`$GITHUB_SHA\`."
+            if [ -n "$PUBLISHED" ]; then
+              echo "Published commit: [$PUBLISHED](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/$PUBLISHED)."
+              echo "CI is not verified by this receipt; inspect checks on that exact commit."
+            elif [ -n "$CANDIDATE" ]; then
+              echo "**Publication was not confirmed.** Candidate: \`$CANDIDATE\`."
+              echo "Check the branch before retrying; a failed push response is not proof nothing landed."
+            else
+              echo "**No publication was attempted.** Any applied edits exist only in the runner tree."
             fi
-            cat "$REPORT" 2>/dev/null || echo "The apply step produced no report."
+            echo ""
+            cat "$REPORT" 2>/dev/null || echo "No detailed report was produced; inspect the run."
             echo ""
             echo "[Actions run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
           } > "$comment"
           cat "$comment" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$FOUND" = false ]; then exit 0; fi
           target="$TARGET"
           if [ -z "$target" ]; then
-            target="$(gh pr list --head "$GITHUB_REF_NAME" --state open --json number \
-              --jq '.[0].number' || true)"
+            target="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --state open --json number --jq '.[0].number' || true)"
           fi
           if [ -z "$target" ]; then
-            echo "No issue or pull request to comment on. The report is in the job summary."
+            echo "No verified target or open PR. Report is available in the job summary only."
             exit 0
           fi
-          gh issue comment "$target" --body-file "$comment"
+          gh issue comment "$target" --repo "$GITHUB_REPOSITORY" --body-file "$comment"

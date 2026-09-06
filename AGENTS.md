@@ -16,7 +16,7 @@ Write the invariant first, name the single owner, add the test that fails withou
 
 Status is replaced, never accumulated. `docs/SESSION-STATUS.md` is the file you are most likely to break that rule in, because every pull request is asked to update it, and the honest edit is usually a deletion and a rewrite rather than a new bullet. State the project as it is now and remove the entry that is no longer it. A rule you earned goes in `docs/GUARDRAILS.md`, a red or green run id goes in your pull request body, and neither goes in the status file. It reached 99,180 bytes the other way, while its own first sentence called it small.
 
-Formatting never shares a commit with behavior.
+Keep unrelated formatting in a separate commit. AI edit normalizes only the files explicitly requested; that is not permission for a repository-wide formatting pass in a behavior change.
 
 Author no markdown tables anywhere. Prettier rewrites their alignment to widths you cannot predict, and the drift is invisible to you while being fatal to `format:check`.
 
@@ -26,11 +26,15 @@ Do not copy anything from the predecessor repository. Recreate the contract from
 
 ## If you have no local checkout
 
-Working through the GitHub API alone, you cannot run `npm`, `prettier`, or the tests, and rewriting a large file through the contents API tends to fail part-way. That is a known condition rather than a broken setup, and it has a supported answer.
+Working through the GitHub API alone, you cannot run `npm`, `prettier`, or the tests, and rewriting a large file through the contents API tends to fail part-way. Use the supported bounded request protocol instead of claiming local checks were run.
 
-Drop one JSON request at `.ai/edits/<name>.json` on your branch. It names the exact text to replace, per file. The push triggers **AI edit**, which applies the edits, runs the pinned Prettier on the files it touched, commits with the repository's personal access token, and comments the result back to the issue or pull request you named.
+Read [docs/AI-EDIT-WORKFLOW.md](docs/AI-EDIT-WORKFLOW.md) at your branch before submitting. Protocol v1 requires `version: 1`, `expected_head` naming the snapshot you read, and `expected_blobs` containing every edited path's original Git blob SHA (or `null` if absent). Unknown keys, unversioned requests, stale inputs, unsafe paths, and CI-skip directives are refused. Older branches may still ignore unknown fields, so do not assume the protocol exists without checking.
 
-Read [docs/AI-EDIT-WORKFLOW.md](docs/AI-EDIT-WORKFLOW.md) before you write one. It is the whole contract, including the anchor rule that decides whether your request is applied or refused, and the reasons to batch a slice into a single request rather than sending one edit at a time.
+Drop one JSON request at `.ai/edits/<name>.json` in a commit that changes only that request. Its single parent must be `expected_head`; do not combine code or workflow changes with submission. The workflow checks out the exact request commit, validates the source snapshot, applies the edits, formats surviving touched files, removes the request, and publishes with a normal fast-forward push. A branch that advances is refused, not force-pushed or silently rebased.
+
+Name `target` so the receipt reaches the issue or pull request. Read the published commit link and verify CI on that exact SHA. A dry run reports validation and pre-format sizes, not a formatted preview or test result. It consumes the request but no longer puts `[skip ci]` on its cleanup commit. Refresh the head precondition before submitting the real apply.
+
+The workflow remains privileged branch code. Snapshot checks are correctness guards, not a complete security sandbox. Workflow changes require a reviewed PR; isolating a trusted runner and credentials is separate work. See the contract for supported paths, retry rules, and remaining reporting limitations.
 
 ### Your read has a budget, and it fails silently
 
@@ -40,6 +44,6 @@ Two numbers follow from it, and both are checked. No file under `packages/core/s
 
 The `read-budget` job in `CI` enforces them, and `npm run test:read-budget` is the command it runs. You cannot run it and you cannot detect the condition it measures, which is exactly why the numbers are written here instead of living only in `scripts/read-budget-scan.mjs`. What you can do is act on them before the gate does: a slice that pushes a file past either number owes the split or the sister doc in the same request, and a `dry_run` reports the size each file would end up at, measured before the formatter, so the check costs one round trip rather than a failed merge.
 
-[docs/AI-EDIT-WORKFLOW.md](docs/AI-EDIT-WORKFLOW.md) owns the rule, the mirror conventions a sister doc has to satisfy, and the one thing you may not do to a file that is over budget, which is edit it by anchor.
+[docs/AI-EDIT-WORKFLOW.md](docs/AI-EDIT-WORKFLOW.md) owns the rule, the mirror conventions a sister doc has to satisfy, and the one thing you may not do to a file that is over budget, which is edit it by anchor. An exact blob SHA does not replace reading the complete invariant.
 
 Do not open a pull request that mixes that infrastructure with behavior, and do not widen a slice past the file count its own body claims.
