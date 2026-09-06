@@ -18,6 +18,7 @@ import {
   SHA,
   ensure,
   boundedBody,
+  verifyRun,
   persistOutcome,
   reportToPull,
 } from "./automation-report.mjs";
@@ -346,7 +347,168 @@ async function reconcileRecordedIntent(api, run, saved) {
   });
 }
 
-export async function recoverRun(api, run) {
+// Suppression is earned by immutable publication identity and complete tree evidence,
+// never by a bot-looking author or a user-controlled commit subject.
+async function cleanupProof(api, run, trustedSha) {
+  if (
+    run.path !== ".github/workflows/ai-edit.yml" ||
+    run.event !== "push" ||
+    run.conclusion !== "skipped"
+  )
+    return null;
+  try {
+    verifyRun(run, api.repository, run.id, run.run_attempt);
+    ensure(SHA.test(trustedSha), "Cleanup classification needs a reviewed runner");
+    ensure(
+      Number.isSafeInteger(run.workflow_id) && run.workflow_id > 0,
+      "Invalid workflow identity",
+    );
+    const [actual, trusted, jobs, commit] = await Promise.all([
+      api.content(run.path, run.head_sha),
+      api.content(run.path, trustedSha),
+      api.list(`/actions/runs/${run.id}/attempts/${run.run_attempt}/jobs`, "jobs"),
+      api.request("GET", `/git/commits/${run.head_sha}`),
+    ]);
+    ensure(actual.sha === trusted.sha, "Cleanup workflow differs from reviewed runner");
+    ensure(
+      jobs.length === 1 &&
+        jobs[0].name === "prepare isolated candidate" &&
+        jobs[0].run_id === run.id &&
+        jobs[0].head_sha === run.head_sha &&
+        jobs[0].status === "completed" &&
+        jobs[0].conclusion === "skipped",
+      "Not a skipped preparation-only run",
+    );
+    ensure(
+      commit.parents.length === 1 && SHA.test(commit.parents[0].sha),
+      "Cleanup needs one request parent",
+    );
+    const requestCommit = commit.parents[0].sha;
+    const [tree, candidates, evidenceHead] = await Promise.all([
+      api.request("GET", `/git/trees/${commit.tree.sha}?recursive=1`),
+      api.list(
+        `/actions/workflows/${run.workflow_id}/runs?head_sha=${requestCommit}`,
+        "workflow_runs",
+      ),
+      api.head("ci-logs"),
+    ]);
+    ensure(!tree.truncated && Array.isArray(tree.tree), "Incomplete cleanup tree");
+    // Enumeration is bounded independently of API pagination. An unavailable proof
+    // leaves ordinary reporting active; it never upgrades a skipped run to success.
+    ensure(candidates.length <= 20, "Too many operation runs to classify");
+    let attempts = 0;
+    for (const candidate of [...candidates].sort((a, b) => a.id - b.id)) {
+      ensure(
+        Number.isSafeInteger(candidate.id) &&
+          candidate.id > 0 &&
+          Number.isSafeInteger(candidate.run_attempt) &&
+          candidate.run_attempt > 0,
+        "Invalid operation run identity",
+      );
+      attempts += candidate.run_attempt;
+      ensure(attempts <= 20, "Too many operation attempts to classify");
+      for (let attempt = 1; attempt <= candidate.run_attempt; attempt++) {
+        let saved;
+        try {
+          saved = JSON.parse(
+            (
+              await api.content(
+                `receipts/ai-edit/${candidate.id}/${attempt}/receipt.json`,
+                evidenceHead,
+              )
+            ).text,
+          );
+        } catch (error) {
+          if (error.status === 404) continue;
+          throw error;
+        }
+        render(saved);
+        if (
+          saved.kind !== "ai-edit" ||
+          saved.repository !== api.repository ||
+          saved.run_id !== candidate.id ||
+          saved.run_attempt !== attempt ||
+          saved.request_commit !== requestCommit ||
+          saved.published_sha !== run.head_sha ||
+          saved.publication !== "confirmed"
+        )
+          continue;
+        const originalRun = await api.run(candidate.id, attempt);
+        verifyRun(originalRun, api.repository, candidate.id, attempt);
+        ensure(
+          originalRun.workflow_id === run.workflow_id &&
+            originalRun.path === run.path &&
+            originalRun.head_sha === requestCommit &&
+            originalRun.head_branch === run.head_branch &&
+            originalRun.conclusion === "success",
+          "Operation run metadata mismatch",
+        );
+        // Reuse the publication owner's snapshot checks, including request-only
+        // input, schema, source parent, regular paths, and original blob hashes.
+        const state = await snapshot(api, originalRun, trustedSha);
+        ensure(
+          ["preview", "validate"].includes(state.operation) &&
+            state.source_sha === saved.source_sha &&
+            state.request_digest === saved.request_digest,
+          "Read-only operation identity mismatch",
+        );
+        const remaining = new Map(
+          tree.tree.filter((entry) => entry.type !== "tree").map((entry) => [entry.path, entry]),
+        );
+        const expected = new Map(state.original);
+        expected.delete(state.request_path);
+        ensure(
+          !remaining.has(state.request_path) && remaining.size === expected.size,
+          "Cleanup must only remove its request",
+        );
+        for (const [file, entry] of expected) {
+          const actualEntry = remaining.get(file);
+          ensure(
+            actualEntry?.sha === entry.sha &&
+              actualEntry?.mode === entry.mode &&
+              actualEntry?.type === entry.type,
+            "Adjacent content or mode change is not cleanup-only",
+          );
+        }
+        return { operation: state.operation, operation_receipt: saved.evidence_path };
+      }
+    }
+  } catch {
+    // Missing, conflicting, oversized, or unverifiable evidence cannot authorize
+    // suppression. Genuine failures keep the existing actionable reporting path.
+  }
+  return null;
+}
+
+async function retainCleanup(api, run, trustedSha) {
+  const proof = await cleanupProof(api, run, trustedSha);
+  if (!proof) return null;
+  const outcome = receipt({
+    kind: "ai-edit",
+    repository: api.repository,
+    run_id: run.id,
+    run_attempt: run.run_attempt,
+    request_commit: run.head_sha,
+    phase: "selection",
+  });
+  const evidence = `receipts/ai-edit/${run.id}/${run.run_attempt}/manifest.json`;
+  const manifest = {
+    version: 1,
+    classification: "cleanup_only",
+    run_conclusion: "skipped",
+    required_ci: "not_replaced",
+    outcome,
+    ...proof,
+  };
+  // Persist outside the proof catch: evidence failures must remain visible. Never
+  // rewrite an older receipt, create a candidate, or touch a PR comment here.
+  await api.persist({ [evidence]: `${JSON.stringify(manifest)}\n` });
+  return { comment: "cleanup_only", publication: "not_attempted", evidence };
+}
+
+export async function recoverRun(api, run, trustedSha) {
+  const cleanup = await retainCleanup(api, run, trustedSha);
+  if (cleanup) return cleanup;
   const directory = `receipts/ai-edit/${run.id}/${run.run_attempt}/`;
   const evidenceHead = await api.head("ci-logs");
   for (const name of ["receipt.json", "intent.json"]) {
@@ -393,6 +555,8 @@ export async function recoverRun(api, run) {
 }
 
 export async function publishRun(api, writer, run, trustedSha) {
+  const cleanup = await retainCleanup(api, run, trustedSha);
+  if (cleanup) return cleanup;
   const basic = {
     kind: "ai-edit",
     repository: api.repository,
@@ -515,7 +679,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         Number(process.env.REPORT_RUN_ATTEMPT),
       );
       ensure(run.path === ".github/workflows/ai-edit.yml", "Recovery only accepts AI edit runs");
-      console.log(JSON.stringify(await recoverRun(api, run)));
+      console.log(JSON.stringify(await recoverRun(api, run, process.env.TRUSTED_SHA)));
     } else if (process.argv[2] === "publish") {
       const api = new GitHub(process.env.GITHUB_REPOSITORY, process.env.GH_TOKEN);
       const writer = new GitHub(process.env.GITHUB_REPOSITORY, process.env.PUBLISH_TOKEN);

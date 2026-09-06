@@ -66,7 +66,7 @@ The publisher stores `intent.json` before attempting the non-force branch update
 
 Evidence lives on `ci-logs` at `receipts/<kind>/<run-id>/<attempt>/`. An existing file is accepted only if its bytes match; conflicting history is refused. Separate attempts have separate paths. Evidence writes can retry after re-reading their branch; semantic edits are not replayed.
 
-`receipt.json` is the completed outcome. `intent.json` is the durable uncertain outcome when publication cannot be established. `manifest.json` is the fallback for an adapter failure before publication intent exists. These are operation records, not another project-status database.
+`receipt.json` is the completed operation outcome. `intent.json` is the durable uncertain outcome when publication cannot be established. `manifest.json` records either the fallback for an adapter failure before publication intent exists or an explicitly classified cleanup-only lifecycle run. A cleanup manifest carries `classification: "cleanup_only"`, the skipped run conclusion, its truthful `not_attempted`/`not_run` outcome, and `operation_receipt` linking the confirmed operation. It never claims CI success or replaces required CI. These are operation records, not another project-status database.
 
 A failed comment after confirmed publication is recovered from the retained receipt without requiring the candidate artifact or publishing again. If only intent survived, recovery checks candidate reachability on the target branch, candidate and source parents, the original request bytes and canonical digest, and the commit trailers. Verified reachability can produce a confirmed receipt even after the artifact expires. Without that evidence, intent remains explicitly unconfirmed.
 
@@ -83,6 +83,14 @@ Failed-job log retrieval has three bounded attempts. Failure becomes `unavailabl
 `diagnostics.json` lists chunk paths and retains a standalone escaped excerpt. The comment links to it without duplicating complete logs. Failure markers are preferred over a prefix of passing output. Retained excerpts are escaped again before rendering, so stored text cannot inject markup or mentions.
 
 The reporter maintains one bot-owned summary per PR, receipt kind, and workflow. Human comments with a matching marker are never updated. Run and attempt ordering prevent older completions from replacing newer same-head evidence. The current PR head is checked before and immediately before the comment write. Reporters are serialized. GitHub has no conditional comment-update API: a branch can still move during the write, so each comment identifies its exact commit and the reporter distinguishes historical completion rather than promising atomic head-and-comment updates.
+
+### Verified cleanup-only reporting
+
+After the issue #335 runner is reviewed and activated, the publication owner recognizes a skipped push as cleanup-only only with verified repository/run/attempt/workflow metadata, an unchanged reviewed workflow blob, and exactly one completed skipped preparation job. It requires a single parent, the original successful operation run on that parent and branch, a matching confirmed publication receipt and canonical request digest, the independently revalidated preview/validation snapshot, and a complete tree proving that only the request was removed. Commit subjects and bot-looking authors are not proof. Content or mode changes, unknown metadata, manual dispatches, missing evidence, and failed runs do not qualify.
+
+Classification examines at most 20 original operation attempts, including older attempts with retained receipts. Unavailable or oversized proof leaves ordinary reporting active rather than suppressing an unexplained outcome. Verified cleanup persists its own manifest without entering comment ordering, so it cannot overwrite the confirmed operation projection even though its run ID is newer. Primary publication and artifact-independent recovery share this classification; evidence-storage failures remain failures. Historical evidence is never rewritten. Existing stale projections are not claimed repaired automatically by deploying prevention logic.
+
+[automation-cleanup.test.ts](../packages/core/test/unit/scripts/automation-cleanup.test.ts) covers confirmed preview and validation followed by skipped cleanup on the same head, recovery, genuine failed runs, unverifiable identities, adjacent changes, and persistence failure. These are adapter fixtures, not proof of live activation. Required PR CI and the broader issue #328 lifecycle/refusal/recovery exercises are unchanged.
 
 ## Formatted preview and targeted validation
 
@@ -125,7 +133,7 @@ Example templates below require real complete source and blob SHAs, not the plac
 
 Dependency maintenance is refused even with a PAT. A future reviewed operation must bound package/version inputs, disable lifecycle scripts, allow only exact manifest-plus-lockfile outputs, preserve credential isolation, and prove CI on its generated commit. No arbitrary command interface or temporary privileged automation is introduced. Historical maintenance retirement belongs to slice 5.
 
-Request cleanup still uses the existing bot-author/trailer recursion suppression. This is not a CI-skip directive or a substitute for required evidence. Lifecycle redesign and the full failure/recovery activation matrix remain separate acceptance work under issue #328. Touched-file normalization accompanies the requested change; unrelated formatting stays separate.
+Request preparation still uses the existing bot-author/trailer recursion suppression; this change does not alter its workflow condition. The reviewed issue #335 reporter separately verifies cleanup-only lifecycle evidence before withholding a comment update. Neither mechanism is a CI-skip directive or a substitute for required evidence. Preparation lifecycle redesign and the full failure/recovery activation matrix remain separate acceptance work under issue #328. Touched-file normalization accompanies the requested change; unrelated formatting stays separate.
 
 ## Activation gate
 
