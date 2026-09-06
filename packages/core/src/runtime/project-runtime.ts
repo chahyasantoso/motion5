@@ -42,13 +42,14 @@ import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import {
   commitInFlight,
   describeDiagnostics,
+  describeError,
   immediateInTransaction,
   nestedTransaction,
   propertyEntry,
   reservedGoalSlot,
   unboundGroup,
 } from "./schema-refusals";
-import { rejectAfterRollback, runRollbackSteps, runSettleSteps } from "./rollback";
+import { collect, rejectAfterRollback, runRollbackSteps, runSettleSteps } from "./rollback";
 import {
   EMPTY_KEYFRAMES,
   NO_OVERLAY,
@@ -794,7 +795,7 @@ export class ProjectRuntime {
       return body();
     } finally {
       this.#inFlight--;
-      if (this.#inFlight === 0 && this.#pendingTeardown) this.#teardown();
+      if (this.#inFlight === 0 && this.#pendingTeardown) this.#recordRelease(this.#teardown());
     }
   }
 
@@ -1241,18 +1242,36 @@ export class ProjectRuntime {
       this.#pendingTeardown = true;
       return;
     }
-    this.#teardown();
+    const failures = this.#teardown();
+    this.#recordRelease(failures);
+    if (failures.length === 1) throw failures[0];
+    if (failures.length > 1) throw new AggregateError(failures, "ProjectRuntime release failed.");
   }
 
-  #teardown(): void {
+  #teardown(): readonly unknown[] {
     this.#pendingTeardown = false;
-    for (const nodeId of [...this.#instances.keys()]) this.#graph.detach(nodeId);
-    this.#instances.clear();
-    this.#tracks.clear();
-    this.#motions.clear();
-    this.#open = undefined;
-    this.#graph.dispose();
-    this.#disposeComposition();
+    const release: (() => void)[] = [];
+    for (const nodeId of [...this.#instances.keys()])
+      release.push(() => this.#graph.detach(nodeId));
+    release.push(() => {
+      this.#instances.clear();
+      this.#tracks.clear();
+      this.#motions.clear();
+      this.#open = undefined;
+    });
+    release.push(() => this.#graph.dispose());
+    release.push(() => this.#disposeComposition());
+    return collect(release);
+  }
+
+  #recordRelease(failures: readonly unknown[]): void {
+    for (const failure of failures)
+      this.#diagnostics.record({
+        ruleId: "project-release-failed",
+        path: "dispose()",
+        message: describeError(failure),
+        severity: "error",
+      });
   }
   #assertLive(): void {
     if (this.#disposed) throw new Error("ProjectRuntime is disposed.");
