@@ -88,7 +88,10 @@ export default class EvidenceReporter {
       identity: identity(),
       reason,
       errors: errors.map((error) => String(error.message)),
-      modules: modules.map((module) => ({ file: relative(module.moduleId), state: module.state() })),
+      modules: modules.map((module) => ({
+        file: relative(module.moduleId),
+        state: module.state(),
+      })),
       tests: modules.flatMap((module) =>
         [...module.children.allTests()].map((test) => ({
           file: relative(module.moduleId),
@@ -112,7 +115,12 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         const output = path.join(directory(), `${scope}.json`);
         execFileSync(
           process.execPath,
-          ["node_modules/vitest/vitest.mjs", "list", ...(filter ? [filter] : []), `--json=${output}`],
+          [
+            "node_modules/vitest/vitest.mjs",
+            "list",
+            ...(filter ? [filter] : []),
+            `--json=${output}`,
+          ],
           { stdio: "inherit", timeout: 180000 },
         );
         inventory[scope] = read(output).map((test) => ({ ...test, file: relative(test.file) }));
