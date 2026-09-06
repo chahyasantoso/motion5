@@ -1,0 +1,26 @@
+# CI log archive: 34037056089
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: chore/328-03-single-suite
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/34037056089
+- Captured: 2026-09-06T13:46:02Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm run format:check	﻿2026-09-06T13:45:39.5536136Z ##[group]Run npm run format:check
+quality (node 24)	Run npm run format:check	2026-09-06T13:45:39.5536495Z ^[[36;1mnpm run format:check^[[0m
+quality (node 24)	Run npm run format:check	2026-09-06T13:45:39.5573928Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run format:check	2026-09-06T13:45:39.5574252Z env:
+quality (node 24)	Run npm run format:check	2026-09-06T13:45:39.5574442Z   NODE_VERSION: 24
+quality (node 24)	Run npm run format:check	2026-09-06T13:45:39.5574650Z ##[endgroup]
+quality (node 24)	Run npm run format:check	2026-09-06T13:45:39.6819850Z 
+quality (node 24)	Run npm run format:check	2026-09-06T13:45:39.6820376Z > motion5@0.0.0 format:check
+quality (node 24)	Run npm run format:check	2026-09-06T13:45:39.6820997Z > prettier . --check
+quality (node 24)	Run npm run format:check	2026-09-06T13:45:39.6821453Z 
+quality (node 24)	Run npm run format:check	2026-09-06T13:45:39.7714761Z Checking formatting...
+quality (node 24)	Run npm run format:check	2026-09-06T13:45:47.4897498Z [^[[33mwarn^[[39m] scripts/ci-evidence.mjs
+quality (node 24)	Run npm run format:check	2026-09-06T13:45:47.5347322Z [^[[33mwarn^[[39m] Code style issues found in the above file. Run Prettier with --write to fix.
+quality (node 24)	Run npm run format:check	2026-09-06T13:45:47.5875143Z ##[error]Process completed with exit code 1.
+```
