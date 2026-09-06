@@ -62,10 +62,7 @@ const RETIRED_CALL = /(?<![.\w])region\s*\(/;
  * this gate until the entry goes with it, and a new source-reading case fails it on arrival. That is
  * the read budget's waiver shape, which may shrink and may not grow.
  */
-const PENDING = [
-  "packages/core/test/integration/bare-authored-leaf.test.ts",
-  "packages/core/test/integration/plugin-group-values-section.test.ts",
-];
+const PENDING: readonly string[] = [];
 
 function testFilesUnder(directory: string): readonly string[] {
   const found: string[] = [];
