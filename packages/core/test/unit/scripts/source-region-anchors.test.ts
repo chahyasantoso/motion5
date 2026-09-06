@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
-import { codeOnly, declaration, parseSource } from "../../helpers/source-region";
+import { code, codeOnly, declaration, parseSource } from "../../helpers/source-region";
 
 // A source-text assertion is addressed by something the claim names, and this gate refuses the shape
 // that is not. Issue #314 found two cases in `live-value-updates.test.ts` sliced between one
@@ -186,6 +188,30 @@ describe("source-region anchors", () => {
     expect(() =>
       declaration("export type ShapeExtra = string;", "export type Shape", ";"),
     ).toThrow();
+  });
+
+  it("reads statement syntax without comments while preserving quoted tokens", () => {
+    const directory = mkdtempSync(join(tmpdir(), "motion5-source-projection-"));
+    const path = join(directory, "fixture.ts");
+    const source = [
+      '/** removed-doc */ const url = "https://example.test/a"; // removed-tail',
+      'const literal = "/* literal */"; const pattern = /word/;',
+      "const text = `literal ${actual()}`;",
+      "const result = left/* removed-inline */+right;",
+    ].join("\n");
+    try {
+      writeFileSync(path, source);
+      const projected = code(path);
+      expect(projected.length).toBe(source.length);
+      expect(projected).not.toMatch(/removed-doc|removed-tail|removed-inline/);
+      expect(projected).toContain('"https://example.test/a"');
+      expect(projected).toContain('"/* literal */"');
+      expect(projected).toContain("/word/");
+      expect(projected).toContain("`literal ${actual()}`");
+      expect(projected.indexOf("actual")).toBe(source.indexOf("actual"));
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   it("preserves offsets and executable template substitutions while erasing literal text", () => {

@@ -8,7 +8,7 @@ Nothing else in this repository may claim what has landed. A plan, an audit, or 
 
 - **Captured:** 2026-09-06, Asia/Jakarta.
 - **Verified on:** `49f30a4` on `main`, after [#325](https://github.com/chahyasantoso/motion5/pull/325) and [#326](https://github.com/chahyasantoso/motion5/pull/326) were merged in order. The issue #317 work below is on its own branch and is not claimed shipped.
-- **Phase:** live editing of a loaded project. Every decision ADR-028 through ADR-070 records is shipped. [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md) is what a caller may do with that and what each edit pays for, and [GUARDRAILS.md](./GUARDRAILS.md) is the standing rules a slice is held to.
+- **Phase:** live editing of a loaded project. Every decision ADR-028 through ADR-071 records is shipped. [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md) is what a caller may do with that and what each edit pays for, and [GUARDRAILS.md](./GUARDRAILS.md) is the standing rules a slice is held to.
 - **Earlier history:** the long-form narrative through 2026-09-03 is this path at `ebad1ab`. It is not copied into `archived/`, because git already holds it whole: read this path at that ref.
 
 ## Now
@@ -20,7 +20,7 @@ This section names the slice that just landed and the one before it. A third ent
 
 ## Next in line
 
-- **Source-evidence correctness is being implemented on its own branch, not merged.** [Issue #317](https://github.com/chahyasantoso/motion5/issues/317), [PR #327](https://github.com/chahyasantoso/motion5/pull/327). One test helper owns syntax projections, declaration bounds, and direct-call locations; existing owning tests keep their claims. The PR owns implementation status and red/green run evidence.
+- **Source-evidence correctness is implemented on its own branch, not merged.** [Issue #317](https://github.com/chahyasantoso/motion5/issues/317), [PR #327](https://github.com/chahyasantoso/motion5/pull/327). One test helper owns syntax projections, declaration bounds, and direct-call locations; existing owning tests keep their claims. The PR owns implementation status and red/green run evidence.
 
 ## Open, and not scheduled
 

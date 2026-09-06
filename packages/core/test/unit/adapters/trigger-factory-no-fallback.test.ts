@@ -31,7 +31,7 @@ const DRIVER_SOURCE = code(new URL("time-driver.ts", FACTORY_DIR));
 const ENGINE_SOURCE = code(new URL("../../../src/engine.ts", import.meta.url));
 
 describe("T5 no manual trigger fallback", () => {
-  it("T-11 counts executable calls rather than comments or literal spellings", () => {
+  it("T-13 counts executable calls rather than comments or literal spellings", () => {
     const prose = [
       "// createManualTriggerPort(",
       "/** createManualTriggerPort() */",
@@ -39,9 +39,12 @@ describe("T5 no manual trigger fallback", () => {
       "const template = `createManualTriggerPort()`;",
       "const pattern = /createManualTriggerPort\\(/;",
       "function createManualTriggerPort() {}",
-      "object.createManualTriggerPort();",
     ].join("\n");
     expect(manualPortCalls(prose)).toBe(0);
+    // The old scan also caught namespace calls. The parser must not weaken that half.
+    expect(manualPortCalls("ports.createManualTriggerPort();")).toBe(1);
+    expect(manualPortCalls('ports["createManualTriggerPort"]();')).toBe(1);
+    expect(manualPortCalls("ports.other(); unrelated();")).toBe(0);
     expect(manualPortCalls(prose + "\ncreateManualTriggerPort /* gap */ ();")).toBe(1);
     expect(manualPortCalls(prose + "\nconst live = `${createManualTriggerPort()}`;")).toBe(1);
     expect(manualPortCalls(prose + "\ncreateManualTriggerPort(); createManualTriggerPort();")).toBe(

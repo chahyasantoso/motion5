@@ -76,17 +76,23 @@ export function codeOnly(source: string, filename = "source.ts"): string {
   return project(source, filename, false);
 }
 
-/** Direct identifier calls only, not imports, declarations, property calls, or prose. */
+/** Named calls, including namespace and literal-property access, never declarations or prose. */
 export function callSites(source: string, name: string): readonly number[] {
   const tree = parseSource(source);
   const found: number[] = [];
   function visit(node: ts.Node): void {
-    if (
-      ts.isCallExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      node.expression.text === name
-    )
-      found.push(node.getStart(tree));
+    if (ts.isCallExpression(node)) {
+      const callee = node.expression;
+      const calledName = ts.isIdentifier(callee)
+        ? callee.text
+        : ts.isPropertyAccessExpression(callee)
+          ? callee.name.text
+          : ts.isElementAccessExpression(callee) &&
+              ts.isStringLiteralLike(callee.argumentExpression)
+            ? callee.argumentExpression.text
+            : undefined;
+      if (calledName === name) found.push(node.getStart(tree));
+    }
     ts.forEachChild(node, visit);
   }
   visit(tree);
@@ -124,13 +130,10 @@ export function member(source: string, signature: string, indent = "  "): string
 }
 
 /**
- * The source of one declaration whose own syntax carries its terminator: `}` for an interface, `;`
- * for a type alias.
- *
- * `PK-18`'s two regions were already sound by the rule above, because both of their bounds belong to
- * the declaration they name. They are re-expressed through this function so the brace and the
- * semicolon are matched by one owner rather than assumed at two call sites, which is what makes a
- * later change to the rule reach them.
+ * Exactly one top-level interface or type alias, ending at its parsed terminator.
+ * Nested member braces and semicolons cannot truncate the subject. Prose cannot impersonate its
+ * opening, and missing, duplicate, wrong-kind, and unterminated declarations fail explicitly.
+ * The signature remains shared with PK-18; issue #317 strengthens the one owner.
  */
 export function declaration(source: string, opening: string, terminator: "}" | ";"): string {
   const tree = parseSource(source);
