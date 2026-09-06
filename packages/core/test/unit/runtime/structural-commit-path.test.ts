@@ -640,7 +640,7 @@ describe("a structural change runs one transaction, in one order", () => {
     expect(outcome.value?.id).toBe(ADDED_ID);
 
     // A settle step may not be abandoned halfway, and this is where that is decided rather than
-    // assumed. It has no revert because it is not allowed to fail, so a guard between two of them
+    // assumed. It has no revert because the graph already accepted, so a guard between two of them
     // would leave a staged Track neither committed nor rolled back and a Motion registered against a
     // node that never mounted. The teardown follows the phase instead of interrupting it, which is
     // the asymmetry with the effect loop above and it is deliberate.
@@ -801,7 +801,7 @@ describe("a structural change runs one transaction, in one order", () => {
     // carry the outer change and loses nothing. It is refused anyway, and not for symmetry: the
     // settle steps still queued were derived against the pair the inner commit would replace, so an
     // inner removal leaves the next `#mountNode` attaching a node the committed graph no longer has,
-    // in the one phase with no revert list and, as of #306, no error boundary. A condition that had
+    // in the one phase with no revert list, whose failure boundary is issue #306's. A condition that had
     // to name a phase would not be one condition, so the message names none.
     expect(outcome.thrown).toBeUndefined();
     expect(outcome.value?.live).toBe(true);

@@ -48,7 +48,7 @@ import {
   reservedGoalSlot,
   unboundGroup,
 } from "./schema-refusals";
-import { rejectAfterRollback, runRollbackSteps } from "./rollback";
+import { rejectAfterRollback, runRollbackSteps, runSettleSteps } from "./rollback";
 import {
   EMPTY_KEYFRAMES,
   NO_OVERLAY,
@@ -834,19 +834,16 @@ export class ProjectRuntime {
         rejectAfterRollback(error, () => runRollbackSteps(steps));
       }
       this.#adoptMaps(tracks, motions);
-      // Deliberately unguarded, unlike the loop above. A settle step has no revert because it is not
-      // allowed to fail, so abandoning this phase halfway leaves a staged Track neither committed
-      // nor rolled back and a Motion registered against a node that never mounted. The teardown
-      // follows this phase rather than interrupting it. See `RA-117`.
-      for (const step of commit.settle) step();
-      // The flush is the one thing a disposal skips rather than completes, on the same reason an
-      // empty seed set is skipped: a batch nobody can read still opens, moves the sequence and
-      // drains whatever a deferred flush was holding. See ADR-064's amendment of 2026-09-03,
-      // ADR-067 and `RA-10`.
-      if (this.#disposed || commit.touched.length === 0) return;
-      const batch = this.#graph.invalidate(commit.touched);
-      this.#diagnostics.recordAll(batch.diagnostics);
+      // Publication is the last collected step, not a finally that could replace a settle error.
+      // Every step is attempted against the accepted pair before reporting once. See ADR-071.
+      runSettleSteps([...commit.settle, () => this.#flush(commit.touched)]);
     });
+  }
+
+  #flush(touched: readonly string[]): void {
+    if (this.#disposed || touched.length === 0) return;
+    const batch = this.#graph.invalidate(touched);
+    this.#diagnostics.recordAll(batch.diagnostics);
   }
 
   #derive(
@@ -870,9 +867,10 @@ export class ProjectRuntime {
       settle.push(() => {
         this.#instances.delete(nodeId);
         this.#graph.evictNode(nodeId);
-        this.#disposeTrack?.(nodeId);
-        if (motionId !== undefined) this.#removeMotionTrack?.(motionId, nodeId);
       });
+      // Separate steps so a failed disposal cannot skip Motion deregistration. See ADR-071.
+      settle.push(() => this.#disposeTrack?.(nodeId));
+      if (motionId !== undefined) settle.push(() => this.#removeMotionTrack?.(motionId, nodeId));
       // Not the removed node, which is gone, but every node that was reading it. Why an edge test
       // misses a solver reading its chain members, why this is read here rather than after
       // `replaceGraph`, and why a seed the committed graph does not contain is harmless rather than

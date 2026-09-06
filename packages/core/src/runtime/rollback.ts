@@ -1,14 +1,13 @@
 import { describeError } from "./schema-refusals";
 /**
- * What a failed structural commit is allowed to report, and in which order.
+ * Runs every step in order and retains exactly what each failed invocation threw.
  *
- * Moved out of `project-runtime.ts` whole by slice 2 of issue #267, docblocks travelling with the
- * functions they constrain. These two are ADR-035's owners, and what they own is failure precedence
- * rather than anything about the class that calls them: neither reads `this`, and the rule they
- * carry is that a host whose teardown throws may not replace the diagnosis with its own unrelated
- * failure. `#apply` has one call site for each of them and had one before this file existed.
+ * Rollback and post-commit settlement share collection, not inverses or sequencing. The caller
+ * supplies the order; this module owns completion and reporting. Counting failures rather than
+ * testing a sentinel preserves thrown undefined. Host aggregates remain intact, not flattened.
+ * See ADR-035 and ADR-071.
  */
-export function runRollbackSteps(steps: readonly (() => void)[]): void {
+function collect(steps: readonly (() => void)[]): readonly unknown[] {
   const failures: unknown[] = [];
   for (const step of steps) {
     try {
@@ -17,9 +16,31 @@ export function runRollbackSteps(steps: readonly (() => void)[]): void {
       failures.push(error);
     }
   }
+  return failures;
+}
+
+/** A single failure keeps its identity; multiple failures arrive in occurrence order. */
+function report(failures: readonly unknown[], summary: string): void {
   if (failures.length === 0) return;
   if (failures.length === 1) throw failures[0];
-  throw new AggregateError(failures, "Track replacement rollback failed.");
+  throw new AggregateError(failures, summary);
+}
+
+/** Runs every rollback inverse with ADR-035's existing report and precedence unchanged. */
+export function runRollbackSteps(steps: readonly (() => void)[]): void {
+  report(collect(steps), "Track replacement rollback failed.");
+}
+
+/**
+ * Attempts all post-commit steps before reporting, with no inverse or retry.
+ *
+ * ProjectRuntime supplies settlement followed by its publication attempt. Including publication
+ * in the collection prevents a synchronous flush failure from replacing an earlier settle error.
+ * The two phase names share one mechanism without allowing a caller to choose the wrong report.
+ * This is internal to the runtime, not a package entrypoint export. See ADR-071.
+ */
+export function runSettleSteps(steps: readonly (() => void)[]): void {
+  report(collect(steps), "Commit settlement failed.");
 }
 /**
  * Rejects an operation whose rollback can fail on its own.
