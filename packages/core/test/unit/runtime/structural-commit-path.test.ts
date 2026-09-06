@@ -392,7 +392,13 @@ describe("project release preserves the outcome it follows", () => {
       dispose();
       throw new Error("graph failed");
     });
-    expect(() => runtime.dispose()).not.toThrow();
+    const thrown = thrownBy(() => runtime.dispose());
+    expect(thrown).toBeInstanceOf(AggregateError);
+    expect((thrown as AggregateError).errors.map((error: Error) => error.message)).toEqual([
+      "detach failed",
+      "graph failed",
+      "composition failed",
+    ]);
     expect(release).toEqual([`detach ${ADDED_ID}`, `detach ${NODE_ID}`, "graph dispose"]);
     expect(runtime.instanceCount).toBe(0);
     expect(runtime.graph.memberCount).toBe(0);
@@ -522,10 +528,21 @@ describe("project release preserves the outcome it follows", () => {
     };
     const journal = recorder({ failAt: { disposeComposition: failure } });
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
-    expect(() => runtime.dispose()).not.toThrow();
+    expect(thrownBy(() => runtime.dispose())).toBe(failure);
     expect(runtime.diagnostics.entries).toHaveLength(1);
     expect(runtime.diagnostics.entries[0]?.message).toBe(
       "Release failed with an unprintable thrown value.",
+    );
+  });
+
+  it("retains repeated aggregate causes without mistaking them for cycles", () => {
+    const cause = new Error("host cause");
+    const failure = new AggregateError([cause, cause, undefined], "host aggregate");
+    const journal = recorder({ failAt: { disposeComposition: failure } });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    expect(thrownBy(() => runtime.dispose())).toBe(failure);
+    expect(runtime.diagnostics.entries[0]?.message).toBe(
+      "host aggregate; host cause; host cause; undefined",
     );
   });
 

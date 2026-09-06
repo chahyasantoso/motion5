@@ -20,7 +20,7 @@ export function collect(steps: readonly (() => void)[]): readonly unknown[] {
 }
 
 /** A single failure keeps its identity; multiple failures arrive in occurrence order. */
-function report(failures: readonly unknown[], summary: string): void {
+export function report(failures: readonly unknown[], summary: string): void {
   if (failures.length === 0) return;
   if (failures.length === 1) throw failures[0];
   throw new AggregateError(failures, summary);

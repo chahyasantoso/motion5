@@ -49,7 +49,7 @@ import {
   reservedGoalSlot,
   unboundGroup,
 } from "./schema-refusals";
-import { collect, rejectAfterRollback, runRollbackSteps, runSettleSteps } from "./rollback";
+import { collect, report, rejectAfterRollback, runRollbackSteps, runSettleSteps } from "./rollback";
 import {
   EMPTY_KEYFRAMES,
   NO_OVERLAY,
@@ -1230,7 +1230,8 @@ export class ProjectRuntime {
    *
    * Reachable from caller code that this runtime is in the middle of calling, which is why the
    * refusal and the release are two things rather than one. See ADR-067.
-   * Release failures are recorded in diagnostics, never thrown; every release step is attempted.
+   * Every release step is attempted. Direct release reports collected failures; a deferred release
+   * records diagnostics without replacing the outcome of the operation it follows.
    */
   dispose(): void {
     if (this.#disposed) return;
@@ -1247,6 +1248,7 @@ export class ProjectRuntime {
   }
 
   #teardown(): void {
+    const deferred = this.#pendingTeardown;
     this.#pendingTeardown = false;
     const failures = collect([
       ...[...this.#instances.keys()].map((nodeId) => () => this.#graph.detach(nodeId)),
@@ -1259,17 +1261,21 @@ export class ProjectRuntime {
       () => this.#graph.dispose(),
       () => this.#disposeComposition(),
     ]);
-    // Reporting is inspection-only and happens after every release attempt. Neither a direct
-    // dispose nor a boundary drain may replace the outcome of the caller it is releasing for.
+    // Completion precedes reporting. The existing pending flag distinguishes a direct release
+    // from a drain whose caller already has an outcome; neither call site owns this policy.
     const describe = (failure: unknown, seen = new Set<unknown>()): string => {
       try {
+        const message = String(describeError(failure));
+        if (!(failure instanceof AggregateError)) return message;
         if (seen.has(failure)) return "[circular release failure]";
         seen.add(failure);
-        const message = describeError(failure);
-        if (!(failure instanceof AggregateError)) return message;
-        return [message, ...failure.errors.map((cause: unknown) => describe(cause, seen))].join(
-          "; ",
-        );
+        try {
+          return [message, ...failure.errors.map((cause: unknown) => describe(cause, seen))].join(
+            "; ",
+          );
+        } finally {
+          seen.delete(failure);
+        }
       } catch {
         return "Release failed with an unprintable thrown value.";
       }
@@ -1284,6 +1290,7 @@ export class ProjectRuntime {
         }),
       );
     }
+    if (!deferred) report(failures, "Project release failed.");
   }
   #assertLive(): void {
     if (this.#disposed) throw new Error("ProjectRuntime is disposed.");
