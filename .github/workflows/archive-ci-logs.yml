@@ -1,124 +1,126 @@
 name: Archive CI logs
 
+# Read from the default branch. A PR that changes this file is not a rollout.
 on:
   workflow_run:
-    workflows: ["CI", "Recovery audit"]
+    workflows: ["CI", "Recovery audit", "AI edit"]
     types: [completed]
-    # Deliberately NOT filtered by branch.
-    #
-    # For workflow_run, `branches:` filters the HEAD branch of the triggering run.
-    # For a PR-triggered CI run that head branch is the PR head ref, so the previous
-    # list ([main, rescue/**, fix/**]) skipped archival for every feat/**, phase*/**,
-    # chore/** and docs/** PR. Run 32011100488 (PR #119, head feat/trigger-drivers-t2)
-    # failed `quality` and archived nothing, which reads as "the log is missing"
-    # rather than "archival refused to run".
-    #
-    # This is the same trap as the pull_request base filter that was removed from
-    # ci.yml. An archive that only covers some branches is not an archive. Keep this
-    # unfiltered; the `if:` below already limits work to non-success runs.
   workflow_dispatch:
     inputs:
       run_id:
-        description: "Completed workflow run ID to archive"
+        description: Completed run to report or reconcile
         required: true
+        type: string
+      run_attempt:
+        description: Exact attempt, not the latest attempt
+        required: true
+        default: "1"
         type: string
 
 permissions:
-  contents: write
+  contents: read
+  actions: read
 
-# Every run commits to the same ci-logs branch. Serialize instead of racing, and
-# never cancel: a cancelled archive loses the only copy of a failed run's log.
+# One owner serializes evidence writes and comment projections across all runs.
 concurrency:
   group: archive-ci-logs
   cancel-in-progress: false
 
+env:
+  TRUSTED_SHA: ${{ vars.MOTION5_AUTOMATION_SHA }}
+  REPORT_RUN_ID: ${{ inputs.run_id || github.event.workflow_run.id }}
+  REPORT_RUN_ATTEMPT: ${{ inputs.run_attempt || github.event.workflow_run.run_attempt }}
+
 jobs:
-  archive:
-    name: archive failed logs
-    # Real failures only. CI cancels stale runs on every PR push, and a cancelled run has no failed
-    # jobs to capture, so archiving it committed an empty log under a misleading message.
+  report:
+    name: trusted outcome publisher
+    if: vars.MOTION5_AUTOMATION_SHA != '' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Require reviewed immutable inputs
+        run: |
+          set -euo pipefail
+          [[ "$TRUSTED_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$REPORT_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$REPORT_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ vars.MOTION5_AUTOMATION_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Resolve workflow from GitHub metadata
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          workflow="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$REPORT_RUN_ID/attempts/$REPORT_RUN_ATTEMPT" --jq '.path')"
+          case "$workflow" in
+            .github/workflows/ai-edit.yml) echo "kind=ai-edit" >> "$GITHUB_OUTPUT" ;;
+            .github/workflows/ci.yml|.github/workflows/recovery-audit.yml) echo "kind=ci" >> "$GITHUB_OUTPUT" ;;
+            *) echo "Unrecognized workflow"; exit 1 ;;
+          esac
+      - name: Retain CI evidence and publish the exact-SHA summary
+        if: steps.resolve.outputs.kind == 'ci'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/automation-report.mjs
+      - name: Independently validate and publish a bounded candidate
+        id: publish
+        if: steps.resolve.outputs.kind == 'ai-edit'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PUBLISH_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+        run: node scripts/automation-publish.mjs publish
+      - name: Recover a failed publication report without replaying the edit
+        if: failure() && steps.resolve.outputs.kind == 'ai-edit'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/automation-publish.mjs recover
+
+  fallback:
+    name: independent reporting fallback
+    needs: report
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'failure' ||
-      github.event.workflow_run.conclusion == 'timed_out'
+      always() && needs.report.result == 'failure' &&
+      vars.MOTION5_AUTOMATION_SHA != '' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: read
+      issues: write
+      pull-requests: write
     steps:
-      - name: Check out log branch
-        uses: actions/checkout@v4
+      - name: Require the reviewed runner
+        run: |
+          set -euo pipefail
+          [[ "$TRUSTED_SHA" =~ ^[a-f0-9]{40}$ ]]
+          [[ "$REPORT_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          [[ "$REPORT_RUN_ATTEMPT" =~ ^[1-9][0-9]*$ ]]
+      - uses: actions/checkout@v4
         with:
-          ref: ci-logs
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Resolve run metadata
-        id: run
+          ref: ${{ vars.MOTION5_AUTOMATION_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Retry only evidence recovery on a fresh runner
         env:
-          EVENT_RUN_ID: ${{ github.event.workflow_run.id }}
-          EVENT_WORKFLOW: ${{ github.event.workflow_run.name }}
-          EVENT_CONCLUSION: ${{ github.event.workflow_run.conclusion }}
-          EVENT_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
-          INPUT_RUN_ID: ${{ inputs.run_id }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          RUN_ID="${INPUT_RUN_ID:-$EVENT_RUN_ID}"
-          test -n "$RUN_ID"
-          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "workflow=${EVENT_WORKFLOW:-manual}" >> "$GITHUB_OUTPUT"
-          echo "conclusion=${EVENT_CONCLUSION:-manual}" >> "$GITHUB_OUTPUT"
-          echo "head_branch=${EVENT_HEAD_BRANCH:-manual}" >> "$GITHUB_OUTPUT"
-
-      - name: Download failed job logs
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPOSITORY: ${{ github.repository }}
-          RUN_ID: ${{ steps.run.outputs.run_id }}
-          WORKFLOW: ${{ steps.run.outputs.workflow }}
-          CONCLUSION: ${{ steps.run.outputs.conclusion }}
-          BRANCH: ${{ steps.run.outputs.branch }}
-        run: |
-          set -euo pipefail
-          mkdir -p "logs/$RUN_ID"
-          gh run view "$RUN_ID" --log-failed > "logs/$RUN_ID/failed-jobs.log" 2>&1 || true
-          gh run view "$RUN_ID" --json databaseId,name,headBranch,headSha,status,conclusion,createdAt,updatedAt \
-            > "logs/$RUN_ID/run.json"
-          {
-            echo "# CI log archive: $RUN_ID"
-            echo
-            echo "- Workflow: ${{ steps.run.outputs.workflow }}"
-            echo "- Conclusion: ${{ steps.run.outputs.conclusion }}"
-            echo "- Head branch: ${{ steps.run.outputs.head_branch }}"
-            echo "- Source run: https://github.com/${{ github.repository }}/actions/runs/$RUN_ID"
-            echo "- Captured: $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-            echo
-            echo "## Failed job output"
-            echo
-            echo '```text'
-            cat "logs/$RUN_ID/failed-jobs.log"
-            echo '```'
-          } > "logs/$RUN_ID/README.md"
-
-      - name: Commit archive
-        env:
-          RUN_ID: ${{ steps.run.outputs.run_id }}
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "logs/$RUN_ID"
-          git commit -m "ci: archive logs for run $RUN_ID" || {
-            echo "No new log files to commit"
-            exit 0
-          }
-          # The concurrency group serializes archive runs, but a manual dispatch can
-          # still land beside an automatic one. Rebase and retry rather than lose a log.
-          for attempt in 1 2 3; do
-            if git push origin HEAD:ci-logs; then
-              exit 0
-            fi
-            echo "Push attempt $attempt failed; rebasing onto origin/ci-logs."
-            git fetch origin ci-logs
-            git rebase origin/ci-logs
-          done
-          echo "Could not push the archive after 3 attempts."
-          exit 1
+          workflow="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$REPORT_RUN_ID/attempts/$REPORT_RUN_ATTEMPT" --jq '.path')"
+          case "$workflow" in
+            .github/workflows/ai-edit.yml) node scripts/automation-publish.mjs recover ;;
+            .github/workflows/ci.yml|.github/workflows/recovery-audit.yml) node scripts/automation-report.mjs ;;
+            *) echo "Unrecognized workflow"; exit 1 ;;
+          esac

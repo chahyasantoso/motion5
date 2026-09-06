@@ -1,7 +1,7 @@
 name: AI edit
 
-# Protocol v1: an immutable, request-only commit with exact source/blob preconditions.
-# This is not yet a trusted-runner boundary: branch code still runs in this writer.
+# Activation requires a reviewed runner SHA and the default-branch reporter.
+# Candidate code has no writer token, persisted Git credential, or publication step.
 on:
   push:
     branches-ignore: [main, ci-logs]
@@ -9,185 +9,67 @@ on:
   workflow_dispatch:
     inputs:
       request:
-        description: Request file to apply, for example .ai/edits/my-slice.json
+        description: Sole pending request file
         required: true
         type: string
+
+permissions:
+  contents: read
 
 concurrency:
   group: ai-edit-${{ github.ref }}
   cancel-in-progress: false
 
-permissions:
-  contents: write
-  issues: write
-  pull-requests: write
-
 jobs:
-  apply:
-    name: apply one request
+  prepare:
+    name: prepare isolated candidate
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      vars.MOTION5_AUTOMATION_SHA != '' &&
+      (github.event_name == 'workflow_dispatch' ||
       !(github.event.head_commit.author.username == 'github-actions[bot]' &&
-      contains(github.event.head_commit.message, 'AI-Edit-Request: .ai/edits/'))
+      contains(github.event.head_commit.message, 'AI-Edit-Request: .ai/edits/')))
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      TRUSTED_SHA: ${{ vars.MOTION5_AUTOMATION_SHA }}
     steps:
-      - name: Name the scratch files
+      - name: Require an immutable reviewed runner
         run: |
-          echo "REPORT=${RUNNER_TEMP}/ai-edit-report.md" >> "$GITHUB_ENV"
-          echo "TOUCHED=${RUNNER_TEMP}/ai-edit-touched.txt" >> "$GITHUB_ENV"
-          echo "FORMAT=${RUNNER_TEMP}/ai-edit-format.txt" >> "$GITHUB_ENV"
-
+          set -euo pipefail
+          [[ "$TRUSTED_SHA" =~ ^[a-f0-9]{40}$ ]]
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ vars.MOTION5_AUTOMATION_SHA }}
+          path: trusted
+          persist-credentials: false
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+          path: candidate
           fetch-depth: 2
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-
-      - name: Choose the request
-        id: request
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install only the reviewed formatter outside the candidate tree
+        run: |
+          set -euo pipefail
+          version="$(jq -r '.devDependencies.prettier' trusted/package.json)"
+          [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          npm install --prefix "$RUNNER_TEMP/motion5-formatter" --ignore-scripts \
+            --no-package-lock --no-audit --no-fund "prettier@$version"
+      - name: Prepare with trusted code and configuration
         env:
           DISPATCH_REQUEST: ${{ inputs.request }}
         run: |
           set -euo pipefail
-          case "$GITHUB_REF" in refs/heads/*) ;; *) echo "A branch is required." > "$REPORT"; exit 1 ;; esac
-          case "$GITHUB_REF_NAME" in main|ci-logs) echo "This branch is not an edit target." > "$REPORT"; exit 1 ;; esac
-          mapfile -t requests < <(find .ai/edits -maxdepth 1 -type f -name '*.json' 2>/dev/null | sort)
-          if [ "${#requests[@]}" -eq 0 ]; then
-            echo "No pending request file. Nothing to do." > "$REPORT"
-            echo "found=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          if [ "${#requests[@]}" -ne 1 ]; then
-            echo "Expected one pending request; found ${#requests[@]}. Nothing applied." > "$REPORT"
-            exit 1
-          fi
-          request="${requests[0]}"
-          if [[ ! "$request" =~ ^\.ai/edits/[A-Za-z0-9][A-Za-z0-9._-]*\.json$ ]]; then
-            echo "Request filenames must use letters, digits, dots, underscores or hyphens." > "$REPORT"
-            exit 1
-          fi
-          if [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && [ "$DISPATCH_REQUEST" != "$request" ]; then
-            echo "Dispatch must name the sole pending request." > "$REPORT"
-            exit 1
-          fi
-          echo "found=true" >> "$GITHUB_OUTPUT"
-          echo "path=$request" >> "$GITHUB_OUTPUT"
-          target="$(jq -r '.target // empty' "$request" 2>/dev/null || true)"
-          if [[ "$target" =~ ^[1-9][0-9]{0,14}$ ]]; then
-            echo "target=$target" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Verify the request-only snapshot
-        if: steps.request.outputs.found == 'true'
-        env:
-          REQUEST: ${{ steps.request.outputs.path }}
-        run: |
-          set -euo pipefail
-          fail() { echo "$1 Nothing applied." > "$REPORT"; exit 1; }
-          read -r -a parents <<< "$(git rev-list --parents -n 1 HEAD)"
-          [ "${#parents[@]}" -eq 2 ] || fail "A request commit must have exactly one parent."
-          base="${parents[1]}"
-          mapfile -d '' -t changed < <(git diff --no-renames --name-only -z "$base" HEAD)
-          [ "${#changed[@]}" -eq 1 ] || fail "A request commit must change only its request file."
-          [ "${changed[0]}" = "$REQUEST" ] || fail "The request is not the only changed path."
-          remote="$(git ls-remote --exit-code origin "$GITHUB_REF" | cut -f1)"
-          [ "$remote" = "$GITHUB_SHA" ] || fail "The branch has advanced since this request."
-          echo "AI_EDIT_BASE_SHA=$base" >> "$GITHUB_ENV"
-
-      - uses: actions/setup-node@v4
-        if: steps.request.outputs.found == 'true'
+          export CANDIDATE_ROOT="$GITHUB_WORKSPACE/candidate"
+          export FORMATTER_ROOT="$RUNNER_TEMP/motion5-formatter"
+          export CANDIDATE_OUTPUT="$RUNNER_TEMP/candidate.json"
+          node trusted/scripts/automation-publish.mjs prepare
+      - uses: actions/upload-artifact@v4
         with:
-          node-version: 24
-
-      - name: Apply the request
-        id: apply
-        if: steps.request.outputs.found == 'true'
-        env:
-          REQUEST: ${{ steps.request.outputs.path }}
-        run: node scripts/apply-ai-edit.mjs "$REQUEST" "$REPORT" "$TOUCHED" "$FORMAT"
-
-      - name: Format what changed
-        if: steps.request.outputs.found == 'true' && steps.apply.outputs.changed == 'true'
-        run: |
-          set -euo pipefail
-          if [ ! -s "$FORMAT" ]; then
-            echo "No surviving changed files to format."
-            exit 0
-          fi
-          version="$(jq -r '.devDependencies.prettier' package.json)"
-          npm install --no-save --no-package-lock --ignore-scripts --no-audit --no-fund "prettier@${version}"
-          while IFS= read -r file; do
-            npx --no-install prettier --write --ignore-unknown -- "$file"
-          done < "$FORMAT"
-
-      - name: Commit the bounded file list
-        id: commit
-        if: steps.request.outputs.found == 'true'
-        env:
-          REQUEST: ${{ steps.request.outputs.path }}
-          MESSAGE: ${{ steps.apply.outputs.message }}
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git rm -q -- "$REQUEST"
-          git add -A
-          allowed="${RUNNER_TEMP}/allowed.txt"
-          staged="${RUNNER_TEMP}/staged.txt"
-          { cat "$TOUCHED"; echo "$REQUEST"; } | LC_ALL=C sort -u > "$allowed"
-          git -c core.quotePath=false diff --cached --name-only | LC_ALL=C sort -u > "$staged"
-          unexpected="$(LC_ALL=C comm -13 "$allowed" "$staged")"
-          if [ -n "$unexpected" ]; then
-            printf 'Refusing unexpected staged paths:\n%s\n' "$unexpected"
-            exit 1
-          fi
-          remote="$(git ls-remote --exit-code origin "$GITHUB_REF" | cut -f1)"
-          [ "$remote" = "$GITHUB_SHA" ] || { echo "Stale branch; refusing publication."; exit 1; }
-          git commit -m "$MESSAGE" -m "AI-Edit-Request: ${REQUEST}"
-          echo "candidate_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          # A racing push is rejected by normal fast-forward rules. Never force or rebase.
-          git push origin "HEAD:${GITHUB_REF}"
-          echo "published_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-
-      - name: Report back
-        if: always()
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REQUEST: ${{ steps.request.outputs.path }}
-          TARGET: ${{ steps.request.outputs.target }}
-          FOUND: ${{ steps.request.outputs.found }}
-          PUBLISHED: ${{ steps.commit.outputs.published_sha }}
-          CANDIDATE: ${{ steps.commit.outputs.candidate_sha }}
-        run: |
-          set -euo pipefail
-          comment="${RUNNER_TEMP}/comment.md"
-          {
-            echo "### AI edit request ${REQUEST:-selection/setup failure}"
-            echo ""
-            echo "Request commit: \`$GITHUB_SHA\`."
-            if [ -n "$PUBLISHED" ]; then
-              echo "Published commit: [$PUBLISHED](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/$PUBLISHED)."
-              echo "CI is not verified by this receipt; inspect checks on that exact commit."
-            elif [ -n "$CANDIDATE" ]; then
-              echo "**Publication was not confirmed.** Candidate: \`$CANDIDATE\`."
-              echo "Check the branch before retrying; a failed push response is not proof nothing landed."
-            else
-              echo "**No publication was attempted.** Any applied edits exist only in the runner tree."
-            fi
-            echo ""
-            cat "$REPORT" 2>/dev/null || echo "No detailed report was produced; inspect the run."
-            echo ""
-            echo "[Actions run](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
-          } > "$comment"
-          cat "$comment" >> "$GITHUB_STEP_SUMMARY"
-          if [ "$FOUND" = false ]; then exit 0; fi
-          target="$TARGET"
-          if [ -z "$target" ]; then
-            target="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$GITHUB_REF_NAME" --state open --json number --jq '.[0].number' || true)"
-          fi
-          if [ -z "$target" ]; then
-            echo "No verified target or open PR. Report is available in the job summary only."
-            exit 0
-          fi
-          gh issue comment "$target" --repo "$GITHUB_REPOSITORY" --body-file "$comment"
+          name: ai-edit-candidate-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/candidate.json
+          if-no-files-found: error
+          retention-days: 14
