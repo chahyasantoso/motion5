@@ -1326,7 +1326,7 @@ describe("a structural change runs one transaction, in one order", () => {
     expect((thrown as AggregateError).errors).toEqual([first, second]);
     expect(detached).toEqual([NODE_ID, "~/second"]);
     expect(disposed).toHaveBeenCalledOnce();
-    expect(journal.entries).toEqual(["composition-dispose"]);
+    expect(journal.entries).toEqual(["compile ~/second", "composition-dispose"]);
     expect(runtime.instanceCount).toBe(0);
     expect(runtime.diagnostics.entries).toHaveLength(2);
     detach.mockRestore();
