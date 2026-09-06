@@ -30,7 +30,7 @@ The removal closure is split into residency cleanup, disposal and Motion deregis
 
 The whole accepted phase stays inside #boundary. A disposing hook may also throw; later settle steps still run against the live graph, publication skips, and the boundary drains the deferred release afterward. No new liveness guard is inserted between settle steps.
 
-Issue #312 still owns a failure in that release: a throwing #teardown can replace the outcome selected here. This record does not claim end-to-end failure preservation through a separate broken release boundary. Issue #313 still owns failing seams on direct-write paths, which never reach #apply. Neither follow-up is absorbed into this slice.
+Issue #312 is now the follow-up that owns the release boundary after this phase. Issue #313 still owns failing seams on direct-write paths, which never reach #apply. Neither is absorbed into ADR-071.
 
 ## Alternatives rejected
 

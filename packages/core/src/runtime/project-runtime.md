@@ -280,7 +280,7 @@ The one path by which a structural change reaches the graph, or the open transac
 
 While a recipe is open there is nothing to do here: every entry point already wrote into the open pair. With none open the pair is applied immediately, and `edit` arrives here too, after its `finally` cleared the transaction and after the liveness re-ask that member owns. The sentence above was aspirational while `edit` called `#apply` directly, because there were two paths: the decision to apply now has one place, and therefore the liveness answer has exactly one reader. The guard is statically known at that call site rather than inapplicable to it, and it answers `none open, apply` for the right reason. See ADR-064 and its amendment of 2026-09-04.
 
-It is not where a deferred teardown is drained, and it may not become that. This member returns early while a recipe is open, so a release drained here would never run for the `edit` path and would run at the wrong depth for a nested commit. The boundary belongs to the member below, which is the one that has the `try`. See ADR-067.
+It is not where a deferred teardown is drained, and it may not become that. This member returns early while a recipe is open, so a release drained here would never run for the `edit` path and would run at the wrong depth for a nested commit. The boundary belongs to the member below, which is the one that has the `try`. See ADR-067. The release it drains completes separately and records any failure without replacing the outcome of this boundary's body. See ADR-072.
 
 It also answers whether it may be entered while a commit is already in flight, and the answer is no. A hook is caller code, so a structural entry point called from one re-enters this member, and it used to find no open transaction and apply immediately: nested inside the outer `#apply`, staged from a retained pair that does not carry the outer commit's change, and adopted over by whichever of the two finished last. A lost update, with a compiled, registered and mounted node that no map and no graph node refers to. The refusal is here rather than at the six entry points, because one condition has one owner and this is the one place all of them reach, and here rather than in `#apply`, which runs one commit and should not have to know whether it is the outer one.
 
@@ -324,7 +324,7 @@ Publication belongs inside that collection rather than in a bare `finally`. Sync
 
 Disposal still defers release past the whole phase and skips only publication. The collector does not ask liveness between steps, so a disposing hook that also throws cannot prevent later mounts against the still-live graph. `#boundary` drains the release after collection. A failure in that separate release can still replace the selected outcome; issue #312 owns that known remaining boundary rather than this slice silently claiming to fix it.
 
-The `finally` drains the release, once, at depth zero. That is why `dispose()` may be called from inside any hook here without the rollback being handed a graph and a composition that no longer exist, and it is what makes `Error: GraphRuntime is disposed.` unreachable through a commit. See ADR-067, `RA-114`, `RA-115` and `RA-117`.
+The `finally` drains the release once, at depth zero. `#teardown` attempts every release statement and returns its failures; the drain records them rather than throwing, so a commit's handle, batch or selected rejection keeps precedence. A direct `dispose()` call records and throws because that caller asked for the release and has no other outcome channel. See ADR-067, ADR-072, `RA-114`, `RA-115` and `RA-117`.
 
 The depth is no longer this member's to own. `#boundary` holds the raise, the decrement and the drain, and this member wraps its whole body in one call, which keeps the raise ahead of `#derive` and costs one closure per commit. The pair it holds in a local still cannot be adopted over by a second commit running inside it, because `#commit` refuses that re-entry. What used to be reachable was a direct write inside one of these hooks, raising the depth to two; the rung refuses it now, so the depth is one again and this member did not change to make that true. The closure ends at the settlement runner; the publication skip returns from `#flush`, so neither skip suppresses a collected failure. See ADR-068 and ADR-069.
 
@@ -440,9 +440,17 @@ One walk, bucketed by the owner each entry already names, with the free tracks f
 
 Every untouched entry's definition is handed through by identity, for ADR-058's reason. See `RA-90` and ADR-058.
 
+## #recordRelease
+
+Records release failures on the single diagnostics surface with rule id `project-release-failed`. It does not throw and does not decide precedence: direct disposal and deferred boundary draining own that distinction because only they know whether a caller asked for release or an unrelated operation is unwinding. The message uses `describeError`, so each original failure is preserved in the collector while the diagnostic remains inspectable. See ADR-072.
+
 ## #teardown
 
-Releases everything this runtime holds, exactly once, and the half of `dispose()` that is allowed to be late.
+Releases everything this runtime holds, exactly once, and answers failures without deciding who receives them.
+
+The release is a collected sequence: one step per graph detach, one infallible map-clearing step, graph disposal, then composition disposal. Every step runs even when an earlier one throws, so a partial release is not a reachable state and the one-shot `#disposed` guard needs no retry flag. The order is unchanged, and `disposeComposition` still sees cleared maps and a disposed graph.
+
+The returned failures are recorded by `#recordRelease` on both direct and deferred paths. Direct `dispose()` reports them to its caller after recording; a boundary drain records and returns because the body it is unwinding already has precedence. A single failure keeps identity; multiple failures are an `AggregateError` in release order. See ADR-067 and ADR-072.
 
 A refusal and a release are two questions, and only the first may be answered inside a callback this class is still inside. `dispose()` owns the decision and sets the flag, so every member refuses and every handle answers stale from that line onward; this owns the release, and `#apply` may hold it back until the commit it is running has finished unwinding. Nothing about what it does changed when it was split out: the body is `dispose()`'s previous body, moved rather than rewritten.
 

@@ -7,7 +7,7 @@ Current state only: where the work is, what the next implementor picks up, and w
 Nothing else in this repository may claim what has landed. A plan, an audit, or an ADR describes intent unless this file says it shipped.
 
 - **Captured:** 2026-09-06, Asia/Jakarta.
-- **Verified on:** `e0b5ad2` on `main`, with [#321](https://github.com/chahyasantoso/motion5/pull/321) and [#322](https://github.com/chahyasantoso/motion5/pull/322) squash-merged. The issue #306 work below is on its own branch and is not claimed shipped.
+- **Verified on:** `8e864f1` on `main`, with [#321](https://github.com/chahyasantoso/motion5/pull/321), [#322](https://github.com/chahyasantoso/motion5/pull/322), and [#323](https://github.com/chahyasantoso/motion5/pull/323) merged. The issue #312 work below is on its own branch and is not claimed shipped.
 - **Phase:** live editing of a loaded project. Every decision ADR-028 through ADR-070 records is shipped. [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md) is what a caller may do with that and what each edit pays for, and [GUARDRAILS.md](./GUARDRAILS.md) is the standing rules a slice is held to.
 - **Earlier history:** the long-form narrative through 2026-09-03 is this path at `ebad1ab`. It is not copied into `archived/`, because git already holds it whole: read this path at that ref.
 
@@ -20,11 +20,9 @@ This section names the slice that just landed and the one before it. A third ent
 
 ## Next in line
 
-- **Settle completion and post-commit failure preservation are implemented on this branch, not merged.** [Issue #306](https://github.com/chahyasantoso/motion5/issues/306), [PR #323](https://github.com/chahyasantoso/motion5/pull/323), ADR-071. Every settle step is attempted, then the non-disposed, nonempty publication, and failures are reported together without rolling back the accepted pair. `RA-126` through `RA-130` and the adjacent boundary cases own the evidence. Review and CI completion precede a merge; the PR owns their live status.
+- **Teardown error precedence and completion.** [Issue #312](https://github.com/chahyasantoso/motion5/issues/312), [PR #324](https://github.com/chahyasantoso/motion5/pull/324), ADR-072. Release failures are collected, recorded, and thrown only when direct disposal asked for them. Evidence: `RA-140` through `RA-144`. This PR is open and owns live CI status.
 
 ## Open, and not scheduled
-
-- **Deferred teardown can replace the outcome it follows.** [Issue #312](https://github.com/chahyasantoso/motion5/issues/312). A throwing release still runs outside the settlement collector; its cleanup completeness and error precedence remain separate from #306.
 
 - **A failing seam in a direct write leaves the retained entry moved and the compiled Track neither committed nor rolled back.** [Issue #313](https://github.com/chahyasantoso/motion5/issues/313). The third and last mechanism on the same four members, after the disposal #305 answered and the adoption #309 answered, and the one neither the boundary nor the rung can see: `#writeValues`' escalation and `#recompileKeyframes`' `staged.commit()` both run after the retained entry has moved, on paths that never reach `#apply`. Two of the four ask a seam after the point of no return and two ask it before, for one condition, so a `stageTrack` or a `commit()` that throws leaves the retained entry claiming a rebase, an overlay and a `liveWrite` the composition never took, and a staged Track nothing holds. It reorders the tails #309 changed the signature of, so it lands after it.
 - Phase 6 packaging is the phase after this one. [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) owns its scope, and nothing here claims any of it has started.

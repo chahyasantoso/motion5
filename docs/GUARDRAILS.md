@@ -21,6 +21,8 @@ Both lists moved verbatim and in order. That is deliberate rather than lazy: sev
 
 ## Guardrails
 
+- A release failure is reported to whoever asked for the release. The release owner attempts every independent cleanup step and returns collected failures; a direct disposal records then throws, while a deferred boundary drain records and preserves the outcome already being unwound. No retry state is needed when every step is attempted. [Issue #312](https://github.com/chahyasantoso/motion5/issues/312), ADR-072.
+
 - A phase after acceptance has no inverse, not an exemption from caller failures. Attempt each independent step, attempt its required publication afterwards, and report failures once in occurrence order. The collector's granularity is the guarantee's granularity: a throwing disposal inside a four-call closure still skips its deregistration even when a collector surrounds that closure. Publication belongs in the same collection when it can throw, because a bare finally replaces the failure already chosen. A single thrown value keeps its identity, including undefined and host aggregates; collecting does not mean flattening or mutating caller errors. Guarantee attempts, not recovery inside an arbitrary failing host. [Issue #306](https://github.com/chahyasantoso/motion5/issues/306), ADR-071.
 
 - One owner per state transition, and one owner per normalization.
