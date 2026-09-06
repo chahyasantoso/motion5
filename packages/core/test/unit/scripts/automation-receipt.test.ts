@@ -81,7 +81,7 @@ describe("automation receipt contracts", () => {
     expect(run("identity", { z: 2, edits: [{ b: 2, a: 1 }] })).not.toEqual(first);
   });
 
-  it("AE-37: validation and formatter failure never claim publication or verified CI", () => {
+  it("AE-37: precommit phase receipts never claim publication or verified CI", () => {
     for (const phase of ["selection", "validated", "applied", "formatted"]) {
       const receipt = run("receipt", facts({ phase }));
       expect(receipt.publication).toBe("not_attempted");
@@ -96,9 +96,10 @@ describe("automation receipt contracts", () => {
     expect(receipt.candidate_sha).toBe(C);
     expect(receipt.published_sha).toBe(null);
     expect(receipt.next_action).toBe("reconcile_before_retry");
+    expect(receipt.ci).toBe("unavailable");
   });
 
-  it("AE-39: confirmed publication remains CI pending and survives report failure", () => {
+  it("AE-39: rendering confirmed publication preserves its identity and pending CI", () => {
     const receipt = run(
       "receipt",
       facts({

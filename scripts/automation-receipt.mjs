@@ -153,7 +153,7 @@ export function receipt(input) {
     candidate_sha,
     published_sha,
     publication,
-    ci: published_sha ? "pending" : "not_run",
+    ci: published_sha ? "pending" : publication === "unconfirmed" ? "unavailable" : "not_run",
     next_action:
       publication === "unconfirmed"
         ? "reconcile_before_retry"
