@@ -38,7 +38,7 @@ function scenario(operation: string, body: string) {
       },
       list: async (path, key) => {
         if (path.startsWith("/actions/workflows/7/runs?")) {assert.ok(path.includes("head_sha=" + B)); assert.equal(key, "workflow_runs"); return [original];}
-        if (path === "/actions/runs/43/attempts/1/jobs") {assert.equal(key, "jobs"); return jobs;}
+        if (path === "/actions/runs/43/attempts/" + run.run_attempt + "/jobs") {assert.equal(key, "jobs"); return jobs;}
         if (path.startsWith("/commits/") && path.endsWith("/pulls")) return [{number: 9, state: "open", base: {repo: {full_name: repository}}, head: {repo: {full_name: repository}, ref: run.head_branch, sha: currentHead}}];
         if (path === "/issues/9/comments") return comments;
         assert.fail("unexpected list: " + path);
@@ -116,6 +116,23 @@ describe("verified cleanup lifecycle reporting", () => {
     ["non-skipped job", 'jobs[0].conclusion = "failure";'],
     ["manual dispatch", 'run.event = "workflow_dispatch";'],
     ["multiple parents", "commits[C].parents.push({sha: A});"],
+    ["retained request", "trees.cleanup.tree.push(pending);"],
+    ["truncated source tree", "trees.source.truncated = true;"],
+    ["truncated request tree", "trees.request.truncated = true;"],
+    ["wrong preparation identity", "jobs[0].head_sha = A;"],
+    ["extra job", "jobs.push({...jobs[0]});"],
+    ["wrong operation branch", 'original.head_branch = "other/branch";'],
+    ["failed original operation", 'original.conclusion = "failure";'],
+    ["unavailable operation metadata", 'api.run = async () => {throw new Error("unavailable");};'],
+    ["attempt quota exceeded", "original.run_attempt = 21;"],
+    [
+      "apply operation rather than read-only cleanup",
+      'request.operation = "apply"; confirmed.request_digest = identity(request).digest;',
+    ],
+    [
+      "spoofed bot trailer with adjacent change",
+      'commits[C].message = "chore(ai-edit): preview complete\\nAI-Edit-Request: " + requestPath; trees.cleanup.tree = [{...leaf, sha: A}];',
+    ],
   ])("does not suppress reporting for %s", (_name, mutation) => {
     scenario(
       "preview",
@@ -124,6 +141,56 @@ describe("verified cleanup lifecycle reporting", () => {
       await publishRun(api, writer, run, A);
       assert.notEqual(comments[0].body, before);
       assert.ok(!saved.has("receipts/ai-edit/43/1/manifest.json"));
+    `,
+    );
+  });
+  it("finds the confirmed older operation attempt after a rerun", () => {
+    scenario(
+      "preview",
+      String.raw`
+      original.run_attempt = 2;
+      assert.equal((await publishRun(api, writer, run, A)).comment, "cleanup_only");
+      assert.equal(comments[0].body, before);
+      assert.equal(JSON.parse(saved.get("receipts/ai-edit/43/1/manifest.json")).operation_receipt, confirmed.evidence_path);
+    `,
+    );
+  });
+  it("recovers cleanup independently before any primary report", () => {
+    scenario(
+      "validate",
+      String.raw`
+      assert.equal((await recoverRun(api, run, A)).comment, "cleanup_only");
+      assert.equal(comments[0].body, before);
+      assert.ok(saved.has("receipts/ai-edit/43/1/manifest.json"));
+    `,
+    );
+  });
+  it("does not replay or rewrite a legacy skipped-run receipt", () => {
+    scenario(
+      "preview",
+      String.raw`
+      const legacy = receipt({kind: "ai-edit", repository, run_id: run.id, run_attempt: 1, request_commit: C, phase: "selection"});
+      const bytes = JSON.stringify(legacy) + String.fromCharCode(10);
+      saved.set(legacy.evidence_path, bytes);
+      await publishRun(api, writer, run, A);
+      await recoverRun(api, run, A);
+      assert.equal(comments[0].body, before);
+      assert.equal(saved.get(legacy.evidence_path), bytes);
+    `,
+    );
+  });
+  it("retains separate cleanup attempts without changing the projection", () => {
+    scenario(
+      "validate",
+      String.raw`
+      await publishRun(api, writer, run, A);
+      const first = saved.get("receipts/ai-edit/43/1/manifest.json");
+      run.run_attempt = 2;
+      await publishRun(api, writer, run, A);
+      const second = JSON.parse(saved.get("receipts/ai-edit/43/2/manifest.json"));
+      assert.equal(saved.get("receipts/ai-edit/43/1/manifest.json"), first);
+      assert.equal(second.outcome.run_attempt, 2);
+      assert.equal(comments[0].body, before);
     `,
     );
   });
