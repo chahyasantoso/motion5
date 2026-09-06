@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type {
   MotionDefinition,
   PatchBatch,
@@ -1170,6 +1170,7 @@ describe("a structural change runs one transaction, in one order", () => {
 
   it("completes later settle steps after a disposing hook throws and still skips publication", () => {
     const failure = new Error("registration failed after disposal");
+    const attachments: string[] = [];
     const host: Host = {};
     const journal = recorder({
       disposeFrom: "addMotionTrack",
@@ -1178,6 +1179,11 @@ describe("a structural change runs one transaction, in one order", () => {
     });
     const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
     host.runtime = runtime;
+    const attach = runtime.graph.attach.bind(runtime.graph);
+    const spy = vi.spyOn(runtime.graph, "attach").mockImplementation((nodeId) => {
+      attachments.push(nodeId);
+      attach(nodeId);
+    });
     const before = runtime.graph.sequence;
     const thrown = thrownBy(() =>
       runtime.edit((tx) => {
@@ -1192,12 +1198,56 @@ describe("a structural change runs one transaction, in one order", () => {
       "motion-add hero/hand undefined",
       "composition-dispose",
     ]);
+    expect(attachments).toEqual([ADDED_ID, "~/second"]);
+    spy.mockRestore();
     expect(runtime.graph.sequence).toBe(before);
     expect(runtime.instanceCount).toBe(0);
     expect(runtime.graph.memberCount).toBe(0);
     expect(occurrences(journal, "composition-dispose")).toBe(1);
     runtime.dispose();
     expect(occurrences(journal, "composition-dispose")).toBe(1);
+  });
+
+  it("records composition diagnostics while preserving the independent settle error", () => {
+    const failure = new Error("registration failed");
+    const journal = recorder({ failAt: { addMotionTrack: failure } });
+    const runtime = new ProjectRuntime(BASE_PROJECT, {
+      ...journal.options,
+      compose: () => () => {
+        throw new Error("composition failed");
+      },
+    });
+    const batches: PatchBatch[] = [];
+    runtime.graph.registry.subscribeBatch((batch) => batches.push(batch));
+    const thrown = thrownBy(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+    expect(thrown).toBe(failure);
+    expect(batches).toHaveLength(1);
+    expect(batches[0]?.diagnostics.length).toBeGreaterThan(0);
+    expect(runtime.diagnostics.entries).toEqual(batches[0]?.diagnostics);
+    expect(runtime.diagnostics.entries[0]).toBe(batches[0]?.diagnostics[0]);
+    runtime.dispose();
+  });
+
+  it("counts a thrown undefined as a settle failure and permits a later commit", () => {
+    const journal = recorder({ failAt: { addMotionTrack: undefined } });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    let caught = false;
+    let observed: unknown = new Error("not caught");
+    try {
+      runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+    } catch (error) {
+      caught = true;
+      observed = error;
+    }
+    expect(caught).toBe(true);
+    expect(observed).toBeUndefined();
+    expect(runtime.graph.registry.get(ADDED_ID)?.nodeId).toBe(ADDED_ID);
+    expect(runtime.instanceCount).toBe(1);
+    const next = runtime.addTrack({ id: "second" });
+    expect(next.live).toBe(true);
+    expect(runtime.instanceCount).toBe(2);
+    expect(disagreeing(runtime)).toEqual([]);
+    runtime.dispose();
   });
 
   it("RA-136 refuses a live write from inside a commit before its seam is reached", () => {
