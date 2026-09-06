@@ -22,9 +22,8 @@ jobs:
     name: quality (node 24)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    env:
-      CI_EVIDENCE_DIR: ${{ runner.temp }}/ci-evidence
     steps:
+      - run: echo "CI_EVIDENCE_DIR=$RUNNER_TEMP/ci-evidence" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -42,7 +41,9 @@ jobs:
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - name: Show expected evidence-adapter formatting without writing
         if: ${{ !cancelled() && steps.format.outcome == 'failure' }}
-        run: npx --no-install prettier scripts/ci-evidence.mjs
+        run: |
+          npx --no-install prettier scripts/ci-evidence.mjs
+          exit 1
       - run: node scripts/ci-evidence.mjs discover
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - run: npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs
@@ -64,11 +65,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      CI_EVIDENCE_DIR: ${{ runner.temp }}/ci-evidence
       SUITE_RESULT: ${{ needs.quality.result }}
     steps:
       - name: Require successful suite owner, including evidence verification
         run: test "$SUITE_RESULT" = success
+      - run: echo "CI_EVIDENCE_DIR=$RUNNER_TEMP/ci-evidence" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -139,11 +140,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     env:
-      CI_EVIDENCE_DIR: ${{ runner.temp }}/ci-evidence
       SUITE_RESULT: ${{ needs.quality.result }}
     steps:
       - name: Require successful suite owner, including evidence verification
         run: test "$SUITE_RESULT" = success
+      - run: echo "CI_EVIDENCE_DIR=$RUNNER_TEMP/ci-evidence" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
