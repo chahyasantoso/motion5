@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type {
   MotionDefinition,
+  PatchBatch,
   ProjectDefinition,
   TrackDefinition,
 } from "../../../src/contract/v5";
@@ -150,6 +151,7 @@ type CommitHook =
 /** What one rig's hooks do beyond recording, and the whole of what a case configures. */
 interface Behaviour {
   readonly createMotion?: Error;
+  readonly failAt?: Partial<Record<CommitHook | "disposeTrack" | "stageCommit", unknown>>;
   readonly disposeFrom?: CommitHook;
   /**
    * Thrown by the disposing hook after it disposed, so the two facts can be measured apart.
@@ -239,6 +241,10 @@ function recorder(behaviour: Behaviour = {}): Recorder {
     record(`reentry ${outcome.thrown === undefined ? "accepted" : describeError(outcome.thrown)}`);
     if (outcome.thrown !== undefined && reenter.swallow !== true) throw outcome.thrown;
   };
+  const failing = (hook: CommitHook | "disposeTrack" | "stageCommit"): void => {
+    const failures = behaviour.failAt;
+    if (failures !== undefined && Object.hasOwn(failures, hook)) throw failures[hook];
+  };
   const staging =
     behaviour.staging === true ||
     behaviour.disposeFrom === "stageTrack" ||
@@ -255,11 +261,15 @@ function recorder(behaviour: Behaviour = {}): Recorder {
         disposing("compileTrack");
         reentering("compileTrack");
       },
-      disposeTrack: (nodeId) => record(`dispose ${nodeId}`),
+      disposeTrack: (nodeId) => {
+        record(`dispose ${nodeId}`);
+        failing("disposeTrack");
+      },
       addMotionTrack: (_motionId, trackId, duration) => {
         record(`motion-add ${trackId} ${String(duration)}`);
         disposing("addMotionTrack");
         reentering("addMotionTrack");
+        failing("addMotionTrack");
       },
       replaceMotionTrack: (_motionId, trackId, duration) => {
         record(`motion-replace ${trackId} ${String(duration)}`);
@@ -300,7 +310,10 @@ function recorder(behaviour: Behaviour = {}): Recorder {
               disposing("stageTrack");
               reentering("stageTrack");
               return {
-                commit: () => record(`stage-commit ${nodeId}`),
+                commit: () => {
+                  record(`stage-commit ${nodeId}`);
+                  failing("stageCommit");
+                },
                 rollback: () => record(`stage-rollback ${nodeId}`),
               };
             },
@@ -949,6 +962,242 @@ describe("a structural change runs one transaction, in one order", () => {
     // them. A refusal is only evidence beside its accepting direction, and this is that direction in
     // the same rig. The guardrail against padding a red count is why that is stated here.
     runtime.dispose();
+  });
+
+  // Issue #306: these cases name existing seams, so the evidence typechecks before the fix.
+  // RA-130 and the flush-only cases are green on both sides deliberately.
+  it("RA-126 mounts and publishes an accepted add even when Motion registration throws", () => {
+    const failure = new Error("registration failed");
+    const journal = recorder({ failAt: { addMotionTrack: failure } });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    const batches: PatchBatch[] = [];
+    runtime.graph.registry.subscribeBatch((batch) => batches.push(batch));
+
+    const thrown = thrownBy(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+
+    expect(thrown).toBe(failure);
+    expect(journal.entries).toEqual(["compile hero/hand", "motion-add hero/hand undefined"]);
+    expect(runtime.track(ADDED_ID).live).toBe(true);
+    expect(disagreeing(runtime)).toEqual([]);
+    expect(runtime.instanceCount).toBe(1);
+    expect(runtime.graph.memberCount).toBe(1);
+    expect(batches).toHaveLength(1);
+    expect(batches[0]?.seeds).toEqual([ADDED_ID]);
+    expect(batches[0]?.patches.map((patch) => patch.nodeId)).toEqual([ADDED_ID]);
+    runtime.dispose();
+  });
+
+  it("RA-127 preserves every settle failure and the later synchronous flush failure in order", () => {
+    const replacement = new AggregateError([new Error("host cause")], "host aggregate");
+    const registration = new Error("registration failed");
+    const publication = new Error("subscriber failed");
+    const journal = recorder({
+      staging: true,
+      failAt: { stageCommit: replacement, addMotionTrack: registration },
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    runtime.mount(NODE_ID);
+    const batches: PatchBatch[] = [];
+    runtime.graph.registry.subscribeBatch((batch) => {
+      batches.push(batch);
+      throw publication;
+    });
+
+    const thrown = thrownBy(() =>
+      runtime.edit((tx) => {
+        tx.track(NODE_ID).replace({ id: "arm", duration: 500 });
+        tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+      }),
+    );
+
+    expect(thrown).toBeInstanceOf(AggregateError);
+    const errors = (thrown as AggregateError).errors;
+    expect(errors).toHaveLength(3);
+    expect(errors[0]).toBe(replacement);
+    expect(errors[1]).toBe(registration);
+    expect(errors[2]).toBe(publication);
+    expect(journal.entries).toEqual([
+      "stage hero/arm",
+      "motion-replace hero/arm 500",
+      "compile hero/hand",
+      "stage-commit hero/arm",
+      "motion-add hero/hand undefined",
+    ]);
+    expect(disagreeing(runtime)).toEqual([]);
+    expect(runtime.track(NODE_ID).definition.duration).toBe(500);
+    expect(runtime.instanceCount).toBe(2);
+    expect(batches).toHaveLength(1);
+    expect(batches[0]?.seeds).toEqual([NODE_ID, ADDED_ID]);
+    expect(batches[0]?.patches.map((patch) => patch.nodeId)).toEqual([NODE_ID, ADDED_ID]);
+    runtime.dispose();
+  });
+
+  it("RA-128 keeps a replacement committed and publishes after its staged commit throws", () => {
+    const failure = new Error("staged commit failed");
+    const journal = recorder({ staging: true, failAt: { stageCommit: failure } });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    runtime.mount(NODE_ID);
+    const retained = runtime.track(NODE_ID).definition;
+    const batches: PatchBatch[] = [];
+    runtime.graph.registry.subscribeBatch((batch) => batches.push(batch));
+
+    const thrown = thrownBy(() => runtime.track(NODE_ID).replace({ id: "arm", duration: 500 }));
+
+    expect(thrown).toBe(failure);
+    expect(runtime.track(NODE_ID).definition).not.toBe(retained);
+    expect(runtime.track(NODE_ID).definition.duration).toBe(500);
+    expect(disagreeing(runtime)).toEqual([]);
+    expect(journal.entries).toEqual([
+      "stage hero/arm",
+      "motion-replace hero/arm 500",
+      "stage-commit hero/arm",
+    ]);
+    expect(batches).toHaveLength(1);
+    expect(batches[0]?.seeds).toEqual([NODE_ID]);
+    expect(batches[0]?.patches.map((patch) => patch.nodeId)).toEqual([NODE_ID]);
+    runtime.dispose();
+  });
+
+  it("RA-129 deregisters after disposal throws and continues to later Motion cleanup", () => {
+    const failure = new Error("track disposal failed");
+    const journal = recorder({ failAt: { disposeTrack: failure } });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    runtime.mount(NODE_ID);
+    const handle = runtime.track(NODE_ID);
+    const before = runtime.graph.sequence;
+
+    const thrown = thrownBy(() =>
+      runtime.edit((tx) => {
+        tx.track(NODE_ID).remove();
+        tx.motion(MOTION_ID).destroy();
+      }),
+    );
+
+    expect(thrown).toBe(failure);
+    expect(journal.entries).toEqual([
+      "dispose hero/arm",
+      "motion-remove hero/arm",
+      "motion-destroy hero",
+    ]);
+    expect(handle.live).toBe(false);
+    expect(runtime.tryTrack(NODE_ID)).toBeUndefined();
+    expect(runtime.tryMotion(MOTION_ID)).toBeUndefined();
+    expect(runtime.graph.graph.nodes).toEqual([]);
+    expect(runtime.instanceCount).toBe(0);
+    expect(runtime.graph.memberCount).toBe(0);
+    // There are no readers to seed. A failure must not invent a flush for an empty commit.
+    expect(runtime.graph.sequence).toBe(before);
+    runtime.dispose();
+  });
+
+  it("RA-130 leaves a successful settle ordered before its single publication", () => {
+    const journal = recorder();
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    const batches: PatchBatch[] = [];
+    const atPublication: { entries: readonly string[]; instances: number }[] = [];
+    runtime.graph.registry.subscribeBatch((batch) => {
+      batches.push(batch);
+      atPublication.push({ entries: journal.entries, instances: runtime.instanceCount });
+    });
+
+    const outcome = outcomeOf(() =>
+      runtime.addTrack({ id: "hand", duration: 250 }, { motionId: MOTION_ID }),
+    );
+
+    expect(outcome.thrown).toBeUndefined();
+    expect(outcome.value?.live).toBe(true);
+    expect(atPublication).toEqual([
+      {
+        entries: ["compile hero/hand", "motion-add hero/hand 250"],
+        instances: 1,
+      },
+    ]);
+    expect(batches).toHaveLength(1);
+    expect(batches[0]?.seeds).toEqual([ADDED_ID]);
+    expect(batches[0]?.patches.map((patch) => patch.nodeId)).toEqual([ADDED_ID]);
+    expect(disagreeing(runtime)).toEqual([]);
+    runtime.dispose();
+  });
+
+  it("preserves a settle failure when snapshot resolution also throws", () => {
+    const settle = new Error("registration failed");
+    const flush = new Error("snapshot resolver failed");
+    const journal = recorder({ failAt: { addMotionTrack: settle } });
+    let resolves = 0;
+    const runtime = new ProjectRuntime(BASE_PROJECT, {
+      ...journal.options,
+      compose: () => {
+        resolves++;
+        throw flush;
+      },
+    });
+    const thrown = thrownBy(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+    expect(thrown).toBeInstanceOf(AggregateError);
+    expect((thrown as AggregateError).errors).toEqual([settle, flush]);
+    expect((thrown as AggregateError).errors[0]).toBe(settle);
+    expect((thrown as AggregateError).errors[1]).toBe(flush);
+    expect(resolves).toBe(1);
+    expect(runtime.instanceCount).toBe(1);
+    expect(disagreeing(runtime)).toEqual([]);
+    runtime.dispose();
+  });
+
+  it("preserves a lone flush failure including a thrown undefined", () => {
+    // Green before and after: collection must count failures, not test their truthiness.
+    for (const failure of [new Error("flush failed"), undefined]) {
+      const journal = recorder();
+      const runtime = new ProjectRuntime(BASE_PROJECT, {
+        ...journal.options,
+        compose: () => {
+          throw failure;
+        },
+      });
+      let caught = false;
+      let observed: unknown;
+      try {
+        runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+      } catch (error) {
+        caught = true;
+        observed = error;
+      }
+      expect(caught).toBe(true);
+      expect(observed).toBe(failure);
+      expect(runtime.track(ADDED_ID).live).toBe(true);
+      expect(runtime.instanceCount).toBe(1);
+      runtime.dispose();
+    }
+  });
+
+  it("completes later settle steps after a disposing hook throws and still skips publication", () => {
+    const failure = new Error("registration failed after disposal");
+    const host: Host = {};
+    const journal = recorder({
+      disposeFrom: "addMotionTrack",
+      failAt: { addMotionTrack: failure },
+      host,
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+    const before = runtime.graph.sequence;
+    const thrown = thrownBy(() =>
+      runtime.edit((tx) => {
+        tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+        tx.addTrack({ id: "second" });
+      }),
+    );
+    expect(thrown).toBe(failure);
+    expect(journal.entries).toEqual([
+      "compile hero/hand",
+      "compile ~/second",
+      "motion-add hero/hand undefined",
+      "composition-dispose",
+    ]);
+    expect(runtime.graph.sequence).toBe(before);
+    expect(runtime.instanceCount).toBe(0);
+    expect(runtime.graph.memberCount).toBe(0);
+    expect(occurrences(journal, "composition-dispose")).toBe(1);
+    runtime.dispose();
+    expect(occurrences(journal, "composition-dispose")).toBe(1);
   });
 
   it("RA-136 refuses a live write from inside a commit before its seam is reached", () => {
