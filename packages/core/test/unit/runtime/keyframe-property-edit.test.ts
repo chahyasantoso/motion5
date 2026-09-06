@@ -6,6 +6,7 @@ import { LiveValueKeyError } from "../../../src/domain/track";
 import { Engine, type ProjectHandle } from "../../../src/engine";
 import { transformPlugin } from "../../../src/plugins/transform";
 import { createManualClock } from "../../../src/ports/clock";
+import type { InterpolationTimeline } from "../../../src/ports/interpolator";
 import type { ProjectRuntime } from "../../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 
@@ -109,12 +110,15 @@ function project(arm: TrackDefinition): ProjectDefinition {
     motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [arm, LEG_TRACK] }],
   };
 }
-function load(arm: TrackDefinition = ARM_TRACK): ProjectHandle {
+function load(
+  arm: TrackDefinition = ARM_TRACK,
+  interpolator = createFakeInterpolator(),
+): ProjectHandle {
   const plugins = new PluginRegistry();
   plugins.register(transformPlugin);
   const handle = new Engine({
     clock: createManualClock(),
-    interpolator: createFakeInterpolator(),
+    interpolator,
     scheduler: createFakeScheduler(),
     plugins,
   }).load(project(arm));
@@ -169,6 +173,61 @@ function values(handle: ProjectHandle, id: string): Readonly<Record<string, unkn
 function retained(track: TrackHandle): unknown {
   return track.definition.keyframes?.transform;
 }
+
+describe("keyframe recompilation finalizes the stage it actually owns", () => {
+  it("PK-21 completes recompile and re-seek when real displaced cleanup fails", () => {
+    const interpolator = createFakeInterpolator();
+    const create = vi.spyOn(interpolator, "create");
+    const handle = load(ARM_TRACK, interpolator);
+    const arm = handle.track(ARM);
+    arm.overrideValues({ rotation: FASTER });
+    expect(values(handle, ARM).rotation).toBe(90);
+    const timeline = create.mock.results.at(-1)!.value as InterpolationTimeline;
+    const kill = timeline.kill.bind(timeline);
+    const failure = new Error("old timeline cleanup failed");
+    const killed = vi.spyOn(timeline, "kill").mockImplementationOnce(() => {
+      kill();
+      throw failure;
+    });
+    const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
+    const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
+    expect(thrownBy(() => arm.setKeyframe("transform", "y", 300))).toBe(failure);
+    expect(retained(arm)).toEqual({ values: { x: 200, y: 300, rotation: AUTHORED_ROTATION } });
+    expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 45 });
+    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(replaceGraph).not.toHaveBeenCalled();
+    arm.setKeyframe("transform", "x", 260);
+    expect(values(handle, ARM)).toEqual({ x: 260, y: 300, rotation: 45 });
+    arm.overrideValues({});
+    expect(values(handle, ARM).rotation).toBe(45);
+    handle.dispose();
+    expect(killed).toHaveBeenCalledTimes(1);
+  });
+
+  it("PK-22 keeps a failed recompile build repairable without adopting its candidate", () => {
+    const interpolator = createFakeInterpolator();
+    const create = vi.spyOn(interpolator, "create");
+    const handle = load(ARM_TRACK, interpolator);
+    const arm = handle.track(ARM);
+    arm.overrideValues({ rotation: FASTER });
+    const before = arm.definition;
+    const published = handle.get(ARM);
+    const failure = new Error("new leaf refused to build");
+    const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
+    create.mockImplementationOnce(() => {
+      throw failure;
+    });
+    expect(thrownBy(() => arm.setKeyframe("transform", "y", 300))).toBe(failure);
+    expect(arm.definition).toBe(before);
+    expect(handle.get(ARM)).toBe(published);
+    expect(invalidate).not.toHaveBeenCalled();
+    arm.setKeyframe("transform", "y", 300);
+    expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 45 });
+    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    handle.dispose();
+  });
+});
 
 describe("one authored property, inside a group this node already authors", () => {
   it("RA-69 writes a key the group authors as a live value, and never asks the graph", () => {
