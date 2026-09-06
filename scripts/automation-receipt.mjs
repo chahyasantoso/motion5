@@ -288,6 +288,8 @@ const commands = { identity, receipt, diagnostics, render, "summary-allowed": su
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   try {
     let raw = "";
+    // Decode across buffers, not once per buffer: a code point can straddle reads.
+    process.stdin.setEncoding("utf8");
     for await (const chunk of process.stdin) {
       raw += chunk;
       assert(Buffer.byteLength(raw) <= 1800000, "Input limit exceeded");
