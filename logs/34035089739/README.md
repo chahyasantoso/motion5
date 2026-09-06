@@ -1,0 +1,1315 @@
+# CI log archive: 34035089739
+
+- Workflow: CI
+- Conclusion: failure
+- Head branch: chore/328-02-observable-outcomes
+- Source run: https://github.com/chahyasantoso/motion5/actions/runs/34035089739
+- Captured: 2026-09-06T13:07:57Z
+
+## Failed job output
+
+```text
+quality (node 24)	Run npm test	﻿2026-09-06T13:07:16.3831002Z ##[group]Run npm test
+quality (node 24)	Run npm test	2026-09-06T13:07:16.3831309Z ^[[36;1mnpm test^[[0m
+quality (node 24)	Run npm test	2026-09-06T13:07:16.3867757Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm test	2026-09-06T13:07:16.3868034Z env:
+quality (node 24)	Run npm test	2026-09-06T13:07:16.3868234Z   NODE_VERSION: 24
+quality (node 24)	Run npm test	2026-09-06T13:07:16.3868443Z ##[endgroup]
+quality (node 24)	Run npm test	2026-09-06T13:07:16.4855898Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:16.4856551Z > motion5@0.0.0 test
+quality (node 24)	Run npm test	2026-09-06T13:07:16.4856961Z > vitest run
+quality (node 24)	Run npm test	2026-09-06T13:07:16.4857119Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:16.7855618Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:16.7865935Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:16.7884860Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:17.1593068Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/evidence-case-ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 47^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:17.5306329Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/structural-commit-path.test.ts ^[[2m(^[[22m^[[2m40 tests^[[22m^[[2m)^[[22m^[[32m 62^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:17.5746373Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/keyframe-property-edit.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 103^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:17.8696793Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/pivot-offset-solve.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 50^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:18.0114586Z ^[[90mstderr^[[2m | packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22m^[[2mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m^[[2m9. Use React usePatch hook at the React boundary
+quality (node 24)	Run npm test	2026-09-06T13:07:18.0117212Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test	2026-09-06T13:07:18.0141810Z An update to Root inside a test was not wrapped in act(...).
+quality (node 24)	Run npm test	2026-09-06T13:07:18.0142523Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:18.0143349Z When testing, code that causes React state updates should be wrapped into act(...):
+quality (node 24)	Run npm test	2026-09-06T13:07:18.0165329Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:18.0165872Z act(() => {
+quality (node 24)	Run npm test	2026-09-06T13:07:18.0166593Z   /* fire events that update state */
+quality (node 24)	Run npm test	2026-09-06T13:07:18.0167559Z });
+quality (node 24)	Run npm test	2026-09-06T13:07:18.0168238Z /* assert on the output */
+quality (node 24)	Run npm test	2026-09-06T13:07:18.0175237Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:18.0176573Z This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+quality (node 24)	Run npm test	2026-09-06T13:07:18.0177790Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:18.0466113Z  ^[[32m✓^[[39m packages/core/test/integration/phase7-walker-demo.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[32m 139^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:18.1942808Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/live-value-updates.test.ts ^[[2m(^[[22m^[[2m19 tests^[[22m^[[2m)^[[22m^[[33m 344^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:18.3108619Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/schema-transaction.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 29^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:18.4218380Z  ^[[32m✓^[[39m packages/core/test/unit/graph/resolve-solvers.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:18.6652750Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/plugin-group-edit.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 38^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:18.9991504Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/handle-base.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 173^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:19.2642735Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/plugin-require-edit.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 28^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:19.5318374Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/structural-commit-flush.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:19.7715218Z  ^[[32m✓^[[39m packages/core/test/unit/domain/dict-valued-requirements.test.ts ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:20.0753892Z  ^[[32m✓^[[39m packages/core/test/integration/t4-runtime-motion-parity.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 40^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:20.3422033Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/commit-write-cost.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 29^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:20.6006421Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/immediate-verb-refusal.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:20.8435742Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/motion-driver-edit.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:21.0790961Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/fabrik-solve.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 34^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:21.3776838Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/recompile-predicate.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 43^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:21.6246455Z  ^[[32m✓^[[39m packages/core/test/integration/engine-teardown-ownership.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:22.2849776Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-group-values-section.test.ts ^[[2m(^[[22m^[[2m14 tests^[[22m^[[2m)^[[22m^[[32m 138^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:22.3059177Z  ^[[32m✓^[[39m packages/core/test/integration/bare-authored-leaf.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[33m 3046^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:22.3135685Z      ^[[33m^[[2m✓^[[22m^[[39m LF-16 leaves no authored schema in the repository on the retired form ^[[33m 2903^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:22.3498053Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/apply-ai-edit.test.ts ^[[2m(^[[22m^[[2m35 tests^[[22m^[[2m)^[[22m^[[33m 4198^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:22.3525448Z      ^[[33m^[[2m✓^[[22m^[[39m AE-21: refuses absent or unsupported protocol versions ^[[33m 311^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:22.3537455Z      ^[[33m^[[2m✓^[[22m^[[39m AE-24: requires exactly one original blob precondition per distinct path ^[[32m 300^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:22.3551554Z      ^[[33m^[[2m✓^[[22m^[[39m AE-26: rejects every supported CI-skip spelling including mixed case ^[[33m 460^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:22.3554557Z      ^[[33m^[[2m✓^[[22m^[[39m AE-27: control characters cannot inject workflow outputs through the subject ^[[33m 346^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:22.3556919Z      ^[[33m^[[2m✓^[[22m^[[39m AE-28: canonical paths reject traversal and line-oriented argument ambiguity ^[[33m 569^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:22.5359952Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-solver-members.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:22.5861510Z  ^[[32m✓^[[39m packages/core/test/unit/graph/solver-goals.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:22.7666780Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/read-budget-scan.test.ts ^[[2m(^[[22m^[[2m18 tests^[[22m^[[2m)^[[22m^[[32m 59^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:23.0128243Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugins.test.ts ^[[2m(^[[22m^[[2m19 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:23.0434498Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/stale-track-handle.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 159^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:23.3082690Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-time-loop.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 31^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:23.3973391Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-patch-keys.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 117^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:23.6576312Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/snapshot-one-walk.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:24.0376601Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track-live-values.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 185^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:24.0566105Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/boundary-scan.test.ts ^[[2m(^[[22m^[[2m18 tests^[[22m^[[2m)^[[22m^[[32m 166^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:24.3315254Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/declined-build-write-drop.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:24.5908963Z  ^[[32m✓^[[39m packages/core/test/unit/graph/solved-pivot-offset.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:24.8060829Z  ^[[32m✓^[[39m packages/core/test/integration/authored-leaf-reader.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 193^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:25.0225595Z  ^[[32m✓^[[39m packages/core/test/unit/graph/solved-rotation-weight.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:25.2177158Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion-track-resolution.test.ts ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:25.4025882Z  ^[[32m✓^[[39m packages/core/test/integration/solver-member-cache.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 58^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:25.5548280Z  ^[[32m✓^[[39m packages/core/test/integration/ik-fabrik-chain.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 39^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4000937Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/source-region-anchors.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[33m 2163^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4019341Z      ^[[33m^[[2m✓^[[22m^[[39m declares the source helpers in one place and nowhere else ^[[33m 1207^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4021043Z      ^[[33m^[[2m✓^[[22m^[[39m leaves no call to the retired two-bound helper anywhere in the suite ^[[33m 927^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4443015Z  ^[[31m❯^[[39m packages/core/test/unit/scripts/automation-adapters.test.ts ^[[2m(^[[22m^[[2m14 tests^[[22m^[[2m | ^[[22m^[[31m14 failed^[[39m^[[2m)^[[22m^[[33m 688^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4451578Z ^[[31m     ^[[31m×^[[31m AE-51: durable evidence precedes a failed comment and retry does not replay edits^[[39m^[[32m 66^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4453648Z ^[[31m     ^[[31m×^[[31m AE-52: stale completion retains evidence without replacing a current summary^[[39m^[[32m 49^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4462817Z ^[[31m     ^[[31m×^[[31m AE-53: only the verified bot-owned marker can be updated^[[39m^[[32m 38^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4481295Z ^[[31m     ^[[31m×^[[31m AE-54: reruns cannot be overwritten by an older attempt^[[39m^[[32m 41^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4495595Z ^[[31m     ^[[31m×^[[31m AE-55: failed or partial candidate preparation never reaches publication^[[39m^[[32m 53^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4497594Z ^[[31m     ^[[31m×^[[31m AE-56: publication intent is durable before the conditional ref update^[[39m^[[32m 53^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4499473Z ^[[31m     ^[[31m×^[[31m AE-57: rejected publication stays unconfirmed without a blind retry^[[39m^[[32m 49^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4501333Z ^[[31m     ^[[31m×^[[31m AE-58: a lost push response is reconciled against the remote commit^[[39m^[[32m 47^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4503231Z ^[[31m     ^[[31m×^[[31m AE-59: retry after publication and report failure never republishes^[[39m^[[32m 42^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4505319Z ^[[31m     ^[[31m×^[[31m AE-60: stale branches are refused without force or semantic rebase^[[39m^[[32m 45^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4507200Z ^[[31m     ^[[31m×^[[31m AE-61: run identity comes from verified repository and workflow metadata^[[39m^[[32m 52^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4509562Z ^[[31m     ^[[31m×^[[31m AE-62: log retries distinguish unavailable diagnostics from retained output^[[39m^[[32m 52^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4511518Z ^[[31m     ^[[31m×^[[31m AE-63: the publisher independently bounds candidate identities and paths^[[39m^[[32m 46^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.4513395Z ^[[31m     ^[[31m×^[[31m AE-64: a persistence failure prevents both comment and publication^[[39m^[[32m 53^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.6194915Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/clock-consumer-error-boundary.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.7827816Z  ^[[32m✓^[[39m packages/core/test/integration/ik-two-bone.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 55^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:26.8511956Z  ^[[32m✓^[[39m packages/core/test/unit/graph/graph-dependants.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:27.0131348Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/dependants-of-reverse-topology.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:27.1146757Z  ^[[32m✓^[[39m packages/core/test/integration/rollback-error-precedence.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:27.2645065Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/removal-flush-seed.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:27.3789165Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion-dispose-ownership.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:27.5116482Z  ^[[32m✓^[[39m packages/core/test/unit/adapters/incremental-graph-builder-eviction.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:27.5856599Z  ^[[32m✓^[[39m packages/core/test/unit/graph/finalize-graph.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:27.7874633Z  ^[[32m✓^[[39m packages/core/test/contract/microtask-scheduler.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:27.8264334Z  ^[[32m✓^[[39m packages/core/test/integration/adoption.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:27.9995037Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion-track-mutation-atomicity.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.0533792Z  ^[[32m✓^[[39m packages/core/test/contract/v5-validator.test.ts ^[[2m(^[[22m^[[2m14 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.1914720Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/fabrik-dispatch.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.2723115Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/automation-receipt.test.ts ^[[2m(^[[22m^[[2m15 tests^[[22m^[[2m)^[[22m^[[33m 2654^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.2785485Z      ^[[33m^[[2m✓^[[22m^[[39m AE-48: rendering refuses forged outcomes, destinations and unknown fields ^[[33m 348^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.2797465Z      ^[[33m^[[2m✓^[[22m^[[39m AE-40: contradictory commits and malformed identities fail closed ^[[33m 412^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.2835609Z      ^[[33m^[[2m✓^[[22m^[[39m AE-47: CI conclusions stay distinct from publication and retain tested identity ^[[33m 318^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.3446194Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/mount-flush-seed.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 39^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.4064346Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/ik-solve.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.5413227Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-types.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 29^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.5703007Z  ^[[32m✓^[[39m packages/core/test/unit/graph/incremental-cache.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.7010672Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-owned-requirements.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 50^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.7742426Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/fk-solved-weight.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.8261327Z  ^[[32m✓^[[39m packages/core/test/integration/phase0-red-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 29^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.9766188Z  ^[[32m✓^[[39m packages/core/test/unit/graph/single-input-channel.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:28.9886437Z  ^[[32m✓^[[39m packages/core/test/integration/replace-track-transactionality.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:29.0707310Z  ^[[32m✓^[[39m packages/core/test/integration/phase4-dynamic-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:29.2053340Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track-compose-from.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:29.2351839Z  ^[[32m✓^[[39m packages/core/test/contract/trigger-factory.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:29.3059414Z  ^[[32m✓^[[39m packages/core/test/unit/graph/arity-lift.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:29.4166289Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugin-contribution-contract.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:29.4433555Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:29.5031907Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/fk-pivot-offset.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:29.6994453Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-one-tween.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 32^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:29.7477498Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/track-staging.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:29.9658016Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-reentrancy.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:29.9860460Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-time.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 40^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:30.2301125Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion.test.ts ^[[2m(^[[22m^[[2m11 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:30.4583130Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:30.7824979Z  ^[[32m✓^[[39m packages/core/test/unit/domain/authored-group-values-one-reader.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 297^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:30.8216542Z  ^[[32m✓^[[39m packages/core/test/integration/ik-multi-goal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 49^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:31.0108799Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-state.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:31.1435668Z  ^[[32m✓^[[39m packages/core/test/integration/trigger-scroll.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 31^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:31.3146079Z  ^[[32m✓^[[39m packages/core/test/integration/mutation-transactionality.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 49^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:31.4527098Z  ^[[32m✓^[[39m packages/core/test/integration/engine-x3-contribution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 35^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:31.5482383Z  ^[[32m✓^[[39m packages/core/test/unit/adapters/time-loop-cycle.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:31.8106280Z  ^[[32m✓^[[39m packages/core/test/integration/per-plugin-key-ownership.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 39^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:31.8618599Z  ^[[32m✓^[[39m packages/core/test/integration/phase3-trigger-port.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:32.0623388Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-snapshot-memo.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:32.2246422Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/live-value-animated.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 57^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:32.2974857Z  ^[[32m✓^[[39m packages/core/test/integration/p2-runtime-smells.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:32.5507173Z  ^[[32m✓^[[39m packages/core/test/unit/graph/solver-goal-required.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:32.7886441Z  ^[[32m✓^[[39m packages/core/test/unit/graph/observation-target-removal.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:32.8501106Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/public-declaration-surface.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[33m 3220^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:32.8503636Z      ^[[33m^[[2m✓^[[22m^[[39m scans the emitted entry declaration closure, not just source strings ^[[33m 3216^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:32.9219603Z  ^[[32m✓^[[39m packages/core/test/unit/adapters/trigger-factory-no-fallback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 47^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:33.0763540Z  ^[[32m✓^[[39m packages/core/test/integration/option-c-track-resolution.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 36^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:33.0855590Z  ^[[32m✓^[[39m packages/core/test/contract/validation-owner.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:33.1487826Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugin-requirements.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:33.2723140Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/angle-blend.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:33.3461390Z  ^[[32m✓^[[39m packages/core/test/integration/phase2-motion-scheduling.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:33.4275454Z  ^[[32m✓^[[39m packages/core/test/integration/live-value-composition.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 48^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:33.4808301Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/fabrik-arity-one.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:33.5959705Z  ^[[32m✓^[[39m packages/core/test/integration/unified-mutation-surface.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:33.7006301Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/clock-tick-identity.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:33.7256731Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-lifecycle.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 35^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:33.8690456Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-equivalence.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:33.8864411Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-structural-change.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:33.9856385Z  ^[[32m✓^[[39m packages/core/test/integration/observation-identity.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 31^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:34.1012488Z  ^[[32m✓^[[39m packages/core/test/integration/cross-motion.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:34.1380246Z  ^[[32m✓^[[39m packages/core/test/integration/issue-114-motion-track-regressions.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 37^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:34.2025952Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ir-validation.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:34.3145801Z  ^[[32m✓^[[39m packages/core/test/unit/graph/order.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:34.3668878Z  ^[[32m✓^[[39m packages/core/test/unit/domain/motion-progress-range.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:34.5679360Z  ^[[32m✓^[[39m packages/core/test/integration/diagnostics.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:34.6088272Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/composition-output-shape.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:34.8316046Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-authored-duration.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 31^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:34.8636359Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/scheduler-reentrancy.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:35.0810138Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-subscriber-errors.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:35.3666345Z  ^[[32m✓^[[39m packages/core/test/integration/adopted-track-immutability.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:35.4770747Z  ^[[32m✓^[[39m packages/core/test/contract/project-templates-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 69^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:35.6076154Z  ^[[32m✓^[[39m packages/core/test/unit/adapters/scroll-trigger-gsap.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:35.7316010Z  ^[[32m✓^[[39m packages/core/test/integration/publisher-output-merge-consistency.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:35.8492456Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/publisher-requirement-inputs.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:36.0006722Z  ^[[32m✓^[[39m packages/core/test/integration/replace-motion-track.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 24^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:36.1397059Z  ^[[32m✓^[[39m packages/core/test/integration/keyframe-groups.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 38^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:36.2842954Z  ^[[32m✓^[[39m packages/core/test/integration/engine-headless.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 20^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:36.3606165Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/session-status-shape.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:36.5647964Z  ^[[32m✓^[[39m packages/core/test/integration/internal-key-strip.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:36.6509543Z  ^[[32m✓^[[39m packages/core/test/integration/handle-adoption.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:36.8560352Z  ^[[32m✓^[[39m packages/core/test/integration/remount.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:36.8755942Z  ^[[32m✓^[[39m packages/core/test/contract/ports.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:37.1096635Z  ^[[32m✓^[[39m packages/core/test/unit/graph/edge-order.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:37.1878477Z ^[[90mstderr^[[2m | packages/react/test/public-hook-render.test.ts^[[2m > ^[[22m^[[2mReact public hook render/update (C2)^[[2m > ^[[22m^[[2mrenders the current patch and updates after publication
+quality (node 24)	Run npm test	2026-09-06T13:07:37.1882333Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test	2026-09-06T13:07:37.1893853Z An update to Root inside a test was not wrapped in act(...).
+quality (node 24)	Run npm test	2026-09-06T13:07:37.1894864Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:37.1895716Z When testing, code that causes React state updates should be wrapped into act(...):
+quality (node 24)	Run npm test	2026-09-06T13:07:37.1896637Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:37.1897017Z act(() => {
+quality (node 24)	Run npm test	2026-09-06T13:07:37.1897704Z   /* fire events that update state */
+quality (node 24)	Run npm test	2026-09-06T13:07:37.1898810Z });
+quality (node 24)	Run npm test	2026-09-06T13:07:37.1899455Z /* assert on the output */
+quality (node 24)	Run npm test	2026-09-06T13:07:37.1900006Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:37.1901311Z This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+quality (node 24)	Run npm test	2026-09-06T13:07:37.1905143Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:37.2012504Z ^[[90mstderr^[[2m | packages/react/test/public-hook-render.test.ts^[[2m > ^[[22m^[[2mReact public hook render/update (C2)^[[2m > ^[[22m^[[2mH-4 hands a consumer the same stripped values the publisher retained
+quality (node 24)	Run npm test	2026-09-06T13:07:37.2016264Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test	2026-09-06T13:07:37.2017886Z An update to Root inside a test was not wrapped in act(...).
+quality (node 24)	Run npm test	2026-09-06T13:07:37.2018669Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:37.2019541Z When testing, code that causes React state updates should be wrapped into act(...):
+quality (node 24)	Run npm test	2026-09-06T13:07:37.2020473Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:37.2020878Z act(() => {
+quality (node 24)	Run npm test	2026-09-06T13:07:37.2026263Z   /* fire events that update state */
+quality (node 24)	Run npm test	2026-09-06T13:07:37.2027072Z });
+quality (node 24)	Run npm test	2026-09-06T13:07:37.2027723Z /* assert on the output */
+quality (node 24)	Run npm test	2026-09-06T13:07:37.2028276Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:37.2029596Z This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+quality (node 24)	Run npm test	2026-09-06T13:07:37.2030912Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:37.2035674Z  ^[[32m✓^[[39m packages/react/test/public-hook-render.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 31^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:37.3382422Z  ^[[32m✓^[[39m packages/core/test/unit/graph/references.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:37.4728539Z  ^[[32m✓^[[39m packages/core/test/integration/graph-publisher.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:37.5851756Z  ^[[32m✓^[[39m packages/core/test/integration/project-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:37.7025422Z  ^[[32m✓^[[39m packages/core/test/contract/adapters.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:37.8116322Z  ^[[32m✓^[[39m packages/core/test/integration/flush-output-merge.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:37.9317806Z  ^[[32m✓^[[39m packages/core/test/integration/graph-runtime.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:38.0738302Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-absolute-stops.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:38.1561060Z  ^[[32m✓^[[39m packages/core/test/integration/graph-rollback.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:38.2866278Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/fk-solver-override.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:38.4556058Z  ^[[32m✓^[[39m packages/core/test/integration/engine-load-validation.test.ts ^[[2m(^[[22m^[[2m4 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:38.5215822Z  ^[[32m✓^[[39m packages/core/test/migration/v4-to-v5.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:38.6976115Z  ^[[32m✓^[[39m packages/core/test/integration/partial-seed-inputs.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:38.7796310Z  ^[[32m✓^[[39m packages/core/test/contract/graph-builder-incremental.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:38.9836201Z  ^[[32m✓^[[39m packages/core/test/integration/dom-patch-apply.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:38.9891299Z  ^[[32m✓^[[39m packages/core/test/integration/single-input-channel.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:39.1960163Z  ^[[32m✓^[[39m packages/core/test/unit/domain/track-node-id.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:39.2235086Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-listener-snapshot.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:39.3975778Z  ^[[32m✓^[[39m packages/core/test/unit/domain/time-driver.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:39.4926693Z  ^[[32m✓^[[39m packages/core/test/integration/adopt-destroy-readopt.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:39.6030520Z  ^[[32m✓^[[39m packages/core/test/unit/graph/edge-key-separator.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:39.6960532Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/governance-gates.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:39.7916277Z  ^[[32m✓^[[39m packages/core/test/unit/graph/requirement-edge-construction.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:39.9346918Z ^[[90mstderr^[[2m | packages/react/test/public-package-surface.test.ts^[[2m > ^[[22m^[[2mReact public package surface (C2)^[[2m > ^[[22m^[[2mrenders and updates through the package entry alone
+quality (node 24)	Run npm test	2026-09-06T13:07:39.9372832Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test	2026-09-06T13:07:39.9374579Z An update to Root inside a test was not wrapped in act(...).
+quality (node 24)	Run npm test	2026-09-06T13:07:39.9398977Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:39.9400066Z When testing, code that causes React state updates should be wrapped into act(...):
+quality (node 24)	Run npm test	2026-09-06T13:07:39.9403219Z  ^[[32m✓^[[39m packages/react/test/public-package-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 22^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:39.9416842Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:39.9417063Z act(() => {
+quality (node 24)	Run npm test	2026-09-06T13:07:39.9417548Z   /* fire events that update state */
+quality (node 24)	Run npm test	2026-09-06T13:07:39.9418061Z });
+quality (node 24)	Run npm test	2026-09-06T13:07:39.9418480Z /* assert on the output */
+quality (node 24)	Run npm test	2026-09-06T13:07:39.9418783Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:39.9419898Z This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+quality (node 24)	Run npm test	2026-09-06T13:07:39.9420946Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:40.0176289Z  ^[[32m✓^[[39m packages/core/test/integration/motion-trigger-lifecycle.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:40.2027526Z  ^[[32m✓^[[39m packages/react/test/patch-store-lifecycle.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:40.2996796Z  ^[[32m✓^[[39m packages/core/test/unit/domain/plugin-contribution-completeness.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:40.4609185Z  ^[[32m✓^[[39m packages/core/test/unit/domain/s7-plugin-evidence.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:40.5175501Z  ^[[32m✓^[[39m packages/react/test/patch-store-destroy.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:40.6709650Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-sparse-percent-map.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:40.7492590Z  ^[[32m✓^[[39m packages/core/test/integration/dom-plugin-metadata.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:40.9334551Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-paused-timeline.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.0616825Z  ^[[32m✓^[[39m packages/core/test/integration/end-to-end.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.1236558Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/public-port-types.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[33m 6751^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.1256078Z      ^[[33m^[[2m✓^[[22m^[[39m K-9 names all five port contracts from the entry declarations ^[[33m 1803^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.1280714Z      ^[[33m^[[2m✓^[[22m^[[39m K-10 still cannot name a runtime internal through the same entry ^[[33m 1761^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.2847619Z  ^[[32m✓^[[39m packages/core/test/unit/graph/edge-key-canonical.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.2850344Z  ^[[32m✓^[[39m packages/core/test/integration/contract-baseline.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.4909629Z  ^[[32m✓^[[39m packages/core/test/unit/domain/lifecycle.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.5116944Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/acceptance-scan.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 31^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.5506432Z  ^[[32m✓^[[39m packages/core/test/unit/engine/motion-entry-shape.test.ts ^[[2m(^[[22m^[[2m3 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.6952211Z  ^[[32m✓^[[39m packages/core/test/unit/graph/ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.7497747Z  ^[[32m✓^[[39m packages/core/test/unit/domain/values.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.7645700Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.8806966Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-retention.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.9454269Z  ^[[32m✓^[[39m packages/core/test/unit/adapters/scroll-trigger-range.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:41.9535700Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/mutation-config.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.0726470Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.1289044Z  ^[[32m✓^[[39m packages/react/test/patch-store.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.1701818Z  ^[[32m✓^[[39m packages/core/test/contract/s4-validation-owner.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.2559275Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/s7-recovery-audit.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.3483487Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.4244170Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-trigger-validation.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 14^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.4999001Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.5926074Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.6447648Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7019402Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7617751Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7670239Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7671070Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 14 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7671705Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7677307Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-adapters.test.ts^[[2m > ^[[22mtrusted automation adapters^[[2m > ^[[22mAE-51: durable evidence precedes a failed comment and retry does not replay edits
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7681544Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7682232Z     throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7682653Z           ^
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7682858Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7683758Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7685563Z     at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7686060Z     at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7686527Z     at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7687005Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7687567Z     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7688146Z     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7688606Z     at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7689107Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7689686Z     at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7690346Z     at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7690730Z   code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7691167Z   url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7691563Z }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7691667Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7691752Z Node.js v24.20.0
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7692143Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7692353Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7692484Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7692739Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7692869Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7692975Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7693186Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7693302Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7693824Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m36:40^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7712117Z     ^[[90m 34|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7712846Z     ^[[90m 35|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7713779Z     ^[[90m 36|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7715266Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7715859Z     ^[[90m 37|^[[39m }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7716253Z     ^[[90m 38|^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7717114Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m41:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7717773Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7718181Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7718533Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7720362Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-adapters.test.ts^[[2m > ^[[22mtrusted automation adapters^[[2m > ^[[22mAE-52: stale completion retains evidence without replacing a current summary
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7722238Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7722917Z     throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7723381Z           ^
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7723600Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7725102Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7726281Z     at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7727103Z     at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7727931Z     at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7728778Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7729766Z     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7730788Z     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7731633Z     at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7732513Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7733729Z     at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7734852Z     at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7735440Z   code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7735865Z   url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7736266Z }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7736365Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7736455Z Node.js v24.20.0
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7737019Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7737394Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7737616Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7738038Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7738254Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7738426Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7738785Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7738972Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7739858Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m36:40^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7741076Z     ^[[90m 34|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7741765Z     ^[[90m 35|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7742873Z     ^[[90m 36|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7743803Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7744653Z     ^[[90m 37|^[[39m }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7745161Z     ^[[90m 38|^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7746184Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m51:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7746837Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7747246Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7747598Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7749227Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-adapters.test.ts^[[2m > ^[[22mtrusted automation adapters^[[2m > ^[[22mAE-53: only the verified bot-owned marker can be updated
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7750984Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7751666Z     throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7752089Z           ^
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7752275Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7753315Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7754886Z     at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7755748Z     at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7756535Z     at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7757368Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7758408Z     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7759256Z     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7759750Z     at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7760261Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7760812Z     at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7761299Z     at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7761774Z   code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7762505Z   url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7762966Z }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7763071Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7763162Z Node.js v24.20.0
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7763529Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7763746Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7763873Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7764398Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7764536Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7764645Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7764862Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7765168Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7765689Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m36:40^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7766354Z     ^[[90m 34|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7766748Z     ^[[90m 35|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7767856Z     ^[[90m 36|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7769056Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7769426Z     ^[[90m 37|^[[39m }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7769670Z     ^[[90m 38|^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7770507Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m58:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7771253Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7771737Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7772035Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7773606Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-adapters.test.ts^[[2m > ^[[22mtrusted automation adapters^[[2m > ^[[22mAE-54: reruns cannot be overwritten by an older attempt
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7775995Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7776434Z     throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7776706Z           ^
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7776817Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7777558Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7778423Z     at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7778995Z     at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7779638Z     at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7780509Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7781104Z     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7781686Z     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7782427Z     at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7783130Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7783693Z     at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7784448Z     at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7785087Z   code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7785870Z   url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7786416Z }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7786599Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7786766Z Node.js v24.20.0
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7787468Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7787891Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7788167Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7788687Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7788941Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7789149Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7789628Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7789828Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7790813Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m36:40^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7792038Z     ^[[90m 34|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7792464Z     ^[[90m 35|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7793172Z     ^[[90m 36|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7793855Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7794488Z     ^[[90m 37|^[[39m }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7794727Z     ^[[90m 38|^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7795303Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m69:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7795708Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7796217Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7796426Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7797416Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-adapters.test.ts^[[2m > ^[[22mtrusted automation adapters^[[2m > ^[[22mAE-55: failed or partial candidate preparation never reaches publication
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7798441Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7798840Z     throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7799123Z           ^
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7799237Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7799948Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7800804Z     at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7801273Z     at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7801726Z     at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7802340Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7802896Z     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7803714Z     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7804818Z     at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7805386Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7805958Z     at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7806592Z     at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7807282Z   code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7807833Z   url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7808227Z }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7808331Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7808415Z Node.js v24.20.0
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7808918Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7809295Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7809520Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7809994Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7810129Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7810238Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7810450Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7810561Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7811317Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m36:40^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7812305Z     ^[[90m 34|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7812703Z     ^[[90m 35|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7813657Z     ^[[90m 36|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7814630Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7814976Z     ^[[90m 37|^[[39m }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7815210Z     ^[[90m 38|^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7816050Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m78:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7816434Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7816683Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7816892Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7817932Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-adapters.test.ts^[[2m > ^[[22mtrusted automation adapters^[[2m > ^[[22mAE-56: publication intent is durable before the conditional ref update
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7819459Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7820203Z     throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7820695Z           ^
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7820821Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7821553Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7822405Z     at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7823327Z     at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7824298Z     at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7824804Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7825372Z     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7825947Z     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7826416Z     at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7827365Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7828109Z     at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7829101Z     at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7829882Z   code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7830656Z   url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7831266Z }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7831373Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7831465Z Node.js v24.20.0
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7832132Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7832509Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7832733Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7833007Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7833131Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7833238Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7833450Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7833639Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7834766Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m36:40^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7835542Z     ^[[90m 34|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7836084Z     ^[[90m 35|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7837207Z     ^[[90m 36|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7837924Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7838327Z     ^[[90m 37|^[[39m }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7838767Z     ^[[90m 38|^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7839737Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m87:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7840116Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7840366Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7840578Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7841851Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-adapters.test.ts^[[2m > ^[[22mtrusted automation adapters^[[2m > ^[[22mAE-57: rejected publication stays unconfirmed without a blind retry
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7844165Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7844944Z     throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7845410Z           ^
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7845611Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7847036Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7848571Z     at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7849078Z     at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7849544Z     at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7850028Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7850598Z     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7851174Z     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7851631Z     at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7852136Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7852688Z     at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7853174Z     at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7853762Z   code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7854863Z   url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7855286Z }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7855408Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7855512Z Node.js v24.20.0
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7855899Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7856112Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7856238Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7856494Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7856616Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7856720Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7856931Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7857044Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7857548Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m36:40^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7858218Z     ^[[90m 34|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7858609Z     ^[[90m 35|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7859774Z     ^[[90m 36|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7860484Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7860816Z     ^[[90m 37|^[[39m }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7861055Z     ^[[90m 38|^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7861621Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m96:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7861999Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7862230Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7862443Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7863395Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-adapters.test.ts^[[2m > ^[[22mtrusted automation adapters^[[2m > ^[[22mAE-58: a lost push response is reconciled against the remote commit
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7864717Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7865117Z     throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7865386Z           ^
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7865502Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7866444Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7867307Z     at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7867934Z     at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7868746Z     at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7869598Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7870582Z     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7871577Z     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7872400Z     at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7873356Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7874189Z     at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7874713Z     at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7875098Z   code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7875553Z   url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7875957Z }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7876056Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7876149Z Node.js v24.20.0
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7876543Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7876762Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7876898Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7877149Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7877278Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7877379Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7877596Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7877714Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7878219Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m36:40^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7878903Z     ^[[90m 34|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7880042Z     ^[[90m 35|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7881490Z     ^[[90m 36|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7882880Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7883532Z     ^[[90m 37|^[[39m }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7884169Z     ^[[90m 38|^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7885245Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m105:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7886016Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7886515Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7886894Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7888848Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-adapters.test.ts^[[2m > ^[[22mtrusted automation adapters^[[2m > ^[[22mAE-59: retry after publication and report failure never republishes
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7891124Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7891960Z     throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7892425Z           ^
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7892599Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7894138Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7895840Z     at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7896836Z     at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7897744Z     at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7898678Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7899795Z     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7900947Z     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7901868Z     at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7902875Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7904117Z     at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7905145Z     at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7905895Z   code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7906669Z   url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7907349Z }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7907539Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7907689Z Node.js v24.20.0
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7908345Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7908729Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7908964Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7909399Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7909694Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7909895Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7910277Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7910495Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7911422Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m36:40^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7912715Z     ^[[90m 34|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7913434Z     ^[[90m 35|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7914738Z     ^[[90m 36|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7915454Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7916027Z     ^[[90m 37|^[[39m }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7916453Z     ^[[90m 38|^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7917496Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m114:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7918180Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7918617Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7918976Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7920753Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-adapters.test.ts^[[2m > ^[[22mtrusted automation adapters^[[2m > ^[[22mAE-60: stale branches are refused without force or semantic rebase
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7923000Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7923747Z     throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7924448Z           ^
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7924652Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7925991Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7927572Z     at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7928491Z     at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7929327Z     at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7930200Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7931238Z     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7932555Z     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7933396Z     at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7934551Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7935638Z     at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7936544Z     at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7937240Z   code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7938009Z   url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7938713Z }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7938897Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7939046Z Node.js v24.20.0
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7939698Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7940084Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7940322Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7940791Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7941037Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7941230Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7941608Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7941810Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7942757Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m36:40^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7944218Z     ^[[90m 34|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7944894Z     ^[[90m 35|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7946061Z     ^[[90m 36|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7947196Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7947740Z     ^[[90m 37|^[[39m }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7948120Z     ^[[90m 38|^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7949052Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m122:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7949667Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7950078Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7950427Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7952105Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-adapters.test.ts^[[2m > ^[[22mtrusted automation adapters^[[2m > ^[[22mAE-61: run identity comes from verified repository and workflow metadata
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7954075Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7954856Z     throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7955337Z           ^
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7955548Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7956853Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7958333Z     at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7959131Z     at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7959905Z     at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7961117Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7962080Z     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7963058Z     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7963840Z     at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7965000Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7965969Z     at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7966812Z     at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7967479Z   code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7968194Z   url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7968847Z }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7969013Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7969159Z Node.js v24.20.0
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7969993Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7970365Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7970568Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7970983Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7971189Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7971358Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7971683Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7971868Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7972752Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m36:40^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7973860Z     ^[[90m 34|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7974785Z     ^[[90m 35|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7976002Z     ^[[90m 36|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7977168Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7977725Z     ^[[90m 37|^[[39m }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7978105Z     ^[[90m 38|^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7979097Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m129:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7979760Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7980147Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7980484Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7982159Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-adapters.test.ts^[[2m > ^[[22mtrusted automation adapters^[[2m > ^[[22mAE-62: log retries distinguish unavailable diagnostics from retained output
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7984130Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7984845Z     throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7985273Z           ^
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7985447Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7986712Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7988159Z     at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7988972Z     at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7989733Z     at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7990559Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7991541Z     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7992542Z     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7993340Z     at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7994386Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7995357Z     at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7996216Z     at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7996869Z   code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7997586Z   url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7998503Z }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7998661Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7998799Z Node.js v24.20.0
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7999390Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7999738Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.7999951Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8000399Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8000610Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8000768Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8001110Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8001289Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8002154Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m36:40^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8003278Z     ^[[90m 34|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8004136Z     ^[[90m 35|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8005351Z     ^[[90m 36|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8006513Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8007276Z     ^[[90m 37|^[[39m }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8007653Z     ^[[90m 38|^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8008599Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m137:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8009240Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8009692Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8010031Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8011767Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-adapters.test.ts^[[2m > ^[[22mtrusted automation adapters^[[2m > ^[[22mAE-63: the publisher independently bounds candidate identities and paths
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8013659Z ^[[31m^[[1mAssertionError^[[22m: file:///home/runner/work/motion5/motion5/[eval1]:24
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8015804Z       const candidate = {version: 1, trusted_sha: A, request_commit: B, source_sha: A, request_digest: "d".repeat(64), files: [{path: "docs/a.md", content: "hello
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8017510Z                                                                                                                                                             ^^^^^^
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8018268Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8018613Z SyntaxError: Invalid or unexpected token
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8019525Z     at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8020637Z     at ModuleLoader.createModuleWrap (node:internal/modules/esm/loader:209:12)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8021741Z     at ModuleLoader.eval (node:internal/modules/esm/loader:247:23)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8022566Z     at node:internal/process/execution:77:24
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8023546Z     at asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8024899Z     at Object.runEntryPointWithESMLoader (node:internal/modules/run_main:123:19)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8026095Z     at evalModuleEntryPoint (node:internal/process/execution:76:47)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8026892Z     at node:internal/main/eval_string:37:3
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8040462Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8040865Z Node.js v24.20.0
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8041550Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8041921Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8042145Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8042575Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8042795Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8042975Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8043334Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8043522Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8044733Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m36:40^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8045916Z     ^[[90m 34|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8046585Z     ^[[90m 35|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8047797Z     ^[[90m 36|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8048982Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8049540Z     ^[[90m 37|^[[39m }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8050154Z     ^[[90m 38|^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8051131Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m147:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8051775Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8052150Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8052479Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8054405Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-adapters.test.ts^[[2m > ^[[22mtrusted automation adapters^[[2m > ^[[22mAE-64: a persistence failure prevents both comment and publication
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8056233Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8056885Z     throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8057293Z           ^
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8057462Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8058671Z Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8060103Z     at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8060951Z     at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8061741Z     at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8062577Z     at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8063578Z     at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8064786Z     at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8065590Z     at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8066497Z     at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8067425Z     at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8068163Z     at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8068883Z   code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8069675Z   url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8070382Z }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8070561Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8070716Z Node.js v24.20.0
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8071416Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8071804Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8072024Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8072477Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8072714Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8072844Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8073073Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8073191Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8073711Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m36:40^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8074660Z     ^[[90m 34|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8075081Z     ^[[90m 35|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8075802Z     ^[[90m 36|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8076694Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8077384Z     ^[[90m 37|^[[39m }
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8077825Z     ^[[90m 38|^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8078830Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-adapters.test.ts:^[[2m156:5^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8079493Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8079903Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8080249Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8080266Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8081081Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m187 passed^[[39m^[[22m^[[90m (188)^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8082519Z ^[[2m      Tests ^[[22m ^[[1m^[[31m14 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1034 passed^[[39m^[[22m^[[90m (1048)^[[39m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8083165Z ^[[2m   Start at ^[[22m 13:07:16
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8083857Z ^[[2m   Duration ^[[22m 25.95s^[[2m (transform 2.68s, setup 1.22s, import 15.77s, tests 28.18s, environment 30ms)^[[22m
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8084753Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8084778Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8126533Z ##[error]AssertionError: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	    throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	          ^
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	    at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	  code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	  url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	}
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Node.js v24.20.0
+quality (node 24)	Run npm test	: expected 1 to be +0 // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- 0
+quality (node 24)	Run npm test	+ 1
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ scenario packages/core/test/unit/scripts/automation-adapters.test.ts:36:40
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/automation-adapters.test.ts:41:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8140410Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8151209Z ##[error]AssertionError: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	    throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	          ^
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	    at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	  code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	  url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	}
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Node.js v24.20.0
+quality (node 24)	Run npm test	: expected 1 to be +0 // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- 0
+quality (node 24)	Run npm test	+ 1
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ scenario packages/core/test/unit/scripts/automation-adapters.test.ts:36:40
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/automation-adapters.test.ts:51:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8156880Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8167810Z ##[error]AssertionError: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	    throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	          ^
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	    at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	  code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	  url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	}
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Node.js v24.20.0
+quality (node 24)	Run npm test	: expected 1 to be +0 // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- 0
+quality (node 24)	Run npm test	+ 1
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ scenario packages/core/test/unit/scripts/automation-adapters.test.ts:36:40
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/automation-adapters.test.ts:58:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8173752Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8184436Z ##[error]AssertionError: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	    throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	          ^
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	    at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	  code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	  url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	}
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Node.js v24.20.0
+quality (node 24)	Run npm test	: expected 1 to be +0 // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- 0
+quality (node 24)	Run npm test	+ 1
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ scenario packages/core/test/unit/scripts/automation-adapters.test.ts:36:40
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/automation-adapters.test.ts:69:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8189919Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8200332Z ##[error]AssertionError: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	    throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	          ^
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	    at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	  code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	  url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	}
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Node.js v24.20.0
+quality (node 24)	Run npm test	: expected 1 to be +0 // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- 0
+quality (node 24)	Run npm test	+ 1
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ scenario packages/core/test/unit/scripts/automation-adapters.test.ts:36:40
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/automation-adapters.test.ts:78:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8205996Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8216442Z ##[error]AssertionError: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	    throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	          ^
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	    at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	  code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	  url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	}
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Node.js v24.20.0
+quality (node 24)	Run npm test	: expected 1 to be +0 // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- 0
+quality (node 24)	Run npm test	+ 1
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ scenario packages/core/test/unit/scripts/automation-adapters.test.ts:36:40
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/automation-adapters.test.ts:87:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8222210Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8233012Z ##[error]AssertionError: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	    throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	          ^
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	    at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	  code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	  url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	}
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Node.js v24.20.0
+quality (node 24)	Run npm test	: expected 1 to be +0 // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- 0
+quality (node 24)	Run npm test	+ 1
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ scenario packages/core/test/unit/scripts/automation-adapters.test.ts:36:40
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/automation-adapters.test.ts:96:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8238647Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8248933Z ##[error]AssertionError: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	    throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	          ^
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	    at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	  code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	  url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	}
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Node.js v24.20.0
+quality (node 24)	Run npm test	: expected 1 to be +0 // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- 0
+quality (node 24)	Run npm test	+ 1
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ scenario packages/core/test/unit/scripts/automation-adapters.test.ts:36:40
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/automation-adapters.test.ts:105:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8254847Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8265184Z ##[error]AssertionError: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	    throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	          ^
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	    at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	  code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	  url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	}
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Node.js v24.20.0
+quality (node 24)	Run npm test	: expected 1 to be +0 // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- 0
+quality (node 24)	Run npm test	+ 1
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ scenario packages/core/test/unit/scripts/automation-adapters.test.ts:36:40
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/automation-adapters.test.ts:114:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8270835Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8281175Z ##[error]AssertionError: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	    throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	          ^
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	    at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	  code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	  url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	}
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Node.js v24.20.0
+quality (node 24)	Run npm test	: expected 1 to be +0 // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- 0
+quality (node 24)	Run npm test	+ 1
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ scenario packages/core/test/unit/scripts/automation-adapters.test.ts:36:40
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/automation-adapters.test.ts:122:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8286915Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8297427Z ##[error]AssertionError: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	    throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	          ^
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	    at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	  code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	  url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	}
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Node.js v24.20.0
+quality (node 24)	Run npm test	: expected 1 to be +0 // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- 0
+quality (node 24)	Run npm test	+ 1
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ scenario packages/core/test/unit/scripts/automation-adapters.test.ts:36:40
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/automation-adapters.test.ts:129:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8303149Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8314174Z ##[error]AssertionError: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	    throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	          ^
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	    at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	  code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	  url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	}
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Node.js v24.20.0
+quality (node 24)	Run npm test	: expected 1 to be +0 // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- 0
+quality (node 24)	Run npm test	+ 1
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ scenario packages/core/test/unit/scripts/automation-adapters.test.ts:36:40
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/automation-adapters.test.ts:137:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8320005Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8328839Z ##[error]AssertionError: file:///home/runner/work/motion5/motion5/[eval1]:24
+quality (node 24)	Run npm test	      const candidate = {version: 1, trusted_sha: A, request_commit: B, source_sha: A, request_digest: "d".repeat(64), files: [{path: "docs/a.md", content: "hello
+quality (node 24)	Run npm test	                                                                                                                                                            ^^^^^^
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	SyntaxError: Invalid or unexpected token
+quality (node 24)	Run npm test	    at compileSourceTextModule (node:internal/modules/esm/utils:319:16)
+quality (node 24)	Run npm test	    at ModuleLoader.createModuleWrap (node:internal/modules/esm/loader:209:12)
+quality (node 24)	Run npm test	    at ModuleLoader.eval (node:internal/modules/esm/loader:247:23)
+quality (node 24)	Run npm test	    at node:internal/process/execution:77:24
+quality (node 24)	Run npm test	    at asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:11)
+quality (node 24)	Run npm test	    at Object.runEntryPointWithESMLoader (node:internal/modules/run_main:123:19)
+quality (node 24)	Run npm test	    at evalModuleEntryPoint (node:internal/process/execution:76:47)
+quality (node 24)	Run npm test	    at node:internal/main/eval_string:37:3
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Node.js v24.20.0
+quality (node 24)	Run npm test	: expected 1 to be +0 // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- 0
+quality (node 24)	Run npm test	+ 1
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ scenario packages/core/test/unit/scripts/automation-adapters.test.ts:36:40
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/automation-adapters.test.ts:147:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8333556Z 
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8344212Z ##[error]AssertionError: node:internal/modules/esm/resolve:272
+quality (node 24)	Run npm test	    throw new ERR_MODULE_NOT_FOUND(
+quality (node 24)	Run npm test	          ^
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/home/runner/work/motion5/motion5/scripts/automation-report.mjs' imported from /home/runner/work/motion5/motion5/[eval1]
+quality (node 24)	Run npm test	    at finalizeResolution (node:internal/modules/esm/resolve:272:11)
+quality (node 24)	Run npm test	    at moduleResolve (node:internal/modules/esm/resolve:879:10)
+quality (node 24)	Run npm test	    at defaultResolve (node:internal/modules/esm/resolve:1006:11)
+quality (node 24)	Run npm test	    at #cachedDefaultResolve (node:internal/modules/esm/loader:705:20)
+quality (node 24)	Run npm test	    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:725:38)
+quality (node 24)	Run npm test	    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:763:56)
+quality (node 24)	Run npm test	    at #resolve (node:internal/modules/esm/loader:687:17)
+quality (node 24)	Run npm test	    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:607:35)
+quality (node 24)	Run npm test	    at ModuleJob.syncLink (node:internal/modules/esm/module_job:276:33)
+quality (node 24)	Run npm test	    at ModuleJob.link (node:internal/modules/esm/module_job:381:17) {
+quality (node 24)	Run npm test	  code: 'ERR_MODULE_NOT_FOUND',
+quality (node 24)	Run npm test	  url: 'file:///home/runner/work/motion5/motion5/scripts/automation-report.mjs'
+quality (node 24)	Run npm test	}
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	Node.js v24.20.0
+quality (node 24)	Run npm test	: expected 1 to be +0 // Object.is equality
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- Expected
+quality (node 24)	Run npm test	+ Received
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	- 0
+quality (node 24)	Run npm test	+ 1
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	 ❯ scenario packages/core/test/unit/scripts/automation-adapters.test.ts:36:40
+quality (node 24)	Run npm test	 ❯ packages/core/test/unit/scripts/automation-adapters.test.ts:156:5
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	
+quality (node 24)	Run npm test	2026-09-06T13:07:42.8498232Z ##[error]Process completed with exit code 1.
+```
