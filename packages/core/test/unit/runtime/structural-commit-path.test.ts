@@ -154,6 +154,7 @@ type SettleHook = Extract<CommitHook, "addMotionTrack"> | "disposeTrack" | "stag
 interface Behaviour {
   readonly createMotion?: Error;
   readonly failAt?: Partial<Record<SettleHook, unknown>>;
+  readonly releaseFailure?: unknown;
   readonly disposeFrom?: CommitHook;
   /**
    * Thrown by the disposing hook after it disposed, so the two facts can be measured apart.
@@ -289,7 +290,10 @@ function recorder(behaviour: Behaviour = {}): Recorder {
       // The last line of a teardown, and the one the whole of issue #303 is about: every rollback
       // step and every settle step above reaches a composition, so a journal that records this can
       // say whether they reached a live one.
-      disposeComposition: () => record("composition-dispose"),
+      disposeComposition: () => {
+        record("composition-dispose");
+        if (Object.hasOwn(behaviour, "releaseFailure")) throw behaviour.releaseFailure;
+      },
       // The two seams issue #309's subject needs, wired unconditionally rather than behind a flag
       // the way `stageTrack` is, and the difference is which cases the wiring can reach. `#derive`
       // calls `stageTrack` on every replacement, so `RA-1` through `RA-7` measure a rig without one
@@ -1250,6 +1254,96 @@ describe("a structural change runs one transaction, in one order", () => {
     expect(runtime.instanceCount).toBe(2);
     expect(disagreeing(runtime)).toEqual([]);
     runtime.dispose();
+  });
+
+  it("RA-140 completes a direct release before reporting its composition failure", () => {
+    const failure = new Error("composition release failed");
+    const journal = recorder({ releaseFailure: failure });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    runtime.mount(NODE_ID);
+
+    const thrown = thrownBy(() => runtime.dispose());
+
+    expect(thrown).toBe(failure);
+    expect(journal.entries).toEqual(["composition-dispose"]);
+    expect(runtime.instanceCount).toBe(0);
+    expect(runtime.diagnostics.entries).toHaveLength(1);
+    expect(runtime.diagnostics.entries[0]).toMatchObject({
+      ruleId: "project-release-failed",
+      message: failure.message,
+    });
+    runtime.dispose();
+    expect(journal.entries).toEqual(["composition-dispose"]);
+  });
+
+  it("RA-141 keeps the commit refusal ahead of a deferred release failure", () => {
+    const failure = new Error("composition release failed");
+    const host: Host = {};
+    const journal = recorder({ disposeFrom: "compileTrack", host, releaseFailure: failure });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+
+    const thrown = thrownBy(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+
+    expect((thrown as Error).message).toBe("ProjectRuntime is disposed.");
+    expect(thrown).not.toBe(failure);
+    expect(runtime.diagnostics.entries).toHaveLength(1);
+    expect(runtime.diagnostics.entries[0]?.ruleId).toBe("project-release-failed");
+  });
+
+  it("RA-142 preserves a successful commit result when its deferred release fails", () => {
+    const failure = new Error("composition release failed");
+    const host: Host = {};
+    const journal = recorder({ disposeFrom: "addMotionTrack", host, releaseFailure: failure });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+
+    const outcome = outcomeOf(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+
+    expect(outcome.thrown).toBeUndefined();
+    expect(outcome.value?.id).toBe(ADDED_ID);
+    expect(outcome.value?.live).toBe(false);
+    expect(runtime.diagnostics.entries[0]?.message).toBe(failure.message);
+  });
+
+  it("RA-143 completes every graph detach before reporting their failures", () => {
+    const first = new Error("first detach failed");
+    const second = new Error("second detach failed");
+    const journal = recorder();
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    runtime.mount(NODE_ID);
+    runtime.addTrack({ id: "second" });
+    const detached: string[] = [];
+    const detach = vi.spyOn(runtime.graph, "detach").mockImplementation((nodeId) => {
+      detached.push(nodeId);
+      throw nodeId === NODE_ID ? first : second;
+    });
+    const disposed = vi.spyOn(runtime.graph, "dispose");
+
+    const thrown = thrownBy(() => runtime.dispose());
+
+    expect(thrown).toBeInstanceOf(AggregateError);
+    expect((thrown as AggregateError).errors).toEqual([first, second]);
+    expect(detached).toEqual([NODE_ID, "~/second"]);
+    expect(disposed).toHaveBeenCalledOnce();
+    expect(journal.entries).toEqual(["composition-dispose"]);
+    expect(runtime.instanceCount).toBe(0);
+    expect(runtime.diagnostics.entries).toHaveLength(2);
+    detach.mockRestore();
+    disposed.mockRestore();
+  });
+
+  it("RA-144 releases cleanly once and records no release diagnostic", () => {
+    const journal = recorder();
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    runtime.mount(NODE_ID);
+
+    runtime.dispose();
+    runtime.dispose();
+
+    expect(journal.entries).toEqual(["composition-dispose"]);
+    expect(runtime.instanceCount).toBe(0);
+    expect(runtime.diagnostics.entries).toEqual([]);
   });
 
   it("RA-136 refuses a live write from inside a commit before its seam is reached", () => {
