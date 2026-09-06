@@ -66,7 +66,10 @@ export function verify(inventory, result, expected, scope) {
   assert.equal(result.reason, "passed", "Suite did not complete successfully");
   assert.deepEqual(result.errors, [], "Unhandled suite errors");
   assert.ok(result.modules.length > 0, "Missing modules");
-  assert.ok(result.modules.every((module) => module.state === "passed"), "Failed module");
+  assert.ok(
+    result.modules.every((module) => module.state === "passed"),
+    "Failed module",
+  );
   const all = counts(inventory.all);
   for (const subset of ["integration", "end-to-end"]) {
     const selected = inventory.all.filter((test) => test.file.includes(filters[subset]));
@@ -77,7 +80,10 @@ export function verify(inventory, result, expected, scope) {
   const selected = result.tests.filter((test) => test.file.includes(filters[scope]));
   assert.ok(selected.length > 0, "Missing scoped results");
   if (scope !== "all")
-    assert.ok(selected.every((test) => test.state === "passed"), "Skipped or failed subset");
+    assert.ok(
+      selected.every((test) => test.state === "passed"),
+      "Skipped or failed subset",
+    );
   return { scope, tests: inventory[scope].length, identity: expected };
 }
 

@@ -37,13 +37,7 @@ jobs:
       - run: npm run typecheck
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - run: npm run format:check
-        id: format
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
-      - name: Show expected evidence-adapter formatting without writing
-        if: ${{ !cancelled() && steps.format.outcome == 'failure' }}
-        run: |
-          npx --no-install prettier scripts/ci-evidence.mjs
-          exit 1
       - run: node scripts/ci-evidence.mjs discover
         if: ${{ !cancelled() && steps.install.outcome == 'success' }}
       - run: npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs
