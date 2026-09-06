@@ -6,6 +6,7 @@ import { PluginRegistry } from "../../../src/domain/plugins";
 import { Engine, type ProjectHandle } from "../../../src/engine";
 import { transformPlugin } from "../../../src/plugins/transform";
 import { createManualClock } from "../../../src/ports/clock";
+import type { InterpolationTimeline } from "../../../src/ports/interpolator";
 import {
   ProjectRuntime,
   type ProjectRuntimeOptions,
@@ -75,12 +76,12 @@ const PROJECT: ProjectDefinition = {
   ],
 };
 
-function load(): ProjectHandle {
+function load(interpolator = createFakeInterpolator()): ProjectHandle {
   const plugins = new PluginRegistry();
   plugins.register(transformPlugin);
   const handle = new Engine({
     clock: createManualClock(),
-    interpolator: createFakeInterpolator(),
+    interpolator,
     scheduler: createFakeScheduler(),
     plugins,
   }).load(PROJECT);
@@ -191,6 +192,233 @@ function directRig(disposeFrom: "writeValues" | "stageTrack", declined = false):
     },
   };
 }
+
+describe("direct-write failures respect the actual stage lifecycle", () => {
+  it("LV-18 leaves a refused writer's retained definition and publication untouched", () => {
+    const failure = new Error("writer refused");
+    let refuse = true;
+    const writeValues = vi.fn(() => {
+      if (refuse) throw failure;
+      return undefined;
+    });
+    const runtime = new ProjectRuntime(DIRECT_PROJECT, {
+      clock: createManualClock(),
+      compose: () => () => ({ values: { x: 200 }, sourceProgress: 0.5, sourceRevisions: {} }),
+      writeValues,
+    });
+    runtime.mount(ARM);
+    runtime.invalidate([ARM]);
+    const arm = runtime.track(ARM);
+    const before = arm.definition;
+    const patch = runtime.graph.registry.get(ARM);
+    const invalidate = vi.spyOn(runtime.graph, "invalidate");
+    expect(thrownBy(() => arm.setValues({ x: 260 }))).toBe(failure);
+    expect(arm.definition).toBe(before);
+    expect(runtime.graph.registry.get(ARM)).toBe(patch);
+    expect(invalidate).not.toHaveBeenCalled();
+    refuse = false;
+    expect(arm.setValues({ x: 260 }).seeds).toEqual([ARM]);
+    expect(arm.definition).not.toBe(before);
+    expect(writeValues).toHaveBeenCalledTimes(2);
+    runtime.dispose();
+  });
+
+  it("LV-19 leaves the retained definition unmoved when the real staging build refuses", () => {
+    const interpolator = createFakeInterpolator();
+    const create = vi.spyOn(interpolator, "create");
+    const handle = load(interpolator);
+    handle.seek(ARM, 0.5);
+    const arm = handle.track(ARM);
+    const before = arm.definition;
+    const published = handle.get(ARM);
+    const failure = new Error("build refused");
+    const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
+    const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
+    create.mockImplementationOnce(() => {
+      throw failure;
+    });
+    expect(thrownBy(() => arm.setValues({ rotation: FASTER }))).toBe(failure);
+    expect(arm.definition).toBe(before);
+    expect(handle.get(ARM)).toBe(published);
+    expect(invalidate).not.toHaveBeenCalled();
+    handle.seek(ARM, 0.5);
+    expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 45 });
+    arm.setValues({ rotation: FASTER });
+    expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 90 });
+    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    expect(replaceGraph).not.toHaveBeenCalled();
+    handle.dispose();
+  });
+
+  it("PK-20 completes an escalation whose real displaced timeline cleanup throws", () => {
+    const interpolator = createFakeInterpolator();
+    const create = vi.spyOn(interpolator, "create");
+    const handle = load(interpolator);
+    handle.seek(ARM, 0.5);
+    const arm = handle.track(ARM);
+    const timeline = create.mock.results[0]!.value as InterpolationTimeline;
+    const kill = timeline.kill.bind(timeline);
+    const failure = new Error("displaced cleanup failed");
+    const killed = vi.spyOn(timeline, "kill").mockImplementationOnce(() => {
+      kill();
+      throw failure;
+    });
+    const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
+    const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
+    expect(thrownBy(() => arm.setValues({ rotation: FASTER }))).toBe(failure);
+    // Engine installs at stage time and marks settled before kill. Rollback here is a no-op,
+    // so asserting the old definition would certify a retained/compiled disagreement.
+    expect(retained(arm)).toEqual({ values: { x: 200, y: 300, rotation: FASTER } });
+    expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 90 });
+    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(replaceGraph).not.toHaveBeenCalled();
+    arm.setValues({ x: 260 });
+    expect(values(handle, ARM)).toEqual({ x: 260, y: 300, rotation: 90 });
+    handle.dispose();
+    expect(killed).toHaveBeenCalledTimes(1);
+  });
+
+  it("LV-20 preserves finalization and publication failures in occurrence order", () => {
+    const interpolator = createFakeInterpolator();
+    const create = vi.spyOn(interpolator, "create");
+    const handle = load(interpolator);
+    handle.seek(ARM, 0.5);
+    const timeline = create.mock.results[0]!.value as InterpolationTimeline;
+    const kill = timeline.kill.bind(timeline);
+    const release = new Error("release failed");
+    const publish = new Error("subscriber failed");
+    vi.spyOn(timeline, "kill").mockImplementationOnce(() => {
+      kill();
+      throw release;
+    });
+    const unsubscribe = runtimeOf(handle).graph.registry.subscribeBatch(() => {
+      throw publish;
+    });
+    const thrown = thrownBy(() => handle.track(ARM).setValues({ rotation: FASTER }));
+    expect(thrown).toBeInstanceOf(AggregateError);
+    expect((thrown as AggregateError).errors).toEqual([release, publish]);
+    expect((thrown as AggregateError).errors[0]).toBe(release);
+    expect((thrown as AggregateError).errors[1]).toBe(publish);
+    expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
+    unsubscribe();
+    handle.dispose();
+  });
+
+  it("reads fallible progress before either path acquires a stage", () => {
+    for (const recompile of [false, true]) {
+      const failure = new Error("progress result refused");
+      let refuse = true;
+      const commit = vi.fn();
+      const rollback = vi.fn();
+      const stageTrack = vi.fn(() => ({ commit, rollback }));
+      const runtime = new ProjectRuntime(DIRECT_PROJECT, {
+        clock: createManualClock(),
+        compose: () => () => ({ values: { x: 200 }, sourceProgress: 0.5, sourceRevisions: {} }),
+        stageTrack,
+        writeValues: () => ({
+          patched: false,
+          get progress() {
+            if (refuse) throw failure;
+            return 0.5;
+          },
+        }),
+      });
+      runtime.mount(ARM);
+      const arm = runtime.track(ARM);
+      const before = arm.definition;
+      const write = () => (recompile ? arm.setKeyframe("fk", "y", 300) : arm.setValues({ x: 260 }));
+      expect(thrownBy(write)).toBe(failure);
+      expect(stageTrack).not.toHaveBeenCalled();
+      expect(commit).not.toHaveBeenCalled();
+      expect(rollback).not.toHaveBeenCalled();
+      expect(arm.definition).toBe(before);
+      refuse = false;
+      expect(write().seeds).toEqual([ARM]);
+      expect(stageTrack).toHaveBeenCalledTimes(1);
+      expect(commit).toHaveBeenCalledTimes(1);
+      runtime.dispose();
+    }
+  });
+
+  it("attempts publication after a failed re-seek without rolling back accepted state", () => {
+    const failure = new Error("seek failed");
+    const commit = vi.fn();
+    const rollback = vi.fn();
+    let compiledX = 200;
+    const runtime = new ProjectRuntime(DIRECT_PROJECT, {
+      clock: createManualClock(),
+      compose: () => () => ({ values: { x: compiledX }, sourceProgress: 0, sourceRevisions: {} }),
+      writeValues: () => ({ patched: false, progress: 0.5 }),
+      stageTrack: () => {
+        compiledX = 260;
+        return { commit, rollback };
+      },
+      setProgress: () => {
+        throw failure;
+      },
+    });
+    runtime.mount(ARM);
+    const invalidate = vi.spyOn(runtime.graph, "invalidate");
+    const arm = runtime.track(ARM);
+    expect(thrownBy(() => arm.setValues({ x: 260 }))).toBe(failure);
+    expect(commit).toHaveBeenCalledTimes(1);
+    expect(rollback).not.toHaveBeenCalled();
+    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(runtime.graph.registry.get(ARM)?.values.x).toBe(260);
+    expect(runtime.graph.registry.get(ARM)?.sourceProgress).toBe(0);
+    expect(arm.definition.keyframes?.fk).toEqual({ values: { x: 260 } });
+    runtime.dispose();
+  });
+
+  it("LV-21 conservatively rebuilds after a successful mask followed by a failed stage", () => {
+    const registry = new PluginRegistry();
+    registry.register({
+      name: "fk",
+      keys: ["x"],
+      requirements: { base: {} },
+      compose: (values) => values,
+    });
+    let mask = 200;
+    let refuseStage = true;
+    const failure = new Error("stage refused");
+    const stageTrack = vi.fn(() => {
+      if (refuseStage) throw failure;
+      mask = 200;
+      return { commit: () => undefined, rollback: () => undefined };
+    });
+    const runtime = new ProjectRuntime(
+      { ...DIRECT_PROJECT, freeTracks: [{ id: "a" }, { id: "b" }] },
+      {
+        clock: createManualClock(),
+        compose: () => () => ({ values: { x: mask }, sourceProgress: 0.5, sourceRevisions: {} }),
+        resolveKeyframes: registry.resolveForKeyframes.bind(registry),
+        writeValues: () => {
+          mask = 260;
+          return { patched: false, progress: 0.5 };
+        },
+        stageTrack,
+      },
+    );
+    runtime.mount(ARM);
+    runtime.mount("~/a");
+    runtime.mount("~/b");
+    runtime.invalidate([ARM, "~/a", "~/b"]);
+    const arm = runtime.track(ARM);
+    const before = arm.definition;
+    expect(thrownBy(() => arm.setValues({ x: 260 }))).toBe(failure);
+    expect(arm.definition).toBe(before);
+    // The writer carries no inverse. Do not pretend its successful mask was rolled back.
+    expect(runtime.invalidate([ARM]).patches[0]?.values.x).toBe(260);
+    refuseStage = false;
+    arm.setRequire("fk", "base", "~/a");
+    expect(stageTrack).toHaveBeenCalledTimes(2);
+    expect(runtime.graph.registry.get(ARM)?.values.x).toBe(200);
+    arm.setRequire("fk", "base", "~/b");
+    expect(stageTrack).toHaveBeenCalledTimes(2);
+    runtime.dispose();
+  });
+});
 
 describe("live values reach the graph without replacing it", () => {
   it("LV-4 never reaches replace(), and a real replace() drops the mask", () => {

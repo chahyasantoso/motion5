@@ -3,6 +3,7 @@ import type {
   AuthoredPluginGroup,
   AuthoredProperty,
   ObservationDefinition,
+  PatchBatch,
   ProjectDefinition,
   TrackDefinition,
   MotionDefinition,
@@ -93,6 +94,14 @@ type MotionEntry = {
   definition: MotionDefinition;
   token: number;
 };
+/**
+ * A replacement already installed by the staging seam, with its displaced Track held for rollback.
+ *
+ * Before commit starts, rollback restores the displaced Track and releases the replacement.
+ * Commit finalizes adoption and releases the displaced Track; that release can throw after the
+ * replacement became irreversible. A throwing commit is not a promise that rollback can restore
+ * a usable old Track. The staging seam owns cleanup if it throws before returning this handle.
+ */
 export interface StagedTrack {
   commit(): void;
   rollback(): void;
@@ -963,6 +972,15 @@ export class ProjectRuntime {
       }
       const mask = { ...authoredValues(entry.track), ...statics };
       const written = this.#writeValuesHook(nodeId, mask, involved ? animated : undefined, rebase);
+      let staged: StagedTrack | undefined;
+      let progress: number | undefined;
+      if (written !== undefined && !written.patched) {
+        // The mask succeeded and has no inverse. If staging refuses, keep the old definition and
+        // overlay but conservatively require the next structural edit to drop that mask.
+        this.#tracks.set(nodeId, { ...entry, liveWrite: true });
+        progress = written.progress;
+        staged = this.#stageTrack?.(rewritten, nodeId);
+      }
       this.#tracks.set(nodeId, {
         ...entry,
         track: rebase ? rewritten : entry.track,
@@ -970,15 +988,29 @@ export class ProjectRuntime {
         // In force from here until something builds a fresh Track for this node. See ADR-066.
         liveWrite: true,
       });
-      // The escalation, and it is neither `#replaceTrack` nor `replaceGraph`: topology did not change
-      // and the compiled definition is allowed to differ from the retained one. The re-seek is here
-      // because this is the only path that escalates. See ADR-060.
-      if (written !== undefined && !written.patched) {
-        this.#stageTrack?.(rewritten, nodeId)?.commit();
-        this.#setProgress(nodeId, written.progress);
-      }
-      return this.#invalidateOne(nodeId);
+      return this.#completeWrite(nodeId, staged, progress);
     });
+  }
+
+  #completeWrite(
+    nodeId: string,
+    staged: StagedTrack | undefined,
+    progress: number | undefined,
+  ): PatchBatch {
+    if (staged === undefined && progress === undefined) return this.#invalidateOne(nodeId);
+    let batch!: PatchBatch;
+    // Adoption already happened. A commit can fail while releasing the old Track, after rollback
+    // ceased to be legal. Complete the remaining attempts and report without reverting the pair.
+    runSettleSteps([
+      () => staged?.commit(),
+      () => {
+        if (progress !== undefined) this.#setProgress(nodeId, progress);
+      },
+      () => {
+        batch = this.#invalidateOne(nodeId);
+      },
+    ]);
+    return batch;
   }
 
   #boundGroup(
@@ -1020,6 +1052,10 @@ export class ProjectRuntime {
         Object.keys(entry.overlay).length === 0 ? undefined : NO_OVERLAY,
         true,
       );
+      // The successful writer may have changed a mask even if staging now refuses. Recording
+      // only that conservative fact keeps a later binding edit from skipping its repair build.
+      this.#tracks.set(nodeId, { ...entry, liveWrite: true });
+      const progress = written?.progress;
       const staged = this.#stageTrack?.(accepted, nodeId);
       this.#tracks.set(nodeId, {
         ...entry,
@@ -1027,9 +1063,7 @@ export class ProjectRuntime {
         overlay: NO_OVERLAY,
         liveWrite: false,
       });
-      staged?.commit();
-      if (written !== undefined) this.#setProgress(nodeId, written.progress);
-      return this.#invalidateOne(nodeId);
+      return this.#completeWrite(nodeId, staged, progress);
     });
   }
 
