@@ -1,0 +1,16 @@
+{
+ "version": 1,
+ "expected_head": "fefc0490b51bb9e8e332788f009aca34fed5ff9b",
+ "expected_blobs": {
+  "scripts/automation-receipt.mjs": "86348ebaa7f2f9123da66531e670289de9da19ee",
+  "packages/core/test/unit/scripts/automation-receipt.test.ts": "67cf197250063861caccd606e3fa7ae7f7f1be5c"
+ },
+ "message": "fix(automation): keep CI unknown when publication is unconfirmed",
+ "target": 330,
+ "edits": [
+  {"path":"scripts/automation-receipt.mjs","find":"    ci: published_sha ? \"pending\" : \"not_run\",","replace":"    ci: published_sha ? \"pending\" : publication === \"unconfirmed\" ? \"unavailable\" : \"not_run\","},
+  {"path":"packages/core/test/unit/scripts/automation-receipt.test.ts","find":"AE-37: validation and formatter failure never claim publication or verified CI","replace":"AE-37: precommit phase receipts never claim publication or verified CI"},
+  {"path":"packages/core/test/unit/scripts/automation-receipt.test.ts","find":"AE-39: confirmed publication remains CI pending and survives report failure","replace":"AE-39: rendering confirmed publication preserves its identity and pending CI"},
+  {"path":"packages/core/test/unit/scripts/automation-receipt.test.ts","find":"    expect(receipt.next_action).toBe(\"reconcile_before_retry\");","replace":"    expect(receipt.next_action).toBe(\"reconcile_before_retry\");\n    expect(receipt.ci).toBe(\"unavailable\");"}
+ ]
+}
