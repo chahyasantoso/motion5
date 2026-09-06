@@ -149,7 +149,11 @@ type CommitHook =
   | "replaceMotionTrack"
   | "addMotionTrack";
 /** Only the settle hooks this rig can fail; unsupported configuration must not be silent. */
-type SettleHook = Extract<CommitHook, "addMotionTrack"> | "disposeTrack" | "stageCommit";
+type SettleHook =
+  | Extract<CommitHook, "addMotionTrack">
+  | "disposeTrack"
+  | "stageCommit"
+  | "disposeComposition";
 /** What one rig's hooks do beyond recording, and the whole of what a case configures. */
 interface Behaviour {
   readonly createMotion?: Error;
@@ -289,7 +293,10 @@ function recorder(behaviour: Behaviour = {}): Recorder {
       // The last line of a teardown, and the one the whole of issue #303 is about: every rollback
       // step and every settle step above reaches a composition, so a journal that records this can
       // say whether they reached a live one.
-      disposeComposition: () => record("composition-dispose"),
+      disposeComposition: () => {
+        record("composition-dispose");
+        failing("disposeComposition");
+      },
       // The two seams issue #309's subject needs, wired unconditionally rather than behind a flag
       // the way `stageTrack` is, and the difference is which cases the wiring can reach. `#derive`
       // calls `stageTrack` on every replacement, so `RA-1` through `RA-7` measure a rig without one
@@ -364,6 +371,180 @@ function disagreeing(runtime: ProjectRuntime): readonly string[] {
     .filter((node) => runtime.track(node.id).definition !== node.track)
     .map((node) => node.id);
 }
+
+describe("project release preserves the outcome it follows", () => {
+  it("RA-140 attempts every release after detach and graph disposal failures", () => {
+    const journal = recorder({ failAt: { disposeComposition: new Error("composition failed") } });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    const added = runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID });
+    const motion = runtime.motion(MOTION_ID);
+    runtime.mount(NODE_ID);
+    const release: string[] = [];
+    const detach = runtime.graph.detach.bind(runtime.graph);
+    const detachSpy = vi.spyOn(runtime.graph, "detach").mockImplementation((id) => {
+      release.push(`detach ${id}`);
+      if (id === ADDED_ID) throw new Error("detach failed");
+      detach(id);
+    });
+    const dispose = runtime.graph.dispose.bind(runtime.graph);
+    const disposeSpy = vi.spyOn(runtime.graph, "dispose").mockImplementation(() => {
+      release.push("graph dispose");
+      dispose();
+      throw new Error("graph failed");
+    });
+    expect(() => runtime.dispose()).not.toThrow();
+    expect(release).toEqual([`detach ${ADDED_ID}`, `detach ${NODE_ID}`, "graph dispose"]);
+    expect(runtime.instanceCount).toBe(0);
+    expect(runtime.graph.memberCount).toBe(0);
+    expect(added.live).toBe(false);
+    expect(motion.live).toBe(false);
+    expect(() => runtime.graph.attach(NODE_ID)).toThrow("GraphRuntime is disposed.");
+    expect(occurrences(journal, "composition-dispose")).toBe(1);
+    expect(runtime.diagnostics.entries.map(({ message }) => message)).toEqual([
+      "detach failed",
+      "graph failed",
+      "composition failed",
+    ]);
+    expect(
+      runtime.diagnostics.entries.every(
+        ({ ruleId, severity }) => ruleId === "project-release-failed" && severity === "error",
+      ),
+    ).toBe(true);
+    runtime.dispose();
+    expect(detachSpy).toHaveBeenCalledTimes(2);
+    expect(disposeSpy).toHaveBeenCalledTimes(1);
+    expect(occurrences(journal, "composition-dispose")).toBe(1);
+    detachSpy.mockRestore();
+    disposeSpy.mockRestore();
+  });
+
+  it("RA-141 preserves effect and rollback diagnoses ahead of a failing release", () => {
+    for (const rollbackFails of [false, true]) {
+      const rejection = new Error("effect refused");
+      const rollback = new Error("rollback refused");
+      const host: Host = {};
+      const journal = recorder({
+        host,
+        staging: true,
+        disposeFrom: "replaceMotionTrack",
+        throwAfterDispose: rejection,
+        failAt: { disposeComposition: new Error("release failed") },
+      });
+      const runtime = new ProjectRuntime(BASE_PROJECT, {
+        ...journal.options,
+        stageTrack: (track, id) => {
+          const staged = journal.options.stageTrack!(track, id);
+          return {
+            commit: () => staged.commit(),
+            rollback: () => {
+              staged.rollback();
+              if (rollbackFails) throw rollback;
+            },
+          };
+        },
+      });
+      host.runtime = runtime;
+      const thrown = thrownBy(() => runtime.track(NODE_ID).replace({ id: "arm", duration: 500 }));
+      if (rollbackFails) {
+        expect(thrown).toBeInstanceOf(AggregateError);
+        expect((thrown as AggregateError).errors).toEqual([rejection, rollback]);
+      } else expect(thrown).toBe(rejection);
+      expect(journal.entries.slice(-2)).toEqual(["stage-rollback hero/arm", "composition-dispose"]);
+      expect(runtime.diagnostics.entries.map(({ message }) => message)).toEqual(["release failed"]);
+    }
+  });
+
+  it("RA-142 returns the accepted handle despite deferred release failure", () => {
+    const host: Host = {};
+    const journal = recorder({
+      host,
+      disposeFrom: "addMotionTrack",
+      failAt: { disposeComposition: new Error("release failed") },
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+    const before = runtime.graph.sequence;
+    const outcome = outcomeOf(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+    expect(outcome.thrown).toBeUndefined();
+    expect(outcome.value?.id).toBe(ADDED_ID);
+    expect(outcome.value?.live).toBe(false);
+    expect(runtime.instanceCount).toBe(0);
+    expect(runtime.graph.memberCount).toBe(0);
+    expect(runtime.graph.sequence).toBe(before);
+    expect(runtime.diagnostics.entries.map(({ message }) => message)).toEqual(["release failed"]);
+    expect(occurrences(journal, "composition-dispose")).toBe(1);
+  });
+
+  it("RA-143 retains the disposal refusal and counts a thrown undefined release", () => {
+    const host: Host = {};
+    const journal = recorder({
+      host,
+      disposeFrom: "compileTrack",
+      failAt: { disposeComposition: undefined },
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+    const thrown = thrownBy(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }));
+    expect(thrown).toBeInstanceOf(Error);
+    expect(thrown).not.toBeInstanceOf(AggregateError);
+    expect((thrown as Error).message).toBe("ProjectRuntime is disposed.");
+    expect(runtime.diagnostics.entries.map(({ message }) => message)).toEqual(["undefined"]);
+    expect(journal.entries).toEqual([
+      "compile hero/hand",
+      "dispose hero/hand",
+      "composition-dispose",
+    ]);
+  });
+
+  it("RA-144 leaves successful release silent, complete and idempotent", () => {
+    const journal = recorder();
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    runtime.mount(NODE_ID);
+    const answer = {};
+    expect(
+      runtime.edit(() => {
+        runtime.dispose();
+        return answer;
+      }),
+    ).toBe(answer);
+    expect(runtime.instanceCount).toBe(0);
+    expect(runtime.graph.memberCount).toBe(0);
+    expect(runtime.diagnostics.entries).toEqual([]);
+    runtime.dispose();
+    expect(occurrences(journal, "composition-dispose")).toBe(1);
+  });
+
+  it("cannot replace an outcome while formatting a hostile thrown value", () => {
+    const failure = {
+      toString() {
+        throw new Error("format failed");
+      },
+    };
+    const journal = recorder({ failAt: { disposeComposition: failure } });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    expect(() => runtime.dispose()).not.toThrow();
+    expect(runtime.diagnostics.entries).toHaveLength(1);
+    expect(runtime.diagnostics.entries[0]?.message).toBe(
+      "Release failed with an unprintable thrown value.",
+    );
+  });
+
+  it("preserves a settle failure when release also fails", () => {
+    const failure = new Error("settle failed");
+    const host: Host = {};
+    const journal = recorder({
+      host,
+      disposeFrom: "addMotionTrack",
+      failAt: { addMotionTrack: failure, disposeComposition: new Error("release failed") },
+    });
+    const runtime = new ProjectRuntime(BASE_PROJECT, journal.options);
+    host.runtime = runtime;
+    expect(thrownBy(() => runtime.addTrack({ id: "hand" }, { motionId: MOTION_ID }))).toBe(failure);
+    expect(runtime.instanceCount).toBe(0);
+    expect(runtime.graph.memberCount).toBe(0);
+    expect(runtime.diagnostics.entries.map(({ message }) => message)).toEqual(["release failed"]);
+  });
+});
 
 describe("a structural change runs one transaction, in one order", () => {
   it("RA-1 creates the Motion before the graph is asked and destroys it on refusal", () => {
