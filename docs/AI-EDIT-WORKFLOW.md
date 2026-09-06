@@ -1,119 +1,100 @@
 # AI edit workflow
 
-This document is the contract for [AI edit](../.github/workflows/ai-edit.yml), an anchor-based editor for an implementor without a local checkout. The script owns validation and staging; the workflow owns formatting, publication, and reporting. A successful apply step is not a published commit, and a published commit is not verified CI.
+This branch contains the gated, two-runner implementation of [AI edit](../.github/workflows/ai-edit.yml). It is not activated merely because its PR passes CI. The default-branch [reporter](../.github/workflows/archive-ci-logs.yml), a reviewed immutable runner revision, appropriate credentials, and live routing evidence are separate rollout requirements. Until that rollout, earlier branches can still contain the legacy privileged writer. Read the workflow at the exact branch you use.
+
+## Ownership and invariant
+
+An attempted edit, a prepared candidate, a published commit, and verified CI are different facts. No comment may promote one into another.
+
+- [apply-ai-edit.mjs](../scripts/apply-ai-edit.mjs) owns protocol validation and in-memory staging before disposable filesystem writes.
+- [automation-receipt.mjs](../scripts/automation-receipt.mjs) owns canonical request identity, receipt states, diagnostic limits, and receipt rendering.
+- [automation-publish.mjs](../scripts/automation-publish.mjs) owns preparation orchestration, independent candidate validation, publication intent, and remote commit reconciliation.
+- [automation-report.mjs](../scripts/automation-report.mjs) owns GitHub metadata, immutable evidence persistence, diagnostic retrieval, and bot-owned comment projections.
+
+The workflow owns credential placement and event routing. Candidate processing has read-only permissions and no writer secret. Publication runs separately from the default branch, executes only reviewed code, and treats candidate output as bounded data. This boundary covers this route, not every historical maintenance workflow in the repository.
 
 ## Protocol version 1
 
-Version 1 is deliberately fail-closed. Unversioned requests and unknown request or edit keys are refused, including misspellings such as `dry_rnu`. Read the script and workflow at the branch you will use: older branches may still run the legacy implementation and ignore unknown keys.
+Requests remain small JSON files under `.ai/edits/`. Unknown request and edit fields, unsupported versions, stale snapshots, ambiguous anchors, unsafe paths, and CI-skip subjects are refused.
 
-A request has these fields:
+A request requires `version: 1`, `expected_head`, `expected_blobs`, `message`, and `edits`. `expected_head` is the full lowercase source commit SHA read before submission, not the future request commit. `expected_blobs` names every distinct edited path exactly once, using its original Git blob SHA or `null` for an absent file. A Git blob SHA is not a commit SHA or a plain content checksum.
 
-- `version`: required, exactly the number `1`.
-- `expected_head`: required, the full lowercase commit SHA of the branch snapshot you read before committing the request.
-- `expected_blobs`: required, one entry for every distinct edited path, and no other paths. An existing file uses its original Git blob SHA from the contents API at `expected_head`. A file absent in that snapshot uses `null`. This is a Git blob SHA, not a commit SHA or a plain content checksum.
-- `message`: required, a nonempty single-line commit subject without control characters or CI-skip directives. Follow [PR-WORKFLOW.md](./PR-WORKFLOW.md).
-- `target`: optional positive safe integer naming the issue or pull request for the result. Name it when possible. The fallback is an open PR for the branch; without either, a job summary is the remaining reporting channel and may not be API-readable.
-- `dry_run`: optional boolean, default `false`. Validation only, as described below.
-- `edits`: required array of 1 through 50 edits.
+`edits` contains 1 through 50 entries. Each entry specifies `path` and exactly one operation: `find` plus `replace`, `create` with complete text, or `delete: true`. Anchors must be nonempty and occur exactly once. Multiple edits to one file use its single original blob precondition and apply sequentially to the staged content. Empty replacement removes an anchor. Creates cannot overwrite an existing or already-staged file.
 
-This is an illustrative request, not a runnable snapshot. Replace the two SHA placeholders with values read from your branch.
+`message` must be a nonempty single line without control characters or CI-skip directives. Real and dry-run requests both reject `[skip ci]`, `[ci skip]`, `[no ci]`, `[skip actions]`, `[actions skip]`, and `skip-checks:`, case-insensitively. Submission commits must not use those directives either.
 
-```json
-{
-  "version": 1,
-  "expected_head": "<full-commit-sha-before-request>",
-  "expected_blobs": {
-    "docs/NOTES.md": "<original-git-blob-sha>"
-  },
-  "message": "docs(notes): clarify ownership",
-  "target": 328,
-  "dry_run": true,
-  "edits": [
-    {
-      "path": "docs/NOTES.md",
-      "find": "Disposal is shared.",
-      "replace": "Disposal has one owner."
-    }
-  ]
-}
-```
-
-Each edit names `path` and exactly one mode: `find` plus `replace`, `create` with the complete new string content, or `delete: true`. Empty `replace` deletes the anchor. Unknown edit fields and mixed modes are refused. A `create` cannot overwrite an existing or already-staged file.
+`dry_run` is an optional boolean. `target` remains an optional positive issue or PR number for schema compatibility, but the trusted reporter does not use it as publication authority. It resolves an open same-repository PR through verified GitHub run and commit metadata. Missing or ambiguous PR associations leave durable branch-run evidence instead of choosing an arbitrary destination.
 
 ## Submit one request-only commit
 
-1. Read the current branch head and the complete files at that immutable SHA. Record the original blob SHAs. Read the relevant owner, invariant, tests, and sister documents before choosing anchors.
-2. Put all edits for the slice in one request at `.ai/edits/<name>.json`. Use letters, digits, dots, underscores, or hyphens in the filename, starting with a letter or digit. Only one pending JSON request is allowed.
-3. Push a commit whose only changed path is that request file. Its single parent must be `expected_head`. Do not combine source changes, other requests, workflow edits, or merge commits with submission.
-4. Wait for the result before advancing the branch. The workflow checks out the event SHA, verifies the request-only diff and parent, and checks that the branch still points to that request commit.
-5. Read the report and verify CI on the exact published SHA. The workflow rechecks the remote head before publication and uses a normal fast-forward push. A racing update is refused; it never force-pushes or silently rebases the change.
+1. Read the current head and complete files at that immutable revision. Record every original blob SHA. Read the relevant invariant, owner, tests, and sister documents before choosing anchors.
+2. Put the bounded edits in one request at `.ai/edits/<name>.json`. Names use letters, digits, dots, underscores, and hyphens, starting with a letter or digit. Only one pending JSON request is allowed.
+3. Commit only that request. Its sole parent must be `expected_head`. Do not combine source edits, workflow changes, or other requests with submission.
+4. Wait for the candidate run and the separate reporting run. Do not advance the branch while publication is pending. Snapshot checks are repeated independently before publication.
+5. Inspect the durable outcome and exact published commit. Check CI on that commit, not the submission commit or an older green head.
 
-The parent rule avoids a self-referential SHA: `expected_head` names the source snapshot, not the future request commit. All blob preconditions are checked against original bytes before any edits are staged. Multiple edits to one path therefore share its original blob precondition, while their anchors are validated sequentially against the evolving staged content.
+A refused request can be corrected in a new request-only commit after refreshing its source and blob preconditions. A consumed request has been removed, so a subsequent request starts from the new head. Never retry an uncertain publication by blindly applying its edits again.
 
-After a refusal, reread the current head and refresh the preconditions. Correct the same pending request path in another request-only commit. A request consumed by a successful apply or dry run has been removed, so the next request starts from the new branch head. Never retry an ambiguous publication result blindly.
+Manual dispatch names the sole pending request on the selected branch. It follows the same immutable snapshot checks. Main, ci-logs, non-branch publication targets, and fork-origin runs are refused. The bot author plus `AI-Edit-Request:` trailer still prevents consumption pushes from recursively applying another request. Replacing this lifecycle classification belongs to the later API-loop slice; the subject is not a claim that CI is complete.
 
-Manual dispatch names the sole pending request on the selected branch and follows the same snapshot checks. Main, ci-logs, and non-branch refs are refused by the writer. Fork requests are not supported by this same-repository workflow.
+## Isolated preparation
 
-## Anchors, staging, and publication
+The candidate job checks out the reviewed runner and the exact request commit into separate directories, with Git credential persistence disabled. It executes the validator from the reviewed revision, not from the contributor tree. The validator receives no publication credential.
 
-An anchor must match exactly once. Zero or multiple matches are refusals naming the observed count. Read the source first and quote enough context to be unique. A dry run verifies uniqueness against the file on disk; it does not prove that you understood unseen invariants.
+Prettier is installed outside the candidate tree at the exact version declared by the reviewed runner, with lifecycle scripts disabled. Formatting uses the reviewed JSON options and built-in parser inference, never candidate-owned formatter configuration or plugins. Only surviving touched files are formatted. Deletions appear in the candidate allow-list but not the formatter input.
 
-Every edit and original-blob precondition is validated before target files are written. A late validation refusal leaves all target files unchanged. Two edits to one file are validated in order against the earlier edit's staged result. Two creates for the same staged file are refused rather than silently overwriting one another.
+Validation completes before target writes begin. Filesystem writes in the disposable tree are sequential: an application failure can leave that tree partially changed. A formatter failure can likewise follow successful local writes. Neither failure produces a candidate artifact or a published commit. This is publication atomicity, not a multi-file filesystem transaction.
 
-Filesystem writes are sequential in a disposable runner tree. An I/O error after writing starts can leave that tree partially changed; the report says application failed, not that no file was written. A failed apply step prevents publication. This is atomicity of the published commit, not a claim that multiple filesystem writes form a transaction.
+Successful preparation uploads only `candidate.json`, named by run ID and attempt. Its versioned envelope records trusted runner SHA, source SHA, request commit, canonical request digest, and bounded file contents. It contains no shell commands, credentials, caller-selected branch, or comment destination. The publisher streams one bounded archive member rather than extracting arbitrary paths or executing artifact files.
 
-The workflow formats only surviving touched files. Deleted files remain in the commit allow-list but are not formatter inputs. Delete-only requests skip formatter installation. Paths are passed as quoted individual arguments, not whitespace-split command text. Dependency installation disables lifecycle scripts; the complete privileged-runner isolation work is still separate.
+## Independent publication and recovery
 
-Before committing, the workflow checks the staged file list against the touched paths plus the request being consumed. Unexpected files cause refusal. Publication uses the repository PAT so the resulting push can trigger CI; a default GitHub token push would not provide that same follow-on workflow behavior.
+The default-branch publisher verifies the repository, workflow path, run, attempt, event, head SHA, and same-repository origin against GitHub metadata. For successful candidates, it also compares the candidate workflow blob with the reviewed runner, verifies the request-only tree change, reads the original request, and checks source blob preconditions, allowed paths, regular-file modes, and the artifact identity.
 
-## Dry runs and CI
+Publication creates a bounded Git tree and a deterministic candidate commit whose sole parent is the request commit. It never checks out or executes candidate files in the credentialed job. The narrow ref update uses the publication PAT so a resulting push can trigger follow-on CI. PAT presence does not itself prove that those checks were triggered.
 
-A dry run validates schema, snapshot identity, original blob SHAs, modes, paths, and anchor counts without writing target files or invoking the formatter. It reports planned file operations and sizes measured before formatting. This is not yet a formatted-diff preview or a test run.
+The publisher stores `intent.json` before attempting the non-force branch update. A divergent branch is refused, not force-pushed or semantically rebased. A failed API response does not prove the push failed: the publisher re-reads the remote ref and checks whether it contains the candidate. Confirmed publication records the exact candidate SHA with CI pending, never CI success.
 
-A successful dry run consumes its request in a commit with the fixed subject `chore(ai-edit): dry run, nothing applied`. That subject no longer contains `[skip ci]`: an open PR needs required checks on its final head even when only request bookkeeping changed. The ordinary CI event rules still apply; creating a branch alone does not guarantee CI on that branch.
+Evidence lives on `ci-logs` at `receipts/<kind>/<run-id>/<attempt>/`. An existing file is accepted only if its bytes match; conflicting history is refused. Separate attempts have separate paths. Evidence writes can retry after re-reading their branch; semantic edits are not replayed.
 
-Real and dry-run request messages both reject `[skip ci]`, `[ci skip]`, `[no ci]`, `[skip actions]`, `[actions skip]`, and `skip-checks:` directives, case-insensitively. Do not add a skip directive to the submission commit either; that would suppress the workflow before validation could run.
+`receipt.json` is the completed outcome. `intent.json` is the durable publication-uncertain outcome when the remote result cannot be established. `manifest.json` is the fallback for an adapter failure before publication intent exists. These files are operation evidence, not another project-status database.
 
-A clean dry run is not permission to apply the same request against a later snapshot. Read the new head and blob metadata, then submit a new request without `dry_run`. The intended anchors may remain identical, but the snapshot precondition must be current.
+A failed comment after confirmed publication is recovered from the retained receipt without requiring the candidate artifact or publishing again. An ambiguous intent remains explicitly unconfirmed until a trusted publication retry reconciles the candidate. The recovery-only route reports the intent and next action but never retries the write. A fresh fallback job retries evidence recovery after early reporter setup or execution failure; it has no publication PAT.
 
-## Reading the result
+GitHub availability, the reviewed revision remaining readable, and working evidence-branch permissions are prerequisites. If both primary and fallback reporting fail, the reporting workflow remains failed rather than inventing a durable-success claim. The run ID and attempt identify the expected evidence directory for investigation.
 
-The report includes the request commit and, after a confirmed push, the published commit link. It explicitly says that the receipt does not verify CI. Check the published commit rather than the request commit or a previous green run.
+## CI evidence and comments
 
-Before a publication attempt, a failure report says no publication was attempted. If a local candidate commit exists but the push did not confirm success, the result is publication unconfirmed: inspect the branch before retrying because a failed response can follow a successful remote write.
+Completed CI and Recovery audit runs are reported for success, failure, cancellation, timeout, and other explicit conclusions. There is no branch filter that silently excludes feature PRs. Run metadata is verified independently; CI's tested head is populated only when its workflow matches the reviewed head-checkout configuration. Recovery audit can execute other trees, so its tested revision is not invented from its event head.
 
-Selection, snapshot, and setup failures also reach the reporting step. If the request is not readable, the workflow tries the branch's open PR rather than trusting arbitrary malformed data. Multiple requests are refused rather than selected alphabetically. An empty request directory is a quiet no-op, including the push that consumes the last request.
+Failed-job log retrieval has three bounded attempts. Failure becomes `unavailable`, not archived CLI error output. Successful empty output is `empty`. Retained diagnostics are sanitized, UTF-8-safe, split into 24,000-byte chunks, and limited to 1,000,000 retained bytes with explicit truncation metadata. A subprocess transport limit of 8,000,000 bytes can instead make diagnostics unavailable. Credential redaction recognizes common forms; it cannot guarantee detection of arbitrary secrets.
 
-Reporting is still best-effort. A missing target or open PR leaves only a job summary; a failed comment publication can follow a successful code push. Durable request IDs, idempotent receipts, bounded machine-readable diagnostics, and guaranteed API-readable fallbacks are follow-up work in [issue #328](https://github.com/chahyasantoso/motion5/issues/328), not guarantees of this slice.
+`diagnostics.json` lists the chunk paths and retains the standalone escaped excerpt. The comment links to it without duplicating complete logs. Failure markers are preferred over a prefix of passing output. Retained excerpts are escaped again before rendering, so stored text cannot inject markup or mentions.
 
-## Allowed paths and remaining trust boundary
+The reporter maintains one bot-owned summary per PR, receipt kind, and workflow. Human comments with a matching marker are never updated. Run and attempt ordering prevent an older completion from replacing newer same-head evidence. The current PR head is checked before and immediately before the comment write. Reporting workflows are serialized. GitHub has no conditional comment-update API: a branch can still move during the write, so every comment identifies its exact commit and the reporter distinguishes a historical completion rather than promising atomic head-and-comment updates.
 
-Paths must be canonical relative file paths without whitespace, backslashes, control characters, empty/dot/parent components, or a leading hyphen. Every existing component is checked without following symlinks. Parent directories must already exist. File symlinks, directory symlinks, dangling symlinks, and directory targets are refused. The current protocol does not create directories or edit binary files intentionally.
+## Dry runs and remaining capabilities
 
-The paths `.git`, `.ai`, `.github/workflows`, and `node_modules`, including everything beneath them, are forbidden. An edit to the workflow is a normal reviewed PR, not an AI-edit request. The line-oriented touched-file contract is why whitespace paths are rejected instead of being ambiguously split later.
+Protocol-v1 dry runs validate without changing target files. They are not formatted-diff previews. They produce an empty candidate and consume the request with the fixed subject `chore(ai-edit): dry run, nothing applied`, without a CI-skip directive. Required PR evidence must still arrive on that final head.
 
-These checks do not turn the writer into a sandbox. It still executes the branch's script and reads the branch's dependency and formatter configuration. Use reviewed same-repository branches only. Isolating a trusted runner revision and withholding write credentials from candidate execution remains required follow-up work; do not claim that workflow-path exclusions alone provide that boundary.
+Formatted previews, allowlisted targeted validation, dependency maintenance, and lifecycle redesign remain the later API-loop slice. No arbitrary command strings or privileged maintenance operations have been added here. Touched-file normalization accompanies the requested change; unrelated formatting remains separate.
+
+## Activation gate
+
+A reviewed rollout must merge the reporter to the default branch and set `MOTION5_AUTOMATION_SHA` to a full immutable commit containing the reviewed workflows, scripts, formatter version, and configuration. The candidate workflow must match that reviewed revision. An unset pin disables preparation and reporting; it does not fall back to the legacy privileged writer.
+
+Verify the existing `ci-logs` branch is writable by the reporter, that the publication PAT is appropriately scoped, and that a generated commit receives follow-on CI. Exercise a successful apply, dry-run consumption, refusal, formatter failure, ambiguous publication, failed comment recovery, rerun, stale completion, and missing diagnostics through actual events. Record exact commit, run, and attempt links in the PR. Fixture tests do not substitute for those live exercises, and passing PR CI does not mean default-branch activation occurred.
 
 ## The read budget
 
-This document owns the rule, [read-budget-scan.mjs](../scripts/read-budget-scan.mjs) owns its numbers and enforcement, and the `read-budget` job runs it against the repository. The amendment to ADR-008 in [DECISIONS.md](./DECISIONS.md) records its rationale.
+This document owns the source read-budget contract; [read-budget-scan.mjs](../scripts/read-budget-scan.mjs) owns its numbers and enforcement. No file under `packages/core/src`, including markdown, may exceed 60,000 bytes. An over-budget file may not be edited by anchor. A contents response can truncate without a reliable marker, and a matching anchor or exact blob SHA does not prove the missing invariant was read.
 
-No file under `packages/core/src` may exceed **60,000 bytes**, including markdown. A file over budget may not be edited by anchor. A contents response can truncate without a reliable marker, so a prefix is not proof that the complete invariant was read. A matching anchor and blob precondition do not establish comprehension of the missing bytes.
+A source over 30,000 bytes keeps private reasoning in a sibling document, `x.ts` beside `x.md`. Read the document before the source. The source has a `// Docs: ./x.md` line; every level-two document heading names a source declaration; those headings follow declaration order; and mirrored source carries no private docblock. Exported API docblocks remain in source because declarations and editor hover consume them. Comments explaining the next statement remain too.
 
-A source over **30,000 bytes** keeps its private reasoning in a sibling document: `x.ts` beside `x.md`. Read the document before the source. Four conventions are checked: the source has a `// Docs: ./x.md` line; every level-two document heading names a source declaration; those headings follow declaration order; and a mirrored source carries no private docblock.
+A temporary waiver carries a shrinking ceiling, not permission to grow. A pending sister-document entry must disappear when no longer needed. A slice crossing a threshold owes its split or sister document in the same change. The scan measures structure, not semantic understanding of the private reasoning.
 
-Exported API docblocks stay in source because declaration files and editor hover consume them. Comments explaining the next statement also stay. Move private-surface reasoning with the member it describes, including file-local types, non-exported helpers, and private members. The scan proves absence of duplicate private docblocks in source, not that every document paragraph is complete or true; semantic review remains necessary.
+## Regression evidence
 
-A temporary over-budget waiver carries a shrinking ceiling, not permission to grow. A pending sister-document entry must disappear when no longer needed. Neither mechanism is an excuse to raise the budget. A slice crossing a threshold owes its split or sister document in the same change, and both source and sibling markdown count toward the read budget.
+The AE cases in [apply-ai-edit.test.ts](../packages/core/test/unit/scripts/apply-ai-edit.test.ts), [automation-receipt.test.ts](../packages/core/test/unit/scripts/automation-receipt.test.ts), and [automation-adapters.test.ts](../packages/core/test/unit/scripts/automation-adapters.test.ts) cover their respective owners. The adapter suite includes injected publication/report failures, concrete API and evidence-storage checks, and disposable Git repositories using the installed formatter while candidate-owned scripts and configuration would throw if executed. Workflow-text assertions check configuration, not production event routing.
 
-## Tests and operating cost
-
-The `AE-` cases in [apply-ai-edit.test.ts](../packages/core/test/unit/scripts/apply-ai-edit.test.ts) run the shipped script as a subprocess against planted trees. They preserve the anchor, staging, create/delete, and formatter-list contracts while adding schema, stale-input, skip-directive, path, and partial-write evidence. AE-14 intentionally changes the dry-run subject contract so it no longer skips CI. Their IDs remain governed by the existing evidence-case uniqueness gate.
-
-Run `npx vitest run packages/core/test/unit/scripts/apply-ai-edit.test.ts` with the repository's Node 24 toolchain and dependencies. Subprocess tests do not prove GitHub event routing, PAT scope, actual formatter installation, comment permissions, or final CI triggering; those require a live workflow exercise and exact-SHA evidence in the implementation PR.
-
-Batch a slice into one request. Dry runs cost an additional Actions round trip and are useful when validating uncertain anchors, but their success is not a full-suite result. AI edit never runs the complete test suite: CI remains the owner of correctness on the published commit. Keep unrelated formatting in its own commit; the writer's touched-file formatting is normalization of the files explicitly requested, not permission to reformat the repository.
-
-The bot author plus `AI-Edit-Request:` trailer prevents consumption commits from recursively applying another request. Selection reads the directory, not the push event's changed-file arrays, because Git data API commits may omit those arrays. Keep a live API-made-commit exercise whenever changing either rule.
-
-This is standing infrastructure, not a temporary migration. Keep permissions narrow, never print credentials, and treat the YAML and script as privileged code requiring review. Historical implementation details live in Git; this contract describes the protocol in this branch, not a promise that it has landed on main.
+Run the existing full Vitest suite with the repository's Node 24 toolchain. Keep exact-SHA CI results and red/green limitations in the PR. Keep shipped project state only in `SESSION-STATUS.md`.
