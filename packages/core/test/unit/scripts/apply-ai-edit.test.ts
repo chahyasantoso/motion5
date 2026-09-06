@@ -1,30 +1,21 @@
 import { execFile } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { afterEach, describe, expect, it } from "vitest";
 
-/**
- * `scripts/apply-ai-edit.mjs` is the one script in `scripts/` with repository-write power, and
- * until these cases its whole evidence model was "we ran it live once" on the pull requests that
- * introduced it. A live run is still the only thing that exercises the token, the formatter, the
- * comment, and how the request is selected, but it demonstrates one outcome per round trip and it
- * cannot plant a tree. These cases own the validation pass instead: they run the shipped script as
- * a subprocess against a throwaway tree, which is exactly how the workflow invokes it, and assert
- * the counts and refusals it reports. That matters most for the commits it is allowed to skip CI
- * on: a dry run writes nothing, so nothing downstream would notice if it silently wrote something.
- */
-
 const runFile = promisify(execFile);
 const script = fileURLToPath(new URL("../../../../../scripts/apply-ai-edit.mjs", import.meta.url));
 const ARGV = [script, "request.json", "report.md", "touched.txt", "format.txt"];
-
+const HEAD = "a".repeat(40);
 const DOC = "# Doc\n\nAlpha line.\n\nBeta line.\n\nBeta line.\n";
-const DRY_RUN_SUBJECT = "chore(ai-edit): dry run, nothing applied [skip ci]";
+const DRY_RUN_SUBJECT = "chore(ai-edit): dry run, nothing applied";
 const REFUSED = "**Refused.** No file was written and nothing was committed.";
+const planted: string[] = [];
 
 interface Outcome {
   code: number;
@@ -34,13 +25,10 @@ interface Outcome {
   outputs: Record<string, string>;
 }
 
-const planted: string[] = [];
-
 afterEach(async () => {
   await Promise.all(planted.splice(0).map((dir) => rm(dir, { recursive: true, force: true })));
 });
 
-/** Writes a throwaway tree for one case and registers it for removal. */
 async function plant(files: Record<string, string>): Promise<string> {
   const dir = await mkdtemp(join(tmpdir(), "motion5-ai-edit-"));
   planted.push(dir);
@@ -52,20 +40,34 @@ async function plant(files: Record<string, string>): Promise<string> {
   return dir;
 }
 
-/**
- * Runs the shipped script the way the workflow does: the request, report, touched-file and
- * format-file paths on the command line, `GITHUB_OUTPUT` in the environment, and the planted tree
- * as the working directory. A refusal exits non-zero, so the exit code is part of what is asserted.
- */
-async function request(dir: string, body: unknown): Promise<Outcome> {
-  await writeFile(join(dir, "request.json"), `${JSON.stringify(body, null, 2)}\n`, "utf8");
+// Supply valid protocol metadata to the original anchor cases. Tests can override every field.
+async function request(
+  dir: string,
+  body: Record<string, unknown>,
+  env: Record<string, string> = {},
+): Promise<Outcome> {
+  const expected: Record<string, string | null> = {};
+  for (const edit of (body.edits ?? []) as { path: string }[]) {
+    if (typeof edit?.path !== "string") continue;
+    try {
+      const bytes = await readFile(join(dir, edit.path));
+      expected[edit.path] = createHash("sha1")
+        .update(`blob ${bytes.length}${String.fromCharCode(0)}`)
+        .update(bytes)
+        .digest("hex");
+    } catch {
+      expected[edit.path] = null;
+    }
+  }
+  const complete = { version: 1, expected_head: HEAD, expected_blobs: expected, ...body };
+  await writeFile(join(dir, "request.json"), `${JSON.stringify(complete, null, 2)}\n`, "utf8");
   const outputPath = join(dir, "github-output.txt");
   await writeFile(outputPath, "", "utf8");
   let code = 0;
   try {
     await runFile(process.execPath, ARGV, {
       cwd: dir,
-      env: { ...process.env, GITHUB_OUTPUT: outputPath },
+      env: { ...process.env, GITHUB_OUTPUT: outputPath, AI_EDIT_BASE_SHA: HEAD, ...env },
     });
   } catch (error) {
     code = (error as { code?: number }).code ?? 1;
@@ -91,14 +93,14 @@ function anchor(path: string, replace: string, find = "Alpha line."): Record<str
   return { path, find, replace };
 }
 
-describe("apply-ai-edit dry run reporting", () => {
+function edit(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+  return { message: "docs(d): change alpha", edits: [anchor("docs/D.md", "Changed.")], ...overrides };
+}
+
+describe("apply-ai-edit original contracts", () => {
   it("AE-1: counts an anchor against the whole file and leaves the tree alone", async () => {
     const dir = await plant({ "docs/D.md": DOC });
-    const outcome = await request(dir, {
-      message: "docs(d): extend the alpha line",
-      dry_run: true,
-      edits: [anchor("docs/D.md", "Alpha line, extended.")],
-    });
+    const outcome = await request(dir, edit({ dry_run: true, edits: [anchor("docs/D.md", "Alpha line, extended.")] }));
     expect(outcome.code).toBe(0);
     expect(outcome.report).toContain("**Dry run.** Validated 1 edit from `request.json`.");
     expect(outcome.report).toContain("No file was written and the tree is unchanged.");
@@ -111,15 +113,11 @@ describe("apply-ai-edit dry run reporting", () => {
 
   it("AE-2: reports create, delete and edit together without touching any of them", async () => {
     const dir = await plant({ "docs/D.md": DOC, "docs/STALE.md": "gone\n" });
-    const outcome = await request(dir, {
-      message: "docs(d): three modes",
-      dry_run: true,
-      edits: [
-        { path: "docs/NEW.md", create: "# New\n" },
-        { path: "docs/STALE.md", delete: true },
-        anchor("docs/D.md", "Alpha line, extended."),
-      ],
-    });
+    const outcome = await request(dir, edit({ dry_run: true, edits: [
+      { path: "docs/NEW.md", create: "# New\n" },
+      { path: "docs/STALE.md", delete: true },
+      anchor("docs/D.md", "Alpha line, extended."),
+    ] }));
     expect(outcome.code).toBe(0);
     expect(outcome.report).toContain("- `docs/D.md` edited, 43 -> 53 bytes");
     expect(outcome.report).toContain("- `docs/NEW.md` created, 6 bytes");
@@ -130,26 +128,15 @@ describe("apply-ai-edit dry run reporting", () => {
 
   it("AE-3: says an already-satisfied edit would write nothing", async () => {
     const dir = await plant({ "docs/D.md": DOC });
-    const outcome = await request(dir, {
-      message: "docs(d): no change",
-      dry_run: true,
-      edits: [anchor("docs/D.md", "Alpha line.")],
-    });
-    const note = "- `docs/D.md` already satisfied, so nothing would be written";
+    const outcome = await request(dir, edit({ dry_run: true, edits: [anchor("docs/D.md", "Alpha line.")] }));
     expect(outcome.code).toBe(0);
     expect(outcome.report).toContain("- `docs/D.md`: 1 anchor, each matching exactly once");
-    expect(outcome.report).toContain(note);
+    expect(outcome.report).toContain("- `docs/D.md` already satisfied, so nothing would be written");
   });
-});
 
-describe("apply-ai-edit anchor counting", () => {
   it("AE-4: refuses an anchor that matches twice and names the count", async () => {
     const dir = await plant({ "docs/D.md": DOC });
-    const outcome = await request(dir, {
-      message: "docs(d): ambiguous anchor",
-      dry_run: true,
-      edits: [anchor("docs/D.md", "z", "Beta line.")],
-    });
+    const outcome = await request(dir, edit({ dry_run: true, edits: [anchor("docs/D.md", "z", "Beta line.")] }));
     expect(outcome.code).toBe(1);
     expect(outcome.report).toContain(REFUSED);
     expect(outcome.report).toContain("the anchor matched 2 times and must match exactly once");
@@ -159,25 +146,16 @@ describe("apply-ai-edit anchor counting", () => {
 
   it("AE-5: refuses an anchor that matches zero times and names the count", async () => {
     const dir = await plant({ "docs/D.md": DOC });
-    const outcome = await request(dir, {
-      message: "docs(d): missing anchor",
-      dry_run: true,
-      edits: [anchor("docs/D.md", "z", "Gamma line.")],
-    });
+    const outcome = await request(dir, edit({ dry_run: true, edits: [anchor("docs/D.md", "z", "Gamma line.")] }));
     expect(outcome.code).toBe(1);
     expect(outcome.report).toContain("the anchor matched 0 times and must match exactly once");
   });
 
   it("AE-6: validates a second anchor against what the first edit staged", async () => {
     const dir = await plant({ "docs/D.md": DOC });
-    const outcome = await request(dir, {
-      message: "docs(d): chained anchors",
-      dry_run: true,
-      edits: [
-        anchor("docs/D.md", "Gamma line."),
-        anchor("docs/D.md", "Delta line.", "Gamma line."),
-      ],
-    });
+    const outcome = await request(dir, edit({ dry_run: true, edits: [
+      anchor("docs/D.md", "Gamma line."), anchor("docs/D.md", "Delta line.", "Gamma line."),
+    ] }));
     expect(outcome.code).toBe(0);
     expect(outcome.report).toContain("**Dry run.** Validated 2 edits from `request.json`.");
     expect(outcome.report).toContain("- `docs/D.md`: 2 anchors, each matching exactly once");
@@ -185,23 +163,16 @@ describe("apply-ai-edit anchor counting", () => {
 
   it("AE-7: counts the copy an earlier edit added, not only the ones on disk", async () => {
     const dir = await plant({ "docs/D.md": DOC });
-    const outcome = await request(dir, {
-      message: "docs(d): self-inflicted ambiguity",
-      dry_run: true,
-      edits: [anchor("docs/D.md", "Beta line."), anchor("docs/D.md", "z", "Beta line.")],
-    });
+    const outcome = await request(dir, edit({ dry_run: true, edits: [
+      anchor("docs/D.md", "Beta line."), anchor("docs/D.md", "z", "Beta line."),
+    ] }));
     expect(outcome.code).toBe(1);
     expect(outcome.report).toContain("edit 2 on `docs/D.md`: the anchor matched 3 times");
   });
-});
 
-describe("apply-ai-edit refusals", () => {
   it("AE-8: leaves the first file untouched when a later edit cannot apply", async () => {
     const dir = await plant({ "docs/D.md": DOC, "docs/E.md": "# E\n\nOnly line.\n" });
-    const outcome = await request(dir, {
-      message: "docs: all or nothing",
-      edits: [anchor("docs/D.md", "Changed."), anchor("docs/E.md", "z", "Missing.")],
-    });
+    const outcome = await request(dir, edit({ edits: [anchor("docs/D.md", "Changed."), anchor("docs/E.md", "z", "Missing.")] }));
     expect(outcome.code).toBe(1);
     expect(outcome.report).toContain("edit 2 on `docs/E.md`: the anchor matched 0 times");
     expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC);
@@ -210,48 +181,30 @@ describe("apply-ai-edit refusals", () => {
 
   it("AE-9: refuses a path this workflow may not touch", async () => {
     const dir = await plant({ "docs/D.md": DOC });
-    const outcome = await request(dir, {
-      message: "ci: reach into a workflow",
-      dry_run: true,
-      edits: [{ path: ".github/workflows/ci.yml", find: "name: CI", replace: "z" }],
-    });
-    const problem = "edit 1: `.github/workflows/ci.yml` is outside what this workflow may edit";
+    const outcome = await request(dir, edit({ dry_run: true, edits: [anchor(".github/workflows/ci.yml", "z")] }));
     expect(outcome.code).toBe(1);
-    expect(outcome.report).toContain(problem);
+    expect(outcome.report).toContain("`.github/workflows/ci.yml` is outside what this workflow may edit");
   });
 
   it("AE-10: refuses a path that escapes the repository", async () => {
     const dir = await plant({ "docs/D.md": DOC });
-    const outcome = await request(dir, {
-      message: "docs: escape the tree",
-      dry_run: true,
-      edits: [{ path: "../outside.md", find: "a", replace: "b" }],
-    });
+    const outcome = await request(dir, edit({ dry_run: true, edits: [anchor("../outside.md", "z")] }));
     expect(outcome.code).toBe(1);
-    expect(outcome.report).toContain("edit 1: `../outside.md` escapes the repository");
+    expect(outcome.report).toContain("`../outside.md` escapes the repository");
   });
 
   it("AE-11: refuses an edit that names two modes", async () => {
     const dir = await plant({ "docs/D.md": DOC });
-    const outcome = await request(dir, {
-      message: "docs(d): two modes",
-      dry_run: true,
-      edits: [{ path: "docs/D.md", find: "Alpha line.", replace: "z", delete: true }],
-    });
+    const outcome = await request(dir, edit({ dry_run: true, edits: [{ ...anchor("docs/D.md", "z"), delete: true }] }));
     expect(outcome.code).toBe(1);
     expect(outcome.report).toContain("must name exactly one of find/replace, create, or delete");
   });
 
   it("AE-12: refuses create over a file that exists and delete of one that does not", async () => {
     const dir = await plant({ "docs/D.md": DOC });
-    const outcome = await request(dir, {
-      message: "docs: two bad modes",
-      dry_run: true,
-      edits: [
-        { path: "docs/D.md", create: "nope" },
-        { path: "docs/GONE.md", delete: true },
-      ],
-    });
+    const outcome = await request(dir, edit({ dry_run: true, edits: [
+      { path: "docs/D.md", create: "nope" }, { path: "docs/GONE.md", delete: true },
+    ] }));
     expect(outcome.code).toBe(1);
     expect(outcome.report).toContain("edit 1 creates `docs/D.md`, which already exists");
     expect(outcome.report).toContain("edit 2 deletes `docs/GONE.md`, which does not exist");
@@ -260,40 +213,26 @@ describe("apply-ai-edit refusals", () => {
 
   it("AE-13: refuses a multiline message before emitting any output", async () => {
     const dir = await plant({ "docs/D.md": DOC });
-    const outcome = await request(dir, {
-      message: "docs(d): first line\nsecond line",
-      dry_run: true,
-      edits: [anchor("docs/D.md", "z")],
-    });
+    const outcome = await request(dir, edit({ message: "docs(d): first line\nsecond line", dry_run: true }));
     expect(outcome.code).toBe(1);
     expect(outcome.report).toContain("`message` must be a single non-empty line");
     expect(outcome.outputs).toEqual({});
   });
-});
 
-describe("apply-ai-edit dry run commit subject", () => {
-  it("AE-14: a dry run gets the fixed subject, and that subject skips CI", async () => {
+  it("AE-14: a dry run gets the fixed subject without skipping required CI", async () => {
     const dir = await plant({ "docs/D.md": DOC });
-    const outcome = await request(dir, {
-      message: "docs(d): the subject that is not used",
-      dry_run: true,
-      edits: [anchor("docs/D.md", "Alpha line, extended.")],
-    });
+    const outcome = await request(dir, edit({ dry_run: true }));
     expect(outcome.code).toBe(0);
     expect(outcome.outputs.message).toBe(DRY_RUN_SUBJECT);
-    expect(outcome.outputs.message).toContain("[skip ci]");
+    expect(outcome.outputs.message).not.toContain("[skip ci]");
   });
 
   it("AE-15: a real run keeps the request message verbatim and does not skip CI", async () => {
     const dir = await plant({ "docs/D.md": DOC, "docs/STALE.md": "gone\n" });
-    const outcome = await request(dir, {
-      message: "docs(d): the subject that is used",
-      edits: [
-        { path: "docs/NEW.md", create: "# New\n" },
-        { path: "docs/STALE.md", delete: true },
-        anchor("docs/D.md", "Alpha line, extended."),
-      ],
-    });
+    const outcome = await request(dir, edit({ message: "docs(d): the subject that is used", edits: [
+      { path: "docs/NEW.md", create: "# New\n" }, { path: "docs/STALE.md", delete: true },
+      anchor("docs/D.md", "Alpha line, extended."),
+    ] }));
     expect(outcome.code).toBe(0);
     expect(outcome.outputs.message).toBe("docs(d): the subject that is used");
     expect(outcome.outputs.message).not.toContain("[skip ci]");
@@ -305,36 +244,18 @@ describe("apply-ai-edit dry run commit subject", () => {
 
   it("AE-16: refuses a non-boolean dry_run rather than applying the request", async () => {
     const dir = await plant({ "docs/D.md": DOC });
-    const outcome = await request(dir, {
-      message: "docs(d): almost a dry run",
-      dry_run: "true",
-      edits: [anchor("docs/D.md", "Alpha line, extended.")],
-    });
+    const outcome = await request(dir, edit({ dry_run: "true" }));
     expect(outcome.code).toBe(1);
     expect(outcome.report).toContain("`dry_run` must be `true` or `false`");
     expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC);
   });
-});
 
-/**
- * Issue #281. The touched list answers the commit step's question, which is every path this
- * request changed, and a deleted path belongs on it: without one, `git add -A` stages a removal
- * the allow-list never authorised. Prettier is asking a different question and exits non-zero on
- * a path that is no longer there, so it gets its own list. The two were one list, which is how a
- * mixed request applied its edits, failed formatting, skipped the commit with the tree already
- * written, and reported `Applied ... edits` with nothing behind it.
- */
-describe("apply-ai-edit formatter input", () => {
   it("AE-17: keeps a deleted path out of the format list and in the touched list", async () => {
     const dir = await plant({ "docs/D.md": DOC, "docs/STALE.md": "gone\n" });
-    const outcome = await request(dir, {
-      message: "docs(d): create, edit and delete in one request",
-      edits: [
-        { path: "docs/NEW.md", create: "# New\n" },
-        { path: "docs/STALE.md", delete: true },
-        anchor("docs/D.md", "Alpha line, extended."),
-      ],
-    });
+    const outcome = await request(dir, edit({ edits: [
+      { path: "docs/NEW.md", create: "# New\n" }, { path: "docs/STALE.md", delete: true },
+      anchor("docs/D.md", "Alpha line, extended."),
+    ] }));
     expect(outcome.code).toBe(0);
     expect(outcome.touched).toBe("docs/D.md\ndocs/NEW.md\ndocs/STALE.md\n");
     expect(outcome.format).toBe("docs/D.md\ndocs/NEW.md\n");
@@ -344,10 +265,7 @@ describe("apply-ai-edit formatter input", () => {
 
   it("AE-18: gives the formatter nothing at all for a delete-only request", async () => {
     const dir = await plant({ "docs/STALE.md": "gone\n" });
-    const outcome = await request(dir, {
-      message: "docs: drop a stale note",
-      edits: [{ path: "docs/STALE.md", delete: true }],
-    });
+    const outcome = await request(dir, edit({ edits: [{ path: "docs/STALE.md", delete: true }] }));
     expect(outcome.code).toBe(0);
     expect(outcome.outputs.changed).toBe("true");
     expect(outcome.touched).toBe("docs/STALE.md\n");
@@ -357,18 +275,180 @@ describe("apply-ai-edit formatter input", () => {
 
   it("AE-19: writes both lists empty for a dry run, which formats nothing either", async () => {
     const dir = await plant({ "docs/D.md": DOC, "docs/STALE.md": "gone\n" });
-    const outcome = await request(dir, {
-      message: "docs(d): a dry run formats nothing",
-      dry_run: true,
-      edits: [
-        { path: "docs/STALE.md", delete: true },
-        anchor("docs/D.md", "Alpha line, extended."),
-      ],
-    });
+    const outcome = await request(dir, edit({ dry_run: true, edits: [
+      { path: "docs/STALE.md", delete: true }, anchor("docs/D.md", "Alpha line, extended."),
+    ] }));
     expect(outcome.code).toBe(0);
     expect(outcome.outputs.changed).toBe("false");
     expect(outcome.touched).toBe("");
     expect(outcome.format).toBe("");
     expect(existsSync(join(dir, "docs/STALE.md"))).toBe(true);
+  });
+});
+
+describe("apply-ai-edit protocol preconditions", () => {
+  it("AE-20: refuses unknown request and edit keys without writing", async () => {
+    const dir = await plant({ "docs/D.md": DOC });
+    for (const extra of [{ dry_rnu: true }, { edits: [{ ...anchor("docs/D.md", "z"), replac: "z" }] }]) {
+      const outcome = await request(dir, edit(extra));
+      expect(outcome.code).toBe(1);
+      expect(outcome.report).toContain("unknown key");
+      expect(outcome.outputs.message).toBe(undefined);
+      expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC);
+    }
+  });
+
+  it("AE-21: refuses absent or unsupported protocol versions", async () => {
+    const dir = await plant({ "docs/D.md": DOC });
+    for (const version of [undefined, 0, 2, "1", null]) {
+      const outcome = await request(dir, edit({ version }));
+      expect(outcome.code).toBe(1);
+      expect(outcome.report).toContain("`version` must be 1");
+    }
+    expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC);
+  });
+
+  it("AE-22: rejects stale heads and missing runner verification", async () => {
+    const dir = await plant({ "docs/D.md": DOC });
+    const stale = await request(dir, edit({ expected_head: "b".repeat(40) }));
+    const missing = await request(dir, edit(), { AI_EDIT_BASE_SHA: "" });
+    expect(stale.code).toBe(1);
+    expect(missing.code).toBe(1);
+    expect(stale.report).toContain("stale or unverified");
+    expect(missing.report).toContain("stale or unverified");
+    expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC);
+  });
+
+  it("AE-23: a still-unique anchor cannot bypass a stale original blob", async () => {
+    const dir = await plant({ "docs/D.md": DOC });
+    const outcome = await request(dir, edit({ expected_blobs: { "docs/D.md": "b".repeat(40) } }));
+    expect(outcome.code).toBe(1);
+    expect(outcome.report).toContain("stale blob precondition");
+    expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC);
+  });
+
+  it("AE-24: requires exactly one original blob precondition per distinct path", async () => {
+    const dir = await plant({ "docs/D.md": DOC });
+    for (const expected_blobs of [undefined, {}, { "docs/D.md": null }, { "docs/D.md": "short" }, { extra: null }]) {
+      const outcome = await request(dir, edit({ expected_blobs }));
+      expect(outcome.code).toBe(1);
+      expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC);
+    }
+  });
+
+  it("AE-25: absent-file preconditions and chained edits use the original snapshot", async () => {
+    const dir = await plant({ "docs/D.md": DOC });
+    const outcome = await request(dir, edit({ edits: [
+      { path: "docs/NEW.md", create: "Alpha line." },
+      anchor("docs/NEW.md", "Changed."),
+      anchor("docs/D.md", "Gamma line."),
+      anchor("docs/D.md", "Delta line.", "Gamma line."),
+    ] }));
+    expect(outcome.code).toBe(0);
+    expect(await readFile(join(dir, "docs/NEW.md"), "utf8")).toBe("Changed.");
+    expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC.replace("Alpha line.", "Delta line."));
+  });
+
+  it("AE-26: rejects every supported CI-skip spelling including mixed case", async () => {
+    const dir = await plant({ "docs/D.md": DOC });
+    for (const suffix of ["[skip ci]", "[ci skip]", "[no ci]", "[skip actions]", "[actions skip]", "[SKIP CI]", "skip-checks: true", "skip-checks:true"]) {
+      const outcome = await request(dir, edit({ message: `docs(d): change ${suffix}` }));
+      expect(outcome.code).toBe(1);
+      expect(outcome.report).toContain("CI-skip directive");
+      expect(outcome.outputs.message).toBe(undefined);
+      expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC);
+    }
+  });
+
+  it("AE-27: control characters cannot inject workflow outputs through the subject", async () => {
+    const dir = await plant({ "docs/D.md": DOC });
+    for (const code of [0, 10, 13, 127, 0x2028, 0x2029]) {
+      const outcome = await request(dir, edit({ message: `docs(d): x${String.fromCharCode(code)}changed=true` }));
+      expect(outcome.code).toBe(1);
+      expect(outcome.outputs).toEqual({});
+    }
+    expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC);
+  });
+
+  it("AE-28: canonical paths reject traversal and line-oriented argument ambiguity", async () => {
+    const dir = await plant({ "docs/D.md": DOC });
+    for (const path of ["docs/../D.md", "./docs/D.md", "docs//D.md", "docs/a b.md", "docs/a\nb.md", "docs\\D.md", "-flag", ".git", ".ai", "node_modules"]) {
+      const outcome = await request(dir, edit({ edits: [{ path, create: "bad" }] }));
+      expect(outcome.code).toBe(1);
+      expect(outcome.report).toContain(REFUSED);
+    }
+  });
+
+  it("AE-29: rejects file symlinks, directory symlinks and dangling symlinks", async () => {
+    const dir = await plant({ "docs/D.md": DOC });
+    await symlink("D.md", join(dir, "docs/link.md"));
+    await symlink("missing.md", join(dir, "docs/dangling.md"));
+    await symlink("docs", join(dir, "linked"));
+    for (const path of ["docs/link.md", "docs/dangling.md", "linked/D.md"]) {
+      const outcome = await request(dir, edit({ edits: [anchor(path, "Changed.")] }));
+      expect(outcome.code).toBe(1);
+      expect(outcome.report).toContain("symbolic link");
+    }
+    expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC);
+  });
+
+  it("AE-30: rejects missing parents before an earlier staged file is written", async () => {
+    const dir = await plant({ "docs/D.md": DOC });
+    const outcome = await request(dir, edit({ edits: [anchor("docs/D.md", "Changed."), { path: "missing/new.md", create: "new" }] }));
+    expect(outcome.code).toBe(1);
+    expect(outcome.report).toContain("missing or unreadable parent");
+    expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC);
+  });
+
+  it("AE-31: a duplicate staged create is refused instead of silently overwriting", async () => {
+    const dir = await plant({ "docs/D.md": DOC });
+    const outcome = await request(dir, edit({ edits: [
+      { path: "docs/NEW.md", create: "first" }, { path: "docs/NEW.md", create: "second" },
+    ] }));
+    expect(outcome.code).toBe(1);
+    expect(existsSync(join(dir, "docs/NEW.md"))).toBe(false);
+  });
+
+  it("AE-32: reports partial runner writes honestly after an injected filesystem failure", async () => {
+    const dir = await plant({ "docs/D.md": DOC, "docs/E.md": DOC });
+    const hook = `import fs from "node:fs/promises";
+import { syncBuiltinESMExports } from "node:module";
+const original = fs.writeFile;
+fs.writeFile = async (file, ...args) => {
+  if (file === "docs/E.md") throw new Error("planted write failure");
+  return original(file, ...args);
+};
+syncBuiltinESMExports();`;
+    await writeFile(join(dir, "fail-write.mjs"), hook, "utf8");
+    const outcome = await request(dir, edit({ edits: [anchor("docs/D.md", "Changed."), anchor("docs/E.md", "Changed.")] }), { NODE_OPTIONS: `--import=${join(dir, "fail-write.mjs")}` });
+    expect(outcome.code).toBe(1);
+    expect(outcome.report).toContain("**Application failed.**");
+    expect(outcome.report).not.toContain(REFUSED);
+    expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC.replace("Alpha line.", "Changed."));
+    expect(await readFile(join(dir, "docs/E.md"), "utf8")).toBe(DOC);
+    expect(outcome.outputs.changed).toBe(undefined);
+  });
+
+  it("AE-33: preserves a valid report target on refusal but no executable commit output", async () => {
+    const dir = await plant({ "docs/D.md": DOC });
+    const outcome = await request(dir, edit({ dry_rnu: true, target: 328 }));
+    expect(outcome.code).toBe(1);
+    expect(outcome.outputs).toEqual({ target: "328" });
+  });
+
+  it("AE-34: hashes UTF-8 bytes with the Git blob header rather than character count", async () => {
+    const dir = await plant({ "docs/D.md": "Alpha line. café 🔒\n" });
+    const { stdout } = await runFile("git", ["hash-object", "docs/D.md"], { cwd: dir });
+    const outcome = await request(dir, edit({ expected_blobs: { "docs/D.md": stdout.trim() } }));
+    expect(outcome.code).toBe(0);
+    expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe("Changed. café 🔒\n");
+  });
+
+  it("AE-35: refuses over-limit requests before any file is written", async () => {
+    const dir = await plant({ "docs/D.md": DOC });
+    const outcome = await request(dir, edit({ edits: Array.from({ length: 51 }, () => anchor("docs/D.md", "Alpha line.")) }));
+    expect(outcome.code).toBe(1);
+    expect(outcome.report).toContain("1 through 50");
+    expect(await readFile(join(dir, "docs/D.md"), "utf8")).toBe(DOC);
   });
 });
