@@ -122,6 +122,14 @@ export function receipt(input) {
   const candidate_sha = sha(input.candidate_sha, "candidate_sha", true);
   const published_sha = sha(input.published_sha, "published_sha", true);
   assert(
+    !candidate_sha || ["committed", "publication"].includes(input.phase),
+    "Candidate requires commit phase",
+  );
+  assert(
+    !published_sha || (input.source_sha && input.request_digest),
+    "Published edit needs source identity",
+  );
+  assert(
     published_sha === null || published_sha === candidate_sha,
     "Publication differs from candidate",
   );
@@ -248,6 +256,13 @@ export function diagnostics(input) {
 
 export function render(value) {
   assert(value.version === 1 && ["ai-edit", "ci"].includes(value.kind), "Invalid receipt");
+  const { version, evidence_path, publication, next_action, ...facts } = value;
+  if (value.kind === "ai-edit") delete facts.ci;
+  const normalized = receipt(facts);
+  assert(
+    canonical(value) === canonical(normalized),
+    "Receipt projection does not match verified facts",
+  );
   assert(REPOSITORY.test(value.repository), "Invalid repository");
   const run = positive(value.run_id, "run_id");
   const attempt = positive(value.run_attempt, "run_attempt");

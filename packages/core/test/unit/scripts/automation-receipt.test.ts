@@ -40,6 +40,37 @@ function facts(extra: Record<string, unknown> = {}) {
 }
 
 describe("automation receipt contracts", () => {
+  it("AE-48: rendering refuses forged outcomes, destinations and unknown fields", () => {
+    const valid = run("receipt", facts());
+    expect(run("render", valid).body).toContain("not_attempted");
+    for (const extra of [
+      { publication: "confirmed" },
+      { ci: "success" },
+      { next_action: "<script>@everyone</script>" },
+      { evidence_path: "../../elsewhere" },
+      { surprise: true },
+    ])
+      expect(invoke("render", { ...valid, ...extra }).status).toBe(1);
+  });
+
+  it("AE-49: commit identities cannot appear before a commit or without a source", () => {
+    expect(run("receipt", facts({ phase: "publication" })).publication).toBe("unconfirmed");
+    for (const extra of [
+      { candidate_sha: C },
+      { phase: "committed", candidate_sha: C, published_sha: C, source_sha: null },
+      { phase: "committed", candidate_sha: C, published_sha: C, request_digest: null },
+    ])
+      expect(invoke("receipt", facts(extra)).status).toBe(1);
+  });
+
+  it("AE-50: diagnostic chunk boundaries preserve complete UTF-8 text", () => {
+    const text = "a".repeat(23999) + "🔒é\n".repeat(10000);
+    const result = run("diagnostics", { exit_code: 0, text });
+    expect(result.chunks.join("")).toBe(text);
+    expect(result.chunks.every((chunk: string) => Buffer.byteLength(chunk) <= 24000)).toBe(true);
+    expect(result.chunks.join("")).not.toContain("�");
+  });
+
   it("AE-36: canonical identity ignores key order but preserves array order and edits", () => {
     const first = run("identity", { z: 1, edits: [{ b: 2, a: 1 }] });
     const reordered = run("identity", { edits: [{ a: 1, b: 2 }], z: 1 });
@@ -87,6 +118,7 @@ describe("automation receipt contracts", () => {
   });
 
   it("AE-40: contradictory commits and malformed identities fail closed", () => {
+    expect(run("receipt", facts()).publication).toBe("not_attempted");
     for (const extra of [
       { candidate_sha: C, published_sha: A },
       { published_sha: C },
@@ -97,7 +129,9 @@ describe("automation receipt contracts", () => {
       { unexpected: true },
       { ci: "success" },
     ]) {
-      expect(invoke("receipt", facts(extra)).status).toBe(1);
+      const result = invoke("receipt", facts(extra));
+      expect(result.status).toBe(1);
+      expect(result.stderr).not.toContain("MODULE_NOT_FOUND");
     }
   });
 
