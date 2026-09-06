@@ -69,7 +69,11 @@ export async function reportOutcome(value, ports, detail = null, scope = "defaul
     return { comment: "stale" };
   // Reporters are serialized by the workflow. GitHub comments have no conditional update API.
   if ((await ports.currentHead()) !== head) return { comment: "stale" };
-  const body = `${prefix}${head}:${value.run_id}:${value.run_attempt} -->\n${projection}`;
+  const diagnosticLink = `https://github.com/${value.repository}/blob/ci-logs/${value.evidence_path.replace("receipt.json", "diagnostics.json")}`;
+  const details = detail
+    ? `\n\nDiagnostics: **${detail.state}**. [Retained evidence](${diagnosticLink}).\n<pre>${detail.excerpt}</pre>`
+    : "";
+  const body = `${prefix}${head}:${value.run_id}:${value.run_attempt} -->\n${projection}${details}`;
   await ports.writeComment(previous?.id ?? null, body);
   return { comment: (await ports.currentHead()) === head ? "published" : "published_historical" };
 }
@@ -94,7 +98,10 @@ export class GitHub {
   }
   async request(method, path, body) {
     ensure(
-      path.startsWith("/") && !path.includes("..") && !path.includes("\\") && !path.includes("#"),
+      path.startsWith("/") &&
+        !path.split(/[/?]/).some((part) => part === ".." || part === ".") &&
+        !path.includes("\\") &&
+        !path.includes("#"),
       "Unsafe API path",
     );
     const response = await fetch(`https://api.github.com/repos/${this.repository}${path}`, {
@@ -270,7 +277,7 @@ export async function reportToPull(api, run, value, detail = null) {
           ? api.request("PATCH", `/issues/comments/${id}`, { body })
           : api.request("POST", `/issues/${number}/comments`, { body }),
     },
-    null,
+    detail,
     String(run.workflow_id),
   );
 }
@@ -294,6 +301,7 @@ export async function reportCompletedRun(api, run, trustedSha) {
     ci: run.conclusion ?? "unavailable",
   });
   let exists = false;
+  let retainedDetail = null;
   try {
     const saved = await api.content(value.evidence_path, await api.head("ci-logs"));
     ensure(
@@ -301,6 +309,11 @@ export async function reportCompletedRun(api, run, trustedSha) {
       "Existing receipt conflicts with run metadata",
     );
     exists = true;
+    const savedDetail = await api.content(
+      value.evidence_path.replace("receipt.json", "diagnostics.json"),
+      await api.head("ci-logs"),
+    );
+    retainedDetail = JSON.parse(savedDetail.text);
   } catch (error) {
     if (error.status !== 404) throw error;
   }
@@ -333,6 +346,22 @@ export async function reportCompletedRun(api, run, trustedSha) {
         ensure(result.status === 0 && !result.error, "Log retrieval failed");
         return result.stdout;
       });
+  if (exists) {
+    const ports = Object.create(api);
+    // Reuse the retained diagnostic projection without re-persisting its removed chunk array.
+    ports.persist = async (files) => {
+      const receiptOnly = Object.fromEntries(
+        Object.entries(files).filter(([key]) => key.endsWith("/receipt.json")),
+      );
+      await api.persist(receiptOnly);
+    };
+    return reportToPull(
+      ports,
+      run,
+      value,
+      retainedDetail ? { ...retainedDetail, chunks: [] } : null,
+    );
+  }
   return reportToPull(api, run, value, detail);
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

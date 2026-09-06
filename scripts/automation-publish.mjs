@@ -144,6 +144,10 @@ export async function prepareCandidate(root, trustedSha, formatterRoot, output) 
     "Expected one bounded request",
   );
   const requestPath = `.ai/edits/${requests[0]}`;
+  ensure(
+    !process.env.DISPATCH_REQUEST || process.env.DISPATCH_REQUEST === requestPath,
+    "Dispatch must name the sole pending request",
+  );
   const parents = git("rev-list", "--parents", "-n", "1", "HEAD").split(" ");
   ensure(
     parents.length === 2 && parents.every((sha) => SHA.test(sha)),
@@ -276,7 +280,9 @@ async function snapshot(api, run, trustedSha) {
     "Untrusted publication workflow",
   );
   ensure(
-    run.event === "push" && run.head_branch !== "main" && run.head_branch !== "ci-logs",
+    ["push", "workflow_dispatch"].includes(run.event) &&
+      run.head_branch !== "main" &&
+      run.head_branch !== "ci-logs",
     "Unsupported publication target",
   );
   const [actual, trusted] = await Promise.all([
@@ -358,6 +364,47 @@ async function snapshot(api, run, trustedSha) {
   };
 }
 
+export async function recoverRun(api, run) {
+  const directory = `receipts/ai-edit/${run.id}/${run.run_attempt}/`;
+  const evidenceHead = await api.head("ci-logs");
+  for (const name of ["receipt.json", "intent.json"]) {
+    let saved;
+    try {
+      saved = JSON.parse((await api.content(`${directory}${name}`, evidenceHead)).text);
+    } catch (error) {
+      if (error.status === 404) continue;
+      throw error;
+    }
+    render(saved);
+    ensure(
+      saved.repository === api.repository &&
+        saved.run_id === run.id &&
+        saved.run_attempt === run.run_attempt &&
+        saved.request_commit === run.head_sha,
+      "Recovery identity mismatch",
+    );
+    if (name === "receipt.json") return reportToPull(api, run, saved);
+    // Intent is the durable uncertain outcome. Do not replay an edit or invent a terminal receipt.
+    return {
+      publication: "unconfirmed",
+      evidence: `${directory}intent.json`,
+      next_action: "reconcile_before_retry",
+    };
+  }
+  const fallback = receipt({
+    kind: "ai-edit",
+    repository: api.repository,
+    run_id: run.id,
+    run_attempt: run.run_attempt,
+    request_commit: run.head_sha,
+    phase: "selection",
+  });
+  await api.persist({
+    [`${directory}manifest.json`]: `${JSON.stringify({ version: 1, outcome: fallback, next_action: "retry_trusted_reporter" })}\n`,
+  });
+  return { publication: "not_attempted", evidence: `${directory}manifest.json` };
+}
+
 export async function publishRun(api, writer, run, trustedSha) {
   const basic = {
     kind: "ai-edit",
@@ -366,6 +413,28 @@ export async function publishRun(api, writer, run, trustedSha) {
     run_attempt: run.run_attempt,
     request_commit: run.head_sha,
   };
+  // Recovery of a confirmed publication needs no retained artifact and never applies again.
+  try {
+    const saved = JSON.parse(
+      (
+        await api.content(
+          `receipts/ai-edit/${run.id}/${run.run_attempt}/receipt.json`,
+          await api.head("ci-logs"),
+        )
+      ).text,
+    );
+    render(saved);
+    ensure(
+      saved.repository === api.repository &&
+        saved.run_id === run.id &&
+        saved.run_attempt === run.run_attempt &&
+        saved.request_commit === run.head_sha,
+      "Stored receipt identity mismatch",
+    );
+    return reportToPull(api, run, saved);
+  } catch (error) {
+    if (error.status !== 404) throw error;
+  }
   // Early failures do not require parsing a candidate-controlled request or artifact.
   if (run.conclusion !== "success") {
     const value = receipt({ ...basic, phase: "selection" });
@@ -449,6 +518,14 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
         process.env.FORMATTER_ROOT,
         process.env.CANDIDATE_OUTPUT,
       );
+    } else if (process.argv[2] === "recover") {
+      const api = new GitHub(process.env.GITHUB_REPOSITORY, process.env.GH_TOKEN);
+      const run = await api.run(
+        Number(process.env.REPORT_RUN_ID),
+        Number(process.env.REPORT_RUN_ATTEMPT),
+      );
+      ensure(run.path === ".github/workflows/ai-edit.yml", "Recovery only accepts AI edit runs");
+      console.log(JSON.stringify(await recoverRun(api, run)));
     } else if (process.argv[2] === "publish") {
       const api = new GitHub(process.env.GITHUB_REPOSITORY, process.env.GH_TOKEN);
       const writer = new GitHub(process.env.GITHUB_REPOSITORY, process.env.PUBLISH_TOKEN);

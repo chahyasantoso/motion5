@@ -37,6 +37,84 @@ function scenario(body: string) {
 }
 
 describe("trusted automation adapters", () => {
+  it("AE-65: concrete API client accepts compare syntax but refuses traversal", () => {
+    scenario(String.raw`
+      const {GitHub} = await import("./scripts/automation-report.mjs");
+      const api = new GitHub(repository, "fixture-only");
+      let url; globalThis.fetch = async (value) => {url = value; return new Response(JSON.stringify({status: "ahead"}));};
+      assert.equal((await api.request("GET", "/compare/" + A + "..." + B)).status, "ahead");
+      assert.equal(url, "https://api.github.com/repos/" + repository + "/compare/" + A + "..." + B);
+      await assert.rejects(api.request("GET", "/../other"), /Unsafe/);
+    `);
+  });
+  it("AE-66: real candidate preparation ignores branch executable configuration", () => {
+    scenario(String.raw`
+      const {prepareCandidate} = await import("./scripts/automation-publish.mjs");
+      const fs = await import("node:fs/promises"), os = await import("node:os"), path = await import("node:path"), cp = await import("node:child_process");
+      const dir = await fs.mkdtemp(path.join(os.tmpdir(), "motion5-trust-test-"));
+      try {
+        for (const child of [".ai/edits", "docs", "scripts"]) await fs.mkdir(path.join(dir, child), {recursive: true});
+        await fs.writeFile(path.join(dir, "docs/.keep"), "keep");
+        await fs.writeFile(path.join(dir, "scripts/apply-ai-edit.mjs"), "throw new Error('candidate code executed')");
+        await fs.writeFile(path.join(dir, ".prettierrc.cjs"), "throw new Error('candidate config executed')");
+        const git = (...args) => cp.execFileSync("git", args, {cwd: dir, encoding: "utf8"}).trim();
+        git("init", "-q"); git("config", "user.name", "fixture"); git("config", "user.email", "fixture@example.invalid"); git("add", "."); git("commit", "-qm", "source");
+        const source = git("rev-parse", "HEAD");
+        const request = {version: 1, expected_head: source, expected_blobs: {"docs/a.json": null}, message: "test(fixture): add JSON", edits: [{path: "docs/a.json", create: '{"hello":1}'}]};
+        await fs.writeFile(path.join(dir, ".ai/edits/test.json"), JSON.stringify(request)); git("add", "."); git("commit", "-qm", "request");
+        const requestCommit = git("rev-parse", "HEAD"), output = path.join(dir, "candidate.json");
+        await prepareCandidate(dir, A, process.cwd(), output);
+        const bundle = JSON.parse(await fs.readFile(output, "utf8"));
+        assert.equal(bundle.request_commit, requestCommit); assert.equal(bundle.source_sha, source);
+        assert.deepEqual(JSON.parse(bundle.files[0].content), {hello: 1});
+        assert.equal(bundle.files[0].content, '{\n  "hello": 1\n}\n'.replaceAll('\n', '
+'));
+        assert.equal(git("rev-parse", "HEAD"), requestCommit);
+        // Reset the disposable application output, then submit a request whose actual formatter fails.
+        await fs.rm(path.join(dir, "docs/a.json")); await fs.rm(output);
+        request.edits[0].create = "{"; request.expected_head = requestCommit;
+        await fs.writeFile(path.join(dir, ".ai/edits/test.json"), JSON.stringify(request)); git("add", ".ai/edits/test.json"); git("commit", "-qm", "malformed JSON request");
+        const failedHead = git("rev-parse", "HEAD");
+        await assert.rejects(prepareCandidate(dir, A, process.cwd(), output));
+        await assert.rejects(fs.access(output)); assert.equal(git("rev-parse", "HEAD"), failedHead);
+      } finally {await fs.rm(dir, {recursive: true, force: true});}
+    `);
+  });
+  it("AE-67: concrete evidence storage is idempotent and refuses history replacement", () => {
+    scenario(String.raw`
+      const {GitHub, blobSha} = await import("./scripts/automation-report.mjs");
+      const api = new GitHub(repository, "fixture-only"), file = "receipts/ci/42/1/receipt.json";
+      api.head = async () => A;
+      api.request = async (method, path) => {
+        assert.equal(method, "GET");
+        if (path.startsWith("/git/commits/")) return {tree: {sha: B}};
+        return {truncated: false, tree: [{path: file, type: "blob", sha: blobSha(Buffer.from("same"))}]};
+      };
+      await api.persist({[file]: "same"});
+      await assert.rejects(api.persist({[file]: "different"}), /historical/);
+      await assert.rejects(api.persist({"../../escape": "same"}), /destination/);
+    `);
+  });
+  it("AE-68: early adapter failure has durable fallback without a parsed request", () => {
+    scenario(String.raw`
+      const {recoverRun} = await import("./scripts/automation-publish.mjs");
+      const saved = [];
+      const api = {repository, head: async () => A, content: async () => {const error = new Error("missing"); error.status = 404; throw error;}, persist: async (files) => saved.push(files)};
+      const result = await recoverRun(api, {id: 42, run_attempt: 1, head_sha: B});
+      assert.equal(result.publication, "not_attempted");
+      const manifest = JSON.parse(saved[0]["receipts/ai-edit/42/1/manifest.json"]);
+      assert.equal(manifest.outcome.request_commit, B); assert.equal(manifest.outcome.publication, "not_attempted");
+    `);
+  });
+  it("AE-69: recovery retains ambiguous intent without claiming or replaying publication", () => {
+    scenario(String.raw`
+      const {recoverRun} = await import("./scripts/automation-publish.mjs");
+      const intent = receipt({...facts, phase: "publication", candidate_sha: C});
+      const api = {repository, head: async () => A, content: async (path) => {if (path.endsWith("intent.json")) return {text: JSON.stringify(intent)}; const error = new Error("missing"); error.status = 404; throw error;}};
+      const result = await recoverRun(api, {id: 42, run_attempt: 1, head_sha: B});
+      assert.equal(result.publication, "unconfirmed"); assert.equal(result.evidence, "receipts/ai-edit/42/1/intent.json");
+    `);
+  });
   it("AE-51: durable evidence precedes a failed comment and retry does not replay edits", () => {
     scenario(`
       ports.writeComment = async () => {calls.push(["comment"]); throw new Error("comment unavailable");};
@@ -144,7 +222,7 @@ describe("trusted automation adapters", () => {
     `);
   });
   it("AE-63: the publisher independently bounds candidate identities and paths", () => {
-    scenario(`
+    scenario(String.raw`
       const expected = {trusted_sha: A, request_commit: B, source_sha: A, request_digest: "d".repeat(64), request_path: ".ai/edits/test.json", paths: ["docs/a.md"], dry_run: false};
       const candidate = {version: 1, trusted_sha: A, request_commit: B, source_sha: A, request_digest: "d".repeat(64), files: [{path: "docs/a.md", content: "hello\n"}]};
       assert.equal(validateCandidate(candidate, expected).length, 1);
