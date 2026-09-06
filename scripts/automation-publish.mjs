@@ -4,10 +4,11 @@ import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtemp, readFile, writeFile, readdir, lstat, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 import { identity, receipt, render } from "./automation-receipt.mjs";
 import {
   operationSpec,
+  safeRequestPath as safePath,
   prepareOperation,
   validateOperationResult,
   persistOperation,
@@ -26,23 +27,6 @@ function exactKeys(value, allowed) {
   ensure(
     Object.keys(value).every((key) => allowed.includes(key)),
     "Unknown field",
-  );
-}
-function safePath(value) {
-  ensure(
-    typeof value === "string" &&
-      value.length > 0 &&
-      value.length <= 1024 &&
-      !/[\s\\\x00-\x1f\x7f]/u.test(value) &&
-      !value.startsWith("-") &&
-      value.split("/").every((part) => part && part !== "." && part !== ".."),
-    "Unsafe candidate path",
-  );
-  ensure(
-    ![".git", ".ai", ".github/workflows", "node_modules"].some(
-      (prefix) => value === prefix || value.startsWith(`${prefix}/`),
-    ),
-    "Protected candidate path",
   );
 }
 export function validateCandidate(candidate, expected) {

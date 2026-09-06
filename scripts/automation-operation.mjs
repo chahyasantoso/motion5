@@ -190,6 +190,8 @@ async function budgetResult(root, file, content) {
 }
 function diffFor(file, before, after, scratch) {
   if (before === after) return "";
+  if ((before === null && after === "") || (before === "" && after === null))
+    return `diff --git a/${file} b/${file}\n${before === null ? "new" : "deleted"} empty file\n`;
   const result = spawnSync(
     "git",
     [
@@ -480,6 +482,7 @@ export async function persistOperation(api, run, value) {
   const files = {},
     paths = [];
   const sanitized = safeText(value.diff);
+  ensure(size(sanitized) <= 1000000, "Sanitized diff exceeds retention limit; split the request");
   let remaining = sanitized,
     index = 0;
   while (remaining.length) {
