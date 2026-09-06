@@ -291,7 +291,10 @@ async function main() {
       continue;
     }
     anchored.push(target);
-    staged.set(target, current.replace(edit.find, () => edit.replace));
+    staged.set(
+      target,
+      current.replace(edit.find, () => edit.replace),
+    );
   }
   if (problems.length > 0) return;
   await emitOutput("message", dryRun ? DRY_RUN_SUBJECT : message);
@@ -310,7 +313,9 @@ async function main() {
       say("");
       say("Anchors, counted against the file rather than against a prefix of it:");
       for (const [target, count] of counts) {
-        say(`- \`${target}\`: ${count} anchor${count === 1 ? "" : "s"}, each matching exactly once`);
+        say(
+          `- \`${target}\`: ${count} anchor${count === 1 ? "" : "s"}, each matching exactly once`,
+        );
       }
     }
     const planned = [];
