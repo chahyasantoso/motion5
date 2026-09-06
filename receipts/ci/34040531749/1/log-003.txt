@@ -1,0 +1,31 @@
+ 15.17s, tests 28.14s, environment 24ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T14:53:54.1272742Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-06T14:53:54.1980723Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-06T14:53:54.2033384Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T14:53:54.2033803Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T14:53:54.2077443Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T14:53:54.2077711Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T14:53:54.2077927Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T14:53:54.2078212Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T14:53:54.2078689Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T14:53:54.2600918Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T14:53:54.2601334Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T14:53:54.2601483Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T14:53:54.2601645Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-06T14:53:54.2651855Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-06T14:54:01.8152263Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-06T14:54:01.8153027Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-06T14:54:01.8193327Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-06T14:54:01.8194140Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-06T14:54:01.8194565Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-06T14:54:01.8195012Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-06T14:54:01.8195469Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-06T14:54:01.8330563Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-06T14:54:03.0012202Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-06T14:54:03.0013289Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-06T14:54:03.0048430Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-06T14:54:03.0049207Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-06T14:54:03.0049711Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-06T14:54:03.0050301Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-06T14:54:03.0050867Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-06T14:54:03.0156766Z ##[error]Process completed with exit code 1.
