@@ -7,7 +7,7 @@ Current state only: where the work is, what the next implementor picks up, and w
 Nothing else in this repository may claim what has landed. A plan, an audit, or an ADR describes intent unless this file says it shipped.
 
 - **Captured:** 2026-09-06, Asia/Jakarta.
-- **Verified on:** `e0b5ad2` on `main`, with [#321](https://github.com/chahyasantoso/motion5/pull/321) and [#322](https://github.com/chahyasantoso/motion5/pull/322) squash-merged. The issue #306 work below is on its own branch and is not claimed shipped.
+- **Verified on:** `49f30a4` on `main`, after [#325](https://github.com/chahyasantoso/motion5/pull/325) and [#326](https://github.com/chahyasantoso/motion5/pull/326) were merged in order. The issue #317 work below is on its own branch and is not claimed shipped.
 - **Phase:** live editing of a loaded project. Every decision ADR-028 through ADR-070 records is shipped. [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md) is what a caller may do with that and what each edit pays for, and [GUARDRAILS.md](./GUARDRAILS.md) is the standing rules a slice is held to.
 - **Earlier history:** the long-form narrative through 2026-09-03 is this path at `ebad1ab`. It is not copied into `archived/`, because git already holds it whole: read this path at that ref.
 
@@ -15,18 +15,15 @@ Nothing else in this repository may claim what has landed. A plan, an audit, or 
 
 This section names the slice that just landed and the one before it. A third entry is the thing this file stopped being.
 
-- **Just landed.** Reentrancy refusal precedes entry resolution on the in-place write paths, [issue #309](https://github.com/chahyasantoso/motion5/issues/309), [PR #322](https://github.com/chahyasantoso/motion5/pull/322), and [ADR-070's amendment](./ADR-070-one-reentrancy-rung.md). `#writeValues` resolves lazily after the shared rung; keyframe entry points refuse before lookup. Evidence: `RA-136` through `RA-139`. The PR owns the narrative and measured red/green results.
-- **Landed before it.** One shared callback-reentrancy rung, [issue #310](https://github.com/chahyasantoso/motion5/issues/310) and [ADR-070](./ADR-070-one-reentrancy-rung.md). Publishing and mounting verbs refuse callback re-entry through `#refuseReentrant`; the commit's private mount and flush remain legal. `#inFlight` stays a counter. Evidence: `RA-131` through `RA-135`.
+- **Just landed.** Direct-write staging refusal is distinct from accepted finalization, [issue #313](https://github.com/chahyasantoso/motion5/issues/313), [PR #326](https://github.com/chahyasantoso/motion5/pull/326). Accepted direct writes complete finalization, re-seek, and publication attempts; refused stages do not adopt candidate definitions. The PR owns the exact guarantees, limits, and measured evidence.
+- **Landed before it.** One teardown owner attempts every independent release and preserves the operation already unwinding, [issue #312](https://github.com/chahyasantoso/motion5/issues/312), [PR #325](https://github.com/chahyasantoso/motion5/pull/325). Direct failures remain reportable and release diagnostics are bounded. The PR owns the detailed evidence.
 
 ## Next in line
 
-- **Settle completion and post-commit failure preservation are implemented on this branch, not merged.** [Issue #306](https://github.com/chahyasantoso/motion5/issues/306), [PR #323](https://github.com/chahyasantoso/motion5/pull/323), ADR-071. Every settle step is attempted, then the non-disposed, nonempty publication, and failures are reported together without rolling back the accepted pair. `RA-126` through `RA-130` and the adjacent boundary cases own the evidence. Review and CI completion precede a merge; the PR owns their live status.
+- **Source-evidence correctness is being implemented on its own branch, not merged.** [Issue #317](https://github.com/chahyasantoso/motion5/issues/317), [PR #327](https://github.com/chahyasantoso/motion5/pull/327). One test helper owns syntax projections, declaration bounds, and direct-call locations; existing owning tests keep their claims. The PR owns implementation status and red/green run evidence.
 
 ## Open, and not scheduled
 
-- **Deferred teardown can replace the outcome it follows.** [Issue #312](https://github.com/chahyasantoso/motion5/issues/312). A throwing release still runs outside the settlement collector; its cleanup completeness and error precedence remain separate from #306.
-
-- **A failing seam in a direct write leaves the retained entry moved and the compiled Track neither committed nor rolled back.** [Issue #313](https://github.com/chahyasantoso/motion5/issues/313). The third and last mechanism on the same four members, after the disposal #305 answered and the adoption #309 answered, and the one neither the boundary nor the rung can see: `#writeValues`' escalation and `#recompileKeyframes`' `staged.commit()` both run after the retained entry has moved, on paths that never reach `#apply`. Two of the four ask a seam after the point of no return and two ask it before, for one condition, so a `stageTrack` or a `commit()` that throws leaves the retained entry claiming a rebase, an overlay and a `liveWrite` the composition never took, and a staged Track nothing holds. It reorders the tails #309 changed the signature of, so it lands after it.
 - Phase 6 packaging is the phase after this one. [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) owns its scope, and nothing here claims any of it has started.
 
 ## Where the rest of it lives

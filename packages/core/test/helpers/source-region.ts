@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect } from "vitest";
+import ts from "typescript";
 
 /**
  * One owner for every source-text assertion in the suite.
@@ -14,19 +15,82 @@ import { expect } from "vitest";
  * owns it, including which claims a source region may carry at all.
  */
 
+/** The pinned TypeScript parser owns lexical context, never a second regex lexer. */
+export function parseSource(source: string, filename = "source.ts"): ts.SourceFile {
+  return ts.createSourceFile(filename, source, ts.ScriptTarget.Latest, true);
+}
+
+/** Erasure preserves offsets, line breaks, and separation between adjacent code tokens. */
+function blank(source: string): string {
+  return source.replace(/[^\r\n]/g, " ");
+}
+
+function literalText(node: ts.Node): boolean {
+  return (
+    ts.isStringLiteralLike(node) ||
+    node.kind === ts.SyntaxKind.RegularExpressionLiteral ||
+    node.kind === ts.SyntaxKind.TemplateHead ||
+    node.kind === ts.SyntaxKind.TemplateMiddle ||
+    node.kind === ts.SyntaxKind.TemplateTail ||
+    node.kind === ts.SyntaxKind.JsxText
+  );
+}
+
 /**
- * A source file with its whole-line comments removed.
- *
- * Whole-line only, deliberately: a commented-out statement can neither satisfy a `toContain` nor
- * defeat a `not.toContain`, which is the direction every claim in the suite needs. A trailing
- * comment on a code line survives, so a `toContain` claim names a statement rather than a phrase
- * that could be written in prose.
+ * Visit syntax tokens, never JSDoc trees. Gaps are trivia, erased in both projections.
+ * Regex bodies are not division; template substitutions are executable code, not template text.
  */
-export function code(path: string): string {
-  return readFileSync(path, "utf8")
-    .split("\n")
-    .filter((line) => !/^(?:\/\/|\/\*|\*)/.test(line.trim()))
-    .join("\n");
+function project(source: string, filename: string, keepLiterals: boolean): string {
+  const tree = parseSource(source, filename);
+  const chunks: string[] = [];
+  let end = 0;
+  function visit(node: ts.Node): void {
+    if (node.kind === ts.SyntaxKind.JSDocComment) return;
+    const children = node.getChildren(tree);
+    if (children.length > 0) {
+      for (const child of children) visit(child);
+      return;
+    }
+    if (node.kind === ts.SyntaxKind.EndOfFileToken) return;
+    const start = node.getStart(tree);
+    chunks.push(blank(source.slice(end, start)));
+    const token = source.slice(start, node.end);
+    chunks.push(!keepLiterals && literalText(node) ? blank(token) : token);
+    end = node.end;
+  }
+  visit(tree);
+  chunks.push(blank(source.slice(end)));
+  return chunks.join("");
+}
+
+/** Statement projection: no comments, but literal tokens remain part of their statements. */
+export function code(path: string | URL): string {
+  return project(readFileSync(path, "utf8"), path instanceof URL ? path.pathname : path, true);
+}
+
+/**
+ * Schema/symbol projection: comments, quoted/regex bodies, and template text cannot be evidence.
+ * Executable template substitutions remain. Pass the actual filename for TSX syntax.
+ */
+export function codeOnly(source: string, filename = "source.ts"): string {
+  return project(source, filename, false);
+}
+
+/** Direct identifier calls only, not imports, declarations, property calls, or prose. */
+export function callSites(source: string, name: string): readonly number[] {
+  const tree = parseSource(source);
+  const found: number[] = [];
+  function visit(node: ts.Node): void {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === name
+    )
+      found.push(node.getStart(tree));
+    ts.forEachChild(node, visit);
+  }
+  visit(tree);
+  return found;
 }
 
 /**
@@ -69,9 +133,19 @@ export function member(source: string, signature: string, indent = "  "): string
  * later change to the rule reach them.
  */
 export function declaration(source: string, opening: string, terminator: "}" | ";"): string {
-  const start = source.indexOf(opening);
-  expect(start, `no declaration opens with "${opening}"`).toBeGreaterThan(-1);
-  const end = source.indexOf(terminator, start + opening.length);
-  expect(end, `"${opening}" is not terminated by "${terminator}"`).toBeGreaterThan(start);
-  return source.slice(start, end);
+  const tree = parseSource(source);
+  const matches = tree.statements.filter((node) => {
+    if (!ts.isInterfaceDeclaration(node) && !ts.isTypeAliasDeclaration(node)) return false;
+    const text = node.getText(tree);
+    if (!text.startsWith(opening)) return false;
+    return !/\w$/.test(opening) || !/^\w/.test(text.slice(opening.length));
+  });
+  expect(matches, `expected exactly one declaration opening with "${opening}"`).toHaveLength(1);
+  const node = matches[0]!;
+  expect(
+    terminator === "}" ? ts.isInterfaceDeclaration(node) : ts.isTypeAliasDeclaration(node),
+    `"${opening}" has the wrong declaration kind`,
+  ).toBe(true);
+  expect(node.getText(tree).endsWith(terminator), `"${opening}" has no "${terminator}"`).toBe(true);
+  return project(source, "source.ts", true).slice(node.getStart(tree), node.end - 1);
 }

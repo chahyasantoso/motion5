@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { code } from "../../helpers/source-region";
 import { fileURLToPath } from "node:url";
 import { Motion, type MotionOptions } from "../../../src/domain/motion";
 import { Track } from "../../../src/domain/track";
@@ -13,9 +13,8 @@ import {
 // Read the domain source once. C-3 asserts on the source itself, because "Motion never holds a
 // compiled Track" is invisible to behavioral tests as long as a cached reference happens to be
 // the right one. The source guard is what stops the capture from creeping back in.
-const MOTION_SOURCE = readFileSync(
+const MOTION_SOURCE = code(
   fileURLToPath(new URL("../../../src/domain/motion.ts", import.meta.url)),
-  "utf8",
 );
 
 interface SetupOptions {

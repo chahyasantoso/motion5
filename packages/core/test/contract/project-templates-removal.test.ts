@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { code, declaration } from "../helpers/source-region";
 import { fileURLToPath } from "node:url";
 
 import type { Diagnostic } from "../../src/contract/v5";
@@ -18,8 +18,7 @@ const DECLARATION = fileURLToPath(new URL("../../src/contract/v5.ts", import.met
 const MEMBER = /readonly\s+([A-Za-z0-9_]+)\??\s*:/g;
 
 function declaredMembers(name: string): readonly string[] {
-  const source = readFileSync(DECLARATION, "utf8");
-  const body = new RegExp(`export interface ${name} \\{([^}]*)\\}`).exec(source)?.[1] ?? "";
+  const body = declaration(code(DECLARATION), `export interface ${name}`, "}");
   return [...body.matchAll(MEMBER)].map((match) => match[1] as string);
 }
 

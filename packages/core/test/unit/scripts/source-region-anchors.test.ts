@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import ts from "typescript";
+import { codeOnly, declaration, parseSource } from "../../helpers/source-region";
 
 // A source-text assertion is addressed by something the claim names, and this gate refuses the shape
 // that is not. Issue #314 found two cases in `live-value-updates.test.ts` sliced between one
@@ -28,10 +30,41 @@ const SELF = "packages/core/test/unit/scripts/source-region-anchors.test.ts";
 const HELPER = "packages/core/test/helpers/source-region.ts";
 const UNWALKED = new Set(["node_modules", "dist", "coverage"]);
 const TEST_FILE = /\.test\.tsx?$/;
-/** The specifier every source-reading case resolves the one owner through. */
-const HELPER_IMPORT = 'helpers/source-region"';
-/** The idiom that names a source file to read, which is what makes a file this gate's subject. */
-const SOURCE_CONSTANT = "_SOURCE = fileURLToPath(";
+/** Actual import specifier suffix; a mention in a comment or fixture is not an import. */
+const HELPER_IMPORT = "/helpers/source-region";
+
+/** Source URL syntax is independent of the receiving name or surrounding read wrapper. */
+function readsSource(source: string): boolean {
+  let found = false;
+  function visit(node: ts.Node): void {
+    if (
+      ts.isNewExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === "URL" &&
+      node.arguments?.[0] !== undefined &&
+      ts.isStringLiteralLike(node.arguments[0]) &&
+      /(?:^|\/)src\//.test(node.arguments[0].text)
+    )
+      found = true;
+    ts.forEachChild(node, visit);
+  }
+  visit(parseSource(source));
+  return found;
+}
+
+function importsOwner(source: string): boolean {
+  return parseSource(source).statements.some(
+    (node) =>
+      ts.isImportDeclaration(node) &&
+      ts.isStringLiteral(node.moduleSpecifier) &&
+      node.moduleSpecifier.text.endsWith(HELPER_IMPORT) &&
+      node.importClause !== undefined &&
+      !node.importClause.isTypeOnly &&
+      node.importClause.namedBindings !== undefined &&
+      (ts.isNamespaceImport(node.importClause.namedBindings) ||
+        node.importClause.namedBindings.elements.some((element) => !element.isTypeOnly)),
+  );
+}
 /**
  * A local redeclaration of anything the one owner exports, asked only of a file that reads source.
  *
@@ -42,7 +75,8 @@ const SOURCE_CONSTANT = "_SOURCE = fileURLToPath(";
  * This file's first run did exactly that and named all three, which is the measurement rather than
  * the theory.
  */
-const REDECLARED = /^\s*(?:export\s+)?function\s+(code|region|member|declaration)\s*\(/m;
+const REDECLARED =
+  /^\s*(?:export\s+)?function\s+(code|codeOnly|region|member|declaration|callSites|parseSource)\s*\(/m;
 /**
  * The retired helper's own declaration, refused suite-wide because that one name is not overloaded.
  *
@@ -53,14 +87,9 @@ const RETIRED_HELPER = /^\s*(?:export\s+)?function\s+region\s*\(/m;
 /** A call to the retired two-bound helper, which no longer exists to be called. */
 const RETIRED_CALL = /(?<![.\w])region\s*\(/;
 /**
- * The source readers this slice did not migrate, and why the list has teeth in both directions.
- *
- * Both read `src/contract/v5.ts` to assert that a retired authored form is absent from a type
- * declaration, neither slices a region at all, and neither is issue #314's defect. They are recorded
- * rather than ignored, because the third check would otherwise be silent about them, and recorded as
- * a closed set rather than as an allowlist, because the assertion is `toEqual`: migrating one fails
- * this gate until the entry goes with it, and a new source-reading case fails it on arrival. That is
- * the read budget's waiver shape, which may shrink and may not grow.
+ * Closed migration set, emptied by issue #317. No additions: discovery must find new readers.
+ * The syntactic scope is source-path URLs, including directories and wrapped reads, not arbitrary
+ * computed filesystem paths. Importing production code or quoting a fixture is not a source read.
  */
 const PENDING: readonly string[] = [];
 
@@ -85,34 +114,100 @@ function sourceOf(relativePath: string): string {
 }
 
 describe("source-region anchors", () => {
-  it("declares the region helpers in one place and nowhere else", () => {
-    const readers = testFiles().filter((file) => sourceOf(file).includes(SOURCE_CONSTANT));
-    const shadowed = readers.filter((file) => REDECLARED.test(sourceOf(file)));
-    expect(shadowed.sort()).toEqual([]);
+  const files = testFiles().map((path) => ({ path, source: sourceOf(path) }));
+  const readers = files.filter(({ source }) => readsSource(source));
 
-    // The retired name is refused everywhere rather than only where source is read, for the reason
-    // stated beside it: it is the one of the four that cannot mean anything else here.
-    const retired = testFiles().filter((file) => RETIRED_HELPER.test(sourceOf(file)));
-    expect(retired.sort()).toEqual([]);
-
-    // The owner exists and exports all three, so a green run above is one owner rather than none.
-    const owner = sourceOf(HELPER);
-    const exported = ["function code(", "function member(", "function declaration("];
-    expect(exported.filter((name) => !owner.includes(`export ${name}`))).toEqual([]);
+  it("declares the source helpers in one place and nowhere else", () => {
+    const shadowed = readers.filter(({ source }) => REDECLARED.test(codeOnly(source)));
+    expect(shadowed.map(({ path }) => path).sort()).toEqual([]);
+    const retired = files.filter(({ source }) => RETIRED_HELPER.test(codeOnly(source)));
+    expect(retired.map(({ path }) => path).sort()).toEqual([]);
+    const owner = codeOnly(sourceOf(HELPER));
+    const exported = ["code", "codeOnly", "member", "declaration", "callSites", "parseSource"];
+    expect(exported.filter((name) => !owner.includes(`export function ${name}(`))).toEqual([]);
   });
 
   it("leaves no call to the retired two-bound helper anywhere in the suite", () => {
-    const offenders = testFiles().filter((file) => RETIRED_CALL.test(sourceOf(file)));
-    expect(offenders.sort()).toEqual([]);
+    const offenders = files.filter(({ source }) => RETIRED_CALL.test(codeOnly(source)));
+    expect(offenders.map(({ path }) => path).sort()).toEqual([]);
   });
 
-  it("reads source through the one owner, and records the readers that do not yet", () => {
-    const readers = testFiles().filter((file) => sourceOf(file).includes(SOURCE_CONSTANT));
+  it("reads source through the one owner with an empty closed pending set", () => {
+    expect(readers.length).toBeGreaterThanOrEqual(13);
+    expect(readers.map(({ path }) => path)).toEqual(
+      expect.arrayContaining([
+        "packages/core/test/integration/bare-authored-leaf.test.ts",
+        "packages/core/test/integration/plugin-group-values-section.test.ts",
+        "packages/core/test/unit/adapters/trigger-factory-no-fallback.test.ts",
+      ]),
+    );
+    expect(
+      readers
+        .filter(({ source }) => !importsOwner(source))
+        .map(({ path }) => path)
+        .sort(),
+    ).toEqual([...PENDING].sort());
+    expect(PENDING).toEqual([]);
+  });
 
-    // A scan asserts that it found what it is scanning: matched nothing reads as every file clean.
-    expect(readers.length).toBeGreaterThanOrEqual(7);
+  it("discovers renamed and wrapped source URLs but not imports or quoted examples", () => {
+    for (const source of [
+      'const renamed = new URL("../../src/contract/v5.ts", import.meta.url);',
+      'const anything = read(new URL("../../src/engine.ts", import.meta.url));',
+      'const directory = new URL("../../src/adapters/", import.meta.url);',
+    ])
+      expect(readsSource(source)).toBe(true);
+    for (const source of [
+      'import { Engine } from "../../src/engine";',
+      '// new URL("../../src/engine.ts", import.meta.url)',
+      `const example = ${JSON.stringify('new URL("../../src/engine.ts", import.meta.url)')};`,
+      'const config = new URL("../../docs/README.md", import.meta.url);',
+    ])
+      expect(readsSource(source)).toBe(false);
+  });
 
-    const unmigrated = readers.filter((file) => !sourceOf(file).includes(HELPER_IMPORT));
-    expect(unmigrated.sort()).toEqual([...PENDING].sort());
+  it("requires a real helper import rather than prose or a type-only import", () => {
+    const statement = 'import { code as readCode } from "../../helpers/source-region";';
+    expect(importsOwner(statement)).toBe(true);
+    expect(importsOwner(`// ${statement}`)).toBe(false);
+    expect(importsOwner(`const example = ${JSON.stringify(statement)};`)).toBe(false);
+    expect(importsOwner('import type { code } from "../../helpers/source-region";')).toBe(false);
+    expect(importsOwner('import { type code } from "../../helpers/source-region";')).toBe(false);
+  });
+
+  it("keeps parsed declaration bounds through nested braces and semicolons", () => {
+    const source =
+      "export type Shape = { nested: { first: string; second: number }; tail: boolean };";
+    expect(declaration(source, "export type Shape", ";")).toContain("tail: boolean");
+    expect(() =>
+      declaration('const prose = "export type Shape = string;";', "export type Shape", ";"),
+    ).toThrow();
+    expect(() => declaration(`${source}\n${source}`, "export type Shape", ";")).toThrow();
+    expect(() =>
+      declaration("export type ShapeExtra = string;", "export type Shape", ";"),
+    ).toThrow();
+  });
+
+  it("preserves offsets and executable template substitutions while erasing literal text", () => {
+    const source = [
+      '/** prose */ const url = "https://example.test/a"; // trailing',
+      "const pattern = /symbol/;",
+      "const text = `symbol ${realCall()} tail ${otherCall()}`;",
+      "const divided = value / divisor; const adjacent = a/* gap */+b;",
+    ].join("\n");
+    const projected = codeOnly(source);
+    expect(projected.length).toBe(source.length);
+    expect(projected.split("\n").map((line) => line.length)).toEqual(
+      source.split("\n").map((line) => line.length),
+    );
+    expect(projected).not.toContain("symbol");
+    expect(projected).not.toContain("https");
+    expect(projected.indexOf("realCall")).toBe(source.indexOf("realCall"));
+    expect(projected.indexOf("otherCall")).toBe(source.indexOf("otherCall"));
+    expect(projected).toContain("value / divisor");
+    expect(projected).toContain("a         +b");
+    const jsx = codeOnly('const view = <div title="symbol">prose{actual()}</div>;', "view.tsx");
+    expect(jsx).toContain("actual()");
+    expect(jsx).not.toMatch(/symbol|prose/);
   });
 });

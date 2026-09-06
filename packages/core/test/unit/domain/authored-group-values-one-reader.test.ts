@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { code, codeOnly } from "../../helpers/source-region";
 import { fileURLToPath } from "node:url";
 import { readPluginValues } from "../../../src/contract/keyframe-shape";
 import type { AuthoredPluginGroup, AuthoredProperty } from "../../../src/contract/v5";
@@ -65,7 +65,7 @@ function boundOf(keyframes: AuthoredKeyframes) {
 }
 
 function sourceOf(site: string): string {
-  return readFileSync(`${SOURCE_ROOT}${site}`, "utf8");
+  return codeOnly(code(`${SOURCE_ROOT}${site}`), site);
 }
 
 describe("one owner for authored group values", () => {

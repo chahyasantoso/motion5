@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync } from "node:fs";
+import { code, codeOnly, declaration } from "../helpers/source-region";
 import { fileURLToPath } from "node:url";
 import type { AuthoredPluginGroup, Diagnostic, ProjectDefinition } from "../../src/contract/v5";
 import { validateKeyframes, validateV5 } from "../../src/contract/validate-v5";
@@ -23,6 +23,13 @@ import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/f
 // paths and two documentation paths.
 
 const V5_SOURCE = fileURLToPath(new URL("../../src/contract/v5.ts", import.meta.url));
+
+function assertGroupDeclaration(source: string): void {
+  const group = declaration(source, "export interface AuthoredPluginGroup", "}");
+  expect(group).toContain("readonly values?");
+  expect(group).toContain("readonly requires?");
+  expect(codeOnly(source)).not.toMatch(/\bAuthoredPluginMember\b/);
+}
 
 /**
  * `true` exactly when `K` is a member of `T`.
@@ -266,7 +273,25 @@ describe("an explicit values section inside plugin groups", () => {
     expect(GROUP_DECLARES_NOTHING_ELSE).toBe(true);
     // `AuthoredPluginMember` was the escape hatch the open record needed. It is deleted rather
     // than left declared and unused, and the declaring source is the artifact under test.
-    expect(readFileSync(V5_SOURCE, "utf8")).not.toContain("AuthoredPluginMember");
+    assertGroupDeclaration(code(V5_SOURCE));
+  });
+
+  it("Y-14 ignores escape-hatch prose but detects a declared unused alias", () => {
+    const real =
+      "export interface AuthoredPluginGroup { readonly values?: unknown; readonly requires?: unknown; }";
+    const prose =
+      '/** AuthoredPluginMember was removed. */\nconst message = "AuthoredPluginMember";\n' +
+      "const template = `AuthoredPluginMember`;\nconst pattern = /AuthoredPluginMember/;\n";
+    expect(() => assertGroupDeclaration(prose + real)).not.toThrow();
+    expect(() =>
+      assertGroupDeclaration(prose + real + "\ntype AuthoredPluginMember = unknown;"),
+    ).toThrow();
+    expect(() =>
+      assertGroupDeclaration(prose + real + "\nexport type AuthoredPluginMember = unknown;"),
+    ).toThrow();
+    expect(() =>
+      assertGroupDeclaration(prose + `const example = ${JSON.stringify(real)};`),
+    ).toThrow();
   });
 
   it("Y-13 composes the walker rig's world frame through the values section", () => {
