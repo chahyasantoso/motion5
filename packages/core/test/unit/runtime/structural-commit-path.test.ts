@@ -148,10 +148,12 @@ type CommitHook =
   | "stageTrack"
   | "replaceMotionTrack"
   | "addMotionTrack";
+/** Only the settle hooks this rig can fail; unsupported configuration must not be silent. */
+type SettleHook = Extract<CommitHook, "addMotionTrack"> | "disposeTrack" | "stageCommit";
 /** What one rig's hooks do beyond recording, and the whole of what a case configures. */
 interface Behaviour {
   readonly createMotion?: Error;
-  readonly failAt?: Partial<Record<CommitHook | "disposeTrack" | "stageCommit", unknown>>;
+  readonly failAt?: Partial<Record<SettleHook, unknown>>;
   readonly disposeFrom?: CommitHook;
   /**
    * Thrown by the disposing hook after it disposed, so the two facts can be measured apart.
@@ -241,7 +243,7 @@ function recorder(behaviour: Behaviour = {}): Recorder {
     record(`reentry ${outcome.thrown === undefined ? "accepted" : describeError(outcome.thrown)}`);
     if (outcome.thrown !== undefined && reenter.swallow !== true) throw outcome.thrown;
   };
-  const failing = (hook: CommitHook | "disposeTrack" | "stageCommit"): void => {
+  const failing = (hook: SettleHook): void => {
     const failures = behaviour.failAt;
     if (failures !== undefined && Object.hasOwn(failures, hook)) throw failures[hook];
   };
