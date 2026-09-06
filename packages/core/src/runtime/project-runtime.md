@@ -440,10 +440,6 @@ One walk, bucketed by the owner each entry already names, with the free tracks f
 
 Every untouched entry's definition is handed through by identity, for ADR-058's reason. See `RA-90` and ADR-058.
 
-## #recordRelease
-
-Records release failures on the single diagnostics surface with rule id `project-release-failed`. It does not throw and does not decide precedence: direct disposal and deferred boundary draining own that distinction because only they know whether a caller asked for release or an unrelated operation is unwinding. The message uses `describeError`, so each original failure is preserved in the collector while the diagnostic remains inspectable. See ADR-072.
-
 ## #teardown
 
 Releases everything this runtime holds, exactly once, and answers failures without deciding who receives them.
@@ -459,3 +455,7 @@ Why it may not run where `dispose()` was called is the whole of ADR-067, and it 
 Exactly once, by construction rather than by two guards agreeing: `dispose()` returns early on its own flag, and this clears `#pendingTeardown` before it does anything, so neither path can reach it twice. `disposeComposition` is therefore called once, after the unwind rather than in the middle of it, which is what `RA-114` and `RA-117` both count.
 
 It still detaches before it disposes the graph, and it still empties both retained maps, which is what `edit` cites when it drops a staged pair rather than committing it. That claim is now true of every path rather than of commits alone: the four direct writes outside `#commit` used to be able to write an entry back after this ran, and they run inside `#boundary` now, so this member is the last thing that touches either map on every path a seam can dispose from. See ADR-067 and ADR-069.
+
+## #recordRelease
+
+Records release failures on the single diagnostics surface with rule id `project-release-failed`. It does not throw and does not decide precedence: direct disposal and deferred boundary draining own that distinction because only they know whether a caller asked for release or an unrelated operation is unwinding. The message uses `describeError`, so each original failure is preserved in the collector while the diagnostic remains inspectable. See ADR-072.
