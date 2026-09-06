@@ -364,6 +364,48 @@ async function snapshot(api, run, trustedSha) {
   };
 }
 
+async function reconcileRecordedIntent(api, run, saved) {
+  if (!saved.candidate_sha || !run.head_branch) return null;
+  const head = await api.head(run.head_branch);
+  if (head !== saved.candidate_sha) {
+    const comparison = await api.request("GET", `/compare/${saved.candidate_sha}...${head}`);
+    if (!["ahead", "identical"].includes(comparison.status)) return null;
+  }
+  const commit = await api.request("GET", `/git/commits/${saved.candidate_sha}`);
+  ensure(
+    commit.parents.length === 1 && commit.parents[0].sha === saved.request_commit,
+    "Recorded candidate parent mismatch",
+  );
+  const source = await api.request("GET", `/git/commits/${saved.request_commit}`);
+  ensure(
+    source.parents.length === 1 && source.parents[0].sha === saved.source_sha,
+    "Recorded source parent mismatch",
+  );
+  const requestPath = commit.message.match(
+    /^AI-Edit-Request: (\.ai\/edits\/[A-Za-z0-9][A-Za-z0-9._-]*\.json)$/m,
+  )?.[1];
+  ensure(requestPath, "Recorded request trailer is absent");
+  const request = JSON.parse((await api.content(requestPath, saved.request_commit)).text);
+  ensure(
+    request.expected_head === saved.source_sha &&
+      identity(request).digest === saved.request_digest &&
+      commit.message.split("\n").includes(`AI-Edit-Digest: ${saved.request_digest}`),
+    "Recorded request identity mismatch",
+  );
+  return receipt({
+    kind: "ai-edit",
+    repository: saved.repository,
+    run_id: saved.run_id,
+    run_attempt: saved.run_attempt,
+    source_sha: saved.source_sha,
+    request_commit: saved.request_commit,
+    request_digest: saved.request_digest,
+    phase: "publication",
+    candidate_sha: saved.candidate_sha,
+    published_sha: saved.candidate_sha,
+  });
+}
+
 export async function recoverRun(api, run) {
   const directory = `receipts/ai-edit/${run.id}/${run.run_attempt}/`;
   const evidenceHead = await api.head("ci-logs");
@@ -384,7 +426,12 @@ export async function recoverRun(api, run) {
       "Recovery identity mismatch",
     );
     if (name === "receipt.json") return reportToPull(api, run, saved);
-    // Intent is the durable uncertain outcome. Do not replay an edit or invent a terminal receipt.
+    // Reconcile only remote facts. No artifact, formatter, candidate creation, or ref update.
+    const confirmed = await reconcileRecordedIntent(api, run, saved);
+    if (confirmed) {
+      const report = await reportToPull(api, run, confirmed);
+      return { ...report, publication: "confirmed" };
+    }
     return {
       publication: "unconfirmed",
       evidence: `${directory}intent.json`,
