@@ -42,13 +42,14 @@ import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import {
   commitInFlight,
   describeDiagnostics,
+  describeError,
   immediateInTransaction,
   nestedTransaction,
   propertyEntry,
   reservedGoalSlot,
   unboundGroup,
 } from "./schema-refusals";
-import { rejectAfterRollback, runRollbackSteps, runSettleSteps } from "./rollback";
+import { collect, report, rejectAfterRollback, runRollbackSteps, runSettleSteps } from "./rollback";
 import {
   EMPTY_KEYFRAMES,
   NO_OVERLAY,
@@ -1229,6 +1230,8 @@ export class ProjectRuntime {
    *
    * Reachable from caller code that this runtime is in the middle of calling, which is why the
    * refusal and the release are two things rather than one. See ADR-067.
+   * Every release step is attempted. Direct release reports collected failures; a deferred release
+   * records diagnostics without replacing the outcome of the operation it follows.
    */
   dispose(): void {
     if (this.#disposed) return;
@@ -1245,14 +1248,49 @@ export class ProjectRuntime {
   }
 
   #teardown(): void {
+    const deferred = this.#pendingTeardown;
     this.#pendingTeardown = false;
-    for (const nodeId of [...this.#instances.keys()]) this.#graph.detach(nodeId);
-    this.#instances.clear();
-    this.#tracks.clear();
-    this.#motions.clear();
-    this.#open = undefined;
-    this.#graph.dispose();
-    this.#disposeComposition();
+    const failures = collect([
+      ...[...this.#instances.keys()].map((nodeId) => () => this.#graph.detach(nodeId)),
+      () => {
+        this.#instances.clear();
+        this.#tracks.clear();
+        this.#motions.clear();
+        this.#open = undefined;
+      },
+      () => this.#graph.dispose(),
+      () => this.#disposeComposition(),
+    ]);
+    // Completion precedes reporting. The existing pending flag distinguishes a direct release
+    // from a drain whose caller already has an outcome; neither call site owns this policy.
+    const describe = (failure: unknown, seen = new Set<unknown>()): string => {
+      try {
+        const message = String(describeError(failure));
+        if (!(failure instanceof AggregateError)) return message;
+        if (seen.has(failure)) return "[circular release failure]";
+        seen.add(failure);
+        try {
+          return [message, ...failure.errors.map((cause: unknown) => describe(cause, seen))].join(
+            "; ",
+          );
+        } finally {
+          seen.delete(failure);
+        }
+      } catch {
+        return "Release failed with an unprintable thrown value.";
+      }
+    };
+    for (const failure of failures) {
+      this.#diagnostics.record(
+        Object.freeze({
+          ruleId: "project-release-failed",
+          path: "dispose",
+          message: describe(failure),
+          severity: "error",
+        }),
+      );
+    }
+    if (!deferred) report(failures, "Project release failed.");
   }
   #assertLive(): void {
     if (this.#disposed) throw new Error("ProjectRuntime is disposed.");

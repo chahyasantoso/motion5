@@ -7,7 +7,7 @@ import { describeError } from "./schema-refusals";
  * testing a sentinel preserves thrown undefined. Host aggregates remain intact, not flattened.
  * See ADR-035 and ADR-071.
  */
-function collect(steps: readonly (() => void)[]): readonly unknown[] {
+export function collect(steps: readonly (() => void)[]): readonly unknown[] {
   const failures: unknown[] = [];
   for (const step of steps) {
     try {
@@ -20,7 +20,7 @@ function collect(steps: readonly (() => void)[]): readonly unknown[] {
 }
 
 /** A single failure keeps its identity; multiple failures arrive in occurrence order. */
-function report(failures: readonly unknown[], summary: string): void {
+export function report(failures: readonly unknown[], summary: string): void {
   if (failures.length === 0) return;
   if (failures.length === 1) throw failures[0];
   throw new AggregateError(failures, summary);
