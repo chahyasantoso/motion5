@@ -5,7 +5,7 @@
   "expected_blobs": {
     "docs/API-CAPABILITIES.md": "5bbd02cfef3761630e82c154853cfbec42d2bedf"
   },
-  "message": "test(automation): intentional stale-input refusal probe",
+  "message": "test(automation): post-339 intentional stale-input diagnostics probe",
   "paths": ["docs/API-CAPABILITIES.md"],
   "checks": ["format"]
 }
