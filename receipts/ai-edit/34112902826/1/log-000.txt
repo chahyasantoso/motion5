@@ -1,0 +1,13 @@
+prepare isolated candidate	Prepare with trusted code and configuration	﻿2026-09-07T10:43:17.7749513Z ##[group]Run set -euo pipefail
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:43:17.7749856Z ^[[36;1mset -euo pipefail^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:43:17.7750170Z ^[[36;1mexport CANDIDATE_ROOT="$GITHUB_WORKSPACE/candidate"^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:43:17.7750594Z ^[[36;1mexport FORMATTER_ROOT="$RUNNER_TEMP/motion5-formatter"^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:43:17.7751027Z ^[[36;1mexport CANDIDATE_OUTPUT="$RUNNER_TEMP/candidate.json"^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:43:17.7751454Z ^[[36;1mnode trusted/scripts/automation-publish.mjs prepare^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:43:17.7788019Z shell: /usr/bin/bash -e {0}
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:43:17.7788275Z env:
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:43:17.7788513Z   TRUSTED_SHA: 8f62206b6856ba9946d27b9240c52e71fe3d762f
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:43:17.7788826Z   DISPATCH_REQUEST: 
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:43:17.7789063Z ##[endgroup]
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:43:17.8377372Z Stale source SHA
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:43:17.8444637Z ##[error]Process completed with exit code 1.
