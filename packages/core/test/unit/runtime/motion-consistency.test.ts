@@ -235,14 +235,19 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
     let intercept: () => void = () => undefined;
     const test = rig(project(), undefined, () => intercept());
     test.handle.mount("hero/arm");
+    // Track skips unchanged progress. Advance first so the new stagger reaches the host.
+    test.handle.signal("hero", { type: "manual", progress: 0.75 });
+    test.flush();
     const motion = test.handle.motion("hero");
     const failure = new Error("Disposing host re-seed failed.");
-    intercept = () => {
+    const disposeDuringProgress = vi.fn(() => {
       test.handle.dispose();
       throw failure;
-    };
+    });
+    intercept = disposeDuringProgress;
     const invalidate = vi.spyOn(test.runtime.graph, "invalidate");
     const result = caught(() => motion.setStagger(250));
+    expect(disposeDuringProgress).toHaveBeenCalledTimes(1);
     expect(result).toBeInstanceOf(AggregateError);
     expect((result as AggregateError).errors[0]).toBe(failure);
     expect((result as AggregateError).errors[1].message).toBe("ProjectRuntime is disposed.");
