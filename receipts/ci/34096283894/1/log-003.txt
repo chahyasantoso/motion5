@@ -1,0 +1,149 @@
+343Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-diagnostics.test.ts^[[2m > ^[[22mcomplete failure diagnostics^[[2m > ^[[22mretains cancelled preparation evidence
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7904140Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-diagnostics.test.ts^[[2m > ^[[22mcomplete failure diagnostics^[[2m > ^[[22mretains timed_out preparation evidence
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7906770Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-diagnostics.test.ts^[[2m > ^[[22mcomplete failure diagnostics^[[2m > ^[[22mretains skipped preparation evidence
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7911296Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/run_main:107
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7912022Z     triggerUncaughtException(
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7912522Z     ^
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7912706Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7913169Z AssertionError [ERR_ASSERTION]: AI failure bypassed diagnostics
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7913655Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7913796Z 0 !== 1
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7913980Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7914328Z     at file:///home/runner/work/motion5/motion5/[eval1]:20:43 {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7914922Z   generatedMessage: false,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7915340Z   code: 'ERR_ASSERTION',
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7915742Z   actual: 0,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7915961Z   expected: 1,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7916203Z   operator: 'strictEqual',
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7916455Z   diff: 'simple'
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7916664Z }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7916771Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7916857Z Node.js v24.20.0
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7917250Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7917468Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7917605Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7917873Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7918010Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7918128Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7918355Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7918475Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7919557Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-diagnostics.test.ts:^[[2m31:40^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7939442Z     ^[[90m 29|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7940208Z     ^[[90m 30|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7941466Z     ^[[90m 31|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7942704Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7943297Z     ^[[90m 32|^[[39m }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7944244Z     ^[[90m 33|^[[39m ^[[34mdescribe^[[39m(^[[32m"complete failure diagnostics"^[[39m^[[33m,^[[39m () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7945755Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-diagnostics.test.ts:^[[2m37:7^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7946438Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7946869Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7947229Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7948928Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-diagnostics.test.ts^[[2m > ^[[22mcomplete failure diagnostics^[[2m > ^[[22mfinds plain Error after setup noise
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7951062Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/run_main:107
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7951746Z     triggerUncaughtException(
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7952205Z     ^
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7952396Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7953177Z AssertionError [ERR_ASSERTION]: plain error lost behind prefix
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7954047Z     at file:///home/runner/work/motion5/motion5/[eval1]:19:103 {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7954708Z   generatedMessage: false,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7955151Z   code: 'ERR_ASSERTION',
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7955552Z   actual: false,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7955917Z   expected: true,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7956277Z   operator: '==',
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7956626Z   diff: 'simple'
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7957312Z }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7957476Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7957625Z Node.js v24.20.0
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7958252Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7958628Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7959110Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7959555Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7959773Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7959951Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7960323Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7960531Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7961523Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-diagnostics.test.ts:^[[2m31:40^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7962755Z     ^[[90m 29|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7963448Z     ^[[90m 30|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7964674Z     ^[[90m 31|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7965857Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7966451Z     ^[[90m 32|^[[39m }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7967380Z     ^[[90m 33|^[[39m ^[[34mdescribe^[[39m(^[[32m"complete failure diagnostics"^[[39m^[[33m,^[[39m () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7969171Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-diagnostics.test.ts:^[[2m52:5^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7969862Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7970371Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7970838Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7972505Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-diagnostics.test.ts^[[2m > ^[[22mcomplete failure diagnostics^[[2m > ^[[22mretries unavailable logs and preserves them on recovery
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7974272Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/run_main:107
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7974914Z     triggerUncaughtException(
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7975335Z     ^
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7975517Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7975990Z AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7976496Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7976649Z 0 !== 3
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7976827Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7977177Z     at file:///home/runner/work/motion5/motion5/[eval1]:19:124 {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7977769Z   generatedMessage: true,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7978193Z   code: 'ERR_ASSERTION',
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7978575Z   actual: 0,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7979228Z   expected: 3,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7979602Z   operator: 'strictEqual',
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7980133Z   diff: 'simple'
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7980469Z }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7980638Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7980906Z Node.js v24.20.0
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7981661Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7982132Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7982413Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7983190Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7983462Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7983753Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7984406Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7984709Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7985748Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-diagnostics.test.ts:^[[2m31:40^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7987141Z     ^[[90m 29|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7987993Z     ^[[90m 30|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7989280Z     ^[[90m 31|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7990204Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7990648Z     ^[[90m 32|^[[39m }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.7991787Z     ^[[90m 33|^[[39m ^[[34mdescribe^[[39m(^[[32m"complete failure diagnostics"^[[39m^[[33m,^[[39m () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8007300Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-diagnostics.test.ts:^[[2m56:5^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8007969Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8008545Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8009609Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8010582Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/automation-diagnostics.test.ts^[[2m > ^[[22mcomplete failure diagnostics^[[2m > ^[[22mrestores details after comment failure
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8011972Z ^[[31m^[[1mAssertionError^[[22m: node:internal/modules/run_main:107
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8012374Z     triggerUncaughtException(
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8012678Z     ^
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8012811Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8013050Z AssertionError [ERR_ASSERTION]: diagnostics not durable
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8013517Z     at file:///home/runner/work/motion5/motion5/[eval1]:19:86 {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8013875Z   generatedMessage: false,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8014153Z   code: 'ERR_ASSERTION',
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8014394Z   actual: false,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8014608Z   expected: true,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8014816Z   operator: '==',
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8015019Z   diff: 'simple'
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8015217Z }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8015318Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8015411Z Node.js v24.20.0
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8015752Z : expected 1 to be +0 // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8015973Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8016117Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8016374Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8016500Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8016601Z ^[[32m- 0^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8016819Z ^[[31m+ 1^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8016939Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8017481Z ^[[36m ^[[2m❯^[[22m scenario packages/core/test/unit/scripts/automation-diagnostics.test.ts:^[[2m31:40^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8018342Z     ^[[90m 29|^[[39m     maxBuffer^[[33m:^[[39m ^[[34m1000000^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8018993Z     ^[[90m 30|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8019736Z     ^[[90m 31|^[[39m   ^[[34mexpect^[[39m(result^[[33m.^[[39mstatus^[[33m,^[[39m result^[[33m.^[[39mstderr)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8020438Z     ^[[90m   |^[[39m                                        ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8020791Z     ^[[90m 32|^[[39m }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8021324Z     ^[[90m 33|^[[39m ^[[34mdescribe^[[39m(^[[32m"complete failure diagnostics"^[[39m^[[33m,^[[39m () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8022162Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/scripts/automation-diagnostics.test.ts:^[[2m60:5^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8022550Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8022794Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/14]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T07:38:08.8023012Z 
+quality (n
