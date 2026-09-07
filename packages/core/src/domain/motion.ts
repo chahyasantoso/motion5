@@ -3,6 +3,12 @@ import type { Scheduler } from "../ports/scheduler";
 import type { TriggerPort } from "../ports/trigger";
 import type { TriggerSignal } from "../contract/v5";
 import { Lifecycle } from "./lifecycle";
+import { collect, report } from "./completion";
+
+interface TriggerBinding {
+  activate(): void;
+  dispose(): void;
+}
 import type { Track } from "./track";
 
 export interface MotionTrackEntry {
@@ -58,7 +64,7 @@ export class Motion {
   #playing = false;
   #position = 0;
   #unsubscribe: (() => void) | undefined;
-  #triggerUnsubscribe: (() => void) | undefined;
+  #triggerBinding: TriggerBinding | undefined;
   constructor(options: MotionOptions) {
     if (typeof options.resolveTrack !== "function")
       throw new TypeError("Motion requires a resolveTrack function.");
@@ -143,11 +149,10 @@ export class Motion {
   /**
    * Installs the trigger this Motion listens to, keeping its tracks, its playhead and its position.
    *
-   * An in-place swap rather than a rebuilt instance, and that is what the tracks and the playhead
-   * survive: #attachTrigger is already isolated and guarded, detach is the same two lines pause()
-   * uses, and `TriggerPort` declares no dispose, so the host resource this Motion never owned stays
-   * with the layer that created it. Reattached only while mounted, so an unmounted Motion subscribes
-   * to nothing and mount() still attaches exactly once.
+   * An in-place swap rather than a rebuilt instance. acceptTrigger owns subscription preparation,
+   * acceptance and the returned cleanup; this member completes both phases synchronously.
+   * TriggerPort declares no resource disposal, so the factory's resource stays with its creator.
+   * Only a mounted Motion subscribes. A refused subscription leaves the old binding intact.
    *
    * Both halves of the port move together, because they are one decision: acceptsExternalSignal is
    * false exactly for a driver-backed trigger, so a swap that left it behind would let signal()
@@ -158,12 +163,35 @@ export class Motion {
    * collapsed.
    */
   setTrigger(trigger: TriggerPort | undefined, acceptsExternalSignal: boolean): void {
+    this.acceptTrigger(trigger, acceptsExternalSignal)();
+  }
+  /**
+   * Installs a prepared subscription and returns its post-acceptance completion.
+   *
+   * Subscription refusal leaves the old binding and capability untouched. The caller must
+   * complete synchronously after retaining its accepted definition. Completion retires the old
+   * binding and activates buffered input even if retirement fails; no rollback is then legal.
+   * Standalone setTrigger performs both phases before returning.
+   */
+  acceptTrigger(trigger: TriggerPort | undefined, acceptsExternalSignal: boolean): () => void {
     this.assertActive();
-    this.#triggerUnsubscribe?.();
-    this.#triggerUnsubscribe = undefined;
+    const replacement =
+      this.#lifecycle.state === "mounted" && trigger !== undefined
+        ? this.#bindTrigger(trigger)
+        : undefined;
+    const displaced = this.#triggerBinding;
     this.#trigger = trigger;
     this.#acceptsExternalSignal = acceptsExternalSignal;
-    if (this.#lifecycle.state === "mounted") this.#attachTrigger();
+    this.#triggerBinding = replacement;
+    let completed = false;
+    return () => {
+      if (completed) return;
+      completed = true;
+      report(
+        collect([() => displaced?.dispose(), () => replacement?.activate()]),
+        "Motion trigger completion failed.",
+      );
+    };
   }
   /**
    * Moves the stagger every track's effective progress is derived from.
@@ -174,9 +202,24 @@ export class Motion {
    * an unmounted Motion drives nothing that could read the new schedule.
    */
   setStagger(stagger?: number): void {
+    this.acceptStagger(stagger)();
+  }
+  /**
+   * Accepts one validated schedule and returns its synchronous re-seeding completion.
+   *
+   * An owning runtime can retain the accepted definition before injected Track code runs and
+   * supply its own publication callback. Ordinary standalone edits keep the configured callback.
+   * A re-seeding failure does not roll the accepted schedule back.
+   */
+  acceptStagger(
+    stagger?: number,
+    invalidate: (progress: number) => void = this.#invalidate,
+  ): () => void {
     this.assertActive();
     this.#stagger = acceptStagger(stagger);
-    if (this.#lifecycle.state === "mounted") this.#setProgress(this.#position);
+    return () => {
+      if (this.#lifecycle.state === "mounted") this.#setProgress(this.#position, invalidate);
+    };
   }
   schedule(): readonly number[] {
     return this.#tracks.map((_, index) => index * this.#stagger);
@@ -200,8 +243,8 @@ export class Motion {
     this.#pendingProgress = undefined;
     this.#unsubscribe?.();
     this.#unsubscribe = undefined;
-    this.#triggerUnsubscribe?.();
-    this.#triggerUnsubscribe = undefined;
+    this.#triggerBinding?.dispose();
+    this.#triggerBinding = undefined;
     this.#lifecycle.detach();
   }
   seek(progress: number): void {
@@ -246,10 +289,34 @@ export class Motion {
       this.#unsubscribe = this.#clock.subscribe((event) => this.#onTick(event));
   }
   #attachTrigger(): void {
-    if (this.#trigger === undefined || this.#triggerUnsubscribe !== undefined) return;
-    this.#triggerUnsubscribe = this.#trigger.subscribe((progress) =>
-      this.#scheduleProgress(progress),
-    );
+    if (this.#trigger === undefined || this.#triggerBinding !== undefined) return;
+    const binding = this.#bindTrigger(this.#trigger);
+    this.#triggerBinding = binding;
+    binding.activate();
+  }
+  #bindTrigger(trigger: TriggerPort): TriggerBinding {
+    let state: "waiting" | "active" | "disposed" = "waiting";
+    let pending: number | undefined;
+    const unsubscribe = trigger.subscribe((progress) => {
+      if (state === "waiting") pending = progress;
+      else if (state === "active") this.#scheduleProgress(progress);
+    });
+    return {
+      activate: () => {
+        if (state !== "waiting") return;
+        state = "active";
+        const latest = pending;
+        pending = undefined;
+        if (latest !== undefined) this.#scheduleProgress(latest);
+      },
+      dispose: () => {
+        if (state === "disposed") return;
+        state = "disposed";
+        pending = undefined;
+        // Disable first: a throwing host unsubscribe cannot leave this generation emitting.
+        unsubscribe();
+      },
+    };
   }
   #onTick(event: ClockTick): void {
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;
@@ -282,7 +349,7 @@ export class Motion {
     if (track === undefined) throw new TypeError(`Motion track "${id}" has no compiled Track.`);
     return track;
   }
-  #setProgress(progress: number): void {
+  #setProgress(progress: number, invalidate: (progress: number) => void = this.#invalidate): void {
     this.#position = progress;
     const unresolved: string[] = [];
     for (let index = 0; index < this.#tracks.length; index += 1) {
@@ -296,7 +363,7 @@ export class Motion {
       }
       track.setProgress(this.#effectiveProgress(index, entry, this.#tracks));
     }
-    this.#invalidate(progress);
+    invalidate(progress);
     if (unresolved.length > 0)
       throw new TypeError(`Motion tracks have no compiled Track: ${unresolved.join(", ")}.`);
   }

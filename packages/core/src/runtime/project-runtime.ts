@@ -187,9 +187,16 @@ export interface ProjectRuntimeOptions {
    * Two hooks rather than one, because which one an edit asks is half of what the edit claims, and
    * why is ADR-061's amendment. Named beside the `addMotionTrack` family, and named for what they do:
    * a trigger carries a disposable resource behind it, a stagger is a bare field. See ADR-061.
+   *
+   * Returning means acceptance; an optional completion runs only after definition adoption.
+   * Throwing before return means refusal and the supplier owns cleanup. Post-acceptance cleanup
+   * or re-seeding failures are reported without restoring a stale definition. Issues #340/#341.
    */
-  readonly replaceMotionTrigger?: (motionId: string, definition: MotionDefinition) => void;
-  readonly setMotionStagger?: (motionId: string, stagger?: number) => void;
+  readonly replaceMotionTrigger?: (
+    motionId: string,
+    definition: MotionDefinition,
+  ) => void | (() => void);
+  readonly setMotionStagger?: (motionId: string, stagger?: number) => void | (() => void);
   /**
    * The signal a live Motion's trigger takes, and the third seam this layer holds for one reason.
    *
@@ -230,10 +237,8 @@ export class ProjectRuntime {
     | ((motionId: string, trackId: string, duration?: number) => void)
     | undefined;
   readonly #removeMotionTrack: ((motionId: string, trackId: string) => void) | undefined;
-  readonly #replaceMotionTrigger:
-    | ((motionId: string, definition: MotionDefinition) => void)
-    | undefined;
-  readonly #setMotionStagger: ((motionId: string, stagger?: number) => void) | undefined;
+  readonly #replaceMotionTrigger: ProjectRuntimeOptions["replaceMotionTrigger"];
+  readonly #setMotionStagger: ProjectRuntimeOptions["setMotionStagger"];
   readonly #signalMotion: ((motionId: string, signal: TriggerSignal) => void) | undefined;
   readonly #createMotion: ((definition: MotionDefinition) => void) | undefined;
   readonly #destroyMotion: ((motionId: string) => void) | undefined;
@@ -647,13 +652,12 @@ export class ProjectRuntime {
         throw new TypeError(describeDiagnostics(diagnostics));
       if (sameTrigger(entry.definition.trigger, trigger)) return;
       const definition = Object.freeze({ ...entry.definition, trigger });
-      this.#replaceMotionTrigger?.(motionId, this.#motionDefinition({ ...entry, definition }));
+      const complete = this.#replaceMotionTrigger?.(
+        motionId,
+        this.#motionDefinition({ ...entry, definition }),
+      );
       this.#motions.set(motionId, { ...entry, definition });
-      // No flush on this tier, so the report has nowhere else to live. Asked last rather than
-      // between the seam and the write, for the same reason the write itself completes: a refusal in
-      // the middle leaves the driver layer holding a trigger no retained definition names. Tier 2's
-      // `#invalidateOne` answers the same condition with the same string. See ADR-069.
-      this.#assertLive();
+      this.#completeMotionEdit(complete);
     });
   }
 
@@ -663,13 +667,20 @@ export class ProjectRuntime {
       const entry = this.#writableMotion(id, token);
       const motionId = entry.definition.id;
       if (entry.definition.stagger === stagger) return;
-      this.#setMotionStagger?.(motionId, stagger);
+      const complete = this.#setMotionStagger?.(motionId, stagger);
       this.#motions.set(motionId, {
         ...entry,
         definition: withStagger(entry.definition, stagger),
       });
-      this.#assertLive();
+      this.#completeMotionEdit(
+        complete,
+        this.#ownedBy(this.#tracks, motionId).map(([id]) => id),
+      );
     });
+  }
+
+  #completeMotionEdit(complete: void | (() => void), touched: readonly string[] = []): void {
+    runSettleSteps([() => complete?.(), () => this.#assertLive(), () => this.#flush(touched)]);
   }
 
   #motionHandle(id: string, token: number): MotionHandle {
@@ -856,10 +867,26 @@ export class ProjectRuntime {
     this.#diagnostics.recordAll(batch.diagnostics);
   }
 
+  #assertSameLifetimes<E extends { readonly token: number }>(
+    retained: ReadonlyMap<string, E>,
+    candidate: ReadonlyMap<string, E>,
+  ): void {
+    for (const [id, entry] of candidate) {
+      const previous = retained.get(id);
+      if (previous !== undefined && previous.token !== entry.token)
+        throw new TypeError(
+          `schema-transaction-recreated: "${id}" was removed and recreated in one transaction. ` +
+            "Use an in-place edit or commit removal before recreation.",
+        );
+    }
+  }
+
   #derive(
     tracks: ReadonlyMap<string, TrackEntry>,
     motions: ReadonlyMap<string, MotionEntry>,
   ): SchemaCommit {
+    this.#assertSameLifetimes(this.#motions, motions);
+    this.#assertSameLifetimes(this.#tracks, tracks);
     const effects: SchemaEffect[] = [];
     const settle: (() => void)[] = [];
     const touched: string[] = [];

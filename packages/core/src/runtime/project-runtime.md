@@ -228,7 +228,7 @@ Installs a Motion's trigger, and reaches no node and no edge doing it.
 
 Tier 0, which is a claim about the mechanism rather than about the cost: `trigger` appears in no `GraphNode`, so `#commit` is the wrong path rather than an expensive one, and `RA-33` measures that as a `replaceGraph` call count. It is refused inside a recipe because an edit that reaches the driver layer immediately cannot be undone by one that throws. See `RA-68`.
 
-The order is the whole contract, and ADR-061's amendment owns why: the recipe refusal, then the runtime's liveness and this handle's staleness together, then `validateMotionTrigger`, which is the owner `addMotion` already asks, then the redundant edit, then the seam, whose failure is reported verbatim, and the retained definition last, once nothing that can refuse is left. Liveness joined that sequence at the staleness step rather than as a step of its own, and no case can place it anywhere else: `dispose` clears `#open`, so the recipe refusal and the disposal never both have something to say. See ADR-035, ADR-056's amendment of 2026-09-04 and ADR-061.
+Order: reentrancy refusal, runtime/handle liveness, trigger validation, redundant-edit check, installation seam, definition adoption, then completion. A seam that throws before returning refuses installation; a returned finalizer belongs to an accepted driver. Displaced subscription/resource release can fail after adoption and must not restore the old definition. Engine owns those resources; this class owns the retained record. Issue #340 corrects ADR-061's assumption that every hook failure precedes acceptance. Standalone Motion.setTrigger still performs both phases synchronously.
 
 The seam is caller code, so a hook called from here may dispose this runtime, and the retained definition moves after it. This member runs inside `#boundary` for that reason, so the release is deferred past the whole write and the entry it wrote is cleared by the teardown that follows rather than surviving it. The report is the last statement rather than a guard between the seam and the write, on the same reason the write completes: a refusal in the middle would leave the driver layer holding a trigger no retained definition names, and this tier has no flush to carry the answer, so `#assertLive` is asked here and answers the string tier 2's `#invalidateOne` answers. See ADR-069.
 
@@ -236,9 +236,13 @@ The seam is caller code, so a hook called from here may dispose this runtime, an
 
 Moves a Motion's stagger, which no driver reads.
 
-The same tier and the same order as the trigger above, with one difference: there is no contract rule to ask, because the seam is where that refusal already lives and a copy here would be a second owner of it. The seam is therefore asked before the retained definition moves, which is what keeps a refused edit from being recorded as one.
+Motion is the sole validator and schedule owner. Its acceptance seam returns the re-seeding completion, so the runtime adopts the new definition before injected Track code runs. Engine gives this one re-seed a no-op invalidation callback; this runtime publishes the owned track ids once afterwards through its private flush. Ordinary Motion callbacks still use guarded public invalidation. No graph replacement and no blanket reentrancy bypass. Issue #341.
 
-An unchanged value asks the seam nothing, and a cleared one leaves no key behind. See ADR-061. A seam that disposes is answered the same way the trigger above answers it, through the same boundary and the same last statement, which is the whole of why one condition does not get a second contract on this tier. See ADR-069.
+An unchanged value asks the seam nothing, and a cleared one leaves no key behind. Completion failure does not roll back an accepted schedule; publication is still attempted from actual Track state. Disposal stays deferred, is reported with the existing liveness error, and skips publication. See ADR-061 and ADR-069.
+
+## #completeMotionEdit
+
+Completes accepted tier 0 changes using the existing settlement collector: finalization/re-seeding, liveness reporting, then the owned publication attempt. Trigger edits have no seeds. Stagger edits name the owned tracks. Every step is attempted; one failure keeps its identity and several stay in occurrence order. The boundary remains raised throughout, so a subscriber or host hook cannot reenter the edit. No public invalidation call is used for the operation's own work.
 
 ## #motionHandle
 
@@ -334,9 +338,13 @@ The commit tier's one publication attempt, after settlement, and the owner of it
 
 This member contains no error boundary: `#apply` includes it as the final collected callback so its failure cannot erase a settle error. It records diagnostics from a returned batch through the existing owner. It is not `#invalidateOne`: that member takes one node, asserts liveness and returns the batch to a direct-write caller; this takes a seed list, skips disposal without introducing a new refusal, and answers void. See ADR-069 and ADR-071.
 
+## #assertSameLifetimes
+
+One generic preflight for both maps: an id present in retained and candidate maps must carry the same token. A different token is a new entity, not an ordinary replacement. Refuse the whole candidate with schema-transaction-recreated before any resolver, effect or graph work, leaving old handles, drivers, compiled tracks and residency untouched. Newly added then removed entries are absent from both maps and cost no effect; ordinary same-token replacement and separately committed remove/add remain valid. Issue #342.
+
 ## #derive
 
-What one accepted pair costs, read against the retained pair.
+What one accepted pair costs, read against the retained pair. Both lifetime preflights precede all injected code. A same-ID recreation cannot silently adopt a new token while keeping the old composition.
 
 A hook list assembled by the entry point is correct for one change and cannot compose two, which is the correction ADR-064 records and `RA-65` is the first case to tell apart.
 

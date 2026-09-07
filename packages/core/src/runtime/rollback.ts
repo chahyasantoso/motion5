@@ -1,30 +1,6 @@
 import { describeError } from "./schema-refusals";
-/**
- * Runs every step in order and retains exactly what each failed invocation threw.
- *
- * Rollback and post-commit settlement share collection, not inverses or sequencing. The caller
- * supplies the order; this module owns completion and reporting. Counting failures rather than
- * testing a sentinel preserves thrown undefined. Host aggregates remain intact, not flattened.
- * See ADR-035 and ADR-071.
- */
-export function collect(steps: readonly (() => void)[]): readonly unknown[] {
-  const failures: unknown[] = [];
-  for (const step of steps) {
-    try {
-      step();
-    } catch (error) {
-      failures.push(error);
-    }
-  }
-  return failures;
-}
-
-/** A single failure keeps its identity; multiple failures arrive in occurrence order. */
-export function report(failures: readonly unknown[], summary: string): void {
-  if (failures.length === 0) return;
-  if (failures.length === 1) throw failures[0];
-  throw new AggregateError(failures, summary);
-}
+import { collect, report } from "../domain/completion";
+export { collect, report } from "../domain/completion";
 
 /** Runs every rollback inverse with ADR-035's existing report and precedence unchanged. */
 export function runRollbackSteps(steps: readonly (() => void)[]): void {

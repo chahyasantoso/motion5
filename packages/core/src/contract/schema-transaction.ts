@@ -26,6 +26,11 @@ import type { MotionDefinition, TrackDefinition } from "./v5";
  * own; what a caller may reach is stated here and what it may reach through a handle is refused by
  * name. See ADR-064.
  *
+ * Removing and recreating a retained motion or track id in the final candidate is refused at
+ * commit with `schema-transaction-recreated`, before any effects. Use an in-place edit or commit
+ * removal separately. A previously absent entity added and removed in one recipe remains an
+ * effect-free no-op. A refused commit leaves the original handles live and staged handles stale.
+ *
  * Declared in `contract/` rather than in `runtime/`, on the rule the declaration-surface gate
  * enforces: the entry may not name a `runtime/` or a `graph/` module, and `ProjectHandle.edit` takes
  * a function of this type, so a caller that cannot import it cannot write the recipe at all.
