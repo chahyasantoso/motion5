@@ -1,0 +1,51 @@
+st -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2725619Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2787978Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2789535Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2790191Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2794264Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/motion-consistency.test.ts^[[2m > ^[[22mEngine motion edits preserve accepted state and entity lifetimes^[[2m > ^[[22mdefers disposal through failed stagger completion and preserves ordered failures
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2802261Z ^[[31m^[[1mAssertionError^[[22m: expected 'did not throw' to be an instance of AggregateError^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2803965Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/motion-consistency.test.ts:^[[2m246:20^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2891927Z     ^[[90m244|^[[39m     ^[[35mconst^[[39m invalidate ^[[33m=^[[39m vi^[[33m.^[[39m^[[34mspyOn^[[39m(test^[[33m.^[[39mruntime^[[33m.^[[39mgraph^[[33m,^[[39m ^[[32m"invalidate"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2894539Z     ^[[90m245|^[[39m     ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mcaught^[[39m(() ^[[33m=>^[[39m motion^[[33m.^[[39m^[[34msetStagger^[[39m(^[[34m250^[[39m))^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2896644Z     ^[[90m246|^[[39m     ^[[34mexpect^[[39m(result)^[[33m.^[[39m^[[34mtoBeInstanceOf^[[39m(^[[33mAggregateError^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2897350Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2897892Z     ^[[90m   |^[[39m                    ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2899336Z     ^[[90m247|^[[39m     ^[[34mexpect^[[39m((result ^[[35mas^[[39m ^[[33mAggregateError^[[39m)^[[33m.^[[39merrors[^[[34m0^[[39m])^[[33m.^[[39m^[[34mtoBe^[[39m(failure)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2901305Z     ^[[90m248|^[[39m     expect((result as AggregateError).errors[1].message).toBe("Project…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2902271Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2903008Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2903596Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2907452Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m194 passed^[[39m^[[22m^[[90m (195)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2917296Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1143 passed^[[39m^[[22m^[[90m (1144)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2918554Z ^[[2m   Start at ^[[22m 12:08:51
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2922048Z ^[[2m   Duration ^[[22m 30.01s^[[2m (transform 2.83s, setup 1.27s, import 16.16s, tests 37.18s, environment 32ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.2924033Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T12:09:21.3595465Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-07T12:09:21.3648870Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T12:09:21.3649572Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T12:09:21.3686112Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T12:09:21.3686588Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T12:09:21.3686921Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T12:09:21.3687353Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T12:09:21.3699466Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T12:09:21.4187238Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T12:09:21.4187699Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T12:09:21.4187916Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T12:09:21.4188184Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T12:09:21.4237247Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-07T12:09:29.3785154Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T12:09:29.3786050Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T12:09:29.3831738Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T12:09:29.3832731Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T12:09:29.3833236Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T12:09:29.3833740Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T12:09:29.3834251Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T12:09:29.3975915Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-07T12:09:28.7016951Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T12:09:28.7017710Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T12:09:28.7061573Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T12:09:28.7062569Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T12:09:28.7062991Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T12:09:28.7063447Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T12:09:28.7063914Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T12:09:28.7202579Z ##[error]Process completed with exit code 1.
