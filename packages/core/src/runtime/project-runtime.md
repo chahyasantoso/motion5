@@ -1,461 +1,269 @@
 # packages/core/src/runtime/project-runtime.ts
 
-The reasoning this file's private surface used to carry as docblocks, moved here rather than deleted. A source file that does not survive one read through the contents API cannot be safely edited by anchor, and this file is the primary edit target of the AI implementor workflow, so its size is a correctness property rather than a preference. `docs/AI-EDIT-WORKFLOW.md` owns the rule and `scripts/read-budget-scan.mjs` owns the budget.
-
-### How to read this
-
-Read this before the source rather than after it. It is the map: every private member with reasoning behind it has a section here, in the order the source declares it, so the member list arrives whole in one read even on a day the source does not.
-
-One `##` heading per documented top-level declaration or class member, named exactly as the source declares it. A field inside a file-local type is documented under that type's heading. A member with nothing worth saying has no section here, and its absence means exactly that rather than that the docs are elsewhere again.
-
-The exported surface keeps its docblocks in the source, because TypeScript carries those into `.d.ts` and into editor hover, so moving one would delete an API doc rather than relocate it. Comments that explain the statement on the next line also stay in the source, because no heading here owns one.
-
-Nothing here duplicates an ADR. A statement a record owns is a pointer to that record, here exactly as it was in the source.
+Private ownership and ordering for ProjectRuntime. Exported API documentation remains in the source; comments explaining individual statements remain beside them. Each level-two heading names a source declaration, in declaration order. Undocumented members carry no additional rule. This is a complete, condensed replacement of the previous mirror, not an appended history. The read-budget contract belongs to docs/AI-EDIT-WORKFLOW.md and its scanner.
 
 ## TrackEntry
 
-`overlay` is the animated half of the last live write, and nothing else. A private map entry, carried by no public surface, and why an override needs one is ADR-060's. See ADR-060.
+The retained track, adopting owner, optional motion owner, lifetime token, animated overlay, and conservative live-write marker. The overlay records the last animated live write; it is not authored state. A live write can survive a refused escalation because the writer has no inverse. Only a successful fresh compilation removes its effect, so structural derivation must build when retained.liveWrite is true even if compiled inputs compare equal. Candidate validation is never short-circuited by that marker. See ADR-060, ADR-062 and ADR-066.
 
 ## MotionEntry
 
-One retained Motion, and the token every handle to it captures.
-
-The token comes from the same `#nextToken` the track entries use, because the staleness machinery is per-entry rather than per-track-ness, which is ADR-061's. No reader trusts `definition.tracks`, because it is empty for a runtime add and authoritative for a loaded one: `#ownedBy` is the one owner of which tracks a motion has. See ADR-056 and ADR-061.
+A retained definition and a lifetime token, allocated by the same counter as tracks. Definition.tracks is not authoritative after runtime additions: #ownedBy projects current children for handles and destruction checks. A new token under the same id is a new entity, not a replacement of the same one. See ADR-056, ADR-061 and issue #342.
 
 ## SchemaEffect
 
-One side effect a structural commit needs in place before the graph is asked to accept it.
-
-`revert` is the inverse, and it is optional because a removal and a motion destroy reach the candidate graph with no hook applied yet. An effect counts as applied only once its `apply` returned, which is `#apply`'s own. See `U-7` and `RA-2`.
-
-Every one of these inverses reaches the composition, which is why a teardown may not run between an `apply` and its `revert`. That is ADR-067's, and it is the reason `#teardown` is deferred rather than called where `dispose()` was.
+A side effect required before the candidate graph can be accepted. Its optional revert is recorded only after apply returns successfully. A throwing supplier owns cleanup for any work performed before its return. Reverts run in apply order, so a displaced compiled Track is restored before Motion resolves it. A removal has no pre-acceptance effect. Teardown cannot release composition while these inverses remain owed. See ADR-031, ADR-035, ADR-045 and ADR-067.
 
 ## SchemaPlan
 
-One structural transaction, as data, and now only the pair the graph is asked to accept.
-
-`tracks` and `motions` are what the graph is asked to accept and, once it has, what the retained maps become, adopted from the same pair that built the snapshot so the committed graph and the maps cannot drift. Why an untouched entry is handed through by identity is ADR-058's, and `RA-7` compares them that way.
-
-Each half is optional: a half this commit did not move is absent rather than handed back, and what pointer adoption buys and costs is ADR-064's third amendment. `#stageTracks` and `#stageMotions` are the only two things that make one, and therefore the only two allowed to fill this. `RA-92`.
-
-What a plan no longer carries is a hook list: a commit's hooks are derived from what it commits, by `#derive`, and every entry point is a map builder that names no hook at all. Why a hook list assembled per op cannot compose two is ADR-064's, and `RA-65` is the first case that can tell the two apart. See ADR-064.
+Only the candidate track/motion maps, with an untouched half omitted. Entry points build maps, never hook lists. The same pair constructs the graph snapshot and becomes the retained pair, preventing divergence. Untouched entries retain identity for incremental caches. Only #stageTracks and #stageMotions produce writable maps; adoption is a pointer move, not a per-entry copy. See ADR-058 and ADR-064.
 
 ## SchemaCommit
 
-What one accepted pair costs, and the only declaration in this file that names a hook.
+The derived effects, post-acceptance settlement steps, and publication seeds. Effects have inverses; settlement does not. Settlement failure cannot justify rollback of an accepted graph or compiled resource. All independent settlement steps and then publication are attempted, with one report. A lone thrown value retains identity, including undefined and host aggregates; multiple failures retain occurrence order without flattening. Granularity is deliberate: grouping several fallible releases in one callback would let the first skip the rest. See ADR-071.
 
-`effects` are applied before the graph sees the candidate and reverted in **apply order** when it refuses, which is ADR-045's republish-before-restore rule rather than an incidental ordering. `settle` runs only after acceptance. See ADR-031 and ADR-045.
-
-`settle` carries no inverse because the graph has already accepted, not because caller code cannot throw. `#apply` attempts every step and then its publication before reporting the collected failures. A single failure preserves its identity; multiple failures remain in occurrence order, including any synchronous publication failure. No rollback or retry is invented for an accepted pair. ADR-071 resolves issue #306 and the completion assumption ADR-067 left open.
-
-`touched` names the nodes this transaction changed and is seeded into one publication attempt after every settle step has been attempted. Empty is a real answer rather than a default, and why a commit that derives no node does not flush at all is ADR-064's amendment. Which nodes a removal names, and why a solver is the reader an edge test misses, is ADR-051's amendment. See `RA-98` and `RA-99`.
+Seeds name changed nodes and the readers of removed nodes. The publisher walks dependants, so replacements need only their own node. Motion-only changes derive no graph node. An empty seed list causes no invalidate at all, because even an empty batch costs publication machinery and advances sequence. See ADR-051 and ADR-064.
 
 ## OpenTransaction
 
-The pending pair one open recipe is staging, and the whole of the transaction owner's state.
-
-Mutable in exactly its two fields, and no op log beside them. Each half starts as the retained map by identity and is replaced by a copy on the first op that stages into it, which is `#stageTracks`'s own. See ADR-064 and `RA-93`.
+The pending pair while one recipe executes. Both halves start by identity as the retained pair and are copied on their first staged write, after the entry point's last refusal. There is no operation log or dirty flag. A recipe that throws adopts nothing, and handles it created become stale. Reads within it see the pending pair. See ADR-064.
 
 ## #tracks
 
-The retained pair, and the two fields a commit adopts rather than rewrites. `#motions` is the same field for the other half and carries the same rule.
-
-Not `readonly`, because a commit replaces the map object rather than rewriting its entries, which is ADR-064's third amendment. The map it adopts was made by `#stageTracks` or `#stageMotions` and nothing holds it afterwards. Every reader still goes through `#readTracks` and `#readMotions`, which answer a `ReadonlyMap`, and both in-place tiers still write through these by id. See `RA-92` and `RA-97`.
+The retained pair; #motions follows the same rule. Maps are mutable fields because an accepted transaction replaces each map object. Structural reads use #readTracks/#readMotions; immediate edits write retained entries only outside an open recipe and inside their own boundary. A builder must not keep a map after handing it over. See ADR-064 and ADR-069.
 
 ## #open
 
-The open transaction, and the one piece of state `edit` adds to this class.
-
-Present exactly while a recipe is running, and the same shape the retained maps are, read through the two accessors so no verb learns it is inside a recipe. See ADR-064.
-
-No longer cleared by `dispose()` on every path, and it does not need to be. `#commit` returns early whenever this is set, so it is always `undefined` inside `#apply`, which means a deferred teardown's window can only ever exist while no recipe is open. ADR-056's measured claim that a disposed runtime never has an open recipe therefore survives, and `#assertLive` and `#refuseReentrant` still cannot both have something to say about the recipe half. That construction also decides the whole of issue #310, which is the sharper thing to know about it: it is the reason the recipe condition cannot see a commit, so a second condition had to be asked somewhere, and `## #refuseReentrant` is where it is asked. See ADR-067 and ADR-070.
+Present only while recipe code is running. edit clears it in finally before committing or propagating an exception. A recipe may dispose the project; edit rechecks liveness after the callback and returns the recipe's answer without committing anything. During a commit this field is necessarily absent, so it cannot detect reentrant commits. #inFlight supplies that separate condition. See ADR-064, ADR-068 and ADR-070.
 
 ## #inFlight
 
-How deeply this class is currently inside caller code it has to survive, and the one thing `dispose()` reads to decide whether it may release anything.
+Depth of boundaries whose work still needs the live graph/composition. Structural commits and immediate edits share it: naming it only for commits would hide the direct-write disposal hazard. A boundary raises it before derivation because plugin resolution is injected code too. Public mutation/publication paths refuse while it is raised; reads remain available and disposal is deferred.
 
-Named for what it counts rather than for the first thing that counted, which is the whole of the rename. A commit raises it, and so does every direct write, because what makes a release unsafe is that a seam is on the stack and not that a graph is being replaced. A live value write is not a commit and must never become one -- this document states that as a rule under `## #writeValues` -- so a field read by both cannot be called `#committing` without lying to one of its two readers. The depth stays a depth for the reason below, unchanged. See ADR-069.
-
-A depth rather than a flag, and that is a correctness choice rather than defensiveness. A hook is caller code and can re-enter this class through a public entry point, so a flag cleared by the inner `finally` would release the graph and the composition while the outer boundary was still unwinding through them.
-
-The bound is one again, by a different guard, and the state is still not narrowed to it. Three revisions of this paragraph read as one argument. While `#apply` was the only raiser, `#commit`'s refusal of a re-entrant commit made the depth provably zero or one. ADR-069 added four raisers and withdrew that bound, because `compileTrack` calling `setValues` reached `#writeValues` and raised this a second time inside the commit's own window. `#refuseReentrant` refuses exactly that call, and it is asked before `#boundary` is entered at every one of the four direct writes, so all five raisers now sit behind a guard that reads this field first and a depth of two is unreachable.
-
-It stays a counter, and that is the decision rather than an oversight. The bound has been proved, withdrawn and re-proved across three slices without this field changing once, which is what a counter buys: a flag would have been right in the first slice, wrong in the second, right again in the third, and silently wrong for the whole of the middle. `docs/GUARDRAILS.md` carries the general rule and this field is what earned it. See ADR-069 and ADR-070.
-
-Raised ahead of `#derive` rather than ahead of the effect loop, because `#needsTimelineBuild` asks `resolveKeyframes`, which is caller code too. See ADR-067 and ADR-069.
+Keep the counter even though current guards bound it to one. That bound has changed as new callback paths were introduced; a boolean would silently release resources too early if nesting ever became reachable. The depth, decrement and teardown drain have one owner, #boundary. See ADR-067 through ADR-070.
 
 ## #pendingTeardown
 
-That a release was asked for and has not happened yet. Set only by `dispose()` and cleared only by `#teardown`, which is what makes the release exactly-once by construction rather than by two guards agreeing on a condition. See ADR-067.
+Disposal was requested but resource release is still owed. dispose marks the runtime dead immediately; only #teardown clears this pending state. The outermost boundary drains it once after all inverses and accepted completion steps finish. Deferred cleanup reports diagnostics rather than replacing the operation's outcome. See ADR-067 and issue #312.
 
 ## #readTracks
 
-The retained tracks, or the pending ones while a recipe is open.
-
-Every structural read in this class goes through this rather than reaching `#tracks` directly, which is the one accessor ADR-064 puts in front of the pair. The two in-place tiers keep reading the retained maps and refuse by name inside a recipe instead. See ADR-064.
+Answers the transaction's pending tracks when a recipe is open, otherwise the retained tracks, as a read-only map. Every structural reader uses this accessor. Immediate edits refuse inside recipes and deliberately operate on retained entries. See ADR-064.
 
 ## #readMotions
 
-The same question about the other map, and the same reason.
+The same read rule for motions.
 
 ## #stageTracks
 
-The track map this commit will hand over, mutable, and copied once rather than once per op.
-
-Outside a recipe it is a copy of the retained map, and a commit in flight is the one condition under which that copy would be wrong rather than merely fresh, because it would lack the change the commit is holding in a local; `#commit` refuses the re-entry that could ask for one, which is ADR-068's. Inside one it is the pair the recipe is staging, made once by the first op that stages anything and written into in place by every op after that, so n ops cost one copy. Why the copy outside a recipe is the floor rather than an expense to remove is ADR-064's third amendment.
-
-Called after an entry point's last refusal and never before it, because a half that is still the retained map by identity is the whole answer to whether the recipe staged anything. That ordering rule is the same amendment's. See `RA-93` and `RA-95`.
+Creates a copy outside recipes. Inside a recipe it copies on the first write only, then returns the pending mutable map. Called after all entry refusals, so a refused/no-op operation cannot manufacture a changed-map identity and an unnecessary commit. A commit's own local pair cannot accept another staged write; #commit refuses that reentry. See ADR-064 and ADR-068.
 
 ## #stageMotions
 
-The same question about the other map, and the same reason.
+The same copy-on-first-write rule for motions.
 
 ## #mountNode
 
-Attaches one member, and the one owner of mounting.
+The single actual mount operation: graph attachment plus native instance registration. Public mount applies its guards and delegates; accepted settlement calls this private member directly. Calling the guarded public verb would reject the owning commit's own work. Disposal remains deferred through settlement, so a later mount still reaches a live graph even when an earlier hook requested disposal. See ADR-064, ADR-067 and ADR-070.
 
-Split from the public verb because a commit mounts too, for the reason ADR-064's amendment records. The public member owns the contract, this owns the attach. See `RA-80`.
-
-That split stopped being a tidiness argument when the rung gained its second condition. `mount` now refuses from inside a commit, so a settle step calling the public verb would refuse the commit's own mount, and this member is the whole of what keeps the two apart. `## #refuseReentrant` states it as a rule rather than leaving it to this section. `RA-134` measures it from the direction that can fail: a hook's `mount` of the node this commit is adding is refused, and this member's mount of that same node is the one that happens. See ADR-070.
-
-Reached from a settle step, which is why the teardown is deferred past that phase rather than into it: `GraphRuntime.attach` asserts liveness, so a release that ran when a settle hook disposed would make this throw on the next step with the commit already adopted and nothing left to unwind it. See ADR-067 and `RA-117`.
+Mount itself seeds no publication. Loaded projects publish on their first real operation/tick, not on mount. An eager seed was measured and rejected because deduplication consumes the next seek's publication rather than adding an independent one. See ADR-066, RA-100 and RA-101.
 
 ## #transaction
 
-The narrowed surface one recipe is handed, and a projection rather than a second author.
-
-Every member forwards to the member this class already has, so there is one owner of what an op costs. The narrowing is a statement about what a recipe is handed and never one about what it can reach, and every immediate verb refuses at itself instead, which is ADR-064's amendment. `addMotion` resolves the handle it returns through `motion`, because the id is what the entry point answers. See ADR-064.
+A frozen projection of existing runtime verbs, not another implementation. addMotion resolves the ordinary handle after staging the addition. Narrowing is not a security or mutation fence: recipes can close over the project handle, so immediate verbs enforce their own refusal regardless of how reached. See ADR-064.
 
 ## #readersOf
 
-Which nodes read one node, and the one owner of that question.
-
-Read from `GraphIR.dependants`, never rederived, so it names both kinds of reader: the observer of an edge, and a solver that reads this node as a chain member. Why an edge walk misses the second, why two consumers share one mechanism, and why `#derive` calls neither `dependantsOf` nor a parameter of its own are all ADR-051's amendment.
-
-Deduplicated and frozen here, so the public member has nothing left to do, and first occurrence wins, which is the committed node order. See `RA-86`, `RA-87` and `RA-99`.
+Reads GraphIR.dependants and returns a deduplicated, frozen list in first-occurrence order. Never rederive readers from edges: solver membership is a dependency without the corresponding observation edge. Both dependantsOf and removal publication use this one reader. See ADR-051, RA-86, RA-87, RA-98 and RA-99.
 
 ## #ownedBy
 
-Every readable track a motion owns, in commit order, and the one owner of that question.
-
-Three readers ask it: the count in the destroy refusal, and both `MotionHandle.definition` and `MotionHandle.trackIds`. Each carried its own filter before, which is how a motion could report `tracks: []` while owning three, and ADR-061 records why they share this one. The committed snapshot was the fourth and is not, for ADR-064's third amendment's reason.
-
-It takes the map explicitly because a plan builder asks about the tracks it is about to commit while a handle asks about the readable ones, and reading `#tracks` here would make that difference invisible at the call site. See ADR-061.
+Filters the explicitly supplied track map for a motion's children in committed map order. Destruction counts, MotionHandle.trackIds and MotionHandle.definition use the same owner. A plan builder and a public read may need different maps, so the map is an argument rather than hidden state. The snapshot uses an equivalent single bucket pass to avoid repeated filtering. See ADR-061 and ADR-064.
 
 ## #entryOf
 
-The entry for a node id, or the refusal for an id this project never had. Separate from `#liveEntry`, which answers about a captured token rather than about an id, and both are one lookup with one message rather than a copy per caller.
+Resolves an id this project must have, or reports an unknown graph node. Unlike #liveEntry it does not answer whether a previously issued handle still names the same lifetime.
 
 ## #liveOf
 
-The one place in this file that compares a captured token against the live one, generic over the entry rather than over the map it came from because the comparison is the same question about either. The two probes below it are two names for two maps rather than two copies of the rule, which `SH-7` measures as a count. See ADR-056 and ADR-061.
-
-A disposed runtime has no live entry, and that is decided here rather than left to the fact that `#teardown` empties both maps. Those two used to be simultaneous, which is why ADR-064's amendment of 2026-09-04 could state the mechanism as "staleness answered only because `dispose` empties the retained maps and the token lookup misses". The teardown is deferrable past a commit now, so they are not: a settle-phase hook runs after `dispose()` returned and before anything is cleared, and a handle answering `live` in that window would be reporting a project whose disposal the caller has already been told happened.
-
-Not a throw, which is the whole reason the term belongs here rather than one rung up. `live` reads this and may never throw, so ADR-056's refusal of `#assertLive` inside the reading ladder is untouched: a read still refuses under the stale family and a write still reports the disposal, because `#writableEntry` and `#writableMotion` ask liveness before they resolve. See ADR-067 and `RA-116`.
+The generic comparison of a handle's captured token against the readable entry. A disposed runtime answers absent immediately, even while deferred teardown has not cleared maps. This is a nonthrowing probe so live getters remain safe. Reads and writes apply their different failure precedence above this layer. See ADR-056, ADR-061 and ADR-067.
 
 ## #entryIfLive
 
-The probe every `live` getter reads, so `TrackHandle.live` and every throwing member answer the same question about the same handle.
-
-One comparison with two readers rather than a copy per member, which is ADR-056's. Asked of the pending pair while a recipe is open, so a handle issued inside one is live for the rest of it and never live after an abort. See ADR-056 and ADR-064.
+The track probe through #liveOf. A pending handle is live during its recipe and stale after abort because its token was never adopted. A motion has the analogous probe. See ADR-056 and ADR-064.
 
 ## #liveEntry
 
-The resolver every reading member of a track handle goes through, so the contract is uniform by construction rather than by four call sites agreeing. It was every private mutation path's resolver too, until a disposed runtime was found reported as a stale handle on seventeen of the eighteen members that write. That order is `#writableEntry`'s below: this member still owns the staleness and no longer owns which of the two questions is answered first. See ADR-056 and its amendment of 2026-09-04.
+The throwing track-read resolver. Absence or a changed token produces StaleTrackHandleError, including on a disposed runtime. Writes use #writableEntry to ask runtime liveness first; adding that check here would change the read/probe contract. See ADR-056.
 
 ## #liveId
 
-This handle's motion id, once the handle is known to be live. Reading the id and refusing a stale handle are the same call, so there is no order for a member to get wrong.
+Resolves a live MotionHandle and returns its motion id. This makes the liveness ordering explicit before child qualification.
 
 ## #liveChildNode
 
-The node id one child track name resolves to on a Motion handle, and the one owner of the order between three refusals.
-
-Three things can be wrong about `handle.track("leg")` at once, and only one of them is reported: the Motion this handle captured may be gone, the child name may be ill-formed, and the child may not exist. The captured Motion is resolved first, so a disposed runtime answers `StaleMotionHandleError` before `qualifyMotionTrack` reads the name and before `track` or `tryTrack` looks it up, which makes that `TypeError` reachable only on a live handle. Which of the three a caller is told is ADR-056's second amendment, and a read reports the staleness rather than the disposal.
-
-A rung rather than an expression at each call site. The two callbacks that need it wrote the resolve, the qualification and the delegate as one nested expression, twice, so their order was a fact about argument evaluation rather than a decision anything owned: a slice rewriting one of them changed half the contract while the half it did not touch stayed green. This resolves into a local instead, so the ordering is a statement here and both callbacks are one call each. `RA-113` measures that as a count.
-
-Not a disposal check, and it may not become one. `live` reads `#motionIfLive` through this same ladder and may never throw, so the guard belongs on the writing rungs below rather than in any resolver a probe shares. See ADR-056's amendment of 2026-09-04 and its second amendment.
+Resolves the captured motion first, then qualifies the child name. A stale parent therefore outranks an invalid child name or a child the project never had. Both track and tryTrack on a MotionHandle use this rung, so qualification cannot drift between them. Reads retain the stale-error family, not the runtime-disposed error. See ADR-056, RA-112 and RA-113.
 
 ## #writableEntry
 
-The resolver every writing member of a track handle goes through, and the one owner of the order between two answers to one condition.
-
-A disposed runtime and a stale handle can both be true of one call, and `dispose` empties the retained maps, so the token lookup misses and staleness answers first unless something asks about the runtime before the lookup. Which of the two the caller is told is ADR-056's, and that record decided the runtime's lifecycle outranks one handle's. This is where the ordering lives, so it is asked once rather than at each writing member, and the deletion that proves it is `#removeTrack`'s own guard. See ADR-056's amendment of 2026-09-04 and `SH-8`.
-
-Beside `#liveEntry` rather than inside it, because a read is answered the other way round and deliberately: `definition` and `requires` still refuse under `StaleHandleError`, which is the family that record asked a caller to catch, and asking liveness in the shared resolver would push a bare `Error` past every one of those narrowings. So the ladder now has three rungs with three readerships: the probe `live` reads, the resolver a read goes through, and this.
+The track-write resolver: runtime liveness first, then captured-token liveness. A disposed project is reported as ProjectRuntime is disposed., not a stale handle suggesting the caller can re-resolve a usable project. Every writing member shares this rung rather than copying guards into each operation. See ADR-056 and issue #298.
 
 ## #writableMotion
 
-The same question about the other map, and the same reason.
-
-Two members rather than one, for the reason `#liveEntry` and `#liveMotion` are already two: two maps and two refusals. `#assertLive` is therefore named twice in this file, which is the floor rather than a copy left to remove.
+The corresponding motion-write resolver, with the same ordering but the motion-specific stale error.
 
 ## #writableId
 
-This handle's motion id, once the runtime is known to be live and the handle known to be current. The writing twin of `#liveId`, and it delegates to `#writableMotion` rather than asking `#assertLive` again, so the rung above stays the only place the order is stated.
+Returns the id through #writableMotion without adding another liveness check.
 
 ## #motionDefinition
 
-The Motion definition as it currently stands, tracks included, projected through `#ownedBy` rather than answered from the entry, for the reason ADR-061 records. See ADR-061.
+Projects a frozen current definition, including children from #ownedBy rather than the entry's potentially empty load/add-time tracks array. See ADR-061.
 
 ## #removeMotion
 
-Destroys a Motion that owns no tracks, from the id or from a live handle.
-
-The refusal counts through `#ownedBy`, so it names the list `MotionHandle.trackIds` shows, and inside a recipe it counts what that recipe staged: a Motion whose last track the same recipe removed is destroyable in it.
+Requires that the readable motion own no tracks, then removes it from a staged map. Within a recipe, removing its last child first makes destruction legal. No resource hook runs here; #derive owns the final candidate's work. See ADR-064.
 
 ## #refuseReentrant
 
-The one rung for a verb that may not run from inside a callback this class is in the middle of.
+The shared rung for immediate mutation/publication: first refuse an open recipe with schema-transaction-immediate naming the verb, then an in-flight boundary with schema-commit-reentrant. The first condition concerns caller-authored recipes; the second concerns callbacks an owning operation invoked. They currently cannot both be true, but the precedence remains explicit.
 
-Two conditions, one question. A recipe is open when a caller's own recipe callback is on the stack; a commit is in flight when a seam this class called is. Both are "caller code is running inside an edit that has not finished", both are answered by one field read, and both are asked at the same ten verbs, so they are one rung rather than two. A second guard beside the first would be the same condition list copied at ten call sites, with an ordering repeated ten times and the eleventh verb getting one of the two, which is the shape issue #298 deleted seventeen of. See ADR-070.
+The guard stays outside #boundary and before argument-dependent entry resolution, so an operation cannot refuse itself or falsely report an unknown node that its owning commit is still adding. Structural writes have their own shared rung in #commit; no entry path is common to both verb families. Both rungs use the same refusal function. See ADR-064, ADR-068 and ADR-070.
 
-Ordered recipe-first, and the order is a contract rather than an accident. A recipe is something the caller wrote and can move, so its refusal names the verb and tells it which of the two to move out. A commit in flight is something the caller did not write -- it wrote a hook, which a commit called -- so its refusal names the condition and lets the stack name the verb. The two cannot both be true, because `edit` clears `#open` in its own `finally` before it commits, which this document states under `## #open`. So nothing observes the order today, and it is written down anyway: two conditions that cannot both be true are two conditions the next slice picks between by accident. See ADR-064 and ADR-068 for the two refusals it hands out.
+Owning work never goes through guarded public verbs. Settlement mounts via #mountNode; structural and stagger publication use #flush; value publication uses #invalidateOne. Ordinary Engine driver callbacks still reach public invalidate. Only the owning stagger re-seed receives its explicit no-op callback and is followed by runtime-owned publication. A global bypass or lowered guard would admit actual caller reentrancy and is not equivalent. Issue #341.
 
-Ten call sites and no more, which is the check a later member repeats rather than assumes: **a commit's own work uses the private twin, never the public verb.** The settle phase calls `#mountNode` and not `mount`, `#apply`'s own flush calls `#flush`, which calls the graph directly rather than the public `invalidate`, and both in-place write paths end at `#invalidateOne` and not at `invalidate`. That is what keeps a commit's own mount and a commit's own flush legal while a hook's are refused, and it is why this rung's condition set grows by exactly the callback-reachable paths and by nothing else.
-
-Asked outside `#boundary` at all four direct writes, and that ordering is what keeps a write from refusing itself: the rung is asked before the depth is raised, and the tail of the write asks no rung at all. A refused call is not inside a callback and has nothing to survive, which is the same reason `#writeValues` puts its refusal outside the boundary. See ADR-069 and ADR-070.
-
-It also out-ranks the resolution of whatever the verb was handed, and that order has one owner rather than one per member. Tier 0 always had it: `#setTrigger` and `#setStagger` ask this rung and resolve inside `#boundary` afterwards, which is ADR-061's order and `RA-36` pins it there. Tier 2 did not, because `#writeValues` took a resolved entry and an argument expression is evaluated before the member that would refuse it, so the order was a property of how four call sites happened to nest two expressions rather than something anything owned. The entry arrives as a thunk now, and `#setKeyframe` and `#removeKeyframe` ask this rung one line above their own resolve, which is the same call moved rather than a second one. What that buys is a true diagnosis instead of a false one: a write aimed at the node an in-flight commit is compiling answers `schema-commit-reentrant` rather than `Unknown graph node`, which is false, because that node exists and is compiled in a map the caller cannot see. See ADR-070's amendment.
-
-Asked twice on one path, and that is the cheaper guarantee rather than sloppiness. `#setKeyframe` asks it and may then reach `#writeValues`, which asks it again. Both asks are a pair of field reads with no side effect on either branch, and nothing between them can change either field, so the second cannot answer differently. A variant of `#writeValues` that skipped the rung for an internal caller would be one member with two contracts, and the first caller to pick the wrong one would get no refusal at all. Neither call is dead, stated here so a later reader does not delete one, and `#recompileKeyframes` asks no rung for the same reason read the other way round: both of its callers just did, and it is a tail rather than an entry point.
+The duplicate guard on the setKeyframe-to-writeValues path is intentional: both public-capability entries need the rung, and two side-effect-free reads are cheaper and safer than an unchecked variant of the write mechanism. #recompileKeyframes is a tail whose callers already checked. See ADR-070.
 
 ## #setTrigger
 
-Installs a Motion's trigger, and reaches no node and no edge doing it.
+Tier 0: trigger configuration lives in no GraphNode, so no structural commit or graph replacement is involved. Order: reentrancy refusal, runtime/handle liveness, validation through validateMotionTrigger, redundant-edit check, installation seam, retained-definition adoption, completion. A seam throwing before return refuses installation and owns its cleanup. A returned finalizer belongs to an installed driver; failed displaced subscription/resource release cannot restore a stale definition. Engine owns those resources; this runtime owns adoption. Issue #340 corrects ADR-061's former assumption that every seam failure preceded acceptance.
 
-Tier 0, which is a claim about the mechanism rather than about the cost: `trigger` appears in no `GraphNode`, so `#commit` is the wrong path rather than an expensive one, and `RA-33` measures that as a `replaceGraph` call count. It is refused inside a recipe because an edit that reaches the driver layer immediately cannot be undone by one that throws. See `RA-68`.
-
-The order is the whole contract, and ADR-061's amendment owns why: the recipe refusal, then the runtime's liveness and this handle's staleness together, then `validateMotionTrigger`, which is the owner `addMotion` already asks, then the redundant edit, then the seam, whose failure is reported verbatim, and the retained definition last, once nothing that can refuse is left. Liveness joined that sequence at the staleness step rather than as a step of its own, and no case can place it anywhere else: `dispose` clears `#open`, so the recipe refusal and the disposal never both have something to say. See ADR-035, ADR-056's amendment of 2026-09-04 and ADR-061.
-
-The seam is caller code, so a hook called from here may dispose this runtime, and the retained definition moves after it. This member runs inside `#boundary` for that reason, so the release is deferred past the whole write and the entry it wrote is cleared by the teardown that follows rather than surviving it. The report is the last statement rather than a guard between the seam and the write, on the same reason the write completes: a refusal in the middle would leave the driver layer holding a trigger no retained definition names, and this tier has no flush to carry the answer, so `#assertLive` is asked here and answers the string tier 2's `#invalidateOne` answers. See ADR-069.
+The boundary remains raised through completion. A disposing hook makes the project immediately dead but defers resource release until completion ends. #completeMotionEdit reports liveness after cleanup without undoing accepted state. Standalone Motion.setTrigger still performs acceptance and completion synchronously. See ADR-061 and ADR-069.
 
 ## #setStagger
 
-Moves a Motion's stagger, which no driver reads.
+Motion alone validates and accepts the schedule. Its seam returns re-seeding work so the retained definition is adopted before injected Track code runs. Engine supplies a no-op invalidation callback only for this re-seed; the runtime subsequently publishes the owned tracks once through #flush. No graph replacement, driver recreation or blanket guard bypass. Unchanged values call no seam; clearing removes the authored key. Issue #341.
 
-The same tier and the same order as the trigger above, with one difference: there is no contract rule to ask, because the seam is where that refusal already lives and a copy here would be a second owner of it. The seam is therefore asked before the retained definition moves, which is what keeps a refused edit from being recorded as one.
+A re-seeding failure leaves the accepted schedule/definition in place and publication is still attempted from actual Track state, without inventing successful host recovery. Disposal is deferred, reported with the existing runtime-liveness error, and skips publication. See ADR-061 and ADR-069.
 
-An unchanged value asks the seam nothing, and a cleared one leaves no key behind. See ADR-061. A seam that disposes is answered the same way the trigger above answers it, through the same boundary and the same last statement, which is the whole of why one condition does not get a second contract on this tier. See ADR-069.
+## #completeMotionEdit
+
+Accepted tier 0 completion through the shared settlement collector: finalization/re-seeding, liveness reporting, then the owned publication attempt. Trigger edits have no seeds. Stagger edits name the owned tracks. All steps are attempted; one failure retains identity, several retain occurrence order. The boundary stays raised throughout, including subscriber callbacks. No public invalidate is used for the operation's own publication.
 
 ## #motionHandle
 
-Every member resolves the entry before it reads an argument, which makes staleness the first answer rather than a second one. `tryTrack` refuses here as well, for the reason ADR-061 records: whether this handle is the live one at all is a different question from an id it cannot find.
-
-The factory decides nothing, which was `#handle`'s rule and is this one's too. `definition` and `trackIds` delegate to `#liveMotion` and `#liveId`, the two child lookups delegate to `#liveChildNode`, and every writing member delegates to a `#writable` rung, so no member here states an order and there is nowhere for one to grow back into. `RA-112` owns what the four reading members answer and `RA-113` owns that each answers it from one rung.
+A frozen capability factory that owns no sequencing or validation. Reads use the live-motion ladder; child resolution uses #liveChildNode; writes use writable resolvers and their existing operations. Every getter resolves current readable state rather than capturing a definition. See ADR-056 and ADR-061.
 
 ## #removeTrack
 
-Drops one node from the pair, and names no hook. The eviction, disposal and Motion deregistration are ordered settle steps `#derive` owns, derived from the id being absent from the committed pair. The separate steps preserve later cleanup when an earlier call fails. See ADR-064 and ADR-071.
-
-Its own `#assertLive` is deleted rather than kept beside `#writableEntry`'s. This was the one writing member that already reported a disposal instead of a staleness, which is why ADR-056's Consequences could name it as where that rule shows, and one owner of the rule is the whole of what its amendment buys. See ADR-056's amendment of 2026-09-04.
+Validates writability, removes the entry from the staged map, and delegates commit. Residency eviction, compiled disposal and Motion deregistration are independent ordered settlement steps derived from the final pair. There is no duplicate assertLive beside #writableEntry. See ADR-064 and ADR-071.
 
 ## #resolve
 
-The registry's answer about one authored record, or nothing when no registry was injected.
-
-The diagnostics path is spelled exactly as `compileTrack` spells it, because the seam's second parameter is a path rather than a node id. See ADR-062.
+Forwards the candidate authored keyframes to the injected registry resolver, or answers absent when no registry exists. Diagnostic paths match compilation: nodeId.keyframes. This layer gains no registry ownership or cache. See ADR-062.
 
 ## #needsTimelineBuild
 
-Whether a replacement has to build a new timeline, and the one place a candidate is resolved.
-
-The resolve is validation and is never skipped, and only the timeline build is skippable, which is ADR-062's amendment: a predicate that skipped the resolve would delete a validator rather than a cost. So the candidate is resolved here, refused here, and only then read as data. The retained record is resolved beside it rather than kept anywhere, on the same record's reason.
-
-Asked from `#derive` rather than from `#replaceTrack`, which moves it from once per op to once per committed replacement and leaves it exactly where it was for every caller outside a recipe. What the answer is compared with is `sameCompiledTrackInput`'s question rather than this one's. See ADR-062 and ADR-064.
-
-The resolve is a seam, so this member is the first caller code a commit reaches and it runs before any effect. That is why the boundary is entered ahead of `#derive` rather than ahead of the effect loop. See ADR-067.
+Always resolves and validates the candidate before deciding whether compilation is skippable. Compares complete compiled inputs through sameCompiledTrackInput, resolving the retained definition rather than caching registry-dependent data. The candidate resolve cannot be skipped even when liveWrite already forces a build: doing so would remove a validator. Asked once per final replacement, not once per recipe operation. This injected callback runs within the boundary and before effects. See ADR-062, ADR-064 and ADR-066.
 
 ## #replaceTrack
 
-Replaces one node's definition in the pair, preserving its node id and its token.
-
-A map builder: the staging, the Motion republish and their reverts are `#derive`'s answer, derived from the retained definition and the committed one. See `RA-65` and ADR-064.
+Validates the complete replacement and requires the same qualified id. Preserves the entry token, resets overlay/live-write declarations, and stages the definition. Derivation still observes the retained live-write marker and pays the build necessary to remove its compiled effects. Hooks and inverse order are not authored here. See ADR-064 and ADR-066.
 
 ## #commit
 
-The one path by which a structural change reaches the graph, or the open transaction.
+The only path by which structural work either waits in a recipe or applies. An open recipe has already written its pending pair, so this returns without effects. Otherwise an in-flight boundary refuses before #apply. A recipe started by a hook can stage normally but is refused when it attempts to commit; this keeps one owner for structural reentrancy.
 
-While a recipe is open there is nothing to do here: every entry point already wrote into the open pair. With none open the pair is applied immediately, and `edit` arrives here too, after its `finally` cleared the transaction and after the liveness re-ask that member owns. The sentence above was aspirational while `edit` called `#apply` directly, because there were two paths: the decision to apply now has one place, and therefore the liveness answer has exactly one reader. The guard is statically known at that call site rather than inapplicable to it, and it answers `none open, apply` for the right reason. See ADR-064 and its amendment of 2026-09-04.
-
-It is not where a deferred teardown is drained, and it may not become that. This member returns early while a recipe is open, so a release drained here would never run for the `edit` path and would run at the wrong depth for a nested commit. The boundary belongs to the member below, which is the one that has the `try`. See ADR-067.
-
-It also answers whether it may be entered while a commit is already in flight, and the answer is no. A hook is caller code, so a structural entry point called from one re-enters this member, and it used to find no open transaction and apply immediately: nested inside the outer `#apply`, staged from a retained pair that does not carry the outer commit's change, and adopted over by whichever of the two finished last. A lost update, with a compiled, registered and mounted node that no map and no graph node refers to. The refusal is here rather than at the six entry points, because one condition has one owner and this is the one place all of them reach, and here rather than in `#apply`, which runs one commit and should not have to know whether it is the outer one.
-
-Refused rather than merged, and the merge is the direction issue #307 asked to be measured first because it is the DRY one. It cannot be built. This member's callee holds the pair it is committing in a local rather than in a field, so there is nothing for a reader to resolve against, and `#open` means a recipe may stage into this pair, which a commit that has already applied effects derived from a comparison of two pairs cannot honour. Reusing that field would give one accessor two incompatible meanings depending on which member set it, which is the invisible-context shape ADR-064 cut two verbs for.
-
-Read after the recipe check and never before it. A recipe opened from inside a hook stages into its own pair as usual and is refused once, when it tries to apply, which keeps one owner of this refusal rather than a second copy in `edit`. Both phases refuse, and the message names neither: a settle-phase re-entry would stage from the adopted pair and lose nothing, and it is refused because the settle steps still queued were derived against the pair it would replace, in the one phase with no revert list. See ADR-068 and `RA-118` through `RA-122`.
-
-It is not the only rung that reads that field, and the pair is a floor rather than a duplication. This member is the one place every structural verb reaches and `#refuseReentrant` is the one place every immediate verb reaches, and no member sits on both paths, so there is no single rung all fifteen pass through. Two rungs, two verb families, one condition, and one refusal function: `commitInFlight` is the third member a reader would be tempted to add, and it already exists. See ADR-070.
+Do not merge reentrant operations into #open. The owning commit keeps its pair in a local, has already derived/applied work against it, and cannot honor the meaning of an open recipe. Reentry could overwrite accepted definitions or leave compiled/mounted resources with no retained owner. Both effect and settlement phases refuse; a second phase flag would make the contract hook-dependent. Teardown drainage does not belong here because the early return would skip it for recipes. See ADR-064, ADR-067 and ADR-068.
 
 ## #boundary
 
-Runs one body inside the window during which a release is owed rather than taken, and the one owner of the depth, the decrement and the drain.
+One owner of raising depth, decrementing in finally, and draining pending teardown at depth zero. Wraps the whole structural application and every immediate write that must survive injected code. It does not turn direct writes into graph commits. Resource release is delayed until no inverse or completion still needs the composition. Deferred teardown diagnostics cannot replace the outcome being unwound. See ADR-067 and ADR-069.
 
-Every seam this class calls is caller code, so every one of them may call `dispose()`. Releasing from inside that call hands whatever is still unwinding -- a rollback list, an escalation, a staged Track waiting to be committed -- a disposed graph and a released composition. So the release is deferred to the outermost boundary and taken exactly once, there.
-
-One member rather than the same three statements at five call sites. The drain is an ordering, and an ordering enforced at n call sites is enforced at the first of them; four more copies of `#apply`'s `finally` is the shape issue #298 deleted seventeen of. `#apply` wraps its whole body in it, and so do all four direct writes, at the outermost of the two so nothing double-raises: `#setKeyframe` reaches either `#writeValues` or `#recompileKeyframes` and never both, no direct write calls another, and none of them reaches `#commit`.
-
-Sharing one counter with the commit boundary widens `schema-commit-reentrant`, and that widening is owned rather than discovered. A structural verb called from inside a `writeValues`, `stageTrack`, `replaceMotionTrigger` or `setMotionStagger` seam is refused now, where it used to apply, and it is ADR-068's lost update one indirection out: `#writeValues` resolves its entry from the retained pair, calls the seam, and writes that entry back, so a commit made from inside the seam has its change to that node overwritten by the `set` that follows. `RA-125` pins it. A second depth field so the two conditions stayed separate was refused: two pieces of state for one condition, and two owners of when a release may happen. See ADR-069.
-
-It widens the refusal a second time now, in the other direction, and that widening is `#refuseReentrant`'s rather than this member's. A publishing verb called from inside any of these five windows reads the same `schema-commit-reentrant`, so the depth this member raises for a direct write is what makes a `seek` from inside a `writeValues` seam refuse as well as one from inside a commit hook. One counter, one condition, two rungs that read it -- `#commit` and `#refuseReentrant` -- and one refusal function they both hand out. See ADR-070.
+Sharing this depth intentionally makes a structural write from a direct-write hook reentrant too: otherwise the direct writer could overwrite that structural change with its previously resolved entry. Immediate mutation/publication paths read the same depth through #refuseReentrant. See ADR-068 through ADR-070.
 
 ## #apply
 
-Applies one accepted pair: derive, apply the effects, ask the graph, settle, and flush once.
+Resolve omitted map halves to the retained maps, enter the boundary, derive effects, assert liveness, apply effects, replace the graph, adopt the pair, settle, and publish. The boundary starts before derivation because resolution is injected code. Disposal during derivation refuses before any effect. Each successful effect is recorded before liveness is rechecked, so disposal after an effect enters ordinary rollback against still-live resources.
 
-The one owner of an ordering three records make load-bearing: ADR-031 for the compiled map, ADR-035 for rollback precedence, ADR-045 for republish-before-restore. `replaceGraph` and `rejectAfterRollback` have one call site each, and so does every hook.
+On pre-acceptance failure, run only recorded inverses in apply order and report through rejectAfterRollback. Once replaceGraph succeeds, adoption and accepted completion have no inverse. Settlement attempts every independent step and finally #flush inside the same collector, not a throwing finally that could erase an earlier failure. Hooks can dispose during settlement; later steps still run against the deferred live graph, while publication skips the now-dead project. Guarantee attempts, not recovery inside an arbitrary failing host. See ADR-031, ADR-035, ADR-045, ADR-067 and ADR-071.
 
-The derivation runs before the try, so a candidate refused inside it costs no teardown at all. The effects are applied inside it, so a hook that throws is rolled back exactly as a refused candidate is, and each is recorded only after its `apply` returned.
-
-One flush ends it, seeded with `touched`, and it runs after the settle steps rather than before them, because a new node is mounted by one of those steps. `replaceGraph` seeds nothing itself, which is why `addObserve` on a manual clock with no tick used to be invisible forever. `RA-8`.
-
-`#flush` owns both publication skips: an empty `touched` and a disposed runtime. Neither skip depends on settlement succeeding. See `RA-10`, ADR-064's amendment of 2026-09-03 and ADR-067.
-
-One call site of its own now, `#commit`, so this member has what `replaceGraph`, `rejectAfterRollback` and every hook already had. It never starts against a runtime its caller disposed, and the re-ask that guarantees that belongs to `edit` rather than here. A guard on entry could fire for no caller at all: `addMotion` and `#addTrack` ask `#assertLive` themselves, `#removeTrack`, `#removeMotion` and `#replaceTrack` are reached through resolvers that ask it before they resolve, and `edit` re-asks after its recipe returned. See ADR-064's amendment of 2026-09-04 and `RA-109`.
-
-And it is the owner of the commit boundary, which is what makes a runtime one of its own hooks disposed survivable rather than merely named. Every hook it reaches is caller code, so the liveness whichever entry point got here asserted is stale from the first one onward, and this member re-asks rather than trusting it. Liveness is inspected at three points: two refusals and one publication skip. After `#derive`, because `#needsTimelineBuild` asks a seam and nothing has been applied yet, so that refusal costs no rollback. After every `effect.apply()`, which is issue #288's rule one indirection out, landing in the existing `catch` so the existing rollback list and precedence do the work unchanged. And before the flush, where it skips rather than refuses.
-
-The accepted phase uses `runSettleSteps` with the settle list followed by one `#flush` callback. That ordering is this member's, while the collector in `rollback.ts` owns attempting every step and reporting once. An exception cannot abandon later mounts or cleanup, and the graph and retained pair are not rolled back. One thrown value is rethrown unchanged, even undefined or a host AggregateError; multiple failures are reported in occurrence order without flattening the host's own error objects. See ADR-071 and `RA-126` through `RA-130`.
-
-Publication belongs inside that collection rather than in a bare `finally`. Synchronous `GraphRuntime.invalidate` can throw while resolving the snapshot or notifying subscribers; the clock and scheduler diagnostic boundaries do not surround this call. A throwing finally would erase the settlement failure. Here the publication is attempted after all settle steps, and its failure is retained after theirs. A batch returned by invalidation still hands its diagnostics to the existing diagnostics owner; if invalidation throws instead, no returned batch is available to record. Publication success and arbitrary host resource recovery are not guaranteed by attempting a call.
-
-Disposal still defers release past the whole phase and skips only publication. The collector does not ask liveness between steps, so a disposing hook that also throws cannot prevent later mounts against the still-live graph. `#boundary` drains the release after collection. That release records its failures without throwing, so the selected settlement outcome survives unchanged. Issue #312's completion and reporting policy is owned entirely by `#teardown`, not by this member or the boundary.
-
-The `finally` drains the release, once, at depth zero. That is why `dispose()` may be called from inside any hook here without the rollback being handed a graph and a composition that no longer exist, and it is what makes `Error: GraphRuntime is disposed.` unreachable through a commit. See ADR-067, `RA-114`, `RA-115` and `RA-117`.
-
-The depth is no longer this member's to own. `#boundary` holds the raise, the decrement and the drain, and this member wraps its whole body in one call, which keeps the raise ahead of `#derive` and costs one closure per commit. The pair it holds in a local still cannot be adopted over by a second commit running inside it, because `#commit` refuses that re-entry. What used to be reachable was a direct write inside one of these hooks, raising the depth to two; the rung refuses it now, so the depth is one again and this member did not change to make that true. The closure ends at the settlement runner; the publication skip returns from `#flush`, so neither skip suppresses a collected failure. See ADR-068 and ADR-069.
+edit rechecks disposal after its recipe, and all other entry paths establish liveness before reaching this member. #commit is its sole caller. The boundary owns the final drain; this method does not duplicate it. See ADR-064 and ADR-069.
 
 ## #flush
 
-The commit tier's one publication attempt, after settlement, and the owner of its two skips. A disposed runtime or an empty seed list publishes nothing, because a batch nobody can read still moves the sequence and drains pending seeds. See ADR-064's amendment of 2026-09-03, ADR-067 and `RA-10`.
+One internal publication attempt for a supplied seed list. Skips a disposed runtime or empty list, otherwise invalidates the graph and records returned diagnostics. It has no error boundary: its owning completion collector preserves any synchronous exception with preceding failures. Unlike #invalidateOne it returns no batch and skips disposal instead of asserting. Structural commits and accepted stagger changes share this mechanism, not their topology semantics. See ADR-064, ADR-069 and ADR-071.
 
-This member contains no error boundary: `#apply` includes it as the final collected callback so its failure cannot erase a settle error. It records diagnostics from a returned batch through the existing owner. It is not `#invalidateOne`: that member takes one node, asserts liveness and returns the batch to a direct-write caller; this takes a seed list, skips disposal without introducing a new refusal, and answers void. See ADR-069 and ADR-071.
+## #assertSameLifetimes
+
+One generic preflight for both maps. An id present in retained and candidate maps must carry the same token. A different token denotes recreation, which is refused as schema-transaction-recreated before any resolver, effect or graph work. Refusal preserves old handles, drivers, compiled tracks, residency and subscriptions; candidate handles become stale. Previously absent entries added and removed in one recipe are absent from both pairs and remain effect-free. Same-token replacement and separately committed remove/add remain supported. Issue #342.
+
+Full reversible motion recreation would require staged ownership and defined track residency/order semantics. Rejecting the unsupported composite operation is safer than treating it as a no-op, destroying resources before acceptance, or inventing an incomplete rollback.
 
 ## #derive
 
-What one accepted pair costs, read against the retained pair.
+Both lifetime preflights run before injected code. Then derive final-pair effects, not an accumulated operation log. New motions are built before track compilation so a recipe can add both. Removed tracks settle native residency deletion/graph eviction, compiled disposal, then Motion deregistration as independently collected steps. Removed motions settle after their children. New tracks compile before graph acceptance, then register and mount after it. Replacements stage compilation when required, republish the Motion track before graph acceptance, and finalize staged resources afterwards.
 
-A hook list assembled by the entry point is correct for one change and cannot compose two, which is the correction ADR-064 records and `RA-65` is the first case to tell apart.
+Reverts run in apply order: restore the compiled map before restoring Motion metadata, because Motion resolves compiled Tracks by id. A stage is finalized after adoption even when old resource cleanup throws. A skipped compilation leaves no stage to finalize. Candidate validation remains unconditional; retained live writes additionally force a build. Add-then-edit collapses to one final add, while add-then-remove of a new entity schedules no hooks. See ADR-031, ADR-045, ADR-062, ADR-064 and ADR-066.
 
-Four categories, each of them the hook set its own entry point used to name, unchanged: a created Motion built before the graph is asked and destroyed if it refuses (ADR-032), a removed track settling its eviction, disposal and deregistration as ordered steps, a destroyed Motion settling after that with nothing to revert, and an added or replaced track compiling before the graph is asked and registering with its Motion after it accepted (ADR-031), with the staging build skipped when the compiled input provably did not move (ADR-062).
-
-Motions are created before any track compiles, because one commit may add a Motion and a track to it. Effects are reverted in apply order, so a replacement's staging rollback still runs before its Motion entry is restored. See ADR-045 and ADR-064.
-
-Removal emits residency cleanup, disposal and Motion deregistration separately, in the original order. The native instance deletion precedes graph eviction in one residency step; each injected cleanup is its own callback, so an eviction failure cannot skip disposal and a disposal failure cannot skip deregistration or later Motion destruction. This member constructs the granularity; the collector, not per-hook try blocks here, enforces completion. Other settle callbacks already contain one call and are not split for symmetry. See ADR-071 and `RA-129`.
+Removal seeds readers from the old graph, including solver dependants, not merely explicit edge readers. Eviction failure cannot skip compiled disposal, nor can a disposal failure skip deregistration or later motion destruction. The derivation owns callback granularity; the shared collector owns completion. See ADR-051 and ADR-071.
 
 ## #adoptMaps
 
-Adopts the accepted pair, which is a pointer move rather than a rewrite.
-
-A named member rather than two lines inside `#apply`, because the ownership change is the thing worth stating where the assignment is: the retained fields are not `readonly` and a plan builder may not keep what it handed over. What the rewrite this replaced cost, and which hazard the read-out existed for, are ADR-064's third amendment. See `RA-92` and `RA-97`.
-
-It is also the line a mid-commit disposal is never allowed to reach when the effect phase aborted, which is where `RA-114` measures that the pair was never partially adopted. See ADR-067.
-
-The assignment is unconditional, and it is safe to be unconditional only because nothing can have written the retained pair since `#derive` read it. Every in-place write is refused while the depth is up, so the four members that reach `#tracks.set` and `#motions.set` outside a commit are unreachable from inside one. Without that refusal this assignment silently deletes an `overlay` and a `liveWrite` the composition is still honouring, along with the retained definition a `setValues` rewrote beside them, which is the defect issue #309 owns. Merging the two pairs instead was refused rather than unconsidered: a merge preserves those fields while the definition they describe is the commit's, so `liveWrite` would claim a write against a Track built from a definition that never took it, which is the opposite of the conservative direction ADR-066 chose for that field. See ADR-070's amendment and ADR-066.
+Adopts the accepted maps by pointer. No per-entry rewrite, merge or second snapshot derivation. Immediate edits are refused throughout the boundary, so no live-write overlay or authored update can race this assignment. Merging would falsely associate an old live-write marker with a newly compiled definition. A pre-acceptance disposal refusal never reaches adoption. See ADR-064, ADR-067 and ADR-070.
 
 ## #writeValues
 
-The one live-value write path.
+One mechanism for setValues and overrideValues; rebase decides whether the authored definition moves. Resolve the entry lazily after reentrancy refusal, preserving the correct diagnosis for a node an owning commit is still adding. Split static and animated values, validate animated candidates, call the writer, stage a replacement if it declines patching, adopt retained state, then #completeWrite. No graph replacement on either path. See ADR-059, ADR-060 and ADR-070.
 
-`rebase` is the only difference between the two entry points, which is ADR-060's decision: an override leaves the retained definition alone and a `setValues` rewrites it, and at the compiled Track it is one boolean. Everything else is shared, so the two cannot answer differently, invalidate twice, or record in two places, and the same boolean names the verb in the recipe refusal.
+A static-only write needs neither validation nor staging. If an animated key is involved now or was involved in the previous overlay, wholesale replacement may need to clear old compiled effects. Read returned progress before staging, since a result getter can throw too. Once a writer succeeds it has no inverse: mark retained.liveWrite conservatively before a fallible escalation. A refused stage preserves the old definition/overlay but does not pretend the successful mask vanished. Accepted finalization failure never restores stale definitions over an installed replacement. See ADR-066 and issue #313.
 
-Tier 2, and refused inside a recipe for the reason tier 0 is: it ends at its own `invalidate`, so it would survive an abort. See `RA-68` and ADR-064.
-
-Order: validate animated input, ask the writer, stage an escalation if declined, adopt the accepted definition and overlay, then complete finalization, re-seek and one publication through `#completeWrite`. A failed build leaves the old definition and overlay by identity, not the candidate. The successful mask has no inverse, so before staging the entry conservatively records `liveWrite: true`; a later binding edit must rebuild to remove that mask even though the candidate was refused. This is ADR-066's conservative direction, not a claim of full rollback. `LV-19` and `LV-21` measure both halves of issue #313.
-
-Not a `#commit` caller, and it must not become one: topology did not change, so there is no candidate graph to accept and nothing to roll back. A static-only write validates nothing and builds nothing. No `replaceGraph` on either path. See ADR-059 and ADR-060.
-
-The body runs inside `#boundary` because every seam can dispose the runtime. Release stays deferred until the write finishes; `#invalidateOne` still owns the disposal refusal and publication skip. The reentrancy refusal stays outside the boundary so the write cannot refuse itself. No sequencing moves into the handle factory. See ADR-069 and `LV-15` through `LV-17`.
-
-The entry stays a thunk: argument evaluation must not resolve an id before `#refuseReentrant` can diagnose the callback in flight. A handle resolves by id and token through `#writableEntry`, while a public verb uses `#entryOf`; the factory names its existing resolver lazily and owns no new guard. This preserves ADR-070's amendment and the true diagnosis for a node the outer commit is still adding.
+The whole operation is inside #boundary, including injected calls and publication. Disposal is reported by the shared direct-write flush and resource release waits until completion ends. The handle factory owns no sequencing.
 
 ## #completeWrite
 
-Completes an accepted direct write: finalize the stage, re-seek, then publish through `#invalidateOne`. The existing `runSettleSteps` attempts all three and reports failures in order, preserving a lone failure by identity. Success returns the actual batch. A static write with no stage or seek takes the original flush path. No graph rebuild.
-
-Issue #313's proposed rollback after a throwing commit is unsound: Engine installs during staging and marks settled before disposing the old Track. A cleanup failure leaves the replacement installed and rollback disabled. Keep the accepted definition and complete its remaining steps, as real Engine failures in `PK-20`, `PK-21` and `LV-20` prove. `StagedTrack` states that contract; a staging seam that throws before returning owns its own cleanup.
-
-The callers own candidates and adoption; this member owns only their shared completion. Read a writer's progress before staging, since even a result getter can throw. The writer has no inverse, and host cleanup is not reversible: guarantee attempts, not recovery. A failed re-seek publishes actual progress, never an invented old value.
+After adoption, attempt staged finalization, optional re-seek to captured progress, and #invalidateOne through runSettleSteps. A static/no-escalation path uses the existing flush directly. Success returns the actual batch; failure preserves ordered thrown values and does not invent rollback. Engine stages by installing a replacement and marks its stage settled before disposing the old Track, so a throwing commit may already be irreversible. Guarantee attempts and publish actual progress if a host re-seek fails, never an invented old value. See issue #313, LV-19 through LV-21, and PK-20 through PK-22.
 
 ## #boundGroup
 
-The bound-group precondition every authored edit shares, and the one owner of it.
-
-A plugin this node authors no group for is `keyframe-group-unbound`, which is `setKeyframeGroup`'s job in the structural tier and is what buys the cheap price in the value tier, for ADR-065's reason. A name this node authors as an ordinary property is not a group either, and that is `readBoundGroup`'s answer rather than a second shape check here.
-
-It answers with the record beside the group, so no caller re-reads `entry.track.keyframes`. See ADR-062, ADR-063 and ADR-065.
+The shared precondition for editing a property or binding inside an authored plugin group. Reads through readBoundGroup and refuses keyframe-group-unbound when absent; it does not duplicate group/property shape logic. Returns the keyframes record and bound group together. Originating a group belongs to structural setKeyframeGroup. See ADR-062, ADR-063 and ADR-065.
 
 ## #invalidateOne
 
-The value tier's one flush, and the one place a direct write reports a disposal.
-
-The assert ahead of the call is the skip and the report in one statement: a disposed runtime never reaches `invalidate`, so nothing publishes -- a batch nobody can read still opens, notifies every subscriber, moves the sequence and drains whatever a deferred flush was holding -- and the caller is told by the owner that decided rather than by the graph that noticed. That a batch is never cheap is also why nothing may publish in front of a commit's own flush, which is `## #refuseReentrant`'s second condition read one tier down: this member is reached only through a verb that rung has already answered for. The write that got here has already completed its phase, on purpose. Both track paths end here rather than one of them ending at an inline copy, which is why the report has one owner. `LV-5` measures that as an absence at the caller and a presence here. See ADR-064's amendment of 2026-09-03 and ADR-069.
+The value tier's single-node flush and disposal report. Assert runtime liveness before invalidating; a disposed project must not publish, advance sequence or drain pending seeds, and an empty batch would falsely claim publication. Records returned diagnostics and returns the actual batch. Both value-write paths use this owner rather than inline copies or public invalidate. See ADR-064, ADR-069 and ADR-070.
 
 ## #recompileKeyframes
 
-Recompiles one edited authored record in place, preserving this node's playhead.
-
-Validation and the registry resolve both run before the live Track is touched, and the staged replacement is re-seeked to the progress the displaced one owned, which is ADR-065's. No graph operation is involved because a leaf carries no edge. See ADR-065.
-
-The whole body stays inside `#boundary`, including registry resolution, so every seam reaches a host whose release remains deferred. After the writer succeeds, `liveWrite` conservatively records its possible mask; a refused stage keeps the old definition and overlay and remains repairable. Once staging returns, adopt the accepted definition with overlay and liveWrite cleared, then use `#completeWrite` for finalization, re-seek and publication. A finalization failure does not restore an old definition over the replacement Engine already installed. See ADR-069, issue #313 and `PK-21` through `PK-22`.
+For authored leaves that cannot be expressed as a live mask: edit the pure record, validate it and resolve plugins, ask the writer, stage a replacement, adopt the accepted definition with overlay/liveWrite cleared, then #completeWrite. Capture prior progress so the new compiled Track resumes at that playhead. The boundary includes resolution and all injected work. A successful writer is conservatively recorded before a refused stage; an accepted stage is never rolled back because finalization cleanup threw. No topology operation is involved. See ADR-065, ADR-066, ADR-069 and issue #313.
 
 ## #setKeyframe
 
-Edits one property of a plugin group this node already authors.
-
-Two paths, chosen by whether the group already authors the key, which is ADR-065's: an existing leaf goes through the live-write owner, and a new or removed one cannot be expressed as a mask, so the authored candidate is validated, resolved and recompiled in place instead. The bound-group precondition keeps both in the value tier. See ADR-065.
-
-It cannot take a thunk, and the reason is worth stating rather than working around: it needs `entry.track.keyframes` through `#boundGroup` before either of its two paths is describable at all, so deferring the resolve would defer a read it immediately has to perform. The refusal moves above the resolve instead, which is the same call one line up rather than a second one, and `#removeKeyframe` is the same shape for the same reason and has no section of its own because the rule has one owner. `## #refuseReentrant` owns it for all four write paths. See ADR-070's amendment.
+An existing property uses the live-write path; a new property uses the authored editor and recompilation path. The group must already exist. Determine existence through readPluginValues, not a private copy of group layout. Reentrancy is checked before resolving the entry. removeKeyframe uses the same ordering; its no-op retains the established direct-flush behavior. See ADR-065, ADR-070 and issue #255.
 
 ## #editRequire
 
-One binding edit on an already-bound plugin, and the one owner of the order all four binding verbs follow.
-
-The runtime's liveness first and this handle's staleness with it, through the resolver every writing member goes through. Then the unbound-group refusal, answered from the retained record on this node. Then the edit, where the one reservation this surface has is checked and the pure editor runs. Then the redundant edit, by identity, because the pure layer returns the record it was given when nothing changed. Then the commit. Why the reservation sits inside the edit rather than ahead of it is ADR-063's.
-
-`#replaceTrack` rather than a plan of its own, for the reason `#replaceWithObservation` already routes there: a binding edit is a candidate the graph accepts or refuses, which is exactly the transaction `#commit` owns. So the price is one candidate build, one edge delta and one flush, and there is no fast lane missing, which is ADR-062's amendment. Inside a recipe it is structural, so it travels with the transaction. See ADR-045, ADR-062 and ADR-063.
+Shared ordering for requirement/goal binding edits: writable entry, bound group, pure edit and primitive-specific reservation, redundant-edit identity check, then one structural replacement. The registry validates the whole candidate at derivation; the primitive does not authorize its own binding. Inside recipes these operations stage rather than publish. See ADR-045, ADR-062, ADR-063 and ADR-064.
 
 ## #setGoal
 
-Binds one entry of a solver's goals slot, addressed by the member id it is authored under.
-
-The same tier, the same owner of order and the same pure editor as `setRequire`, with the slot fixed rather than named, which is the whole of what the verb buys and is ADR-063's. No editor of its own, because a dict entry is a dict entry and `setRequire` already owns what one is.
-
-Whether the member id names a leaf of this solver's chain is `resolveSolvers`' question, asked of the candidate graph rather than here, because a per-primitive copy is a second owner that can disagree with the loader. See ADR-057 and ADR-063.
+The requirement editor with the reserved goals slot fixed and a member key supplied. No second dict editor. Whether the member belongs to the solver chain is validated against the candidate graph by resolveSolvers, not by the primitive. The ordinary setRequire spelling of the reserved slot remains refused. See ADR-057 and ADR-063.
 
 ## #editGroup
 
-One whole-group edit, and the one owner of the order both group verbs follow.
-
-The runtime's liveness first and this handle's staleness with it, through the resolver every writing member goes through. Then the property-entry refusal, which is the only thing about a group edit no other layer can see, because a plugin name and a keyframe name share one namespace. Then the pure edit, which knows the group layout and refuses `keyframe-group-shape` rather than committing a husk. Then the redundant edit, by identity. Then the commit. Both refusals are ADR-063's.
-
-An absent record reads as one frozen empty one, which lets `setKeyframeGroup` originate on a track that authors nothing with no branch here. No registry question is asked and none is missing: they all arrive at the resolve this commit pays. See ADR-062 and ADR-063.
+Shared whole-group editor: writable entry, refuse a name currently authored as an ordinary property, pure edit, identity no-op check, structural replacement. Missing keyframes read as one frozen empty record. Originating and replacing a group are the same whole-group operation because the group carries no separate id, token or mount. Registry ownership is still checked during derivation. See ADR-062 and ADR-063.
 
 ## #writeKeyframes
 
-Writes an edited authored record back onto `track` and commits it as a replacement.
-
-The one owner of what an authored edit leaves behind, so the six verbs in this tier cannot disagree about it: a record that ends up holding nothing loses the key rather than being committed as an empty object, which is ADR-063's one rule at four levels. An edit may not leave behind a shape that is legal only because nothing refuses it. See ADR-063.
+Writes the authored record through withKeyframes, then delegates replacement. Empty containers are removed at their owning level: empty slot, section, group and final keyframes record leave no meaningless shell behind. Six structural authoring verbs share this retained-record write rather than restating it. See ADR-063.
 
 ## #snapshot
 
-The committed pair as one authored document, walked once.
-
-One walk, bucketed by the owner each entry already names, with the free tracks falling out of the same pass. A bucket fills in map order, so each motion's list is the list a per-motion filter produced, and a motion that owns nothing answers with an empty list rather than with no key. What asking `#ownedBy` per motion used to cost, and why this is not a second derivation of the fact that member owns, are both ADR-064's third amendment. See `RA-89` and `RA-91`.
-
-Every untouched entry's definition is handed through by identity, for ADR-058's reason. See `RA-90` and ADR-058.
+One pass over tracks builds free tracks and buckets motion-owned tracks, then one pass projects motions. Avoids repeated per-motion filtering without creating another persistent ownership cache. Entries preserve committed order and untouched definition identity, and the snapshot comes from the same pair adoption will retain. See ADR-058 and ADR-064.
 
 ## #teardown
 
-Releases everything this runtime holds, exactly once, and the half of `dispose()` that is allowed to be late.
+Release resources exactly once after marking the runtime dead. Capture whether the release is deferred, clear the pending flag, attempt each mounted-node detach separately, clear native instances and retained maps/open transaction state, then dispose graph and composition as separate steps. Independent failure never skips later release attempts. Retry is not safe for an arbitrary host that may have partially released; the guarantee is exactly-once attempts. See ADR-067 and issue #312.
 
-A refusal and a release are two questions, and only the first may be answered inside a callback this class is still inside. `dispose()` owns the decision and sets the flag, so every member refuses and every handle answers stale from that line onward; this owns the release, and `#apply` may hold it back until the commit it is running has finished unwinding. Issue #312 extends that owner with completion and precedence: attempt every independent release step, then record failures in the bounded diagnostics. A direct release reports its failure to the caller; a deferred drain does not throw over the outcome already in flight. This member captures the existing `#pendingTeardown` before clearing it, so neither caller passes a policy flag or gains a second error boundary.
+The shared collector preserves failure identity and occurrence order. Every failure is recorded in bounded diagnostics as project-release-failed at dispose. Nested aggregate causes appear in diagnostic messages without flattening the actual thrown objects; cycles and hostile stringification cannot escape teardown. Direct disposal reports failures through the shared reporter. Deferred disposal records them without throwing over the original operation, its rollback error or its successful return. This preserves Engine failed-load cleanup attachment and the observable contracts exercised by RA-140 through RA-144.
 
-Why it may not run where `dispose()` was called is the whole of ADR-067, and it is one measurement rather than a preference. Every `SchemaEffect.revert` reaches the composition, because they are the inverses of `compileTrack`, `createMotion` and `stageTrack`, so a release that ran inside a hook would leave the rollback handing a torn-down host the inverse of effects it can no longer apply, and every effect after the disposing one building against a host that will never be asked to release it again. The choice that forces is between double-freeing what the applied effects built and leaking it, and neither is a contract.
-
-Exactly once, by construction rather than by two guards agreeing: `dispose()` returns early on its own flag, and this clears `#pendingTeardown` before it does anything, so neither path can reach it twice. `disposeComposition` is therefore attempted once, after the unwind rather than in the middle of it, which is what `RA-114` and `RA-117` both count. `RA-140` through `RA-144` extend that evidence to cleanup completion, effect and rollback precedence, successful handle returns, thrown undefined, and the healthy direction. Release failures are recorded in occurrence order as error-severity `project-release-failed` diagnostics at `dispose`; nested aggregate causes are included in their messages, and hostile formatting cannot escape this owner. Diagnostics remain bounded by the existing capacity and dropped-count contract. The original operation's error is neither wrapped nor mutated. A direct `dispose()` rethrows a single failure by identity, including undefined or a host aggregate, and combines multiple failures in occurrence order using the shared reporter. This preserves Engine's failed-load cleanup attachment (`D-3`), whose caller never receives a runtime to inspect. A deferred release is diagnostics-only so `RA-114`'s disposal refusal and `RA-117`'s accepted handle remain untouched. The distinction belongs here, not in `dispose()`, `#boundary`, or `#apply`.
-
-Each mounted node's detach is an independent collected step. Native map clearing and the open-transaction reset follow those attempts, then graph disposal and composition disposal each get their own step. The collector in `rollback.ts` is reused without changing rollback or settlement reporting. A failed detach cannot prevent a later detach, retained-map clearing, or either disposal. The guarantee is exactly-once attempts, not successful recovery inside a host that threw partway through its own cleanup; retrying such a host could double-release it. Both retained maps are cleared, which is what `edit` cites when it drops a staged pair rather than committing it. That claim is now true of every path rather than of commits alone: the four direct writes outside `#commit` used to be able to write an entry back after this ran, and they run inside `#boundary` now, so this member is the last thing that touches either map on every path a seam can dispose from. See ADR-067 and ADR-069.
+No release runs while an inverse or accepted completion still needs the graph/composition. Once the outermost boundary drains it, both retained maps are cleared after every possible direct-write adoption, so no disposed entry can be written back after cleanup. Handle.live reads the disposal flag during the earlier deferred window rather than inferring it from map emptiness. See ADR-056, ADR-067 and ADR-069.

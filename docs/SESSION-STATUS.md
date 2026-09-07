@@ -13,6 +13,7 @@ Current project state only. Replace stale entries rather than append history. Th
 
 ## Next in line
 
+- **Unmerged runtime consistency:** [#343](https://github.com/chahyasantoso/motion5/pull/343) addresses [#340](https://github.com/chahyasantoso/motion5/issues/340), [#341](https://github.com/chahyasantoso/motion5/issues/341), and [#342](https://github.com/chahyasantoso/motion5/issues/342): accepted motion edits complete after definition adoption, and same-ID lifetime reuse is refused atomically. Engine-backed regressions and exact-SHA CI evidence belong to the PR; no merge is claimed.
 - **Unmerged reporting completion:** [#339](https://github.com/chahyasantoso/motion5/pull/339) consolidates failed-preparation diagnostics, retry/recovery retention, legacy evidence completion, and useful error excerpts. Its regression and exact-SHA CI evidence belong to the PR. Review, a single runner-pin rollout, and live failure/correction/replay verification remain gates; no deployed diagnostics fix is claimed.
 
 ## Open, and not scheduled

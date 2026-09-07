@@ -18,6 +18,7 @@ import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default"
 import { compilePercentKeyframes } from "./domain/keyframe-compiler";
 import { flattenAuthoredKeyframes } from "./domain/keyframe-groups";
 import { Motion, type MotionTrackEntry } from "./domain/motion";
+import { collect, report } from "./domain/completion";
 import { PluginRegistry, type RequirementInputs } from "./domain/plugins";
 import { Track } from "./domain/track";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
@@ -90,7 +91,9 @@ function createHandle(runtime: RuntimeLike): ProjectHandle {
     signal: (motionId, value) => runtime.signal(motionId, value),
     addMotion: (definition) => runtime.addMotion(definition),
     destroyMotion: (motionId) => runtime.destroyMotion(motionId),
-    edit: <T>(recipe: (transaction: SchemaTransaction) => T) => runtime.edit(recipe),
+    edit<T>(recipe: (transaction: SchemaTransaction) => T) {
+      return runtime.edit(recipe);
+    },
     addTrack: (track, options) => runtime.addTrack(track, options),
     track: (nodeId) => runtime.track(nodeId),
     tryTrack: (nodeId) => runtime.tryTrack(nodeId),
@@ -126,16 +129,7 @@ function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
 function runAllAndReportOnce(steps: readonly (() => void)[], context: string): void {
-  const failures: unknown[] = [];
-  for (const step of steps) {
-    try {
-      step();
-    } catch (error) {
-      failures.push(error);
-    }
-  }
-  if (failures.length === 0) return;
-  throw failures.length === 1 ? failures[0] : new AggregateError(failures, context);
+  report(collect(steps), context);
 }
 function afterCleanup(failure: unknown, cleanup: () => void): unknown {
   try {
@@ -451,8 +445,9 @@ export class Engine {
           createdTriggers.set(motionId, created);
           consumers.delete(motionId);
           bindClock(motionId, motion, created);
+          let complete: () => void;
           try {
-            motion.setTrigger(created.port, created.acceptsExternalSignal);
+            complete = motion.acceptTrigger(created.port, created.acceptsExternalSignal);
           } catch (error) {
             // The swap never landed, so the replacement is what has no owner left. Restore the
             // displaced registrations and release what this hook built, on buildMotion's own
@@ -466,18 +461,22 @@ export class Engine {
             }
             throw afterCleanup(error, () => created.dispose());
           }
-          // Released last, so every step that can refuse has refused before the driver moved. A
-          // host `dispose` that throws is reported rather than swallowed: it is a teardown failure
-          // at the layer that owns the host resource, and the swap it follows has already landed.
-          displaced?.dispose();
+          // Returning marks acceptance. Runtime adopts the definition before asking for cleanup.
+          // Motion's displaced subscription and the factory's resource are independent releases:
+          // neither failure can skip the other or turn the accepted driver into a refused edit.
+          return () =>
+            runAllAndReportOnce(
+              [complete, () => displaced?.dispose()],
+              `Completing trigger replacement for "${motionId}" failed.`,
+            );
         },
         setMotionStagger: (motionId, stagger) => {
           const motion = motions.get(motionId);
           if (!motion) throw new TypeError(`Unknown motion "${motionId}".`);
-          // The stagger rule has one owner, and it is this class: an absent value is zero and a
-          // negative or non-finite one is refused, at construction and here through the same
-          // function. `ProjectRuntime` asks no copy of it.
-          motion.setStagger(stagger);
+          // Motion alone validates and accepts the schedule. Runtime adopts before re-seeding,
+          // and owns the one publication afterwards. Only this operation's callback is replaced;
+          // ordinary driver callbacks still reach the guarded public invalidation path.
+          return motion.acceptStagger(stagger, () => undefined);
         },
         // Moved off a closure over this map and onto the runtime, so the one owner of the recipe
         // refusal is asked before a signal can reach a live trigger port. Nothing else about it
