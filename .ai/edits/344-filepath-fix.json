@@ -1,0 +1,52 @@
+{
+  "version": 1,
+  "expected_head": "faa8ae21269ece8bf71cf1d55255bee6d65b1698",
+  "expected_blobs": {
+    "scripts/automation-operation.mjs": "79334c2a63ebe17f67ca1354bcf0e8cbf8b11f5b",
+    "docs/AI-EDIT-WORKFLOW.md": "d0796cace57f9bba7b7abfec881de07a23556c38",
+    "docs/SESSION-STATUS.md": "658719e24540ea6a31b23ba6603a6633bbeeebfe"
+  },
+  "message": "fix(automation): preserve filepath in formatting and validation",
+  "edits": [
+    {
+      "path": "scripts/automation-operation.mjs",
+      "find": "          : await prettier.getFileInfo(file, { resolveConfig: false, ignorePath: [] });\n      if (",
+      "replace": "          : await prettier.getFileInfo(file, { resolveConfig: false, ignorePath: [] });\n      // Filepath also controls printing (notably .ts versus .tsx generic-arrow commas).\n      // Share that context without discovering candidate-owned configuration or plugins.\n      const formatOptions = { ...options, filepath: file, parser: info?.inferredParser };\n      if ("
+    },
+    {
+      "path": "scripts/automation-operation.mjs",
+      "find": "content = await prettier.format(content, { ...options, parser: info.inferredParser });",
+      "replace": "content = await prettier.format(content, formatOptions);"
+    },
+    {
+      "path": "scripts/automation-operation.mjs",
+      "find": "state = (await prettier.check(content, { ...options, parser: info.inferredParser }))",
+      "replace": "state = (await prettier.check(content, formatOptions))"
+    },
+    {
+      "path": "docs/AI-EDIT-WORKFLOW.md",
+      "find": "Prettier is installed outside the candidate tree at the exact version declared by the reviewed runner, with lifecycle scripts disabled. Formatting uses reviewed JSON options and built-in parser inference, never candidate-owned formatter configuration or plugins. Only surviving touched files are formatted. Deletions appear in the candidate allow-list but not the formatter input.",
+      "replace": "Prettier is installed outside the candidate tree at the exact version declared by the reviewed runner, with lifecycle scripts disabled. Formatting uses reviewed JSON options and built-in parser inference, never candidate-owned formatter configuration or plugins. Both formatting and checking receive the same per-file options, including the original validated repository-relative filepath: a parser name alone does not preserve filename-dependent printing such as TypeScript versus TSX generic-arrow commas. This filename is printer context, not permission to discover candidate configuration. Only surviving touched files are formatted. Deletions appear in the candidate allow-list but not the formatter input."
+    },
+    {
+      "path": "docs/AI-EDIT-WORKFLOW.md",
+      "find": "[automation-operation.test.ts](../packages/core/test/unit/scripts/automation-operation.test.ts) proves the formatted-preview regression; [automation-operation-policy.test.ts](../packages/core/test/unit/scripts/automation-operation-policy.test.ts) covers allowlisted operations, exact-source validation, preview/apply equivalence, refusal boundaries, bounded diffs, and durable redacted evidence.",
+      "replace": "[automation-operation.test.ts](../packages/core/test/unit/scripts/automation-operation.test.ts) proves the formatted-preview regression; [automation-operation-policy.test.ts](../packages/core/test/unit/scripts/automation-operation-policy.test.ts) covers allowlisted operations, exact-source validation, preview/apply equivalence, refusal boundaries, bounded diffs, and durable redacted evidence. [automation-format-filepath.test.ts](../packages/core/test/unit/scripts/automation-format-filepath.test.ts) compares real apply/preview bytes and targeted validation against the pinned Prettier CLI for both `.ts` and `.tsx`, including canonical and noncanonical inputs, untouched targets, read-only evidence, and hostile or incompatible candidate formatting configuration. These are isolated preparation regressions, not live runner activation evidence."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- **Inspected main:** `b0ced240593ecbf0248130b356e2e1e230ba7f51`, after cleanup reporting [#336](https://github.com/chahyasantoso/motion5/pull/336) and the maintenance inventory [#337](https://github.com/chahyasantoso/motion5/pull/337). Exact CI and operation evidence belong to their PRs.",
+      "replace": "- **Inspected main:** `34da0d33309f2cb3d599b5d0aca32413e76d4a07`, after runtime consistency [#343](https://github.com/chahyasantoso/motion5/pull/343). Exact CI and operation evidence belong to their PRs."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "## Now\n\n",
+      "replace": "## Now\n\n- **Runtime consistency landed:** [#343](https://github.com/chahyasantoso/motion5/pull/343) is merged: accepted trigger/stagger edits retain the installed definition before completion, and same-ID lifetime recreation is refused atomically. Its generic-arrow rewrite avoids the formatting symptom but does not repair the AI-edit formatter.\n"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- **Unmerged runtime consistency:** [#343](https://github.com/chahyasantoso/motion5/pull/343) addresses [#340](https://github.com/chahyasantoso/motion5/issues/340), [#341](https://github.com/chahyasantoso/motion5/issues/341), and [#342](https://github.com/chahyasantoso/motion5/issues/342): accepted motion edits complete after definition adoption, and same-ID lifetime reuse is refused atomically. Engine-backed regressions and exact-SHA CI evidence belong to the PR; no merge is claimed.",
+      "replace": "- **Unmerged formatter parity:** [#345](https://github.com/chahyasantoso/motion5/pull/345) addresses [#344](https://github.com/chahyasantoso/motion5/issues/344) by preserving filepath context in AI-edit formatting and validation, with real CLI regressions for `.ts` and `.tsx`. Review, merge, a reviewed runner-pin update and live parity exercises remain gates; no activated correction is claimed."
+    }
+  ]
+}
