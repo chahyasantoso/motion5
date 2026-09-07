@@ -1,0 +1,89 @@
+-07T11:45:18.4978174Z     ^[[90m213|^[[39m       )^[[33m.^[[39m^[[34mtoThrow^[[39m(^[[36m/schema-transaction-recreated/^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4978976Z     ^[[90m   |^[[39m         ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4979866Z     ^[[90m214|^[[39m       ^[[34mexpect^[[39m(old^[[33m.^[[39mlive)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mtrue^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4981260Z     ^[[90m215|^[[39m       ^[[34mexpect^[[39m(replacement^[[33m?.^[[39mlive)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[35mfalse^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4981913Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4982467Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/11]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4982852Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4984762Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/motion-consistency.test.ts^[[2m > ^[[22mEngine motion edits preserve accepted state and entity lifetimes^[[2m > ^[[22matomically refuses track lifetime reuse, motion-owned=false
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4987313Z ^[[31m^[[1mTypeError^[[22m: keyframes-missing-values-section at freeTracks[0].keyframes.x: Plugin group 'x' must author its properties under a 'values' section.^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4988240Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m118:11^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4989161Z     ^[[90m116|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4990718Z     ^[[90m117|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4991919Z     ^[[90m118|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4992949Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4993902Z     ^[[90m119|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4994897Z     ^[[90m120|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4996008Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m162:29^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4997282Z ^[[90m ^[[2m❯^[[22m rig packages/core/test/unit/runtime/motion-consistency.test.ts:^[[2m61:81^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4998672Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/runtime/motion-consistency.test.ts:^[[2m234:18^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4999305Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.4999705Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/11]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5000035Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5001836Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/motion-consistency.test.ts^[[2m > ^[[22mEngine motion edits preserve accepted state and entity lifetimes^[[2m > ^[[22matomically refuses track lifetime reuse, motion-owned=true
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5006206Z ^[[31m^[[1mTypeError^[[22m: keyframes-missing-values-section at motions[0].tracks[0].keyframes.x: Plugin group 'x' must author its properties under a 'values' section. keyframes-missing-values-section at motions[0].tracks[1].keyframes.x: Plugin group 'x' must author its properties under a 'values' section.^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5008847Z ^[[36m ^[[2m❯^[[22m assertValidProject packages/core/src/engine.ts:^[[2m118:11^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5010089Z     ^[[90m116|^[[39m   ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mvalidateV5^[[39m(project)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5011536Z     ^[[90m117|^[[39m   ^[[35mif^[[39m (^[[33m!^[[39mresult^[[33m.^[[39mvalid ^[[33m||^[[39m result^[[33m.^[[39mvalue ^[[33m===^[[39m ^[[35mnull^[[39m)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5012879Z     ^[[90m118|^[[39m     ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5013864Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5014688Z     ^[[90m119|^[[39m       result^[[33m.^[[39mdiagnostics^[[33m.^[[39mlength ^[[33m===^[[39m ^[[34m0^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5015560Z     ^[[90m120|^[[39m         ^[[33m?^[[39m ^[[32m"Project failed v5 validation."^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5016165Z ^[[90m ^[[2m❯^[[22m Engine.load packages/core/src/engine.ts:^[[2m162:29^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5016877Z ^[[90m ^[[2m❯^[[22m rig packages/core/test/unit/runtime/motion-consistency.test.ts:^[[2m61:81^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5017637Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/runtime/motion-consistency.test.ts:^[[2m234:18^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5017979Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5018216Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/11]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5018415Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5019675Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/motion-consistency.test.ts^[[2m > ^[[22mEngine motion edits preserve accepted state and entity lifetimes^[[2m > ^[[22mkeeps newly added then removed entities effect-free and permits separate committed recreation
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5026807Z ^[[31m^[[1mTypeError^[[22m: keyframes-missing-values-section at addTrack(temp).keyframes.x: Plugin group 'x' must author its properties under a 'values' section.^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5028916Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#addTrack packages/core/src/runtime/project-runtime.ts:^[[2m523:13^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5099517Z     ^[[90m521|^[[39m     const validation = validateTrackDefinition(track, `addTrack(${trac…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5101115Z     ^[[90m522|^[[39m     ^[[35mif^[[39m (^[[33m!^[[39mvalidation^[[33m.^[[39mvalid ^[[33m||^[[39m ^[[33m!^[[39mvalidation^[[33m.^[[39mvalue)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5106343Z     ^[[90m523|^[[39m       ^[[35mthrow^[[39m ^[[35mnew^[[39m ^[[33mTypeError^[[39m(^[[34mdescribeDiagnostics^[[39m(validation^[[33m.^[[39mdiagnostics))^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5108230Z     ^[[90m   |^[[39m             ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5108590Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5109373Z     ^[[90m524|^[[39m     ^[[35mconst^[[39m accepted ^[[33m=^[[39m validation^[[33m.^[[39mvalue^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5110774Z     ^[[90m525|^[[39m     ^[[35mconst^[[39m token ^[[33m=^[[39m ^[[35mthis^[[39m^[[33m.^[[39m#nextToken^[[33m++^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5112675Z ^[[90m ^[[2m❯^[[22m Object.addTrack packages/core/src/runtime/project-runtime.ts:^[[2m690:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5114251Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/runtime/motion-consistency.test.ts:^[[2m270:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5115856Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m194 passed^[[39m^[[22m^[[90m (195)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5117493Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.edit packages/core/src/runtime/project-runtime.ts:^[[2m376:16^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5118914Z ^[[90m ^[[2m❯^[[22m Object.edit packages/core/src/engine.ts:^[[2m93:73^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5120363Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/runtime/motion-consistency.test.ts:^[[2m268:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5121146Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5121639Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/11]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5122130Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5126201Z ^[[2m      Tests ^[[22m ^[[1m^[[31m11 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1127 passed^[[39m^[[22m^[[90m (1138)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5127497Z ^[[2m   Start at ^[[22m 11:44:51
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5130251Z ^[[2m   Duration ^[[22m 27.20s^[[2m (transform 2.61s, setup 1.10s, import 15.27s, tests 33.52s, environment 27ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5131611Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:45:18.5870437Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-07T11:45:18.5900824Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:45:18.5901224Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:45:18.5922894Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:45:18.5923168Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:45:18.5923377Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:45:18.5923673Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:45:18.5924002Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:45:18.6406827Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:45:18.6407252Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:45:18.6407379Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:45:18.6407536Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:45:18.6444621Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-07T11:45:28.7839876Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:45:28.7841032Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:45:28.7863332Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:45:28.7864463Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:45:28.7865121Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:45:28.7865873Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:45:28.7866619Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:45:28.7961230Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-07T11:45:28.2601651Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:45:28.2602671Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:45:28.2630573Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:45:28.2631930Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:45:28.2632564Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:45:28.2633157Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:45:28.2634120Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:45:28.2755980Z ##[error]Process completed with exit code 1.
