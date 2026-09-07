@@ -17,7 +17,7 @@ const animated = (id: string) => ({
   keyframes: {
     x: [
       { p: 0, v: 0 },
-      { p: 100, v: 100 },
+      { p: 1, v: 100 },
     ],
   },
 });
