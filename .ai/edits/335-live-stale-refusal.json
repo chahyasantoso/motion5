@@ -1,15 +1,15 @@
 {
   "version": 1,
   "operation": "preview",
-  "expected_head": "2cf970ad3ab34b5035697c37e7c5c3a773f4f25c",
+  "expected_head": "3de6b8eddd6c5d5759416cd991bdca710577ee22",
   "expected_blobs": {
     "docs/338-formatter-probe.json": null
   },
-  "message": "test(automation): intentional preview formatter failure",
+  "message": "test(automation): corrected preview after formatter failure",
   "edits": [
     {
       "path": "docs/338-formatter-probe.json",
-      "create": "{\"probe\": }\n"
+      "create": "{\"probe\":true}\n"
     }
   ]
 }
