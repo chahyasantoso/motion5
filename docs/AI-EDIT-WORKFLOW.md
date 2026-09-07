@@ -131,7 +131,7 @@ Example templates below require real complete source and blob SHAs, not the plac
 
 ## Disabled maintenance and remaining lifecycle limits
 
-Dependency maintenance is refused even with a PAT. A future reviewed operation must bound package/version inputs, disable lifecycle scripts, allow only exact manifest-plus-lockfile outputs, preserve credential isolation, and prove CI on its generated commit. No arbitrary command interface or temporary privileged automation is introduced. Historical maintenance retirement belongs to slice 5.
+Dependency maintenance is refused even with a PAT. A future reviewed operation must bound package/version inputs, disable lifecycle scripts, allow only exact manifest-plus-lockfile outputs, preserve credential isolation, and prove CI on its generated commit. No arbitrary command interface or temporary privileged automation is introduced. [MAINTENANCE-WORKFLOWS.md](./MAINTENANCE-WORKFLOWS.md) owns the slice 5 capability inventory, supported human-dispatch routes, replacement requirements, and retirement prerequisites. Inventory completion does not authorize removal: usage review, live replacement validation, and separately confirmed deletion remain required.
 
 Request preparation still uses the existing bot-author/trailer recursion suppression; this change does not alter its workflow condition. The reviewed issue #335 reporter separately verifies cleanup-only lifecycle evidence before withholding a comment update. Neither mechanism is a CI-skip directive or a substitute for required evidence. Preparation lifecycle redesign and the full failure/recovery activation matrix remain separate acceptance work under issue #328. Touched-file normalization accompanies the requested change; unrelated formatting stays separate.
 

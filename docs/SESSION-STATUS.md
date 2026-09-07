@@ -13,11 +13,11 @@ Current project state only. Replace stale entries rather than append history. Th
 
 ## Next in line
 
-- **Cleanup-summary fix is unmerged:** [#336](https://github.com/chahyasantoso/motion5/pull/336) adds verified cleanup-only reporting and its regressions. Review, runner-pin rollout, and live replay remain separate gates; no deployed fix is claimed. Slice 5 follows as a separate maintenance inventory/documentation PR, not speculative workflow removal.
+- **Unmerged infrastructure:** cleanup-summary fix [#336](https://github.com/chahyasantoso/motion5/pull/336) has verified PR CI but still needs review, runner-pin rollout, and live verification. The sequential slice 5 [maintenance inventory](./MAINTENANCE-WORKFLOWS.md) is written on this stacked branch with capability distinctions, supported routes, and retirement prerequisites; its PR owns verification evidence. No deployed cleanup fix, maintenance activation, or workflow retirement is claimed.
 
 ## Open, and not scheduled
 
-- [Issue #328](https://github.com/chahyasantoso/motion5/issues/328) remains open for remaining activation/failure-recovery exercises, lifecycle limits, and slice 5 maintenance inventory and retirement prerequisites. Dependency maintenance remains disabled.
+- [Issue #328](https://github.com/chahyasantoso/motion5/issues/328) remains open for remaining activation/failure-recovery exercises, lifecycle limits, and maintenance usage/replacement validation before any separately confirmed retirement. Historical workflows and the manual formatting escape hatch are retained; dependency maintenance through the bounded API protocol remains disabled.
 - Phase 6 packaging follows the current phase. [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md) owns scope; no implementation is claimed here.
 
 ## Where the rest of it lives
