@@ -1,0 +1,76 @@
+scripts/ci-evidence.mjs	2026-09-07T11:58:19.1430907Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/s7-recovery-audit.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.1491669Z  ^[[32m✓^[[39m packages/core/test/contract/s4-validation-owner.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.2914703Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.4045066Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.4112633Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-trigger-validation.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.5080346Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6164078Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6466049Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6647783Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6715782Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6717393Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6717885Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6720465Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/read-budget-scan.test.ts^[[2m > ^[[22mread budget scan^[[2m > ^[[22mRB-7: leaves the shipped tree clean, with nothing left waived
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6727576Z ^[[31m^[[1mAssertionError^[[22m: expected [ Array(1) ] to deeply equal []^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6728093Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6728335Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6728778Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6728973Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6729132Z ^[[32m- []^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6729364Z ^[[31m+ [^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6730034Z ^[[31m+   "packages/core/src/runtime/project-runtime.md: 60801 bytes is over the 60000 byte read budget",^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6730576Z ^[[31m+ ]^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6730691Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6731158Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/read-budget-scan.test.ts:^[[2m142:26^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6781601Z     ^[[90m140|^[[39m   it("RB-7: leaves the shipped tree clean, with nothing left waived", …
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6782929Z     ^[[90m141|^[[39m     ^[[34mexpect^[[39m(^[[33mREAD_BUDGET_EXCEPTIONS^[[39m)^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6784281Z     ^[[90m142|^[[39m     ^[[34mexpect^[[39m(^[[35mawait^[[39m ^[[34mscan^[[39m())^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6785230Z     ^[[90m   |^[[39m                          ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6785826Z     ^[[90m143|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6786280Z     ^[[90m144|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6786727Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6787153Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6787500Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6787540Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6790860Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m194 passed^[[39m^[[22m^[[90m (195)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6800500Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1137 passed^[[39m^[[22m^[[90m (1138)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6801722Z ^[[2m   Start at ^[[22m 11:57:50
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6804764Z ^[[2m   Duration ^[[22m 29.22s^[[2m (transform 2.88s, setup 1.29s, import 16.00s, tests 36.58s, environment 26ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.6806853Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-07T11:58:19.7573494Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-07T11:58:19.7625780Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:58:19.7626204Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:58:19.7666681Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:58:19.7666980Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:58:19.7667218Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:58:19.7667507Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:58:19.7667842Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:58:19.8192963Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:58:19.8193362Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:58:19.8193500Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:58:19.8193662Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-07T11:58:19.8250441Z ##[error]Process completed with exit code 1.
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	﻿2026-09-07T11:57:13.2045895Z ##[group]Run node scripts/read-budget-scan.mjs
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	2026-09-07T11:57:13.2046305Z ^[[36;1mnode scripts/read-budget-scan.mjs^[[0m
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	2026-09-07T11:57:13.2085671Z shell: /usr/bin/bash -e {0}
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	2026-09-07T11:57:13.2085953Z env:
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	2026-09-07T11:57:13.2086153Z   NODE_VERSION: 24
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	2026-09-07T11:57:13.2086365Z ##[endgroup]
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	2026-09-07T11:57:13.2555495Z packages/core/src/runtime/project-runtime.md: 60801 bytes is over the 60000 byte read budget
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	2026-09-07T11:57:13.2609201Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-07T11:58:27.2710791Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:58:27.2711568Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:58:27.2751052Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:58:27.2751872Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:58:27.2752306Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:58:27.2752769Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:58:27.2753233Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:58:27.2882467Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-07T11:58:27.8999670Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:58:27.9000562Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:58:27.9026664Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:58:27.9027578Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:58:27.9028083Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:58:27.9028605Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:58:27.9029130Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-07T11:58:27.9155497Z ##[error]Process completed with exit code 1.
