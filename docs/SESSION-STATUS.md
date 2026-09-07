@@ -3,17 +3,18 @@
 Current project state only. Replace stale entries rather than append history. The four sections below are the complete shape; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces it and the byte ceiling.
 
 - **Captured:** 2026-09-07, Asia/Jakarta.
-- **Inspected main:** `b0ced240593ecbf0248130b356e2e1e230ba7f51`, after cleanup reporting [#336](https://github.com/chahyasantoso/motion5/pull/336) and the maintenance inventory [#337](https://github.com/chahyasantoso/motion5/pull/337). Exact CI and operation evidence belong to their PRs.
+- **Inspected main:** `34da0d33309f2cb3d599b5d0aca32413e76d4a07`, after runtime consistency [#343](https://github.com/chahyasantoso/motion5/pull/343). Exact CI and operation evidence belong to their PRs.
 - **Phase:** live editing of a loaded project. Infrastructure work below does not add runtime behavior. [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md) owns caller cost; [GUARDRAILS.md](./GUARDRAILS.md) owns standing constraints.
 
 ## Now
 
+- **Runtime consistency landed:** [#343](https://github.com/chahyasantoso/motion5/pull/343) is merged: accepted trigger/stagger edits retain the installed definition before completion, and same-ID lifetime recreation is refused atomically. Its generic-arrow rewrite avoids the formatting symptom but does not repair the AI-edit formatter.
 - **Just landed and exercised:** cleanup reporting [#336](https://github.com/chahyasantoso/motion5/pull/336) and maintenance inventory [#337](https://github.com/chahyasantoso/motion5/pull/337) are merged. With the reviewed runner activated, [#338](https://github.com/chahyasantoso/motion5/pull/338) verified live preview/validation, preserved cleanup summaries, unchanged targets, and exact-head CI; its intentional stale request also exposed missing preparation-failure diagnostics. Inventory completion does not activate maintenance or retire workflows.
 - **Landed before it:** slices 1 through 3 via [#332](https://github.com/chahyasantoso/motion5/pull/332): snapshot protections, isolated preparation, trusted outcomes, and one full-suite execution with preserved CI evidence. Runtime behavior is unchanged by these infrastructure slices.
 
 ## Next in line
 
-- **Unmerged runtime consistency:** [#343](https://github.com/chahyasantoso/motion5/pull/343) addresses [#340](https://github.com/chahyasantoso/motion5/issues/340), [#341](https://github.com/chahyasantoso/motion5/issues/341), and [#342](https://github.com/chahyasantoso/motion5/issues/342): accepted motion edits complete after definition adoption, and same-ID lifetime reuse is refused atomically. Engine-backed regressions and exact-SHA CI evidence belong to the PR; no merge is claimed.
+- **Unmerged formatter parity:** [#345](https://github.com/chahyasantoso/motion5/pull/345) addresses [#344](https://github.com/chahyasantoso/motion5/issues/344) by preserving filepath context in AI-edit formatting and validation, with real CLI regressions for `.ts` and `.tsx`. Review, merge, a reviewed runner-pin update and live parity exercises remain gates; no activated correction is claimed.
 - **Unmerged reporting completion:** [#339](https://github.com/chahyasantoso/motion5/pull/339) consolidates failed-preparation diagnostics, retry/recovery retention, legacy evidence completion, and useful error excerpts. Its regression and exact-SHA CI evidence belong to the PR. Review, a single runner-pin rollout, and live failure/correction/replay verification remain gates; no deployed diagnostics fix is claimed.
 
 ## Open, and not scheduled
