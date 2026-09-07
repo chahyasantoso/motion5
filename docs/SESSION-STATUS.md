@@ -3,17 +3,17 @@
 Current project state only. Replace stale entries rather than append history. The four sections below are the complete shape; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces it and the byte ceiling.
 
 - **Captured:** 2026-09-07, Asia/Jakarta.
-- **Inspected main:** `d60892834fd8cfaab0974babbe5741949b50fa1f`, after slice 4 [#333](https://github.com/chahyasantoso/motion5/pull/333). Exact CI and operation evidence belong to their PRs.
+- **Inspected main:** `b0ced240593ecbf0248130b356e2e1e230ba7f51`, after cleanup reporting [#336](https://github.com/chahyasantoso/motion5/pull/336) and the maintenance inventory [#337](https://github.com/chahyasantoso/motion5/pull/337). Exact CI and operation evidence belong to their PRs.
 - **Phase:** live editing of a loaded project. Infrastructure work below does not add runtime behavior. [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md) owns caller cost; [GUARDRAILS.md](./GUARDRAILS.md) owns standing constraints.
 
 ## Now
 
-- **Just landed:** issue #328 slice 4, [#333](https://github.com/chahyasantoso/motion5/pull/333), adds bounded formatted preview and targeted validation. [#334](https://github.com/chahyasantoso/motion5/pull/334) records live preview/validation happy paths and successful follow-on CI, but also the cleanup summary overwrite tracked in [#335](https://github.com/chahyasantoso/motion5/issues/335). This does not complete the broader activation matrix.
+- **Just landed and exercised:** cleanup reporting [#336](https://github.com/chahyasantoso/motion5/pull/336) and maintenance inventory [#337](https://github.com/chahyasantoso/motion5/pull/337) are merged. With the reviewed runner activated, [#338](https://github.com/chahyasantoso/motion5/pull/338) verified live preview/validation, preserved cleanup summaries, unchanged targets, and exact-head CI; its intentional stale request also exposed missing preparation-failure diagnostics. Inventory completion does not activate maintenance or retire workflows.
 - **Landed before it:** slices 1 through 3 via [#332](https://github.com/chahyasantoso/motion5/pull/332): snapshot protections, isolated preparation, trusted outcomes, and one full-suite execution with preserved CI evidence. Runtime behavior is unchanged by these infrastructure slices.
 
 ## Next in line
 
-- **Unmerged infrastructure:** cleanup-summary fix [#336](https://github.com/chahyasantoso/motion5/pull/336) has verified PR CI but still needs review, runner-pin rollout, and live verification. The sequential slice 5 [maintenance inventory](./MAINTENANCE-WORKFLOWS.md) is written on this stacked branch with capability distinctions, supported routes, and retirement prerequisites; its PR owns verification evidence. No deployed cleanup fix, maintenance activation, or workflow retirement is claimed.
+- **Unmerged reporting completion:** [#339](https://github.com/chahyasantoso/motion5/pull/339) consolidates failed-preparation diagnostics, retry/recovery retention, legacy evidence completion, and useful error excerpts. Its regression and exact-SHA CI evidence belong to the PR. Review, a single runner-pin rollout, and live failure/correction/replay verification remain gates; no deployed diagnostics fix is claimed.
 
 ## Open, and not scheduled
 

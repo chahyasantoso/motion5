@@ -33,12 +33,14 @@ export async function collectDiagnostics(fetchLogs) {
     try {
       const text = await fetchLogs();
       const retained = diagnostics({ exit_code: 0, text });
-      let failure = text.search(/AssertionError(?:\s*\[|:)|Error \[|##\[error\]/i);
+      let failure = text.search(
+        /AssertionError(?:\s*\[|:)|\b(?:[A-Za-z]*Error)(?:\s*\[|:)|##\[error\]/i,
+      );
       if (failure < 0) failure = text.search(/\bFAIL\s+[^\n]*\.(?:test|spec)\./);
       if (failure >= 0)
         retained.excerpt = diagnostics({
           exit_code: 0,
-          text: text.slice(failure, failure + 10000),
+          text: text.slice(Math.max(0, failure - 1200), failure + 8800),
         }).excerpt;
       return retained;
     } catch {
@@ -46,6 +48,73 @@ export async function collectDiagnostics(fetchLogs) {
     }
   }
   return diagnostics({ exit_code: 1, text: "" });
+}
+
+// Diagnostics have one lifecycle for CI and failed AI preparation. A legacy receipt
+// may gain a missing sibling, but retained diagnostic bytes are never refreshed.
+export async function retainedRunDiagnostics(api, run, value) {
+  verifyRun(run, api.repository, run.id, run.run_attempt);
+  render(value);
+  ensure(
+    value.repository === api.repository &&
+      value.run_id === run.id &&
+      value.run_attempt === run.run_attempt &&
+      (value.head_sha ?? value.request_commit) === run.head_sha,
+    "Diagnostic run identity mismatch",
+  );
+  const conclusion = run.conclusion ?? "unavailable";
+  ensure(
+    [
+      "success",
+      "failure",
+      "cancelled",
+      "timed_out",
+      "skipped",
+      "unavailable",
+      "neutral",
+      "action_required",
+      "stale",
+    ].includes(conclusion),
+    "Invalid diagnostic conclusion",
+  );
+  const file = value.evidence_path.replace("receipt.json", "diagnostics.json");
+  let existing = null;
+  try {
+    existing = await api.content(file, await api.head("ci-logs"));
+  } catch (error) {
+    if (error.status !== 404) throw error;
+  }
+  if (existing) {
+    const metadata = JSON.parse(existing.text);
+    ensure(
+      metadata &&
+        ["available", "empty", "unavailable"].includes(metadata.state) &&
+        typeof metadata.excerpt === "string" &&
+        Buffer.byteLength(metadata.excerpt) <= 4000,
+      "Invalid retained diagnostics",
+    );
+    ensure(
+      metadata.run_conclusion === undefined || metadata.run_conclusion === conclusion,
+      "Retained diagnostic conclusion conflicts with run metadata",
+    );
+    // Stored metadata is a projection, not permission to rewrite chunks.
+    const { chunks, ...retained } = metadata;
+    return { ...retained, run_conclusion: conclusion };
+  }
+  const detail = await collectDiagnostics(() => api.failedLogs(run));
+  return { ...detail, run_conclusion: conclusion };
+}
+
+export async function reportPreparationFailure(api, run, value) {
+  ensure(
+    run.path === ".github/workflows/ai-edit.yml" &&
+      run.conclusion !== "success" &&
+      value.kind === "ai-edit" &&
+      value.publication === "not_attempted",
+    "Not an unpublished preparation failure",
+  );
+  const detail = await retainedRunDiagnostics(api, run, value);
+  return reportToPull(api, run, value, detail);
 }
 
 export async function reportOutcome(value, ports, detail = null, scope = "default") {
@@ -90,11 +159,15 @@ export async function reportOutcome(value, ports, detail = null, scope = "defaul
   const details = detail
     ? `\n\nDiagnostics: **${detail.state}**. [Retained evidence](${diagnosticLink}).\n<pre>${excerpt}</pre>`
     : "";
+  const preparation =
+    value.kind === "ai-edit" && detail?.run_conclusion
+      ? `\n\nPreparation: **${diagnostics({ exit_code: 0, text: detail.run_conclusion }).excerpt}**. Publication and required CI remain separate.`
+      : "";
   const operationLink =
-    value.kind === "ai-edit"
+    value.kind === "ai-edit" && value.publication === "confirmed"
       ? `\n\n[Operation evidence directory](https://github.com/${value.repository}/tree/ci-logs/${value.evidence_path.replace("receipt.json", "")}). For preview or validation requests, publication only consumes the request; inspect operation.json and retained diff chunks, not CI success. Required PR CI is separate.`
       : "";
-  const body = `${prefix}${head}:${value.run_id}:${value.run_attempt} -->\n${projection}${details}${operationLink}`;
+  const body = `${prefix}${head}:${value.run_id}:${value.run_attempt} -->\n${projection}${preparation}${details}${operationLink}`;
   await ports.writeComment(previous?.id ?? null, body);
   return { comment: (await ports.currentHead()) === head ? "published" : "published_historical" };
 }
@@ -187,6 +260,34 @@ export class GitHub {
       id,
       attempt,
     );
+  }
+  async failedLogs(run) {
+    verifyRun(run, this.repository, run.id, run.run_attempt);
+    const result = spawnSync(
+      "gh",
+      [
+        "run",
+        "view",
+        String(run.id),
+        "--repo",
+        this.repository,
+        "--attempt",
+        String(run.run_attempt),
+        "--log-failed",
+      ],
+      {
+        encoding: "utf8",
+        timeout: 45000,
+        maxBuffer: 8000000,
+        env: {
+          PATH: process.env.PATH,
+          GH_TOKEN: this.token,
+          HOME: process.env.RUNNER_TEMP ?? "/tmp",
+        },
+      },
+    );
+    ensure(result.status === 0 && !result.error, "Log retrieval failed");
+    return result.stdout;
   }
   async head(branch) {
     ensure(
@@ -321,53 +422,18 @@ export async function reportCompletedRun(api, run, trustedSha) {
     tested_sha: tested,
     ci: run.conclusion ?? "unavailable",
   });
-  let exists = false;
-  let retainedDetail = null;
+  let saved = null;
   try {
-    const saved = await api.content(value.evidence_path, await api.head("ci-logs"));
+    saved = await api.content(value.evidence_path, await api.head("ci-logs"));
+  } catch (error) {
+    if (error.status !== 404) throw error;
+  }
+  if (saved)
     ensure(
       saved.text === `${JSON.stringify(value)}\n`,
       "Existing receipt conflicts with run metadata",
     );
-    exists = true;
-    const savedDetail = await api.content(
-      value.evidence_path.replace("receipt.json", "diagnostics.json"),
-      await api.head("ci-logs"),
-    );
-    retainedDetail = JSON.parse(savedDetail.text);
-  } catch (error) {
-    if (error.status !== 404) throw error;
-  }
-  const detail = exists
-    ? null
-    : await collectDiagnostics(async () => {
-        const result = spawnSync(
-          "gh",
-          [
-            "run",
-            "view",
-            String(run.id),
-            "--repo",
-            api.repository,
-            "--attempt",
-            String(run.run_attempt),
-            "--log-failed",
-          ],
-          {
-            encoding: "utf8",
-            timeout: 45000,
-            maxBuffer: 8000000,
-            env: {
-              PATH: process.env.PATH,
-              GH_TOKEN: api.token,
-              HOME: process.env.RUNNER_TEMP ?? "/tmp",
-            },
-          },
-        );
-        ensure(result.status === 0 && !result.error, "Log retrieval failed");
-        return result.stdout;
-      });
-  if (exists) return reportToPull(api, run, value, retainedDetail);
+  const detail = await retainedRunDiagnostics(api, run, value);
   return reportToPull(api, run, value, detail);
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
