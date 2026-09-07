@@ -31,6 +31,51 @@ const detailPath=()=>"receipts/ai-edit/42/"+run.run_attempt+"/diagnostics.json";
   expect(result.status, result.stderr).toBe(0);
 }
 describe("complete failure diagnostics", () => {
+  it("keeps the bare cause preceding a workflow error marker", () =>
+    scenario(String.raw`
+    const d=await collectDiagnostics(async()=>"setup ".repeat(2000)+"\nStale source SHA\n##[error]Process completed with exit code 1.");
+    assert.ok(d.excerpt.includes("Stale source SHA"));
+  `));
+  it("invokes the concrete log adapter with exact repository and attempt", () =>
+    scenario(String.raw`
+    const fs=await import("node:fs/promises"), os=await import("node:os"), path=await import("node:path");
+    const dir=await fs.mkdtemp(path.join(os.tmpdir(),"motion5-log-adapter-"));
+    const oldPath=process.env.PATH;
+    try {
+      await fs.writeFile(path.join(dir,"gh"),"#!"+process.execPath+"\nif(process.env.GH_TOKEN !== 'fixture-only') process.exit(3); process.stdout.write(JSON.stringify(process.argv.slice(2)));\n",{mode:0o700});
+      process.env.PATH=dir+path.delimiter+oldPath;
+      run.run_attempt=7; const concrete=new GitHub(repository,"fixture-only");
+      assert.deepEqual(JSON.parse(await concrete.failedLogs(run)),["run","view","42","--repo",repository,"--attempt","7","--log-failed"]);
+      await fs.writeFile(path.join(dir,"gh"),"#!"+process.execPath+"\nprocess.stdout.write('not successful logs'); process.exit(1);\n",{mode:0o700});
+      await assert.rejects(concrete.failedLogs(run),/Log retrieval failed/);
+    } finally {process.env.PATH=oldPath;await fs.rm(dir,{recursive:true,force:true});}
+  `));
+  it("distinguishes empty logs from unavailable logs", () =>
+    scenario(String.raw`
+    api.failedLogs=async()=>"";await publishRun(api,writer,run,A);
+    const d=JSON.parse(saved.get(detailPath()));assert.equal(d.state,"empty");assert.deepEqual(d.paths,[]);
+    assert.ok(comments[0].body.includes("Preparation: **failure**"));
+  `));
+  it("does not treat a forbidden evidence read as absent history", () =>
+    scenario(String.raw`
+    api.content=async()=>{const e=new Error("forbidden evidence");e.status=403;throw e;};
+    await assert.rejects(publishRun(api,writer,run,A),/forbidden evidence/);
+    assert.equal(logCalls,0);assert.equal(saved.size,0);assert.equal(comments.length,0);
+  `));
+  it("reuses legacy diagnostic metadata without fetching or rewriting", () =>
+    scenario(String.raw`
+    const bytes=JSON.stringify({state:"available",excerpt:"legacy failure",paths:[]});saved.set(detailPath(),bytes);
+    api.failedLogs=async()=>assert.fail("legacy diagnostics refetched");
+    await publishRun(api,writer,run,A);await recoverRun(api,run,A);
+    assert.equal(saved.get(detailPath()),bytes);assert.ok(comments[0].body.includes("legacy failure"));
+  `));
+  it("rejects malformed retained diagnostics before reporting", () =>
+    scenario(String.raw`
+    saved.set(detailPath(),JSON.stringify({state:"available",excerpt:123}));
+    await assert.rejects(publishRun(api,writer,run,A),/Invalid retained diagnostics/);
+    assert.equal(comments.length,0);
+  `));
+
   it.each(["failure", "cancelled", "timed_out", "skipped"])(
     "retains %s preparation evidence",
     (conclusion) => {
