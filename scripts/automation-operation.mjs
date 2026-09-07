@@ -311,13 +311,16 @@ export async function prepareOperation(
         content === null
           ? null
           : await prettier.getFileInfo(file, { resolveConfig: false, ignorePath: [] });
+      // Filepath also controls printing (notably .ts versus .tsx generic-arrow commas).
+      // Share that context without discovering candidate-owned configuration or plugins.
+      const formatOptions = { ...options, filepath: file, parser: info?.inferredParser };
       if (
         spec.operation !== "validate" &&
         touched.includes(file) &&
         content !== null &&
         info.inferredParser
       ) {
-        content = await prettier.format(content, { ...options, parser: info.inferredParser });
+        content = await prettier.format(content, formatOptions);
         await writeFile(path.join(root, file), content);
       }
       if (touched.includes(file)) files.push({ path: file, content });
@@ -346,9 +349,7 @@ export async function prepareOperation(
           detail = "No built-in parser or deleted file";
         if (info?.inferredParser) {
           try {
-            state = (await prettier.check(content, { ...options, parser: info.inferredParser }))
-              ? "passed"
-              : "failure";
+            state = (await prettier.check(content, formatOptions)) ? "passed" : "failure";
             detail = state === "passed" ? "" : "Formatting differs";
           } catch {
             state = "failure";
