@@ -1,0 +1,14 @@
+diff --git a/docs/ai-edit-live.ts b/docs/ai-edit-live.ts
+index f8c72f9..0e89876 100644
+--- a/docs/ai-edit-live.ts
++++ b/docs/ai-edit-live.ts
+@@ -1 +1 @@
+-export const liveTypeScript = <T>(value: T): T => value;
++export const liveTypeScriptPreview = <T>(value: T): T => value;
+diff --git a/docs/ai-edit-live.tsx b/docs/ai-edit-live.tsx
+index 0f1f4c0..258d7f7 100644
+--- a/docs/ai-edit-live.tsx
++++ b/docs/ai-edit-live.tsx
+@@ -1 +1 @@
+-export const liveTsx = <T,>(value: T): T => value;
++export const liveTsxPreview = <T,>(value: T): T => value;
