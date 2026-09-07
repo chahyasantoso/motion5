@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "expected_head": "28507ddab9b58a16af7962df31004803ba864ec0",
+  "expected_blobs": {
+    "docs/ai-edit-live.ts": "f8c72f972bccdb62801cddafe6aa754baa9c8b39",
+    "docs/ai-edit-live.tsx": "0f1f4c01530b3778ad7e5f86fd6ef0fde76efd35"
+  },
+  "message": "test(automation): exercise live ts and tsx preview",
+  "operation": "preview",
+  "edits": [
+    {
+      "path": "docs/ai-edit-live.ts",
+      "find": "liveTypeScript",
+      "replace": "liveTypeScriptPreview"
+    },
+    {
+      "path": "docs/ai-edit-live.tsx",
+      "find": "liveTsx",
+      "replace": "liveTsxPreview"
+    }
+  ]
+}
