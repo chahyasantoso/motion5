@@ -21,6 +21,7 @@ import {
   verifyRun,
   persistOutcome,
   reportToPull,
+  reportPreparationFailure,
 } from "./automation-report.mjs";
 
 function exactKeys(value, allowed) {
@@ -527,7 +528,11 @@ export async function recoverRun(api, run, trustedSha) {
         saved.request_commit === run.head_sha,
       "Recovery identity mismatch",
     );
-    if (name === "receipt.json") return reportToPull(api, run, saved);
+    if (name === "receipt.json") {
+      if (saved.publication === "not_attempted" && run.conclusion && run.conclusion !== "success")
+        return reportPreparationFailure(api, run, saved);
+      return reportToPull(api, run, saved);
+    }
     // Reconcile only remote facts. No artifact, formatter, candidate creation, or ref update.
     const confirmed = await reconcileRecordedIntent(api, run, saved);
     if (confirmed) {
@@ -548,6 +553,8 @@ export async function recoverRun(api, run, trustedSha) {
     request_commit: run.head_sha,
     phase: "selection",
   });
+  if (run.conclusion && run.conclusion !== "success")
+    return reportPreparationFailure(api, run, fallback);
   await api.persist({
     [`${directory}manifest.json`]: `${JSON.stringify({ version: 1, outcome: fallback, next_action: "retry_trusted_reporter" })}\n`,
   });
@@ -564,16 +571,18 @@ export async function publishRun(api, writer, run, trustedSha) {
     run_attempt: run.run_attempt,
     request_commit: run.head_sha,
   };
-  // Recovery of a confirmed publication needs no retained artifact and never applies again.
+  // Only a missing receipt read means absence. Reporting failures never enter publication.
+  let stored = null;
   try {
-    const saved = JSON.parse(
-      (
-        await api.content(
-          `receipts/ai-edit/${run.id}/${run.run_attempt}/receipt.json`,
-          await api.head("ci-logs"),
-        )
-      ).text,
+    stored = await api.content(
+      `receipts/ai-edit/${run.id}/${run.run_attempt}/receipt.json`,
+      await api.head("ci-logs"),
     );
+  } catch (error) {
+    if (error.status !== 404) throw error;
+  }
+  if (stored) {
+    const saved = JSON.parse(stored.text);
     render(saved);
     ensure(
       saved.repository === api.repository &&
@@ -582,14 +591,14 @@ export async function publishRun(api, writer, run, trustedSha) {
         saved.request_commit === run.head_sha,
       "Stored receipt identity mismatch",
     );
+    if (saved.publication === "not_attempted" && run.conclusion !== "success")
+      return reportPreparationFailure(api, run, saved);
     return reportToPull(api, run, saved);
-  } catch (error) {
-    if (error.status !== 404) throw error;
   }
   // Early failures do not require parsing a candidate-controlled request or artifact.
   if (run.conclusion !== "success") {
     const value = receipt({ ...basic, phase: "selection" });
-    return reportToPull(api, run, value);
+    return reportPreparationFailure(api, run, value);
   }
   const state = await snapshot(api, run, trustedSha);
   const candidate = await readCandidate(api, run);
