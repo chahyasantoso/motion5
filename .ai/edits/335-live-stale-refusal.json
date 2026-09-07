@@ -1,11 +1,15 @@
 {
   "version": 1,
-  "operation": "validate",
-  "expected_head": "512e612a9f0ebcccda15941c7291fbc125222f01",
+  "operation": "preview",
+  "expected_head": "2cf970ad3ab34b5035697c37e7c5c3a773f4f25c",
   "expected_blobs": {
-    "docs/API-CAPABILITIES.md": "5bbd02cfef3761630e82c154853cfbec42d2bedf"
+    "docs/338-formatter-probe.json": null
   },
-  "message": "test(automation): post-339 intentional stale-input diagnostics probe",
-  "paths": ["docs/API-CAPABILITIES.md"],
-  "checks": ["format"]
+  "message": "test(automation): intentional preview formatter failure",
+  "edits": [
+    {
+      "path": "docs/338-formatter-probe.json",
+      "create": "{\"probe\": }\n"
+    }
+  ]
 }
