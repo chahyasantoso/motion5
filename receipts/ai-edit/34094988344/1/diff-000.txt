@@ -1,0 +1,13 @@
+diff --git a/docs/API-CAPABILITIES.md b/docs/API-CAPABILITIES.md
+index 5bbd02c..2ccb588 100644
+--- a/docs/API-CAPABILITIES.md
++++ b/docs/API-CAPABILITIES.md
+@@ -31,6 +31,8 @@ A future dependency operation needs a reviewed schema with bounded allowlisted p
+ 
+ ## Short round trip
+ 
++Preview-only activation probe: this sentence must not reach the contributor tree.
++
+ 1. Read a complete snapshot and source blob SHAs. Check this map against the pinned runner.
+ 2. On an open same-repository PR, submit one request-only commit. Do not advance the branch while publication is pending.
+ 3. Read `operation.json` and all listed diff chunks for a preview, or per-path check results for validation. Redacted diff bytes are explicitly labeled; do not apply retained redacted text as a patch.
