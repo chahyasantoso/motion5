@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "expected_head": "526d96b6a4e248699542c13fd8a9f26bd7f89cf4",
+  "expected_blobs": {
+    "docs/ai-edit-live.ts": "f8c72f972bccdb62801cddafe6aa754baa9c8b39",
+    "docs/ai-edit-live.tsx": "0f1f4c01530b3778ad7e5f86fd6ef0fde76efd35"
+  },
+  "message": "test(automation): remove live formatter fixtures",
+  "operation": "apply",
+  "edits": [
+    {
+      "path": "docs/ai-edit-live.ts",
+      "delete": true
+    },
+    {
+      "path": "docs/ai-edit-live.tsx",
+      "delete": true
+    }
+  ]
+}
