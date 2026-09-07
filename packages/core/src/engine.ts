@@ -91,7 +91,9 @@ function createHandle(runtime: RuntimeLike): ProjectHandle {
     signal: (motionId, value) => runtime.signal(motionId, value),
     addMotion: (definition) => runtime.addMotion(definition),
     destroyMotion: (motionId) => runtime.destroyMotion(motionId),
-    edit: <T,>(recipe: (transaction: SchemaTransaction) => T) => runtime.edit(recipe),
+    edit<T>(recipe: (transaction: SchemaTransaction) => T) {
+      return runtime.edit(recipe);
+    },
     addTrack: (track, options) => runtime.addTrack(track, options),
     track: (nodeId) => runtime.track(nodeId),
     tryTrack: (nodeId) => runtime.tryTrack(nodeId),

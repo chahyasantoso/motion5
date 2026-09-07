@@ -4,12 +4,12 @@ import type { TriggerPort } from "../ports/trigger";
 import type { TriggerSignal } from "../contract/v5";
 import { Lifecycle } from "./lifecycle";
 import { collect, report } from "./completion";
+import type { Track } from "./track";
 
 interface TriggerBinding {
   activate(): void;
   dispose(): void;
 }
-import type { Track } from "./track";
 
 export interface MotionTrackEntry {
   readonly id: string;
@@ -45,6 +45,10 @@ function acceptStagger(stagger: number | undefined): number {
   if (!Number.isFinite(value) || value < 0)
     throw new TypeError("Motion stagger must be a finite non-negative number.");
   return value;
+}
+function assertProgress(progress: number): void {
+  if (!Number.isFinite(progress)) throw new TypeError("Motion progress must be finite.");
+  if (progress < 0 || progress > 1) throw new RangeError("Progress must be between 0 and 1.");
 }
 export class Motion {
   readonly #clock: Clock;
@@ -298,8 +302,11 @@ export class Motion {
     let state: "waiting" | "active" | "disposed" = "waiting";
     let pending: number | undefined;
     const unsubscribe = trigger.subscribe((progress) => {
-      if (state === "waiting") pending = progress;
-      else if (state === "active") this.#scheduleProgress(progress);
+      if (state === "waiting") {
+        // Validate every eager emission, not just the last one that survives coalescing.
+        assertProgress(progress);
+        pending = progress;
+      } else if (state === "active") this.#scheduleProgress(progress);
     });
     return {
       activate: () => {
@@ -326,13 +333,10 @@ export class Motion {
     this.#scheduleProgress(next);
   }
   #scheduleProgress(progress: number): void {
-    // Validated before the liveness guard on purpose. A paused or unmounted Motion that quietly
-    // drops a malformed emission teaches the port nothing, and this is the one place every
-    // TriggerPort reaches, so it is the only place the rule can live exactly once. Normalization
-    // belongs to the source adapter, so by the time progress arrives here anything outside
-    // [0, 1] is a contract violation and must be loud rather than clamped. See ADR-037.
-    if (!Number.isFinite(progress)) throw new TypeError("Motion progress must be finite.");
-    if (progress < 0 || progress > 1) throw new RangeError("Progress must be between 0 and 1.");
+    // Validate before liveness. Prepared subscriptions ask the same validator before buffering,
+    // so a later valid emission cannot conceal an earlier malformed one. Normalization belongs
+    // to the source adapter; neither preparation nor active input may clamp it. See ADR-037.
+    assertProgress(progress);
     if (!this.#playing || this.#lifecycle.state !== "mounted") return;
     this.#pendingProgress = progress;
     if (this.#progressJob !== undefined) return;

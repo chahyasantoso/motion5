@@ -6,7 +6,7 @@ import type { TrackHandle } from "../../../src/contract/track-handle";
 import { createDefaultTriggerFactory } from "../../../src/adapters/trigger-factory/default";
 import { createManualClock } from "../../../src/ports/clock";
 import type { Interpolator } from "../../../src/ports/interpolator";
-import type { Scheduler } from "../../../src/ports/scheduler";
+import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 import type { CreatedTrigger, TriggerFactory } from "../../../src/ports/trigger-factory";
 import type { ProjectRuntime } from "../../../src/runtime/project-runtime";
 
@@ -31,51 +31,39 @@ const project = (withTracks = true): ProjectDefinition => ({
     },
   ],
 });
-function rig(definition = project(), triggerFactory?: TriggerFactory) {
+function rig(definition = project(), triggerFactory?: TriggerFactory, onProgress?: () => void) {
   const clock = createManualClock();
-  const jobs = new Set<() => void>();
-  const scheduler: Scheduler = {
-    schedule(job) {
-      jobs.add(job);
-      return {
-        cancel() {
-          jobs.delete(job);
-        },
-      };
-    },
-  };
+  const scheduler = createFakeScheduler();
+  const base = createFakeInterpolator();
   const kills: ReturnType<typeof vi.fn>[] = [];
   const interpolator: Interpolator = {
-    create() {
-      let position = 0;
-      const kill = vi.fn();
+    create(config) {
+      const timeline = base.create(config);
+      const kill = vi.fn(() => timeline.kill());
       kills.push(kill);
-      return {
-        duration: 1000,
-        get state() {
-          return { x: position * 100 };
-        },
-        progress(value?: number) {
-          if (value !== undefined) position = value;
-          return position;
-        },
-        kill,
-      };
+      function progress(): number;
+      function progress(value: number): void;
+      function progress(value?: number): number | void {
+        if (value === undefined) return timeline.progress();
+        timeline.progress(value);
+        onProgress?.();
+      }
+      return { ...timeline, progress, kill };
     },
   };
   const handle = new Engine({ clock, scheduler, interpolator, triggerFactory }).load(definition);
   const runtime = (handle as typeof handle & { readonly _runtime: ProjectRuntime })._runtime;
   const flush = () => {
-    for (let rounds = 0; jobs.size; rounds++) {
+    for (let rounds = 0; scheduler.pending.length; rounds++) {
       if (rounds > 20) throw new Error("Scheduler did not settle.");
-      const batch = [...jobs];
-      jobs.clear();
-      for (const job of batch) job();
+      scheduler.flush();
     }
   };
   return { handle, runtime, clock, flush, kills };
 }
-function drivers(options: { cleanup?: unknown; refuse?: "create" | "subscribe" } = {}) {
+function drivers(
+  options: { cleanup?: unknown; refuse?: "create" | "subscribe"; onCleanup?: () => void } = {},
+) {
   const base = createDefaultTriggerFactory();
   const created: { trigger: CreatedTrigger; dispose: ReturnType<typeof vi.fn> }[] = [];
   const failure = new Error("Replacement refused.");
@@ -86,7 +74,10 @@ function drivers(options: { cleanup?: unknown; refuse?: "create" | "subscribe" }
       const index = created.length;
       const dispose = vi.fn(() => {
         trigger.dispose();
-        if (index === 0 && Object.hasOwn(options, "cleanup")) throw options.cleanup;
+        if (index === 0) {
+          options.onCleanup?.();
+          if (Object.hasOwn(options, "cleanup")) throw options.cleanup;
+        }
       });
       created.push({ trigger, dispose });
       return {
@@ -115,6 +106,171 @@ function caught(operation: () => void): unknown {
 }
 
 describe("Engine motion edits preserve accepted state and entity lifetimes", () => {
+  it("completes both cleanup layers, activates eager input and disables failed old generations", () => {
+    const subscriptionFailure = new Error("Old subscription cleanup failed.");
+    const resourceFailure = new Error("Old resource cleanup failed.");
+    const entries: {
+      emit: (progress: number) => void;
+      unsubscribe: ReturnType<typeof vi.fn>;
+      dispose: ReturnType<typeof vi.fn>;
+    }[] = [];
+    const factory: TriggerFactory = {
+      create(context) {
+        const index = entries.length;
+        const entry = {
+          emit: (_progress: number) => undefined as void,
+          unsubscribe: vi.fn(() => {
+            if (index === 0) throw subscriptionFailure;
+          }),
+          dispose: vi.fn(() => {
+            if (index === 0) throw resourceFailure;
+          }),
+        };
+        entries.push(entry);
+        return {
+          port: {
+            subscribe(listener) {
+              entry.emit = listener;
+              if (index === 1) listener(0.6);
+              return entry.unsubscribe;
+            },
+          },
+          clockBinding: { kind: "none" },
+          acceptsExternalSignal: context.trigger.type === "manual",
+          dispose: entry.dispose,
+        };
+      },
+    };
+    const test = rig(project(), factory);
+    test.handle.mount("hero/arm");
+    const motion = test.handle.motion("hero");
+    const failure = caught(() => motion.setTrigger({ type: "time", duration: 1000 }));
+    expect(failure).toBeInstanceOf(AggregateError);
+    expect((failure as AggregateError).errors).toEqual([subscriptionFailure, resourceFailure]);
+    expect(motion.definition.trigger.type).toBe("time");
+    test.flush();
+    expect(test.handle.get("hero/arm")?.sourceProgress).toBeCloseTo(0.6);
+    const patch = test.handle.get("hero/arm");
+    entries[0]!.emit(0.9);
+    test.flush();
+    expect(test.handle.get("hero/arm")).toBe(patch);
+    test.handle.dispose();
+    for (const entry of entries) {
+      expect(entry.unsubscribe).toHaveBeenCalledTimes(1);
+      expect(entry.dispose).toHaveBeenCalledTimes(1);
+    }
+  });
+
+  it.each([-0.1, NaN])(
+    "refuses malformed eager input %s before a later valid emission can hide it",
+    (invalid) => {
+      const base = createDefaultTriggerFactory();
+      const releases: ReturnType<typeof vi.fn>[] = [];
+      const factory: TriggerFactory = {
+        create(context) {
+          const created = base.create(context);
+          const dispose = vi.fn(() => created.dispose());
+          releases.push(dispose);
+          return {
+            ...created,
+            dispose,
+            port:
+              context.trigger.type === "time"
+                ? {
+                    subscribe(listener) {
+                      listener(invalid);
+                      listener(0.6);
+                      return () => undefined;
+                    },
+                  }
+                : created.port,
+          };
+        },
+      };
+      const test = rig(project(), factory);
+      test.handle.mount("hero/arm");
+      expect(() => test.handle.motion("hero").setTrigger({ type: "time", duration: 1000 })).toThrow(
+        /finite|between 0 and 1/,
+      );
+      expect(test.handle.motion("hero").definition.trigger.type).toBe("manual");
+      test.handle.signal("hero", { type: "manual", progress: 0.4 });
+      test.flush();
+      expect(test.handle.get("hero/arm")?.sourceProgress).toBeCloseTo(0.4);
+      expect(releases[0]).not.toHaveBeenCalled();
+      expect(releases[1]).toHaveBeenCalledTimes(1);
+      test.handle.dispose();
+      for (const release of releases) expect(release).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("retains an accepted stagger and attempts publication when re-seeding throws", () => {
+    let intercept: () => void = () => undefined;
+    const test = rig(project(), undefined, () => intercept());
+    test.handle.mount("hero/arm");
+    test.handle.mount("hero/leg");
+    test.handle.signal("hero", { type: "manual", progress: 0.75 });
+    test.flush();
+    const motion = test.handle.motion("hero");
+    const failure = new Error("Host re-seed failed.");
+    const seen: (number | undefined)[] = [];
+    intercept = () => {
+      seen.push(motion.definition.stagger);
+      throw failure;
+    };
+    const invalidate = vi.spyOn(test.runtime.graph, "invalidate");
+    expect(caught(() => motion.setStagger(250))).toBe(failure);
+    expect(seen).toEqual([250]);
+    expect(motion.definition.stagger).toBe(250);
+    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(test.handle.get("hero/arm")?.sourceProgress).toBeCloseTo(0.75);
+    intercept = () => undefined;
+    motion.setStagger();
+    test.flush();
+    expect(test.handle.get("hero/leg")?.sourceProgress).toBeCloseTo(0.75);
+    test.handle.dispose();
+    for (const kill of test.kills) expect(kill).toHaveBeenCalledTimes(1);
+  });
+
+  it("defers disposal through failed stagger completion and preserves ordered failures", () => {
+    let intercept: () => void = () => undefined;
+    const test = rig(project(), undefined, () => intercept());
+    test.handle.mount("hero/arm");
+    const motion = test.handle.motion("hero");
+    const failure = new Error("Disposing host re-seed failed.");
+    intercept = () => {
+      test.handle.dispose();
+      throw failure;
+    };
+    const invalidate = vi.spyOn(test.runtime.graph, "invalidate");
+    const result = caught(() => motion.setStagger(250));
+    expect(result).toBeInstanceOf(AggregateError);
+    expect((result as AggregateError).errors[0]).toBe(failure);
+    expect((result as AggregateError).errors[1].message).toBe("ProjectRuntime is disposed.");
+    expect(motion.live).toBe(false);
+    expect(invalidate).not.toHaveBeenCalled();
+    for (const kill of test.kills) expect(kill).toHaveBeenCalledTimes(1);
+  });
+
+  it("adopts before a trigger finalizer disposes and releases the replacement once", () => {
+    let cleanup: () => void = () => undefined;
+    const host = drivers({ onCleanup: () => cleanup() });
+    const test = rig(project(), host.factory);
+    const motion = test.handle.motion("hero");
+    const seen: string[] = [];
+    cleanup = () => {
+      seen.push(motion.definition.trigger.type);
+      test.handle.dispose();
+    };
+    expect(() => motion.setTrigger({ type: "time", duration: 1000 })).toThrow(
+      "ProjectRuntime is disposed.",
+    );
+    expect(seen).toEqual(["time"]);
+    expect(motion.live).toBe(false);
+    expect(host.created).toHaveLength(2);
+    for (const entry of host.created) expect(entry.dispose).toHaveBeenCalledTimes(1);
+    for (const kill of test.kills) expect(kill).toHaveBeenCalledTimes(1);
+  });
+
   it.each([new Error("Old driver cleanup failed."), undefined])(
     "retains an installed trigger when cleanup throws %s",
     (failure) => {
