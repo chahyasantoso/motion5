@@ -1,0 +1,16 @@
+prepare isolated candidate	Prepare with trusted code and configuration	﻿2026-09-07T10:45:00.0212280Z ##[group]Run set -euo pipefail
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.0212617Z ^[[36;1mset -euo pipefail^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.0212943Z ^[[36;1mexport CANDIDATE_ROOT="$GITHUB_WORKSPACE/candidate"^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.0213387Z ^[[36;1mexport FORMATTER_ROOT="$RUNNER_TEMP/motion5-formatter"^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.0213822Z ^[[36;1mexport CANDIDATE_OUTPUT="$RUNNER_TEMP/candidate.json"^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.0214591Z ^[[36;1mnode trusted/scripts/automation-publish.mjs prepare^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.0251985Z shell: /usr/bin/bash -e {0}
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.0252244Z env:
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.0252491Z   TRUSTED_SHA: 8f62206b6856ba9946d27b9240c52e71fe3d762f
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.0252817Z   DISPATCH_REQUEST: 
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.0253050Z ##[endgroup]
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.2020887Z Unexpected token (1:11)
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.2021803Z ^[[0m^[[31m^[[1m>^[[22m^[[39m^[[90m 1 |^[[39m {^[[32m"probe"^[[39m^[[33m:^[[39m }
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.2022395Z  ^[[90m   |^[[39m           ^[[31m^[[1m^^[[22m^[[39m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.2022783Z  ^[[90m 2 |^[[39m^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-07T10:45:00.2088387Z ##[error]Process completed with exit code 1.
