@@ -14,7 +14,12 @@ import type { ProjectRuntime } from "../../../src/runtime/project-runtime";
 const animated = (id: string) => ({
   id,
   duration: 1000,
-  keyframes: { x: { "0%": 0, "100%": 100 } },
+  keyframes: {
+    x: [
+      { p: 0, v: 0 },
+      { p: 100, v: 100 },
+    ],
+  },
 });
 const project = (withTracks = true): ProjectDefinition => ({
   schemaVersion: 5,
@@ -119,7 +124,7 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
       test.handle.mount("hero/arm");
       expect(caught(() => motion.setTrigger({ type: "time", duration: 1000 }))).toBe(failure);
       expect(motion.definition.trigger).toEqual({ type: "time", duration: 1000 });
-      expect(() => test.handle.signal("hero", { progress: 0.5 })).toThrow(
+      expect(() => test.handle.signal("hero", { type: "manual", progress: 0.5 })).toThrow(
         /configured trigger driver/,
       );
       test.clock.tick(250);
@@ -127,7 +132,7 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
       expect(test.handle.get("hero/arm")?.sourceProgress).toBeCloseTo(0.25);
       motion.setTrigger({ type: "manual" });
       expect(host.created).toHaveLength(3);
-      expect(() => test.handle.signal("hero", { progress: 0.5 })).not.toThrow();
+      expect(() => test.handle.signal("hero", { type: "manual", progress: 0.5 })).not.toThrow();
       test.flush();
       test.handle.dispose();
       for (const entry of host.created) expect(entry.dispose).toHaveBeenCalledTimes(1);
@@ -144,7 +149,7 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
         caught(() => test.handle.motion("hero").setTrigger({ type: "time", duration: 1000 })),
       ).toBe(host.failure);
       expect(test.handle.motion("hero").definition.trigger).toEqual({ type: "manual" });
-      expect(() => test.handle.signal("hero", { progress: 0.4 })).not.toThrow();
+      expect(() => test.handle.signal("hero", { type: "manual", progress: 0.4 })).not.toThrow();
       test.flush();
       expect(test.handle.get("hero/arm")?.sourceProgress).toBeCloseTo(0.4);
       expect(host.created[0]!.dispose).not.toHaveBeenCalled();
@@ -156,7 +161,7 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
   it("publishes changed and cleared stagger only after definition adoption without graph work", () => {
     const test = rig();
     for (const id of ["hero/arm", "hero/leg"]) test.handle.mount(id);
-    test.handle.signal("hero", { progress: 0.75 });
+    test.handle.signal("hero", { type: "manual", progress: 0.75 });
     test.flush();
     const motion = test.handle.motion("hero");
     const replace = vi.spyOn(test.runtime.graph, "replaceGraph");
@@ -220,7 +225,7 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
       expect(test.kills).toHaveLength(0);
       expect(host.created).toHaveLength(1);
       expect(host.created[0]!.dispose).not.toHaveBeenCalled();
-      expect(() => test.handle.signal("hero", { progress: 0.5 })).not.toThrow();
+      expect(() => test.handle.signal("hero", { type: "manual", progress: 0.5 })).not.toThrow();
       test.flush();
       test.handle.dispose();
       expect(host.created[0]!.dispose).toHaveBeenCalledTimes(1);
@@ -276,7 +281,7 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
     old.destroy();
     test.handle.addMotion({ id: "hero", trigger: { type: "time", duration: 1000 }, tracks: [] });
     expect(old.live).toBe(false);
-    expect(() => test.handle.signal("hero", { progress: 0.5 })).toThrow(
+    expect(() => test.handle.signal("hero", { type: "manual", progress: 0.5 })).toThrow(
       /configured trigger driver/,
     );
     test.handle.dispose();
