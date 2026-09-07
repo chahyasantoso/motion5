@@ -1,0 +1,6 @@
+diff --git a/docs/338-formatter-probe.json b/docs/338-formatter-probe.json
+index e69de29..af91160 100644
+--- /dev/null
++++ b/docs/338-formatter-probe.json
+@@ -0,0 +1 @@
++{ "probe": true }
