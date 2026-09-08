@@ -1,4 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
+import { gsap } from "gsap";
+import {
+  bindScrollReach,
+  createScrollReach,
+} from "../../../../apps/ik-playground/src/scroll-reach";
+import { createGsapInterpolator } from "../../src/adapters/interpolator/gsap";
 import {
   ALL_NODE_IDS,
   ARM,
@@ -13,7 +19,7 @@ import { lerpAngle } from "../../src/plugins/frame";
 import { ikPlugin } from "../../src/plugins/ik";
 import { transformPlugin } from "../../src/plugins/transform";
 import { createManualClock } from "../../src/ports/clock";
-import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
+import { createFakeScheduler } from "../../src/testing/fakes";
 import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";
 import { createGsapScrollSource } from "../../src/adapters/scroll-trigger-gsap";
 
@@ -87,13 +93,18 @@ describe("IK playground adapter-driven progress", () => {
     for (const plugin of [transformPlugin, fkPlugin, ikPlugin]) plugins.register(plugin);
     const scheduler = createFakeScheduler();
     const clock = createManualClock();
+    let controller: ReturnType<typeof createScrollReach>;
     const handle = new Engine({
       clock,
       scheduler,
       plugins,
-      interpolator: createFakeInterpolator(),
-      triggerFactory: createTriggerFactory({ scroll: () => scroll.source }),
+      // Only the browser producer and scheduler are controlled; interpolation is real GSAP.
+      interpolator: createGsapInterpolator(gsap),
+      triggerFactory: createTriggerFactory({
+        scroll: () => bindScrollReach(scroll.source, () => controller.commit()),
+      }),
     }).load(ikPlaygroundProject);
+    controller = createScrollReach(handle);
     try {
       for (const id of ALL_NODE_IDS) handle.mount(id);
       expect(scroll.create).toHaveBeenCalledTimes(1);
@@ -114,9 +125,31 @@ describe("IK playground adapter-driven progress", () => {
         lerpAngle(ARM.restRotations[0]!, rotations[id]!, 0.5),
       );
       const held = handle.get(id);
+      const appliedGoal = handle.get(nodeId(ARM.goalTrack));
+      controller.moveGoal(ARM.goalTrack, 290, 360);
+      controller.flip(ARM.solverTrack, true);
       clock.tick(1000);
       scheduler.flush();
+      scroll.refresh(0.25, 500);
+      scroll.update(0.25, 500);
+      scheduler.flush();
       expect(handle.get(id)).toBe(held);
+      expect(handle.get(nodeId(ARM.goalTrack))).toBe(appliedGoal);
+      scroll.update(1, 1000);
+      scheduler.flush();
+      expect(handle.get(id)?.sourceProgress).toBe(1);
+      expect(handle.get(nodeId(ARM.goalTrack))?.values).toMatchObject({ x: 290, y: 360 });
+      expect(handle.get(nodeId(ARM.solverTrack))?.values.flip).toBe(true);
+      const full = handle.get(id);
+      controller.moveGoal(ARM.goalTrack, 310, 380);
+      controller.flip(ARM.solverTrack, false);
+      clock.tick(2000);
+      scheduler.flush();
+      expect(handle.get(id)).toBe(full);
+      scroll.update(0.75, 750);
+      scheduler.flush();
+      expect(handle.get(nodeId(ARM.goalTrack))?.values).toMatchObject({ x: 310, y: 380 });
+      expect(handle.get(nodeId(ARM.solverTrack))?.values.flip).toBe(false);
       expect(() => handle.signal(MOTION_ID, { type: "manual", progress: 1 })).toThrow(
         "does not accept external signals",
       );
@@ -127,5 +160,9 @@ describe("IK playground adapter-driven progress", () => {
       handle.dispose();
     }
     expect(scroll.kill).toHaveBeenCalledTimes(1);
+    expect(() => {
+      scroll.update(0.5, 500);
+      scheduler.flush();
+    }).not.toThrow();
   });
 });
