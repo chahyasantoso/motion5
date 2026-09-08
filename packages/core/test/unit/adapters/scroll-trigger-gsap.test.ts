@@ -44,6 +44,48 @@ function fakeScrollTrigger() {
 }
 
 describe("gsap scroll source producer seam", () => {
+  it("shared source refresh holds existing consumers and initializes new ones freshly", async () => {
+    const { created, scrollTrigger } = fakeScrollTrigger();
+    const source = createGsapScrollSource(scrollTrigger, { trigger: "#scene" });
+    const first: number[] = [];
+    const late: number[] = [];
+    const detach = source.subscribe((p) => {
+      first.push(p);
+    });
+    await Promise.resolve();
+    created[0]!.emit(0.5);
+    first.length = 0;
+    (created[0]!.vars.onRefreshInit as () => void)();
+    created[0]!.emit(0.25);
+    (created[0]!.vars.onRefresh as () => void)();
+    const detachLate = source.subscribe((p) => {
+      late.push(p);
+    });
+    await Promise.resolve();
+    expect(first).toEqual([]);
+    expect(late).toEqual([0.25]);
+    detach();
+    detachLate();
+  });
+
+  it("shared source skips a subscription removed earlier in fan-out", async () => {
+    const { created, scrollTrigger } = fakeScrollTrigger();
+    const source = createGsapScrollSource(scrollTrigger, { trigger: "#scene" });
+    const seen: number[] = [];
+    let detachSecond = () => {};
+    const detachFirst = source.subscribe((p) => {
+      if (p > 0) detachSecond();
+    });
+    detachSecond = source.subscribe((p) => {
+      seen.push(p);
+    });
+    await Promise.resolve();
+    seen.length = 0;
+    created[0]!.emit(0.6);
+    expect(seen).toEqual([]);
+    detachFirst();
+  });
+
   it("G-1 refuses a missing create and creates nothing before the first subscriber", () => {
     expect(() =>
       createGsapScrollSource({} as GsapScrollTriggerLike, { trigger: "#scene" }),

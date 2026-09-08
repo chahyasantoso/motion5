@@ -98,7 +98,8 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  // Pointer and checkbox gestures stage intent, including at weight 1. Only scroll commits it.
+  // Gestures stage intent even at weight 1. Only qualifying source events commit it;
+  // movement outside the clipped trigger range need not produce an event.
   const moveGoal = (goalTrack: string, x: number, y: number) => {
     const controller = controllerRef.current;
     if (controller) setPendingGoals(controller.moveGoal(goalTrack, x, y));
@@ -122,7 +123,8 @@ export const App: React.FC = () => {
             <h1>motion5: IK Playground</h1>
             <p>
               Drag a target, then scroll to reach. Scroll back to the top for rest. Targets and
-              flips stay pending until the page moves.
+              flips stay pending until ScrollTrigger emits a qualifying progress change. Movement
+              beyond a clamped endpoint does not apply them.
             </p>
             <p className="weight-readout">
               <output aria-label="IK blend weight" data-testid="ik-weight">

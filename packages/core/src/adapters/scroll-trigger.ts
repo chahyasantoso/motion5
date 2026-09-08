@@ -1,11 +1,16 @@
 import type { TriggerPort } from "../ports/trigger";
 
 /**
- * A push-based scroll source. Call onProgress(0..1) whenever scroll position
- * changes. Returns an unsubscribe function.
+ * A push-based measured-progress source with a cancellation function. Producers
+ * define snapshot timing and which physical changes qualify as events; this seam
+ * does not promise an event for every movement. The port below owns finite validation
+ * and normalization, not the producer. A listener return is not a general acceptance
+ * acknowledgement or an atomic transaction with other subscribers.
  *
- * Intentionally minimal — works with GSAP ScrollTrigger, native scroll,
- * Lenis, Locomotive Scroll, or anything else.
+ * The GSAP implementation supplies deferred fresh initial snapshots and filters
+ * progress-change callbacks by physical position, holding existing consumers through
+ * refresh. Movement while GSAP progress remains clamped may produce no event. Other
+ * injected producers must document their own initialization and delivery policy.
  */
 export interface ScrollSource {
   subscribe(onProgress: (progress: number) => void): () => void;
