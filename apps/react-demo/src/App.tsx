@@ -70,17 +70,21 @@ export const App: React.FC = () => {
     const unsubscribe = scrollSource.subscribe((p: number) => {
       setProgress(p);
 
-      // Add arm tracks when scrolling past 50%.
+      // One structural transaction adds and mounts all four arms at the live Motion's progress.
+      // Retain the new handles only after the recipe commits successfully.
       if (p >= 0.5 && armHandlesRef.current.length === 0) {
-        armHandlesRef.current = armTracks.map((track) =>
-          project.addTrack(track, { motionId: "walk" }),
-        );
+        armHandlesRef.current = project.edit((tx) => {
+          const walk = tx.motion("walk");
+          return armTracks.map((track) => walk.addTrack(track));
+        });
         setArmsAdopted(true);
       } else if (p < 0.45 && armHandlesRef.current.length > 0) {
-        // Remove children before parents so every intermediate graph stays valid.
-        for (const trackHandle of [...armHandlesRef.current].reverse()) {
-          trackHandle.remove();
-        }
+        // Remove the whole branch in one commit, with no partially removed graph published.
+        project.edit(() => {
+          for (const trackHandle of [...armHandlesRef.current].reverse()) {
+            trackHandle.remove();
+          }
+        });
         armHandlesRef.current = [];
         setArmsAdopted(false);
       }
@@ -90,10 +94,9 @@ export const App: React.FC = () => {
 
     return () => {
       unsubscribe();
-      for (const trackHandle of [...armHandlesRef.current].reverse()) {
-        trackHandle.remove();
-      }
+      // Project disposal owns all remaining tracks; do not rebuild a graph being torn down.
       armHandlesRef.current = [];
+      setArmsAdopted(false);
       setHandle(undefined);
       project.dispose();
       clock.dispose();
@@ -106,10 +109,10 @@ export const App: React.FC = () => {
         <header className="demo-header">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div>
-              <h1>motion5 — Dynamic Graph Rig Demo</h1>
+              <h1>motion5: Dynamic Graph Rig Demo</h1>
               <p>
-                Authored Schema v5 · Runtime Track Handles · React 19 <code>usePatch</code> · GSAP
-                ScrollTrigger
+                Authored Schema v5 · Runtime Schema Transactions · React 19 <code>usePatch</code> ·
+                GSAP ScrollTrigger
               </p>
             </div>
             <div
@@ -173,13 +176,13 @@ export const App: React.FC = () => {
         </div>
 
         <footer className="sidebar-footer">
-          <strong>Architecture: Unified Track Store</strong>
+          <strong>Architecture: Runtime Schema Transactions</strong>
           <br />
           Start: 9 Nodes (Core)
           <br />
-          Scroll &ge; 50% → 13 Nodes (Arm TrackHandles added)
+          Scroll &ge; 50% → 13 Nodes (one edit transaction)
           <br />
-          Scroll &lt; 45% → Arm handles removed
+          Scroll &lt; 45% → Arm handles removed together
         </footer>
       </aside>
     </div>

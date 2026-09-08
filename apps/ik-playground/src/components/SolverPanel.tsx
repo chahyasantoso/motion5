@@ -142,11 +142,11 @@ export const SolverPanel: React.FC<SolverPanelProps> = ({
     <div className="panel-footer">
       <strong>How this page moves</strong>
       <br />
-      Drag either goal on the stage, or toggle a flip. Each gesture is a{" "}
-      <code>TrackHandle.replace()</code> of one track plus a single <code>seek</code> that flushes
-      the solver and every bone below it. Nothing animates on a timeline here: every authored leaf
-      is static, so the interpolator compiles zero tweens and the whole rig is driven by
-      transactional graph replacement.
+      Drag either goal on the stage, or toggle a flip. Goal coordinates use{" "}
+      <code>TrackHandle.setValues()</code>; flips use <code>setKeyframe("ik", "flip", value)</code>.
+      Each gesture publishes once, updating the solver and every bone below it without replacing
+      the graph or calling an extra <code>seek</code>. Every authored leaf is static, so the
+      interpolator compiles zero tweens.
     </div>
   </>
 );

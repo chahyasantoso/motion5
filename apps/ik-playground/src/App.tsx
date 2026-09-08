@@ -17,11 +17,8 @@ import {
   ALL_NODE_IDS,
   ARM,
   TENTACLE,
-  armSolverTrack,
-  frameTrack,
   ikPlaygroundProject,
   nodeId,
-  tentacleSolverTrack,
 } from "./ik-playground-project";
 
 export const App: React.FC = () => {
@@ -43,8 +40,7 @@ export const App: React.FC = () => {
 
     const project = new Engine({
       clock,
-      // No leaf in this project animates, so the interpolator compiles zero tweens; it is still a
-      // required port at the Engine seam. Every rig movement below is a track replacement.
+      // Static leaves compile zero tweens. Gestures below use value-tier writes, not graph edits.
       interpolator: createGsapInterpolator(gsap),
       scheduler: createMicrotaskScheduler(),
       plugins,
@@ -52,8 +48,7 @@ export const App: React.FC = () => {
 
     for (const id of ALL_NODE_IDS) project.mount(id);
 
-    // A manual trigger emits nothing on its own, so the first pose comes from explicit seeks.
-    // Each seek flushes its seed and every dependant, and the four source nodes cover both rigs.
+    // Load and mount do not publish. Seed the initial pose once; later value edits flush themselves.
     for (const id of [
       nodeId(ARM.rootTrack),
       nodeId(ARM.goalTrack),
@@ -64,6 +59,8 @@ export const App: React.FC = () => {
     }
 
     handleRef.current = project;
+    setArmFlip(false);
+    setTentacleFlip(false);
     setHandle(project);
 
     return () => {
@@ -74,40 +71,35 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  // Every pointer move is a transactional track replacement followed by one seek: the replacement
-  // rebuilds the graph but does not flush, and the seek seeds the goal so the solver and every bone
-  // below it re-compose in the same synchronous flush.
+  // Both coordinates move in one value write and one flush, preserving rotation and bindings.
   const moveGoal = (goalTrack: string, x: number, y: number) => {
     const project = handleRef.current;
     if (!project) return;
-    project.track(nodeId(goalTrack)).replace(frameTrack(goalTrack, x, y));
-    project.seek(nodeId(goalTrack), 0);
+    project.track(nodeId(goalTrack)).setValues({ x, y });
   };
 
   const flipArm = (flip: boolean) => {
-    setArmFlip(flip);
     const project = handleRef.current;
     if (!project) return;
-    project.track(nodeId(ARM.solverTrack)).replace(armSolverTrack(flip));
-    project.seek(nodeId(ARM.solverTrack), 0);
+    project.track(nodeId(ARM.solverTrack)).setKeyframe("ik", "flip", flip);
+    setArmFlip(flip);
   };
 
   const flipTentacle = (flip: boolean) => {
-    setTentacleFlip(flip);
     const project = handleRef.current;
     if (!project) return;
-    project.track(nodeId(TENTACLE.solverTrack)).replace(tentacleSolverTrack(flip));
-    project.seek(nodeId(TENTACLE.solverTrack), 0);
+    project.track(nodeId(TENTACLE.solverTrack)).setKeyframe("ik", "flip", flip);
+    setTentacleFlip(flip);
   };
 
   return (
     <div id="playground">
       <div className="stage-wrap">
         <header className="demo-header">
-          <h1>motion5 — IK Playground</h1>
+          <h1>motion5: IK Playground</h1>
           <p>
-            Authored Schema v5 · ik plugin · analytic + FABRIK dispatch · runtime track replacement
-            · React 19 <code>usePatch</code>
+            Authored Schema v5 · ik plugin · analytic + FABRIK dispatch · runtime value authoring ·
+            React 19 <code>usePatch</code>
           </p>
         </header>
         {handle ? <IkStage handle={handle} onGoalMove={moveGoal} /> : null}
