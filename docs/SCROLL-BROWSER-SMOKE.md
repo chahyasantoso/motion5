@@ -8,11 +8,15 @@ The candidate job has contents-read permission and no writer secret. It exercise
 
 Read the report's exact tested SHA and compare it with the current head. The run includes browser version, operating system, GSAP version, per-scenario observed values, failures and console/page errors. Screenshots, the Playwright trace, server log and report.json are retained as Actions artifacts for seven days; download them before expiry for longer retention. The PR comment retains bounded textual observations. Required CI must pass separately on the final head.
 
+The reconciled PR #351 has a complementary temporary .github/workflows/ik-browser-351.yml. It uses the same isolated candidate/separate bounded reporter pattern, posts its observations to shared PR #353, and records the shared source Git blob alongside the IK commit. Matching source blobs establish implementation parity, not parity of the two applications. No feature code is copied into the shared fix.
+
 ## What is exercised
 
 The isolated browser fixture creates actual ScrollTrigger over a scrollable document and observes deferred restored snapshots, refresh hold, late-subscriber freshness, unchanged-position suppression, refreshed-geometry updates, clamped-endpoint movement, producer/pin cleanup, remount and cancellation. Changing the fixture's GSAP end value is test setup, not application-side normalization.
 
-The walking checks load the actual app through Vite, read the rendered pose rather than just its progress label, cross both arm thresholds, reload from nonzero scroll and resize while checking pin-spacer count. A reload that returns the physical document to zero is a failed history-restoration scenario, not proof that the adapter received nonzero progress and dropped it. Do not convert such a result into a nonzero-restoration pass.
+The walking checks load the actual app through Vite with its development StrictMode bootstrap, read the rendered pose rather than just its progress label, cross both arm thresholds, reload from nonzero scroll and resize while checking pin-spacer count. Named required scenario identities detect missing, unexpected or duplicate coverage instead of relying on a guessed case count. Instance and global refresh are separate source scenarios; resize is checked at a verified nonzero pose even if an earlier reload fails. A reload that returns the physical document to zero is a failed history-restoration scenario, not proof that the adapter received nonzero progress and dropped it. Do not convert such a result into a nonzero-restoration pass.
+
+The IK workflow reads real rendered bone coordinates, lengths, applied targets, pending targets, flip controls and published weight. It stages keyboard goals/flips at zero, partial and full weight, checks instance/global refresh and stationary hold, applies on the next qualifying update, verifies clipped-endpoint hold with test-only space outside the trigger element, returns to authored rest, reloads and resizes. It locates the actual app-loaded ScrollTrigger module and uses its measured range, not a fake producer. Results remain pending until the exact-commit report is inspected.
 
 ## Remaining acceptance
 

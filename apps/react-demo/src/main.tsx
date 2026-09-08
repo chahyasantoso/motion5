@@ -9,4 +9,10 @@ const root = createRoot(container);
 // The first committed layout must exist before load/pageshow so native restoration
 // sees GSAP's pin spacer, not an empty root. This is one bootstrap commit, not a
 // per-event flush, second animation clock, or application-owned scroll calculation.
-flushSync(() => root.render(<App />));
+flushSync(() =>
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>,
+  ),
+);
