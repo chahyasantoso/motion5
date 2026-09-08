@@ -14,12 +14,15 @@ import { transformPlugin } from "@motion5/core/plugins/transform";
 import { IkStage } from "./components/IkStage";
 import { SolverPanel } from "./components/SolverPanel";
 import { ALL_NODE_IDS, ARM, TENTACLE, ikPlaygroundProject, nodeId } from "./ik-playground-project";
+import { bindScrollReach, createScrollReach, initialGoals } from "./scroll-reach";
 
 export const App: React.FC = () => {
   const [handle, setHandle] = useState<ProjectHandle | undefined>(undefined);
   const [armFlip, setArmFlip] = useState(false);
   const [tentacleFlip, setTentacleFlip] = useState(false);
-  const handleRef = useRef<ProjectHandle | undefined>(undefined);
+  const controllerRef = useRef<ReturnType<typeof createScrollReach> | undefined>(undefined);
+  const [pendingGoals, setPendingGoals] = useState(initialGoals);
+  const [weight, setWeight] = useState(0);
 
   useEffect(() => {
     const plugins = new PluginRegistry();
@@ -52,63 +55,80 @@ export const App: React.FC = () => {
       project.seek(id, 0);
     }
 
-    handleRef.current = project;
+    const controller = createScrollReach(project);
+    controllerRef.current = controller;
+    setPendingGoals(controller.goals);
     setArmFlip(false);
     setTentacleFlip(false);
     setHandle(project);
+    const unbindScroll = bindScrollReach(
+      window,
+      () => document.documentElement.scrollHeight - window.innerHeight,
+      (progress) => setWeight(controller.commit(progress)),
+    );
 
     return () => {
-      handleRef.current = undefined;
+      unbindScroll();
+      controllerRef.current = undefined;
       setHandle(undefined);
       project.dispose();
       clock.dispose();
     };
   }, []);
 
-  // Both coordinates move in one value write and one flush, preserving rotation and bindings.
+  // Pointer and checkbox gestures stage intent, including at weight 1. Only scroll commits it.
   const moveGoal = (goalTrack: string, x: number, y: number) => {
-    const project = handleRef.current;
-    if (!project) return;
-    project.track(nodeId(goalTrack)).setValues({ x, y });
+    const controller = controllerRef.current;
+    if (controller) setPendingGoals(controller.moveGoal(goalTrack, x, y));
   };
 
   const flipArm = (flip: boolean) => {
-    const project = handleRef.current;
-    if (!project) return;
-    project.track(nodeId(ARM.solverTrack)).setKeyframe("ik", "flip", flip);
+    controllerRef.current?.flip(ARM.solverTrack, flip);
     setArmFlip(flip);
   };
 
   const flipTentacle = (flip: boolean) => {
-    const project = handleRef.current;
-    if (!project) return;
-    project.track(nodeId(TENTACLE.solverTrack)).setKeyframe("ik", "flip", flip);
+    controllerRef.current?.flip(TENTACLE.solverTrack, flip);
     setTentacleFlip(flip);
   };
 
   return (
-    <div id="playground">
-      <div className="stage-wrap">
-        <header className="demo-header">
-          <h1>motion5: IK Playground</h1>
-          <p>
-            Authored Schema v5 · ik plugin · analytic + FABRIK dispatch · runtime value authoring ·
-            React 19 <code>usePatch</code>
-          </p>
-        </header>
-        {handle ? <IkStage handle={handle} onGoalMove={moveGoal} /> : null}
+    <main id="scroll-demo">
+      <div id="playground">
+        <div className="stage-wrap">
+          <header className="demo-header">
+            <h1>motion5: IK Playground</h1>
+            <p>
+              Drag a target, then scroll to reach. Scroll back to the top for rest. Targets and
+              flips stay pending until the page moves.
+            </p>
+            <p className="weight-readout">
+              <output aria-label="IK blend weight" data-testid="ik-weight">
+                {Math.round(weight * 100)}%
+              </output>{" "}
+              IK weight
+              <progress aria-label="Rest to IK reach" max={1} value={weight} />
+              <span>0% rest · 100% solved</span>
+            </p>
+          </header>
+          {handle ? (
+            <IkStage handle={handle} pendingGoals={pendingGoals} onGoalMove={moveGoal} />
+          ) : (
+            <p>Loading rig...</p>
+          )}
+        </div>
+        <aside className="sidebar">
+          {handle ? (
+            <SolverPanel
+              handle={handle}
+              armFlip={armFlip}
+              tentacleFlip={tentacleFlip}
+              onArmFlip={flipArm}
+              onTentacleFlip={flipTentacle}
+            />
+          ) : null}
+        </aside>
       </div>
-      <aside className="sidebar">
-        {handle ? (
-          <SolverPanel
-            handle={handle}
-            armFlip={armFlip}
-            tentacleFlip={tentacleFlip}
-            onArmFlip={flipArm}
-            onTentacleFlip={flipTentacle}
-          />
-        ) : null}
-      </aside>
-    </div>
+    </main>
   );
 };

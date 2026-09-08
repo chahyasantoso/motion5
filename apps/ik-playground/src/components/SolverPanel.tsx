@@ -47,7 +47,7 @@ const DispatchCard: React.FC<DispatchCardProps> = ({
   const rotations = solverPatch.values.rotations as Readonly<Record<string, number>> | undefined;
 
   return (
-    <div className="solver-card">
+    <div className="solver-card" data-rig={rig.solverTrack}>
       <div className="card-title" style={{ color: accent }}>
         {rig.label}
       </div>
@@ -71,8 +71,8 @@ const DispatchCard: React.FC<DispatchCardProps> = ({
         </div>
         <div className={reachable ? "chip ok" : "chip warn"}>
           {reachable
-            ? `reachable · tip error ${tipError.toFixed(1)} px`
-            : `beyond reach · extends toward goal (${tipError.toFixed(0)} px short)`}
+            ? `within reach · blended tip gap ${tipError.toFixed(1)} px`
+            : `beyond reach · blended tip gap ${tipError.toFixed(0)} px`}
         </div>
       </div>
 
@@ -124,7 +124,7 @@ export const SolverPanel: React.FC<SolverPanelProps> = ({
         accent="#38bdf8"
         flip={armFlip}
         onFlip={onArmFlip}
-        flipNote="mirror the elbow branch"
+        flipNote="applies on next scroll"
       />
       <DispatchCard
         handle={handle}
@@ -135,18 +135,21 @@ export const SolverPanel: React.FC<SolverPanelProps> = ({
         accent="#34d399"
         flip={tentacleFlip}
         onFlip={onTentacleFlip}
-        flipNote="mirror the seed arc"
+        flipNote="applies on next scroll"
       />
     </div>
 
     <div className="panel-footer">
       <strong>How this page moves</strong>
       <br />
-      Drag goals with <code>setValues()</code>; toggle flips with <code>setKeyframe()</code>.
+      Solid targets and flip checkboxes show pending intent. Hollow targets and metrics show the
+      last applied solve.
       <br />
-      Each gesture publishes once, without replacing the graph or calling an extra seek.
+      Scroll commits targets, flips and per-bone <code>fk.weight</code> through value writes,
+      without graph replacement.
       <br />
-      Every leaf is static, so the interpolator compiles zero tweens.
+      The visible tip gap is expected below 100% weight, not a convergence diagnostic. All leaves
+      remain static.
     </div>
   </>
 );

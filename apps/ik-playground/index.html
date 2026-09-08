@@ -32,18 +32,25 @@
         color: var(--text);
       }
 
+      #scroll-demo {
+        height: 250vh;
+      }
+
       #playground {
         height: 100vh;
-        width: 100vw;
+        height: 100dvh;
+        width: 100%;
         display: grid;
-        grid-template-columns: 1fr 360px;
-        position: relative;
+        grid-template-columns: minmax(0, 1fr) 340px;
+        position: sticky;
+        top: 0;
         overflow: hidden;
         background: var(--bg);
       }
 
       .stage-wrap {
         position: relative;
+        min-height: 0;
         display: flex;
         flex-direction: column;
         background: radial-gradient(ellipse 80% 60% at 50% 55%, #0f2040 0%, var(--bg) 100%);
@@ -53,17 +60,14 @@
       .demo-header {
         padding: 1.25rem 2rem;
         border-bottom: 1px solid var(--border);
-        background: rgba(8, 12, 20, 0.6);
-        backdrop-filter: blur(8px);
+        background: var(--bg);
         z-index: 10;
       }
 
       .demo-header h1 {
         font-size: 1.35rem;
         font-weight: 800;
-        background: linear-gradient(135deg, var(--accent), var(--accent2));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+        color: var(--accent);
       }
 
       .demo-header p {
@@ -84,7 +88,7 @@
         position: absolute;
         top: 0;
         left: 0;
-        touch-action: none;
+        touch-action: pan-y;
       }
 
       .sidebar {
@@ -145,7 +149,7 @@
       .reach-fill {
         height: 100%;
         border-radius: 3px;
-        transition: width 0.05s linear;
+        /* Scroll owns the pose; no time-based catch-up animation. */
       }
 
       .reach-labels {
@@ -240,6 +244,46 @@
         color: var(--accent);
         font-family: ui-monospace, monospace;
         font-size: 0.68rem;
+      }
+      .weight-readout {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.5rem;
+        font-variant-numeric: tabular-nums;
+      }
+      .weight-readout output {
+        color: var(--text);
+        font-weight: 700;
+      }
+      .weight-readout progress {
+        width: 7rem;
+        height: 0.5rem;
+        accent-color: var(--teal);
+      }
+      #stage [tabindex]:focus-visible {
+        outline: 2px solid var(--text);
+        outline-offset: 4px;
+      }
+      @media (max-width: 760px) {
+        #playground {
+          grid-template-columns: minmax(0, 1fr);
+          grid-template-rows: minmax(0, 1fr) minmax(0, 30vh);
+        }
+        .demo-header {
+          padding: 0.75rem 1rem;
+        }
+        .demo-header h1 {
+          font-size: 1.1rem;
+        }
+        .sidebar {
+          padding: 0.75rem 1rem;
+          border-left: 0;
+          border-top: 1px solid var(--border);
+        }
+        .stage-wrap {
+          border-right: 0;
+        }
       }
     </style>
   </head>

@@ -10,8 +10,8 @@ import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
  * neither rig names its solver and neither rig could choose the other one.
  *
  * Every leaf is static, so nothing enters the interpolator and no tween is created (ADR-050).
- * Goal drags use TrackHandle.setValues for both coordinates in one flush; flip toggles use
- * setKeyframe on the already-bound ik group. Neither gesture changes graph topology.
+ * Drags and flips stage intent only. Page scroll commits that intent through value-tier writes
+ * and blends each member's authored rest rotation toward its solve (ADR-055). No graph edits.
  */
 
 export const MOTION_ID = "rig";
@@ -29,6 +29,7 @@ export interface RigGeometry {
   readonly fkTailTrack: string;
   readonly fkTailLength: number;
   readonly lengths: readonly number[];
+  readonly restRotations: readonly number[];
   readonly root: { readonly x: number; readonly y: number };
   readonly goal: { readonly x: number; readonly y: number };
 }
@@ -43,6 +44,7 @@ export const ARM: RigGeometry = {
   fkTailTrack: "hand",
   fkTailLength: 22,
   lengths: [80, 60],
+  restRotations: [110, -55],
   root: { x: 250, y: 300 },
   goal: { x: 365, y: 360 },
 };
@@ -57,6 +59,7 @@ export const TENTACLE: RigGeometry = {
   fkTailTrack: "fin",
   fkTailLength: 16,
   lengths: [45, 45, 45, 45, 45, 45],
+  restRotations: [150, -30, -30, -30, -30, -30],
   root: { x: 820, y: 180 },
   goal: { x: 870, y: 420 },
 };
@@ -98,16 +101,19 @@ export function tentacleSolverTrack(flip: boolean): TrackDefinition {
   };
 }
 
-/**
- * A solved member. It authors a `length` and its pivot bindings, and nothing else: an authored
- * `rotation` on a member is `ik-solved-rotation-dead`, because the solve owns that key outright.
- */
-function memberTrack(id: string, base: string, solver: string, length: number): TrackDefinition {
+/** Rest rotation and weight share the solver-bound FK group, as ADR-055 requires. */
+function memberTrack(
+  id: string,
+  base: string,
+  solver: string,
+  length: number,
+  rotation: number,
+): TrackDefinition {
   return {
     id,
     keyframes: {
       fk: {
-        values: { length },
+        values: { length, rotation, weight: 0 },
         requires: { base, solver },
       },
     },
@@ -133,7 +139,9 @@ function rigTracks(
   ];
   let base = rig.rootTrack;
   rig.memberTracks.forEach((id, index) => {
-    tracks.push(memberTrack(id, base, rig.solverTrack, rig.lengths[index]!));
+    tracks.push(
+      memberTrack(id, base, rig.solverTrack, rig.lengths[index]!, rig.restRotations[index]!),
+    );
     base = id;
   });
   tracks.push(fkTailTrack(rig.fkTailTrack, base, rig.fkTailLength));

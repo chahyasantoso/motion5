@@ -14,6 +14,8 @@ Current project state only. Replace stale entries rather than append history. Th
 
 ## Next in line
 
+- **IK playground rest-pose refactor:** [#350](https://github.com/chahyasantoso/motion5/issues/350) separates pending targets/flips from applied solves and uses existing per-member FK weights on page scroll. Feature-branch implementation and regression coverage are under review; exact-head CI and real-browser interaction verification remain gates. No core plugin API change or merge is claimed.
+
 - **Unmerged formatter parity:** [#345](https://github.com/chahyasantoso/motion5/pull/345) addresses [#344](https://github.com/chahyasantoso/motion5/issues/344) by preserving filepath context in AI-edit formatting and validation, with real CLI regressions for `.ts` and `.tsx`. Review, merge, a reviewed runner-pin update and live parity exercises remain gates; no activated correction is claimed.
 - **Unmerged reporting completion:** [#339](https://github.com/chahyasantoso/motion5/pull/339) consolidates failed-preparation diagnostics, retry/recovery retention, legacy evidence completion, and useful error excerpts. Its regression and exact-SHA CI evidence belong to the PR. Review, a single runner-pin rollout, and live failure/correction/replay verification remain gates; no deployed diagnostics fix is claimed.
 
