@@ -13,13 +13,7 @@ import { ikPlugin } from "@motion5/core/plugins/ik";
 import { transformPlugin } from "@motion5/core/plugins/transform";
 import { IkStage } from "./components/IkStage";
 import { SolverPanel } from "./components/SolverPanel";
-import {
-  ALL_NODE_IDS,
-  ARM,
-  TENTACLE,
-  ikPlaygroundProject,
-  nodeId,
-} from "./ik-playground-project";
+import { ALL_NODE_IDS, ARM, TENTACLE, ikPlaygroundProject, nodeId } from "./ik-playground-project";
 
 export const App: React.FC = () => {
   const [handle, setHandle] = useState<ProjectHandle | undefined>(undefined);
