@@ -1,0 +1,133 @@
+372Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-trigger-validation.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:18.8283461Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:18.9916796Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.0478850Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.0508614Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1479079Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1534262Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1535110Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 8 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1535652Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1541736Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/adapters/scroll-trigger-gsap-lifecycle.test.ts^[[2m > ^[[22mGSAP source initial snapshot and subscription lifetime^[[2m > ^[[22mdelivers restored progress once after subscription and cancels detached initialization
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1547137Z ^[[31m^[[1mAssertionError^[[22m: expected "vi.fn()" to be called once with arguments: [ 0.6 ]^[[90m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1547867Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1548607Z Number of calls: ^[[1m0^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1549184Z ^[[31m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1550629Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/adapters/scroll-trigger-gsap-lifecycle.test.ts:^[[2m66:18^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1602334Z     ^[[90m 64|^[[39m     ^[[34mexpect^[[39m(seen)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1603838Z     ^[[90m 65|^[[39m     ^[[34mflush^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1605501Z     ^[[90m 66|^[[39m     ^[[34mexpect^[[39m(seen)^[[33m.^[[39m^[[34mtoHaveBeenCalledExactlyOnceWith^[[39m(^[[34m0.6^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1607030Z     ^[[90m   |^[[39m                  ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1608130Z     ^[[90m 67|^[[39m     ^[[34mflush^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1609801Z     ^[[90m 68|^[[39m     ^[[34mexpect^[[39m(seen)^[[33m.^[[39m^[[34mtoHaveBeenCalledTimes^[[39m(^[[34m1^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1610535Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1610968Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/8]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1611338Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1613642Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/adapters/scroll-trigger-gsap-lifecycle.test.ts^[[2m > ^[[22mGSAP source initial snapshot and subscription lifetime^[[2m > ^[[22mrefresh holds existing consumers but a later subscriber gets fresh measured progress
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1616292Z ^[[31m^[[1mAssertionError^[[22m: expected "vi.fn()" to not be called at all, but actually been called 1 times^[[90m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1617041Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1617537Z Received:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1617733Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1617990Z ^[[1m  1st vi.fn() call:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1618533Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1618747Z ^[[22m    Array [
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1619109Z       0.25,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1619428Z     ]
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1619781Z ^[[31m^[[90m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1619975Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1620236Z Number of calls: ^[[1m1^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1620686Z ^[[31m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1621885Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/adapters/scroll-trigger-gsap-lifecycle.test.ts:^[[2m100:23^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1623933Z     ^[[90m 98|^[[39m     ^[[35mconst^[[39m unsubscribeSecond ^[[33m=^[[39m host^[[33m.^[[39msource^[[33m.^[[39m^[[34msubscribe^[[39m(second)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1625132Z     ^[[90m 99|^[[39m     ^[[34mflush^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1626267Z     ^[[90m100|^[[39m     ^[[34mexpect^[[39m(first)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1627291Z     ^[[90m   |^[[39m                       ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1628814Z     ^[[90m101|^[[39m     ^[[34mexpect^[[39m(second)^[[33m.^[[39m^[[34mtoHaveBeenCalledExactlyOnceWith^[[39m(^[[34m0.25^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1630703Z     ^[[90m102|^[[39m     host^[[33m.^[[39mcreated[^[[34m0^[[39m]^[[33m!^[[39m^[[33m.^[[39m^[[34mupdate^[[39m(^[[34m0.3^[[39m^[[33m,^[[39m ^[[34m600^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1631522Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1631967Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/8]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1632340Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1634724Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/adapters/scroll-trigger-gsap-lifecycle.test.ts^[[2m > ^[[22mGSAP source initial snapshot and subscription lifetime^[[2m > ^[[22msuppresses refresh callbacks and unchanged-position updates without losing the next update
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1637366Z ^[[31m^[[1mAssertionError^[[22m: expected "vi.fn()" to not be called at all, but actually been called 2 times^[[90m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1638090Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1638613Z Received:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1638829Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1644548Z ^[[1m  1st vi.fn() call:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1644844Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1645093Z ^[[22m    Array [
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1645448Z       0.25,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1645762Z     ]
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1645947Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1646186Z ^[[1m  2nd vi.fn() call:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1646431Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1646629Z ^[[22m    Array [
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1646974Z       0.25,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1647291Z     ]
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1647788Z ^[[31m^[[90m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1648798Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1649089Z Number of calls: ^[[1m2^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1649572Z ^[[31m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1650726Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/adapters/scroll-trigger-gsap-lifecycle.test.ts:^[[2m129:22^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1652478Z     ^[[90m127|^[[39m     host^[[33m.^[[39mcreated[^[[34m0^[[39m]^[[33m!^[[39m^[[33m.^[[39m^[[34mrefresh^[[39m(^[[34m0.25^[[39m^[[33m,^[[39m ^[[34m450^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1654249Z     ^[[90m128|^[[39m     host^[[33m.^[[39mcreated[^[[34m0^[[39m]^[[33m!^[[39m^[[33m.^[[39m^[[34mupdate^[[39m(^[[34m0.25^[[39m^[[33m,^[[39m ^[[34m450^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1655773Z     ^[[90m129|^[[39m     ^[[34mexpect^[[39m(seen)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1656761Z     ^[[90m   |^[[39m                      ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1658022Z     ^[[90m130|^[[39m     host^[[33m.^[[39mcreated[^[[34m0^[[39m]^[[33m!^[[39m^[[33m.^[[39m^[[34mupdate^[[39m(^[[34m0.3^[[39m^[[33m,^[[39m ^[[34m550^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1659985Z     ^[[90m131|^[[39m     ^[[34mexpect^[[39m(seen)^[[33m.^[[39m^[[34mtoHaveBeenCalledExactlyOnceWith^[[39m(^[[34m0.3^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1660801Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1661246Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/8]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1661617Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1663757Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/adapters/scroll-trigger-gsap-lifecycle.test.ts^[[2m > ^[[22mGSAP source initial snapshot and subscription lifetime^[[2m > ^[[22mskips a subscriber detached by an earlier listener in the same update
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1666473Z ^[[31m^[[1mAssertionError^[[22m: expected "vi.fn()" to not be called at all, but actually been called 1 times^[[90m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1666912Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1667004Z Received:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1667128Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1667277Z ^[[1m  1st vi.fn() call:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1667421Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1667535Z ^[[22m    Array [
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1667742Z       0.6,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1667948Z     ]
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1668669Z ^[[31m^[[90m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1668972Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1669172Z Number of calls: ^[[1m1^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1670005Z ^[[31m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1670815Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/adapters/scroll-trigger-gsap-lifecycle.test.ts:^[[2m143:24^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1671903Z     ^[[90m141|^[[39m     unsubscribeSecond ^[[33m=^[[39m host^[[33m.^[[39msource^[[33m.^[[39m^[[34msubscribe^[[39m(second)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1672962Z     ^[[90m142|^[[39m     host^[[33m.^[[39mcreated[^[[34m0^[[39m]^[[33m!^[[39m^[[33m.^[[39m^[[34mupdate^[[39m(^[[34m0.6^[[39m^[[33m,^[[39m ^[[34m600^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1674005Z     ^[[90m143|^[[39m     ^[[34mexpect^[[39m(second)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1674720Z     ^[[90m   |^[[39m                        ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1675245Z     ^[[90m144|^[[39m     ^[[34munsubscribeFirst^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1675819Z     ^[[90m145|^[[39m   })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1676057Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1676330Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/8]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1676599Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1694211Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/adapters/scroll-trigger-gsap-lifecycle.test.ts^[[2m > ^[[22mGSAP source initial snapshot and subscription lifetime^[[2m > ^[[22mold update and refresh callbacks are inert after a new generation subscribes
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1697933Z ^[[31m^[[1mAssertionError^[[22m: expected "vi.fn()" to not be called at all, but actually been called 2 times^[[90m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1699225Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1699463Z Received:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1699678Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1699978Z ^[[1m  1st vi.fn() call:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1700229Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1700409Z ^[[22m    Array [
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1700798Z       0.9,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1701236Z     ]
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1701480Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1701829Z ^[[1m  2nd vi.fn() call:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1702154Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1702440Z ^[[22m    Array [
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1702953Z       0.1,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1703375Z     ]
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1703764Z ^[[31m^[[90m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1703974Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1704241Z Number of calls: ^[[1m2^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1704708Z ^[[31m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1705877Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/adapters/scroll-trigger-gsap-lifecycle.test.ts:^[[2m161:23^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1707624Z     ^[[90m159|^[[39m     host^[[33m.^[[39mcreated[^[[34m0^[[39m]^[[33m!^[[39m^[[33m.^[[39m^[[34mupdate^[[39m(^[[34m0.9^[[39m^[[33m,^[[39m ^[[34m900^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1709717Z     ^[[90m160|^[[39m     host^[[33m.^[[39mcreated[^[[34m0^[[39m]^[[33m!^[[39m^[[33m.^[[39m^[[34mrefresh^[[39m(^[[34m0.1^[[39m^[[33m,^[[39m ^[[34m100^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1711298Z     ^[[90m161|^[[39m     ^[[34mexpect^[[39m(fresh)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1712313Z     ^[[90m   |^[[39m                       ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1713612Z     ^[[90m162|^[[39m     host^[[33m.^[[39mcreated[^[[34m1^[[39m]^[[33m!^[[39m^[[33m.^[[39m^[[34mupdate^[[39m(^[[34m0.6^[[39m^[[33m,^[[39m ^[[34m600^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1715297Z     ^[[90m163|^[[39m     ^[[34mexpect^[[39m(fresh)^[[33m.^[[39m^[[34mtoHaveBeenCalledExactlyOnceWith^[[39m(^[[34m0.6^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1716086Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1716546Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1716914Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T09:52:19.1719388Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/adapters/scroll-trigger-gsap-lifecycle.test.ts^[[2m > ^[[22mGSAP source initial snapshot and subscription l
