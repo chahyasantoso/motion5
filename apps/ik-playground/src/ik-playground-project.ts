@@ -1,7 +1,7 @@
 import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
 
 /**
- * Two rigs, two goal spellings, two solvers — one project.
+ * Two rigs, two goal spellings, two solvers: one project.
  *
  * The arm binds the bare `target` slot, the degenerate single-leaf case from ADR-051, and its
  * derived shape (two members, one goal) dispatches to the analytic two-bone solve. The tentacle
@@ -9,10 +9,9 @@ import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
  * six members dispatch to FABRIK. `solveChain` reads the derived shape, not an authored mode, so
  * neither rig names its solver and neither rig could choose the other one.
  *
- * Every leaf in this project is static, so nothing enters the interpolator (ADR-050) and no tween
- * is ever created. The rigs move only through runtime track replacement: `TrackHandle.replace()`
- * on every goal drag and every flip toggle, the same transactional mutation path the walker demo
- * uses for track adoption.
+ * Every leaf is static, so nothing enters the interpolator and no tween is created (ADR-050).
+ * Goal drags use TrackHandle.setValues for both coordinates in one flush; flip toggles use
+ * setKeyframe on the already-bound ik group. Neither gesture changes graph topology.
  */
 
 export const MOTION_ID = "rig";
@@ -70,7 +69,7 @@ export function frameTrack(id: string, x: number, y: number): TrackDefinition {
   };
 }
 
-/** The arm's solver, on the bare `target` slot. Replaced in place whenever `flip` toggles. */
+/** The arm's initial solver, on the bare `target` slot. Runtime flips retain these bindings. */
 export function armSolverTrack(flip: boolean): TrackDefinition {
   return {
     id: ARM.solverTrack,
