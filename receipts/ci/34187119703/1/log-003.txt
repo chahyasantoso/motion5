@@ -1,0 +1,91 @@
+node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0167855Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 16^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0223787Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0294840Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0295588Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 3 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0295954Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0299901Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/ik-playground-motion-progress.test.ts^[[2m > ^[[22mIK playground adapter-driven progress^[[2m > ^[[22mpublishes a restored source position after driver subscription and cancels detached initialization
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0305514Z ^[[31m^[[1mAssertionError^[[22m: expected "vi.fn()" to be called once with arguments: [ 0.6 ]^[[90m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0305924Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0306155Z Number of calls: ^[[1m0^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0306679Z ^[[31m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0307455Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/ik-playground-motion-progress.test.ts:^[[2m56:18^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0351635Z     ^[[90m 54|^[[39m     ^[[34mexpect^[[39m(seen)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0352414Z     ^[[90m 55|^[[39m     ^[[35mawait^[[39m ^[[33mPromise^[[39m^[[33m.^[[39m^[[34mresolve^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0355937Z     ^[[90m 56|^[[39m     ^[[34mexpect^[[39m(seen)^[[33m.^[[39m^[[34mtoHaveBeenCalledExactlyOnceWith^[[39m(^[[34m0.6^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0357093Z     ^[[90m   |^[[39m                  ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0357816Z     ^[[90m 57|^[[39m     ^[[34munsubscribe^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0359081Z     ^[[90m 58|^[[39m     ^[[34mexpect^[[39m(scroll^[[33m.^[[39mkill)^[[33m.^[[39m^[[34mtoHaveBeenCalledTimes^[[39m(^[[34m1^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0360134Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0360612Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0361015Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0363128Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/ik-playground-motion-progress.test.ts^[[2m > ^[[22mIK playground adapter-driven progress^[[2m > ^[[22mholds refresh-only and unchanged-position updates until the next actual scroll
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0365460Z ^[[31m^[[1mAssertionError^[[22m: expected "vi.fn()" to not be called at all, but actually been called 1 times^[[90m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0365895Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0366001Z Received:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0366124Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0366271Z ^[[1m  1st vi.fn() call:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0366417Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0366526Z ^[[22m    Array [
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0366727Z       0.25,
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0366911Z     ]
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0367119Z ^[[31m^[[90m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0367224Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0367372Z Number of calls: ^[[1m1^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0367621Z ^[[31m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0368263Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/ik-playground-motion-progress.test.ts:^[[2m75:22^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0369865Z     ^[[90m 73|^[[39m     scroll^[[33m.^[[39m^[[34mrefresh^[[39m(^[[34m0.25^[[39m^[[33m,^[[39m ^[[34m500^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0371335Z     ^[[90m 74|^[[39m     scroll^[[33m.^[[39m^[[34mupdate^[[39m(^[[34m0.25^[[39m^[[33m,^[[39m ^[[34m500^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0372627Z     ^[[90m 75|^[[39m     ^[[34mexpect^[[39m(seen)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0373629Z     ^[[90m   |^[[39m                      ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0374525Z     ^[[90m 76|^[[39m     scroll^[[33m.^[[39m^[[34mupdate^[[39m(^[[34m0.5^[[39m^[[33m,^[[39m ^[[34m1000^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0375375Z     ^[[90m 77|^[[39m     ^[[34mexpect^[[39m(seen)^[[33m.^[[39m^[[34mtoHaveBeenCalledExactlyOnceWith^[[39m(^[[34m0.5^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0375824Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0376062Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0376285Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0378723Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/ik-playground-motion-progress.test.ts^[[2m > ^[[22mIK playground adapter-driven progress^[[2m > ^[[22mdrives authored FK weights through the scroll driver and Motion scheduler, never a manual signal
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0381657Z ^[[31m^[[1mAssertionError^[[22m: expected "vi.fn()" to be called 1 times, but got 0 times^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0383363Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/ik-playground-motion-progress.test.ts:^[[2m96:29^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0384018Z     ^[[90m 94|^[[39m     ^[[35mtry^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0385187Z     ^[[90m 95|^[[39m       ^[[35mfor^[[39m (^[[35mconst^[[39m id ^[[35mof^[[39m ^[[33mALL_NODE_IDS^[[39m) handle^[[33m.^[[39m^[[34mmount^[[39m(id)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0387034Z     ^[[90m 96|^[[39m       ^[[34mexpect^[[39m(scroll^[[33m.^[[39mcreate)^[[33m.^[[39m^[[34mtoHaveBeenCalledTimes^[[39m(^[[34m1^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0387703Z     ^[[90m   |^[[39m                             ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0388266Z     ^[[90m 97|^[[39m       ^[[35mawait^[[39m ^[[33mPromise^[[39m^[[33m.^[[39m^[[34mresolve^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0389249Z     ^[[90m 98|^[[39m       scheduler^[[33m.^[[39m^[[34mflush^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0389935Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0390239Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0390462Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0390491Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0390968Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m198 passed^[[39m^[[22m^[[90m (199)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0391773Z ^[[2m      Tests ^[[22m ^[[1m^[[31m3 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1161 passed^[[39m^[[22m^[[90m (1164)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0392316Z ^[[2m   Start at ^[[22m 04:29:55
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0393021Z ^[[2m   Duration ^[[22m 31.82s^[[2m (transform 2.83s, setup 1.24s, import 16.46s, tests 42.91s, environment 32ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.0393427Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-08T04:30:27.1203725Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-08T04:30:27.1271642Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-08T04:30:27.1272088Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-08T04:30:27.1308313Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-08T04:30:27.1308583Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-08T04:30:27.1308772Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-08T04:30:27.1309046Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-08T04:30:27.1309597Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-08T04:30:27.1786611Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-08T04:30:27.1787100Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-08T04:30:27.1787325Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-08T04:30:27.1787650Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-08T04:30:27.1838009Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-08T04:30:36.1947567Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-08T04:30:36.1948312Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-08T04:30:36.1992465Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-08T04:30:36.1993273Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-08T04:30:36.1993704Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-08T04:30:36.1994165Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-08T04:30:36.1994636Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-08T04:30:36.2129685Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-08T04:30:37.1306437Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-08T04:30:37.1307275Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-08T04:30:37.1352104Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-08T04:30:37.1352976Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-08T04:30:37.1353436Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-08T04:30:37.1353936Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-08T04:30:37.1354450Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-08T04:30:37.1489960Z ##[error]Process completed with exit code 1.
