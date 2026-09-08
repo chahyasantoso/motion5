@@ -2,9 +2,9 @@
 
 Current project state only. Replace stale entries rather than append history. The four sections below are the complete shape; `packages/core/test/unit/scripts/session-status-shape.test.ts` enforces it and the byte ceiling.
 
-- **Captured:** 2026-09-07, Asia/Jakarta.
+- **Captured:** 2026-09-08, Asia/Jakarta.
 - **Inspected main:** `34da0d33309f2cb3d599b5d0aca32413e76d4a07`, after runtime consistency [#343](https://github.com/chahyasantoso/motion5/pull/343). Exact CI and operation evidence belong to their PRs.
-- **Phase:** live editing of a loaded project. Infrastructure work below does not add runtime behavior. [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md) owns caller cost; [GUARDRAILS.md](./GUARDRAILS.md) owns standing constraints.
+- **Phase:** live editing of a loaded project. Shared scroll-source lifecycle correction [#353](https://github.com/chahyasantoso/motion5/pull/353) is unmerged; browser history restoration and reconciliation of IK consumer #351 remain acceptance work, not completed behavior. [LIVE-EDIT-COST.md](./LIVE-EDIT-COST.md) owns caller cost; [GUARDRAILS.md](./GUARDRAILS.md) owns standing constraints.
 
 ## Now
 
