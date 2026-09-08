@@ -49,7 +49,8 @@ jobs:
           const root = process.cwd();
           const out = `${process.env.RUNNER_TEMP}/scroll-browser-evidence`;
           const { chromium } = await import(pathToFileURL(`${process.env.RUNNER_TEMP}/scroll-browser-tools/node_modules/playwright/index.mjs`).href);
-          const report = { tested_sha: process.env.TESTED_SHA, os: `${os.platform()} ${os.release()} ${os.arch()}`, playwright: "1.55.0", scope: "PR 353 shared source and actual walking app; IK PR 351 is NOT covered", scenarios: [], errors: [] };
+          const required = ["source.initial", "source.refresh.instance", "source.late", "source.refresh.global", "source.stationary", "source.next", "source.endpoint", "source.cleanup", "source.remount", "source.cancel", "walk.initial", "walk.adopt", "walk.remove", "walk.reload", "walk.resize"];
+          const report = { tested_sha: process.env.TESTED_SHA, os: `${os.platform()} ${os.release()} ${os.arch()}`, playwright: "1.55.0", scope: "PR 353 shared source and actual walking app; IK PR 351 is NOT covered", required, scenarios: [], errors: [] };
           const html = `<!doctype html><html><head><meta charset="utf-8"><title>Scroll source acceptance fixture</title><style>html,body{margin:0}body{height:6500px}#fixture{height:500px;background:#cdf}</style></head><body><div id="fixture">Real ScrollTrigger lifecycle fixture</div><script type="module">
           import { gsap } from "gsap";
           import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -57,7 +58,7 @@ jobs:
           gsap.registerPlugin(ScrollTrigger);
           window.smoke = { gsapVersion: gsap.version, run: async () => {
             const checks = [];
-            const check = (name, passed, observed) => checks.push({ name, passed: Boolean(passed), observed });
+            const check = (id, name, passed, observed) => checks.push({ id, name, passed: Boolean(passed), observed });
             const settle = async () => { await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); await new Promise(r => setTimeout(r, 150)); };
             const close = (a,b) => Math.abs(a-b) < 0.005;
             window.scrollTo(0,600); await settle();
@@ -66,42 +67,36 @@ jobs:
             try {
               let subscribing = true; let synchronous = false;
               cleanups.push(source.subscribe(p => { if (subscribing) synchronous = true; seen.push(p); }));
-              subscribing = false;
-              await settle();
+              subscribing = false; await settle();
               const instance = ScrollTrigger.getAll().find(t => t.trigger?.id === "fixture");
               if (!instance) throw new Error("No real ScrollTrigger instance was acquired");
-              check("restored initial snapshot is deferred and measured", !synchronous && seen.length === 1 && close(seen[0], instance.progress) && instance.progress > 0.1, { synchronous, seen: [...seen], measured: instance.progress, scroll: instance.scroll() });
-              seen.length = 0;
-              instance.vars.end = "+=2000";
+              check("source.initial", "restored snapshot is deferred and measured", !synchronous && seen.length === 1 && close(seen[0], instance.progress) && instance.progress > 0.1, { synchronous, seen: [...seen], measured: instance.progress, scroll: instance.scroll() });
+              seen.length = 0; instance.vars.end = "+=2000";
               instance.refresh(); await settle();
-              check("geometry refresh holds existing subscribers", seen.length === 0, { seen: [...seen], measured: instance.progress });
-              cleanups.push(source.subscribe(p => late.push(p)));
-              await settle();
-              check("late subscriber receives refreshed measurement", late.length === 1 && close(late[0], instance.progress), { late: [...late], measured: instance.progress });
+              check("source.refresh.instance", "instance geometry refresh holds existing subscribers", seen.length === 0, { seen: [...seen], measured: instance.progress });
+              cleanups.push(source.subscribe(p => late.push(p))); await settle();
+              check("source.late", "late subscriber receives refreshed measurement", late.length === 1 && close(late[0], instance.progress), { late: [...late], measured: instance.progress });
+              seen.length = 0; late.length = 0;
+              ScrollTrigger.refresh(); await settle();
+              check("source.refresh.global", "global refresh holds both subscribers", seen.length === 0 && late.length === 0, { seen: [...seen], late: [...late], measured: instance.progress });
               seen.length = 0; late.length = 0;
               ScrollTrigger.update(); await settle();
-              check("unchanged-position update is suppressed", seen.length === 0 && late.length === 0, { seen: [...seen], late: [...late] });
+              check("source.stationary", "unchanged-position update is suppressed", seen.length === 0 && late.length === 0, { seen: [...seen], late: [...late] });
               window.scrollTo(0,800); await settle();
-              check("next qualifying update uses refreshed geometry", seen.length > 0 && late.length > 0 && close(seen.at(-1), instance.progress) && close(late.at(-1), instance.progress) && close(instance.progress, 0.4), { seen: [...seen], late: [...late], measured: instance.progress, position: instance.scroll() });
+              check("source.next", "next qualifying update uses refreshed geometry", seen.length > 0 && late.length > 0 && close(seen.at(-1), instance.progress) && close(late.at(-1), instance.progress) && close(instance.progress, 0.4), { seen: [...seen], late: [...late], measured: instance.progress, position: instance.scroll() });
               window.scrollTo(0,2400); await settle();
-              seen.length = 0; late.length = 0;
-              const before = instance.scroll();
+              seen.length = 0; late.length = 0; const before = instance.scroll();
               window.scrollTo(0,2600); await settle();
-              check("clamped endpoint movement is not a progress event", instance.scroll() > before && instance.progress === 1 && seen.length === 0 && late.length === 0, { before, after: instance.scroll(), progress: instance.progress, seen: [...seen], late: [...late] });
-              for (const unsubscribe of cleanups.splice(0)) unsubscribe();
-              await settle();
-              check("last unsubscribe removes producer and pin spacer", ScrollTrigger.getAll().length === 0 && document.querySelectorAll(".pin-spacer").length === 0, { producers: ScrollTrigger.getAll().length, spacers: document.querySelectorAll(".pin-spacer").length });
-              window.scrollTo(0,400); await settle();
-              const remounted = [];
-              const unsubscribe = source.subscribe(p => remounted.push(p));
-              cleanups.push(unsubscribe); await settle();
+              check("source.endpoint", "clamped endpoint movement is not a progress event", instance.scroll() > before && instance.progress === 1 && seen.length === 0 && late.length === 0, { before, after: instance.scroll(), progress: instance.progress, seen: [...seen], late: [...late] });
+              for (const unsubscribe of cleanups.splice(0)) unsubscribe(); await settle();
+              check("source.cleanup", "last unsubscribe removes producer and pin spacer", ScrollTrigger.getAll().length === 0 && document.querySelectorAll(".pin-spacer").length === 0, { producers: ScrollTrigger.getAll().length, spacers: document.querySelectorAll(".pin-spacer").length });
+              window.scrollTo(0,400); await settle(); const remounted = [];
+              const unsubscribe = source.subscribe(p => remounted.push(p)); cleanups.push(unsubscribe); await settle();
               const fresh = ScrollTrigger.getAll()[0];
-              check("remount creates a fresh producer and snapshot", fresh !== instance && remounted.length === 1 && close(remounted[0], fresh?.progress), { seen: [...remounted], measured: fresh?.progress, producers: ScrollTrigger.getAll().length });
-              unsubscribe(); cleanups.pop();
-              const cancelled = [];
-              source.subscribe(p => cancelled.push(p))();
-              await settle();
-              check("immediate detachment cancels initialization", cancelled.length === 0 && ScrollTrigger.getAll().length === 0 && document.querySelectorAll(".pin-spacer").length === 0, { cancelled, producers: ScrollTrigger.getAll().length, spacers: document.querySelectorAll(".pin-spacer").length });
+              check("source.remount", "remount creates a fresh producer and snapshot", fresh !== instance && remounted.length === 1 && close(remounted[0], fresh?.progress), { seen: [...remounted], measured: fresh?.progress, producers: ScrollTrigger.getAll().length });
+              unsubscribe(); cleanups.pop(); const cancelled = [];
+              source.subscribe(p => cancelled.push(p))(); await settle();
+              check("source.cancel", "immediate detachment cancels initialization", cancelled.length === 0 && ScrollTrigger.getAll().length === 0 && document.querySelectorAll(".pin-spacer").length === 0, { cancelled, producers: ScrollTrigger.getAll().length, spacers: document.querySelectorAll(".pin-spacer").length });
               return checks;
             } finally { for (const unsubscribe of cleanups) unsubscribe(); }
           }};
@@ -118,56 +113,67 @@ jobs:
               await new Promise(r => setTimeout(r, 200));
             }
             if (!ready) throw new Error("Vite did not become ready");
-            browser = await chromium.launch({ headless: true });
-            report.browser = browser.version();
+            browser = await chromium.launch({ headless: true }); report.browser = browser.version();
             context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
             await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
             const page = await context.newPage();
             page.on("pageerror", error => { if (report.errors.length < 20) report.errors.push(String(error).slice(0, 1000)); });
             page.on("console", message => { if (message.type() === "error" && report.errors.length < 20) report.errors.push(message.text().slice(0, 1000)); });
+            await page.addInitScript(() => {
+              window.scrollEvidence = [{ event: "init", y: scrollY, restoration: history.scrollRestoration }];
+              for (const event of ["DOMContentLoaded", "load", "pageshow", "scroll"]) addEventListener(event, () => {
+                if (window.scrollEvidence.length < 30) window.scrollEvidence.push({ event, y: scrollY, height: document.documentElement.scrollHeight, restoration: history.scrollRestoration });
+              });
+            });
             const scenario = async (name, run) => {
-              try { await run(); } catch (error) { report.scenarios.push({ name, passed: false, error: String(error).slice(0, 1500) }); }
+              try { await run(); } catch (error) { report.scenarios.push({ id: `${name}.failed`, name, passed: false, error: String(error).slice(0, 1500) }); }
             };
-            await scenario("real source browser fixture", async () => {
+            await scenario("fixture", async () => {
               await page.goto("http://127.0.0.1:4173/__scroll-smoke.html");
               await page.waitForFunction(() => Boolean(window.smoke), null, { timeout: 20000 });
               report.gsap = await page.evaluate(() => window.smoke.gsapVersion);
               report.scenarios.push(...await page.evaluate(() => window.smoke.run()));
               await page.screenshot({ path: `${out}/source.png` });
             });
-            await scenario("actual walking application", async () => {
+            await scenario("walking", async () => {
               await page.goto("http://127.0.0.1:4173/");
-              await page.waitForSelector("#stage", { timeout: 20000 });
-              await page.waitForTimeout(800);
-              const state = () => page.evaluate(() => ({ progress: Number(document.querySelector(".progress-label span:last-child")?.textContent), pelvisX: Number(document.querySelector('#stage ellipse[fill="url(#groundShadow)"]')?.getAttribute("cx")), arms: document.body.textContent.includes("ARM TRACKS ACTIVE (13 NODES)"), lines: document.querySelectorAll("#stage line").length, spacers: document.querySelectorAll(".pin-spacer").length, scrollY }));
+              await page.waitForSelector("#stage", { timeout: 20000 }); await page.waitForTimeout(800);
+              const state = () => page.evaluate(() => ({ progress: Number(document.querySelector(".progress-label span:last-child")?.textContent), pelvisX: Number(document.querySelector('#stage ellipse[fill="url(#groundShadow)"]')?.getAttribute("cx")), arms: document.body.textContent.includes("ARM TRACKS ACTIVE (13 NODES)"), lines: document.querySelectorAll("#stage line").length, spacers: document.querySelectorAll(".pin-spacer").length, scrollY, restoration: history.scrollRestoration, documentHeight: document.documentElement.scrollHeight }));
+              const check = (id, name, passed, observed) => report.scenarios.push({ id, name, passed: Boolean(passed), observed });
               const initial = await state();
-              report.scenarios.push({ name: "walking initial pose is published through the driver", passed: Math.abs(initial.pelvisX - 120) < 1 && initial.lines > 5 && initial.spacers === 1, observed: initial });
+              check("walk.initial", "walking initial pose is published through the driver", Math.abs(initial.pelvisX - 120) < 1 && initial.lines > 5 && initial.spacers === 1, initial);
               await page.evaluate(() => window.scrollTo(0,1600)); await page.waitForTimeout(500);
               const adopted = await state();
-              report.scenarios.push({ name: "walking adopts arms above threshold with current pose", passed: adopted.arms && adopted.progress >= 0.5 && Math.abs(adopted.pelvisX - (120 + 860 * adopted.progress)) < 2, observed: adopted });
+              check("walk.adopt", "walking adopts arms above threshold with current pose", adopted.arms && adopted.progress >= 0.5 && Math.abs(adopted.pelvisX - (120 + 860 * adopted.progress)) < 2, adopted);
               await page.screenshot({ path: `${out}/walking-adopted.png` });
               await page.evaluate(() => window.scrollTo(0,1000)); await page.waitForTimeout(500);
               const removed = await state();
-              report.scenarios.push({ name: "walking removes arms below hysteresis threshold", passed: !removed.arms && removed.progress < 0.45 && removed.spacers === 1, observed: removed });
+              check("walk.remove", "walking removes arms below hysteresis threshold", !removed.arms && removed.progress < 0.45 && removed.spacers === 1, removed);
               await page.evaluate(() => window.scrollTo(0,1600)); await page.waitForTimeout(300);
+              report.beforeReload = await state();
               await page.reload(); await page.waitForSelector("#stage"); await page.waitForTimeout(1000);
               const restored = await state();
-              report.scenarios.push({ name: "walking reload restores nonzero progress and pose", passed: restored.scrollY > 1000 && restored.arms && Math.abs(restored.progress - restored.scrollY / 2500) < 0.005 && Math.abs(restored.pelvisX - (120 + 860 * restored.progress)) < 2 && restored.spacers === 1, observed: restored });
+              report.reloadEvents = await page.evaluate(() => window.scrollEvidence);
+              check("walk.reload", "walking reload restores nonzero progress and pose", restored.scrollY > 1000 && restored.arms && Math.abs(restored.progress - restored.scrollY / 2500) < 0.005 && Math.abs(restored.pelvisX - (120 + 860 * restored.progress)) < 2 && restored.spacers === 1, restored);
+              // Check resize at an explicitly verified nonzero state even if reload failed.
+              await page.evaluate(() => window.scrollTo(0,1600)); await page.waitForTimeout(400);
+              const beforeResize = await state();
               await page.setViewportSize({ width: 900, height: 700 }); await page.waitForTimeout(600);
               const resized = await state();
-              report.scenarios.push({ name: "walking resize holds pose without duplicate pinning", passed: resized.arms === restored.arms && Math.abs(resized.pelvisX - restored.pelvisX) < 1 && resized.spacers === 1, observed: resized });
+              check("walk.resize", "walking resize holds a nonzero pose without duplicate pinning", beforeResize.scrollY > 1000 && beforeResize.arms && resized.arms === beforeResize.arms && Math.abs(resized.pelvisX - beforeResize.pelvisX) < 1 && resized.spacers === 1, { before: beforeResize, after: resized });
               await page.screenshot({ path: `${out}/walking-resized.png` });
             });
           } catch (error) { report.errors.push(String(error).slice(0, 1500)); }
           finally {
             if (context) { try { await context.tracing.stop({ path: `${out}/trace.zip` }); } catch (error) { report.errors.push(String(error)); } }
-            if (browser) await browser.close();
-            server.kill("SIGTERM");
-            report.passed = report.scenarios.length >= 15 && report.scenarios.every(s => s.passed) && report.errors.length === 0;
+            if (browser) await browser.close(); server.kill("SIGTERM");
+            const ids = report.scenarios.map(s => s.id);
+            report.missing = required.filter(id => !ids.includes(id));
+            report.unexpected = ids.filter(id => !required.includes(id));
+            report.passed = report.missing.length === 0 && report.unexpected.length === 0 && new Set(ids).size === ids.length && report.scenarios.every(s => s.passed) && report.errors.length === 0;
             await mkdir(out, { recursive: true });
             await writeFile(`${out}/report.json`, JSON.stringify(report, null, 2));
-            await writeFile(`${out}/server.log`, serverLog);
-            console.log(JSON.stringify(report, null, 2));
+            await writeFile(`${out}/server.log`, serverLog); console.log(JSON.stringify(report, null, 2));
           }
           if (!report.passed) process.exitCode = 1;
           NODE
