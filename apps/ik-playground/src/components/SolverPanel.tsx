@@ -145,11 +145,11 @@ export const SolverPanel: React.FC<SolverPanelProps> = ({
       Solid targets and flip checkboxes show pending intent. Hollow targets and metrics show the
       last applied solve.
       <br />
-      Scroll commits targets, flips and per-bone <code>fk.weight</code> through value writes,
-      without graph replacement.
+      The scroll adapter applies pending targets and flips; Motion progress drives authored
+      <code>fk.weight</code> stops. FK owns blending, without graph replacement.
       <br />
-      The visible tip gap is expected below 100% weight, not a convergence diagnostic. All leaves
-      remain static.
+      The visible tip gap is expected below 100% weight, not a convergence diagnostic. Only member
+      weights animate; gestures do not advance the motion.
     </div>
   </>
 );

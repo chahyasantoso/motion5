@@ -16,7 +16,13 @@ function fakeScrollTrigger() {
   const scrollTrigger: GsapScrollTriggerLike = {
     create(vars) {
       let killed = false;
+      let position = 0;
+      let currentProgress = 0;
       const instance: GsapScrollTriggerInstanceLike = {
+        get progress() {
+          return currentProgress;
+        },
+        scroll: () => position,
         kill() {
           killed = true;
         },
@@ -26,7 +32,9 @@ function fakeScrollTrigger() {
         killed: () => killed,
         emit(progress) {
           const onUpdate = vars.onUpdate as ((self: { progress: number }) => void) | undefined;
-          onUpdate?.({ progress });
+          currentProgress = progress;
+          position += 1;
+          onUpdate?.(instance);
         },
       });
       return instance;

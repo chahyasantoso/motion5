@@ -9,6 +9,7 @@ import {
 import { Engine } from "../../src/engine";
 import { PluginRegistry } from "../../src/domain/plugins";
 import { fkPlugin } from "../../src/plugins/fk";
+import { lerpAngle } from "../../src/plugins/frame";
 import { ikPlugin } from "../../src/plugins/ik";
 import { transformPlugin } from "../../src/plugins/transform";
 import { createManualClock } from "../../src/ports/clock";
@@ -39,8 +40,10 @@ function host(initialProgress = 0, initialPosition = 0) {
       (vars.onUpdate as (self: typeof instance) => void)(instance);
     },
     refresh(progress: number, y: number) {
+      (vars.onRefreshInit as (() => void) | undefined)?.();
       instance.progress = progress;
       position = y;
+      (vars.onUpdate as (self: typeof instance) => void)(instance);
       (vars.onRefresh as ((self: typeof instance) => void) | undefined)?.(instance);
     },
   };
@@ -103,7 +106,13 @@ describe("IK playground adapter-driven progress", () => {
       expect(handle.get(id)).toBe(rest);
       scheduler.flush();
       expect(handle.get(id)?.sourceProgress).toBeCloseTo(0.5);
-      expect(handle.get(id)?.values.weight).toBeCloseTo(0.5);
+      // FK publishes a world frame, not its private weight input. Measure the actual blend.
+      const rotations = handle.get(nodeId(ARM.solverTrack))!.values.rotations as Readonly<
+        Record<string, number>
+      >;
+      expect(handle.get(id)?.values.rotation).toBeCloseTo(
+        lerpAngle(ARM.restRotations[0]!, rotations[id]!, 0.5),
+      );
       const held = handle.get(id);
       clock.tick(1000);
       scheduler.flush();

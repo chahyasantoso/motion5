@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
   Engine,
   PluginRegistry,
@@ -7,13 +8,24 @@ import {
   type ProjectHandle,
 } from "@motion5/core";
 import { createBrowserClock } from "@motion5/core/adapters/browser-clock";
-import { createGsapInterpolator } from "@motion5/core/adapters";
+import {
+  createGsapInterpolator,
+  createGsapScrollSource,
+  createTriggerFactory,
+} from "@motion5/core/adapters";
 import { fkPlugin } from "@motion5/core/plugins/fk";
 import { ikPlugin } from "@motion5/core/plugins/ik";
 import { transformPlugin } from "@motion5/core/plugins/transform";
 import { IkStage } from "./components/IkStage";
 import { SolverPanel } from "./components/SolverPanel";
-import { ALL_NODE_IDS, ARM, TENTACLE, ikPlaygroundProject, nodeId } from "./ik-playground-project";
+import {
+  ALL_NODE_IDS,
+  ARM,
+  TENTACLE,
+  SCROLL_SOURCE,
+  ikPlaygroundProject,
+  nodeId,
+} from "./ik-playground-project";
 import { bindScrollReach, createScrollReach, initialGoals } from "./scroll-reach";
 
 export const App: React.FC = () => {
@@ -35,44 +47,54 @@ export const App: React.FC = () => {
       cancelFrame: (h: number) => cancelAnimationFrame(h),
     });
 
-    const project = new Engine({
-      clock,
-      // Static leaves compile zero tweens. Gestures below use value-tier writes, not graph edits.
-      interpolator: createGsapInterpolator(gsap),
-      scheduler: createMicrotaskScheduler(),
-      plugins,
-    }).load(ikPlaygroundProject);
-
-    for (const id of ALL_NODE_IDS) project.mount(id);
-
-    // Load and mount do not publish. Seed the initial pose once; later value edits flush themselves.
-    for (const id of [
-      nodeId(ARM.rootTrack),
-      nodeId(ARM.goalTrack),
-      nodeId(TENTACLE.rootTrack),
-      nodeId(TENTACLE.goalTrack),
-    ]) {
-      project.seek(id, 0);
+    gsap.registerPlugin(ScrollTrigger);
+    const scroll = createGsapScrollSource(ScrollTrigger, {
+      trigger: "#scroll-demo",
+      start: "top top",
+      end: "bottom bottom",
+    });
+    // The adapter defers initial delivery until load, mount and this wiring have completed.
+    let controller: ReturnType<typeof createScrollReach>;
+    let project: ProjectHandle;
+    try {
+      project = new Engine({
+        clock,
+        interpolator: createGsapInterpolator(gsap),
+        scheduler: createMicrotaskScheduler(),
+        plugins,
+        triggerFactory: createTriggerFactory({
+          scroll: ({ trigger }) =>
+            trigger.source === SCROLL_SOURCE
+              ? bindScrollReach(scroll, () => controller.commit())
+              : undefined,
+        }),
+      }).load(ikPlaygroundProject);
+    } catch (error) {
+      clock.dispose();
+      throw error;
     }
-
-    const controller = createScrollReach(project);
+    controller = createScrollReach(project);
+    for (const id of ALL_NODE_IDS) project.mount(id);
     controllerRef.current = controller;
     setPendingGoals(controller.goals);
     setArmFlip(false);
     setTentacleFlip(false);
     setHandle(project);
-    const unbindScroll = bindScrollReach(
-      window,
-      () => document.documentElement.scrollHeight - window.innerHeight,
-      (progress) => setWeight(controller.commit(progress)),
-    );
+    setWeight(0);
+    const unsubscribeWeight = project.subscribe(nodeId(ARM.memberTracks[0]!), (patch) => {
+      if (patch.status === "ready") setWeight(patch.sourceProgress);
+    });
 
     return () => {
-      unbindScroll();
+      unsubscribeWeight();
       controllerRef.current = undefined;
       setHandle(undefined);
-      project.dispose();
-      clock.dispose();
+      // Project disposal owns the driver subscription and therefore the GSAP instance.
+      try {
+        project.dispose();
+      } finally {
+        clock.dispose();
+      }
     };
   }, []);
 

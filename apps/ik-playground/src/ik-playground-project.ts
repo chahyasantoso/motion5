@@ -9,12 +9,13 @@ import type { ProjectDefinition, TrackDefinition } from "@motion5/core";
  * six members dispatch to FABRIK. `solveChain` reads the derived shape, not an authored mode, so
  * neither rig names its solver and neither rig could choose the other one.
  *
- * Every leaf is static, so nothing enters the interpolator and no tween is created (ADR-050).
- * Drags and flips stage intent only. Page scroll commits that intent through value-tier writes
- * and blends each member's authored rest rotation toward its solve (ADR-055). No graph edits.
+ * Only member weights animate: the scroll driver advances Motion, which seeks their authored
+ * 0..1 stops. FK remains the sole rest/solved angle blend owner (ADR-055). Drags and flips
+ * stage intent; accepted scroll emissions apply it through value-tier writes. No graph edits.
  */
 
 export const MOTION_ID = "rig";
+export const SCROLL_SOURCE = "ik-scroll";
 
 /** Authored track ids qualify with the motion prefix once loaded, so renderers address nodes. */
 export const nodeId = (trackId: string): string => `${MOTION_ID}/${trackId}`;
@@ -63,6 +64,8 @@ export const TENTACLE: RigGeometry = {
   root: { x: 820, y: 180 },
   goal: { x: 870, y: 420 },
 };
+
+export const RIGS = [ARM, TENTACLE] as const;
 
 /** A static transform frame: the root a chain hangs from, or the goal it reaches for. */
 export function frameTrack(id: string, x: number, y: number): TrackDefinition {
@@ -113,7 +116,14 @@ function memberTrack(
     id,
     keyframes: {
       fk: {
-        values: { length, rotation, weight: 0 },
+        values: {
+          length,
+          rotation,
+          weight: [
+            { p: 0, v: 0 },
+            { p: 1, v: 1 },
+          ],
+        },
         requires: { base, solver },
       },
     },
@@ -154,21 +164,16 @@ export const ikPlaygroundProject: ProjectDefinition = {
   motions: [
     {
       id: MOTION_ID,
-      trigger: { type: "manual" },
+      trigger: { type: "scroll", source: SCROLL_SOURCE },
       tracks: [...rigTracks(ARM, armSolverTrack), ...rigTracks(TENTACLE, tentacleSolverTrack)],
     },
   ],
 };
 
-export const ALL_NODE_IDS: readonly string[] = [
-  ARM.rootTrack,
-  ARM.goalTrack,
-  ARM.solverTrack,
-  ...ARM.memberTracks,
-  ARM.fkTailTrack,
-  TENTACLE.rootTrack,
-  TENTACLE.goalTrack,
-  TENTACLE.solverTrack,
-  ...TENTACLE.memberTracks,
-  TENTACLE.fkTailTrack,
-].map(nodeId);
+export const ALL_NODE_IDS: readonly string[] = RIGS.flatMap((rig) => [
+  rig.rootTrack,
+  rig.goalTrack,
+  rig.solverTrack,
+  ...rig.memberTracks,
+  rig.fkTailTrack,
+]).map(nodeId);

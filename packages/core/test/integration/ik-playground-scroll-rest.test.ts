@@ -9,7 +9,6 @@ import {
 import {
   bindScrollReach,
   createScrollReach,
-  scrollWeight,
 } from "../../../../apps/ik-playground/src/scroll-reach";
 import { Engine, type ProjectHandle } from "../../src/engine";
 import { PluginRegistry } from "../../src/domain/plugins";
@@ -19,25 +18,51 @@ import { transformPlugin } from "../../src/plugins/transform";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type { ProjectRuntime } from "../../src/runtime/project-runtime";
+import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";
+import type { ScrollSource } from "../../src/adapters/scroll-trigger";
+import { lerpAngle } from "../../src/plugins/frame";
 
 const rigs = [ARM, TENTACLE];
 function load() {
   const plugins = new PluginRegistry();
   for (const plugin of [transformPlugin, fkPlugin, ikPlugin]) plugins.register(plugin);
   const scheduler = createFakeScheduler();
+  const clock = createManualClock();
+  let listener: ((progress: number) => void) | undefined;
+  const unsubscribe = vi.fn(() => {
+    listener = undefined;
+  });
+  const source: ScrollSource = {
+    subscribe(fn) {
+      listener = fn;
+      return unsubscribe;
+    },
+  };
+  let controller: ReturnType<typeof createScrollReach>;
   const handle = new Engine({
-    clock: createManualClock(),
+    clock,
     interpolator: createFakeInterpolator(),
     scheduler,
     plugins,
+    triggerFactory: createTriggerFactory({
+      scroll: () => bindScrollReach(source, () => controller.commit()),
+    }),
   }).load(ikPlaygroundProject);
+  controller = createScrollReach(handle);
   for (const id of ALL_NODE_IDS) handle.mount(id);
-  for (const rig of rigs) {
-    handle.seek(nodeId(rig.rootTrack), 0);
-    handle.seek(nodeId(rig.goalTrack), 0);
-  }
-  while (scheduler.pending.length) scheduler.flush();
-  return handle;
+  const flush = () => {
+    for (let rounds = 0; scheduler.pending.length; rounds++) {
+      if (rounds > 20) throw new Error("Scheduler did not settle.");
+      scheduler.flush();
+    }
+  };
+  const push = (progress: number) => listener?.(progress);
+  const emit = (progress: number) => {
+    push(progress);
+    flush();
+  };
+  emit(0);
+  return { handle, controller, emit, push, flush, clock, unsubscribe };
 }
 function pose(handle: ProjectHandle) {
   return rigs.flatMap((rig) =>
@@ -62,7 +87,7 @@ function expectLengths(handle: ProjectHandle) {
 
 describe("IK playground scroll-only rest blending", () => {
   it("starts in the authored local rest pose including ordinary FK tails", () => {
-    const handle = load();
+    const { handle } = load();
     try {
       for (const rig of rigs) {
         let x = rig.root.x,
@@ -79,7 +104,15 @@ describe("IK playground scroll-only rest blending", () => {
           expect(Number(values.rotation)).toBeCloseTo(rotation, 7);
           if (index < rig.memberTracks.length)
             expect(handle.track(nodeId(id)).definition.keyframes).toMatchObject({
-              fk: { values: { rotation: rig.restRotations[index], weight: 0 } },
+              fk: {
+                values: {
+                  rotation: rig.restRotations[index],
+                  weight: [
+                    { p: 0, v: 0 },
+                    { p: 1, v: 1 },
+                  ],
+                },
+              },
             });
         });
       }
@@ -90,15 +123,14 @@ describe("IK playground scroll-only rest blending", () => {
   });
 
   it("holds staged goals and flips at zero, partial and full weight until another scroll commit", () => {
-    const handle = load();
-    const controller = createScrollReach(handle);
+    const { handle, controller, emit, clock, flush } = load();
     const runtime = (handle as ProjectHandle & { readonly _runtime: ProjectRuntime })._runtime;
     const replace = vi.spyOn(runtime.graph, "replaceGraph");
     const bindings = ALL_NODE_IDS.map((id) => handle.track(id).requires);
     try {
       const rest = pose(handle);
       for (const weight of [0, 0.5, 1]) {
-        controller.commit(weight);
+        emit(weight);
         const before = pose(handle);
         const applied = rigs.map((rig) => handle.get(nodeId(rig.goalTrack))!.values);
         const oldSnapshot = controller.goals;
@@ -112,17 +144,34 @@ describe("IK playground scroll-only rest blending", () => {
           expect(handle.get(nodeId(rig.goalTrack))!.values).toEqual(applied[index]);
         });
         expect(oldSnapshot).not.toBe(controller.goals);
+        clock.tick(1000 + weight * 1000);
+        flush();
         expect(pose(handle)).toEqual(before);
-        controller.commit(weight);
+        emit(weight);
         for (const rig of rigs) {
           expect(handle.get(nodeId(rig.goalTrack))!.values).toMatchObject(
             controller.goals[rig.goalTrack]!,
           );
           expect(handle.get(nodeId(rig.solverTrack))!.values.flip).toBe(weight !== 0.5);
-          for (const id of rig.memberTracks)
+          const rotations = handle.get(nodeId(rig.solverTrack))!.values.rotations as Readonly<
+            Record<string, number>
+          >;
+          let rotation = 0;
+          rig.memberTracks.forEach((id, index) => {
+            rotation += lerpAngle(rig.restRotations[index]!, rotations[nodeId(id)]!, weight);
+            expect(handle.get(nodeId(id))?.sourceProgress).toBeCloseTo(weight);
+            expect(handle.get(nodeId(id))?.values.rotation).toBeCloseTo(rotation);
             expect(handle.track(nodeId(id)).definition.keyframes).toMatchObject({
-              fk: { values: { weight } },
+              fk: {
+                values: {
+                  weight: [
+                    { p: 0, v: 0 },
+                    { p: 1, v: 1 },
+                  ],
+                },
+              },
             });
+          });
           if (weight === 1) {
             const tip = handle.get(nodeId(rig.tipTrack))!.values;
             const goal = controller.goals[rig.goalTrack]!;
@@ -133,81 +182,55 @@ describe("IK playground scroll-only rest blending", () => {
         else expect(pose(handle)).not.toEqual(before);
         expectLengths(handle);
       }
-      controller.commit(0);
+      emit(0);
       expect(pose(handle)).toEqual(rest);
       expect(ALL_NODE_IDS.map((id) => handle.track(id).requires)).toEqual(bindings);
       expect(replace).not.toHaveBeenCalled();
       const invalidate = vi.spyOn(runtime.graph, "invalidate");
-      controller.commit(0);
+      controller.commit();
       expect(invalidate).not.toHaveBeenCalled();
     } finally {
       handle.dispose();
     }
   });
 
-  it("normalizes real scroll position, holds on resize, and cleans up before remount", () => {
-    class Host extends EventTarget {
-      scrollY = 0;
-    }
-    const host = new Host();
-    let range = 1000;
-    const handle = load();
-    const controller = createScrollReach(handle);
-    const apply = vi.fn((weight: number) => controller.commit(weight));
-    let cleanup = bindScrollReach(host, () => range, apply);
-    try {
-      const rest = pose(handle);
-      controller.moveGoal(ARM.goalTrack, 290, 360);
-      host.dispatchEvent(new Event("scroll"));
-      expect(apply).toHaveBeenCalledTimes(1);
-      expect(pose(handle)).toEqual(rest);
-      host.scrollY = 500;
-      host.dispatchEvent(new Event("scroll"));
-      expect(apply).toHaveBeenLastCalledWith(0.5);
-      expect(pose(handle)).not.toEqual(rest);
-      const held = pose(handle);
-      controller.moveGoal(TENTACLE.goalTrack, 860, 260);
-      range = 2000;
-      host.dispatchEvent(new Event("resize"));
-      expect(pose(handle)).toEqual(held);
-      host.scrollY = 1000;
-      host.dispatchEvent(new Event("scroll"));
-      expect(apply).toHaveBeenLastCalledWith(0.5);
-      expect(handle.get(nodeId(TENTACLE.goalTrack))!.values).toMatchObject({ x: 860, y: 260 });
-      host.scrollY = 0;
-      host.dispatchEvent(new Event("scroll"));
-      expect(pose(handle)).toEqual(rest);
-      cleanup();
-      apply.mockClear();
-      host.scrollY = 2000;
-      host.dispatchEvent(new Event("scroll"));
-      expect(apply).not.toHaveBeenCalled();
-      cleanup = bindScrollReach(host, () => range, apply);
-      expect(apply).toHaveBeenCalledExactlyOnceWith(1);
-      host.scrollY = 1000;
-      host.dispatchEvent(new Event("scroll"));
-      expect(apply).toHaveBeenCalledTimes(2);
-    } finally {
-      cleanup();
+  it("coalesces progress through Motion and cancels its queued work and source on disposal", () => {
+    const { handle, push, flush, unsubscribe } = load();
+    const rest = pose(handle);
+    push(0.25);
+    push(0.75);
+    expect(pose(handle)).toEqual(rest);
+    flush();
+    for (const id of ALL_NODE_IDS) expect(handle.get(id)?.sourceProgress).toBeCloseTo(0.75);
+    push(1);
+    handle.dispose();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    expect(() => {
+      push(0.5);
+      flush();
       handle.dispose();
-    }
+    }).not.toThrow();
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
 
   it("clamps scroll bounds and rejects invalid pending input without poisoning the solve", () => {
-    expect(scrollWeight(-20, 100)).toBe(0);
-    expect(scrollWeight(200, 100)).toBe(1);
-    expect(scrollWeight(30, 0)).toBe(0);
-    expect(scrollWeight(NaN, 100)).toBe(0);
-    expect(scrollWeight(30, Infinity)).toBe(0);
-    const handle = load();
+    const { handle, controller, emit } = load();
     try {
-      const controller = createScrollReach(handle);
       const before = controller.goals;
       expect(controller.moveGoal(ARM.goalTrack, NaN, 20)).toBe(before);
       expect(() => controller.moveGoal("missing", 0, 0)).toThrow("Unknown pending goal");
       expect(() => controller.flip("missing", true)).toThrow("Unknown pending solver");
-      expect(controller.commit(2)).toBe(1);
-      expect(controller.commit(-1)).toBe(0);
+      emit(2);
+      expect(handle.get(nodeId(ARM.tipTrack))?.sourceProgress).toBe(1);
+      emit(-1);
+      expect(handle.get(nodeId(ARM.tipTrack))?.sourceProgress).toBe(0);
+      const applied = handle.get(nodeId(ARM.goalTrack));
+      controller.moveGoal(ARM.goalTrack, 290, 360);
+      expect(() => emit(NaN)).toThrow("finite");
+      expect(() => emit(Infinity)).toThrow("finite");
+      expect(handle.get(nodeId(ARM.goalTrack))).toBe(applied);
+      emit(0.5);
+      expect(handle.get(nodeId(ARM.goalTrack))?.values).toMatchObject({ x: 290, y: 360 });
     } finally {
       handle.dispose();
     }
