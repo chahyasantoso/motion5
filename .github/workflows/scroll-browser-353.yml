@@ -1,0 +1,219 @@
+name: Scroll browser evidence (PR 353)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: scroll-browser-353
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    if: github.event.pull_request.number == 353 && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      tested_sha: ${{ steps.identity.outputs.sha }}
+    steps:
+      - id: identity
+        env:
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: echo "sha=$HEAD_SHA" >> "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Install isolated browser tooling without changing the project lockfile
+        run: |
+          npm install --prefix "$RUNNER_TEMP/scroll-browser-tools" --ignore-scripts --no-audit --no-fund --package-lock=false playwright@1.55.0
+          node "$RUNNER_TEMP/scroll-browser-tools/node_modules/playwright/cli.js" install --with-deps chromium
+      - name: Run real-browser source and walking regressions
+        env:
+          TESTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/scroll-browser-evidence"
+          node --input-type=module <<'NODE'
+          import { writeFile, mkdir } from "node:fs/promises";
+          import { spawn } from "node:child_process";
+          import { pathToFileURL } from "node:url";
+          import os from "node:os";
+          const root = process.cwd();
+          const out = `${process.env.RUNNER_TEMP}/scroll-browser-evidence`;
+          const { chromium } = await import(pathToFileURL(`${process.env.RUNNER_TEMP}/scroll-browser-tools/node_modules/playwright/index.mjs`).href);
+          const report = { tested_sha: process.env.TESTED_SHA, os: `${os.platform()} ${os.release()} ${os.arch()}`, playwright: "1.55.0", scope: "PR 353 shared source and actual walking app; IK PR 351 is NOT covered", scenarios: [], errors: [] };
+          const html = `<!doctype html><html><head><meta charset="utf-8"><title>Scroll source acceptance fixture</title><style>html,body{margin:0}body{height:6500px}#fixture{height:500px;background:#cdf}</style></head><body><div id="fixture">Real ScrollTrigger lifecycle fixture</div><script type="module">
+          import { gsap } from "gsap";
+          import { ScrollTrigger } from "gsap/ScrollTrigger";
+          import { createGsapScrollSource } from "/@fs/${root}/packages/core/src/adapters/scroll-trigger-gsap.ts";
+          gsap.registerPlugin(ScrollTrigger);
+          window.smoke = { gsapVersion: gsap.version, run: async () => {
+            const checks = [];
+            const check = (name, passed, observed) => checks.push({ name, passed: Boolean(passed), observed });
+            const settle = async () => { await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); await new Promise(r => setTimeout(r, 150)); };
+            const close = (a,b) => Math.abs(a-b) < 0.005;
+            window.scrollTo(0,600); await settle();
+            const source = createGsapScrollSource(ScrollTrigger, { trigger: "#fixture", start: "top top", end: "+=1000", pin: true });
+            const seen = []; const late = []; const cleanups = [];
+            try {
+              let subscribing = true; let synchronous = false;
+              cleanups.push(source.subscribe(p => { if (subscribing) synchronous = true; seen.push(p); }));
+              subscribing = false;
+              await settle();
+              const instance = ScrollTrigger.getAll().find(t => t.trigger?.id === "fixture");
+              if (!instance) throw new Error("No real ScrollTrigger instance was acquired");
+              check("restored initial snapshot is deferred and measured", !synchronous && seen.length === 1 && close(seen[0], instance.progress) && instance.progress > 0.1, { synchronous, seen: [...seen], measured: instance.progress, scroll: instance.scroll() });
+              seen.length = 0;
+              instance.vars.end = "+=2000";
+              instance.refresh(); await settle();
+              check("geometry refresh holds existing subscribers", seen.length === 0, { seen: [...seen], measured: instance.progress });
+              cleanups.push(source.subscribe(p => late.push(p)));
+              await settle();
+              check("late subscriber receives refreshed measurement", late.length === 1 && close(late[0], instance.progress), { late: [...late], measured: instance.progress });
+              seen.length = 0; late.length = 0;
+              ScrollTrigger.update(); await settle();
+              check("unchanged-position update is suppressed", seen.length === 0 && late.length === 0, { seen: [...seen], late: [...late] });
+              window.scrollTo(0,800); await settle();
+              check("next qualifying update uses refreshed geometry", seen.length > 0 && late.length > 0 && close(seen.at(-1), instance.progress) && close(late.at(-1), instance.progress) && close(instance.progress, 0.4), { seen: [...seen], late: [...late], measured: instance.progress, position: instance.scroll() });
+              window.scrollTo(0,2400); await settle();
+              seen.length = 0; late.length = 0;
+              const before = instance.scroll();
+              window.scrollTo(0,2600); await settle();
+              check("clamped endpoint movement is not a progress event", instance.scroll() > before && instance.progress === 1 && seen.length === 0 && late.length === 0, { before, after: instance.scroll(), progress: instance.progress, seen: [...seen], late: [...late] });
+              for (const unsubscribe of cleanups.splice(0)) unsubscribe();
+              await settle();
+              check("last unsubscribe removes producer and pin spacer", ScrollTrigger.getAll().length === 0 && document.querySelectorAll(".pin-spacer").length === 0, { producers: ScrollTrigger.getAll().length, spacers: document.querySelectorAll(".pin-spacer").length });
+              window.scrollTo(0,400); await settle();
+              const remounted = [];
+              const unsubscribe = source.subscribe(p => remounted.push(p));
+              cleanups.push(unsubscribe); await settle();
+              const fresh = ScrollTrigger.getAll()[0];
+              check("remount creates a fresh producer and snapshot", fresh !== instance && remounted.length === 1 && close(remounted[0], fresh?.progress), { seen: [...remounted], measured: fresh?.progress, producers: ScrollTrigger.getAll().length });
+              unsubscribe(); cleanups.pop();
+              const cancelled = [];
+              source.subscribe(p => cancelled.push(p))();
+              await settle();
+              check("immediate detachment cancels initialization", cancelled.length === 0 && ScrollTrigger.getAll().length === 0 && document.querySelectorAll(".pin-spacer").length === 0, { cancelled, producers: ScrollTrigger.getAll().length, spacers: document.querySelectorAll(".pin-spacer").length });
+              return checks;
+            } finally { for (const unsubscribe of cleanups) unsubscribe(); }
+          }};
+          </script></body></html>`;
+          await writeFile(`${root}/apps/react-demo/__scroll-smoke.html`, html);
+          const server = spawn(`${root}/node_modules/.bin/vite`, ["apps/react-demo", "--host", "127.0.0.1", "--port", "4173", "--strictPort"], { stdio: ["ignore", "pipe", "pipe"] });
+          let serverLog = "";
+          for (const stream of [server.stdout, server.stderr]) stream.on("data", bytes => { serverLog = (serverLog + bytes.toString()).slice(-16000); });
+          let browser; let context;
+          try {
+            let ready = false;
+            for (let attempt = 0; attempt < 100; attempt++) {
+              try { const response = await fetch("http://127.0.0.1:4173/"); if (response.ok) { ready = true; break; } } catch {}
+              await new Promise(r => setTimeout(r, 200));
+            }
+            if (!ready) throw new Error("Vite did not become ready");
+            browser = await chromium.launch({ headless: true });
+            report.browser = browser.version();
+            context = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+            await context.tracing.start({ screenshots: true, snapshots: true, sources: true });
+            const page = await context.newPage();
+            page.on("pageerror", error => { if (report.errors.length < 20) report.errors.push(String(error).slice(0, 1000)); });
+            page.on("console", message => { if (message.type() === "error" && report.errors.length < 20) report.errors.push(message.text().slice(0, 1000)); });
+            const scenario = async (name, run) => {
+              try { await run(); } catch (error) { report.scenarios.push({ name, passed: false, error: String(error).slice(0, 1500) }); }
+            };
+            await scenario("real source browser fixture", async () => {
+              await page.goto("http://127.0.0.1:4173/__scroll-smoke.html");
+              await page.waitForFunction(() => Boolean(window.smoke), null, { timeout: 20000 });
+              report.gsap = await page.evaluate(() => window.smoke.gsapVersion);
+              report.scenarios.push(...await page.evaluate(() => window.smoke.run()));
+              await page.screenshot({ path: `${out}/source.png` });
+            });
+            await scenario("actual walking application", async () => {
+              await page.goto("http://127.0.0.1:4173/");
+              await page.waitForSelector("#stage", { timeout: 20000 });
+              await page.waitForTimeout(800);
+              const state = () => page.evaluate(() => ({ progress: Number(document.querySelector(".progress-label span:last-child")?.textContent), pelvisX: Number(document.querySelector('#stage ellipse[fill="url(#groundShadow)"]')?.getAttribute("cx")), arms: document.body.textContent.includes("ARM TRACKS ACTIVE (13 NODES)"), lines: document.querySelectorAll("#stage line").length, spacers: document.querySelectorAll(".pin-spacer").length, scrollY }));
+              const initial = await state();
+              report.scenarios.push({ name: "walking initial pose is published through the driver", passed: Math.abs(initial.pelvisX - 120) < 1 && initial.lines > 5 && initial.spacers === 1, observed: initial });
+              await page.evaluate(() => window.scrollTo(0,1600)); await page.waitForTimeout(500);
+              const adopted = await state();
+              report.scenarios.push({ name: "walking adopts arms above threshold with current pose", passed: adopted.arms && adopted.progress >= 0.5 && Math.abs(adopted.pelvisX - (120 + 860 * adopted.progress)) < 2, observed: adopted });
+              await page.screenshot({ path: `${out}/walking-adopted.png` });
+              await page.evaluate(() => window.scrollTo(0,1000)); await page.waitForTimeout(500);
+              const removed = await state();
+              report.scenarios.push({ name: "walking removes arms below hysteresis threshold", passed: !removed.arms && removed.progress < 0.45 && removed.spacers === 1, observed: removed });
+              await page.evaluate(() => window.scrollTo(0,1600)); await page.waitForTimeout(300);
+              await page.reload(); await page.waitForSelector("#stage"); await page.waitForTimeout(1000);
+              const restored = await state();
+              report.scenarios.push({ name: "walking reload restores nonzero progress and pose", passed: restored.scrollY > 1000 && restored.arms && Math.abs(restored.progress - restored.scrollY / 2500) < 0.005 && Math.abs(restored.pelvisX - (120 + 860 * restored.progress)) < 2 && restored.spacers === 1, observed: restored });
+              await page.setViewportSize({ width: 900, height: 700 }); await page.waitForTimeout(600);
+              const resized = await state();
+              report.scenarios.push({ name: "walking resize holds pose without duplicate pinning", passed: resized.arms === restored.arms && Math.abs(resized.pelvisX - restored.pelvisX) < 1 && resized.spacers === 1, observed: resized });
+              await page.screenshot({ path: `${out}/walking-resized.png` });
+            });
+          } catch (error) { report.errors.push(String(error).slice(0, 1500)); }
+          finally {
+            if (context) { try { await context.tracing.stop({ path: `${out}/trace.zip` }); } catch (error) { report.errors.push(String(error)); } }
+            if (browser) await browser.close();
+            server.kill("SIGTERM");
+            report.passed = report.scenarios.length >= 15 && report.scenarios.every(s => s.passed) && report.errors.length === 0;
+            await mkdir(out, { recursive: true });
+            await writeFile(`${out}/report.json`, JSON.stringify(report, null, 2));
+            await writeFile(`${out}/server.log`, serverLog);
+            console.log(JSON.stringify(report, null, 2));
+          }
+          if (!report.passed) process.exitCode = 1;
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scroll-browser-353-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/scroll-browser-evidence
+          retention-days: 7
+          if-no-files-found: warn
+
+  report:
+    needs: browser
+    if: always() && needs.browser.result != 'skipped' && needs.browser.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+      pull-requests: write
+    steps:
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: scroll-browser-353-${{ github.run_id }}-${{ github.run_attempt }}
+          path: evidence
+      - uses: actions/github-script@v7
+        env:
+          TESTED_SHA: ${{ needs.browser.outputs.tested_sha }}
+          BROWSER_RESULT: ${{ needs.browser.result }}
+        with:
+          script: |
+            const fs = require("node:fs");
+            const sha = process.env.TESTED_SHA;
+            if (!/^[a-f0-9]{40}$/.test(sha)) throw new Error("Missing exact tested SHA");
+            const { data: pr } = await github.rest.pulls.get({ ...context.repo, pull_number: 353 });
+            if (pr.head.repo.full_name !== `${context.repo.owner}/${context.repo.repo}`) throw new Error("Unexpected PR repository");
+            let text = "Browser report unavailable; inspect the run and installation/server steps. No browser pass is claimed.";
+            if (fs.existsSync("evidence/report.json")) {
+              const stat = fs.lstatSync("evidence/report.json");
+              if (!stat.isFile() || stat.size > 48000) throw new Error("Report is not a bounded regular file");
+              const report = JSON.parse(fs.readFileSync("evidence/report.json", "utf8"));
+              if (report.tested_sha !== sha) throw new Error("Report SHA mismatch");
+              text = JSON.stringify(report, null, 2);
+            }
+            const escaped = text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("@", "&#64;");
+            const url = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const historical = pr.head.sha !== sha ? " Historical head; not current-head acceptance." : "";
+            const body = `### Temporary real-browser evidence for PR #353\n\nTested commit: ${sha}. Browser job: **${process.env.BROWSER_RESULT}**.${historical}\n\n[Run, screenshots and Playwright trace](${url}) (artifacts retained 7 days). This opt-in job is limited to PR #353; it is not a required-check or automation-runner rollout. Shared source and walking checks do not certify IK PR #351, other browsers, or manual interaction review.\n\n<details><summary>Bounded browser observations and assertions</summary>\n<pre>${escaped}</pre>\n</details>`;
+            await github.rest.issues.createComment({ ...context.repo, issue_number: 353, body });
