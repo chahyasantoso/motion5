@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import {
@@ -36,7 +36,7 @@ export const App: React.FC = () => {
   const [pendingGoals, setPendingGoals] = useState(initialGoals);
   const [weight, setWeight] = useState(0);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const plugins = new PluginRegistry();
     plugins.register(transformPlugin);
     plugins.register(fkPlugin);
@@ -47,17 +47,34 @@ export const App: React.FC = () => {
       cancelFrame: (h: number) => cancelAnimationFrame(h),
     });
 
-    gsap.registerPlugin(ScrollTrigger);
-    const scroll = createGsapScrollSource(ScrollTrigger, {
-      trigger: "#scroll-demo",
-      start: "top top",
-      end: "bottom bottom",
-    });
-    // The adapter defers initial delivery until load, mount and this wiring have completed.
-    let controller: ReturnType<typeof createScrollReach>;
-    let project: ProjectHandle;
+    let ownedProject: ProjectHandle | undefined;
+    let unsubscribeWeight = () => {};
+    const release = () => {
+      const failures: unknown[] = [];
+      for (const dispose of [
+        () => unsubscribeWeight(),
+        () => ownedProject?.dispose(),
+        () => clock.dispose(),
+      ]) {
+        try {
+          dispose();
+        } catch (error) {
+          failures.push(error);
+        }
+      }
+      if (failures.length === 1) throw failures[0];
+      if (failures.length > 1) throw new AggregateError(failures, "IK resource cleanup failed.");
+    };
     try {
-      project = new Engine({
+      gsap.registerPlugin(ScrollTrigger);
+      const scroll = createGsapScrollSource(ScrollTrigger, {
+        trigger: "#scroll-demo",
+        start: "top top",
+        end: "bottom bottom",
+      });
+      // The adapter defers initial delivery until load, mount and this wiring have completed.
+      let controller: ReturnType<typeof createScrollReach>;
+      const project = new Engine({
         clock,
         interpolator: createGsapInterpolator(gsap),
         scheduler: createMicrotaskScheduler(),
@@ -69,32 +86,33 @@ export const App: React.FC = () => {
               : undefined,
         }),
       }).load(ikPlaygroundProject);
+      ownedProject = project;
+      controller = createScrollReach(project);
+      for (const id of ALL_NODE_IDS) project.mount(id);
+      controllerRef.current = controller;
+      setPendingGoals(controller.goals);
+      setArmFlip(false);
+      setTentacleFlip(false);
+      setHandle(project);
+      setWeight(0);
+      unsubscribeWeight = project.subscribe(nodeId(ARM.memberTracks[0]!), (patch) => {
+        if (patch.status === "ready") setWeight(patch.sourceProgress);
+      });
     } catch (error) {
-      clock.dispose();
+      controllerRef.current = undefined;
+      try {
+        release();
+      } catch (cleanupError) {
+        throw new AggregateError([error, cleanupError], "IK setup and cleanup failed.");
+      }
       throw error;
     }
-    controller = createScrollReach(project);
-    for (const id of ALL_NODE_IDS) project.mount(id);
-    controllerRef.current = controller;
-    setPendingGoals(controller.goals);
-    setArmFlip(false);
-    setTentacleFlip(false);
-    setHandle(project);
-    setWeight(0);
-    const unsubscribeWeight = project.subscribe(nodeId(ARM.memberTracks[0]!), (patch) => {
-      if (patch.status === "ready") setWeight(patch.sourceProgress);
-    });
 
     return () => {
-      unsubscribeWeight();
       controllerRef.current = undefined;
       setHandle(undefined);
       // Project disposal owns the driver subscription and therefore the GSAP instance.
-      try {
-        project.dispose();
-      } finally {
-        clock.dispose();
-      }
+      release();
     };
   }, []);
 
