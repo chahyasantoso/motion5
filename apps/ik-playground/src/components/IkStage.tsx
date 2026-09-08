@@ -2,6 +2,7 @@ import React, { useRef } from "react";
 import type { ProjectHandle } from "@motion5/core";
 import { usePatch, type Patch } from "@motion5/react";
 import { ARM, TENTACLE, nodeId, type RigGeometry } from "../ik-playground-project";
+import type { GoalPoint, PendingGoals } from "../scroll-reach";
 
 /**
  * Presence is not liveness. A patch that is blocked, errored, or terminal still carries the last
@@ -127,17 +128,17 @@ const ReachCircle: React.FC<{
 };
 
 /**
- * The draggable goal. Pointer capture keeps the drag alive outside the marker, and the position
- * renders from the goal node's own patch, so the marker and the solver read one source of truth:
- * the track the drag just replaced.
+ * The solid marker renders pending intent. The small hollow marker shows the applied target
+ * from the runtime. Pointer capture keeps the drag alive without moving the solved rig.
  */
 const GoalHandle: React.FC<{
   readonly handle: ProjectHandle;
   readonly id: string;
   readonly color: string;
   readonly svgRef: React.RefObject<SVGSVGElement | null>;
+  readonly pending: GoalPoint;
   readonly onDrag: (x: number, y: number) => void;
-}> = ({ handle, id, color, svgRef, onDrag }) => {
+}> = ({ handle, id, color, svgRef, pending, onDrag }) => {
   const patch = useLivePatch(handle, id);
   const dragging = useRef(false);
   if (!patch) return null;
@@ -153,51 +154,89 @@ const GoalHandle: React.FC<{
   };
 
   return (
-    <g
-      transform={`translate(${Number(patch.values.x ?? 0)}, ${Number(patch.values.y ?? 0)})`}
-      style={{ cursor: dragging.current ? "grabbing" : "grab" }}
-    >
+    <g>
       <circle
-        r={18}
-        fill="transparent"
-        onPointerDown={(e) => {
-          e.stopPropagation();
-          e.currentTarget.setPointerCapture(e.pointerId);
-          dragging.current = true;
-        }}
-        onPointerMove={(e) => {
-          if (!dragging.current) return;
-          const point = toStagePoint(e.clientX, e.clientY);
-          if (point) onDrag(point.x, point.y);
-        }}
-        onPointerUp={(e) => {
-          dragging.current = false;
-          if (e.currentTarget.hasPointerCapture(e.pointerId))
-            e.currentTarget.releasePointerCapture(e.pointerId);
-        }}
-        onPointerCancel={() => {
-          dragging.current = false;
-        }}
-      />
-      <circle r={12} fill="none" stroke={color} strokeWidth={2} opacity={0.9} />
-      <circle r={4.5} fill={color} />
-      <g opacity={0.8} pointerEvents="none">
-        <line x1={-20} y1={0} x2={-14} y2={0} stroke={color} strokeWidth={2} />
-        <line x1={14} y1={0} x2={20} y2={0} stroke={color} strokeWidth={2} />
-        <line x1={0} y1={-20} x2={0} y2={-14} stroke={color} strokeWidth={2} />
-        <line x1={0} y1={14} x2={0} y2={20} stroke={color} strokeWidth={2} />
-      </g>
-      <text
-        x={22}
-        y={-14}
-        fill={color}
-        fontSize="10"
-        fontWeight="700"
-        fontFamily="monospace"
+        data-applied-goal={id}
+        cx={Number(patch.values.x ?? 0)}
+        cy={Number(patch.values.y ?? 0)}
+        r={7}
+        fill="none"
+        stroke={color}
+        opacity={0.45}
         pointerEvents="none"
+      />
+      <g
+        data-pending-goal={id}
+        transform={`translate(${pending.x}, ${pending.y})`}
+        style={{ cursor: dragging.current ? "grabbing" : "grab" }}
       >
-        goal · drag
-      </text>
+        <circle
+          r={22}
+          role="button"
+          tabIndex={0}
+          aria-label={`Move ${id} pending target with arrow keys`}
+          style={{ touchAction: "none" }}
+          onKeyDown={(e) => {
+            const step = e.shiftKey ? 20 : 5;
+            const dx = e.key === "ArrowRight" ? step : e.key === "ArrowLeft" ? -step : 0;
+            const dy = e.key === "ArrowDown" ? step : e.key === "ArrowUp" ? -step : 0;
+            if (!dx && !dy) return;
+            e.preventDefault();
+            onDrag(
+              Math.min(1080, Math.max(20, pending.x + dx)),
+              Math.min(540, Math.max(20, pending.y + dy)),
+            );
+          }}
+          fill="transparent"
+          onPointerDown={(e) => {
+            e.stopPropagation();
+            e.currentTarget.setPointerCapture(e.pointerId);
+            dragging.current = true;
+          }}
+          onPointerMove={(e) => {
+            if (!dragging.current) return;
+            const point = toStagePoint(e.clientX, e.clientY);
+            if (point) onDrag(point.x, point.y);
+          }}
+          onPointerUp={(e) => {
+            dragging.current = false;
+            if (e.currentTarget.hasPointerCapture(e.pointerId))
+              e.currentTarget.releasePointerCapture(e.pointerId);
+          }}
+          onPointerCancel={() => {
+            dragging.current = false;
+          }}
+          onLostPointerCapture={() => {
+            dragging.current = false;
+          }}
+        />
+        <circle
+          r={12}
+          fill="none"
+          stroke={color}
+          strokeWidth={2}
+          opacity={0.9}
+          pointerEvents="none"
+        />
+        <circle r={4.5} fill={color} pointerEvents="none" />
+        <g opacity={0.8} pointerEvents="none">
+          <line x1={-20} y1={0} x2={-14} y2={0} stroke={color} strokeWidth={2} />
+          <line x1={14} y1={0} x2={20} y2={0} stroke={color} strokeWidth={2} />
+          <line x1={0} y1={-20} x2={0} y2={-14} stroke={color} strokeWidth={2} />
+          <line x1={0} y1={14} x2={0} y2={20} stroke={color} strokeWidth={2} />
+        </g>
+        <text
+          x={22}
+          y={-14}
+          fill={color}
+          fontSize="10"
+          fontWeight="700"
+          fontFamily="monospace"
+          pointerEvents="none"
+        >
+          pending · drag
+        </text>
+      </g>
     </g>
   );
 };
@@ -211,6 +250,7 @@ interface RigViewProps {
   readonly innerColor: string;
   readonly goalColor: string;
   readonly dispatchNote: string;
+  readonly pending: GoalPoint;
   readonly svgRef: React.RefObject<SVGSVGElement | null>;
   readonly onGoalMove: (goalTrack: string, x: number, y: number) => void;
 }
@@ -224,6 +264,7 @@ const RigView: React.FC<RigViewProps> = ({
   innerColor,
   goalColor,
   dispatchNote,
+  pending,
   svgRef,
   onGoalMove,
 }) => {
@@ -287,6 +328,7 @@ const RigView: React.FC<RigViewProps> = ({
       <GoalHandle
         handle={handle}
         id={nodeId(rig.goalTrack)}
+        pending={pending}
         color={goalColor}
         svgRef={svgRef}
         onDrag={(x, y) => onGoalMove(rig.goalTrack, x, y)}
@@ -297,10 +339,11 @@ const RigView: React.FC<RigViewProps> = ({
 
 interface IkStageProps {
   readonly handle: ProjectHandle;
+  readonly pendingGoals: PendingGoals;
   readonly onGoalMove: (goalTrack: string, x: number, y: number) => void;
 }
 
-export const IkStage: React.FC<IkStageProps> = ({ handle, onGoalMove }) => {
+export const IkStage: React.FC<IkStageProps> = ({ handle, pendingGoals, onGoalMove }) => {
   const svgRef = useRef<SVGSVGElement | null>(null);
 
   return (
@@ -318,6 +361,7 @@ export const IkStage: React.FC<IkStageProps> = ({ handle, onGoalMove }) => {
         <RigView
           handle={handle}
           rig={ARM}
+          pending={pendingGoals[ARM.goalTrack]!}
           labelX={28}
           labelY={44}
           accent="#38bdf8"
@@ -330,6 +374,7 @@ export const IkStage: React.FC<IkStageProps> = ({ handle, onGoalMove }) => {
         <RigView
           handle={handle}
           rig={TENTACLE}
+          pending={pendingGoals[TENTACLE.goalTrack]!}
           labelX={578}
           labelY={44}
           accent="#34d399"

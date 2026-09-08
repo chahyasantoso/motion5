@@ -16,6 +16,7 @@ import {
 } from "../../../../apps/react-demo/src/full-body-project";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { Engine, type ProjectHandle } from "../../src/engine";
+import { createTriggerFactory } from "../../src/adapters/trigger-factory/default";
 import { PluginRegistry } from "../../src/domain/plugins";
 import { fkPlugin } from "../../src/plugins/fk";
 import { ikPlugin } from "../../src/plugins/ik";
@@ -37,6 +38,8 @@ function load(definition: ProjectDefinition) {
     interpolator: createFakeInterpolator(),
     scheduler,
     plugins,
+    // These tests exercise value authoring, not scrolling. Keep the declared driver with an idle host.
+    triggerFactory: createTriggerFactory({ scroll: () => ({ subscribe: () => () => undefined }) }),
   }).load(definition);
   const runtime = (handle as ProjectHandle & { readonly _runtime: ProjectRuntime })._runtime;
   const flush = () => {
