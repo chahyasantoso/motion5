@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import {
   Engine,
@@ -35,9 +35,10 @@ export const App: React.FC = () => {
   const [handle, setHandle] = useState<ProjectHandle | undefined>(undefined);
   const armHandlesRef = useRef<TrackHandle[]>([]);
 
-  useEffect(() => {
-    // engine.load() runs here, not in a render-phase useMemo, because this app owns the scroll
-    // source and GSAP needs #scroll-scene committed to the DOM before ScrollTrigger.create().
+  useLayoutEffect(() => {
+    // GSAP measures committed DOM in the layout phase, not during render or after paint.
+    // Together with the initial root commit, its pin spacer exists before native scroll
+    // restoration. The source still defers its snapshot; core load/mount do not publish.
     const plugins = new PluginRegistry();
     plugins.register(transformPlugin);
     plugins.register(fkPlugin);
