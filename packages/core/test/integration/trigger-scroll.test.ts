@@ -4,6 +4,7 @@ import { Engine } from "../../src/engine";
 import { createManualClock } from "../../src/ports/clock";
 import { createFakeInterpolator, createFakeScheduler } from "../../src/testing/fakes";
 import type { ScrollSource } from "../../src/adapters/scroll-trigger";
+import { createGsapScrollSource } from "../../src/adapters/scroll-trigger-gsap";
 import {
   createTriggerFactory,
   type ScrollSourceResolver,
@@ -69,6 +70,104 @@ function scrollMotion(id = "scene", key = "hero"): MotionDefinition {
 }
 
 describe("T3 scroll driver", () => {
+  it("routes the GSAP restored snapshot through the factory and scheduler, never load or mount", async () => {
+    const producer = { progress: 0.6, scroll: () => 600, kill() {} };
+    const scroll = createGsapScrollSource({ create: () => producer }, { trigger: "#scene" });
+    const { handle, scheduler } = load(() => scroll, [scrollMotion()]);
+    handle.mount("scene/arm");
+    const beforeDriver = handle.get("scene/arm");
+    scheduler.flush();
+    expect(handle.get("scene/arm")).toEqual(beforeDriver);
+    await Promise.resolve();
+    expect(handle.get("scene/arm")).toEqual(beforeDriver);
+    scheduler.flush();
+    expect(handle.get("scene/arm")?.values).toEqual({ x: 60 });
+    handle.dispose();
+  });
+
+  it("shares one producer across motions, holds refresh and normalizes only in the port", async () => {
+    let vars: Record<string, unknown> = {};
+    let position = 500;
+    let kills = 0;
+    let creates = 0;
+    const producer = {
+      progress: 1.4,
+      scroll: () => position,
+      kill() {
+        kills++;
+      },
+    };
+    const scroll = createGsapScrollSource(
+      {
+        create: (options) => {
+          creates++;
+          vars = options;
+          return producer;
+        },
+      },
+      { trigger: "#scene" },
+    );
+    const emit = (key: string) => (vars[key] as () => void)();
+    const { handle, scheduler } = load(
+      () => scroll,
+      [scrollMotion("first"), scrollMotion("second")],
+    );
+    handle.mount("first/arm");
+    handle.mount("second/arm");
+    await Promise.resolve();
+    scheduler.flush();
+    expect(creates).toBe(1);
+    expect(handle.get("first/arm")?.values).toEqual({ x: 100 });
+    expect(handle.get("second/arm")?.values).toEqual({ x: 100 });
+    emit("onRefreshInit");
+    producer.progress = 0.25;
+    emit("onUpdate");
+    emit("onRefresh");
+    scheduler.flush();
+    expect(handle.get("first/arm")?.values).toEqual({ x: 100 });
+    producer.progress = -0.2;
+    position = 100;
+    emit("onUpdate");
+    scheduler.flush();
+    expect(handle.get("first/arm")?.values).toEqual({ x: 0 });
+    expect(handle.get("second/arm")?.values).toEqual({ x: 0 });
+    producer.progress = Number.NaN;
+    position = 200;
+    expect(() => emit("onUpdate")).toThrow(AggregateError);
+    producer.progress = 0.3;
+    position = 300;
+    emit("onUpdate");
+    scheduler.flush();
+    expect(handle.get("second/arm")?.values).toEqual({ x: 30 });
+    handle.dispose();
+    expect(kills).toBe(1);
+    expect(() => emit("onUpdate")).not.toThrow();
+  });
+
+  it("disposal before the GSAP initial microtask cancels both Motion consumers", async () => {
+    let kills = 0;
+    const scroll = createGsapScrollSource(
+      {
+        create: () => ({
+          progress: 0.6,
+          scroll: () => 600,
+          kill() {
+            kills++;
+          },
+        }),
+      },
+      { trigger: "#scene" },
+    );
+    const { handle, scheduler } = load(
+      () => scroll,
+      [scrollMotion("first"), scrollMotion("second")],
+    );
+    handle.dispose();
+    await Promise.resolve();
+    expect(() => scheduler.flush()).not.toThrow();
+    expect(kills).toBe(1);
+  });
+
   it("3.1 drives progress from an injected source and clamps out-of-range emissions", () => {
     const scroll = source();
     const { scheduler, handle } = load(() => scroll, [scrollMotion()]);

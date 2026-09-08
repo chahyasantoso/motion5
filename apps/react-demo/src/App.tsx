@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import {
   Engine,
@@ -35,9 +35,10 @@ export const App: React.FC = () => {
   const [handle, setHandle] = useState<ProjectHandle | undefined>(undefined);
   const armHandlesRef = useRef<TrackHandle[]>([]);
 
-  useEffect(() => {
-    // engine.load() runs here, not in a render-phase useMemo, because this app owns the scroll
-    // source and GSAP needs #scroll-scene committed to the DOM before ScrollTrigger.create().
+  useLayoutEffect(() => {
+    // GSAP measures committed DOM in the layout phase, not during render or after paint.
+    // Together with the initial root commit, its pin spacer exists before native scroll
+    // restoration. The source still defers its snapshot; core load/mount do not publish.
     const plugins = new PluginRegistry();
     plugins.register(transformPlugin);
     plugins.register(fkPlugin);
@@ -46,60 +47,88 @@ export const App: React.FC = () => {
       requestFrame: (cb: FrameRequestCallback) => requestAnimationFrame(cb),
       cancelFrame: (h: number) => cancelAnimationFrame(h),
     });
-    const scrollSource = createWalkScrollSource();
-
-    // Core never sees the element, the selector, or GSAP. It receives a normalized progress
-    // source resolved from the serializable authored key, and nothing else.
-    const project = new Engine({
-      clock,
-      interpolator: createGsapInterpolator(gsap),
-      // The shipped scheduler drains on a microtask, so this app no longer flushes the queue by
-      // hand from inside the scroll subscriber below. Issue #155.
-      scheduler: createMicrotaskScheduler(),
-      plugins,
-      triggerFactory: createTriggerFactory({
-        scroll: ({ trigger }) => (trigger.source === WALK_SCROLL_SOURCE ? scrollSource : undefined),
-      }),
-    }).load(initialWalkerProject);
-
-    for (const nodeId of CORE_NODES) project.mount(nodeId);
-
-    // The app owns the source, so tapping it for UI and threshold logic keeps core clean. There is
-    // deliberately no handle.signal() call here: the injected driver is the only thing that moves
-    // this Motion, and signalling it would now throw.
-    const unsubscribe = scrollSource.subscribe((p: number) => {
-      setProgress(p);
-
-      // One structural transaction adds and mounts all four arms at the live Motion's progress.
-      // Retain the new handles only after the recipe commits successfully.
-      if (p >= 0.5 && armHandlesRef.current.length === 0) {
-        armHandlesRef.current = project.edit((tx) => {
-          const walk = tx.motion("walk");
-          return armTracks.map((track) => walk.addTrack(track));
-        });
-        setArmsAdopted(true);
-      } else if (p < 0.45 && armHandlesRef.current.length > 0) {
-        // Remove the whole branch in one commit, with no partially removed graph published.
-        project.edit(() => {
-          for (const trackHandle of [...armHandlesRef.current].reverse()) {
-            trackHandle.remove();
-          }
-        });
-        armHandlesRef.current = [];
-        setArmsAdopted(false);
+    let ownedProject: ProjectHandle | undefined;
+    let unsubscribe = () => {};
+    const release = () => {
+      const failures: unknown[] = [];
+      for (const dispose of [
+        () => unsubscribe(),
+        () => ownedProject?.dispose(),
+        () => clock.dispose(),
+      ]) {
+        try {
+          dispose();
+        } catch (error) {
+          failures.push(error);
+        }
       }
-    });
+      if (failures.length === 1) throw failures[0];
+      if (failures.length > 1)
+        throw new AggregateError(failures, "Walking resource cleanup failed.");
+    };
+    try {
+      const scrollSource = createWalkScrollSource();
 
-    setHandle(project);
+      // Core never sees the element, the selector, or GSAP. It receives a normalized progress
+      // source resolved from the serializable authored key, and nothing else.
+      const project = new Engine({
+        clock,
+        interpolator: createGsapInterpolator(gsap),
+        // The shipped scheduler drains on a microtask, so this app no longer flushes the queue by
+        // hand from inside the scroll subscriber below. Issue #155.
+        scheduler: createMicrotaskScheduler(),
+        plugins,
+        triggerFactory: createTriggerFactory({
+          scroll: ({ trigger }) =>
+            trigger.source === WALK_SCROLL_SOURCE ? scrollSource : undefined,
+        }),
+      }).load(initialWalkerProject);
+      ownedProject = project;
+
+      for (const nodeId of CORE_NODES) project.mount(nodeId);
+
+      // The app owns the source, so tapping it for UI and threshold logic keeps core clean. There is
+      // deliberately no handle.signal() call here: the injected driver is the only thing that moves
+      // this Motion, and signalling it would now throw.
+      unsubscribe = scrollSource.subscribe((p: number) => {
+        setProgress(p);
+
+        // One structural transaction adds and mounts all four arms at the live Motion's progress.
+        // Retain the new handles only after the recipe commits successfully.
+        if (p >= 0.5 && armHandlesRef.current.length === 0) {
+          armHandlesRef.current = project.edit((tx) => {
+            const walk = tx.motion("walk");
+            return armTracks.map((track) => walk.addTrack(track));
+          });
+          setArmsAdopted(true);
+        } else if (p < 0.45 && armHandlesRef.current.length > 0) {
+          // Remove the whole branch in one commit, with no partially removed graph published.
+          project.edit(() => {
+            for (const trackHandle of [...armHandlesRef.current].reverse()) {
+              trackHandle.remove();
+            }
+          });
+          armHandlesRef.current = [];
+          setArmsAdopted(false);
+        }
+      });
+
+      setHandle(project);
+    } catch (error) {
+      try {
+        release();
+      } catch (cleanupError) {
+        throw new AggregateError([error, cleanupError], "Walking setup and cleanup failed.");
+      }
+      throw error;
+    }
 
     return () => {
-      unsubscribe();
       // Project disposal owns all remaining tracks; do not rebuild a graph being torn down.
       armHandlesRef.current = [];
       setArmsAdopted(false);
       setHandle(undefined);
-      project.dispose();
-      clock.dispose();
+      release();
     };
   }, []);
 
