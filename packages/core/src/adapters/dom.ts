@@ -8,9 +8,11 @@ export interface DomStyle {
 }
 export interface StageLike {
   style: DomStyle;
+  [key: string]: unknown;
 }
 export interface DomTarget {
   style: DomStyle;
+  [key: string]: unknown;
 }
 function styleValues(target: StageLike | DomTarget): Record<string, unknown> {
   return target.style as Record<string, unknown>;

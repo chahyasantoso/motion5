@@ -22,13 +22,18 @@ export function usePatch(source: PatchSource, nodeId: string): Patch | undefined
 }
 
 /** Bind one published node directly to a DOM or SVG target without rendering through React. */
-export function useDomPatch<T extends DomTarget>(
+export function useDomPatch<T extends Pick<DomTarget, "style">>(
   source: PatchSource,
   nodeId: string,
 ): RefCallback<T> {
   const target = useRef<T | null>(null);
   const adapter = useMemo(
-    () => createDomPatchAdapter({ style: {} }, undefined, () => target.current ?? undefined),
+    () =>
+      createDomPatchAdapter(
+        { style: {} },
+        undefined,
+        () => target.current as DomTarget | null | undefined,
+      ),
     [],
   );
 

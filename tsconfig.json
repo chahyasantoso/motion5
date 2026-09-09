@@ -17,6 +17,7 @@
     "paths": {
       "@motion5/core": ["packages/core/src/index.ts"],
       "@motion5/core/internal": ["packages/core/src/internal.ts"],
+      "@motion5/core/adapters": ["packages/core/src/adapters/index.ts"],
       "@motion5/core/*": ["packages/core/src/*"],
       "@motion5/react": ["packages/react/src/index.ts"]
     },
