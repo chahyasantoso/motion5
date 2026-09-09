@@ -1,0 +1,130 @@
+quality (node 24)	Run npm run typecheck	﻿2026-09-09T12:32:33.8858318Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-09-09T12:32:33.8858787Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-09-09T12:32:33.8882374Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-09-09T12:32:33.8882952Z env:
+quality (node 24)	Run npm run typecheck	2026-09-09T12:32:33.8883234Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-09-09T12:32:33.8883667Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run npm run typecheck	2026-09-09T12:32:33.8884093Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-09-09T12:32:33.9816749Z 
+quality (node 24)	Run npm run typecheck	2026-09-09T12:32:33.9817808Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-09-09T12:32:33.9818609Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-09-09T12:32:33.9818973Z 
+quality (node 24)	Run npm run typecheck	2026-09-09T12:32:38.2069639Z ##[error]packages/react/src/index.ts(35,9): error TS2345: Argument of type '() => DomTarget | null | undefined' is not assignable to parameter of type 'DomTargetResolver'.
+quality (node 24)	Run npm run typecheck	2026-09-09T12:32:38.2077410Z   Type 'DomTarget | null | undefined' is not assignable to type 'DomTarget | undefined'.
+quality (node 24)	Run npm run typecheck	2026-09-09T12:32:38.2078153Z     Type 'null' is not assignable to type 'DomTarget | undefined'.
+quality (node 24)	Run npm run typecheck	2026-09-09T12:32:38.2345613Z ##[error]Process completed with exit code 2.
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	﻿2026-09-09T12:32:46.0606068Z ##[group]Run node scripts/ci-evidence.mjs discover
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:32:46.0606586Z ^[[36;1mnode scripts/ci-evidence.mjs discover^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:32:46.0631024Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:32:46.0631416Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:32:46.0631744Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:32:46.0632136Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:32:46.0632689Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9791827Z ^[[31m^[[1mError^[[22m: Cannot find package '@motion5/core/adapters' imported from /home/runner/work/motion5/motion5/packages/react/src/index.ts^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9794561Z ^[[36m ^[[2m❯^[[22m packages/react/src/index.ts:^[[2m9:1^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9829398Z     ^[[90m  7|^[[39m   type ^[[33mRefCallback^[[39m^[[33m,^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9830274Z     ^[[90m  8|^[[39m } ^[[35mfrom^[[39m ^[[32m"react"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9831129Z     ^[[90m  9|^[[39m import { createDomPatchAdapter, type DomTarget } from "@motion5/core/a…
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9831722Z     ^[[90m   |^[[39m ^[[31m^^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9832806Z     ^[[90m 10|^[[39m ^[[35mimport^[[39m type { ^[[33mPatch^[[39m^[[33m,^[[39m ^[[33mPatchSource^[[39m } ^[[35mfrom^[[39m ^[[32m"@motion5/core/internal"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9833840Z     ^[[90m 11|^[[39m ^[[35mimport^[[39m { createPatchStore } ^[[35mfrom^[[39m ^[[32m"./patch-store"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9834779Z ^[[90m ^[[2m❯^[[22m packages/react/test/dom-patch-hook.test.ts:^[[2m4:1^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9835149Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9835430Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9837207Z ^[[31m^[[1mSerialized Error:^[[22m^[[39m ^[[90m{ code: 'ERR_MODULE_NOT_FOUND' }^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9843007Z ^[[31m^[[1mError^[[22m: Cannot find package '@motion5/core/adapters' imported from /home/runner/work/motion5/motion5/packages/react/src/index.ts^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9843954Z ^[[36m ^[[2m❯^[[22m packages/react/src/index.ts:^[[2m9:1^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9846617Z     ^[[90m  7|^[[39m   type ^[[33mRefCallback^[[39m^[[33m,^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9847375Z     ^[[90m  8|^[[39m } ^[[35mfrom^[[39m ^[[32m"react"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9848129Z     ^[[90m  9|^[[39m import { createDomPatchAdapter, type DomTarget } from "@motion5/core/a…
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9849052Z     ^[[90m   |^[[39m ^[[31m^^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9850200Z     ^[[90m 10|^[[39m ^[[35mimport^[[39m type { ^[[33mPatch^[[39m^[[33m,^[[39m ^[[33mPatchSource^[[39m } ^[[35mfrom^[[39m ^[[32m"@motion5/core/internal"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9851524Z     ^[[90m 11|^[[39m ^[[35mimport^[[39m { createPatchStore } ^[[35mfrom^[[39m ^[[32m"./patch-store"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9853059Z ^[[90m ^[[2m❯^[[22m packages/react/test/public-hook.test.ts:^[[2m2:1^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9853523Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9853894Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9854843Z ^[[31m^[[1mSerialized Error:^[[22m^[[39m ^[[90m{ code: 'ERR_MODULE_NOT_FOUND' }^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9856305Z ^[[31m^[[1mError^[[22m: Cannot find package '@motion5/core/adapters' imported from /home/runner/work/motion5/motion5/packages/react/src/index.ts^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9857215Z ^[[36m ^[[2m❯^[[22m packages/react/src/index.ts:^[[2m9:1^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9857807Z     ^[[90m  7|^[[39m   type ^[[33mRefCallback^[[39m^[[33m,^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9858343Z     ^[[90m  8|^[[39m } ^[[35mfrom^[[39m ^[[32m"react"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9859027Z     ^[[90m  9|^[[39m import { createDomPatchAdapter, type DomTarget } from "@motion5/core/a…
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9859572Z     ^[[90m   |^[[39m ^[[31m^^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9860323Z     ^[[90m 10|^[[39m ^[[35mimport^[[39m type { ^[[33mPatch^[[39m^[[33m,^[[39m ^[[33mPatchSource^[[39m } ^[[35mfrom^[[39m ^[[32m"@motion5/core/internal"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9861689Z     ^[[90m 11|^[[39m ^[[35mimport^[[39m { createPatchStore } ^[[35mfrom^[[39m ^[[32m"./patch-store"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9862982Z ^[[90m ^[[2m❯^[[22m packages/react/test/public-hook-render.test.ts:^[[2m9:1^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9863381Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9863842Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9864861Z ^[[31m^[[1mSerialized Error:^[[22m^[[39m ^[[90m{ code: 'ERR_MODULE_NOT_FOUND' }^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9866324Z ^[[31m^[[1mError^[[22m: Cannot find package '@motion5/core/adapters' imported from /home/runner/work/motion5/motion5/packages/react/src/index.ts^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9867710Z ^[[36m ^[[2m❯^[[22m packages/react/src/index.ts:^[[2m9:1^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9868478Z     ^[[90m  7|^[[39m   type ^[[33mRefCallback^[[39m^[[33m,^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9869512Z     ^[[90m  8|^[[39m } ^[[35mfrom^[[39m ^[[32m"react"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9870478Z     ^[[90m  9|^[[39m import { createDomPatchAdapter, type DomTarget } from "@motion5/core/a…
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9871310Z     ^[[90m   |^[[39m ^[[31m^^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9872373Z     ^[[90m 10|^[[39m ^[[35mimport^[[39m type { ^[[33mPatch^[[39m^[[33m,^[[39m ^[[33mPatchSource^[[39m } ^[[35mfrom^[[39m ^[[32m"@motion5/core/internal"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9873767Z     ^[[90m 11|^[[39m ^[[35mimport^[[39m { createPatchStore } ^[[35mfrom^[[39m ^[[32m"./patch-store"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9874638Z ^[[90m ^[[2m❯^[[22m packages/react/test/public-package-surface.test.ts:^[[2m4:1^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9875019Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9875315Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9876031Z ^[[31m^[[1mSerialized Error:^[[22m^[[39m ^[[90m{ code: 'ERR_MODULE_NOT_FOUND' }^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9877027Z ^[[31m^[[1mError^[[22m: Cannot find package '@motion5/core/adapters' imported from /home/runner/work/motion5/motion5/packages/react/src/index.ts^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9877913Z ^[[36m ^[[2m❯^[[22m packages/react/src/index.ts:^[[2m9:1^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9878430Z     ^[[90m  7|^[[39m   type ^[[33mRefCallback^[[39m^[[33m,^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9878929Z     ^[[90m  8|^[[39m } ^[[35mfrom^[[39m ^[[32m"react"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9879650Z     ^[[90m  9|^[[39m import { createDomPatchAdapter, type DomTarget } from "@motion5/core/a…
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9880187Z     ^[[90m   |^[[39m ^[[31m^^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9880982Z     ^[[90m 10|^[[39m ^[[35mimport^[[39m type { ^[[33mPatch^[[39m^[[33m,^[[39m ^[[33mPatchSource^[[39m } ^[[35mfrom^[[39m ^[[32m"@motion5/core/internal"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9881912Z     ^[[90m 11|^[[39m ^[[35mimport^[[39m { createPatchStore } ^[[35mfrom^[[39m ^[[32m"./patch-store"^[[39m^[[33m;^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9882872Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m11:1^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9883331Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9883654Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯^[[22m^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:01.9884250Z ^[[31m^[[1mSerialized Error:^[[22m^[[39m ^[[90m{ code: 'ERR_MODULE_NOT_FOUND' }^[[39m
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:02.0225561Z Command failed: /opt/hostedtoolcache/node/24.20.0/x64/bin/node node_modules/vitest/vitest.mjs list --json=/home/runner/work/_temp/ci-evidence/all.json
+quality (node 24)	Run node scripts/ci-evidence.mjs discover	2026-09-09T12:33:02.0264927Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	﻿2026-09-09T12:33:02.0303750Z ##[group]Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:02.0304483Z ^[[36;1mnpm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs^[[0m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:02.0328617Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:02.0329006Z env:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:02.0329297Z   NODE_VERSION: 24
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:02.0329715Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:02.0330139Z ##[endgroup]
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:02.1359249Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:02.1360420Z > motion5@0.0.0 test
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:02.1361161Z > vitest run --reporter=default --reporter=./scripts/ci-evidence.mjs
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:02.1361477Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:02.4404687Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:02.4408164Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:02.4409072Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:02.8365110Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/evidence-case-ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 39^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:03.1561214Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/structural-commit-path.test.ts ^[[2m(^[[22m^[[2m40 tests^[[22m^[[2m)^[[22m^[[32m 59^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:03.1563941Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/keyframe-property-edit.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 60^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:03.4525216Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/pivot-offset-solve.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 25^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:03.4960813Z  ^[[31m❯^[[39m packages/core/test/integration/phase7-walker-demo.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:03.7528645Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/schema-transaction.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 32^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:03.8312097Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/live-value-updates.test.ts ^[[2m(^[[22m^[[2m19 tests^[[22m^[[2m)^[[22m^[[33m 317^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:03.9695644Z  ^[[32m✓^[[39m packages/core/test/unit/graph/resolve-solvers.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:04.1975912Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/plugin-group-edit.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:04.4897126Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/handle-base.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 135^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:04.7785441Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/motion-consistency.test.ts ^[[2m(^[[22m^[[2m17 tests^[[22m^[[2m)^[[22m^[[32m 53^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:05.0557625Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/plugin-require-edit.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 31^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:05.3322132Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/structural-commit-flush.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 30^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:05.5556369Z  ^[[32m✓^[[39m packages/core/test/unit/domain/dict-valued-requirements.test.ts ^[[2m(^[[22m^[[2m12 tests^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:07.4145258Z  ^[[32m✓^[[39m packages/core/test/integration/bare-authored-leaf.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m)^[[22m^[[33m 2630^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:07.4179079Z      ^[[33m^[[2m✓^[[22m^[[39m LF-16 leaves no authored schema in the repository on the retired form ^[[33m 2500^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:07.6762861Z  ^[[32m✓^[[39m packages/core/test/integration/t4-runtime-motion-parity.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 32^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:07.8197366Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/apply-ai-edit.test.ts ^[[2m(^[[22m^[[2m35 tests^[[22m^[[2m)^[[22m^[[33m 4147^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:07.8203615Z      ^[[33m^[[2m✓^[[22m^[[39m AE-21: refuses absent or unsupported protocol versions ^[[33m 341^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:07.8205305Z      ^[[33m^[[2m✓^[[22m^[[39m AE-26: rejects every supported CI-skip spelling including mixed case ^[[33m 448^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:07.8208925Z      ^[[33m^[[2m✓^[[22m^[[39m AE-27: control characters cannot inject workflow outputs through the subject ^[[33m 316^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:07.8213728Z      ^[[33m^[[2m✓^[[22m^[[39m AE-28: canonical paths reject traversal and line-oriented argument ambiguity ^[[33m 538^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:07.9195471Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/commit-write-cost.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 28^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:08.0635484Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/immediate-verb-refusal.test.ts ^[[2m(^[[22m^[[2m7 tests^[[22m^[[2m)^[[22m^[[32m 21^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:08.3020193Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/motion-driver-edit.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 23^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:08.3572215Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/automation-operation-policy.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[33m 2613^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:08.3574714Z    ^[[33m^[[2m✓^[[22m^[[39m preview and apply produce the same normalized bytes while preview publishes none ^[[33m 390^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:08.3576844Z    ^[[33m^[[2m✓^[[22m^[[39m targeted read-budget evidence uses trusted source checks rather than a green placeholder ^[[33m 391^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:08.3578952Z    ^[[33m^[[2m✓^[[22m^[[39m publication consumes only the request after durable validated operation evidence ^[[33m 388^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:08.5148653Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/fabrik-solve.test.ts ^[[2m(^[[22m^[[2m8 tests^[[22m^[[2m)^[[22m^[[32m 27^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:08.6520782Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/recompile-predicate.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 48^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:08.7494

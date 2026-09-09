@@ -1,0 +1,114 @@
+ntime/patch-registry-retention.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:30.7117367Z  ^[[32m✓^[[39m packages/core/test/unit/adapters/scroll-trigger-range.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:30.7447134Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/mutation-config.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:30.8015354Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:30.9013320Z  ^[[32m✓^[[39m packages/react/test/patch-store.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:30.9272045Z  ^[[32m✓^[[39m packages/core/test/contract/s4-validation-owner.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:30.9755215Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/s7-recovery-audit.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.1051643Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.1645090Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-trigger-validation.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.2035385Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.3065099Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.3725395Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4001514Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4586944Z  ^[[31m❯^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m0 test^[[22m^[[2m)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4660182Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4661503Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Suites 5 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4661892Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4664371Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/react/test/dom-patch-hook.test.ts^[[2m [ packages/react/test/dom-patch-hook.test.ts ]^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4669366Z ^[[31m^[[1mError^[[22m: Cannot find package '@motion5/core/adapters' imported from /home/runner/work/motion5/motion5/packages/react/src/index.ts^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4670748Z ^[[36m ^[[2m❯^[[22m packages/react/src/index.ts:^[[2m9:1^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4697822Z     ^[[90m  7|^[[39m   type ^[[33mRefCallback^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4698743Z     ^[[90m  8|^[[39m } ^[[35mfrom^[[39m ^[[32m"react"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4700061Z     ^[[90m  9|^[[39m import { createDomPatchAdapter, type DomTarget } from "@motion5/core/a…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4700879Z     ^[[90m   |^[[39m ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4702115Z     ^[[90m 10|^[[39m ^[[35mimport^[[39m type { ^[[33mPatch^[[39m^[[33m,^[[39m ^[[33mPatchSource^[[39m } ^[[35mfrom^[[39m ^[[32m"@motion5/core/internal"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4703769Z     ^[[90m 11|^[[39m ^[[35mimport^[[39m { createPatchStore } ^[[35mfrom^[[39m ^[[32m"./patch-store"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4705017Z ^[[90m ^[[2m❯^[[22m packages/react/test/dom-patch-hook.test.ts:^[[2m4:1^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4705983Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4706466Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4706807Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4707794Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/react/test/public-hook-render.test.ts^[[2m [ packages/react/test/public-hook-render.test.ts ]^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4709723Z ^[[31m^[[1mError^[[22m: Cannot find package '@motion5/core/adapters' imported from /home/runner/work/motion5/motion5/packages/react/src/index.ts^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4711113Z ^[[36m ^[[2m❯^[[22m packages/react/src/index.ts:^[[2m9:1^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4711815Z     ^[[90m  7|^[[39m   type ^[[33mRefCallback^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4712413Z     ^[[90m  8|^[[39m } ^[[35mfrom^[[39m ^[[32m"react"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4713300Z     ^[[90m  9|^[[39m import { createDomPatchAdapter, type DomTarget } from "@motion5/core/a…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4713868Z     ^[[90m   |^[[39m ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4714716Z     ^[[90m 10|^[[39m ^[[35mimport^[[39m type { ^[[33mPatch^[[39m^[[33m,^[[39m ^[[33mPatchSource^[[39m } ^[[35mfrom^[[39m ^[[32m"@motion5/core/internal"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4715666Z     ^[[90m 11|^[[39m ^[[35mimport^[[39m { createPatchStore } ^[[35mfrom^[[39m ^[[32m"./patch-store"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4716660Z ^[[90m ^[[2m❯^[[22m packages/react/test/public-hook-render.test.ts:^[[2m9:1^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4717010Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4717359Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4717631Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4718157Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/react/test/public-hook.test.ts^[[2m [ packages/react/test/public-hook.test.ts ]^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4719314Z ^[[31m^[[1mError^[[22m: Cannot find package '@motion5/core/adapters' imported from /home/runner/work/motion5/motion5/packages/react/src/index.ts^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4720141Z ^[[36m ^[[2m❯^[[22m packages/react/src/index.ts:^[[2m9:1^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4720672Z     ^[[90m  7|^[[39m   type ^[[33mRefCallback^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4721255Z     ^[[90m  8|^[[39m } ^[[35mfrom^[[39m ^[[32m"react"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4721919Z     ^[[90m  9|^[[39m import { createDomPatchAdapter, type DomTarget } from "@motion5/core/a…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4722452Z     ^[[90m   |^[[39m ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4723523Z     ^[[90m 10|^[[39m ^[[35mimport^[[39m type { ^[[33mPatch^[[39m^[[33m,^[[39m ^[[33mPatchSource^[[39m } ^[[35mfrom^[[39m ^[[32m"@motion5/core/internal"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4724735Z     ^[[90m 11|^[[39m ^[[35mimport^[[39m { createPatchStore } ^[[35mfrom^[[39m ^[[32m"./patch-store"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4725594Z ^[[90m ^[[2m❯^[[22m packages/react/test/public-hook.test.ts:^[[2m2:1^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4725891Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4726203Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4726545Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4727509Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/react/test/public-package-surface.test.ts^[[2m [ packages/react/test/public-package-surface.test.ts ]^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4729348Z ^[[31m^[[1mError^[[22m: Cannot find package '@motion5/core/adapters' imported from /home/runner/work/motion5/motion5/packages/react/src/index.ts^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4730640Z ^[[36m ^[[2m❯^[[22m packages/react/src/index.ts:^[[2m9:1^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4731380Z     ^[[90m  7|^[[39m   type ^[[33mRefCallback^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4731928Z     ^[[90m  8|^[[39m } ^[[35mfrom^[[39m ^[[32m"react"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4732893Z     ^[[90m  9|^[[39m import { createDomPatchAdapter, type DomTarget } from "@motion5/core/a…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4733670Z     ^[[90m   |^[[39m ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4734484Z     ^[[90m 10|^[[39m ^[[35mimport^[[39m type { ^[[33mPatch^[[39m^[[33m,^[[39m ^[[33mPatchSource^[[39m } ^[[35mfrom^[[39m ^[[32m"@motion5/core/internal"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4735406Z     ^[[90m 11|^[[39m ^[[35mimport^[[39m { createPatchStore } ^[[35mfrom^[[39m ^[[32m"./patch-store"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4736244Z ^[[90m ^[[2m❯^[[22m packages/react/test/public-package-surface.test.ts:^[[2m4:1^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4737012Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4737302Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4737623Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4738604Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase7-walker-demo.test.ts^[[2m [ packages/core/test/integration/phase7-walker-demo.test.ts ]^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4739918Z ^[[31m^[[1mError^[[22m: Cannot find package '@motion5/core/adapters' imported from /home/runner/work/motion5/motion5/packages/react/src/index.ts^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4740768Z ^[[36m ^[[2m❯^[[22m packages/react/src/index.ts:^[[2m9:1^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4742011Z     ^[[90m  7|^[[39m   type ^[[33mRefCallback^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4742680Z     ^[[90m  8|^[[39m } ^[[35mfrom^[[39m ^[[32m"react"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4743337Z     ^[[90m  9|^[[39m import { createDomPatchAdapter, type DomTarget } from "@motion5/core/a…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4743975Z     ^[[90m   |^[[39m ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4744752Z     ^[[90m 10|^[[39m ^[[35mimport^[[39m type { ^[[33mPatch^[[39m^[[33m,^[[39m ^[[33mPatchSource^[[39m } ^[[35mfrom^[[39m ^[[32m"@motion5/core/internal"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4745699Z     ^[[90m 11|^[[39m ^[[35mimport^[[39m { createPatchStore } ^[[35mfrom^[[39m ^[[32m"./patch-store"^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4746554Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/phase7-walker-demo.test.ts:^[[2m11:1^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4746961Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4747244Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4747522Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4747559Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4748056Z ^[[2m Test Files ^[[22m ^[[1m^[[31m5 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m196 passed^[[39m^[[22m^[[90m (201)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4748724Z ^[[2m      Tests ^[[22m ^[[1m^[[32m1167 passed^[[39m^[[22m^[[90m (1167)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4749289Z ^[[2m   Start at ^[[22m 12:33:02
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4750042Z ^[[2m   Duration ^[[22m 28.99s^[[2m (transform 2.82s, setup 1.14s, import 15.25s, tests 38.25s, environment 23ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.4750474Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-09T12:33:31.5319135Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-09T12:33:31.5373800Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-09T12:33:31.5374737Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-09T12:33:31.5407542Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-09T12:33:31.5408061Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-09T12:33:31.5408580Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-09T12:33:31.5409110Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-09T12:33:31.5409765Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-09T12:33:31.5804953Z ENOENT: no such file or directory, open '/home/runner/work/_temp/ci-evidence/inventory.json'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-09T12:33:31.5840343Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-09T12:33:41.0840033Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-09T12:33:41.0840847Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-09T12:33:41.0880977Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-09T12:33:41.0881856Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-09T12:33:41.0882343Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-09T12:33:41.0882845Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-09T12:33:41.0883362Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-09T12:33:41.1016493Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-09T12:33:41.2020764Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-09T12:33:41.2021605Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-09T12:33:41.2062250Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-09T12:33:41.2063161Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-09T12:33:41.2063686Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-09T12:33:41.2064232Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-09T12:33:41.2064783Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-09T12:33:41.2199516Z ##[error]Process completed with exit code 1.
