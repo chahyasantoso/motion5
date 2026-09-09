@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import type { ProjectHandle } from "@motion5/core";
-import { usePatch, type Patch } from "@motion5/react";
+import { useDomPatch, usePatch, type Patch } from "@motion5/react";
 import { ARM, TENTACLE, nodeId, type RigGeometry } from "../ik-playground-project";
 import type { GoalPoint, PendingGoals } from "../scroll-reach";
 
@@ -62,11 +62,10 @@ const Joint: React.FC<{
   readonly radius: number;
   readonly label?: string;
 }> = ({ handle, id, color, radius, label }) => {
-  const patch = useLivePatch(handle, id);
-  if (!patch) return null;
+  const target = useDomPatch<SVGGElement>(handle, id);
 
   return (
-    <g transform={`translate(${Number(patch.values.x ?? 0)}, ${Number(patch.values.y ?? 0)})`}>
+    <g ref={target}>
       <circle r={radius} fill={color} stroke="#0f172a" strokeWidth={1.5} />
       {label && (
         <text

@@ -98,7 +98,7 @@ A private channel between core and React: `Patch`, `PatchListener`, and `PatchSo
 
 ## @motion5/react
 
-`usePatch(source, nodeId)` and the re-exported `Patch`, `PatchListener`, and `PatchSource` types.
+`usePatch(source, nodeId)`, `useDomPatch(source, nodeId)`, and the re-exported `Patch`, `PatchListener`, and `PatchSource` types. `useDomPatch` returns a callback ref for a one-patch-to-one-DOM-or-SVG-target binding; derived markup and multi-node projections stay on `usePatch`.
 
 ## Known gaps
 

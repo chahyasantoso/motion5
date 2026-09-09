@@ -1,13 +1,22 @@
 import type { Patch } from "../runtime/patch-registry";
 import type { ResolvedPlugins } from "../domain/plugins";
 
+export interface DomStyle {
+  perspective?: string;
+  transform?: string;
+  removeProperty?: (property: string) => unknown;
+}
 export interface StageLike {
-  style: { perspective?: string; [key: string]: unknown };
-  [key: string]: unknown;
+  style: DomStyle;
 }
 export interface DomTarget {
-  style: { removeProperty?: (property: string) => void; [key: string]: unknown };
-  [key: string]: unknown;
+  style: DomStyle;
+}
+function styleValues(target: StageLike | DomTarget): Record<string, unknown> {
+  return target.style as Record<string, unknown>;
+}
+function targetValues(target: DomTarget): Record<string, unknown> {
+  return target as unknown as Record<string, unknown>;
 }
 export type DomTargetResolver = (nodeId: string) => DomTarget | undefined;
 export type DomPatchWriter = (target: DomTarget, values: Readonly<Record<string, unknown>>) => void;
@@ -39,7 +48,7 @@ function composeTransform(values: Readonly<Record<string, unknown>>): string {
 }
 function removeStyleProperty(target: DomTarget, key: string): void {
   if (typeof target.style.removeProperty === "function") target.style.removeProperty(key);
-  else target.style[key] = undefined;
+  else styleValues(target)[key] = undefined;
 }
 function defaultWriter(target: DomTarget, values: Readonly<Record<string, unknown>>): void {
   const state = transformState.get(target) ?? {};
@@ -51,10 +60,10 @@ function defaultWriter(target: DomTarget, values: Readonly<Record<string, unknow
       continue;
     }
     if (value === undefined) removeStyleProperty(target, key);
-    else if (key in target.style || key.startsWith("--")) target.style[key] = value;
-    else target[key] = value;
+    else if (key in target.style || key.startsWith("--")) styleValues(target)[key] = value;
+    else targetValues(target)[key] = value;
   }
-  if (Object.keys(state).length > 0) target.style.transform = composeTransform(state);
+  if (Object.keys(state).length > 0) styleValues(target).transform = composeTransform(state);
   else if (hadTransform) removeStyleProperty(target, "transform");
   transformState.set(target, state);
 }
@@ -104,7 +113,7 @@ export function createDomPatchAdapter(
   metadata?: ResolvedPlugins,
 ): DomPatchAdapter {
   if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
-    stage.style.perspective = `${perspective}px`;
+    styleValues(stage).perspective = `${perspective}px`;
   const lastApplied = new WeakMap<object, Record<string, unknown>>();
   return {
     apply(patch) {

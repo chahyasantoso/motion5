@@ -41,16 +41,17 @@ Call `adapter.clear(target)` when you stop rendering a target, so its diff and t
 ## React
 
 ```tsx
-import { usePatch } from "@motion5/react";
+import { useDomPatch } from "@motion5/react";
 
 function Title({ handle }: { handle: ProjectHandle }) {
-  const patch = usePatch(handle, "hero/title");
-  if (patch?.status !== "ready") return null;
-  return <div style={{ transform: `translateX(${String(patch.values.x)}px)` }} />;
+  const target = useDomPatch<HTMLDivElement>(handle, "hero/title");
+  return <div ref={target} />;
 }
 ```
 
-`usePatch` takes any `PatchSource`, which is exactly `{ get, subscribeNode }`, so a project handle satisfies it. It is built on `useSyncExternalStore`, so it is tear-free under concurrent rendering and safe in strict mode. One hook subscribes to one node; render a component per animated node rather than subscribing to the project and re-rendering the tree.
+`useDomPatch` binds one node to one DOM or SVG target and routes complete patches through the DOM adapter. It subscribes before reading the retained patch, writes future batch notifications directly without a React render, ignores non-ready patches through the adapter contract, and clears target state on replacement or unmount. A new renderable plugin output therefore reaches the target without a component learning its key.
+
+Use `usePatch` when React must derive markup, combine nodes, or display diagnostics. It takes any `PatchSource`, which is exactly `{ get, subscribeNode }`, and is built on `useSyncExternalStore`, so it is tear-free under concurrent rendering and safe in strict mode. A bone joining two nodes is derived geometry, not a one-patch-to-one-target binding; keeping that projection explicit avoids teaching a generic renderer application semantics.
 
 ## Your own consumer
 

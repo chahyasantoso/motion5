@@ -14,6 +14,7 @@ Current project state only. Replace stale entries rather than append history. Th
 
 ## Next in line
 
+- **Unmerged React DOM binding:** issue [#354](https://github.com/chahyasantoso/motion5/issues/354) has an implementation branch adding a direct one-node-to-one-target React binding over the existing DOM adapter. The PR and exact-head CI remain gates; no landed public surface is claimed.
 - **Unmerged formatter parity:** [#345](https://github.com/chahyasantoso/motion5/pull/345) addresses [#344](https://github.com/chahyasantoso/motion5/issues/344) by preserving filepath context in AI-edit formatting and validation, with real CLI regressions for `.ts` and `.tsx`. Review, merge, a reviewed runner-pin update and live parity exercises remain gates; no activated correction is claimed.
 - **Unmerged reporting completion:** [#339](https://github.com/chahyasantoso/motion5/pull/339) consolidates failed-preparation diagnostics, retry/recovery retention, legacy evidence completion, and useful error excerpts. Its regression and exact-SHA CI evidence belong to the PR. Review, a single runner-pin rollout, and live failure/correction/replay verification remain gates; no deployed diagnostics fix is claimed.
 
