@@ -1,7 +1,7 @@
 {
   "version": 1,
   "operation": "apply",
-  "expected_head": "a9f911a95ec9c681fbef01c56b884f27c7108ef0",
+  "expected_head": "8f7dce3f2f28510f79ce4f60ac4bae24ab552603",
   "expected_blobs": {
     "packages/core/src/adapters/dom.ts": "c6c5712a7bff9e4e207944d207283e1f01343b24",
     "packages/react/src/index.ts": "d4d0fc05a1b3c3382bc27999182eceeda3e45c49",
@@ -19,26 +19,14 @@
       "find": "export interface StageLike {\n  style: { perspective?: string; [key: string]: unknown };\n  [key: string]: unknown;\n}\nexport interface DomTarget {\n  style: { removeProperty?: (property: string) => void; [key: string]: unknown };\n  [key: string]: unknown;\n}",
       "replace": "export interface DomStyle {\n  perspective?: string;\n  transform?: string;\n  removeProperty?: (property: string) => unknown;\n}\nexport interface StageLike {\n  style: DomStyle;\n}\nexport interface DomTarget {\n  style: DomStyle;\n}\nfunction styleValues(target: StageLike | DomTarget): Record<string, unknown> {\n  return target.style as Record<string, unknown>;\n}\nfunction targetValues(target: DomTarget): Record<string, unknown> {\n  return target as unknown as Record<string, unknown>;\n}"
     },
-    {
-      "path": "packages/core/src/adapters/dom.ts",
-      "find": "  else target.style[key] = undefined;",
-      "replace": "  else styleValues(target)[key] = undefined;"
-    },
+    { "path": "packages/core/src/adapters/dom.ts", "find": "  else target.style[key] = undefined;", "replace": "  else styleValues(target)[key] = undefined;" },
     {
       "path": "packages/core/src/adapters/dom.ts",
       "find": "    else if (key in target.style || key.startsWith(\"--\")) target.style[key] = value;\n    else target[key] = value;",
       "replace": "    else if (key in target.style || key.startsWith(\"--\")) styleValues(target)[key] = value;\n    else targetValues(target)[key] = value;"
     },
-    {
-      "path": "packages/core/src/adapters/dom.ts",
-      "find": "  if (Object.keys(state).length > 0) target.style.transform = composeTransform(state);",
-      "replace": "  if (Object.keys(state).length > 0) styleValues(target).transform = composeTransform(state);"
-    },
-    {
-      "path": "packages/core/src/adapters/dom.ts",
-      "find": "    stage.style.perspective = `${perspective}px`;",
-      "replace": "    styleValues(stage).perspective = `${perspective}px`;"
-    },
+    { "path": "packages/core/src/adapters/dom.ts", "find": "  if (Object.keys(state).length > 0) target.style.transform = composeTransform(state);", "replace": "  if (Object.keys(state).length > 0) styleValues(target).transform = composeTransform(state);" },
+    { "path": "packages/core/src/adapters/dom.ts", "find": "    stage.style.perspective = `${perspective}px`;", "replace": "    styleValues(stage).perspective = `${perspective}px`;" },
     {
       "path": "packages/react/src/index.ts",
       "find": "import { useMemo, useSyncExternalStore } from \"react\";\nimport type { Patch, PatchSource } from \"@motion5/core/internal\";",
@@ -51,32 +39,20 @@
     },
     {
       "path": "packages/react/test/dom-patch-hook.test.ts",
-      "create": "import { createElement } from \"react\";\nimport { act, create } from \"react-test-renderer\";\nimport { describe, expect, it } from \"vitest\";\nimport { useDomPatch } from \"@motion5/react\";\nimport type { Patch, PatchListener, PatchSource } from \"@motion5/react\";\n\nconst NODE_ID = \"hero/arm\";\n\ninterface FakeSource extends PatchSource {\n  listenerCount(): number;\n  publish(patch: Patch): void;\n}\n\nfunction createFakeSource(initial?: Patch): FakeSource {\n  const listeners = new Set<PatchListener>();\n  let latest = initial;\n  return {\n    get: () => latest,\n    subscribeNode(nodeId, listener) {\n      if (nodeId !== NODE_ID) throw new Error(`Unexpected node ${nodeId}`);\n      listeners.add(listener);\n      return () => listeners.delete(listener);\n    },\n    listenerCount: () => listeners.size,\n    publish(next) {\n      latest = next;\n      for (const listener of [...listeners]) listener(next);\n    },\n  };\n}\n\nfunction patch(revision: number, values: Readonly<Record<string, unknown>>, status: Patch[\"status\"] = \"ready\"): Patch {\n  return { nodeId: NODE_ID, revision, values, sourceProgress: 0, sourceRevisions: {}, status, diagnostics: [] };\n}\n\ndescribe(\"useDomPatch\", () => {\n  it(\"binds retained and future complete patches through the public package entry\", () => {\n    const source = createFakeSource(patch(1, { x: 4, y: 8, scale: 2, opacity: 0.5 }));\n    const style: Record<string, unknown> & { removeProperty(property: string): void } = {\n      opacity: undefined,\n      removeProperty(property) { delete this[property]; },\n    };\n    const target = { style };\n    function Consumer() {\n      return createElement(\"div\", { ref: useDomPatch(source, NODE_ID) });\n    }\n    let renderer: { unmount(): void } | undefined;\n    act(() => { renderer = create(createElement(Consumer), { createNodeMock: () => target }); });\n    expect(style).toMatchObject({ opacity: 0.5, transform: \"translate3d(4px, 8px, 0px) scale(2)\" });\n    act(() => source.publish(patch(2, { x: 99, opacity: 1 }, \"blocked\")));\n    expect(style).toMatchObject({ opacity: 0.5, transform: \"translate3d(4px, 8px, 0px) scale(2)\" });\n    act(() => source.publish(patch(3, { x: 12, y: 16 })));\n    expect(style.opacity).toBeUndefined();\n    expect(style.transform).toBe(\"translate3d(12px, 16px, 0px)\");\n    expect(source.listenerCount()).toBe(1);\n    act(() => renderer?.unmount());\n    expect(source.listenerCount()).toBe(0);\n  });\n});\n"
+      "create": "import { createElement } from \"react\";\nimport { act, create } from \"react-test-renderer\";\nimport { describe, expect, it } from \"vitest\";\nimport { useDomPatch } from \"@motion5/react\";\nimport type { Patch, PatchListener, PatchSource } from \"@motion5/react\";\n\nconst NODE_ID = \"hero/arm\";\ninterface FakeSource extends PatchSource { listenerCount(): number; publish(patch: Patch): void; }\nfunction createFakeSource(initial?: Patch): FakeSource {\n  const listeners = new Set<PatchListener>();\n  let latest = initial;\n  return {\n    get: () => latest,\n    subscribeNode(nodeId, listener) {\n      if (nodeId !== NODE_ID) throw new Error(`Unexpected node ${nodeId}`);\n      listeners.add(listener);\n      return () => listeners.delete(listener);\n    },\n    listenerCount: () => listeners.size,\n    publish(next) { latest = next; for (const listener of [...listeners]) listener(next); },\n  };\n}\nfunction patch(revision: number, values: Readonly<Record<string, unknown>>, status: Patch[\"status\"] = \"ready\"): Patch {\n  return { nodeId: NODE_ID, revision, values, sourceProgress: 0, sourceRevisions: {}, status, diagnostics: [] };\n}\ndescribe(\"useDomPatch\", () => {\n  it(\"binds retained and future complete patches through the public package entry\", () => {\n    const source = createFakeSource(patch(1, { x: 4, y: 8, scale: 2, opacity: 0.5 }));\n    const style: Record<string, unknown> & { removeProperty(property: string): void } = {\n      opacity: undefined,\n      removeProperty(property) { delete this[property]; },\n    };\n    const target = { style };\n    function Consumer() { return createElement(\"div\", { ref: useDomPatch(source, NODE_ID) }); }\n    let renderer: { unmount(): void } | undefined;\n    act(() => { renderer = create(createElement(Consumer), { createNodeMock: () => target }); });\n    expect(style).toMatchObject({ opacity: 0.5, transform: \"translate3d(4px, 8px, 0px) scale(2)\" });\n    act(() => source.publish(patch(2, { x: 99, opacity: 1 }, \"blocked\")));\n    expect(style).toMatchObject({ opacity: 0.5, transform: \"translate3d(4px, 8px, 0px) scale(2)\" });\n    act(() => source.publish(patch(3, { x: 12, y: 16 })));\n    expect(style.opacity).toBeUndefined();\n    expect(style.transform).toBe(\"translate3d(12px, 16px, 0px)\");\n    expect(source.listenerCount()).toBe(1);\n    act(() => renderer?.unmount());\n    expect(source.listenerCount()).toBe(0);\n  });\n});\n"
     },
+    { "path": "apps/ik-playground/src/components/IkStage.tsx", "find": "import { usePatch, type Patch } from \"@motion5/react\";", "replace": "import { useDomPatch, usePatch, type Patch } from \"@motion5/react\";" },
     {
       "path": "apps/ik-playground/src/components/IkStage.tsx",
-      "find": "import { usePatch, type Patch } from \"@motion5/react\";",
-      "replace": "import { useDomPatch, usePatch, type Patch } from \"@motion5/react\";"
-    },
-    {
-      "path": "apps/ik-playground/src/components/IkStage.tsx",
-      "find": "  const patch = useLivePatch(handle, id);\n  if (!patch) return null;\n\n  return (\n    <g transform={`translate(${Number(patch.values.x ?? 0)}, ${Number(patch.values.y ?? 0)})`}>",
-      "replace": "  const target = useDomPatch<SVGGElement>(handle, id);\n\n  return (\n    <g ref={target}>"
+      "find": "const Joint: React.FC<{\n  readonly handle: ProjectHandle;\n  readonly id: string;\n  readonly color: string;\n  readonly radius: number;\n  readonly label?: string;\n}> = ({ handle, id, color, radius, label }) => {\n  const patch = useLivePatch(handle, id);\n  if (!patch) return null;\n\n  return (\n    <g transform={`translate(${Number(patch.values.x ?? 0)}, ${Number(patch.values.y ?? 0)})`}>",
+      "replace": "const Joint: React.FC<{\n  readonly handle: ProjectHandle;\n  readonly id: string;\n  readonly color: string;\n  readonly radius: number;\n  readonly label?: string;\n}> = ({ handle, id, color, radius, label }) => {\n  const target = useDomPatch<SVGGElement>(handle, id);\n\n  return (\n    <g ref={target}>"
     },
     {
       "path": "docs/guide/rendering-patches.md",
       "find": "## React\n\n```tsx\nimport { usePatch } from \"@motion5/react\";\n\nfunction Title({ handle }: { handle: ProjectHandle }) {\n  const patch = usePatch(handle, \"hero/title\");\n  if (patch?.status !== \"ready\") return null;\n  return <div style={{ transform: `translateX(${String(patch.values.x)}px)` }} />;\n}\n```\n\n`usePatch` takes any `PatchSource`, which is exactly `{ get, subscribeNode }`, so a project handle satisfies it. It is built on `useSyncExternalStore`, so it is tear-free under concurrent rendering and safe in strict mode. One hook subscribes to one node; render a component per animated node rather than subscribing to the project and re-rendering the tree.",
       "replace": "## React\n\n```tsx\nimport { useDomPatch } from \"@motion5/react\";\n\nfunction Title({ handle }: { handle: ProjectHandle }) {\n  const target = useDomPatch<HTMLDivElement>(handle, \"hero/title\");\n  return <div ref={target} />;\n}\n```\n\n`useDomPatch` binds one node to one DOM or SVG target and routes complete patches through the DOM adapter. It subscribes before reading the retained patch, writes future batch notifications directly without a React render, ignores non-ready patches through the adapter contract, and clears target state on replacement or unmount. A new renderable plugin output therefore reaches the target without a component learning its key.\n\nUse `usePatch` when React must derive markup, combine nodes, or display diagnostics. It takes any `PatchSource`, which is exactly `{ get, subscribeNode }`, and is built on `useSyncExternalStore`, so it is tear-free under concurrent rendering and safe in strict mode. A bone joining two nodes is derived geometry, not a one-patch-to-one-target binding; keeping that projection explicit avoids teaching a generic renderer application semantics."
     },
-    {
-      "path": "docs/guide/api-reference.md",
-      "find": "`usePatch(source, nodeId)` and the re-exported `Patch`, `PatchListener`, and `PatchSource` types.",
-      "replace": "`usePatch(source, nodeId)`, `useDomPatch(source, nodeId)`, and the re-exported `Patch`, `PatchListener`, and `PatchSource` types. `useDomPatch` returns a callback ref for a one-patch-to-one-DOM-or-SVG-target binding; derived markup and multi-node projections stay on `usePatch`."
-    },
-    {
-      "path": "docs/SESSION-STATUS.md",
-      "find": "## Next in line\n\n- **Unmerged formatter parity:**",
-      "replace": "## Next in line\n\n- **Unmerged React DOM binding:** issue [#354](https://github.com/chahyasantoso/motion5/issues/354) has an implementation branch adding a direct one-node-to-one-target React binding over the existing DOM adapter. The PR and exact-head CI remain gates; no landed public surface is claimed.\n- **Unmerged formatter parity:**"
-    }
+    { "path": "docs/guide/api-reference.md", "find": "`usePatch(source, nodeId)` and the re-exported `Patch`, `PatchListener`, and `PatchSource` types.", "replace": "`usePatch(source, nodeId)`, `useDomPatch(source, nodeId)`, and the re-exported `Patch`, `PatchListener`, and `PatchSource` types. `useDomPatch` returns a callback ref for a one-patch-to-one-DOM-or-SVG-target binding; derived markup and multi-node projections stay on `usePatch`." },
+    { "path": "docs/SESSION-STATUS.md", "find": "## Next in line\n\n- **Unmerged formatter parity:**", "replace": "## Next in line\n\n- **Unmerged React DOM binding:** issue [#354](https://github.com/chahyasantoso/motion5/issues/354) has an implementation branch adding a direct one-node-to-one-target React binding over the existing DOM adapter. The PR and exact-head CI remain gates; no landed public surface is claimed.\n- **Unmerged formatter parity:**" }
   ]
 }
