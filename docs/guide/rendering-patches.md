@@ -41,16 +41,19 @@ Call `adapter.clear(target)` when you stop rendering a target, so its diff and t
 ## React
 
 ```tsx
-import { usePatch } from "@motion5/react";
+import { useDomPatch } from "@motion5/react";
 
 function Title({ handle }: { handle: ProjectHandle }) {
-  const patch = usePatch(handle, "hero/title");
-  if (patch?.status !== "ready") return null;
-  return <div style={{ transform: `translateX(${String(patch.values.x)}px)` }} />;
+  const bind = useDomPatch<HTMLDivElement>(handle, "hero/title");
+  return <div ref={bind} />;
 }
 ```
 
-`usePatch` takes any `PatchSource`, which is exactly `{ get, subscribeNode }`, so a project handle satisfies it. It is built on `useSyncExternalStore`, so it is tear-free under concurrent rendering and safe in strict mode. One hook subscribes to one node; render a component per animated node rather than subscribing to the project and re-rendering the tree.
+`useDomPatch` binds one node to one DOM or SVG target and routes every patch through the same DOM adapter, metadata included: it takes a `PatchSource` that also answers `renderMetadata(nodeId)`, which a project handle does. It subscribes before reading the retained patch, writes later batches straight to the target without a React render, and clears adapter state when the target is replaced or unmounted. A renderable plugin output therefore reaches the target without a component learning its key. On an SVG target the adapter pins `transform-box: fill-box`, so a composed `rotation` or `scale` pivots around the element rather than around the view box.
+
+A non-ready patch is a no-op, so a blocked, errored, or destroyed node leaves its target at the last applied pose rather than disappearing. That is the binding's contract, and it is deliberately not `useLivePatch`'s rule: when absence has to be rendered, gate the component on `usePatch` instead.
+
+`usePatch` remains the projection API: derived markup, geometry that joins two nodes, and diagnostic readouts. It takes any `PatchSource`, which is exactly `{ get, subscribeNode }`, and is built on `useSyncExternalStore`, so it is tear-free under concurrent rendering and safe in strict mode. One hook subscribes to one node; render a component per animated node rather than subscribing to the project and re-rendering the tree.
 
 ## Your own consumer
 

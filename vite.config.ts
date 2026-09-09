@@ -5,6 +5,10 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: "@motion5/core/adapters",
+        replacement: path.resolve(import.meta.dirname, "packages/core/src/adapters/index.ts"),
+      },
+      {
         find: "@motion5/core/internal",
         replacement: path.resolve(import.meta.dirname, "packages/core/src/internal.ts"),
       },

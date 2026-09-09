@@ -22,6 +22,7 @@ A declared subpath is not automatically production API. The tier says who may im
 
 - `mount(nodeId, instance?)` and `unmount(nodeId)` control membership.
 - `get(nodeId)` returns the retained `Patch` or `undefined`.
+- `renderMetadata(nodeId)` returns the node's `RenderMetadata`, the output serializers a renderer needs, or `undefined` for a node with no compiled track.
 - `subscribeNode(nodeId, listener)` returns an unsubscribe function. `subscribe` is the same call under an older name.
 - `seek(nodeId, progress)` scrubs one leaf and returns a `PatchBatch`.
 - `signal(motionId, signal)` controls a `manual` motion.
@@ -73,7 +74,7 @@ Optional implementations for the composition root.
 - `createBrowserClock(frameSource)` returns a `Clock` with `dispose()`.
 - `createMicrotaskScheduler(options?)`, plus `SchedulerHost` and `MicrotaskSchedulerOptions`.
 - `createGsapInterpolator(gsap)` and `createGsapOneTweenInterpolator(gsap)`, plus structural GSAP types. The timeline-backed one declares `patchKeys`; the one-tween one deliberately does not, because a single tween carrying a `keyframes` map has no per-key child to replace.
-- `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?, metadata?)`, plus DOM adapter types.
+- `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?, metadata?)`, plus DOM adapter types and `RenderMetadata`. `metadata` is the serializer half of a resolved plugin chain, which `ProjectHandle.renderMetadata` answers. A composed transform on an SVG target pins `transform-box: fill-box` so a future transform key pivots locally.
 - `createScrollTriggerPort(source)` wraps a `ScrollSource` as a `TriggerPort`.
 - `createGsapScrollSource(scrollTrigger, options)`, plus structural GSAP scroll source types. Core never imports GSAP.
 - `FrameSource`, and the default graph builder.
@@ -94,11 +95,13 @@ These are the implementations the core suite runs the port contract suite agains
 
 ## @motion5/core/internal
 
-A private channel between core and React: `Patch`, `PatchListener`, and `PatchSource`.
+A private channel between core and React: `Patch`, `PatchListener`, `PatchSource`, `RenderMetadata`, and `RenderMetadataSource`. The metadata half is declared separately and required only by the binding that renders, so a consumer that reads values keeps the two-member source contract.
 
 ## @motion5/react
 
-`usePatch(source, nodeId)` and the re-exported `Patch`, `PatchListener`, and `PatchSource` types.
+`usePatch(source, nodeId)`, `useDomPatch(source, nodeId)`, and the re-exported `Patch`, `PatchListener`, `PatchSource`, `RenderMetadata`, and `RenderMetadataSource` types.
+
+`useDomPatch` returns a callback ref for one-patch-to-one-target HTML or SVG binding and requires a `PatchSource & RenderMetadataSource`. Derived geometry, multi-node projections, diagnostics, and anything that must render absence stay on `usePatch`. See ADR-073.
 
 ## Known gaps
 

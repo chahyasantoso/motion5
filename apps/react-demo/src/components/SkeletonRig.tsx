@@ -1,6 +1,6 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
-import { usePatch, type Patch } from "@motion5/react";
+import { useDomPatch, usePatch, type Patch } from "@motion5/react";
 
 /**
  * Presence is not liveness.
@@ -9,6 +9,9 @@ import { usePatch, type Patch } from "@motion5/react";
  * published, so gating a bone on `usePatch(...) !== undefined` happily draws a node that the
  * graph has already destroyed or that is stalled behind a broken upstream. Only `"ready"`
  * means "this pose is current", so that is the only status this rig will render.
+ *
+ * It guards the derived geometry below. A one-to-one binding is `useDomPatch`, whose target holds its
+ * last applied pose instead of disappearing, by the DOM adapter's own contract. See ADR-073.
  */
 function useLivePatch(handle: ProjectHandle, nodeId: string): Patch | undefined {
   const patch = usePatch(handle, nodeId);
@@ -90,14 +93,10 @@ const JointMarker: React.FC<JointMarkerProps> = ({
   label,
   glow = false,
 }) => {
-  const patch = useLivePatch(handle, nodeId);
-  if (!patch) return null;
-
-  const x = Number(patch.values.x ?? 0);
-  const y = Number(patch.values.y ?? 0);
+  const bind = useDomPatch<SVGGElement>(handle, nodeId);
 
   return (
-    <g transform={`translate(${x}, ${y})`}>
+    <g ref={bind}>
       {glow && <circle cx={0} cy={0} r={radius * 1.8} fill={color} opacity={0.25} />}
       <circle cx={0} cy={0} r={radius} fill={color} stroke="#0f172a" strokeWidth={1.5} />
       {label && (

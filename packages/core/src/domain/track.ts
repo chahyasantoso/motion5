@@ -204,6 +204,16 @@ export class Track {
   get dirty(): boolean {
     return this.#dirty;
   }
+  /**
+   * The resolved plugin chain this track compiled from.
+   *
+   * A read of what the constructor was handed, so the compiled Track stays the single owner of it. A
+   * caller that cached the resolve result in a map beside `tracks` would keep the metadata of a
+   * replacement a staged rollback threw away; asking the live track cannot. See ADR-073.
+   */
+  get plugins(): ResolvedPlugins {
+    return this.#plugins;
+  }
   setProgress(value: number): boolean {
     this.assertActive();
     if (!Number.isFinite(value)) throw new TypeError("Track progress must be finite.");

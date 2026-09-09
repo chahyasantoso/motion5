@@ -5,6 +5,7 @@ export { createMicrotaskScheduler } from "./microtask-scheduler";
 export type { MicrotaskSchedulerOptions, SchedulerHost } from "./microtask-scheduler";
 
 export { createDomPatchAdapter } from "./dom";
+export type { RenderMetadata } from "../domain/plugins";
 export type {
   DomPatchAdapter,
   DomPatchWriter,
