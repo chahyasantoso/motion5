@@ -32,7 +32,7 @@ export function useDomPatch<T extends Pick<DomTarget, "style">>(
       createDomPatchAdapter(
         { style: {} },
         undefined,
-        () => target.current as DomTarget | null | undefined,
+        () => (target.current as DomTarget | null) ?? undefined,
       ),
     [],
   );
