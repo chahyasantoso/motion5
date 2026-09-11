@@ -34,6 +34,10 @@ const unsubscribe = handle.subscribeNode("hero/title", (patch) => adapter.apply(
 
 The adapter ignores anything that is not `ready`, diffs against what it last wrote so an unchanged property is not touched, and removes a property that disappears from a later patch. `x`, `y`, `z`, `rotation`, `rotationX`, `rotationY`, and `scale` are composed into one `transform` string rather than fighting each other. Keys starting with `_`, plus `offset` and any plugin-declared internal keys, are treated as internal and never written.
 
+Everything else goes through one of three channels, decided by the target rather than by a list: a CSS property is a style write, a key that names no writable property on a target answering `setAttribute` is written as an attribute, so SVG geometry such as `x1` or `points` lands where it renders, and anything else is a property assignment. A key that is both a CSS property and an SVG geometry attribute, such as `cx` or `r`, is a style write, where a unitless number is invalid CSS: derive a position as `x`/`y` and let it compose instead.
+
+`adapter.applyValues(nodeId, values)` writes a record you derived yourself, through that same filtering, composition and diff. There is no status to gate and no revision to compare, so freshness belongs to whoever built the record.
+
 The second argument is the project's `perspective` in CSS pixels, applied once to the stage. Core validates and preserves `perspective` but never applies it, because that is a renderer's job.
 
 Call `adapter.clear(target)` when you stop rendering a target, so its diff, its composed transform state, and its record of the newest revision it applied there are dropped.
@@ -51,11 +55,33 @@ function Title({ handle }: { handle: ProjectHandle }) {
 }
 ```
 
-`useDomPatch` binds one node to one DOM or SVG target and routes every patch through the same DOM adapter, metadata included: it takes a `PatchSource` that also answers `renderMetadata(nodeId)`, which a project handle does. It subscribes before reading the retained patch, writes later batches straight to the target without a React render, and clears adapter state when the target is replaced or unmounted. A renderable plugin output therefore reaches the target without a component learning its key. On an SVG target the adapter pins `transform-box: fill-box`, so a composed `rotation` or `scale` pivots around the element rather than around the view box.
+`useDomPatch` binds one node to one DOM or SVG target and routes every patch through the same DOM adapter, metadata included: it takes a `PatchSource` that also answers `renderMetadata(nodeId)`, which a project handle does. It subscribes before reading the retained patch, writes later batches straight to the target without a React render, and clears adapter state when the target is replaced or unmounted. A renderable plugin output therefore reaches the target without a component learning its key. On an SVG target the adapter pins `transform-box: view-box` with `transform-origin: 0px 0px`, so a composed `rotation` or `scale` pivots at the element's own origin, exactly as the `transform` attribute did. Inside a transformed ancestor group the pivot is the viewport origin instead; see ADR-075.
 
 A non-ready patch is a no-op, so a blocked, errored, or destroyed node leaves its target at the last applied pose rather than disappearing. That is the binding's contract, and it is deliberately not `useLivePatch`'s rule: when absence has to be rendered, gate the component on `usePatch` instead.
 
-`usePatch` remains the projection API: derived markup, geometry that joins two nodes, and diagnostic readouts. It takes any `PatchSource`, which is exactly `{ get, subscribeNode }`, and is built on `useSyncExternalStore`, so it is tear-free under concurrent rendering and safe in strict mode. One hook subscribes to one node; render a component per animated node rather than subscribing to the project and re-rendering the tree.
+`useDerivedDomPatch(source, nodeIds, derive)` is the same write path for a target whose values are a function of several nodes, or of one node's values rather than its pose:
+
+```tsx
+import { useDerivedDomPatch, type PatchDerivation } from "@motion5/react";
+
+const endpoints: PatchDerivation = ([parent = {}, child = {}]) => ({
+  x1: Number(parent.x ?? 0),
+  y1: Number(parent.y ?? 0),
+  x2: Number(child.x ?? 0),
+  y2: Number(child.y ?? 0),
+});
+
+function Bone({ handle, parentId, childId }: BoneProps) {
+  const bind = useDerivedDomPatch<SVGLineElement>(handle, [parentId, childId], endpoints);
+  return <line ref={bind} stroke="#38bdf8" strokeWidth={8} />;
+}
+```
+
+It subscribes to every id, reads their retained patches on each delivery, and writes whatever your derivation returns. Keep the derivation pure and keep its identity stable: declare it at module scope, or memoize it. The id array itself may be a fresh literal on every render. It takes a plain `PatchSource`, because a derivation authors its own keys and has no plugin output to serialize.
+
+Liveness is this hook's rule, unlike `useDomPatch`'s: the derivation runs only while every named node is `ready`, and the target is hidden while one is not, because a bound element cannot unmount itself. Returning `undefined` from the derivation hides it the same way.
+
+`usePatch` remains the read API: diagnostic readouts, and markup that must render absence rather than hide it. It takes any `PatchSource`, which is exactly `{ get, subscribeNode }`, and is built on `useSyncExternalStore`, so it is tear-free under concurrent rendering and safe in strict mode. One hook subscribes to one node; render a component per animated node rather than subscribing to the project and re-rendering the tree.
 
 ## Your own consumer
 

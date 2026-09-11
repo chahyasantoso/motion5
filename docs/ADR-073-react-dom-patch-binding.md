@@ -1,6 +1,6 @@
 # ADR-073: one React binding from a patch to a DOM target
 
-Status: accepted. Supersedes nothing. Issue [#354](https://github.com/chahyasantoso/motion5/issues/354).
+Status: accepted, and amended in part by [ADR-075](./ADR-075-derived-dom-binding.md): the SVG reference-box pin below is now a view-box pin with a zero origin, and derived geometry no longer stays on `usePatch`. Supersedes nothing. Issue [#354](https://github.com/chahyasantoso/motion5/issues/354).
 
 ## Context
 

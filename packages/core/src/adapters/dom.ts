@@ -7,12 +7,24 @@ export interface StageLike {
 }
 export interface DomTarget {
   style: { removeProperty?: (property: string) => void; [key: string]: unknown };
+  setAttribute?: (name: string, value: string) => void;
+  removeAttribute?: (name: string) => void;
   [key: string]: unknown;
 }
 export type DomTargetResolver = (nodeId: string) => DomTarget | undefined;
 export type DomPatchWriter = (target: DomTarget, values: Readonly<Record<string, unknown>>) => void;
 export interface DomPatchAdapter {
   apply(patch: Patch): void;
+  /**
+   * Writes values a caller derived, onto the target the resolver names for `nodeId`.
+   *
+   * The same renderable filtering, transform composition, dirty diff and omitted-key removal as
+   * `apply`, without the patch protocol above it: a derivation is not a published node, so it
+   * carries no status to gate and no revision to compare, and a caller that fabricated those to
+   * reach `apply` would be authoring registry bookkeeping it has no business owning. Freshness
+   * belongs to whoever built the record. See ADR-075.
+   */
+  applyValues(nodeId: string, values: Readonly<Record<string, unknown>>): void;
   clear(target?: DomTarget): void;
 }
 
@@ -40,22 +52,71 @@ function removeStyleProperty(target: DomTarget, key: string): void {
   if (typeof target.style.removeProperty === "function") target.style.removeProperty(key);
   else target.style[key] = undefined;
 }
-const SVG_TRANSFORM_BOX = "fill-box";
+const SVG_TRANSFORM_BOX = "view-box";
+const SVG_TRANSFORM_ORIGIN = "0px 0px";
 /**
- * Pins the reference box before a composed transform reaches an SVG element.
+ * Pins the reference box and the pivot before a composed transform reaches an SVG element.
  *
- * CSS `transform-box` initially resolves against the nearest view box, so on an SVG element a future
- * `rotation` or `scale` would pivot around the viewport while the `transform` attribute those
- * consumers used pivoted around the element itself. Translation is origin-independent, which is why
- * no shipped output changes here; the pin is what makes the next transform key correct when it is
- * published rather than one bug report later. Structural detection, because this adapter types a
- * target by what it can be written to and never by `instanceof`, and idempotent, so a bound element
- * pays one write instead of one per frame. See ADR-073.
+ * The consumers this adapter writes for migrated off the SVG `transform` attribute, whose `rotate`
+ * and `scale` pivot at the element's own coordinate origin. CSS resolves a transform against a
+ * reference box instead, so its defaults pivot at the centre of the view box, and ADR-073's
+ * `fill-box` pin moved that to the centre of the element's bounding box: right only for content
+ * that happens to be symmetric about its origin, and wrong for the label beside a joint or the
+ * visor beside a skull. Pinning the view box with a zero origin restores the attribute's pivot for
+ * a target whose ancestors are untransformed, which is every shipped consumer; under a transformed
+ * ancestor the reference box is the viewport as this element's user space sees it, and that
+ * boundary is stated in ADR-075 rather than papered over. Translation is origin-independent, so no
+ * shipped translation moves for it. Structural detection, because this adapter types a target by
+ * what it can be written to and never by `instanceof`, and idempotent, so a bound element pays two
+ * writes once instead of two per frame. See ADR-075.
  */
-function pinTransformBox(target: DomTarget): void {
+function pinTransformReference(target: DomTarget): void {
   if (!("ownerSVGElement" in target)) return;
   if (target.style.transformBox !== SVG_TRANSFORM_BOX)
     target.style.transformBox = SVG_TRANSFORM_BOX;
+  if (target.style.transformOrigin !== SVG_TRANSFORM_ORIGIN)
+    target.style.transformOrigin = SVG_TRANSFORM_ORIGIN;
+}
+type WriteChannel = "attribute" | "property" | "style";
+function isWritableProperty(target: DomTarget, key: string): boolean {
+  for (let owner: object | null = target; owner !== null; owner = Object.getPrototypeOf(owner)) {
+    const descriptor = Object.getOwnPropertyDescriptor(owner, key);
+    if (descriptor === undefined) continue;
+    return descriptor.set !== undefined || descriptor.writable === true;
+  }
+  return false;
+}
+/**
+ * Which of a target's three channels owns a key, decided by the target rather than by a list.
+ *
+ * A CSS property is a style write, as it always was. What was left used to be a property assignment
+ * unconditionally, and on a real element that is how SVG geometry failed: `x1`, `y1`, `points` and
+ * their neighbours are readonly IDL attributes, so `target.x1 = 4` throws in a module and reaches
+ * nothing when it does not. A key naming no writable property on a target that answers
+ * `setAttribute` is therefore an attribute, and a plain object with neither keeps the property
+ * write every fake target in the suite relies on. The order is load-bearing: a key that is both a
+ * CSS property and an SVG geometry attribute, such as `cx` or `r`, stays a style write, where a
+ * unitless number is invalid CSS, so a derived position is `x`/`y` and this adapter composes it.
+ * See ADR-075.
+ */
+function channelFor(target: DomTarget, key: string): WriteChannel {
+  if (key.startsWith("--") || key in target.style) return "style";
+  if (isWritableProperty(target, key)) return "property";
+  return typeof target.setAttribute === "function" ? "attribute" : "property";
+}
+function writeKey(target: DomTarget, key: string, value: unknown): void {
+  const channel = channelFor(target, key);
+  if (channel === "style") {
+    if (value === undefined) removeStyleProperty(target, key);
+    else target.style[key] = value;
+    return;
+  }
+  if (channel === "attribute") {
+    if (value === undefined) target.removeAttribute?.(key);
+    else target.setAttribute?.(key, String(value));
+    return;
+  }
+  target[key] = value;
 }
 /**
  * The shipped writer, over the transform state of exactly one adapter.
@@ -79,12 +140,10 @@ function createTransformWriter(
         else state[key] = value;
         continue;
       }
-      if (value === undefined) removeStyleProperty(target, key);
-      else if (key in target.style || key.startsWith("--")) target.style[key] = value;
-      else target[key] = value;
+      writeKey(target, key, value);
     }
     if (Object.keys(state).length > 0) {
-      pinTransformBox(target);
+      pinTransformReference(target);
       target.style.transform = composeTransform(state);
     } else if (hadTransform) removeStyleProperty(target, "transform");
     transformState.set(target, state);
@@ -151,6 +210,20 @@ export function createDomPatchAdapter(
    */
   const appliedRevisions = new WeakMap<object, Map<string, number>>();
   const writeTarget = write ?? createTransformWriter(transformState);
+  // One renderable set, one dirty cache, one write, for both entries. `apply` owns the patch
+  // protocol above this and `applyValues` owns nothing extra below it, so a derived record and a
+  // published one cannot drift into two filters or two diffs.
+  function writeValues(target: DomTarget, values: Readonly<Record<string, unknown>>): void {
+    const next = renderableValues(values, metadata);
+    const previous = lastApplied.get(target) ?? {};
+    const dirty: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(next))
+      if (!Object.is(previous[key], value)) dirty[key] = value;
+    for (const key of Object.keys(previous)) if (!(key in next)) dirty[key] = undefined;
+    if (Object.keys(dirty).length === 0) return;
+    writeTarget(target, dirty);
+    lastApplied.set(target, next);
+  }
   return {
     apply(patch) {
       if (patch.status !== "ready") return;
@@ -166,15 +239,12 @@ export function createDomPatchAdapter(
       if (accepted !== undefined && patch.revision <= accepted) return;
       revisions.set(patch.nodeId, patch.revision);
       appliedRevisions.set(target, revisions);
-      const next = renderableValues(patch.values, metadata);
-      const previous = lastApplied.get(target) ?? {};
-      const dirty: Record<string, unknown> = {};
-      for (const [key, value] of Object.entries(next))
-        if (!Object.is(previous[key], value)) dirty[key] = value;
-      for (const key of Object.keys(previous)) if (!(key in next)) dirty[key] = undefined;
-      if (Object.keys(dirty).length === 0) return;
-      writeTarget(target, dirty);
-      lastApplied.set(target, next);
+      writeValues(target, patch.values);
+    },
+    applyValues(nodeId, values) {
+      const target = resolveTarget(nodeId);
+      if (target === undefined) return;
+      writeValues(target, values);
     },
     clear(target) {
       if (target === undefined) return;

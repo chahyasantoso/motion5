@@ -74,7 +74,7 @@ Optional implementations for the composition root.
 - `createBrowserClock(frameSource)` returns a `Clock` with `dispose()`.
 - `createMicrotaskScheduler(options?)`, plus `SchedulerHost` and `MicrotaskSchedulerOptions`.
 - `createGsapInterpolator(gsap)` and `createGsapOneTweenInterpolator(gsap)`, plus structural GSAP types. The timeline-backed one declares `patchKeys`; the one-tween one deliberately does not, because a single tween carrying a `keyframes` map has no per-key child to replace.
-- `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?, metadata?)`, plus DOM adapter types and `RenderMetadata`. `metadata` is the serializer half of a resolved plugin chain, which `ProjectHandle.renderMetadata` answers. A composed transform on an SVG target pins `transform-box: fill-box` so a future transform key pivots locally. Every cache the adapter keeps is its own: the dirty diff, the composed transform state, and the newest revision accepted per target and node, all dropped by `clear(target)`. A patch that is not newer than that revision is refused before the diff, so two adapters on one element cannot compose each other's keys. See ADR-074.
+- `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?, metadata?)`, plus DOM adapter types and `RenderMetadata`. `metadata` is the serializer half of a resolved plugin chain, which `ProjectHandle.renderMetadata` answers. `apply(patch)` writes a published patch and `applyValues(nodeId, values)` writes a record the caller derived, both through one filter, one composer and one dirty diff; the derived entry has no status to gate and no revision to compare. A key is written to `style`, to an attribute when it names no writable property on a target answering `setAttribute`, or to a property, decided by the target: SVG geometry such as `x1` or `points` therefore renders, while `cx` and `r` stay style writes and want a pose instead. A composed transform on an SVG target pins `transform-box: view-box` with `transform-origin: 0px 0px`, so `rotation` and `scale` pivot at the element's own origin. Every cache the adapter keeps is its own: the dirty diff, the composed transform state, and the newest revision accepted per target and node, all dropped by `clear(target)`. A patch that is not newer than that revision is refused before the diff, so two adapters on one element cannot compose each other's keys. See ADR-074.
 - `createScrollTriggerPort(source)` wraps a `ScrollSource` as a `TriggerPort`.
 - `createGsapScrollSource(scrollTrigger, options)`, plus structural GSAP scroll source types. Core never imports GSAP.
 - `FrameSource`, and the default graph builder.
@@ -99,9 +99,9 @@ A private channel between core and React: `Patch`, `PatchListener`, `PatchSource
 
 ## @motion5/react
 
-`usePatch(source, nodeId)`, `useDomPatch(source, nodeId)`, and the re-exported `Patch`, `PatchListener`, `PatchSource`, `RenderMetadata`, and `RenderMetadataSource` types.
+`usePatch(source, nodeId)`, `useDomPatch(source, nodeId)`, `useDerivedDomPatch(source, nodeIds, derive)`, the `PatchDerivation` and `PatchValues` types, and the re-exported `Patch`, `PatchListener`, `PatchSource`, `RenderMetadata`, and `RenderMetadataSource` types.
 
-`useDomPatch` returns a callback ref for one-patch-to-one-target HTML or SVG binding and requires a `PatchSource & RenderMetadataSource`. Derived geometry, multi-node projections, diagnostics, and anything that must render absence stay on `usePatch`. See ADR-073.
+`useDomPatch` returns a callback ref for one-patch-to-one-target HTML or SVG binding and requires a `PatchSource & RenderMetadataSource`. `useDerivedDomPatch` returns one for a target whose values are a `PatchDerivation` over the nodes it names: it takes a plain `PatchSource`, runs the derivation only while every named node is ready, and hides the target while one is not or while the derivation returns `undefined`. Diagnostics and markup that must render absence rather than hide it stay on `usePatch`. See ADR-073 and ADR-075.
 
 ## Known gaps
 
