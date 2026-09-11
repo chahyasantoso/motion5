@@ -36,7 +36,9 @@ The adapter ignores anything that is not `ready`, diffs against what it last wro
 
 The second argument is the project's `perspective` in CSS pixels, applied once to the stage. Core validates and preserves `perspective` but never applies it, because that is a renderer's job.
 
-Call `adapter.clear(target)` when you stop rendering a target, so its diff and transform state are dropped.
+Call `adapter.clear(target)` when you stop rendering a target, so its diff, its composed transform state, and its record of the newest revision it applied there are dropped.
+
+All three belong to the adapter you called rather than to the element. Two adapters bound to one element compose independently and clear independently, and each refuses a patch that is not newer than the one it already applied for that target and node, so an out-of-order `PatchSource` cannot leave a target's diff cache describing a pose that is no longer there. See ADR-074.
 
 ## React
 

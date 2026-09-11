@@ -74,7 +74,7 @@ Optional implementations for the composition root.
 - `createBrowserClock(frameSource)` returns a `Clock` with `dispose()`.
 - `createMicrotaskScheduler(options?)`, plus `SchedulerHost` and `MicrotaskSchedulerOptions`.
 - `createGsapInterpolator(gsap)` and `createGsapOneTweenInterpolator(gsap)`, plus structural GSAP types. The timeline-backed one declares `patchKeys`; the one-tween one deliberately does not, because a single tween carrying a `keyframes` map has no per-key child to replace.
-- `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?, metadata?)`, plus DOM adapter types and `RenderMetadata`. `metadata` is the serializer half of a resolved plugin chain, which `ProjectHandle.renderMetadata` answers. A composed transform on an SVG target pins `transform-box: fill-box` so a future transform key pivots locally.
+- `createDomPatchAdapter(stage, perspective?, resolveTarget?, write?, metadata?)`, plus DOM adapter types and `RenderMetadata`. `metadata` is the serializer half of a resolved plugin chain, which `ProjectHandle.renderMetadata` answers. A composed transform on an SVG target pins `transform-box: fill-box` so a future transform key pivots locally. Every cache the adapter keeps is its own: the dirty diff, the composed transform state, and the newest revision accepted per target and node, all dropped by `clear(target)`. A patch that is not newer than that revision is refused before the diff, so two adapters on one element cannot compose each other's keys. See ADR-074.
 - `createScrollTriggerPort(source)` wraps a `ScrollSource` as a `TriggerPort`.
 - `createGsapScrollSource(scrollTrigger, options)`, plus structural GSAP scroll source types. Core never imports GSAP.
 - `FrameSource`, and the default graph builder.
