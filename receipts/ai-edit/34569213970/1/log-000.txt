@@ -1,0 +1,13 @@
+prepare isolated candidate	Prepare with trusted code and configuration	﻿2026-09-11T06:16:16.4908338Z ##[group]Run set -euo pipefail
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-11T06:16:16.4908835Z ^[[36;1mset -euo pipefail^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-11T06:16:16.4909264Z ^[[36;1mexport CANDIDATE_ROOT="$GITHUB_WORKSPACE/candidate"^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-11T06:16:16.4909896Z ^[[36;1mexport FORMATTER_ROOT="$RUNNER_TEMP/motion5-formatter"^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-11T06:16:16.4910328Z ^[[36;1mexport CANDIDATE_OUTPUT="$RUNNER_TEMP/candidate.json"^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-11T06:16:16.4910720Z ^[[36;1mnode trusted/scripts/automation-publish.mjs prepare^[[0m
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-11T06:16:16.4932604Z shell: /usr/bin/bash -e {0}
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-11T06:16:16.4932918Z env:
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-11T06:16:16.4933270Z   TRUSTED_SHA: 611917033e6f6ad637a017f6c6ce749d8e8cbac2
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-11T06:16:16.4933651Z   DISPATCH_REQUEST: 
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-11T06:16:16.4933917Z ##[endgroup]
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-11T06:16:16.5396504Z Expected ',' or '}' after property value in JSON at position 15014 (line 55 column 1488)
+prepare isolated candidate	Prepare with trusted code and configuration	2026-09-11T06:16:16.5434773Z ##[error]Process completed with exit code 1.
