@@ -4,7 +4,7 @@ Private ownership and ordering for ProjectRuntime. Exported API documentation re
 
 ## TrackEntry
 
-The retained track, adopting owner, optional motion owner, lifetime token, animated overlay, and conservative live-write marker. The overlay records the last animated live write; it is not authored state. A live write can survive a refused escalation because the writer has no inverse. Only a successful fresh compilation removes its effect, so structural derivation must build when retained.liveWrite is true even if compiled inputs compare equal. Candidate validation is never short-circuited by that marker. See ADR-060, ADR-062 and ADR-066.
+The retained track, adopting owner, optional motion owner, lifetime token, animated overlay, and conservative live-write marker, recorded from the write being asked for rather than from what the backend answered, so nothing can under-report. The overlay records the last animated live write; it is not authored state. A live write can survive a refused escalation because the writer has no inverse. Only a successful fresh compilation removes its effect, so structural derivation must build when retained.liveWrite is true even if compiled inputs compare equal. Candidate validation is never short-circuited by that marker. See ADR-060, ADR-062 and ADR-066.
 
 ## MotionEntry
 
@@ -66,7 +66,7 @@ The same copy-on-first-write rule for motions.
 
 The single actual mount operation: graph attachment plus native instance registration. Public mount applies its guards and delegates; accepted settlement calls this private member directly. Calling the guarded public verb would reject the owning commit's own work. Disposal remains deferred through settlement, so a later mount still reaches a live graph even when an earlier hook requested disposal. See ADR-064, ADR-067 and ADR-070.
 
-Mount itself seeds no publication. Loaded projects publish on their first real operation/tick, not on mount. An eager seed was measured and rejected because deduplication consumes the next seek's publication rather than adding an independent one. See ADR-066, RA-100 and RA-101.
+Mount itself seeds no publication. Loaded projects publish on their first real operation/tick, not on mount. An eager seed was measured and rejected because deduplication consumes the next seek's publication rather than adding an independent one, so the following seek would publish nothing and hand its caller an empty batch. T-1 owns the asymmetry between a commit-mounted node and a caller-mounted one as real rather than pending, and trigger-time owns that a time Motion does not emit before its first tick while a mount precedes every tick. Run 33712936651 is the 21 cases that refused the seed, RA-8 among them. See ADR-066, RA-100 and RA-101.
 
 ## #transaction
 
@@ -164,7 +164,7 @@ Forwards the candidate authored keyframes to the injected registry resolver, or 
 
 ## #needsTimelineBuild
 
-Always resolves and validates the candidate before deciding whether compilation is skippable. Compares complete compiled inputs through sameCompiledTrackInput, resolving the retained definition rather than caching registry-dependent data. The candidate resolve cannot be skipped even when liveWrite already forces a build: doing so would remove a validator. Asked once per final replacement, not once per recipe operation. This injected callback runs within the boundary and before effects. See ADR-062, ADR-064 and ADR-066.
+Always resolves and validates the candidate before deciding whether compilation is skippable. Compares complete compiled inputs through sameCompiledTrackInput, resolving the retained definition rather than caching registry-dependent data. The candidate resolve cannot be skipped even when liveWrite already forces a build: doing so would remove a validator. Asked once per final replacement, not once per recipe operation. This injected callback runs within the boundary and before effects. Spelling the condition with the retained marker first would short-circuit the resolve, which deletes a validator rather than a cost. See RA-103, RA-105, ADR-062, ADR-064 and ADR-066.
 
 ## #replaceTrack
 
@@ -186,7 +186,7 @@ Sharing this depth intentionally makes a structural write from a direct-write ho
 
 Resolve omitted map halves to the retained maps, enter the boundary, derive effects, assert liveness, apply effects, replace the graph, adopt the pair, settle, and publish. The boundary starts before derivation because resolution is injected code. Disposal during derivation refuses before any effect. Each successful effect is recorded before liveness is rechecked, so disposal after an effect enters ordinary rollback against still-live resources.
 
-On pre-acceptance failure, run only recorded inverses in apply order and report through rejectAfterRollback. Once replaceGraph succeeds, adoption and accepted completion have no inverse. Settlement attempts every independent step and finally #flush inside the same collector, not a throwing finally that could erase an earlier failure. Hooks can dispose during settlement; later steps still run against the deferred live graph, while publication skips the now-dead project. Guarantee attempts, not recovery inside an arbitrary failing host. See ADR-031, ADR-035, ADR-045, ADR-067 and ADR-071.
+On pre-acceptance failure, run only recorded inverses in apply order and report through rejectAfterRollback. Once replaceGraph succeeds, adoption and accepted completion have no inverse. Settlement attempts every independent step and finally #flush inside the same collector, not a throwing finally that could erase an earlier failure. Hooks can dispose during settlement; later steps still run against the deferred live graph, while publication skips the now-dead project. Guarantee attempts, not recovery inside an arbitrary failing host. See RA-114, ADR-031, ADR-035, ADR-045, ADR-067 and ADR-071.
 
 edit rechecks disposal after its recipe, and all other entry paths establish liveness before reaching this member. #commit is its sole caller. The boundary owns the final drain; this method does not duplicate it. See ADR-064 and ADR-069.
 
@@ -202,7 +202,7 @@ Full reversible motion recreation would require staged ownership and defined tra
 
 ## #derive
 
-Both lifetime preflights run before injected code. Then derive final-pair effects, not an accumulated operation log. New motions are built before track compilation so a recipe can add both. Removed tracks settle native residency deletion/graph eviction, compiled disposal, then Motion deregistration as independently collected steps. Removed motions settle after their children. New tracks compile before graph acceptance, then register and mount after it. Replacements stage compilation when required, republish the Motion track before graph acceptance, and finalize staged resources afterwards.
+Both lifetime preflights run before injected code. Then derive final-pair effects, not an accumulated operation log. New motions are built before track compilation so a recipe can add both. Removed tracks settle native residency deletion/graph eviction, compiled disposal, then Motion deregistration as independently collected steps. Removed motions settle after their children. New tracks compile before graph acceptance, then register and mount after it. Replacements stage compilation when required, republish the Motion track before graph acceptance, and finalize staged resources afterwards. A new node publishes, and one whose sources have not published yet lands on blocked with a pending diagnostic; addObserve and removeObserve route through the replacement path, which makes them publish too. See RA-9.
 
 Reverts run in apply order: restore the compiled map before restoring Motion metadata, because Motion resolves compiled Tracks by id. A stage is finalized after adoption even when old resource cleanup throws. A skipped compilation leaves no stage to finalize. Candidate validation remains unconditional; retained live writes additionally force a build. Add-then-edit collapses to one final add, while add-then-remove of a new entity schedules no hooks. See ADR-031, ADR-045, ADR-062, ADR-064 and ADR-066.
 
@@ -238,7 +238,11 @@ For authored leaves that cannot be expressed as a live mask: edit the pure recor
 
 ## #setKeyframe
 
-An existing property uses the live-write path; a new property uses the authored editor and recompilation path. The group must already exist. Determine existence through readPluginValues, not a private copy of group layout. Reentrancy is checked before resolving the entry. removeKeyframe uses the same ordering; its no-op retains the established direct-flush behavior. See ADR-065, ADR-070 and issue #255.
+An existing property uses the live-write path; a new property uses the authored editor and recompilation path. The group must already exist. Determine existence through readPluginValues, not a private copy of group layout. Reentrancy is checked before resolving the entry. removeKeyframe uses the same ordering; its no-op retains the established direct-flush behavior. See RA-106, ADR-065, ADR-070 and issue #255.
+
+## #replaceWithObservation
+
+Idempotent observation semantics rather than a stale guard, which the writable resolver already answered. Adding an observation the node already carries and removing one it does not are both no-ops that commit nothing, so neither flushes and neither stages inside a recipe, which is what lets a recipe of nothing but no-ops end without a candidate build. Edge identity comes from observationEdgeKey against the entry's own motion owner rather than from object identity. See RA-66 and ADR-064.
 
 ## #editRequire
 
