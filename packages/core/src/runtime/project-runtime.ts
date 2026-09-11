@@ -74,19 +74,6 @@ type TrackEntry = {
   motionId?: string;
   token: number;
   overlay: Readonly<Record<string, unknown>>;
-  /**
-   * Whether a live value write is in force on this node's compiled `Track`.
-   *
-   * The compiled Track carries a mask, a patched timeline, or both, and the retained definition may
-   * not say so: that gap is what an override is. A fresh Track is built from a definition and
-   * carries neither, so the timeline build is what dropped a write, and it was the only thing that
-   * did. C3 made that build conditional, so the four binding verbs stopped dropping one, and this
-   * is the fact the predicate reads to keep paying for it. See ADR-066.
-   *
-   * Recorded from the write being asked for rather than from what the backend answered, which is
-   * the conservative direction the predicate already commits to: a write that reached no compiled
-   * Track costs one build it does not strictly need, and nothing can under-report.
-   */
   liveWrite: boolean;
 };
 
@@ -334,15 +321,6 @@ export class ProjectRuntime {
   mount(nodeId: string, instance: object = {}): object {
     this.#assertLive();
     this.#refuseReentrant("mount");
-    // Seeds no flush, deliberately, and measured where the reason is written. A member arrives here
-    // and nothing publishes, which looks like the asymmetry A2 left behind: a node mounted by a
-    // commit is seeded by `#apply` and a node mounted by a caller is seeded by nobody. A seed here
-    // was drafted, implemented and refused on three measurements. `T-1` owns the asymmetry as real
-    // rather than pending, `trigger-time` owns that a time Motion does not emit before its first
-    // tick and a mount precedes every tick, and `PatchRegistry.publish` drops a candidate through
-    // `samePatch`, so this flush would not add a publication but take the next one: the `seek` that
-    // follows would publish nothing and hand its caller an empty batch. Run 33712936651 is the 21
-    // cases that says so, `RA-8` among them. See `RA-100`, `RA-101` and ADR-066.
     return this.#mountNode(nodeId, instance);
   }
 
@@ -380,16 +358,8 @@ export class ProjectRuntime {
     try {
       answer = recipe(this.#transaction());
     } finally {
-      // Cleared before the commit rather than after it, so the settle steps mount against the
-      // retained pair and an `edit` after a throw finds no transaction open.
       this.#open = undefined;
     }
-    // The liveness asserted on entry is stale here. ADR-064's amendment leaves `dispose` reachable
-    // from inside a recipe, on the reason that teardown has to be reachable from a `catch`, so a
-    // precondition asked before the callback is not one on what follows it. Answered rather than
-    // refused, because a recipe that tore the project down from its own `catch` would lose its
-    // answer to a refusal about the teardown, and a disposed runtime has cleared its retained pair
-    // and disposed its graph, so there is nothing left for the staged pair to be committed to.
     if (this.#disposed) return answer;
     if (open.tracks !== this.#tracks || open.motions !== this.#motions)
       this.#commit({ tracks: open.tracks, motions: open.motions });
@@ -423,8 +393,6 @@ export class ProjectRuntime {
     const accepted = { ...definition, tracks: [] };
     const motions = this.#stageMotions();
     motions.set(accepted.id, { definition: accepted, token: this.#nextToken++ });
-    // A map builder and nothing else. Which hooks a created Motion costs is `#derive`'s answer, and
-    // the track half is absent because this commit did not move it. See ADR-032 and ADR-064.
     this.#commit({ motions });
     return Object.freeze({ id: accepted.id });
   }
@@ -467,11 +435,6 @@ export class ProjectRuntime {
     const entry = this.#entryOf(nodeId);
     return this.#handle(nodeId, entry.token);
   }
-  /**
-   * The same resolution as `track` above without the refusal, and the probe an upsert is written
-   * with: a caller branches on the answer at its own call site. Why a single `setTrack` verb is not
-   * on this surface is ADR-063's. See ADR-063.
-   */
   tryTrack(nodeId: string): TrackHandle | undefined {
     this.#assertLive();
     const entry = this.#readTracks().get(nodeId);
@@ -537,12 +500,6 @@ export class ProjectRuntime {
       overlay: NO_OVERLAY,
       liveWrite: false,
     });
-    // A map builder and nothing else. That the compile runs before the graph is asked, that the
-    // Motion entry is written after it because Motion resolves by id against the live compiled map,
-    // and that the mount settles last are all `#derive`'s answer now, derived from the fact that
-    // this id is absent from the retained pair. That is also what makes an add-then-remove inside
-    // one recipe cost nothing at all rather than mounting a node the committed graph lacks.
-    // See ADR-031 and ADR-064.
     this.#commit({ tracks });
     return this.#handle(id, token);
   }
@@ -565,11 +522,6 @@ export class ProjectRuntime {
     id: string,
     token: number,
   ): E | undefined {
-    // A disposed runtime has no live entry, stated here rather than left to the fact that the
-    // teardown empties both maps. Those two stopped being simultaneous when the teardown became
-    // deferrable past a commit, and a handle answering `live` inside that window would be reporting
-    // a project whose `dispose()` has already returned. Not a throw, so the reading ladder above is
-    // untouched. See ADR-067 and `RA-116`.
     if (this.#disposed) return undefined;
     const entry = entries.get(id);
     return entry !== undefined && entry.token === token ? entry : undefined;
@@ -598,8 +550,6 @@ export class ProjectRuntime {
   }
 
   #liveChildNode(motionId: string, token: number, trackId: string): string {
-    // Resolved into a local before the child name is qualified, so this order is stated here
-    // rather than left to how a call site happens to nest the two expressions. See ADR-056.
     const owner = this.#liveId(motionId, token);
     return qualifyMotionTrack(owner, trackId).value;
   }
@@ -789,9 +739,6 @@ export class ProjectRuntime {
     if (!validation.valid || !validation.value)
       throw new TypeError(describeDiagnostics(validation.diagnostics));
     const tracks = this.#stageTracks();
-    // No overlay and no live write, which is the same claim at two levels: a replacement builds a
-    // fresh Track, and the predicate above is what keeps that true when the compiled input did not
-    // move. See ADR-066.
     tracks.set(id, {
       ...entry,
       track: validation.value,
@@ -803,8 +750,6 @@ export class ProjectRuntime {
 
   #commit(plan: SchemaPlan): void {
     if (this.#open !== undefined) return;
-    // Read after the recipe check and never before it, so a recipe opened from inside a hook stages
-    // as usual and is refused once, at the moment it would apply, by the one owner of this refusal.
     if (this.#inFlight > 0) commitInFlight();
     this.#apply(plan);
   }
@@ -820,30 +765,16 @@ export class ProjectRuntime {
   }
 
   #apply(plan: SchemaPlan): void {
-    // An absent half resolves to the map this class already holds, so the adoption assigns it back
-    // to itself. Read directly rather than through the accessors: a recipe is never open here.
     const tracks = plan.tracks ?? this.#tracks;
     const motions = plan.motions ?? this.#motions;
-    // Raised ahead of the derivation rather than ahead of the effect loop, because `#derive` asks
-    // `resolveKeyframes`, which is caller code and can dispose from there too. The raise, the
-    // decrement and the drain are `#boundary`'s rather than this member's: four direct writes need
-    // the same three statements, and an ordering enforced at five call sites is enforced at the
-    // first of them. See ADR-067 and ADR-069.
     this.#boundary(() => {
       const commit = this.#derive(tracks, motions);
-      // Nothing has been applied yet, so a disposal asked for during the derivation refuses with
-      // nothing to roll back.
       this.#assertLive();
       const applied: SchemaEffect[] = [];
       try {
         for (const effect of commit.effects) {
           effect.apply();
           applied.push(effect);
-          // Re-asked after every hook, because every one of them is caller code and a precondition
-          // asserted before a callback is not a precondition on what follows it. The teardown is
-          // deferred to this member's `finally`, so the rollback below still hands a live graph and
-          // a live composition the inverse of what these effects just built. That is the whole
-          // reason the deferral exists. See `RA-114`.
           this.#assertLive();
         }
         this.#graph.replaceGraph(this.#snapshot(tracks, motions));
@@ -855,8 +786,6 @@ export class ProjectRuntime {
         rejectAfterRollback(error, () => runRollbackSteps(steps));
       }
       this.#adoptMaps(tracks, motions);
-      // Publication is the last collected step, not a finally that could replace a settle error.
-      // Every step is attempted against the accepted pair before reporting once. See ADR-071.
       runSettleSteps([...commit.settle, () => this.#flush(commit.touched)]);
     });
   }
@@ -905,13 +834,8 @@ export class ProjectRuntime {
         this.#instances.delete(nodeId);
         this.#graph.evictNode(nodeId);
       });
-      // Separate steps so a failed disposal cannot skip Motion deregistration. See ADR-071.
       settle.push(() => this.#disposeTrack?.(nodeId));
       if (motionId !== undefined) settle.push(() => this.#removeMotionTrack?.(motionId, nodeId));
-      // Not the removed node, which is gone, but every node that was reading it. Why an edge test
-      // misses a solver reading its chain members, why this is read here rather than after
-      // `replaceGraph`, and why a seed the committed graph does not contain is harmless rather than
-      // filtered are all ADR-051's amendment. See `RA-98` and `RA-99`.
       touched.push(...this.#readersOf(nodeId));
     }
     for (const motionId of this.#motions.keys())
@@ -928,8 +852,6 @@ export class ProjectRuntime {
         if (motionId !== undefined)
           settle.push(() => this.#addMotionTrack?.(motionId, nodeId, added.duration));
         settle.push(() => this.#mountNode(nodeId));
-        // The new node publishes, which it never did before, and one whose sources have not
-        // published yet lands on blocked with a pending diagnostic. See `RA-9`.
         touched.push(nodeId);
         continue;
       }
@@ -937,16 +859,6 @@ export class ProjectRuntime {
       const previous = retained.track;
       const next = entry.track;
       let staged: StagedTrack | undefined;
-      // Conditional, and nothing else about the transaction moves: there is no fast lane for an
-      // edge. A skipped build leaves `staged` undefined, so the settle step below is the no-op it
-      // already was for a caller that wired no staging seam at all. See ADR-062.
-      // The resolve is asked unconditionally and the build additionally runs when a live write is
-      // in force, and that order is the whole correctness of it. Spelled
-      // `retained.liveWrite || needsBuild` it short-circuits, so the resolve never runs, and the
-      // resolve is the only place a registry sees an already-compiled node's candidate: skipping it
-      // deletes a validator rather than a cost, which is the defect C1 refused to ship. The build
-      // is also the only thing that dropped a live value write, so it is paid for that too rather
-      // than leaving an override the documentation says is gone. See `RA-103`, `RA-105`, ADR-066.
       const needsBuild = this.#needsTimelineBuild(nodeId, previous, next);
       if (needsBuild || retained.liveWrite)
         effects.push({
@@ -955,16 +867,12 @@ export class ProjectRuntime {
           },
           revert: () => staged?.rollback(),
         });
-      // Republish the displaced compiled Track before restoring Motion, which is what reverts
-      // running in apply order buys. See ADR-031 and ADR-045.
       if (motionId !== undefined)
         effects.push({
           apply: () => this.#replaceMotionTrack?.(motionId, nodeId, next.duration),
           revert: () => this.#replaceMotionTrack?.(motionId, nodeId, previous.duration),
         });
       settle.push(() => staged?.commit());
-      // The edited node, and only it: the publisher walks dependants from the seed, so naming it is
-      // sufficient. `addObserve` and `removeObserve` route through here, which makes them publish.
       touched.push(nodeId);
     }
     return { effects, settle, touched };
@@ -982,15 +890,9 @@ export class ProjectRuntime {
     rebase: boolean,
   ) {
     this.#refuseReentrant(rebase ? "setValues" : "overrideValues");
-    // The refusal stays outside the boundary, because a refused call is not inside a callback and
-    // has nothing to survive. See ADR-069.
     return this.#boundary(() => {
-      // Resolved here rather than by an argument expression, which is evaluated before this member
-      // is entered and therefore before the rung above. See ADR-070's amendment.
       const entry = resolveEntry();
       const { statics, animated } = splitAuthoredValues(values);
-      // An animated key is involved when this call names one, and also when the last one did: a
-      // revert names no key at all, which is what the retained overlay is for. See ADR-060.
       const involved = Object.keys(animated).length > 0 || Object.keys(entry.overlay).length > 0;
       const rewritten = rebase || involved ? withAuthoredValues(entry.track, values) : entry.track;
       if (involved) {
@@ -1002,8 +904,6 @@ export class ProjectRuntime {
       let staged: StagedTrack | undefined;
       let progress: number | undefined;
       if (written !== undefined && !written.patched) {
-        // The mask succeeded and has no inverse. If staging refuses, keep the old definition and
-        // overlay but conservatively require the next structural edit to drop that mask.
         this.#tracks.set(nodeId, { ...entry, liveWrite: true });
         progress = written.progress;
         staged = this.#stageTrack?.(rewritten, nodeId);
@@ -1012,7 +912,6 @@ export class ProjectRuntime {
         ...entry,
         track: rebase ? rewritten : entry.track,
         overlay: animated,
-        // In force from here until something builds a fresh Track for this node. See ADR-066.
         liveWrite: true,
       });
       return this.#completeWrite(nodeId, staged, progress);
@@ -1026,8 +925,6 @@ export class ProjectRuntime {
   ): PatchBatch {
     if (staged === undefined && progress === undefined) return this.#invalidateOne(nodeId);
     let batch!: PatchBatch;
-    // Adoption already happened. A commit can fail while releasing the old Track, after rollback
-    // ceased to be legal. Complete the remaining attempts and report without reverting the pair.
     runSettleSteps([
       () => staged?.commit(),
       () => {
@@ -1079,8 +976,6 @@ export class ProjectRuntime {
         Object.keys(entry.overlay).length === 0 ? undefined : NO_OVERLAY,
         true,
       );
-      // The successful writer may have changed a mask even if staging now refuses. Recording
-      // only that conservative fact keeps a later binding edit from skipping its repair build.
       this.#tracks.set(nodeId, { ...entry, liveWrite: true });
       const progress = written?.progress;
       const staged = this.#stageTrack?.(accepted, nodeId);
@@ -1101,14 +996,9 @@ export class ProjectRuntime {
     key: string,
     value: AuthoredProperty,
   ) {
-    // Asked before the entry is resolved, so a write aimed at a node an in-flight commit has
-    // already compiled reports the commit rather than a missing id or a stale handle, which is the
-    // order tier 0 has always had. See ADR-070's amendment.
     this.#refuseReentrant("setKeyframe");
     const entry = this.#writableEntry(nodeId, token);
     const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
-    // Asked through the one reader of the section rather than off the field, so this path and the
-    // pure editor cannot disagree about what the group authors. See `RA-106` and issue #255.
     if (Object.hasOwn(readPluginValues(bound.group), key))
       return this.#writeValues(nodeId, () => entry, { [key]: value }, true);
     const edited = setAuthoredKeyframe(keyframes, bound, key, value);
@@ -1134,9 +1024,6 @@ export class ProjectRuntime {
     const index = observations.findIndex(
       (candidate) => observationEdgeKey(candidate, id, entry.motionId ?? "~") === key,
     );
-    // Idempotent observation semantics rather than a stale guard, which was answered above. Neither
-    // no-op commits anything, so neither flushes and neither stages inside a recipe, which is what
-    // lets a recipe of nothing but no-ops end without a candidate build. See `RA-66`.
     if (add) {
       if (index >= 0) return;
       observations.push(observation);
@@ -1297,10 +1184,6 @@ export class ProjectRuntime {
   dispose(): void {
     if (this.#disposed) return;
     this.#disposed = true;
-    // Deferred rather than refused, and answered rather than ignored. A composition hook reaches
-    // this member from inside the commit it is part of, and releasing the graph and the composition
-    // here would hand that commit's rollback the inverse of effects it can no longer apply. Every
-    // member refuses from the line above onward, and `#apply`'s `finally` releases exactly once.
     if (this.#inFlight > 0) {
       this.#pendingTeardown = true;
       return;
@@ -1322,8 +1205,6 @@ export class ProjectRuntime {
       () => this.#graph.dispose(),
       () => this.#disposeComposition(),
     ]);
-    // Completion precedes reporting. The existing pending flag distinguishes a direct release
-    // from a drain whose caller already has an outcome; neither call site owns this policy.
     const describe = (failure: unknown, seen = new Set<unknown>()): string => {
       try {
         const message = String(describeError(failure));
