@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "operation": "apply",
+  "expected_head": "49c7821f5c06ee4506e6fd936217299e7af0db35",
+  "expected_blobs": {
+    "packages/core/src/adapters/dom.ts": "93acd77d85deb627eb9f24f9906caf9b7d4af37a",
+    "docs/ADR-074-adapter-owned-write-state.md": null,
+    "docs/guide/api-reference.md": "7a8cbb3c7bd745d79c2c8f23e36b73a54f3d551d",
+    "docs/guide/rendering-patches.md": "76e4f75bf05d9fc5b308d790da5392d4a67208f8",
+    "docs/SESSION-STATUS.md": "4c51907469c07a118fccadd5ebdef5786062ac89"
+  },
+  "message": "fix(adapters): own DOM write state per adapter and refuse a stale revision",
+  "edits": [
+    {
+      "path": "packages/core/src/adapters/dom.ts",
+      "find": "const transformKeys = new Set([\"x\", \"y\", \"z\", \"rotation\", \"rotationX\", \"rotationY\", \"scale\"]);\nconst transformState = new WeakMap<object, Record<string, unknown>>();\n",
+      "replace": "const transformKeys = new Set([\"x\", \"y\", \"z\", \"rotation\", \"rotationX\", \"rotationY\", \"scale\"]);\n"
+    },
+    {
+      "path": "packages/core/src/adapters/dom.ts",
+      "find": "function defaultWriter(target: DomTarget, values: Readonly<Record<string, unknown>>): void {\n  const state = transformState.get(target) ?? {};\n  const hadTransform = Object.keys(state).length > 0;\n  for (const [key, value] of Object.entries(values)) {\n    if (transformKeys.has(key)) {\n      if (value === undefined) delete state[key];\n      else state[key] = value;\n      continue;\n    }\n    if (value === undefined) removeStyleProperty(target, key);\n    else if (key in target.style || key.startsWith(\"--\")) target.style[key] = value;\n    else target[key] = value;\n  }\n  if (Object.keys(state).length > 0) {\n    pinTransformBox(target);\n    target.style.transform = composeTransform(state);\n  } else if (hadTransform) removeStyleProperty(target, \"transform\");\n  transformState.set(target, state);\n}\n",
+      "replace": "/**\n * The shipped writer, over the transform state of exactly one adapter.\n *\n * Composition is stateful: `x` alone has to be written as a whole `transform` string beside the\n * `scale` an earlier patch set, so the writer keeps the keys it has already composed per target.\n * That state is handed in rather than reached for, because two adapters bound to one element are\n * two owners of one element's pose. A module-level map let the second inherit keys it was never\n * sent, compose them into a transform its own patches never mentioned, and lose them again when\n * either one cleared. One adapter, one composition. See ADR-074.\n */\nfunction createTransformWriter(\n  transformState: WeakMap<object, Record<string, unknown>>,\n): DomPatchWriter {\n  return (target, values) => {\n    const state = transformState.get(target) ?? {};\n    const hadTransform = Object.keys(state).length > 0;\n    for (const [key, value] of Object.entries(values)) {\n      if (transformKeys.has(key)) {\n        if (value === undefined) delete state[key];\n        else state[key] = value;\n        continue;\n      }\n      if (value === undefined) removeStyleProperty(target, key);\n      else if (key in target.style || key.startsWith(\"--\")) target.style[key] = value;\n      else target[key] = value;\n    }\n    if (Object.keys(state).length > 0) {\n      pinTransformBox(target);\n      target.style.transform = composeTransform(state);\n    } else if (hadTransform) removeStyleProperty(target, \"transform\");\n    transformState.set(target, state);\n  };\n}\n"
+    },
+    {
+      "path": "packages/core/src/adapters/dom.ts",
+      "find": "  write: DomPatchWriter = defaultWriter,\n",
+      "replace": "  write?: DomPatchWriter,\n"
+    },
+    {
+      "path": "packages/core/src/adapters/dom.ts",
+      "find": "  const lastApplied = new WeakMap<object, Record<string, unknown>>();\n  return {\n    apply(patch) {\n      if (patch.status !== \"ready\") return;\n      const target = resolveTarget(patch.nodeId);\n      if (target === undefined) return;\n      const next = renderableValues(patch.values, metadata);\n",
+      "replace": "  const lastApplied = new WeakMap<object, Record<string, unknown>>();\n  const transformState = new WeakMap<object, Record<string, unknown>>();\n  /**\n   * The newest revision this adapter has accepted, per target and per node.\n   *\n   * Keyed by both, because a revision is monotonic per node and says nothing across nodes: the\n   * default resolver hands one stage every node's patches, so a per-target key alone would drop a\n   * lower-numbered node's writes as stale. Keyed by target as well, because a rebound element\n   * arrives with no record while the retained patch that re-poses it carries a revision this\n   * adapter has already accepted; `clear` drops the record with the rest of that target's state,\n   * which is what makes a rebind write. See ADR-074.\n   */\n  const appliedRevisions = new WeakMap<object, Map<string, number>>();\n  const writeTarget = write ?? createTransformWriter(transformState);\n  return {\n    apply(patch) {\n      if (patch.status !== \"ready\") return;\n      const target = resolveTarget(patch.nodeId);\n      if (target === undefined) return;\n      const revisions = appliedRevisions.get(target) ?? new Map<string, number>();\n      const accepted = revisions.get(patch.nodeId);\n      // Refused before the diff, and recorded even when the diff turns out empty. `lastApplied` is\n      // what the next frame's dirty set is measured against, so an older patch does not cost one\n      // stale frame: it leaves every later diff wrong about what the element holds. An accepted\n      // patch that wrote nothing is still the newest one seen, and calling it unseen would let the\n      // patch before it through.\n      if (accepted !== undefined && patch.revision <= accepted) return;\n      revisions.set(patch.nodeId, patch.revision);\n      appliedRevisions.set(target, revisions);\n      const next = renderableValues(patch.values, metadata);\n"
+    },
+    {
+      "path": "packages/core/src/adapters/dom.ts",
+      "find": "      write(target, dirty);\n",
+      "replace": "      writeTarget(target, dirty);\n"
+    },
+    {
+      "path": "packages/core/src/adapters/dom.ts",
+      "find": "      lastApplied.delete(target);\n      transformState.delete(target);\n    },",
+      "replace": "      lastApplied.delete(target);\n      transformState.delete(target);\n      appliedRevisions.delete(target);\n    },"
+    },
+    {
+      "path": "docs/ADR-074-adapter-owned-write-state.md",
+      "create": "# ADR-074: a DOM adapter writes only from state it owns, at the newest revision it accepted\n\nStatus: accepted. Supersedes nothing. Issues [#356](https://github.com/chahyasantoso/motion5/issues/356) and [#357](https://github.com/chahyasantoso/motion5/issues/357).\n\n## Context\n\n`createDomPatchAdapter` is the single owner of patch-to-target translation, and ADR-073 made it the owner for the React path too, so every published value that reaches an element now goes through one implementation. That implementation carried two pieces of state whose ownership had never been decided. Both were decided by where a declaration happened to sit rather than by what the state is for.\n\n`transformState`, the record of composed transform keys per target, was a module-level `WeakMap`. Composition is genuinely stateful: `x` alone has to be written as a whole `transform` string beside the `scale` an earlier patch set, so the writer has to remember the keys it composed. A module-level map makes that memory global to the process. Two adapters bound to one element therefore shared one composition while keeping separate dirty caches, which is the worst of both: the second starts with an empty `lastApplied`, writes its own keys, and composes them together with keys the first set and it has never seen. `clear(target)` was global for the same reason, so releasing one binding erased the other's pose. `useDomPatch` creates one adapter per binding, which is what turned a narrow API shape into a reachable one.\n\n`apply` read `patch.revision` for nothing. `PatchRegistry` increments it per node on every publish and is the only publisher in the tree, so out-of-order delivery is not something the shipped composition can produce. An injected `PatchSource` can, and the cost is not one stale frame: `lastApplied` is what the next frame's dirty set is measured against, so a write from an older patch leaves every later diff wrong about what the element holds. Keys that should be rewritten are suppressed as unchanged, and keys that should be removed are not in the previous record to remove.\n\n## Decision\n\nBoth live on the adapter instance. `transformState` moves into the closure beside `lastApplied`, and the shipped writer becomes `createTransformWriter(transformState)`, a factory over the state it composes into rather than a module function reaching for a module map. An injected `write` replaces it entirely, as before, and the declared parameter type does not change: a defaulted parameter and an optional one emit the same declaration.\n\n`apply` refuses a patch whose revision is not newer than the newest this adapter accepted for that target and that node, before the diff rather than after it, and records the accepted revision whether or not the diff turned out to be empty. An accepted patch that writes nothing is still the newest thing this adapter has seen, and treating it as unseen would let the patch before it through.\n\n**The guard is keyed by target and node together, and neither half is optional.** Keyed by node alone it would refuse the first write to a rebound element: `useDomPatch` re-applies the retained patch when React hands it a new node, and that patch carries a revision the adapter has already accepted, so a fresh element would keep whatever pose it was born with. Keyed by target alone it would refuse legitimate writes: the default `resolveTarget` sends every node's patches to the stage, revisions are monotonic per node and unrelated across nodes, and a node whose stream is numbered lower than its neighbour's is not stale for it. `clear(target)` drops the record with the rest of that target's state, which is what re-arms a rebind.\n\nIssue #356 proposed reading the revision off `lastApplied`. That record holds rendered values and no revision, and widening it would key the freshness question and the dirty question on one entry while they need different keys: the dirty diff is per target, because that is what a write lands on, and freshness is per target and node. Two maps, two questions.\n\n## Consequences\n\nAn adapter is now safe to construct per binding, which is what the React hook already does, and two of them on one element are two independent renderers rather than one shared pose with two dirty caches. A custom `PatchSource` cannot walk a target's diff cache backwards.\n\n`originPinned` is not part of this. The SVG reference-box pin ADR-073 added is idempotent against the element's own `style.transformBox` rather than against a module-level `WeakSet`, so it reads per-target state from the target and had nothing to move. Issue #357's description of it was written against a draft that did not ship, and that half of the issue is answered as already correct rather than quietly dropped.\n\nEvidence is `packages/core/test/integration/dom-adapter-owned-state.test.ts`. Each case asserts the accepting direction in the same rig as the refusing one, because a guard that refuses everything and a writer that composes nothing are both green against the refusal alone.\n"
+    },
+    {
+      "path": "docs/guide/api-reference.md",
+      "find": "A composed transform on an SVG target pins `transform-box: fill-box` so a future transform key pivots locally.",
+      "replace": "A composed transform on an SVG target pins `transform-box: fill-box` so a future transform key pivots locally. Every cache the adapter keeps is its own: the dirty diff, the composed transform state, and the newest revision accepted per target and node, all dropped by `clear(target)`. A patch that is not newer than that revision is refused before the diff, so two adapters on one element cannot compose each other's keys. See ADR-074."
+    },
+    {
+      "path": "docs/guide/rendering-patches.md",
+      "find": "Call `adapter.clear(target)` when you stop rendering a target, so its diff and transform state are dropped.",
+      "replace": "Call `adapter.clear(target)` when you stop rendering a target, so its diff, its composed transform state, and its record of the newest revision it applied there are dropped.\n\nAll three belong to the adapter you called rather than to the element. Two adapters bound to one element compose independently and clear independently, and each refuses a patch that is not newer than the one it already applied for that target and node, so an out-of-order `PatchSource` cannot leave a target's diff cache describing a pose that is no longer there. See ADR-074."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- **Captured:** 2026-09-10, Asia/Jakarta.\n- **Inspected main:** `cff33a0bfd29331f7a37149654eef6a5e0eb0872`, after shared scroll-source lifecycle [#353](https://github.com/chahyasantoso/motion5/pull/353). Exact CI and operation evidence belong to their PRs.",
+      "replace": "- **Captured:** 2026-09-11, Asia/Jakarta.\n- **Inspected main:** `da9d9fd06cf3c14bb76e88a549c070eadbc2dcac`, after the React DOM patch binding [#358](https://github.com/chahyasantoso/motion5/pull/358). Exact CI and operation evidence belong to their PRs."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "## Now\n\n- **Runtime consistency landed:**",
+      "replace": "## Now\n\n- **React DOM binding landed:** [#358](https://github.com/chahyasantoso/motion5/pull/358) is merged: `useDomPatch` binds one node to one DOM or SVG target through `createDomPatchAdapter`, `ProjectHandle.renderMetadata` answers the serializer channel a renderer needs, and the three one-to-one `<g transform>` consumers are migrated. The choke point is deliberately partial: derived geometry, projections, and diagnostics stay on `usePatch`. See ADR-073.\n- **Runtime consistency landed:**"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- **Landed before it:** slices 1 through 3 via [#332](https://github.com/chahyasantoso/motion5/pull/332): snapshot protections, isolated preparation, trusted outcomes, and one full-suite execution with preserved CI evidence. Runtime behavior is unchanged by these infrastructure slices.\n",
+      "replace": ""
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- **Unmerged React DOM binding:** issue [#354](https://github.com/chahyasantoso/motion5/issues/354) has an implementation branch adding `useDomPatch`, a required render-metadata channel on `ProjectHandle`, an SVG `transform-box` pin in the DOM adapter, and three migrated one-to-one consumers. The choke point is deliberately partial: derived geometry and diagnostics stay on `usePatch`. Review, exact-head CI, and merge remain gates; no landed public surface is claimed.",
+      "replace": "- **Unmerged adapter owned state:** [#360](https://github.com/chahyasantoso/motion5/pull/360) closes [#356](https://github.com/chahyasantoso/motion5/issues/356) and [#357](https://github.com/chahyasantoso/motion5/issues/357) by moving the DOM adapter's composed transform state onto the adapter instance and refusing a patch no newer than the one already applied for that target and node. Review, exact-head CI, and merge remain gates; no landed fix is claimed."
+    }
+  ]
+}
