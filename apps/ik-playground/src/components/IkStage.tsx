@@ -1,21 +1,34 @@
 import React, { useRef } from "react";
 import type { ProjectHandle } from "@motion5/core";
-import { useDomPatch, usePatch, type Patch } from "@motion5/react";
+import {
+  useDerivedDomPatch,
+  useDomPatch,
+  type PatchDerivation,
+  type PatchValues,
+} from "@motion5/react";
 import { ARM, TENTACLE, nodeId, type RigGeometry } from "../ik-playground-project";
 import type { GoalPoint, PendingGoals } from "../scroll-reach";
 
 /**
- * Presence is not liveness. A patch that is blocked, errored, or terminal still carries the last
- * values the node published, so gating a bone on `usePatch(...) !== undefined` happily draws a node
- * the graph has already destroyed. Only `"ready"` means "this pose is current".
+ * Nothing in this stage re-renders on a tick.
  *
- * It guards the derived geometry below. A one-to-one binding is `useDomPatch`, whose target holds its
- * last applied pose instead of disappearing, by the DOM adapter's own contract. See ADR-073.
+ * A one-node pose is `useDomPatch`. Everything else is a derivation: geometry this file computes
+ * from the values of one or more nodes, written to one element by `useDerivedDomPatch` through the
+ * same DOM adapter. Presence is still not liveness, and that rule has one owner now instead of one
+ * per component: a derivation runs only while every node it names is ready, and its target is hidden
+ * rather than unmounted while one is not. See ADR-073 and ADR-075.
  */
-function useLivePatch(handle: ProjectHandle, id: string): Patch | undefined {
-  const patch = usePatch(handle, id);
-  return patch?.status === "ready" ? patch : undefined;
+function point(values: PatchValues): { x: number; y: number } {
+  return { x: Number(values.x ?? 0), y: Number(values.y ?? 0) };
 }
+
+const boneEndpoints: PatchDerivation = ([parent = {}, child = {}]) => {
+  const from = point(parent);
+  const to = point(child);
+  return { x1: from.x, y1: from.y, x2: to.x, y2: to.y };
+};
+
+const nodePose: PatchDerivation = ([values = {}]) => point(values);
 
 interface BoneProps {
   readonly handle: ProjectHandle;
@@ -27,27 +40,17 @@ interface BoneProps {
 }
 
 const Bone: React.FC<BoneProps> = ({ handle, parentId, childId, color, width, innerColor }) => {
-  const parentPatch = useLivePatch(handle, parentId);
-  const childPatch = useLivePatch(handle, childId);
-  if (!parentPatch || !childPatch) return null;
+  // One derivation, two elements: the inner highlight is the same line at a smaller width, so it
+  // takes its own binding rather than a second derivation.
+  const bindBone = useDerivedDomPatch<SVGLineElement>(handle, [parentId, childId], boneEndpoints);
+  const bindInner = useDerivedDomPatch<SVGLineElement>(handle, [parentId, childId], boneEndpoints);
 
   return (
     <g>
-      <line
-        x1={Number(parentPatch.values.x ?? 0)}
-        y1={Number(parentPatch.values.y ?? 0)}
-        x2={Number(childPatch.values.x ?? 0)}
-        y2={Number(childPatch.values.y ?? 0)}
-        stroke={color}
-        strokeWidth={width}
-        strokeLinecap="round"
-      />
+      <line ref={bindBone} stroke={color} strokeWidth={width} strokeLinecap="round" />
       {innerColor && (
         <line
-          x1={Number(parentPatch.values.x ?? 0)}
-          y1={Number(parentPatch.values.y ?? 0)}
-          x2={Number(childPatch.values.x ?? 0)}
-          y2={Number(childPatch.values.y ?? 0)}
+          ref={bindInner}
           stroke={innerColor}
           strokeWidth={Math.max(1, width - 3)}
           strokeLinecap="round"
@@ -111,13 +114,14 @@ const ReachCircle: React.FC<{
   readonly radius: number;
   readonly color: string;
 }> = ({ handle, rootId, radius, color }) => {
-  const patch = useLivePatch(handle, rootId);
-  if (!patch) return null;
+  // A projection onto the element's own geometry, posed rather than positioned: `cx` and `cy` are
+  // CSS properties as well as SVG attributes, so a derived position is `x`/`y` and the adapter
+  // composes it into a transform that pivots at this element's origin.
+  const bind = useDerivedDomPatch<SVGCircleElement>(handle, [rootId], nodePose);
 
   return (
     <circle
-      cx={Number(patch.values.x ?? 0)}
-      cy={Number(patch.values.y ?? 0)}
+      ref={bind}
       r={radius}
       fill="none"
       stroke={color}
@@ -140,9 +144,11 @@ const GoalHandle: React.FC<{
   readonly pending: GoalPoint;
   readonly onDrag: (x: number, y: number) => void;
 }> = ({ handle, id, color, svgRef, pending, onDrag }) => {
-  const patch = useLivePatch(handle, id);
+  // The applied marker is the runtime's answer, so it binds to it. The pending marker is client
+  // state, so it stays mounted and draggable while the node is blocked, errored or destroyed, where
+  // gating the whole handle on one patch used to take the drag target with it. See ADR-075.
+  const bindApplied = useDerivedDomPatch<SVGCircleElement>(handle, [id], nodePose);
   const dragging = useRef(false);
-  if (!patch) return null;
 
   const toStagePoint = (clientX: number, clientY: number) => {
     const ctm = svgRef.current?.getScreenCTM();
@@ -157,9 +163,8 @@ const GoalHandle: React.FC<{
   return (
     <g>
       <circle
+        ref={bindApplied}
         data-applied-goal={id}
-        cx={Number(patch.values.x ?? 0)}
-        cy={Number(patch.values.y ?? 0)}
         r={7}
         fill="none"
         stroke={color}

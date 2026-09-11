@@ -4,18 +4,6 @@ import type { Patch } from "../../src/runtime/patch-registry";
 
 const NODE_ID = "walk/legL_thigh";
 
-/**
- * The seam this file is red against: `applyValues` is not declared on `DomPatchAdapter` yet, and a
- * test that names a member the interface does not declare fails `typecheck` rather than an
- * assertion. The commit that lands the member deletes this block and calls it directly.
- */
-interface DerivedWriteSeam {
-  applyValues(nodeId: string, values: Readonly<Record<string, unknown>>): void;
-}
-function derived(adapter: unknown): DerivedWriteSeam {
-  return adapter as DerivedWriteSeam;
-}
-
 function patch(
   revision: number,
   values: Readonly<Record<string, unknown>>,
@@ -131,12 +119,12 @@ describe("DOM adapter write channels", () => {
         written.push({ ...values });
       },
     );
-    expect(typeof derived(adapter).applyValues).toBe("function");
+    expect(typeof adapter.applyValues).toBe("function");
 
-    derived(adapter).applyValues(NODE_ID, { x1: 1 });
-    derived(adapter).applyValues(NODE_ID, { x1: 1 });
+    adapter.applyValues(NODE_ID, { x1: 1 });
+    adapter.applyValues(NODE_ID, { x1: 1 });
     adapter.apply(patch(1, { x1: 1 }));
-    derived(adapter).applyValues(NODE_ID, { x1: 2 });
+    adapter.applyValues(NODE_ID, { x1: 2 });
 
     expect(written).toEqual([{ x1: 1 }, { x1: 2 }]);
   });

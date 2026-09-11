@@ -130,7 +130,8 @@ describe("useDomPatch", () => {
     // Without the metadata channel this composite is suppressed unrendered, which is the divergence
     // a React-only DOM configuration used to ship.
     expect(target.pose).toBe("3px");
-    expect(target.style.transformBox).toBe("fill-box");
+    expect(target.style.transformBox).toBe("view-box");
+    expect(target.style.transformOrigin).toBe("0px 0px");
 
     for (const status of ["blocked", "error", "destroyed"] as const)
       act(() => {

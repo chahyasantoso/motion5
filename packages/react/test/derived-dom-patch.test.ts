@@ -2,32 +2,11 @@ import { createElement } from "react";
 import type { RefCallback } from "react";
 import { act, create } from "react-test-renderer";
 import { describe, expect, it } from "vitest";
-import * as reactEntry from "@motion5/react";
-import type { Patch, PatchListener, PatchSource } from "@motion5/react";
+import { useDerivedDomPatch } from "@motion5/react";
+import type { Patch, PatchDerivation, PatchListener, PatchSource } from "@motion5/react";
 
 const PARENT = "walk/pelvis";
 const CHILD = "walk/legL_thigh";
-
-/**
- * The seam this file is red against.
- *
- * `useDerivedDomPatch` and `PatchValues` are not exported yet, and a test that names a member the
- * entry does not declare fails `typecheck` rather than an assertion, which is not failing-first
- * evidence. So the shape is declared here and read off the entry through one cast; the commit that
- * lands the hook deletes this block and imports both names instead.
- */
-type PatchValues = Patch["values"];
-type PatchDerivation = (
-  values: readonly PatchValues[],
-) => Readonly<Record<string, unknown>> | undefined;
-type DerivedDomPatchSeam = <T extends Element>(
-  source: PatchSource,
-  nodeIds: readonly string[],
-  derive: PatchDerivation,
-) => RefCallback<T>;
-const { useDerivedDomPatch } = reactEntry as unknown as {
-  useDerivedDomPatch: DerivedDomPatchSeam;
-};
 
 interface FakeSource extends PatchSource {
   listenerCount(): number;

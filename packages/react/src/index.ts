@@ -20,3 +20,5 @@ export function usePatch(source: PatchSource, nodeId: string): Patch | undefined
 }
 
 export { useDomPatch } from "./dom-patch";
+export { useDerivedDomPatch } from "./derived-dom-patch";
+export type { PatchDerivation, PatchValues } from "./derived-dom-patch";

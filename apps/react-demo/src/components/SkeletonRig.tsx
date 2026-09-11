@@ -1,22 +1,30 @@
 import React from "react";
 import type { ProjectHandle } from "@motion5/core";
-import { useDomPatch, usePatch, type Patch } from "@motion5/react";
+import {
+  useDerivedDomPatch,
+  useDomPatch,
+  type PatchDerivation,
+  type PatchValues,
+} from "@motion5/react";
 
 /**
- * Presence is not liveness.
+ * Nothing in this rig re-renders on a tick.
  *
- * A patch that is blocked, errored, or terminal still carries the last values the node
- * published, so gating a bone on `usePatch(...) !== undefined` happily draws a node that the
- * graph has already destroyed or that is stalled behind a broken upstream. Only `"ready"`
- * means "this pose is current", so that is the only status this rig will render.
- *
- * It guards the derived geometry below. A one-to-one binding is `useDomPatch`, whose target holds its
- * last applied pose instead of disappearing, by the DOM adapter's own contract. See ADR-073.
+ * A one-node pose is `useDomPatch`. Everything else is a derivation: geometry this file computes
+ * from the values of one or more nodes, written to one element by `useDerivedDomPatch` through the
+ * same DOM adapter. Presence is still not liveness, and that rule has one owner now instead of one
+ * per component: a derivation runs only while every node it names is ready, and its target is hidden
+ * rather than unmounted while one is not. See ADR-073 and ADR-075.
  */
-function useLivePatch(handle: ProjectHandle, nodeId: string): Patch | undefined {
-  const patch = usePatch(handle, nodeId);
-  return patch?.status === "ready" ? patch : undefined;
+function point(values: PatchValues): { x: number; y: number } {
+  return { x: Number(values.x ?? 0), y: Number(values.y ?? 0) };
 }
+
+const boneEndpoints: PatchDerivation = ([parent = {}, child = {}]) => {
+  const from = point(parent);
+  const to = point(child);
+  return { x1: from.x, y1: from.y, x2: to.x, y2: to.y };
+};
 
 interface SkeletonRigProps {
   readonly handle: ProjectHandle;
@@ -39,33 +47,17 @@ const BoneSegment: React.FC<BoneSegmentProps> = ({
   width,
   innerColor,
 }) => {
-  const parentPatch = useLivePatch(handle, parentId);
-  const childPatch = useLivePatch(handle, childId);
-
-  if (!parentPatch || !childPatch) return null;
-
-  const px = Number(parentPatch.values.x ?? 0);
-  const py = Number(parentPatch.values.y ?? 0);
-  const cx = Number(childPatch.values.x ?? 0);
-  const cy = Number(childPatch.values.y ?? 0);
+  // One derivation, two elements: the inner highlight is the same line at a smaller width, so it
+  // takes its own binding rather than a second derivation.
+  const bindBone = useDerivedDomPatch<SVGLineElement>(handle, [parentId, childId], boneEndpoints);
+  const bindInner = useDerivedDomPatch<SVGLineElement>(handle, [parentId, childId], boneEndpoints);
 
   return (
     <g>
-      <line
-        x1={px}
-        y1={py}
-        x2={cx}
-        y2={cy}
-        stroke={color}
-        strokeWidth={width}
-        strokeLinecap="round"
-      />
+      <line ref={bindBone} stroke={color} strokeWidth={width} strokeLinecap="round" />
       {innerColor && width > 3 && (
         <line
-          x1={px}
-          y1={py}
-          x2={cx}
-          y2={cy}
+          ref={bindInner}
           stroke={innerColor}
           strokeWidth={Math.max(1, width - 3)}
           strokeLinecap="round"
@@ -122,24 +114,22 @@ interface FootWedgeProps {
   readonly color: string;
 }
 
+// Ankle -> Heel vector (-12px back, +5px down)
+const wedgePoints: PatchDerivation = ([shin = {}, foot = {}]) => {
+  const ankle = point(shin);
+  const toe = point(foot);
+  const heel = { x: ankle.x - 12, y: ankle.y + 5 };
+  return {
+    points: `${heel.x},${heel.y} ${ankle.x},${ankle.y} ${toe.x},${toe.y} ${toe.x},${toe.y + 5}`,
+  };
+};
+
 const FootWedge: React.FC<FootWedgeProps> = ({ handle, shinId, footId, color }) => {
-  const shinPatch = useLivePatch(handle, shinId);
-  const footPatch = useLivePatch(handle, footId);
-
-  if (!shinPatch || !footPatch) return null;
-
-  const ax = Number(shinPatch.values.x ?? 0);
-  const ay = Number(shinPatch.values.y ?? 0);
-  const tx = Number(footPatch.values.x ?? 0);
-  const ty = Number(footPatch.values.y ?? 0);
-
-  // Ankle -> Heel vector (-12px back, +6px down)
-  const hx = ax - 12;
-  const hy = ay + 5;
+  const bind = useDerivedDomPatch<SVGPolygonElement>(handle, [shinId, footId], wedgePoints);
 
   return (
     <polygon
-      points={`${hx},${hy} ${ax},${ay} ${tx},${ty} ${tx},${ty + 5}`}
+      ref={bind}
       fill={color}
       stroke={color}
       strokeWidth={1}
@@ -155,38 +145,33 @@ interface HeadSkullProps {
   readonly headId: string;
 }
 
+// Skull center is slightly above the neck: the node is the top of the head.
+function skullCenter(head: PatchValues): { x: number; y: number } {
+  const top = point(head);
+  return { x: top.x, y: top.y + 8 };
+}
+
+const skullPose: PatchDerivation = ([head = {}]) => skullCenter(head);
+
+const visorPose: PatchDerivation = ([head = {}]) => ({
+  ...skullCenter(head),
+  rotation: Number(head.rotation ?? 0) + 90,
+});
+
 const HeadSkull: React.FC<HeadSkullProps> = ({ handle, chestId, headId }) => {
-  const chestPatch = useLivePatch(handle, chestId);
-  const headPatch = useLivePatch(handle, headId);
-
-  if (!chestPatch || !headPatch) return null;
-
-  const cx = Number(chestPatch.values.x ?? 0);
-  const cy = Number(chestPatch.values.y ?? 0);
-  const hx = Number(headPatch.values.x ?? 0);
-  const hy = Number(headPatch.values.y ?? 0);
-  const hrot = Number(headPatch.values.rotation ?? 0);
-
-  // Skull center is slightly above neck (hx, hy is top of head)
-  const skullX = hx;
-  const skullY = hy + 8;
+  const bindNeck = useDerivedDomPatch<SVGLineElement>(handle, [chestId, headId], boneEndpoints);
+  const bindSkull = useDerivedDomPatch<SVGCircleElement>(handle, [headId], skullPose);
+  const bindVisor = useDerivedDomPatch<SVGGElement>(handle, [headId], visorPose);
 
   return (
     <g>
       {/* Neck Bone */}
-      <line
-        x1={cx}
-        y1={cy}
-        x2={hx}
-        y2={hy}
-        stroke="#e2e8f0"
-        strokeWidth={5}
-        strokeLinecap="round"
-      />
-      {/* Skull Outline */}
-      <circle cx={skullX} cy={skullY} r={18} fill="#0f172a" stroke="#cbd5e1" strokeWidth={3} />
+      <line ref={bindNeck} stroke="#e2e8f0" strokeWidth={5} strokeLinecap="round" />
+      {/* Skull Outline, posed rather than positioned: the composed transform pivots at the element's
+          own origin, which is what the visor group below rotates around. */}
+      <circle ref={bindSkull} r={18} fill="#0f172a" stroke="#cbd5e1" strokeWidth={3} />
       {/* Eye/Visor Line */}
-      <g transform={`translate(${skullX}, ${skullY}) rotate(${hrot + 90})`}>
+      <g ref={bindVisor}>
         <rect x={2} y={-3} width={14} height={6} rx={2} fill="#38bdf8" />
         <circle cx={-3} cy={7} r={2} fill="#94a3b8" />
       </g>
@@ -200,46 +185,38 @@ interface TorsoContourProps {
   readonly chestId: string;
 }
 
+function spanX(values: PatchValues, half: number): Record<string, number> {
+  const centre = point(values);
+  return { x1: centre.x - half, y1: centre.y, x2: centre.x + half, y2: centre.y };
+}
+
+const pelvisBar: PatchDerivation = ([pelvis = {}]) => spanX(pelvis, 14);
+const shoulderBar: PatchDerivation = ([chest = {}]) => spanX(chest, 20);
+
+const ribcagePose: PatchDerivation = ([pelvis = {}, chest = {}]) => {
+  const hips = point(pelvis);
+  const shoulders = point(chest);
+  return { x: (hips.x + shoulders.x) / 2, y: (hips.y + shoulders.y) / 2 - 6 };
+};
+
 const TorsoContour: React.FC<TorsoContourProps> = ({ handle, pelvisId, chestId }) => {
-  const pelvisPatch = useLivePatch(handle, pelvisId);
-  const chestPatch = useLivePatch(handle, chestId);
-
-  if (!pelvisPatch || !chestPatch) return null;
-
-  const px = Number(pelvisPatch.values.x ?? 0);
-  const py = Number(pelvisPatch.values.y ?? 0);
-  const cx = Number(chestPatch.values.x ?? 0);
-  const cy = Number(chestPatch.values.y ?? 0);
-
-  const midX = (px + cx) / 2;
-  const midY = (py + cy) / 2;
+  const bindPelvis = useDerivedDomPatch<SVGLineElement>(handle, [pelvisId], pelvisBar);
+  const bindShoulder = useDerivedDomPatch<SVGLineElement>(handle, [chestId], shoulderBar);
+  const bindRibcage = useDerivedDomPatch<SVGEllipseElement>(
+    handle,
+    [pelvisId, chestId],
+    ribcagePose,
+  );
 
   return (
     <g>
       {/* Pelvis Transverse Bar */}
-      <line
-        x1={px - 14}
-        y1={py}
-        x2={px + 14}
-        y2={py}
-        stroke="#64748b"
-        strokeWidth={5}
-        strokeLinecap="round"
-      />
+      <line ref={bindPelvis} stroke="#64748b" strokeWidth={5} strokeLinecap="round" />
       {/* Shoulder Transverse Bar */}
-      <line
-        x1={cx - 20}
-        y1={cy}
-        x2={cx + 20}
-        y2={cy}
-        stroke="#cbd5e1"
-        strokeWidth={6}
-        strokeLinecap="round"
-      />
+      <line ref={bindShoulder} stroke="#cbd5e1" strokeWidth={6} strokeLinecap="round" />
       {/* Ribcage Outline */}
       <ellipse
-        cx={midX}
-        cy={midY - 6}
+        ref={bindRibcage}
         rx={18}
         ry={26}
         fill="none"
@@ -251,9 +228,10 @@ const TorsoContour: React.FC<TorsoContourProps> = ({ handle, pelvisId, chestId }
   );
 };
 
+const shadowPose: PatchDerivation = ([pelvis = {}]) => ({ x: point(pelvis).x, y: 398 });
+
 export const SkeletonRig: React.FC<SkeletonRigProps> = ({ handle }) => {
-  const pelvisPatch = useLivePatch(handle, "walk/pelvis");
-  const pelvisX = Number(pelvisPatch?.values.x ?? 150);
+  const bindShadow = useDerivedDomPatch<SVGEllipseElement>(handle, ["walk/pelvis"], shadowPose);
 
   return (
     <div className="stage-container">
@@ -278,8 +256,9 @@ export const SkeletonRig: React.FC<SkeletonRigProps> = ({ handle }) => {
           opacity={0.3}
         />
 
-        {/* Ground Dynamic Shadow */}
-        <ellipse cx={pelvisX} cy={398} rx={60} ry={8} fill="url(#groundShadow)" />
+        {/* Ground Dynamic Shadow: absent while the pelvis is not live, rather than parked at a
+            default, which is what a derivation with nothing to draw means. */}
+        <ellipse ref={bindShadow} rx={60} ry={8} fill="url(#groundShadow)" />
 
         {/* 1. BACKGROUND LIMBS (Right Arm & Right Leg - Dimmed) */}
         <g opacity={0.65}>
