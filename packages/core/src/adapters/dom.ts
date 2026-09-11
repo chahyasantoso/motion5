@@ -1,5 +1,5 @@
 import type { Patch } from "../runtime/patch-registry";
-import type { ResolvedPlugins } from "../domain/plugins";
+import type { RenderMetadata } from "../domain/plugins";
 
 export interface StageLike {
   style: { perspective?: string; [key: string]: unknown };
@@ -41,6 +41,23 @@ function removeStyleProperty(target: DomTarget, key: string): void {
   if (typeof target.style.removeProperty === "function") target.style.removeProperty(key);
   else target.style[key] = undefined;
 }
+const SVG_TRANSFORM_BOX = "fill-box";
+/**
+ * Pins the reference box before a composed transform reaches an SVG element.
+ *
+ * CSS `transform-box` initially resolves against the nearest view box, so on an SVG element a future
+ * `rotation` or `scale` would pivot around the viewport while the `transform` attribute those
+ * consumers used pivoted around the element itself. Translation is origin-independent, which is why
+ * no shipped output changes here; the pin is what makes the next transform key correct when it is
+ * published rather than one bug report later. Structural detection, because this adapter types a
+ * target by what it can be written to and never by `instanceof`, and idempotent, so a bound element
+ * pays one write instead of one per frame. See ADR-073.
+ */
+function pinTransformBox(target: DomTarget): void {
+  if (!("ownerSVGElement" in target)) return;
+  if (target.style.transformBox !== SVG_TRANSFORM_BOX)
+    target.style.transformBox = SVG_TRANSFORM_BOX;
+}
 function defaultWriter(target: DomTarget, values: Readonly<Record<string, unknown>>): void {
   const state = transformState.get(target) ?? {};
   const hadTransform = Object.keys(state).length > 0;
@@ -54,8 +71,10 @@ function defaultWriter(target: DomTarget, values: Readonly<Record<string, unknow
     else if (key in target.style || key.startsWith("--")) target.style[key] = value;
     else target[key] = value;
   }
-  if (Object.keys(state).length > 0) target.style.transform = composeTransform(state);
-  else if (hadTransform) removeStyleProperty(target, "transform");
+  if (Object.keys(state).length > 0) {
+    pinTransformBox(target);
+    target.style.transform = composeTransform(state);
+  } else if (hadTransform) removeStyleProperty(target, "transform");
   transformState.set(target, state);
 }
 /**
@@ -76,7 +95,7 @@ function isPlainRecord(value: unknown): value is Readonly<Record<string, unknown
 // See ADR-042.
 function renderableValues(
   values: Readonly<Record<string, unknown>>,
-  metadata?: ResolvedPlugins,
+  metadata?: RenderMetadata,
 ): Record<string, unknown> {
   const result: Record<string, unknown> = {};
   const outputSerializers = metadata?.outputSerializers ?? {};
@@ -101,7 +120,7 @@ export function createDomPatchAdapter(
   perspective?: number,
   resolveTarget: DomTargetResolver = () => stage,
   write: DomPatchWriter = defaultWriter,
-  metadata?: ResolvedPlugins,
+  metadata?: RenderMetadata,
 ): DomPatchAdapter {
   if (perspective !== undefined && Number.isFinite(perspective) && perspective > 0)
     stage.style.perspective = `${perspective}px`;

@@ -102,7 +102,18 @@ export interface PreparedContribution {
   readonly keyframes: Readonly<Record<string, AuthoredProperty>>;
   readonly tweenVars: Readonly<Record<string, unknown>>;
 }
-export interface ResolvedPlugins {
+/**
+ * What a renderer needs from a resolved plugin chain, and nothing else.
+ *
+ * `adapters/dom.ts` reads `outputSerializers` and never another member, so this is the interface it
+ * depends on and the one a metadata channel has to satisfy. `ResolvedPlugins` extends it rather than
+ * restating the member, so what turns a plugin output into something writable has one declaration.
+ * See ADR-073.
+ */
+export interface RenderMetadata {
+  readonly outputSerializers: Readonly<Record<string, OutputSerializer>>;
+}
+export interface ResolvedPlugins extends RenderMetadata {
   readonly plugins: readonly PluginDefinition[];
   readonly diagnostics: readonly Diagnostic[];
   /**
@@ -124,7 +135,6 @@ export interface ResolvedPlugins {
    */
   readonly requirements: readonly ResolvedRequirement[];
   readonly internalKeys: readonly string[];
-  readonly outputSerializers: Readonly<Record<string, OutputSerializer>>;
   readonly preparation: PreparedContribution;
 }
 export interface PluginDefinition {

@@ -1,6 +1,6 @@
 import React, { useRef } from "react";
 import type { ProjectHandle } from "@motion5/core";
-import { usePatch, type Patch } from "@motion5/react";
+import { useDomPatch, usePatch, type Patch } from "@motion5/react";
 import { ARM, TENTACLE, nodeId, type RigGeometry } from "../ik-playground-project";
 import type { GoalPoint, PendingGoals } from "../scroll-reach";
 
@@ -8,6 +8,9 @@ import type { GoalPoint, PendingGoals } from "../scroll-reach";
  * Presence is not liveness. A patch that is blocked, errored, or terminal still carries the last
  * values the node published, so gating a bone on `usePatch(...) !== undefined` happily draws a node
  * the graph has already destroyed. Only `"ready"` means "this pose is current".
+ *
+ * It guards the derived geometry below. A one-to-one binding is `useDomPatch`, whose target holds its
+ * last applied pose instead of disappearing, by the DOM adapter's own contract. See ADR-073.
  */
 function useLivePatch(handle: ProjectHandle, id: string): Patch | undefined {
   const patch = usePatch(handle, id);
@@ -62,11 +65,10 @@ const Joint: React.FC<{
   readonly radius: number;
   readonly label?: string;
 }> = ({ handle, id, color, radius, label }) => {
-  const patch = useLivePatch(handle, id);
-  if (!patch) return null;
+  const bind = useDomPatch<SVGGElement>(handle, id);
 
   return (
-    <g transform={`translate(${Number(patch.values.x ?? 0)}, ${Number(patch.values.y ?? 0)})`}>
+    <g ref={bind}>
       <circle r={radius} fill={color} stroke="#0f172a" strokeWidth={1.5} />
       {label && (
         <text
@@ -90,11 +92,10 @@ const RootPin: React.FC<{
   readonly color: string;
   readonly label: string;
 }> = ({ handle, id, color, label }) => {
-  const patch = useLivePatch(handle, id);
-  if (!patch) return null;
+  const bind = useDomPatch<SVGGElement>(handle, id);
 
   return (
-    <g transform={`translate(${Number(patch.values.x ?? 0)}, ${Number(patch.values.y ?? 0)})`}>
+    <g ref={bind}>
       <circle r={16} fill={color} opacity={0.18} />
       <rect x={-6} y={-6} width={12} height={12} fill={color} transform="rotate(45)" />
       <text x={20} y={4} fill={color} fontSize="10" fontWeight="700" fontFamily="monospace">

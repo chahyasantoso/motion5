@@ -19,7 +19,7 @@ import { compilePercentKeyframes } from "./domain/keyframe-compiler";
 import { flattenAuthoredKeyframes } from "./domain/keyframe-groups";
 import { Motion, type MotionTrackEntry } from "./domain/motion";
 import { collect, report } from "./domain/completion";
-import { PluginRegistry, type RequirementInputs } from "./domain/plugins";
+import { PluginRegistry, type RenderMetadata, type RequirementInputs } from "./domain/plugins";
 import { Track } from "./domain/track";
 import { qualifyFreeTrack, qualifyMotionTrack } from "./graph/ids";
 import { assertClock, type Clock } from "./ports/clock";
@@ -69,6 +69,14 @@ export interface ProjectHandle {
   subscribe(nodeId: string, listener: PatchListener): () => void;
   get(nodeId: string): Patch | undefined;
   subscribeNode(nodeId: string, listener: PatchListener): () => void;
+  /**
+   * The render metadata for one node, or `undefined` for a node this project holds no track for.
+   *
+   * The channel a renderer needs to serialize plugin output, answered by the compiled Track rather
+   * than by a second map beside it, so a recompiled node reports the chain it actually has. It is a
+   * read: no renderer reaches a Track, a plugin, or the graph through it. See ADR-073.
+   */
+  renderMetadata(nodeId: string): RenderMetadata | undefined;
   adopt(
     track: TrackDefinition,
     owner: object,
@@ -83,7 +91,10 @@ interface CompilableTrack {
   readonly keyframes?: Readonly<Record<string, unknown>>;
 }
 type RuntimeLike = ProjectRuntime;
-function createHandle(runtime: RuntimeLike): ProjectHandle {
+function createHandle(
+  runtime: RuntimeLike,
+  renderMetadata: (nodeId: string) => RenderMetadata | undefined,
+): ProjectHandle {
   const handle: ProjectHandle = {
     mount: (nodeId, instance = {}) => runtime.mount(nodeId, instance),
     unmount: (nodeId) => runtime.unmount(nodeId),
@@ -103,6 +114,7 @@ function createHandle(runtime: RuntimeLike): ProjectHandle {
     subscribe: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
     get: (nodeId) => runtime.graph.registry.get(nodeId),
     subscribeNode: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
+    renderMetadata,
     adopt: (track, owner, options) => runtime.adopt(track, owner, options),
     destroyAdopted: (nodeId, owner) => runtime.destroyAdopted(nodeId, owner),
     dispose: () => runtime.dispose(),
@@ -524,7 +536,7 @@ export class Engine {
         });
         motions.set(motionDefinition.id, buildMotion(motionDefinition, entries));
       }
-      return createHandle(created);
+      return createHandle(created, (nodeId) => tracks.get(nodeId)?.plugins);
     } catch (error) {
       throw afterCleanup(error, () => {
         // `load()` owns everything it created, including the runtime. `GraphRuntime` takes the

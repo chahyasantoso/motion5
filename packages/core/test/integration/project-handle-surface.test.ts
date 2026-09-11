@@ -34,6 +34,7 @@ describe("public project handle surface (P1-9)", () => {
       "get",
       "motion",
       "mount",
+      "renderMetadata",
       "seek",
       "signal",
       "subscribe",
