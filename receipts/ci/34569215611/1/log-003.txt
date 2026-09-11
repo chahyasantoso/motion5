@@ -1,0 +1,119 @@
+ 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:33.9188247Z  ^[[32m✓^[[39m packages/core/test/integration/project-handle-surface.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 15^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:33.9740490Z  ^[[32m✓^[[39m packages/core/test/unit/domain/values.test.ts ^[[2m(^[[22m^[[2m6 tests^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:33.9975047Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/patch-registry-retention.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.0903659Z  ^[[32m✓^[[39m packages/core/test/unit/adapters/scroll-trigger-range.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.1764351Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/mutation-config.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.1944883Z  ^[[32m✓^[[39m packages/core/test/integration/dom-transform-removal.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.2974756Z  ^[[32m✓^[[39m packages/react/test/patch-store.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.3737496Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/s7-recovery-audit.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.4016143Z  ^[[32m✓^[[39m packages/core/test/contract/s4-validation-owner.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.5323392Z  ^[[32m✓^[[39m packages/core/test/integration/membership-gating.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 12^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.6072916Z  ^[[32m✓^[[39m packages/core/test/integration/runtime-motion-trigger-validation.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.6678314Z  ^[[32m✓^[[39m packages/core/test/integration/plugin-use-contract.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.7724859Z  ^[[32m✓^[[39m packages/core/test/contract/gsap-multi-stop.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.8731123Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.8911543Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9372494Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9429299Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9430061Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 7 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9430405Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9444912Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/react/test/derived-dom-patch.test.ts^[[2m > ^[[22museDerivedDomPatch^[[2m > ^[[22mwrites geometry derived from every source, on mount and on later batches, with no React render
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9454266Z ^[[31m^[[1mAssertionError^[[22m: expected 'undefined' to be 'function' // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9455094Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9455376Z Expected: ^[[32m"^[[7mf^[[27mun^[[7mction^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9455819Z Received: ^[[31m"un^[[7mdefined^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9456020Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9456856Z ^[[36m ^[[2m❯^[[22m mount packages/react/test/derived-dom-patch.test.ts:^[[2m129:37^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9504238Z     ^[[90m127|^[[39m   // The assertion the red run fails on. A case that throws "not a fun…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9505827Z     ^[[90m128|^[[39m   // without being failing-first evidence, and this stays afterwards a…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9507323Z     ^[[90m129|^[[39m   ^[[34mexpect^[[39m(^[[35mtypeof^[[39m useDerivedDomPatch)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"function"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9508524Z     ^[[90m   |^[[39m                                     ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9509419Z     ^[[90m130|^[[39m   ^[[35mlet^[[39m renders ^[[33m=^[[39m ^[[34m0^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9510946Z     ^[[90m131|^[[39m   ^[[35mfunction^[[39m ^[[33mConsumer^[[39m()^[[33m:^[[39m ^[[33mReturnType^[[39m^[[33m<^[[39m^[[35mtypeof^[[39m createElement^[[33m>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9512571Z ^[[90m ^[[2m❯^[[22m packages/react/test/derived-dom-patch.test.ts:^[[2m160:21^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9513447Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9513917Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9514293Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9515949Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/react/test/derived-dom-patch.test.ts^[[2m > ^[[22museDerivedDomPatch^[[2m > ^[[22mhides the target while any source is not live, and derives again when every one is
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9518057Z ^[[31m^[[1mAssertionError^[[22m: expected 'undefined' to be 'function' // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9518729Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9519133Z Expected: ^[[32m"^[[7mf^[[27mun^[[7mction^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9519849Z Received: ^[[31m"un^[[7mdefined^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9520184Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9520950Z ^[[36m ^[[2m❯^[[22m mount packages/react/test/derived-dom-patch.test.ts:^[[2m129:37^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9522212Z     ^[[90m127|^[[39m   // The assertion the red run fails on. A case that throws "not a fun…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9523670Z     ^[[90m128|^[[39m   // without being failing-first evidence, and this stays afterwards a…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9525218Z     ^[[90m129|^[[39m   ^[[34mexpect^[[39m(^[[35mtypeof^[[39m useDerivedDomPatch)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"function"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9526470Z     ^[[90m   |^[[39m                                     ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9527369Z     ^[[90m130|^[[39m   ^[[35mlet^[[39m renders ^[[33m=^[[39m ^[[34m0^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9528891Z     ^[[90m131|^[[39m   ^[[35mfunction^[[39m ^[[33mConsumer^[[39m()^[[33m:^[[39m ^[[33mReturnType^[[39m^[[33m<^[[39m^[[35mtypeof^[[39m createElement^[[33m>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9530489Z ^[[90m ^[[2m❯^[[22m packages/react/test/derived-dom-patch.test.ts:^[[2m190:21^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9531073Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9531510Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9531896Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9534006Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/react/test/derived-dom-patch.test.ts^[[2m > ^[[22museDerivedDomPatch^[[2m > ^[[22mcomposes a derived pose through the adapter and pivots at the element's own origin
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9536149Z ^[[31m^[[1mAssertionError^[[22m: expected 'undefined' to be 'function' // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9553251Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9561354Z ^[[2m Test Files ^[[22m ^[[1m^[[31m2 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m202 passed^[[39m^[[22m^[[90m (204)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9563114Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9573703Z Expected: ^[[32m"^[[7mf^[[27mun^[[7mction^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9574864Z Received: ^[[31m"un^[[7mdefined^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9575500Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9576662Z ^[[36m ^[[2m❯^[[22m mount packages/react/test/derived-dom-patch.test.ts:^[[2m129:37^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9578803Z ^[[2m      Tests ^[[22m ^[[1m^[[31m7 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1189 passed^[[39m^[[22m^[[90m (1196)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9580676Z ^[[2m   Start at ^[[22m 06:17:02
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9583227Z     ^[[90m127|^[[39m   // The assertion the red run fails on. A case that throws "not a fun…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9584967Z     ^[[90m128|^[[39m   // without being failing-first evidence, and this stays afterwards a…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9586935Z     ^[[90m129|^[[39m   ^[[34mexpect^[[39m(^[[35mtypeof^[[39m useDerivedDomPatch)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"function"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9589004Z     ^[[90m   |^[[39m                                     ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9590132Z     ^[[90m130|^[[39m   ^[[35mlet^[[39m renders ^[[33m=^[[39m ^[[34m0^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9591755Z ^[[2m   Duration ^[[22m 32.29s^[[2m (transform 2.90s, setup 1.38s, import 17.02s, tests 42.49s, environment 32ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9594388Z     ^[[90m131|^[[39m   ^[[35mfunction^[[39m ^[[33mConsumer^[[39m()^[[33m:^[[39m ^[[33mReturnType^[[39m^[[33m<^[[39m^[[35mtypeof^[[39m createElement^[[33m>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9595496Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9596771Z ^[[90m ^[[2m❯^[[22m packages/react/test/derived-dom-patch.test.ts:^[[2m225:21^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9597760Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9614385Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9614824Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9616308Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/react/test/derived-dom-patch.test.ts^[[2m > ^[[22museDerivedDomPatch^[[2m > ^[[22mkeeps one subscription per source across a render that passes a fresh id array
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9618320Z ^[[31m^[[1mAssertionError^[[22m: expected 'undefined' to be 'function' // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9619014Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9619414Z Expected: ^[[32m"^[[7mf^[[27mun^[[7mction^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9620246Z Received: ^[[31m"un^[[7mdefined^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9620621Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9621512Z ^[[36m ^[[2m❯^[[22m packages/react/test/derived-dom-patch.test.ts:^[[2m249:39^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9622269Z     ^[[90m247|^[[39m     }^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9623431Z     ^[[90m248|^[[39m     ^[[35mconst^[[39m target ^[[33m=^[[39m ^[[34mcreateSvgTarget^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9624593Z     ^[[90m249|^[[39m     ^[[34mexpect^[[39m(^[[35mtypeof^[[39m useDerivedDomPatch)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"function"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9625423Z     ^[[90m   |^[[39m                                       ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9626343Z     ^[[90m250|^[[39m     ^[[35mfunction^[[39m ^[[33mConsumer^[[39m()^[[33m:^[[39m ^[[33mReturnType^[[39m^[[33m<^[[39m^[[35mtypeof^[[39m createElement^[[33m>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9627321Z     ^[[90m251|^[[39m       const bind = useDerivedDomPatch<SVGLineElement>(counted, [PARENT…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9627767Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9628087Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9628350Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9629587Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/dom-write-channels.test.ts^[[2m > ^[[22mDOM adapter write channels^[[2m > ^[[22mwrites a readonly geometry key as an attribute and removes it when a later patch omits it
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9631342Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to not throw an error but 'TypeError: Cannot set property x1 of …' was thrown^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9631968Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9632156Z ^[[32m- Expected:^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9632415Z undefined
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9632577Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9632984Z ^[[31m+ Received:^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9633625Z "TypeError: Cannot set property x1 of #<Object> which has only a getter"
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9633996Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9634546Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/dom-write-channels.test.ts:^[[2m103:11^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9635270Z     ^[[90m101|^[[39m     ^[[34mexpect^[[39m(() ^[[33m=>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9635924Z     ^[[90m102|^[[39m       adapter.apply(patch(1, { x1: 10, y1: 20, visibility: "hidden", t…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9636619Z     ^[[90m103|^[[39m     )^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoThrow^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9637110Z     ^[[90m   |^[[39m           ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9638226Z     ^[[90m104|^[[39m     ^[[34mexpect^[[39m(line^[[33m.^[[39mattributes^[[33m.^[[39m^[[35mget^[[39m(^[[32m"x1"^[[39m))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"10"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9639441Z     ^[[90m105|^[[39m     ^[[34mexpect^[[39m(line^[[33m.^[[39mattributes^[[33m.^[[39m^[[35mget^[[39m(^[[32m"y1"^[[39m))^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"20"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9639955Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9640229Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9640643Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9641825Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/dom-write-channels.test.ts^[[2m > ^[[22mDOM adapter write channels^[[2m > ^[[22mwrites a derived record through the same diff as a patch, with no status and no revision
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9643477Z ^[[31m^[[1mAssertionError^[[22m: expected 'undefined' to be 'function' // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9643899Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9644149Z Expected: ^[[32m"^[[7mf^[[27mun^[[7mction^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9644625Z Received: ^[[31m"un^[[7mdefined^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9644827Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9645279Z ^[[36m ^[[2m❯^[[22m packages/core/test

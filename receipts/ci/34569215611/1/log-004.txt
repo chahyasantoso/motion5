@@ -1,0 +1,55 @@
+/integration/dom-write-channels.test.ts:^[[2m134:49^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9645814Z     ^[[90m132|^[[39m       }^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9646143Z     ^[[90m133|^[[39m     )^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9646932Z     ^[[90m134|^[[39m     ^[[34mexpect^[[39m(^[[35mtypeof^[[39m ^[[34mderived^[[39m(adapter)^[[33m.^[[39mapplyValues)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"function"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9648075Z     ^[[90m   |^[[39m                                                 ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9648454Z     ^[[90m135|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9649158Z     ^[[90m136|^[[39m     ^[[34mderived^[[39m(adapter)^[[33m.^[[39m^[[34mapplyValues^[[39m(^[[33mNODE_ID^[[39m^[[33m,^[[39m { x1^[[33m:^[[39m ^[[34m1^[[39m })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9649648Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9649893Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9650099Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9651100Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/dom-write-channels.test.ts^[[2m > ^[[22mDOM adapter write channels^[[2m > ^[[22mpins the reference box and a zero origin once, and only on an SVG-shaped target
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9652253Z ^[[31m^[[1mAssertionError^[[22m: expected 'fill-box' to be 'view-box' // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9652623Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9653078Z Expected: ^[[32m"^[[7mview^[[27m-box"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9653464Z Received: ^[[31m"^[[7mfill^[[27m-box"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9653647Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9654096Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/dom-write-channels.test.ts:^[[2m161:37^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9655264Z     ^[[90m159|^[[39m     adapter^[[33m.^[[39m^[[34mapply^[[39m(^[[34mpatch^[[39m(^[[34m2^[[39m^[[33m,^[[39m { x^[[33m:^[[39m ^[[34m5^[[39m^[[33m,^[[39m y^[[33m:^[[39m ^[[34m8^[[39m^[[33m,^[[39m rotation^[[33m:^[[39m ^[[34m90^[[39m }))^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9656226Z     ^[[90m160|^[[39m     expect(line.style.transform).toBe("translate3d(5px, 8px, 0px) rota…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9657106Z     ^[[90m161|^[[39m     ^[[34mexpect^[[39m(line^[[33m.^[[39mstyle^[[33m.^[[39mtransformBox)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"view-box"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9657796Z     ^[[90m   |^[[39m                                     ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9658556Z     ^[[90m162|^[[39m     ^[[34mexpect^[[39m(line^[[33m.^[[39mstyle^[[33m.^[[39mtransformOrigin)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"0px 0px"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9659385Z     ^[[90m163|^[[39m     ^[[34mexpect^[[39m(boxWrites)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m1^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9659723Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9659952Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:34.9660160Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-11T06:17:35.0314939Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-11T06:17:35.0369699Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-11T06:17:35.0370143Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-11T06:17:35.0405549Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-11T06:17:35.0405818Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-11T06:17:35.0406005Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-11T06:17:35.0406272Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-11T06:17:35.0406581Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-11T06:17:35.0897270Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-11T06:17:35.0897626Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-11T06:17:35.0897764Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-11T06:17:35.0897933Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-11T06:17:35.0946858Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-11T06:17:44.3269245Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-11T06:17:44.3270180Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-11T06:17:44.3314529Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-11T06:17:44.3315691Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-11T06:17:44.3316265Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-11T06:17:44.3316823Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-11T06:17:44.3317392Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-11T06:17:44.3475161Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-11T06:17:43.9461056Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-11T06:17:43.9461796Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-11T06:17:43.9501060Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-11T06:17:43.9501866Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-11T06:17:43.9502294Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-11T06:17:43.9502807Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-11T06:17:43.9503329Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-11T06:17:43.9628969Z ##[error]Process completed with exit code 1.
