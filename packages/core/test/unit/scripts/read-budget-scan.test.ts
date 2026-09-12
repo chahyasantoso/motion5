@@ -6,12 +6,13 @@ import {
   READ_BUDGET_BYTES,
   READ_BUDGET_EXCEPTIONS,
   SISTER_DOC_TRIGGER_BYTES,
+  checkCitations,
   checkMirror,
   checkSize,
   scan,
   sisterDocOf,
+  type PendingEntry,
   type ReadBudgetException,
-  type SisterDocPending,
 } from "../../../../../scripts/read-budget-scan.mjs";
 
 const WAIVED = "packages/core/src/runtime/project-runtime.ts";
@@ -64,7 +65,7 @@ async function withPlanted<T>(
 }
 
 async function violationsFor(files: Record<string, string | number>): Promise<string[]> {
-  return withPlanted(files, (planted) => scan(planted, [], []));
+  return withPlanted(files, (planted) => scan(planted, [], [], []));
 }
 
 function padded(prefix: string, size: number): string {
@@ -122,7 +123,7 @@ describe("read budget scan", () => {
 
   it("RB-5: reports a waiver naming a file the tree does not hold", async () => {
     const violations = await withPlanted({ [ORDINARY]: 10 }, (planted) =>
-      scan(planted, PLANTED_WAIVER, []),
+      scan(planted, PLANTED_WAIVER, [], []),
     );
     expect(violations).toEqual([`${WAIVED}: no such file`]);
   });
@@ -222,12 +223,12 @@ describe("read budget scan", () => {
   // The teeth of the pending list, and why it is a ratchet rather than an allowlist: an entry the
   // tree stopped needing fails the scan by itself, which is what a removal date cannot do.
   it("RB-16: refuses a pending entry the tree no longer needs", async () => {
-    const pending: readonly SisterDocPending[] = [{ path: ORDINARY, issue: 267 }];
+    const pending: readonly PendingEntry[] = [{ path: ORDINARY, issue: 267 }];
     const over = padded(POINTER, SISTER_DOC_TRIGGER_BYTES + 1);
-    const needed = await withPlanted({ [ORDINARY]: over }, (p) => scan(p, [], pending));
+    const needed = await withPlanted({ [ORDINARY]: over }, (p) => scan(p, [], pending, []));
     expect(needed).toEqual([]);
     const files = { [ORDINARY]: over, [ORDINARY_DOC]: doc() };
-    const stale = await withPlanted(files, (p) => scan(p, [], pending));
+    const stale = await withPlanted(files, (p) => scan(p, [], pending, []));
     expect(stale).toEqual([expect.stringContaining("no longer needs its pending entry")]);
   });
 
@@ -281,5 +282,83 @@ describe("read budget scan", () => {
       "",
     ].join("\n");
     expect(checkMirror(ORDINARY, exported, doc("run"))).toEqual([]);
+  });
+
+  // A case whose subject is a refusal asserts the accepting direction in the same rig, because a
+  // scan that matched nothing would refuse every comment it was pointed at and be green against the
+  // refusal alone. The same two lines, once with a decision behind them and once without, is the
+  // whole of what the rule reads.
+  it("RB-19: refuses a cited comment in a mirrored source and accepts an uncited one", () => {
+    const source = [
+      POINTER.trimEnd(),
+      "class C {",
+      "  #first(): void {",
+      "    // Mounting seeds no publication, because the deduplicating publisher takes the next",
+      "    // seek's batch instead of adding one. See ADR-066.",
+      "    return;",
+      "  }",
+      "}",
+      "",
+    ].join("\n");
+    const violations = checkCitations(ORDINARY, source);
+    const refusal = `${ORDINARY}: cites ADR-066 on line 5, which graph-runtime.md owns`;
+    expect(violations).toEqual([refusal]);
+    expect(checkCitations(ORDINARY, source.replace(" See ADR-066.", ""))).toEqual([]);
+  });
+
+  // The partition rather than a courtesy. TypeScript hands an exported or public docblock to the
+  // declaration file and to editor hover, so a citation in one is documentation a consumer reads,
+  // and `docblocked` already refuses the private docblocks outright. Neither check answers for a
+  // comment the other one owns.
+  it("RB-20: leaves a docblock's citation in a mirrored source alone", () => {
+    const source = [
+      POINTER.trimEnd(),
+      "/**",
+      " * What a caller may do, and why the refusal is named. See ADR-064 and issue #362.",
+      " */",
+      "export function run(): void {}",
+      "/** One line, cited too. See RA-101. */",
+      "export const LIMIT = 1;",
+      "",
+    ].join("\n");
+    expect(checkCitations(ORDINARY, source)).toEqual([]);
+    expect(checkMirror(ORDINARY, source, doc("run", "LIMIT"))).toEqual([]);
+  });
+
+  // `RB-16`'s shape asked of the other ratchet: an entry the tree stopped needing fails the scan by
+  // itself, which is the only thing that makes a suppression list shrink. The third arm is `RB-5`'s,
+  // because an entry naming a file the tree does not hold is the same defect as a waiver naming one.
+  it("RB-21: refuses a citation pending entry the tree no longer needs", async () => {
+    const pending: readonly PendingEntry[] = [{ path: ORDINARY, issue: 362 }];
+    const citing = `${POINTER}// Why it is here, and where that was decided. See ADR-066.\n`;
+    const quiet = `${POINTER}// Why it is here.\n`;
+    const needed = { [ORDINARY]: citing, [ORDINARY_DOC]: doc() };
+    expect(await withPlanted(needed, (p) => scan(p, [], [], pending))).toEqual([]);
+    const files = { [ORDINARY]: quiet, [ORDINARY_DOC]: doc() };
+    const stale = await withPlanted(files, (p) => scan(p, [], [], pending));
+    expect(stale).toEqual([expect.stringContaining("cites nothing in a comment")]);
+    const absent: readonly PendingEntry[] = [{ path: WAIVED, issue: 362 }];
+    expect(await withPlanted(files, (p) => scan(p, [], [], absent))).toEqual([
+      `${WAIVED}: no such file`,
+    ]);
+  });
+
+  // The list suppresses rather than selects, so coverage needs no case of its own: a mirrored source
+  // nobody listed is refused by default, and `RB-7` is what reads the shipped tree in both
+  // directions. What does need one is the scope of the suppression, because an entry that quietened
+  // its neighbours would leave a file nobody recorded reported by nothing at all.
+  it("RB-22: silences the pending path and no other mirrored source", async () => {
+    const other = "packages/core/src/runtime/value-runtime.ts";
+    const cited = (name: string) => `// Docs: ./${name}.md\n// Decided elsewhere. See ADR-066.\n`;
+    const files = {
+      [ORDINARY]: cited("graph-runtime"),
+      [ORDINARY_DOC]: doc(),
+      [other]: cited("value-runtime"),
+      [sisterDocOf(other)]: doc(),
+    };
+    const pending: readonly PendingEntry[] = [{ path: ORDINARY, issue: 362 }];
+    const violations = await withPlanted(files, (p) => scan(p, [], [], pending));
+    const refusal = `${other}: cites ADR-066 on line 2, which value-runtime.md owns`;
+    expect(violations).toEqual([refusal]);
   });
 });

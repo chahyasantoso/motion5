@@ -147,6 +147,8 @@ This document owns the source read-budget contract; [read-budget-scan.mjs](../sc
 
 A source over 30,000 bytes keeps private reasoning in a sibling document, `x.ts` beside `x.md`. Read the document before the source. The source has a `// Docs: ./x.md` line; every level-two document heading names a source declaration; those headings follow declaration order; and mirrored source carries no private docblock. Exported API docblocks remain in source because declarations and editor hover consume them. Comments explaining the next statement remain too.
 
+A standalone comment in mirrored source carries no citation: no `ADR-nnn`, no evidence case id, no issue or pull request number. A citation is provenance, provenance is member-level rationale, and the sister document owns it. A comment trailing a statement on the same line keeps its exemption, and an exported or public docblock keeps its citations because the declaration file and editor hover consume it. A pair that still owes the move carries a shrinking pending entry rather than a waiver, and an entry the tree no longer needs fails the scan by itself.
+
 A temporary waiver carries a shrinking ceiling, not permission to grow. A pending sister-document entry must disappear when no longer needed. A slice crossing a threshold owes its split or sister document in the same change. The scan measures structure, not semantic understanding of private reasoning.
 
 ## Regression evidence
