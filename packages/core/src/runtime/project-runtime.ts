@@ -476,6 +476,40 @@ export class ProjectRuntime {
     const readers: readonly string[] | undefined = this.#graph.graph.dependants[nodeId];
     return Object.freeze(readers === undefined ? [] : [...new Set(readers)]);
   }
+  /**
+   * Every Motion id this project holds, in committed order.
+   *
+   * The first of three enumeration readers, and one contract covers all three. Total, frozen, and
+   * in the order the committed maps carry, answered through the same accessors every structural
+   * read uses: inside an open recipe a reader sees what that recipe staged, and inside a commit's
+   * own hook it sees the retained pair the rest of that hook sees. Live-gated exactly as
+   * `dependantsOf` is and refused on nothing else, because a read publishes nothing and mounts
+   * nothing, so it cannot be placed in front of an owning operation's publication.
+   *
+   * They exist so no consumer keeps a second copy of the document's ids beside it. Widening
+   * `SchemaTransaction` with them was declined: a recipe closes over this project already, so a
+   * second spelling of one read would be two owners for it. See ADR-064 and issue #362.
+   */
+  motionIds(): readonly string[] {
+    this.#assertLive();
+    return Object.freeze([...this.#readMotions().keys()]);
+  }
+  /**
+   * Every track node id no Motion owns, which is the unowned half of the one ownership filter
+   * `MotionHandle.trackIds` already reads, so the two cannot disagree about committed order.
+   */
+  freeTrackIds(): readonly string[] {
+    this.#assertLive();
+    return Object.freeze(this.#ownedBy(this.#readTracks(), undefined).map(([node]) => node));
+  }
+  /**
+   * Every node mounted right now, which no staged pair carries: `mount`, `unmount` and a commit's
+   * own settlement are what move it.
+   */
+  mountedNodeIds(): readonly string[] {
+    this.#assertLive();
+    return Object.freeze([...this.#instances.keys()]);
+  }
   #addTrack(track: TrackDefinition, owner: object, options?: { motionId?: string }): TrackHandle {
     this.#assertLive();
     const motionId = options?.motionId;
@@ -506,7 +540,7 @@ export class ProjectRuntime {
 
   #ownedBy(
     tracks: ReadonlyMap<string, TrackEntry>,
-    motionId: string,
+    motionId: string | undefined,
   ): readonly (readonly [string, TrackEntry])[] {
     return [...tracks.entries()].filter(([, entry]) => entry.motionId === motionId);
   }

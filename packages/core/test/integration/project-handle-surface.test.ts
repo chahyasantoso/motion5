@@ -20,8 +20,9 @@ describe("public project handle surface (P1-9)", () => {
     expect((runtime as unknown as { registry?: unknown }).registry).toBeUndefined();
     expect((runtime as unknown as { publisher?: unknown }).publisher).toBeUndefined();
     // Enumerated rather than sampled, so a member added to `ProjectHandle` lands here first. The
-    // three resolvers below arrived with the handle base in issue #223, and `edit` arrived with
-    // slice D of the same issue; nothing else moved.
+    // three resolvers below arrived with the handle base in issue #223, `edit` arrived with slice D
+    // of the same issue, and the three enumeration readers arrived with phase 2 of issue #362;
+    // nothing else moved.
     expect(Object.keys(runtime).sort()).toEqual([
       "addMotion",
       "addTrack",
@@ -31,9 +32,12 @@ describe("public project handle surface (P1-9)", () => {
       "destroyMotion",
       "dispose",
       "edit",
+      "freeTrackIds",
       "get",
       "motion",
+      "motionIds",
       "mount",
+      "mountedNodeIds",
       "renderMetadata",
       "seek",
       "signal",

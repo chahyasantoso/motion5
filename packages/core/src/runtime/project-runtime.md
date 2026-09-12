@@ -78,7 +78,7 @@ Reads GraphIR.dependants and returns a deduplicated, frozen list in first-occurr
 
 ## #ownedBy
 
-Filters the explicitly supplied track map for a motion's children in committed map order. Destruction counts, MotionHandle.trackIds and MotionHandle.definition use the same owner. A plan builder and a public read may need different maps, so the map is an argument rather than hidden state. The snapshot uses an equivalent single bucket pass to avoid repeated filtering. See ADR-061 and ADR-064.
+Filters the explicitly supplied track map for one owner's children in committed map order. An undefined motion id asks for the tracks no Motion owns, which is the same partition read from the other side rather than a second filter, so freeTrackIds and MotionHandle.trackIds cannot disagree about which half a track is in or about the order it arrives in. Destruction counts, MotionHandle.trackIds and MotionHandle.definition use the same owner. A plan builder and a public read may need different maps, so the map is an argument rather than hidden state. The snapshot uses an equivalent single bucket pass to avoid repeated filtering. See ADR-061, ADR-064 and issue #362.
 
 ## #entryOf
 
