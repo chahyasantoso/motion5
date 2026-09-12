@@ -170,6 +170,13 @@ export const ikPlaygroundProject: ProjectDefinition = {
   ],
 };
 
+/**
+ * Every node this document authors, kept as the oracle the suite compares the runtime's own answer
+ * against rather than as the app's mount list. The app mounts from `motionIds()`, `trackIds` and
+ * `freeTrackIds()` instead: a hand-written list beside the definition it copies has two owners and
+ * no gate keeping them in step, and a case reading the same reader it is checking would prove
+ * nothing.
+ */
 export const ALL_NODE_IDS: readonly string[] = RIGS.flatMap((rig) => [
   rig.rootTrack,
   rig.goalTrack,

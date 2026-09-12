@@ -18,14 +18,7 @@ import { ikPlugin } from "@motion5/core/plugins/ik";
 import { transformPlugin } from "@motion5/core/plugins/transform";
 import { IkStage } from "./components/IkStage";
 import { SolverPanel } from "./components/SolverPanel";
-import {
-  ALL_NODE_IDS,
-  ARM,
-  TENTACLE,
-  SCROLL_SOURCE,
-  ikPlaygroundProject,
-  nodeId,
-} from "./ik-playground-project";
+import { ARM, TENTACLE, SCROLL_SOURCE, ikPlaygroundProject, nodeId } from "./ik-playground-project";
 import { bindScrollReach, createScrollReach, initialGoals } from "./scroll-reach";
 
 export const App: React.FC = () => {
@@ -88,7 +81,10 @@ export const App: React.FC = () => {
       }).load(ikPlaygroundProject);
       ownedProject = project;
       controller = createScrollReach(project);
-      for (const id of ALL_NODE_IDS) project.mount(id);
+      // Mounted from the runtime's own answer rather than from a list written beside the document.
+      for (const motionId of project.motionIds())
+        for (const trackNode of project.motion(motionId).trackIds) project.mount(trackNode);
+      for (const freeNode of project.freeTrackIds()) project.mount(freeNode);
       controllerRef.current = controller;
       setPendingGoals(controller.goals);
       setArmFlip(false);

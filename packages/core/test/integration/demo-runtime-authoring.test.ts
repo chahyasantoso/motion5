@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   ALL_NODE_IDS,
   ARM,
+  MOTION_ID,
   TENTACLE,
   armSolverTrack,
   frameTrack,
@@ -53,7 +54,8 @@ function load(definition: ProjectDefinition) {
 
 function playground() {
   const test = load(ikPlaygroundProject);
-  for (const id of ALL_NODE_IDS) test.handle.mount(id);
+  for (const motionId of test.handle.motionIds())
+    for (const node of test.handle.motion(motionId).trackIds) test.handle.mount(node);
   for (const rig of [ARM, TENTACLE]) {
     test.handle.seek(nodeId(rig.rootTrack), 0);
     test.handle.seek(nodeId(rig.goalTrack), 0);
@@ -178,6 +180,39 @@ describe("demo runtime authoring", () => {
     } finally {
       actual.handle.dispose();
       reference.handle.dispose();
+    }
+  });
+
+  it("RA-154 mounts the playground from the runtime's own answer rather than a copy of it", () => {
+    const test = load(ikPlaygroundProject);
+    const handle = test.handle;
+    try {
+      const enumerated = handle.motionIds().flatMap((id) => handle.motion(id).trackIds);
+
+      // The lie detector for the deletion, and it is deliberately not symmetrical. `ALL_NODE_IDS`
+      // is the hand-written list the app used to mount from, kept here as an oracle rather than as
+      // a reader: a case comparing one reader against another spelling of the same reader would be
+      // green for either of them, and this comparison fails the moment the two owners disagree.
+      expect(enumerated).toEqual(ALL_NODE_IDS);
+      expect(handle.freeTrackIds()).toEqual([]);
+      expect(handle.mountedNodeIds()).toEqual([]);
+
+      for (const node of enumerated) handle.mount(node);
+      for (const node of handle.freeTrackIds()) handle.mount(node);
+
+      expect(handle.mountedNodeIds()).toEqual(ALL_NODE_IDS);
+
+      // And a shape no authored constant can carry, which is the half that says why the reader
+      // exists rather than only that it agrees: a track added after load is in the reader's answer,
+      // mounted by the commit that accepted it, and can never be in a list written beside the
+      // document.
+      const added = handle.edit((tx) => tx.motion(MOTION_ID).addTrack(frameTrack("late", 12, 34)));
+
+      expect(handle.motion(MOTION_ID).trackIds).toContain(added.id);
+      expect(handle.mountedNodeIds()).toContain(added.id);
+      expect(ALL_NODE_IDS).not.toContain(added.id);
+    } finally {
+      handle.dispose();
     }
   });
 });

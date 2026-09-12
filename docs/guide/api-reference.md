@@ -32,6 +32,7 @@ A declared subpath is not automatically production API. The tier says who may im
 - `edit(recipe)` runs one `SchemaTransaction` and commits what it staged exactly once, answering with whatever the recipe returned.
 - A `MotionHandle` exposes `id`, `live`, `definition`, `trackIds`, `setTrigger`, `setStagger`, `addTrack`, `track`, `tryTrack`, `signal`, and `destroy`.
 - `dependantsOf(nodeId)` lists every reader of a node for editor preflight: the observer of an edge, and a solver that reads it as a chain member.
+- `motionIds()`, `freeTrackIds()` and `mountedNodeIds()` enumerate a loaded project: every Motion id, every track node no Motion owns, and every node currently mounted. All three answer a frozen, total array in committed order, they resolve against a recipe's staged pair while one is open, and they refuse on a disposed project exactly as `dependantsOf` does. A Motion's own children stay `MotionHandle.trackIds`, so mounting a whole document is a loop over these rather than over a copy of its ids kept beside the definition.
 - `adopt(track, owner, options?)` and `destroyAdopted(nodeId, owner)` are the superseded owner-based API.
 - `dispose()` releases the project, motions, triggers, and compiled tracks.
 

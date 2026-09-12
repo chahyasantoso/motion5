@@ -17,18 +17,6 @@ import { createWalkScrollSource } from "./scroll-source-gsap";
 import { SkeletonRig } from "./components/SkeletonRig";
 import { InspectorPanel } from "./components/InspectorPanel";
 
-const CORE_NODES = [
-  "walk/pelvis",
-  "walk/chest",
-  "walk/head",
-  "walk/legL_thigh",
-  "walk/legL_shin",
-  "walk/legL_foot",
-  "walk/legR_thigh",
-  "walk/legR_shin",
-  "walk/legR_foot",
-];
-
 export const App: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [armsAdopted, setArmsAdopted] = useState(false);
@@ -85,7 +73,12 @@ export const App: React.FC = () => {
       }).load(initialWalkerProject);
       ownedProject = project;
 
-      for (const nodeId of CORE_NODES) project.mount(nodeId);
+      // Mounted from the runtime's own answer rather than from a second copy of the document's
+      // ids. This is every node any project can hold rather than the shape this one happens to
+      // have, and a track added later is mounted by the commit that added it.
+      for (const motionId of project.motionIds())
+        for (const trackNode of project.motion(motionId).trackIds) project.mount(trackNode);
+      for (const freeNode of project.freeTrackIds()) project.mount(freeNode);
 
       // The app owns the source, so tapping it for UI and threshold logic keeps core clean. There is
       // deliberately no handle.signal() call here: the injected driver is the only thing that moves
@@ -132,6 +125,10 @@ export const App: React.FC = () => {
     };
   }, []);
 
+  // The badge counts what is actually mounted rather than restating 9 and 13 as literals: the
+  // recipe that adds the arms mounts them too, and the state flip above is what re-renders this.
+  const mountedNodes = handle?.mountedNodeIds().length ?? 0;
+
   return (
     <div id="scroll-scene">
       <div className="stage-wrap">
@@ -157,7 +154,9 @@ export const App: React.FC = () => {
                 transition: "all 0.3s ease",
               }}
             >
-              {armsAdopted ? "✨ ARM TRACKS ACTIVE (13 NODES)" : "⏳ CORE RIG ONLY (9 NODES)"}
+              {armsAdopted
+                ? `✨ ARM TRACKS ACTIVE (${mountedNodes} NODES)`
+                : `⏳ CORE RIG ONLY (${mountedNodes} NODES)`}
             </div>
           </div>
         </header>
