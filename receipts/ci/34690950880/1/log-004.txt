@@ -1,0 +1,97 @@
+4)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8359417Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8359656Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/10]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8359856Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8361227Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/project-enumeration.test.ts^[[2m > ^[[22ma loaded project is enumerable through its own API^[[2m > ^[[22mRA-150 answers the retained pair inside a commit's own hook and is not refused there
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8363851Z ^[[31m^[[1mTypeError^[[22m: project.motionIds is not a function^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8366048Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#createMotion packages/core/test/unit/runtime/project-enumeration.test.ts:^[[2m242:32^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8367261Z     ^[[90m240|^[[39m     project ^[[33m=^[[39m ^[[34mruntime^[[39m({
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8368040Z     ^[[90m241|^[[39m       createMotion^[[33m:^[[39m () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8369637Z     ^[[90m242|^[[39m         seen^[[33m.^[[39mmotions ^[[33m=^[[39m project^[[33m.^[[39m^[[34mmotionIds^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8371122Z     ^[[90m   |^[[39m                                ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8372094Z     ^[[90m243|^[[39m       }^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8373135Z     ^[[90m244|^[[39m       compileTrack^[[33m:^[[39m () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8374952Z ^[[90m ^[[2m❯^[[22m Object.apply packages/core/src/runtime/project-runtime.ts:^[[2m826:27^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8377082Z ^[[90m ^[[2m❯^[[22m packages/core/src/runtime/project-runtime.ts:^[[2m776:18^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8379029Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#boundary packages/core/src/runtime/project-runtime.ts:^[[2m760:14^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8381250Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#apply packages/core/src/runtime/project-runtime.ts:^[[2m770:10^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8383313Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#commit packages/core/src/runtime/project-runtime.ts:^[[2m754:10^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8385023Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.addMotion packages/core/src/runtime/project-runtime.ts:^[[2m396:10^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8386829Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/runtime/project-enumeration.test.ts:^[[2m249:13^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8387778Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8388223Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/10]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8388592Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8390596Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/project-enumeration.test.ts^[[2m > ^[[22ma loaded project is enumerable through its own API^[[2m > ^[[22mRA-151 drops a removed track and a destroyed motion from the answers
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8392649Z ^[[31m^[[1mTypeError^[[22m: project.freeTrackIds is not a function^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8394217Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/project-enumeration.test.ts:^[[2m272:20^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8395917Z     ^[[90m270|^[[39m     project^[[33m.^[[39m^[[34mtrack^[[39m(^[[33mFLOOR^[[39m)^[[33m.^[[39m^[[34mremove^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8396832Z     ^[[90m271|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8398065Z     ^[[90m272|^[[39m     ^[[34mexpect^[[39m(project^[[33m.^[[39m^[[34mfreeTrackIds^[[39m())^[[33m.^[[39m^[[34mtoEqual^[[39m([^[[33mCEILING^[[39m])^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8399296Z     ^[[90m   |^[[39m                    ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8400325Z     ^[[90m273|^[[39m     // A track removal is not a motion change, so this answer may not …
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8402022Z     ^[[90m274|^[[39m     ^[[34mexpect^[[39m(project^[[33m.^[[39m^[[34mmotionIds^[[39m())^[[33m.^[[39m^[[34mtoEqual^[[39m([^[[33mRIG^[[39m^[[33m,^[[39m ^[[33mCREW^[[39m])^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8402965Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8403400Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/10]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8403780Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8406132Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/project-enumeration.test.ts^[[2m > ^[[22ma loaded project is enumerable through its own API^[[2m > ^[[22mRA-152 removes a chain parent-first or leaf-first in one recipe at one replacement
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8408289Z ^[[31m^[[1mTypeError^[[22m: project.freeTrackIds is not a function^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8409613Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/project-enumeration.test.ts:^[[2m304:23^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8410714Z     ^[[90m302|^[[39m       answers^[[33m.^[[39m^[[34mpush^[[39m({
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8411965Z     ^[[90m303|^[[39m         tracks^[[33m:^[[39m project^[[33m.^[[39m^[[34mmotion^[[39m(^[[33mRIG^[[39m)^[[33m.^[[39mtrackIds^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8413328Z     ^[[90m304|^[[39m         free^[[33m:^[[39m project^[[33m.^[[39m^[[34mfreeTrackIds^[[39m()^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8414208Z     ^[[90m   |^[[39m                       ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8415574Z     ^[[90m305|^[[39m         replaced^[[33m:^[[39m replaced^[[33m.^[[39mmock^[[33m.^[[39mcalls^[[33m.^[[39mlength^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8416574Z     ^[[90m306|^[[39m       })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8416895Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8417331Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/10]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8417691Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8419783Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/project-enumeration.test.ts^[[2m > ^[[22ma loaded project is enumerable through its own API^[[2m > ^[[22mRA-153 refuses every reader on a disposed project, deferred release included
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8421410Z ^[[31m^[[1mAssertionError^[[22m: expected 'project.mountedNodeIds is not a funct…' to contain 'disposed'^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8421833Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8422018Z Expected: ^[[32m"disposed"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8422486Z Received: ^[[31m"project.mountedNodeIds is not a function"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8422764Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8423219Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/project-enumeration.test.ts:^[[2m340:41^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8424027Z     ^[[90m338|^[[39m     ^[[34mexpect^[[39m(refused)^[[33m.^[[39m^[[34mtoBeInstanceOf^[[39m(^[[33mError^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8424799Z     ^[[90m339|^[[39m     ^[[34mexpect^[[39m(deferred)^[[33m.^[[39m^[[34mtoBeInstanceOf^[[39m(^[[33mError^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8426048Z     ^[[90m340|^[[39m     ^[[34mexpect^[[39m((deferred ^[[35mas^[[39m ^[[33mError^[[39m)^[[33m.^[[39mmessage)^[[33m.^[[39m^[[34mtoContain^[[39m(^[[32m"disposed"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8427016Z     ^[[90m   |^[[39m                                         ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8427357Z     ^[[90m341|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8427833Z     ^[[90m342|^[[39m     // And after the release, on the same rung `dependantsOf` uses: th…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8428146Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8428386Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/10]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8428605Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8428631Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8429089Z ^[[2m Test Files ^[[22m ^[[1m^[[31m2 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m203 passed^[[39m^[[22m^[[90m (205)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8430847Z ^[[2m      Tests ^[[22m ^[[1m^[[31m10 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1200 passed^[[39m^[[22m^[[90m (1210)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8431835Z ^[[2m   Start at ^[[22m 11:24:48
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8433092Z ^[[2m   Duration ^[[22m 31.79s^[[2m (transform 2.92s, setup 1.29s, import 16.71s, tests 41.94s, environment 31ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.8433833Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-12T11:25:19.9044234Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-12T11:25:19.9097245Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-12T11:25:19.9097667Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-12T11:25:19.9133889Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-12T11:25:19.9134177Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-12T11:25:19.9134369Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-12T11:25:19.9134649Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-12T11:25:19.9134973Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-12T11:25:19.9610158Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-12T11:25:19.9610570Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-12T11:25:19.9610774Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-12T11:25:19.9610978Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-12T11:25:19.9656430Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-12T11:25:26.7775449Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-12T11:25:26.7776102Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-12T11:25:26.7796927Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-12T11:25:26.7797575Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-12T11:25:26.7798025Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-12T11:25:26.7798428Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-12T11:25:26.7798846Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-12T11:25:26.7887372Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-12T11:25:27.0766830Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-12T11:25:27.0767503Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-12T11:25:27.0803197Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-12T11:25:27.0803886Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-12T11:25:27.0804249Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-12T11:25:27.0804658Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-12T11:25:27.0805060Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-12T11:25:27.0914927Z ##[error]Process completed with exit code 1.
