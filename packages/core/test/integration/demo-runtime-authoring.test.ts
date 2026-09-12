@@ -52,21 +52,10 @@ function load(definition: ProjectDefinition) {
   return { handle, runtime, flush };
 }
 
-/**
- * The three readers phase 2 adds, declared here rather than named on `ProjectHandle` before it has
- * them, because a test file naming a member the source does not declare fails `typecheck`, and a
- * failed gate is not failing-first evidence. The commit that lands the interface deletes this and
- * the cast below it.
- */
-type EnumeratingHandle = ProjectHandle & {
-  motionIds(): readonly string[];
-  freeTrackIds(): readonly string[];
-  mountedNodeIds(): readonly string[];
-};
-
 function playground() {
   const test = load(ikPlaygroundProject);
-  for (const id of ALL_NODE_IDS) test.handle.mount(id);
+  for (const motionId of test.handle.motionIds())
+    for (const node of test.handle.motion(motionId).trackIds) test.handle.mount(node);
   for (const rig of [ARM, TENTACLE]) {
     test.handle.seek(nodeId(rig.rootTrack), 0);
     test.handle.seek(nodeId(rig.goalTrack), 0);
@@ -196,7 +185,7 @@ describe("demo runtime authoring", () => {
 
   it("RA-154 mounts the playground from the runtime's own answer rather than a copy of it", () => {
     const test = load(ikPlaygroundProject);
-    const handle = test.handle as EnumeratingHandle;
+    const handle = test.handle;
     try {
       const enumerated = handle.motionIds().flatMap((id) => handle.motion(id).trackIds);
 

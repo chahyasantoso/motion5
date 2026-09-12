@@ -37,19 +37,6 @@ import { ProjectRuntime, type ProjectRuntimeOptions } from "../../../src/runtime
  * below is allowed to be answered by a flush, by a plugin resolve or by the graph.
  */
 
-/**
- * The three readers this slice adds, declared here and cast to rather than named on the class
- * before it has them, because a test file naming a member the source does not declare fails
- * `typecheck` and a failed gate is not failing-first evidence. The commit that lands the readers
- * deletes this declaration and the cast with it. `StaleSeam`, `ComposeSeam` and the `LV-` locals
- * are the precedent.
- */
-type EnumeratingRuntime = ProjectRuntime & {
-  motionIds(): readonly string[];
-  freeTrackIds(): readonly string[];
-  mountedNodeIds(): readonly string[];
-};
-
 const RIG = "rig";
 const CREW = "crew";
 const BASE = "rig/base";
@@ -92,12 +79,12 @@ const compose = (node: { id: string }) => () => ({
 
 type Hooks = Pick<ProjectRuntimeOptions, "createMotion" | "compileTrack">;
 
-function runtime(hooks: Hooks = {}): EnumeratingRuntime {
+function runtime(hooks: Hooks = {}): ProjectRuntime {
   return new ProjectRuntime(PROJECT, {
     clock: createManualClock(),
     compose,
     ...hooks,
-  }) as EnumeratingRuntime;
+  });
 }
 
 /** Returns the thrown value, because each case asserts on more than one facet of it. */
@@ -235,7 +222,7 @@ describe("a loaded project is enumerable through its own API", () => {
   });
 
   it("RA-150 answers the retained pair inside a commit's own hook and is not refused there", () => {
-    let project!: EnumeratingRuntime;
+    let project!: ProjectRuntime;
     const seen: { motions?: readonly string[]; free?: readonly string[] } = {};
     project = runtime({
       createMotion: () => {
@@ -320,7 +307,7 @@ describe("a loaded project is enumerable through its own API", () => {
   });
 
   it("RA-153 refuses every reader on a disposed project, deferred release included", () => {
-    let project!: EnumeratingRuntime;
+    let project!: ProjectRuntime;
     let deferred: unknown;
     project = runtime({
       createMotion: () => {

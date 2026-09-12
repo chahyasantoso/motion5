@@ -162,6 +162,18 @@ for (const track of [...handles].reverse()) track.remove();
 
 `handle.dependantsOf(nodeId)` is a read-only query for editor preflight: it tells you who reads a node before you try to delete it, which is every observer of an edge plus any solver that reads it as a chain member. It is not the enforcement. Graph validation rejects a deletion that would orphan a live dependant, and there is no cascade delete.
 
+Inside one `edit(recipe)` the order does not matter, and that is a property of the commit rather than a courtesy. A recipe derives from the final pair rather than from an accumulated operation log and replaces the graph once, so the intermediate state in which a child still binds a removed parent is never built and never validated. Two constraints survive it and both are one line each: a Motion must own no tracks when `destroy()` runs, so children still leave before their Motion, and removing an id and recreating it in one recipe is refused as `schema-transaction-recreated`. Reversing a list is therefore only necessary when each removal is its own commit.
+
+Enumeration is a read too. `handle.motionIds()`, `handle.freeTrackIds()` and `handle.mountedNodeIds()` answer every Motion id, every track node no Motion owns, and every node currently mounted, each frozen and in committed order, so nothing has to keep a copy of the document's ids beside it:
+
+```ts
+for (const motionId of handle.motionIds())
+  for (const node of handle.motion(motionId).trackIds) handle.mount(node);
+for (const node of handle.freeTrackIds()) handle.mount(node);
+```
+
+A Motion's own children stay `MotionHandle.trackIds`, so the two track answers partition the project between them. Inside a recipe they resolve against what it has staged, exactly as the resolvers do, and on a disposed project they refuse the way `dependantsOf` does.
+
 ## What atomicity guarantees you get
 
 A refused single-track mutation costs nothing. `addTrack` and `replaceTrack` resolve the compiled track and seed its progress against the entry list they are about to commit, then commit, so a rejection leaves no partial state and the seeded values are identical to what a successful commit would have produced. A refused live value write is the same: every key is classified before anything is written, so the retained definition, the mask, the timeline, and the published patch are all exactly as they were.

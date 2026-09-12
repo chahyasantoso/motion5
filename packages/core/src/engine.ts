@@ -65,6 +65,9 @@ export interface ProjectHandle {
   tryTrack(nodeId: string): TrackHandle | undefined;
   motion(motionId: string): MotionHandle;
   tryMotion(motionId: string): MotionHandle | undefined;
+  motionIds(): readonly string[];
+  freeTrackIds(): readonly string[];
+  mountedNodeIds(): readonly string[];
   dependantsOf(nodeId: string): readonly string[];
   subscribe(nodeId: string, listener: PatchListener): () => void;
   get(nodeId: string): Patch | undefined;
@@ -110,6 +113,9 @@ function createHandle(
     tryTrack: (nodeId) => runtime.tryTrack(nodeId),
     motion: (motionId) => runtime.motion(motionId),
     tryMotion: (motionId) => runtime.tryMotion(motionId),
+    motionIds: () => runtime.motionIds(),
+    freeTrackIds: () => runtime.freeTrackIds(),
+    mountedNodeIds: () => runtime.mountedNodeIds(),
     dependantsOf: (nodeId) => runtime.dependantsOf(nodeId),
     subscribe: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
     get: (nodeId) => runtime.graph.registry.get(nodeId),
