@@ -1,6 +1,6 @@
 # packages/core/src/runtime/project-runtime.ts
 
-Private ownership and ordering for ProjectRuntime. Exported API documentation remains in the source; comments explaining individual statements remain beside them. Each level-two heading names a source declaration, in declaration order. Undocumented members carry no additional rule. This is a complete, condensed replacement of the previous mirror, not an appended history. The read-budget contract belongs to docs/AI-EDIT-WORKFLOW.md and its scanner.
+Private ownership and ordering for ProjectRuntime. Exported API documentation remains in the source; a comment explaining the statement beside it remains too, and a comment that cites a decision, an evidence id or an issue number belongs here rather than there. Each level-two heading names a source declaration, in declaration order. Undocumented members carry no additional rule. This is a complete, condensed replacement of the previous mirror, not an appended history. The read-budget contract belongs to docs/AI-EDIT-WORKFLOW.md and its scanner.
 
 ## TrackEntry
 

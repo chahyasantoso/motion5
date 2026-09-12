@@ -24,16 +24,17 @@ const scannedExtensions = [".ts", ".tsx", ".md"];
  *
  * The number is bounded from both sides rather than chosen. It is below the largest size measured
  * to survive a read, because the cap is a response limit rather than a byte limit and a source
- * file's effective ceiling is therefore lower than a markdown file's. It is above the largest file
- * in this tree, `packages/core/src/runtime/project-runtime.ts` at 47,200 bytes, because a budget
- * that fails a file nobody has trouble reading buys churn rather than readability.
+ * file's effective ceiling is therefore lower than a markdown file's. It is above every file in
+ * this tree, because a budget that fails a file nobody has trouble reading buys churn rather than
+ * readability, and that half of it is gated rather than recorded: `checkSize` is what refuses a
+ * file over it.
  *
- * Every size named above is measured, and none of them is gated. The two `project-runtime.ts`
- * figures are historical: they bound the cap at the ref they were taken on, and #269, #270 and #271
- * have since split that file to 47,200. The lower bound was `graph/ir.ts` at 45,240 until #275 took
- * it to 40,538 and `project-runtime.ts` became the largest source here. Nothing checks a
- * measurement written in prose against the tree it measures, which is how all three drifted without
- * a red run, so a reader who needs a current size reads the tree rather than this paragraph.
+ * The two `project-runtime.ts` figures are measured and historical, and none of them is gated: they
+ * bound the cap at the ref they were taken on. No current size of anything in the tree is named
+ * here any more. This paragraph used to record the largest source in this tree and its byte count,
+ * and that sentence was wrong by up to 10,367 bytes across three slices, because nothing checks a
+ * measurement written in prose against the tree it measures. A reader who needs a current size
+ * reads the tree.
  *
  * A sister doc is held to it too, and markdown under the scanned root is in scope for that reason:
  * a rule that moves a file's reasoning into a sibling and budgets one half of the pair relocates
@@ -93,6 +94,29 @@ export const READ_BUDGET_EXCEPTIONS = [];
  * rather than a new mechanism.
  */
 export const SISTER_DOC_PENDING = [];
+/**
+ * Every mirrored pair whose source cites a decision in a comment, and the issue that moves it.
+ *
+ * An entry says this source still owes that move and has not made it yet. A file may only leave the
+ * list, and it leaves by having those citations moved into the sister document that already owns
+ * its private reasoning, which makes this the same ratchet on a count `SISTER_DOC_PENDING` already
+ * is.
+ *
+ * The teeth are the other direction, for the same reason. An entry the tree no longer needs is
+ * itself a violation, so a source that stopped citing anything in a comment, lost its sister
+ * document, or stopped existing fails the scan by carrying a stale entry, and no date has to be
+ * picked for it.
+ *
+ * `runtime/project-runtime.ts` is deliberately absent rather than listed with the rest. Issue
+ * #362's first slice moved its thirty-four cited comment blocks into `project-runtime.md`, and this
+ * list exists so the file cannot grow them back while the four below are still owed.
+ */
+export const CITATION_PENDING = [
+  { path: "packages/core/src/contract/validate-v5.ts", issue: 362 },
+  { path: "packages/core/src/domain/plugins.ts", issue: 362 },
+  { path: "packages/core/src/engine.ts", issue: 362 },
+  { path: "packages/core/src/graph/ir.ts", issue: 362 },
+];
 const MEMBER_DECLARATION = /^[ \t]*(?:readonly[ \t]+)?(#[A-Za-z][\w$]*)\b/;
 const TYPE_DECLARATION = /^[ \t]*(?:export[ \t]+)?(?:type|interface)[ \t]+([A-Za-z][\w$]*)\b/;
 const LOCAL_TYPE_DECLARATION = /^[ \t]*(?:type|interface)[ \t]+([A-Za-z][\w$]*)\b/;
@@ -101,6 +125,19 @@ const VALUE_DECLARATION =
 const LOCAL_VALUE_DECLARATION =
   /^[ \t]*(?:async[ \t]+)?(?:function|class|const|let|var|enum)[ \t]+([A-Za-z][\w$]*)\b/;
 const MEMBER_HEADING = /^## (.+?)[ \t]*$/;
+/**
+ * The three shapes a citation is written in, and nothing else.
+ *
+ * A decision record, an evidence case id or a plan slice id, and an issue or pull request number.
+ * Each of them is provenance rather than an explanation, which is what makes a comment carrying one
+ * member-level rationale by definition and the sister document its owner.
+ *
+ * The last two shapes are bounded rather than open. An evidence prefix is one or two letters and an
+ * optional digit, which is the shape `evidence-case-ids.test.ts` already reads, so `UTF-8` and an
+ * ISO date cannot match one: neither has a word boundary in front of its letters. An issue number
+ * is at most five digits, so a six-digit hex colour is not read as issue #123456.
+ */
+const CITATION = /ADR-\d+|\b[A-Z]{1,2}\d*-\d+\b|#\d{1,5}(?!\d)/;
 export async function walk(directory) {
   let entries;
   try {
@@ -223,6 +260,56 @@ export function docblocked(source) {
   return members;
 }
 /**
+ * Every comment in this source that cites a decision, with the line the citation sits on.
+ *
+ * Standalone comment lines only: a line whose first characters are two slashes, and the lines of a
+ * block comment that is not a docblock. A docblock is skipped whole, because the only docblocks a
+ * mirrored source may still carry are the exported and public ones. TypeScript hands those to the
+ * declaration file and to editor hover, so a citation in one is documentation a consumer reads, and
+ * `docblocked` already refuses the private ones outright rather than reading them for provenance.
+ * The two checks therefore partition the file instead of both answering for one comment.
+ *
+ * Measured rather than reasoned, and this is the mechanism the obvious one lost to. Widening
+ * `docblocked` to leading comment runs sees none of the duplication that grew
+ * `runtime/project-runtime.ts` back by 10,367 bytes, because none of those blocks led a
+ * declaration: they sat inside member bodies, above a `return` and above a `const`. Every one of
+ * them carried a citation.
+ *
+ * A comment trailing a statement on the same line is out of scope, and that is a named bound rather
+ * than a claim. It explains the statement it sits on, which is the exemption the mirror preamble
+ * already grants, and reading one would mean lexing strings and regular expressions to find out
+ * whether two slashes start a comment at all. What this measures is the shape the duplication was
+ * actually written in, which is a block of comment lines above a statement.
+ */
+export function citations(source) {
+  const cited = [];
+  const lines = source.split("\n");
+  let block;
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+    const opens = block === undefined && line.startsWith("/*");
+    const kind = block ?? (opens ? (line.startsWith("/**") ? "doc" : "plain") : undefined);
+    const reads = kind === undefined ? line.startsWith("//") : kind === "plain";
+    const found = reads ? CITATION.exec(line) : null;
+    if (found !== null) cited.push(`${found[0]} on line ${index + 1}`);
+    if (line.includes("*/")) block = undefined;
+    else if (opens) block = kind;
+  }
+  return cited;
+}
+/**
+ * Whether a mirrored source still keeps provenance a comment cannot own.
+ *
+ * Its own function rather than a fourth question inside `checkMirror`, because it answers about the
+ * source alone: the document it names is where the citation goes, not something to compare against.
+ * Exported so a case can ask it in both directions, since a scan that matched nothing would refuse
+ * every comment it was pointed at and be green against the refusal alone.
+ */
+export function checkCitations(file, source) {
+  const sister = basename(sisterDocOf(file));
+  return citations(source).map((cited) => `${file}: cites ${cited}, which ${sister} owns`);
+}
+/**
  * Whether one source and its sister doc still describe the same file.
  *
  * Three questions, and none of them is whether the prose is true. The two name each other, every
@@ -272,10 +359,26 @@ export function checkPending(entry, mirrored, size) {
   if (size <= SISTER_DOC_TRIGGER_BYTES) return `${entry.path}: is under the trigger and ${stale}`;
   return undefined;
 }
+/**
+ * Whether one citation pending entry is still needed, which is the same ratchet one rule across.
+ *
+ * `cited` is how many citations the source still carries, and `undefined` is a file the tree does
+ * not hold. Every answer other than undefined names an entry to delete rather than a file to fix.
+ * An entry on a source with no sister document is stale for a different reason than one on a source
+ * that cites nothing, and the refusal says which, because the two are fixed differently.
+ */
+export function checkCitationPending(entry, mirrored, cited) {
+  if (cited === undefined) return `${entry.path}: no such file`;
+  const stale = `no longer needs its pending entry, see issue #${entry.issue}`;
+  if (!mirrored) return `${entry.path}: has no sister doc and ${stale}`;
+  if (cited === 0) return `${entry.path}: cites nothing in a comment and ${stale}`;
+  return undefined;
+}
 export async function scan(
   scanRoot = root,
   exceptions = READ_BUDGET_EXCEPTIONS,
   pending = SISTER_DOC_PENDING,
+  citationPending = CITATION_PENDING,
 ) {
   const base = join(scanRoot, "packages", "core", "src");
   const files = await walk(base);
@@ -290,6 +393,8 @@ export async function scan(
     if (violation !== undefined) violations.push(violation);
   }
   const owed = new Set(pending.map((entry) => entry.path));
+  const owedCitations = new Set(citationPending.map((entry) => entry.path));
+  const cited = new Map();
   for (const [file, { path, size }] of held) {
     if (extname(file) === ".md") continue;
     const mirrored = held.get(sisterDocOf(file));
@@ -297,10 +402,20 @@ export async function scan(
     const source = await readFile(path, "utf8");
     const doc = mirrored === undefined ? undefined : await readFile(mirrored.path, "utf8");
     violations.push(...checkMirror(file, source, doc));
+    if (doc === undefined) continue;
+    const found = checkCitations(file, source);
+    cited.set(file, found.length);
+    if (!owedCitations.has(file)) violations.push(...found);
   }
   for (const entry of pending) {
     const mirrored = held.has(sisterDocOf(entry.path));
     const violation = checkPending(entry, mirrored, held.get(entry.path)?.size);
+    if (violation !== undefined) violations.push(violation);
+  }
+  for (const entry of citationPending) {
+    const mirrored = held.has(sisterDocOf(entry.path));
+    const counted = held.has(entry.path) ? (cited.get(entry.path) ?? 0) : undefined;
+    const violation = checkCitationPending(entry, mirrored, counted);
     if (violation !== undefined) violations.push(violation);
   }
   for (const exception of exceptions)
