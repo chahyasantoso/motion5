@@ -83,8 +83,8 @@ describe("ProjectRuntime", () => {
     // 1 call during initial runtime construction
     expect(buildCount).toBe(1);
 
-    // 1 call during adopt
-    runtime.adopt({ id: "adopted_1" }, {});
+    // 1 call during the runtime add
+    runtime.addTrack({ id: "added_1" });
     expect(buildCount).toBe(2);
 
     runtime.dispose();

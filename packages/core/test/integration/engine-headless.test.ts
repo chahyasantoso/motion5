@@ -36,7 +36,7 @@ describe("Engine", () => {
     }).load(project);
     runtime.mount("hero/arm");
     let published: { values: Readonly<Record<string, unknown>> } | undefined;
-    runtime.subscribe("hero/arm", (patch) => {
+    runtime.subscribeNode("hero/arm", (patch) => {
       published = patch;
     });
     const batch = runtime.seek("hero/arm", 0.5);
@@ -76,7 +76,7 @@ describe("Engine", () => {
       plugins,
     }).load(project);
     runtime.mount("hero/arm");
-    runtime.subscribe("hero/arm", (patch) => {
+    runtime.subscribeNode("hero/arm", (patch) => {
       expect(patch.values).toEqual({ opacity: 1, rendered: true });
     });
     runtime.seek("hero/arm", 1);
@@ -92,7 +92,7 @@ describe("Engine", () => {
     }).load(project);
     runtime.mount("hero/arm");
     let opacity = 0;
-    runtime.subscribe("hero/arm", (patch) => {
+    runtime.subscribeNode("hero/arm", (patch) => {
       opacity = Number(patch.values.opacity);
     });
 

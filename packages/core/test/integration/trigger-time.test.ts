@@ -36,7 +36,7 @@ describe("time trigger integration T2", () => {
   it("drives a time Motion once per project-clock tick", () => {
     const { clock, scheduler, handle } = loadTimeMotion();
     const seen: unknown[] = [];
-    handle.subscribe("timeMotion/arm", (patch) => seen.push(patch.values));
+    handle.subscribeNode("timeMotion/arm", (patch) => seen.push(patch.values));
     seen.length = 0;
     clock.tick(250);
     scheduler.flush();

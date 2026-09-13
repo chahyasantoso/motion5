@@ -18,9 +18,9 @@ import {
  *
  * It was enforced for those two tiers and stated for four more verbs. `SchemaTransaction` narrows
  * what a recipe is handed, and both its docblock and `ProjectHandle.edit`'s said that `mount`,
- * `seek`, `subscribe` and `dispose` "are not reachable through it" -- true of the transaction object,
- * and never true of the run, because the recipe closure holds the `ProjectHandle` the caller called
- * `edit` on. `seek`, `mount`, `unmount`, `invalidate` and `signal` are all reachable through it, none
+ * `seek`, `subscribeNode` and `dispose` "are not reachable through it" -- true of the transaction
+ * object, and never true of the run, because the recipe closure holds the `ProjectHandle` the caller
+ * called `edit` on. `seek`, `mount`, `unmount`, `invalidate` and `signal` are all reachable through it, none
  * of them consults the open transaction, and every one of them publishes or mounts immediately and
  * survives an abort. That is the same half-loud, half-silent shape ADR-064's own rule exists to
  * refuse.
@@ -31,9 +31,9 @@ import {
  * enforcement of anything.
  *
  * `RA-85` is the other direction, and it is why this file is not "refuse everything reachable":
- * `adopt` and `destroyAdopted` are structural, so they compose into the one commit and must not
- * refuse, and a subscription taken inside a recipe is the caller's own object and receives the
- * commit's flush.
+ * `ProjectHandle.addTrack` and `TrackHandle.remove` are structural, so they compose into the one
+ * commit and must not refuse, and a subscription taken inside a recipe is the caller's own object
+ * and receives the commit's flush.
  *
  * The clock is manual and never ticks. A publication that only happened because a frame arrived
  * would prove nothing about what a recipe let through.
@@ -336,21 +336,21 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
 
   it("RA-85 leaves the structural verbs and a subscription reachable inside a recipe", () => {
     const test = rig();
-    const owner = {};
     const builds = test.builds;
     let heard = 0;
 
     editing(test.runtime).edit((tx) => {
       tx.addTrack({ id: "hand" }, { motionId: MOTION_ID });
       // Structural, so they reach `#commit` and merge into the open pair exactly as the transaction's
-      // own `addTrack` does. Neither is on `SchemaTransaction`, and that was never a guarantee that
-      // they could not be reached: it is what makes the narrowing documentation rather than a fence.
-      const adopted = test.runtime.adopt({ id: "foot" }, owner, { motionId: MOTION_ID });
+      // own `addTrack` does. Neither the project's `addTrack` nor a handle's `remove` is on
+      // `SchemaTransaction`, and that was never a guarantee that they could not be reached: it is
+      // what makes the narrowing documentation rather than a fence.
+      const added = test.runtime.addTrack({ id: "foot" }, { motionId: MOTION_ID });
 
-      expect(adopted.id).toBe(FOOT_ID);
+      expect(added.id).toBe(FOOT_ID);
       expect(test.runtime.track(FOOT_ID).live).toBe(true);
 
-      test.runtime.destroyAdopted(FOOT_ID, owner);
+      added.remove();
 
       expect(test.runtime.tryTrack(FOOT_ID)).toBeUndefined();
       // A listener is the caller's own object. It survives an abort harmlessly, and taken inside a
@@ -360,7 +360,7 @@ describe("a verb that applies immediately refuses inside a recipe", () => {
       });
     });
 
-    // One commit for the add, the adopt and the destroy together, and the subscription heard it.
+    // One commit for the two adds and the removal together, and the subscription heard it.
     expect(test.builds).toBe(builds + 1);
     expect(test.runtime.track(HAND_ID).live).toBe(true);
     expect(test.runtime.tryTrack(FOOT_ID)).toBeUndefined();

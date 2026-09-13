@@ -117,7 +117,7 @@ describe("IncrementalGraphBuilder cache correctness (W1)", () => {
   });
 
   // Guards against "fix the cache" degrading into "delete the cache". Node identity is what
-  // makes adopt/destroyAdopted incremental rather than a full rebuild per mutation.
+  // makes an add and a remove incremental rather than a full rebuild per mutation.
   it("returns the identical GraphNode for an unchanged track across builds", () => {
     const root: TrackDefinition = { id: "root", keyframes: { x: ramp(0, 100) } };
     const project = freeProject([root]);

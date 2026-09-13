@@ -21,14 +21,14 @@ describe("public project handle surface (P1-9)", () => {
     expect((runtime as unknown as { publisher?: unknown }).publisher).toBeUndefined();
     // Enumerated rather than sampled, so a member added to `ProjectHandle` lands here first. The
     // three resolvers below arrived with the handle base in issue #223, `edit` arrived with slice D
-    // of the same issue, and the three enumeration readers arrived with phase 2 of issue #362;
-    // nothing else moved.
+    // of the same issue, and the three enumeration readers arrived with phase 2 of issue #362.
+    // Phase 3 subtracted three: `adopt` and `destroyAdopted`, whose question `addTrack` and
+    // `TrackHandle.remove` already answered, and `subscribe`, which was `subscribeNode` under an
+    // older name. Nothing else moved.
     expect(Object.keys(runtime).sort()).toEqual([
       "addMotion",
       "addTrack",
-      "adopt",
       "dependantsOf",
-      "destroyAdopted",
       "destroyMotion",
       "dispose",
       "edit",
@@ -41,7 +41,6 @@ describe("public project handle surface (P1-9)", () => {
       "renderMetadata",
       "seek",
       "signal",
-      "subscribe",
       "subscribeNode",
       "track",
       "tryMotion",

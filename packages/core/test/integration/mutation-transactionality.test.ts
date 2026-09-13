@@ -68,13 +68,13 @@ const dependentTrack: TrackDefinition = {
 };
 
 /**
- * The one-property track the two retry cases adopt, authored under the group that owns `x`.
+ * The one-property track the two retry cases add, authored under the group that owns `x`.
  *
  * Each case is about an observation rule, so its fixture has to reach that rule: authored flat, `x`
  * is now `plugin-ambiguous-key` and the load is refused a layer earlier for a reason the case is
  * not testing. One helper rather than four copies of the shape.
  */
-function adoptable(id: string): TrackDefinition {
+function addable(id: string): TrackDefinition {
   return { id, keyframes: { transform: { values: { x: ramp(0, 10) } } } };
 }
 
@@ -85,71 +85,68 @@ function snapshot(handle: ReturnType<typeof makeHandle>["handle"], ids: readonly
 describe("runtime mutation transactionality (W2)", () => {
   it("rejects destroying a source without changing graph state or the observation wire", () => {
     const { handle } = makeHandle();
-    const owner = {};
-    const root = handle.adopt(rootTrack, owner);
-    const elbow = handle.adopt(dependentTrack, owner);
+    const root = handle.addTrack(rootTrack);
+    const elbow = handle.addTrack(dependentTrack);
     handle.seek(root.id, 1);
 
     const patches: Patch[] = [];
-    const unsubscribe = handle.subscribe(root.id, (patch) => patches.push(patch));
+    const unsubscribe = handle.subscribeNode(root.id, (patch) => patches.push(patch));
     const before = snapshot(handle, [root.id, elbow.id]);
 
-    expect(() => handle.destroyAdopted(root.id, owner)).toThrow(/observation-unknown-source/);
+    expect(() => root.remove()).toThrow(/observation-unknown-source/);
 
-    // A failed destroy is not a destruction event. The graph and its compiled track must still
-    // be live, and the adoption map must still make the same failure reachable on retry.
+    // A failed removal is not a destruction event. The graph and its compiled track must still
+    // be live, and the retained map must still make the same failure reachable on retry.
     expect(patches.filter(({ status }) => status === "destroyed")).toHaveLength(0);
     expect(handle.get(root.id)?.status).toBe(before[0]?.patch?.status);
     const retryBatch = handle.seek(root.id, 0.7);
     expect(retryBatch.patches.some(({ status }) => status === "error")).toBe(false);
     expect(handle.get(root.id)?.status).toBe("ready");
-    expect(() => handle.destroyAdopted(root.id, owner)).toThrow(/observation-unknown-source/);
+    expect(() => root.remove()).toThrow(/observation-unknown-source/);
     expect(handle.get(root.id)).toBeDefined();
 
     // Recovery is still possible once the dependent is removed. The source then gets exactly one
     // terminal patch, which is the only point at which the wire should hear about destruction.
-    handle.destroyAdopted(elbow.id, owner);
-    handle.destroyAdopted(root.id, owner);
+    elbow.remove();
+    root.remove();
     expect(patches.filter(({ status }) => status === "destroyed")).toHaveLength(1);
 
     unsubscribe();
     handle.dispose();
   });
 
-  it("leaves a rejected unknown-source adoption retryable", () => {
+  it("leaves a rejected unknown-source addition retryable", () => {
     const { handle } = makeHandle();
-    const owner = {};
     const invalid: TrackDefinition = {
-      ...adoptable("child"),
+      ...addable("child"),
       observes: [{ source: "~/missing" }],
     };
 
-    expect(() => handle.adopt(invalid, owner)).toThrow(/observation-unknown-source/);
+    expect(() => handle.addTrack(invalid)).toThrow(/observation-unknown-source/);
 
-    const replacement = handle.adopt(adoptable("child"), owner);
+    const replacement = handle.addTrack(addable("child"));
     expect(replacement.id).toBe("~/child");
     expect(handle.seek(replacement.id, 0.5).patches.some(({ status }) => status === "error")).toBe(
       false,
     );
     expect(handle.get(replacement.id)?.status).toBe("ready");
 
-    handle.destroyAdopted(replacement.id, owner);
+    replacement.remove();
     handle.dispose();
   });
 
-  it("leaves a rejected self-reference adoption retryable", () => {
+  it("leaves a rejected self-reference addition retryable", () => {
     const { handle } = makeHandle();
-    const owner = {};
     const invalid: TrackDefinition = {
-      ...adoptable("self"),
+      ...addable("self"),
       observes: [{ source: "~/self" }],
     };
 
-    expect(() => handle.adopt(invalid, owner)).toThrow(/observation-self-reference/);
-    const replacement = handle.adopt(adoptable("self"), owner);
+    expect(() => handle.addTrack(invalid)).toThrow(/observation-self-reference/);
+    const replacement = handle.addTrack(addable("self"));
     expect(replacement.id).toBe("~/self");
 
-    handle.destroyAdopted(replacement.id, owner);
+    replacement.remove();
     handle.dispose();
   });
 });

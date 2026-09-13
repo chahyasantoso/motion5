@@ -443,7 +443,7 @@ describe("Phase 7: Walker Demo Integration Suite", () => {
     handle.mount("walk/pelvis");
 
     let count = 0;
-    const unsubscribe = handle.subscribe("walk/pelvis", () => count++);
+    const unsubscribe = handle.subscribeNode("walk/pelvis", () => count++);
     handle.seek("walk/pelvis", 0.5);
     expect(count).toBe(1);
 

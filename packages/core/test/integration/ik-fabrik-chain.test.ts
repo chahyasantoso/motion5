@@ -155,7 +155,7 @@ function mountAll(project: ProjectDefinition, ids: readonly string[]) {
   const patches = new Map<string, Patch>();
   for (const id of ids) {
     runtime.mount(id);
-    runtime.subscribe(id, (patch) => patches.set(id, patch));
+    runtime.subscribeNode(id, (patch) => patches.set(id, patch));
   }
   return { runtime, patches };
 }

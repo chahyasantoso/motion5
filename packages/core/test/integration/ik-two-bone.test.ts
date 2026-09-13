@@ -109,7 +109,7 @@ describe("Two-bone IK Integration (Slice C3)", () => {
       "walker/hand",
     ]) {
       runtime.mount(trackId);
-      runtime.subscribe(trackId, (p) => patches.set(trackId, p));
+      runtime.subscribeNode(trackId, (p) => patches.set(trackId, p));
     }
 
     runtime.seek("walker/shoulder", 0);
@@ -197,7 +197,7 @@ describe("Two-bone IK Integration (Slice C3)", () => {
     ]) {
       runtime.mount(id);
     }
-    runtime.subscribe("walker/forearm", (p) => {
+    runtime.subscribeNode("walker/forearm", (p) => {
       forearmPatch = p;
     });
 

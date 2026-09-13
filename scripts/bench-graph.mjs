@@ -78,13 +78,11 @@ async function runBenchmark() {
     // -----------------------------------------------------------------------
     // Scenario A: Edgeless adoptions (previous benchmark — baseline)
     // -----------------------------------------------------------------------
-    const ownerA = {};
     const adoptCountA = 50;
     const adoptedA = [];
     const startAdoptA = performance.now();
     for (let a = 0; a < adoptCountA; a++) {
-      const res = runtime.adopt({ id: `edgeless_${a}` }, ownerA);
-      adoptedA.push(res.id);
+      adoptedA.push(runtime.addTrack({ id: `edgeless_${a}` }));
     }
     const endAdoptA = performance.now();
     console.log(
@@ -92,8 +90,8 @@ async function runBenchmark() {
     );
 
     const startDestroyA = performance.now();
-    for (const id of adoptedA) {
-      runtime.destroyAdopted(id, ownerA);
+    for (const track of adoptedA) {
+      track.remove();
     }
     const endDestroyA = performance.now();
     console.log(
@@ -105,7 +103,6 @@ async function runBenchmark() {
     // This is the realistic case: adopted tracks that participate in the graph topology.
     // Each adopted track has keyframes AND observes the first authored motion track.
     // -----------------------------------------------------------------------
-    const ownerB = {};
     const adoptCountB = 50;
     const adoptedB = [];
     // The first authored motion track id is "m_0/t_0"
@@ -113,8 +110,8 @@ async function runBenchmark() {
 
     const startAdoptB = performance.now();
     for (let b = 0; b < adoptCountB; b++) {
-      const res = runtime.adopt(
-        {
+      adoptedB.push(
+        runtime.addTrack({
           id: `edged_${b}`,
           keyframes: {
             x: {
@@ -132,10 +129,8 @@ async function runBenchmark() {
             },
           },
           observes: [{ source: observeTarget }],
-        },
-        ownerB,
+        }),
       );
-      adoptedB.push(res.id);
     }
     const endAdoptB = performance.now();
     console.log(
@@ -143,8 +138,8 @@ async function runBenchmark() {
     );
 
     const startDestroyB = performance.now();
-    for (const id of adoptedB) {
-      runtime.destroyAdopted(id, ownerB);
+    for (const track of adoptedB) {
+      track.remove();
     }
     const endDestroyB = performance.now();
     console.log(
@@ -155,7 +150,6 @@ async function runBenchmark() {
     // Scenario C: Chain adoptions — each adopted track observes the previous adopted track.
     // This creates a growing linear dependency chain, maximizing topological sort pressure.
     // -----------------------------------------------------------------------
-    const ownerC = {};
     const adoptCountC = 50;
     const adoptedC = [];
     // First one observes an existing authored track
@@ -163,8 +157,8 @@ async function runBenchmark() {
 
     const startAdoptC = performance.now();
     for (let c = 0; c < adoptCountC; c++) {
-      const res = runtime.adopt(
-        {
+      adoptedC.push(
+        runtime.addTrack({
           id: `chain_${c}`,
           keyframes: {
             x: {
@@ -175,10 +169,8 @@ async function runBenchmark() {
             },
           },
           observes: [{ source: previousSource }],
-        },
-        ownerC,
+        }),
       );
-      adoptedC.push(res.id);
       previousSource = `~/chain_${c}`;
     }
     const endAdoptC = performance.now();
@@ -187,8 +179,8 @@ async function runBenchmark() {
     );
 
     const startDestroyC = performance.now();
-    for (const id of [...adoptedC].reverse()) {
-      runtime.destroyAdopted(id, ownerC);
+    for (const track of [...adoptedC].reverse()) {
+      track.remove();
     }
     const endDestroyC = performance.now();
     console.log(
@@ -208,13 +200,12 @@ async function runBenchmark() {
       graphBuilder: new IncrementalGraphBuilder(),
     });
 
-    const ownerD = {};
     const adoptCountD = 50;
     const adoptedD = [];
     const startAdoptD = performance.now();
     for (let d = 0; d < adoptCountD; d++) {
-      const res = incrementalRuntime.adopt(
-        {
+      adoptedD.push(
+        incrementalRuntime.addTrack({
           id: `edged_incremental_${d}`,
           keyframes: {
             x: {
@@ -232,10 +223,8 @@ async function runBenchmark() {
             },
           },
           observes: [{ source: observeTarget }],
-        },
-        ownerD,
+        }),
       );
-      adoptedD.push(res.id);
     }
     const endAdoptD = performance.now();
     console.log(

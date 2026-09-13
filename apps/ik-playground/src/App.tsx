@@ -91,7 +91,7 @@ export const App: React.FC = () => {
       setTentacleFlip(false);
       setHandle(project);
       setWeight(0);
-      unsubscribeWeight = project.subscribe(nodeId(ARM.memberTracks[0]!), (patch) => {
+      unsubscribeWeight = project.subscribeNode(nodeId(ARM.memberTracks[0]!), (patch) => {
         if (patch.status === "ready") setWeight(patch.sourceProgress);
       });
     } catch (error) {

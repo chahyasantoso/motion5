@@ -113,7 +113,7 @@ describe("goal-addressed IK integration (Slice D1)", () => {
     const patches = new Map<string, Patch>();
     for (const id of NODE_IDS) {
       runtime.mount(id);
-      runtime.subscribe(id, (patch) => patches.set(id, patch));
+      runtime.subscribeNode(id, (patch) => patches.set(id, patch));
     }
 
     runtime.seek("walker/shoulder", 0);
@@ -143,7 +143,7 @@ describe("goal-addressed IK integration (Slice D1)", () => {
     const runtime = createEngine(ANIMATED_GOAL);
     for (const id of NODE_IDS) runtime.mount(id);
     let forearm: Patch | undefined;
-    runtime.subscribe("walker/forearm", (patch) => {
+    runtime.subscribeNode("walker/forearm", (patch) => {
       forearm = patch;
     });
 
