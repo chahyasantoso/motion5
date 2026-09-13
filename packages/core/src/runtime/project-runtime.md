@@ -4,7 +4,7 @@ Private ownership and ordering for ProjectRuntime. Exported API documentation re
 
 ## TrackEntry
 
-The retained track, adopting owner, optional motion owner, lifetime token, animated overlay, and conservative live-write marker, recorded from the write being asked for rather than from what the backend answered, so nothing can under-report. The overlay records the last animated live write; it is not authored state. A live write can survive a refused escalation because the writer has no inverse. Only a successful fresh compilation removes its effect, so structural derivation must build when retained.liveWrite is true even if compiled inputs compare equal. Candidate validation is never short-circuited by that marker. See ADR-060, ADR-062 and ADR-066.
+The retained track, optional motion owner, lifetime token, animated overlay, and conservative live-write marker, recorded from the write being asked for rather than from what the backend answered, so nothing can under-report. The overlay records the last animated live write; it is not authored state. A live write can survive a refused escalation because the writer has no inverse. Only a successful fresh compilation removes its effect, so structural derivation must build when retained.liveWrite is true even if compiled inputs compare equal. Candidate validation is never short-circuited by that marker. See ADR-060, ADR-062 and ADR-066.
 
 ## MotionEntry
 

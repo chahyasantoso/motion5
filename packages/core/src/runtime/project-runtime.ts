@@ -70,7 +70,6 @@ import type { GraphBuilder } from "../ports/graph-builder";
 
 type TrackEntry = {
   track: TrackDefinition;
-  owner: object;
   motionId?: string;
   token: number;
   overlay: Readonly<Record<string, unknown>>;
@@ -206,7 +205,6 @@ export class ProjectRuntime {
 
   #tracks = new Map<string, TrackEntry>();
   #motions = new Map<string, MotionEntry>();
-  readonly #schemaOwner = {};
   #nextToken = 1;
 
   #open: OpenTransaction | undefined;
@@ -240,7 +238,6 @@ export class ProjectRuntime {
       for (const track of motion.tracks)
         this.#tracks.set(qualifyMotionTrack(motion.id, track.id).value, {
           track,
-          owner: this.#schemaOwner,
           motionId: motion.id,
           token: this.#nextToken++,
           overlay: NO_OVERLAY,
@@ -250,7 +247,6 @@ export class ProjectRuntime {
     for (const track of project.freeTracks ?? [])
       this.#tracks.set(qualifyFreeTrack(track.id).value, {
         track,
-        owner: this.#schemaOwner,
         token: this.#nextToken++,
         overlay: NO_OVERLAY,
         liveWrite: false,
@@ -428,7 +424,7 @@ export class ProjectRuntime {
     return entry === undefined ? undefined : this.#motionHandle(motionId, entry.token);
   }
   addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle {
-    return this.#addTrack(track, this.#schemaOwner, options);
+    return this.#addTrack(track, options);
   }
   track(nodeId: string): TrackHandle {
     this.#assertLive();
@@ -439,25 +435,6 @@ export class ProjectRuntime {
     this.#assertLive();
     const entry = this.#readTracks().get(nodeId);
     return entry === undefined ? undefined : this.#handle(nodeId, entry.token);
-  }
-  adopt(
-    track: TrackDefinition,
-    owner: object,
-    options?: { motionId?: string },
-  ): { readonly id: string; readonly track: TrackDefinition } {
-    const handle = this.#addTrack(track, owner, options);
-    return Object.freeze({ id: handle.id, track: handle.definition });
-  }
-  destroyAdopted(nodeId: string, owner: object): void {
-    this.#assertLive();
-    const entry = this.#readTracks().get(nodeId);
-    if (!entry || entry.owner !== owner)
-      throw new TypeError(
-        !entry
-          ? `Node "${nodeId}" is not adopted.`
-          : `Only the adopting owner can destroy "${nodeId}".`,
-      );
-    this.#removeTrack(nodeId, entry.token);
   }
   /**
    * Every node that reads this one, for an editor's preflight rather than for enforcement.
@@ -510,7 +487,7 @@ export class ProjectRuntime {
     this.#assertLive();
     return Object.freeze([...this.#instances.keys()]);
   }
-  #addTrack(track: TrackDefinition, owner: object, options?: { motionId?: string }): TrackHandle {
+  #addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle {
     this.#assertLive();
     const motionId = options?.motionId;
     if (motionId !== undefined && !this.#readMotions().has(motionId))
@@ -528,7 +505,6 @@ export class ProjectRuntime {
     const tracks = this.#stageTracks();
     tracks.set(id, {
       track: accepted,
-      owner,
       motionId,
       token,
       overlay: NO_OVERLAY,
@@ -682,9 +658,7 @@ export class ProjectRuntime {
         return Object.freeze(runtime.#ownedBy(runtime.#readTracks(), owner).map(([node]) => node));
       },
       addTrack: (track: TrackDefinition) =>
-        runtime.#addTrack(track, runtime.#schemaOwner, {
-          motionId: runtime.#writableId(id, token),
-        }),
+        runtime.#addTrack(track, { motionId: runtime.#writableId(id, token) }),
       track: (trackId: string) => runtime.track(runtime.#liveChildNode(id, token, trackId)),
       tryTrack: (trackId: string) => runtime.tryTrack(runtime.#liveChildNode(id, token, trackId)),
       setTrigger: (next: MotionDefinition["trigger"]) => runtime.#setTrigger(id, token, next),

@@ -69,7 +69,6 @@ export interface ProjectHandle {
   freeTrackIds(): readonly string[];
   mountedNodeIds(): readonly string[];
   dependantsOf(nodeId: string): readonly string[];
-  subscribe(nodeId: string, listener: PatchListener): () => void;
   get(nodeId: string): Patch | undefined;
   subscribeNode(nodeId: string, listener: PatchListener): () => void;
   /**
@@ -80,12 +79,6 @@ export interface ProjectHandle {
    * read: no renderer reaches a Track, a plugin, or the graph through it. See ADR-073.
    */
   renderMetadata(nodeId: string): RenderMetadata | undefined;
-  adopt(
-    track: TrackDefinition,
-    owner: object,
-    options?: { motionId?: string },
-  ): { readonly id: string; readonly track: TrackDefinition };
-  destroyAdopted(nodeId: string, owner: object): void;
   dispose(): void;
 }
 interface CompilableTrack {
@@ -117,12 +110,9 @@ function createHandle(
     freeTrackIds: () => runtime.freeTrackIds(),
     mountedNodeIds: () => runtime.mountedNodeIds(),
     dependantsOf: (nodeId) => runtime.dependantsOf(nodeId),
-    subscribe: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
     get: (nodeId) => runtime.graph.registry.get(nodeId),
     subscribeNode: (nodeId, listener) => runtime.graph.registry.subscribeNode(nodeId, listener),
     renderMetadata,
-    adopt: (track, owner, options) => runtime.adopt(track, owner, options),
-    destroyAdopted: (nodeId, owner) => runtime.destroyAdopted(nodeId, owner),
     dispose: () => runtime.dispose(),
   };
   Object.defineProperty(handle, "_runtime", {
