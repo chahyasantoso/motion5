@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "expected_head": "45cd2c9d0d348838020bcaf879cbb11de094c9bf",
+  "expected_blobs": {
+    "docs/ADR-076-one-mechanism-per-question.md": "f11eb2cef7dc13946de638a6c2da724df516b787"
+  },
+  "message": "docs(runtime): correct ADR-076's moved-reader test file count",
+  "edits": [
+    {
+      "path": "docs/ADR-076-one-mechanism-per-question.md",
+      "find": "nineteen test files",
+      "replace": "twenty-four modified test files"
+    }
+  ]
+}
