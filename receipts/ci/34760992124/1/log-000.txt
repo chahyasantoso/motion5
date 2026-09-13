@@ -1,0 +1,24 @@
+boundaries (node 24)	Run node scripts/boundary-scan.mjs	﻿2026-09-13T13:51:28.4066485Z ##[group]Run node scripts/boundary-scan.mjs
+boundaries (node 24)	Run node scripts/boundary-scan.mjs	2026-09-13T13:51:28.4066883Z ^[[36;1mnode scripts/boundary-scan.mjs^[[0m
+boundaries (node 24)	Run node scripts/boundary-scan.mjs	2026-09-13T13:51:28.4105237Z shell: /usr/bin/bash -e {0}
+boundaries (node 24)	Run node scripts/boundary-scan.mjs	2026-09-13T13:51:28.4105505Z env:
+boundaries (node 24)	Run node scripts/boundary-scan.mjs	2026-09-13T13:51:28.4105723Z   NODE_VERSION: 24
+boundaries (node 24)	Run node scripts/boundary-scan.mjs	2026-09-13T13:51:28.4105935Z ##[endgroup]
+boundaries (node 24)	Run node scripts/boundary-scan.mjs	2026-09-13T13:51:28.4659131Z packages/core/src/index.ts: public export ValueTransaction is not allow-listed
+boundaries (node 24)	Run node scripts/boundary-scan.mjs	2026-09-13T13:51:28.4711522Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-13T13:52:04.1790641Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:52:04.1791443Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:52:04.1815875Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:52:04.1816682Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:52:04.1817234Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:52:04.1817726Z   SUITE_RESULT: cancelled
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:52:04.1818255Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:52:04.1923411Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-13T13:52:03.9243163Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:52:03.9243884Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:52:03.9283560Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:52:03.9284364Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:52:03.9284788Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:52:03.9285250Z   SUITE_RESULT: cancelled
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:52:03.9285724Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:52:03.9415874Z ##[error]Process completed with exit code 1.
