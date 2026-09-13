@@ -1,0 +1,187 @@
+{
+  "version": 1,
+  "expected_head": "21c2ba8287f638be9cd94733d2439f53467da2ef",
+  "expected_blobs": {
+    "packages/core/test/integration/runtime-motion-lifecycle.test.ts": "07fccae9548ddef33df1934641ac98fc3b7af81c",
+    "packages/core/test/integration/phase4-dynamic-lifecycle.test.ts": "deb499650ab796910c1c0fffabbb909ea7827084",
+    "packages/core/test/integration/project-runtime.test.ts": "eadf40846d142e4cf3bb3bbf8e09300cb5b14153",
+    "packages/core/test/integration/phase0-red-baseline.test.ts": "08e32f8479824cb679a9fd2156609cd191a22fc4",
+    "packages/core/test/unit/runtime/immediate-verb-refusal.test.ts": "1bbdad23a051e46214a95cb82ccfe057ce4b9bdc",
+    "packages/core/test/integration/phase2-motion-scheduling.test.ts": "35395b12f1185136d504e98fb719004f5ca6d939",
+    "packages/core/test/integration/trigger-time.test.ts": "16bbd8543ce76c20971589cf05d668308324270a",
+    "packages/core/test/integration/phase3-trigger-port.test.ts": "5609cdae5c0afe9e7525c2863aff027d87db954b",
+    "packages/core/test/integration/phase7-walker-demo.test.ts": "f4fa422f7cb5e721f71b7eb2cfdbd34c0fe893b3",
+    "packages/core/test/unit/runtime/motion-consistency.test.ts": "ec093d056d6d18eb2909484a49c1463898725264",
+    "packages/core/test/integration/unified-mutation-surface.test.ts": "01ebafe1df741e2de45ce931449ed15caa7e8bcc",
+    "packages/core/test/integration/t4-runtime-motion-parity.test.ts": "f459b2ddd81e50b30ad300070eea1fb4831d0efe",
+    "packages/core/test/unit/graph/incremental-cache.test.ts": "f82255bb815611c3afa27c203d5a598a94623f64"
+  },
+  "message": "test(runtime): finish every reader of the deleted members",
+  "edits": [
+    {
+      "path": "packages/core/test/integration/runtime-motion-lifecycle.test.ts",
+      "find": "    const { handle, scheduler } = makeRuntime();\n    const owner = {};\n\n    const created = handle.addMotion(motion(\"scene\"));\n    expect(created.id).toBe(\"scene\");\n\n    const adopted = handle.adopt(track(\"arm\", 0, 100), owner, { motionId: \"scene\" });\n    handle.signal(\"scene\", { type: \"manual\", progress: 0.5 });\n    scheduler.flush();\n\n    expect(handle.get(adopted.id)?.status).toBe(\"ready\");\n    expect(handle.get(adopted.id)?.values).toEqual({ x: 50 });\n\n    handle.destroyAdopted(adopted.id, owner);\n    handle.destroyMotion(\"scene\");",
+      "replace": "    const { handle, scheduler } = makeRuntime();\n\n    const created = handle.addMotion(motion(\"scene\"));\n    expect(created.id).toBe(\"scene\");\n\n    const added = handle.addTrack(track(\"arm\", 0, 100), { motionId: \"scene\" });\n    handle.signal(\"scene\", { type: \"manual\", progress: 0.5 });\n    scheduler.flush();\n\n    expect(handle.get(added.id)?.status).toBe(\"ready\");\n    expect(handle.get(added.id)?.values).toEqual({ x: 50 });\n\n    added.remove();\n    handle.destroyMotion(\"scene\");"
+    },
+    {
+      "path": "packages/core/test/integration/runtime-motion-lifecycle.test.ts",
+      "find": "    const { handle } = makeRuntime();\n    const owner = {};\n    handle.addMotion(motion(\"scene\"));\n    const adopted = handle.adopt(track(\"arm\", 0, 100), owner, { motionId: \"scene\" });\n\n    expect(() => handle.destroyMotion(\"scene\")).toThrow(/still has 1 track/);\n    handle.destroyAdopted(adopted.id, owner);",
+      "replace": "    const { handle } = makeRuntime();\n    handle.addMotion(motion(\"scene\"));\n    const added = handle.addTrack(track(\"arm\", 0, 100), { motionId: \"scene\" });\n\n    expect(() => handle.destroyMotion(\"scene\")).toThrow(/still has 1 track/);\n    added.remove();"
+    },
+    {
+      "path": "packages/core/test/integration/runtime-motion-lifecycle.test.ts",
+      "find": "    const { handle, scheduler } = makeRuntime();\n    const owner = {};\n    handle.addMotion(motion(\"left\", 0.1));\n    handle.addMotion(motion(\"right\", 0));\n    const left = handle.adopt(track(\"arm\", 0, 100, 1), owner, { motionId: \"left\" });\n    const right = handle.adopt(track(\"arm\", 0, 200, 1), owner, { motionId: \"right\" });",
+      "replace": "    const { handle, scheduler } = makeRuntime();\n    handle.addMotion(motion(\"left\", 0.1));\n    handle.addMotion(motion(\"right\", 0));\n    const left = handle.addTrack(track(\"arm\", 0, 100, 1), { motionId: \"left\" });\n    const right = handle.addTrack(track(\"arm\", 0, 200, 1), { motionId: \"right\" });"
+    },
+    {
+      "path": "packages/core/test/integration/runtime-motion-lifecycle.test.ts",
+      "find": "    handle.destroyAdopted(left.id, owner);\n    handle.destroyAdopted(right.id, owner);",
+      "replace": "    left.remove();\n    right.remove();"
+    },
+    {
+      "path": "packages/core/test/integration/phase4-dynamic-lifecycle.test.ts",
+      "find": "  it(\"1. Adoption produces ready patches and publishes through the ordinary graph path\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    const owner = {};\n    const adopted = runtime.adopt({ id: \"cursor\" } as TrackDefinition, owner);\n    expect(adopted.id).toBe(\"~/cursor\");",
+      "replace": "  it(\"1. A runtime add produces ready patches and publishes through the ordinary graph path\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    const added = runtime.addTrack({ id: \"cursor\" } as TrackDefinition);\n    expect(added.id).toBe(\"~/cursor\");"
+    },
+    {
+      "path": "packages/core/test/integration/phase4-dynamic-lifecycle.test.ts",
+      "find": "    const owner = {};\n    runtime.adopt({ id: \"cursor\" } as TrackDefinition, owner);\n\n    const snapshotBefore = runtime.graph.state.snapshot();",
+      "replace": "    runtime.addTrack({ id: \"cursor\" } as TrackDefinition);\n\n    const snapshotBefore = runtime.graph.state.snapshot();"
+    },
+    {
+      "path": "packages/core/test/integration/phase4-dynamic-lifecycle.test.ts",
+      "find": "    // Duplicate adopt should fail atomically\n    expect(() => runtime.adopt({ id: \"cursor\" } as TrackDefinition, {})).toThrow(/already exists/);",
+      "replace": "    // A duplicate add should fail atomically\n    expect(() => runtime.addTrack({ id: \"cursor\" } as TrackDefinition)).toThrow(/already exists/);"
+    },
+    {
+      "path": "packages/core/test/integration/phase4-dynamic-lifecycle.test.ts",
+      "find": "  it(\"3. Repeated adopt/destroy cycles do not retain dead GraphNode identities or stale compose closures\", () => {",
+      "replace": "  it(\"3. Repeated add/remove cycles do not retain dead GraphNode identities or stale compose closures\", () => {"
+    },
+    {
+      "path": "packages/core/test/integration/phase4-dynamic-lifecycle.test.ts",
+      "find": "    const owner = {};\n\n    // 5 sequential adopt/destroy cycles\n    for (let i = 0; i < 5; i++) {\n      const adopted = runtime.adopt({ id: `track${i}` } as TrackDefinition, owner);\n      runtime.seek(adopted.id, 0);\n      runtime.destroyAdopted(adopted.id, owner);\n    }",
+      "replace": "    // 5 sequential add/remove cycles\n    for (let i = 0; i < 5; i++) {\n      const added = runtime.addTrack({ id: `track${i}` } as TrackDefinition);\n      runtime.seek(added.id, 0);\n      added.remove();\n    }"
+    },
+    {
+      "path": "packages/core/test/integration/phase4-dynamic-lifecycle.test.ts",
+      "find": "  it(\"6. Keyframe validation is shared: malformed adopted stops are rejected before graph commit\", () => {",
+      "replace": "  it(\"6. Keyframe validation is shared: malformed stops are rejected before graph commit\", () => {"
+    },
+    {
+      "path": "packages/core/test/integration/phase4-dynamic-lifecycle.test.ts",
+      "find": "    expect(() => runtime.adopt(badTrack, {})).toThrow(/stop-position|monoton/);\n\n    // Graph state byte-identical after failed adoption",
+      "replace": "    expect(() => runtime.addTrack(badTrack)).toThrow(/stop-position|monoton/);\n\n    // Graph state byte-identical after a failed add"
+    },
+    {
+      "path": "packages/core/test/integration/project-runtime.test.ts",
+      "find": "    // 1 call during adopt\n    runtime.adopt({ id: \"adopted_1\" }, {});",
+      "replace": "    // 1 call during the runtime add\n    runtime.addTrack({ id: \"added_1\" });"
+    },
+    {
+      "path": "packages/core/test/integration/phase0-red-baseline.test.ts",
+      "find": "  it(\"3. Adopted-track Engine path: adopted free track compiles keyframes and publishes ready patch\", () => {",
+      "replace": "  it(\"3. Runtime-track Engine path: an added free track compiles keyframes and publishes ready patch\", () => {"
+    },
+    {
+      "path": "packages/core/test/integration/phase0-red-baseline.test.ts",
+      "find": "    if (runtime) {\n      const owner = {};\n      const adopted = runtime.adopt(\n        {\n          id: \"cursor\",\n          keyframes: {\n            opacity: [\n              { p: 0, v: 0 },\n              { p: 1, v: 1 },\n            ],\n          },\n        },\n        owner,\n      );\n\n      expect(adopted.id).toBe(\"~/cursor\");",
+      "replace": "    if (runtime) {\n      const added = runtime.addTrack({\n        id: \"cursor\",\n        keyframes: {\n          opacity: [\n            { p: 0, v: 0 },\n            { p: 1, v: 1 },\n          ],\n        },\n      });\n\n      expect(added.id).toBe(\"~/cursor\");"
+    },
+    {
+      "path": "packages/core/test/integration/phase0-red-baseline.test.ts",
+      "find": "    handle.subscribe(\"spinner/rotation\", (patch) => {",
+      "replace": "    handle.subscribeNode(\"spinner/rotation\", (patch) => {"
+    },
+    {
+      "path": "packages/core/test/integration/phase0-red-baseline.test.ts",
+      "find": "    handle.subscribe(\"hero/t1\", (patch) => patchesReceived.push(patch.nodeId));\n    handle.subscribe(\"hero/t2\", (patch) => patchesReceived.push(patch.nodeId));",
+      "replace": "    handle.subscribeNode(\"hero/t1\", (patch) => patchesReceived.push(patch.nodeId));\n    handle.subscribeNode(\"hero/t2\", (patch) => patchesReceived.push(patch.nodeId));"
+    },
+    {
+      "path": "packages/core/test/integration/phase0-red-baseline.test.ts",
+      "find": "    let updateCount = 0;\n    handle.subscribe(\"hero/t1\", () => {",
+      "replace": "    let updateCount = 0;\n    handle.subscribeNode(\"hero/t1\", () => {"
+    },
+    {
+      "path": "packages/core/test/integration/phase0-red-baseline.test.ts",
+      "find": "    let lastValue = 0;\n    handle.subscribe(\"hero/t1\", (patch) => {",
+      "replace": "    let lastValue = 0;\n    handle.subscribeNode(\"hero/t1\", (patch) => {"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/immediate-verb-refusal.test.ts",
+      "find": " * It was enforced for those two tiers and stated for four more verbs. `SchemaTransaction` narrows\n * what a recipe is handed, and both its docblock and `ProjectHandle.edit`'s said that `mount`,\n * `seek`, `subscribe` and `dispose` \"are not reachable through it\" -- true of the transaction object,\n * and never true of the run, because the recipe closure holds the `ProjectHandle` the caller called\n * `edit` on.",
+      "replace": " * It was enforced for those two tiers and stated for four more verbs. `SchemaTransaction` narrows\n * what a recipe is handed, and both its docblock and `ProjectHandle.edit`'s said that `mount`,\n * `seek`, `subscribeNode` and `dispose` \"are not reachable through it\" -- true of the transaction\n * object, and never true of the run, because the recipe closure holds the `ProjectHandle` the caller\n * called `edit` on."
+    },
+    {
+      "path": "packages/core/test/unit/runtime/immediate-verb-refusal.test.ts",
+      "find": " * `RA-85` is the other direction, and it is why this file is not \"refuse everything reachable\":\n * `adopt` and `destroyAdopted` are structural, so they compose into the one commit and must not\n * refuse, and a subscription taken inside a recipe is the caller's own object and receives the\n * commit's flush.",
+      "replace": " * `RA-85` is the other direction, and it is why this file is not \"refuse everything reachable\":\n * `ProjectHandle.addTrack` and `TrackHandle.remove` are structural, so they compose into the one\n * commit and must not refuse, and a subscription taken inside a recipe is the caller's own object\n * and receives the commit's flush."
+    },
+    {
+      "path": "packages/core/test/unit/runtime/immediate-verb-refusal.test.ts",
+      "find": "    const test = rig();\n    const owner = {};\n    const builds = test.builds;\n    let heard = 0;",
+      "replace": "    const test = rig();\n    const builds = test.builds;\n    let heard = 0;"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/immediate-verb-refusal.test.ts",
+      "find": "      // Structural, so they reach `#commit` and merge into the open pair exactly as the transaction's\n      // own `addTrack` does. Neither is on `SchemaTransaction`, and that was never a guarantee that\n      // they could not be reached: it is what makes the narrowing documentation rather than a fence.\n      const adopted = test.runtime.adopt({ id: \"foot\" }, owner, { motionId: MOTION_ID });\n\n      expect(adopted.id).toBe(FOOT_ID);\n      expect(test.runtime.track(FOOT_ID).live).toBe(true);\n\n      test.runtime.destroyAdopted(FOOT_ID, owner);",
+      "replace": "      // Structural, so they reach `#commit` and merge into the open pair exactly as the transaction's\n      // own `addTrack` does. Neither the project's `addTrack` nor a handle's `remove` is on\n      // `SchemaTransaction`, and that was never a guarantee that they could not be reached: it is\n      // what makes the narrowing documentation rather than a fence.\n      const added = test.runtime.addTrack({ id: \"foot\" }, { motionId: MOTION_ID });\n\n      expect(added.id).toBe(FOOT_ID);\n      expect(test.runtime.track(FOOT_ID).live).toBe(true);\n\n      added.remove();"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/immediate-verb-refusal.test.ts",
+      "find": "    // One commit for the add, the adopt and the destroy together, and the subscription heard it.",
+      "replace": "    // One commit for the two adds and the removal together, and the subscription heard it."
+    },
+    {
+      "path": "packages/core/test/integration/phase2-motion-scheduling.test.ts",
+      "find": "    const trackValues: number[] = [];\n    handle.subscribe(\"hero/t1\", (patch) => {",
+      "replace": "    const trackValues: number[] = [];\n    handle.subscribeNode(\"hero/t1\", (patch) => {"
+    },
+    {
+      "path": "packages/core/test/integration/phase2-motion-scheduling.test.ts",
+      "find": "    let updated = false;\n    handle.subscribe(\"hero/t1\", () => {",
+      "replace": "    let updated = false;\n    handle.subscribeNode(\"hero/t1\", () => {"
+    },
+    {
+      "path": "packages/core/test/integration/phase2-motion-scheduling.test.ts",
+      "find": "    const batchHistory: number[] = [];\n    handle.subscribe(\"hero/t1\", (patch) => {",
+      "replace": "    const batchHistory: number[] = [];\n    handle.subscribeNode(\"hero/t1\", (patch) => {"
+    },
+    {
+      "path": "packages/core/test/integration/trigger-time.test.ts",
+      "find": "    handle.subscribe(\"timeMotion/arm\", (patch) => seen.push(patch.values));",
+      "replace": "    handle.subscribeNode(\"timeMotion/arm\", (patch) => seen.push(patch.values));"
+    },
+    {
+      "path": "packages/core/test/integration/phase3-trigger-port.test.ts",
+      "find": "    let patchValue = 0;\n    handle.subscribe(\"hero/t1\", (patch) => {",
+      "replace": "    let patchValue = 0;\n    handle.subscribeNode(\"hero/t1\", (patch) => {"
+    },
+    {
+      "path": "packages/core/test/integration/phase7-walker-demo.test.ts",
+      "find": "    const unsubscribe = handle.subscribe(\"walk/pelvis\", () => count++);",
+      "replace": "    const unsubscribe = handle.subscribeNode(\"walk/pelvis\", () => count++);"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/motion-consistency.test.ts",
+      "find": "    test.handle.subscribe(\"hero/leg\", () => {",
+      "replace": "    test.handle.subscribeNode(\"hero/leg\", () => {"
+    },
+    {
+      "path": "packages/core/test/integration/unified-mutation-surface.test.ts",
+      "find": "    handle.subscribe(handleForTrack.id, (patch) => seen.push(patch.status));",
+      "replace": "    handle.subscribeNode(handleForTrack.id, (patch) => seen.push(patch.status));"
+    },
+    {
+      "path": "packages/core/test/integration/t4-runtime-motion-parity.test.ts",
+      "find": "  handle.subscribe(nodeId, (patch) => seen.push(patch.values));",
+      "replace": "  handle.subscribeNode(nodeId, (patch) => seen.push(patch.values));"
+    },
+    {
+      "path": "packages/core/test/unit/graph/incremental-cache.test.ts",
+      "find": "  // makes adopt/destroyAdopted incremental rather than a full rebuild per mutation.",
+      "replace": "  // makes an add and a remove incremental rather than a full rebuild per mutation."
+    }
+  ]
+}
