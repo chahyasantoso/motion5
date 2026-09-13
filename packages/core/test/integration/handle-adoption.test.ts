@@ -16,37 +16,34 @@ function makeHandle() {
   }).load(project);
 }
 
-describe("adoption through ProjectHandle (G2)", () => {
-  it("adopts a free track and publishes a ready patch on the commit", () => {
+describe("runtime track addition through ProjectHandle (G2)", () => {
+  it("adds a free track and publishes a ready patch on the commit", () => {
     const handle = makeHandle();
-    const owner = {};
-    const adopted = handle.adopt({ id: "cursor" }, owner);
-    expect(adopted.id).toBe("~/cursor");
+    const added = handle.addTrack({ id: "cursor" });
+    expect(added.id).toBe("~/cursor");
     // On the commit, not on a following seek. A structural commit seeds its own flush, so the
-    // adopted node is ready through the handle before anything else is asked of it, and the seek
+    // added node is ready through the handle before anything else is asked of it, and the seek
     // that used to carry this patch now publishes nothing because nothing changed.
     // Issue #223, slice A2.
-    const patch = handle.get(adopted.id);
+    const patch = handle.get(added.id);
     expect(patch).toBeDefined();
     expect(patch!.status).toBe("ready");
-    expect(handle.seek(adopted.id, 0).patches).toEqual([]);
+    expect(handle.seek(added.id, 0).patches).toEqual([]);
     handle.dispose();
   });
 
-  it("destroyAdopted removes the node from the graph", () => {
+  it("remove() takes the node out of the graph", () => {
     const handle = makeHandle();
-    const owner = {};
-    const adopted = handle.adopt({ id: "cursor" }, owner);
-    handle.destroyAdopted(adopted.id, owner);
-    // Seeking a destroyed node should produce no patch for that node.
+    const added = handle.addTrack({ id: "cursor" });
+    added.remove();
+    // Seeking a removed node should produce no patch for that node.
     const batch = handle.seek("hero/arm", 0);
-    expect(batch.patches.find(({ nodeId }) => nodeId === adopted.id)).toBeUndefined();
+    expect(batch.patches.find(({ nodeId }) => nodeId === added.id)).toBeUndefined();
     handle.dispose();
   });
 
-  it("rejects adoption of a track with malformed keyframes", () => {
+  it("rejects a track with malformed keyframes", () => {
     const handle = makeHandle();
-    const owner = {};
     const bad = {
       id: "bad",
       keyframes: {
@@ -56,19 +53,18 @@ describe("adoption through ProjectHandle (G2)", () => {
         ],
       },
     };
-    expect(() => handle.adopt(bad, owner)).toThrow(/stop-position/);
+    expect(() => handle.addTrack(bad)).toThrow(/stop-position/);
     handle.dispose();
   });
 
-  it("adopts a track into an existing motion and receives motion signals", () => {
+  it("adds a track into an existing motion and receives motion signals", () => {
     const scheduler = createFakeScheduler();
     const handle = new Engine({
       clock: createManualClock(),
       interpolator: createFakeInterpolator(),
       scheduler,
     }).load(project);
-    const owner = {};
-    const adopted = handle.adopt(
+    const added = handle.addTrack(
       {
         id: "leg",
         keyframes: {
@@ -78,13 +74,12 @@ describe("adoption through ProjectHandle (G2)", () => {
           ],
         },
       },
-      owner,
       { motionId: "hero" },
     );
-    expect(adopted.id).toBe("hero/leg");
+    expect(added.id).toBe("hero/leg");
 
     let latestPatch: any;
-    handle.subscribe("hero/leg", (patch) => {
+    handle.subscribeNode("hero/leg", (patch) => {
       latestPatch = patch;
     });
 
@@ -95,7 +90,7 @@ describe("adoption through ProjectHandle (G2)", () => {
     expect(latestPatch.nodeId).toBe("hero/leg");
     expect(latestPatch.values).toEqual({ x: 50 });
 
-    handle.destroyAdopted(adopted.id, owner);
+    added.remove();
     const batch = handle.seek("hero/arm", 0);
     expect(batch.patches.find(({ nodeId }) => nodeId === "hero/leg")).toBeUndefined();
     handle.dispose();

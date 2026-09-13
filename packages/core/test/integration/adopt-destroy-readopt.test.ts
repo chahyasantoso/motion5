@@ -29,14 +29,13 @@ function makeHandle() {
   return { handle, scheduler };
 }
 
-describe("adopt -> destroy -> re-adopt lifecycle on the wire (D1)", () => {
-  it("tells subscribers the node was destroyed and reaches them again after re-adoption", () => {
+describe("add -> remove -> re-add lifecycle on the wire (D1)", () => {
+  it("tells subscribers the node was destroyed and reaches them again after re-addition", () => {
     const { handle, scheduler } = makeHandle();
-    const owner = {};
     const seen: Patch[] = [];
 
-    const adopted = handle.adopt(armTrack, owner, { motionId: "walk" });
-    handle.subscribe(adopted.id, (patch) => seen.push(patch));
+    const added = handle.addTrack(armTrack, { motionId: "walk" });
+    handle.subscribeNode(added.id, (patch) => seen.push(patch));
 
     handle.signal("walk", { type: "manual", progress: 0.45 });
     scheduler.flush();
@@ -45,20 +44,20 @@ describe("adopt -> destroy -> re-adopt lifecycle on the wire (D1)", () => {
 
     // Destruction must be an event, not a silent deletion. This is the exact moment the demo
     // rig used to freeze: the graph dropped the node while the renderer kept its last pose.
-    handle.destroyAdopted(adopted.id, owner);
+    added.remove();
     expect(seen.at(-1)?.status).toBe("destroyed");
     expect(seen.at(-1)?.values).toEqual({});
-    expect(handle.get(adopted.id)).toBeUndefined();
+    expect(handle.get(added.id)).toBeUndefined();
 
     // Driving the motion backwards must not resurrect the destroyed node.
     handle.signal("walk", { type: "manual", progress: 0.2 });
     scheduler.flush();
-    expect(handle.get(adopted.id)).toBeUndefined();
+    expect(handle.get(added.id)).toBeUndefined();
     expect(seen.at(-1)?.status).toBe("destroyed");
 
-    // Re-adoption has to reach the subscriber that survived the eviction.
-    const readopted = handle.adopt(armTrack, owner, { motionId: "walk" });
-    expect(readopted.id).toBe(adopted.id);
+    // Re-addition has to reach the subscriber that survived the eviction.
+    const readded = handle.addTrack(armTrack, { motionId: "walk" });
+    expect(readded.id).toBe(added.id);
     handle.signal("walk", { type: "manual", progress: 0.6 });
     scheduler.flush();
     expect(seen.at(-1)?.status).toBe("ready");

@@ -19,81 +19,77 @@ function ramp(from: number, to: number) {
   ];
 }
 
-describe("adopted track validation and immutability (W3)", () => {
+describe("runtime track validation and immutability (W3)", () => {
   it("returns a deeply frozen runtime-owned definition", () => {
     const handle = makeHandle();
-    const owner = {};
     const source: TrackDefinition = {
       id: "arm",
       keyframes: { x: ramp(0, 100) },
     };
 
-    const adopted = handle.adopt(source, owner);
+    const added = handle.addTrack(source);
 
     // An authored keyframe entry is a property or a plugin-named group, so reading stops off one
     // narrows to the property form first. Since ADR-050 that property *is* the stops array, so the
     // levels the freeze has to reach are the array and each stop in it, not a wrapper object, its
     // `stops` member, and then the stop.
-    const stops = adopted.track.keyframes?.x as readonly AuthoredStop[] | undefined;
-    expect(adopted.track).not.toBe(source);
-    expect(Object.isFrozen(adopted.track)).toBe(true);
-    expect(Object.isFrozen(adopted.track.keyframes)).toBe(true);
+    const stops = added.definition.keyframes?.x as readonly AuthoredStop[] | undefined;
+    expect(added.definition).not.toBe(source);
+    expect(Object.isFrozen(added.definition)).toBe(true);
+    expect(Object.isFrozen(added.definition.keyframes)).toBe(true);
     expect(Object.isFrozen(stops)).toBe(true);
     expect(Object.isFrozen(stops?.[0])).toBe(true);
 
-    handle.destroyAdopted(adopted.id, owner);
+    added.remove();
     handle.dispose();
   });
 
   it("isolates caller mutation from the frozen graph definition", () => {
     const handle = makeHandle();
-    const owner = {};
     const source: TrackDefinition = {
       id: "arm",
       keyframes: { x: ramp(0, 100) },
     };
-    const adopted = handle.adopt(source, owner);
+    const added = handle.addTrack(source);
 
     // The caller-owned source remains mutable. The runtime-owned clone must not change with it.
     const stops = source.keyframes!.x as readonly AuthoredStop[];
     (stops[1] as { p: number; v: unknown }).v = 999;
 
-    handle.seek(adopted.id, 1);
-    expect(handle.get(adopted.id)?.values).toEqual({ x: 100 });
+    handle.seek(added.id, 1);
+    expect(handle.get(added.id)?.values).toEqual({ x: 100 });
 
-    handle.destroyAdopted(adopted.id, owner);
+    added.remove();
     handle.dispose();
   });
 
   it("uses the authored validation owner for malformed runtime track structure", () => {
     const handle = makeHandle();
-    const owner = {};
     const malformed = {
       id: "broken",
       keyframes: { x: ramp(0, 1) },
       observes: "not-an-array",
     } as unknown as TrackDefinition;
 
-    expect(() => handle.adopt(malformed, owner)).toThrow(/observes-shape/);
-    expect(() => handle.adopt({ id: "broken", keyframes: { x: ramp(0, 1) } }, owner)).not.toThrow();
+    expect(() => handle.addTrack(malformed)).toThrow(/observes-shape/);
+    expect(() => handle.addTrack({ id: "broken", keyframes: { x: ramp(0, 1) } })).not.toThrow();
 
     handle.dispose();
   });
 
-  it("keeps the existing same-source destroy and readopt path working", () => {
+  it("keeps the existing same-source remove and re-add path working", () => {
     const handle = makeHandle();
-    const owner = {};
     const source: TrackDefinition = { id: "arm", keyframes: { x: ramp(0, 100) } };
 
-    const first = handle.adopt(source, owner);
-    handle.destroyAdopted(first.id, owner);
-    const second = handle.adopt(source, owner);
+    const first = handle.addTrack(source);
+    first.remove();
+    const second = handle.addTrack(source);
 
     expect(second.id).toBe(first.id);
-    expect(second.track).not.toBe(source);
-    expect(Object.isFrozen(second.track)).toBe(true);
+    expect(second.definition).not.toBe(source);
+    expect(Object.isFrozen(second.definition)).toBe(true);
 
-    handle.destroyAdopted(second.id, owner);
+    second.remove();
     handle.dispose();
   });
 });
