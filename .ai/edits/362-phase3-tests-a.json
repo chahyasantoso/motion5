@@ -1,0 +1,174 @@
+{
+  "version": 1,
+  "expected_head": "ad61288054c3ef47c1295a0f3c1f3b97ab99d817",
+  "expected_blobs": {
+    "packages/core/test/integration/adoption.test.ts": "a30c61a9b7a99844e6f993e4263836e8e91cdc36",
+    "packages/core/test/integration/handle-adoption.test.ts": "74228c2bf510e3d99ed8a30e34284dc7b5eab666",
+    "packages/core/test/integration/adopt-destroy-readopt.test.ts": "c6df58cc516dbdfe7c455ce1b7621793f8190480",
+    "packages/core/test/integration/adopted-track-immutability.test.ts": "96e00a164274f13231c32adf8fbf577a0e773bfa",
+    "packages/core/test/integration/mutation-transactionality.test.ts": "b9f9ec5f84ab598240219720adef4e70b1fe16b7"
+  },
+  "message": "test(runtime): migrate the adoption suites onto addTrack and TrackHandle",
+  "edits": [
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "describe(\"P5-02 adopted free tracks\", () => {\n  it(\"adopts a free track under ~/id and publishes through the ordinary graph path\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    const owner = {};\n    const adopted = runtime.adopt(freeTrack, owner);\n    expect(adopted.id).toBe(\"~/cursor\");",
+      "replace": "describe(\"P5-02 runtime free tracks\", () => {\n  it(\"adds a free track under ~/id and publishes through the ordinary graph path\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    const added = runtime.addTrack(freeTrack);\n    expect(added.id).toBe(\"~/cursor\");"
+    },
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "    // The adopt publishes it, rather than the seek that used to follow: a structural commit seeds",
+      "replace": "    // The add publishes it, rather than the seek that used to follow: a structural commit seeds"
+    },
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "  it(\"rejects duplicate adopted ids instead of silently replacing membership\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    runtime.adopt(freeTrack, {});\n    expect(() => runtime.adopt(freeTrack, {})).toThrow(/already exists/);",
+      "replace": "  it(\"rejects duplicate ids instead of silently replacing membership\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    runtime.addTrack(freeTrack);\n    expect(() => runtime.addTrack(freeTrack)).toThrow(/already exists/);"
+    },
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "  it(\"lets a borrower unmount without destroying the adopted track, while only the owner can destroy it\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    const owner = {};\n    const adopted = runtime.adopt(freeTrack, owner);\n    runtime.unmount(adopted.id);\n    expect(runtime.instanceCount).toBe(0);\n    expect(runtime.graph.state.snapshot().nodes).toContain(\"~/cursor\");\n    expect(() => runtime.destroyAdopted(adopted.id, {})).toThrow(/owner/);\n    runtime.destroyAdopted(adopted.id, owner);",
+      "replace": "  // The owner gate this case also asserted went with the mechanism that carried it rather than\n  // moving: what refuses a removal now is the token the handle captured, and\n  // `unified-mutation-surface.test.ts` owns that refusal.\n  it(\"lets a borrower unmount without removing the track\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    const added = runtime.addTrack(freeTrack);\n    runtime.unmount(added.id);\n    expect(runtime.instanceCount).toBe(0);\n    expect(runtime.graph.state.snapshot().nodes).toContain(\"~/cursor\");\n    added.remove();"
+    },
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "  it(\"keeps every adopted track independently addressable across sequential adopt and destroy calls\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    const owner = {};\n    const cursor = runtime.adopt({ id: \"cursor\" }, owner);\n    const drag = runtime.adopt({ id: \"drag\" }, owner);",
+      "replace": "  it(\"keeps every track independently addressable across sequential add and remove calls\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    const cursor = runtime.addTrack({ id: \"cursor\" });\n    const drag = runtime.addTrack({ id: \"drag\" });"
+    },
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "    // Each adopt published its own node and nothing else. Read at the commit rather than through a\n    // following seek, and read per id, because addressability is the claim: a commit that seeded\n    // the whole member set instead of the node it touched would pass a two-node assertion here and\n    // fail this one on the second adopt, which would republish the first.",
+      "replace": "    // Each add published its own node and nothing else. Read at the commit rather than through a\n    // following seek, and read per id, because addressability is the claim: a commit that seeded\n    // the whole member set instead of the node it touched would pass a two-node assertion here and\n    // fail this one on the second add, which would republish the first."
+    },
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "    expect(runtime.graph.registry.get(cursor.id)?.revision).toBe(1);\n    runtime.destroyAdopted(cursor.id, owner);",
+      "replace": "    expect(runtime.graph.registry.get(cursor.id)?.revision).toBe(1);\n    cursor.remove();"
+    },
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "  it(\"rejects adopted tracks with non-finite stop positions\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    expect(() =>\n      runtime.adopt({ id: \"bad\", keyframes: { x: [{ p: Number.NaN, v: 0 }] } }, {}),\n    ).toThrow(/stop-position/);",
+      "replace": "  it(\"rejects tracks with non-finite stop positions\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    expect(() =>\n      runtime.addTrack({ id: \"bad\", keyframes: { x: [{ p: Number.NaN, v: 0 }] } }),\n    ).toThrow(/stop-position/);"
+    },
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "  it(\"rejects adopted tracks with non-monotonic stop positions\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    expect(() =>\n      runtime.adopt(\n        {\n          id: \"bad\",\n          keyframes: {\n            x: [\n              { p: 0.5, v: 0 },\n              { p: 0.2, v: 1 },\n            ],\n          },\n        },\n        {},\n      ),\n    ).toThrow(/stop-position/);",
+      "replace": "  it(\"rejects tracks with non-monotonic stop positions\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    expect(() =>\n      runtime.addTrack({\n        id: \"bad\",\n        keyframes: {\n          x: [\n            { p: 0.5, v: 0 },\n            { p: 0.2, v: 1 },\n          ],\n        },\n      }),\n    ).toThrow(/stop-position/);"
+    },
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "  it(\"rejects adopted tracks with duplicate stop positions\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    expect(() =>\n      runtime.adopt(\n        {\n          id: \"bad\",\n          keyframes: {\n            x: [\n              { p: 0, v: 0 },\n              { p: 0, v: 1 },\n            ],\n          },\n        },\n        {},\n      ),\n    ).toThrow(/stop-position/);",
+      "replace": "  it(\"rejects tracks with duplicate stop positions\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    expect(() =>\n      runtime.addTrack({\n        id: \"bad\",\n        keyframes: {\n          x: [\n            { p: 0, v: 0 },\n            { p: 0, v: 1 },\n          ],\n        },\n      }),\n    ).toThrow(/stop-position/);"
+    },
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "  it(\"adopts a track into an existing motion under motionId/trackId\", () => {",
+      "replace": "  it(\"adds a track into an existing motion under motionId/trackId\", () => {"
+    },
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "    const owner = {};\n    const adopted = runtime.adopt({ id: \"opacity\" }, owner, { motionId: \"hero\" });\n    expect(adopted.id).toBe(\"hero/opacity\");",
+      "replace": "    const added = runtime.addTrack({ id: \"opacity\" }, { motionId: \"hero\" });\n    expect(added.id).toBe(\"hero/opacity\");"
+    },
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "  it(\"rejects adopting into a non-existent motion\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    expect(() => runtime.adopt({ id: \"opacity\" }, {}, { motionId: \"nonexistent\" })).toThrow(",
+      "replace": "  it(\"rejects adding into a non-existent motion\", () => {\n    const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });\n    expect(() => runtime.addTrack({ id: \"opacity\" }, { motionId: \"nonexistent\" })).toThrow("
+    },
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "  it(\"destroys a motion-adopted track and invokes removeMotionTrack\", () => {",
+      "replace": "  it(\"removes a motion-owned track and invokes removeMotionTrack\", () => {"
+    },
+    {
+      "path": "packages/core/test/integration/adoption.test.ts",
+      "find": "    const owner = {};\n    const adopted = runtime.adopt({ id: \"opacity\" }, owner, { motionId: \"hero\" });\n    expect(runtime.graph.state.snapshot().nodes).toContain(\"hero/opacity\");\n\n    runtime.destroyAdopted(adopted.id, owner);",
+      "replace": "    const added = runtime.addTrack({ id: \"opacity\" }, { motionId: \"hero\" });\n    expect(runtime.graph.state.snapshot().nodes).toContain(\"hero/opacity\");\n\n    added.remove();"
+    },
+    {
+      "path": "packages/core/test/integration/handle-adoption.test.ts",
+      "find": "describe(\"adoption through ProjectHandle (G2)\", () => {\n  it(\"adopts a free track and publishes a ready patch on the commit\", () => {\n    const handle = makeHandle();\n    const owner = {};\n    const adopted = handle.adopt({ id: \"cursor\" }, owner);\n    expect(adopted.id).toBe(\"~/cursor\");\n    // On the commit, not on a following seek. A structural commit seeds its own flush, so the\n    // adopted node is ready through the handle before anything else is asked of it, and the seek\n    // that used to carry this patch now publishes nothing because nothing changed.\n    // Issue #223, slice A2.\n    const patch = handle.get(adopted.id);\n    expect(patch).toBeDefined();\n    expect(patch!.status).toBe(\"ready\");\n    expect(handle.seek(adopted.id, 0).patches).toEqual([]);\n    handle.dispose();\n  });\n\n  it(\"destroyAdopted removes the node from the graph\", () => {\n    const handle = makeHandle();\n    const owner = {};\n    const adopted = handle.adopt({ id: \"cursor\" }, owner);\n    handle.destroyAdopted(adopted.id, owner);\n    // Seeking a destroyed node should produce no patch for that node.\n    const batch = handle.seek(\"hero/arm\", 0);\n    expect(batch.patches.find(({ nodeId }) => nodeId === adopted.id)).toBeUndefined();\n    handle.dispose();\n  });\n\n  it(\"rejects adoption of a track with malformed keyframes\", () => {\n    const handle = makeHandle();\n    const owner = {};\n    const bad = {",
+      "replace": "describe(\"runtime track addition through ProjectHandle (G2)\", () => {\n  it(\"adds a free track and publishes a ready patch on the commit\", () => {\n    const handle = makeHandle();\n    const added = handle.addTrack({ id: \"cursor\" });\n    expect(added.id).toBe(\"~/cursor\");\n    // On the commit, not on a following seek. A structural commit seeds its own flush, so the\n    // added node is ready through the handle before anything else is asked of it, and the seek\n    // that used to carry this patch now publishes nothing because nothing changed.\n    // Issue #223, slice A2.\n    const patch = handle.get(added.id);\n    expect(patch).toBeDefined();\n    expect(patch!.status).toBe(\"ready\");\n    expect(handle.seek(added.id, 0).patches).toEqual([]);\n    handle.dispose();\n  });\n\n  it(\"remove() takes the node out of the graph\", () => {\n    const handle = makeHandle();\n    const added = handle.addTrack({ id: \"cursor\" });\n    added.remove();\n    // Seeking a removed node should produce no patch for that node.\n    const batch = handle.seek(\"hero/arm\", 0);\n    expect(batch.patches.find(({ nodeId }) => nodeId === added.id)).toBeUndefined();\n    handle.dispose();\n  });\n\n  it(\"rejects a track with malformed keyframes\", () => {\n    const handle = makeHandle();\n    const bad = {"
+    },
+    {
+      "path": "packages/core/test/integration/handle-adoption.test.ts",
+      "find": "    expect(() => handle.adopt(bad, owner)).toThrow(/stop-position/);\n    handle.dispose();\n  });\n\n  it(\"adopts a track into an existing motion and receives motion signals\", () => {",
+      "replace": "    expect(() => handle.addTrack(bad)).toThrow(/stop-position/);\n    handle.dispose();\n  });\n\n  it(\"adds a track into an existing motion and receives motion signals\", () => {"
+    },
+    {
+      "path": "packages/core/test/integration/handle-adoption.test.ts",
+      "find": "    const owner = {};\n    const adopted = handle.adopt(\n      {\n        id: \"leg\",\n        keyframes: {\n          x: [\n            { p: 0, v: 0 },\n            { p: 1, v: 100 },\n          ],\n        },\n      },\n      owner,\n      { motionId: \"hero\" },\n    );\n    expect(adopted.id).toBe(\"hero/leg\");\n\n    let latestPatch: any;\n    handle.subscribe(\"hero/leg\", (patch) => {",
+      "replace": "    const added = handle.addTrack(\n      {\n        id: \"leg\",\n        keyframes: {\n          x: [\n            { p: 0, v: 0 },\n            { p: 1, v: 100 },\n          ],\n        },\n      },\n      { motionId: \"hero\" },\n    );\n    expect(added.id).toBe(\"hero/leg\");\n\n    let latestPatch: any;\n    handle.subscribeNode(\"hero/leg\", (patch) => {"
+    },
+    {
+      "path": "packages/core/test/integration/handle-adoption.test.ts",
+      "find": "    handle.destroyAdopted(adopted.id, owner);\n    const batch = handle.seek(\"hero/arm\", 0);",
+      "replace": "    added.remove();\n    const batch = handle.seek(\"hero/arm\", 0);"
+    },
+    {
+      "path": "packages/core/test/integration/adopt-destroy-readopt.test.ts",
+      "find": "describe(\"adopt -> destroy -> re-adopt lifecycle on the wire (D1)\", () => {\n  it(\"tells subscribers the node was destroyed and reaches them again after re-adoption\", () => {\n    const { handle, scheduler } = makeHandle();\n    const owner = {};\n    const seen: Patch[] = [];\n\n    const adopted = handle.adopt(armTrack, owner, { motionId: \"walk\" });\n    handle.subscribe(adopted.id, (patch) => seen.push(patch));",
+      "replace": "describe(\"add -> remove -> re-add lifecycle on the wire (D1)\", () => {\n  it(\"tells subscribers the node was destroyed and reaches them again after re-addition\", () => {\n    const { handle, scheduler } = makeHandle();\n    const seen: Patch[] = [];\n\n    const added = handle.addTrack(armTrack, { motionId: \"walk\" });\n    handle.subscribeNode(added.id, (patch) => seen.push(patch));"
+    },
+    {
+      "path": "packages/core/test/integration/adopt-destroy-readopt.test.ts",
+      "find": "    handle.destroyAdopted(adopted.id, owner);\n    expect(seen.at(-1)?.status).toBe(\"destroyed\");\n    expect(seen.at(-1)?.values).toEqual({});\n    expect(handle.get(adopted.id)).toBeUndefined();\n\n    // Driving the motion backwards must not resurrect the destroyed node.\n    handle.signal(\"walk\", { type: \"manual\", progress: 0.2 });\n    scheduler.flush();\n    expect(handle.get(adopted.id)).toBeUndefined();\n    expect(seen.at(-1)?.status).toBe(\"destroyed\");\n\n    // Re-adoption has to reach the subscriber that survived the eviction.\n    const readopted = handle.adopt(armTrack, owner, { motionId: \"walk\" });\n    expect(readopted.id).toBe(adopted.id);",
+      "replace": "    added.remove();\n    expect(seen.at(-1)?.status).toBe(\"destroyed\");\n    expect(seen.at(-1)?.values).toEqual({});\n    expect(handle.get(added.id)).toBeUndefined();\n\n    // Driving the motion backwards must not resurrect the destroyed node.\n    handle.signal(\"walk\", { type: \"manual\", progress: 0.2 });\n    scheduler.flush();\n    expect(handle.get(added.id)).toBeUndefined();\n    expect(seen.at(-1)?.status).toBe(\"destroyed\");\n\n    // Re-addition has to reach the subscriber that survived the eviction.\n    const readded = handle.addTrack(armTrack, { motionId: \"walk\" });\n    expect(readded.id).toBe(added.id);"
+    },
+    {
+      "path": "packages/core/test/integration/adopted-track-immutability.test.ts",
+      "find": "describe(\"adopted track validation and immutability (W3)\", () => {\n  it(\"returns a deeply frozen runtime-owned definition\", () => {\n    const handle = makeHandle();\n    const owner = {};\n    const source: TrackDefinition = {\n      id: \"arm\",\n      keyframes: { x: ramp(0, 100) },\n    };\n\n    const adopted = handle.adopt(source, owner);",
+      "replace": "describe(\"runtime track validation and immutability (W3)\", () => {\n  it(\"returns a deeply frozen runtime-owned definition\", () => {\n    const handle = makeHandle();\n    const source: TrackDefinition = {\n      id: \"arm\",\n      keyframes: { x: ramp(0, 100) },\n    };\n\n    const added = handle.addTrack(source);"
+    },
+    {
+      "path": "packages/core/test/integration/adopted-track-immutability.test.ts",
+      "find": "    const stops = adopted.track.keyframes?.x as readonly AuthoredStop[] | undefined;\n    expect(adopted.track).not.toBe(source);\n    expect(Object.isFrozen(adopted.track)).toBe(true);\n    expect(Object.isFrozen(adopted.track.keyframes)).toBe(true);\n    expect(Object.isFrozen(stops)).toBe(true);\n    expect(Object.isFrozen(stops?.[0])).toBe(true);\n\n    handle.destroyAdopted(adopted.id, owner);\n    handle.dispose();\n  });\n\n  it(\"isolates caller mutation from the frozen graph definition\", () => {\n    const handle = makeHandle();\n    const owner = {};\n    const source: TrackDefinition = {\n      id: \"arm\",\n      keyframes: { x: ramp(0, 100) },\n    };\n    const adopted = handle.adopt(source, owner);",
+      "replace": "    const stops = added.definition.keyframes?.x as readonly AuthoredStop[] | undefined;\n    expect(added.definition).not.toBe(source);\n    expect(Object.isFrozen(added.definition)).toBe(true);\n    expect(Object.isFrozen(added.definition.keyframes)).toBe(true);\n    expect(Object.isFrozen(stops)).toBe(true);\n    expect(Object.isFrozen(stops?.[0])).toBe(true);\n\n    added.remove();\n    handle.dispose();\n  });\n\n  it(\"isolates caller mutation from the frozen graph definition\", () => {\n    const handle = makeHandle();\n    const source: TrackDefinition = {\n      id: \"arm\",\n      keyframes: { x: ramp(0, 100) },\n    };\n    const added = handle.addTrack(source);"
+    },
+    {
+      "path": "packages/core/test/integration/adopted-track-immutability.test.ts",
+      "find": "    handle.seek(adopted.id, 1);\n    expect(handle.get(adopted.id)?.values).toEqual({ x: 100 });\n\n    handle.destroyAdopted(adopted.id, owner);\n    handle.dispose();\n  });\n\n  it(\"uses the authored validation owner for malformed runtime track structure\", () => {\n    const handle = makeHandle();\n    const owner = {};\n    const malformed = {",
+      "replace": "    handle.seek(added.id, 1);\n    expect(handle.get(added.id)?.values).toEqual({ x: 100 });\n\n    added.remove();\n    handle.dispose();\n  });\n\n  it(\"uses the authored validation owner for malformed runtime track structure\", () => {\n    const handle = makeHandle();\n    const malformed = {"
+    },
+    {
+      "path": "packages/core/test/integration/adopted-track-immutability.test.ts",
+      "find": "    expect(() => handle.adopt(malformed, owner)).toThrow(/observes-shape/);\n    expect(() => handle.adopt({ id: \"broken\", keyframes: { x: ramp(0, 1) } }, owner)).not.toThrow();\n\n    handle.dispose();\n  });\n\n  it(\"keeps the existing same-source destroy and readopt path working\", () => {\n    const handle = makeHandle();\n    const owner = {};\n    const source: TrackDefinition = { id: \"arm\", keyframes: { x: ramp(0, 100) } };\n\n    const first = handle.adopt(source, owner);\n    handle.destroyAdopted(first.id, owner);\n    const second = handle.adopt(source, owner);\n\n    expect(second.id).toBe(first.id);\n    expect(second.track).not.toBe(source);\n    expect(Object.isFrozen(second.track)).toBe(true);\n\n    handle.destroyAdopted(second.id, owner);\n    handle.dispose();\n  });",
+      "replace": "    expect(() => handle.addTrack(malformed)).toThrow(/observes-shape/);\n    expect(() => handle.addTrack({ id: \"broken\", keyframes: { x: ramp(0, 1) } })).not.toThrow();\n\n    handle.dispose();\n  });\n\n  it(\"keeps the existing same-source remove and re-add path working\", () => {\n    const handle = makeHandle();\n    const source: TrackDefinition = { id: \"arm\", keyframes: { x: ramp(0, 100) } };\n\n    const first = handle.addTrack(source);\n    first.remove();\n    const second = handle.addTrack(source);\n\n    expect(second.id).toBe(first.id);\n    expect(second.definition).not.toBe(source);\n    expect(Object.isFrozen(second.definition)).toBe(true);\n\n    second.remove();\n    handle.dispose();\n  });"
+    },
+    {
+      "path": "packages/core/test/integration/mutation-transactionality.test.ts",
+      "find": " * The one-property track the two retry cases adopt, authored under the group that owns `x`.",
+      "replace": " * The one-property track the two retry cases add, authored under the group that owns `x`."
+    },
+    {
+      "path": "packages/core/test/integration/mutation-transactionality.test.ts",
+      "find": "function adoptable(id: string): TrackDefinition {",
+      "replace": "function addable(id: string): TrackDefinition {"
+    },
+    {
+      "path": "packages/core/test/integration/mutation-transactionality.test.ts",
+      "find": "    const { handle } = makeHandle();\n    const owner = {};\n    const root = handle.adopt(rootTrack, owner);\n    const elbow = handle.adopt(dependentTrack, owner);\n    handle.seek(root.id, 1);\n\n    const patches: Patch[] = [];\n    const unsubscribe = handle.subscribe(root.id, (patch) => patches.push(patch));\n    const before = snapshot(handle, [root.id, elbow.id]);\n\n    expect(() => handle.destroyAdopted(root.id, owner)).toThrow(/observation-unknown-source/);",
+      "replace": "    const { handle } = makeHandle();\n    const root = handle.addTrack(rootTrack);\n    const elbow = handle.addTrack(dependentTrack);\n    handle.seek(root.id, 1);\n\n    const patches: Patch[] = [];\n    const unsubscribe = handle.subscribeNode(root.id, (patch) => patches.push(patch));\n    const before = snapshot(handle, [root.id, elbow.id]);\n\n    expect(() => root.remove()).toThrow(/observation-unknown-source/);"
+    },
+    {
+      "path": "packages/core/test/integration/mutation-transactionality.test.ts",
+      "find": "    // A failed destroy is not a destruction event. The graph and its compiled track must still\n    // be live, and the adoption map must still make the same failure reachable on retry.",
+      "replace": "    // A failed removal is not a destruction event. The graph and its compiled track must still\n    // be live, and the retained map must still make the same failure reachable on retry."
+    },
+    {
+      "path": "packages/core/test/integration/mutation-transactionality.test.ts",
+      "find": "    expect(handle.get(root.id)?.status).toBe(\"ready\");\n    expect(() => handle.destroyAdopted(root.id, owner)).toThrow(/observation-unknown-source/);\n    expect(handle.get(root.id)).toBeDefined();",
+      "replace": "    expect(handle.get(root.id)?.status).toBe(\"ready\");\n    expect(() => root.remove()).toThrow(/observation-unknown-source/);\n    expect(handle.get(root.id)).toBeDefined();"
+    },
+    {
+      "path": "packages/core/test/integration/mutation-transactionality.test.ts",
+      "find": "    handle.destroyAdopted(elbow.id, owner);\n    handle.destroyAdopted(root.id, owner);",
+      "replace": "    elbow.remove();\n    root.remove();"
+    },
+    {
+      "path": "packages/core/test/integration/mutation-transactionality.test.ts",
+      "find": "  it(\"leaves a rejected unknown-source adoption retryable\", () => {\n    const { handle } = makeHandle();\n    const owner = {};\n    const invalid: TrackDefinition = {\n      ...adoptable(\"child\"),\n      observes: [{ source: \"~/missing\" }],\n    };\n\n    expect(() => handle.adopt(invalid, owner)).toThrow(/observation-unknown-source/);\n\n    const replacement = handle.adopt(adoptable(\"child\"), owner);\n    expect(replacement.id).toBe(\"~/child\");\n    expect(handle.seek(replacement.id, 0.5).patches.some(({ status }) => status === \"error\")).toBe(\n      false,\n    );\n    expect(handle.get(replacement.id)?.status).toBe(\"ready\");\n\n    handle.destroyAdopted(replacement.id, owner);\n    handle.dispose();\n  });\n\n  it(\"leaves a rejected self-reference adoption retryable\", () => {\n    const { handle } = makeHandle();\n    const owner = {};\n    const invalid: TrackDefinition = {\n      ...adoptable(\"self\"),\n      observes: [{ source: \"~/self\" }],\n    };\n\n    expect(() => handle.adopt(invalid, owner)).toThrow(/observation-self-reference/);\n    const replacement = handle.adopt(adoptable(\"self\"), owner);\n    expect(replacement.id).toBe(\"~/self\");\n\n    handle.destroyAdopted(replacement.id, owner);\n    handle.dispose();\n  });",
+      "replace": "  it(\"leaves a rejected unknown-source addition retryable\", () => {\n    const { handle } = makeHandle();\n    const invalid: TrackDefinition = {\n      ...addable(\"child\"),\n      observes: [{ source: \"~/missing\" }],\n    };\n\n    expect(() => handle.addTrack(invalid)).toThrow(/observation-unknown-source/);\n\n    const replacement = handle.addTrack(addable(\"child\"));\n    expect(replacement.id).toBe(\"~/child\");\n    expect(handle.seek(replacement.id, 0.5).patches.some(({ status }) => status === \"error\")).toBe(\n      false,\n    );\n    expect(handle.get(replacement.id)?.status).toBe(\"ready\");\n\n    replacement.remove();\n    handle.dispose();\n  });\n\n  it(\"leaves a rejected self-reference addition retryable\", () => {\n    const { handle } = makeHandle();\n    const invalid: TrackDefinition = {\n      ...addable(\"self\"),\n      observes: [{ source: \"~/self\" }],\n    };\n\n    expect(() => handle.addTrack(invalid)).toThrow(/observation-self-reference/);\n    const replacement = handle.addTrack(addable(\"self\"));\n    expect(replacement.id).toBe(\"~/self\");\n\n    replacement.remove();\n    handle.dispose();\n  });"
+    }
+  ]
+}
