@@ -16,7 +16,7 @@ handle.destroyMotion(id);
 
 `addMotion` validates, builds the motion, and only then publishes its id. If the trigger cannot resolve a driver, or the graph rejects the definition, nothing is committed and no public surface ever names a motion that failed to build. The rejection you get back is the reason the operation was refused, never a failure from the rollback that followed it.
 
-A `MotionHandle` edits a live Motion without tearing down its tracks. Resolve one with `handle.motion(motionId)`; use `tryMotion(motionId)` when a missing id is expected. It exposes `id`, `live`, `definition`, `trackIds`, `setTrigger`, `setStagger`, `addTrack`, `track`, `tryTrack`, `signal`, and `destroy`. Trigger and stagger edits are tier 0: they touch no graph node or edge, preserve the playhead, and refuse stale handles with `StaleMotionHandleError`.
+A `MotionHandle` edits a live Motion without tearing down its tracks. Resolve one with `handle.motion(motionId)`; use `tryMotion(motionId)` when a missing id is expected. It exposes `id`, `live`, `definition`, `trackIds`, `setTrigger`, `setStagger`, `addTrack`, `track`, `tryTrack`, and `destroy`, and no `signal`: signalling a Motion is `ProjectHandle.signal`'s question, because the runtime holding those trigger tokens holds no Motion instance to signal. Trigger and stagger edits are tier 0: they touch no graph node or edge, preserve the playhead, and refuse stale handles with `StaleMotionHandleError`.
 
 ## Track handles
 
@@ -64,7 +64,7 @@ handle.edit((tx) => {
 
 `n` ops across `m` tracks cost one candidate build, one graph replacement, one `ObservationState` commit and one flush, where the same sequence outside a recipe costs all of that per op. Each op still validates on entry, so every step is individually correct exactly as before; what changes is that committing is a separate verb from editing.
 
-The recipe is handed a `SchemaTransaction`, which carries `addMotion`, `motion`, `tryMotion`, `addTrack`, `track` and `tryTrack` and nothing else: `mount`, `seek`, `subscribe` and `dispose` are not reachable through it. Reads inside it resolve against what it has staged, so a two-step edit sees its own first step, and the recipe's own return value is yours. A throw commits nothing, reaches no hook, and leaves every handle the recipe issued permanently not live.
+The recipe is handed a `SchemaTransaction`, which carries `addMotion`, `motion`, `tryMotion`, `addTrack`, `track` and `tryTrack` and nothing else: `mount`, `seek`, `subscribeNode` and `dispose` are not reachable through it. Reads inside it resolve against what it has staged, so a two-step edit sees its own first step, and the recipe's own return value is yours. A throw commits nothing, reaches no hook, and leaves every handle the recipe issued permanently not live.
 
 Two refusals name where a call was made rather than what it does. A recipe opened inside a recipe is `schema-transaction-nested`. A verb that applies immediately is `schema-transaction-immediate`, named at the verb, which covers `setTrigger` and `setStagger` on a `MotionHandle` and `overrideValues`, `setValues`, `setKeyframe` and `removeKeyframe` on a `TrackHandle`: a settle step cannot refuse, so deferring one of those into the transaction would move its failure to after the graph had committed. See ADR-064.
 
@@ -181,7 +181,3 @@ A refused single-track mutation costs nothing. `addTrack` and `replaceTrack` res
 A rejected motion mutation reports the rejection that caused it. If the rollback itself also fails, for example because your own scroll-source unsubscribe throws, you get one `AggregateError` whose message opens with the original rejection verbatim and whose `errors` are `[rejection, rollbackFailure]`. The reason the operation was refused always outranks the noise from cleaning up.
 
 Destruction is visible on the wire. An evicted node publishes exactly one `destroyed` patch before its retained patch is dropped, so an already-attached subscriber cannot keep rendering a node the graph has removed.
-
-## Compatibility note
-
-`handle.adopt()` and `handle.destroyAdopted()` still exist and still take a caller-invented owner object. They are the older owner-based API that `addTrack` replaced. Prefer handles; the demo consumer has already migrated.
