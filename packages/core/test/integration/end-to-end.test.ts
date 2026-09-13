@@ -44,7 +44,7 @@ describe("real end-to-end product path (E2)", () => {
 
     runtime.mount("hero/arm");
     let patch: Patch | undefined;
-    runtime.subscribe("hero/arm", (next) => {
+    runtime.subscribeNode("hero/arm", (next) => {
       patch = next;
     });
     runtime.seek("hero/arm", 0);
