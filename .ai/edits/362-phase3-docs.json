@@ -1,0 +1,141 @@
+{
+  "version": 1,
+  "expected_head": "dffba5d6cf44289dcf163f01fc9d2c80a5fe10a0",
+  "expected_blobs": {
+    "apps/ik-playground/src/App.tsx": "8b23e42b72771de65209d623e9161490a14c5b0e",
+    "scripts/bench-graph.mjs": "1a2d61048be55ff5b4cf0f044659f2a447c3b615",
+    "docs/guide/api-reference.md": "1780ed102ccbc1a0f7960a52d959137b0b028e6f",
+    "docs/guide/runtime-changes.md": "8704d36c4cae25b07c8375a11766ddb6bdc43cd9",
+    "docs/LIVE-EDIT-COST.md": "6fb6ce9bac6b314bdda4d33815c6565cbf6bc6a6",
+    "docs/SESSION-STATUS.md": "154129d6ca49fdd0c7595373ee915aff4ce5b456",
+    "docs/DECISIONS.md": "ca12a9dda2be366bcc5c8486b8f7b7187165ece1",
+    "docs/ADR-076-one-mechanism-per-question.md": null
+  },
+  "message": "docs(runtime): record the surface subtraction and finish its unread readers",
+  "edits": [
+    {
+      "path": "apps/ik-playground/src/App.tsx",
+      "find": "      unsubscribeWeight = project.subscribe(nodeId(ARM.memberTracks[0]!), (patch) => {",
+      "replace": "      unsubscribeWeight = project.subscribeNode(nodeId(ARM.memberTracks[0]!), (patch) => {"
+    },
+    {
+      "path": "scripts/bench-graph.mjs",
+      "find": "    const ownerA = {};\n    const adoptCountA = 50;\n    const adoptedA = [];\n    const startAdoptA = performance.now();\n    for (let a = 0; a < adoptCountA; a++) {\n      const res = runtime.adopt({ id: `edgeless_${a}` }, ownerA);\n      adoptedA.push(res.id);\n    }",
+      "replace": "    const adoptCountA = 50;\n    const adoptedA = [];\n    const startAdoptA = performance.now();\n    for (let a = 0; a < adoptCountA; a++) {\n      adoptedA.push(runtime.addTrack({ id: `edgeless_${a}` }));\n    }"
+    },
+    {
+      "path": "scripts/bench-graph.mjs",
+      "find": "    const startDestroyA = performance.now();\n    for (const id of adoptedA) {\n      runtime.destroyAdopted(id, ownerA);\n    }",
+      "replace": "    const startDestroyA = performance.now();\n    for (const track of adoptedA) {\n      track.remove();\n    }"
+    },
+    {
+      "path": "scripts/bench-graph.mjs",
+      "find": "    const ownerB = {};\n    const adoptCountB = 50;",
+      "replace": "    const adoptCountB = 50;"
+    },
+    {
+      "path": "scripts/bench-graph.mjs",
+      "find": "    const startAdoptB = performance.now();\n    for (let b = 0; b < adoptCountB; b++) {\n      const res = runtime.adopt(\n        {\n          id: `edged_${b}`,\n          keyframes: {\n            x: {\n              stops: [\n                { p: 0, v: 0 },\n                { p: 0.5, v: 50 },\n                { p: 1, v: 100 },\n              ],\n            },\n            y: {\n              stops: [\n                { p: 0, v: 0 },\n                { p: 1, v: 200 },\n              ],\n            },\n          },\n          observes: [{ source: observeTarget }],\n        },\n        ownerB,\n      );\n      adoptedB.push(res.id);\n    }",
+      "replace": "    const startAdoptB = performance.now();\n    for (let b = 0; b < adoptCountB; b++) {\n      adoptedB.push(\n        runtime.addTrack({\n          id: `edged_${b}`,\n          keyframes: {\n            x: {\n              stops: [\n                { p: 0, v: 0 },\n                { p: 0.5, v: 50 },\n                { p: 1, v: 100 },\n              ],\n            },\n            y: {\n              stops: [\n                { p: 0, v: 0 },\n                { p: 1, v: 200 },\n              ],\n            },\n          },\n          observes: [{ source: observeTarget }],\n        }),\n      );\n    }"
+    },
+    {
+      "path": "scripts/bench-graph.mjs",
+      "find": "    const startDestroyB = performance.now();\n    for (const id of adoptedB) {\n      runtime.destroyAdopted(id, ownerB);\n    }",
+      "replace": "    const startDestroyB = performance.now();\n    for (const track of adoptedB) {\n      track.remove();\n    }"
+    },
+    {
+      "path": "scripts/bench-graph.mjs",
+      "find": "    const ownerC = {};\n    const adoptCountC = 50;",
+      "replace": "    const adoptCountC = 50;"
+    },
+    {
+      "path": "scripts/bench-graph.mjs",
+      "find": "    const startAdoptC = performance.now();\n    for (let c = 0; c < adoptCountC; c++) {\n      const res = runtime.adopt(\n        {\n          id: `chain_${c}`,\n          keyframes: {\n            x: {\n              stops: [\n                { p: 0, v: 0 },\n                { p: 1, v: 100 },\n              ],\n            },\n          },\n          observes: [{ source: previousSource }],\n        },\n        ownerC,\n      );\n      adoptedC.push(res.id);\n      previousSource = `~/chain_${c}`;\n    }",
+      "replace": "    const startAdoptC = performance.now();\n    for (let c = 0; c < adoptCountC; c++) {\n      adoptedC.push(\n        runtime.addTrack({\n          id: `chain_${c}`,\n          keyframes: {\n            x: {\n              stops: [\n                { p: 0, v: 0 },\n                { p: 1, v: 100 },\n              ],\n            },\n          },\n          observes: [{ source: previousSource }],\n        }),\n      );\n      previousSource = `~/chain_${c}`;\n    }"
+    },
+    {
+      "path": "scripts/bench-graph.mjs",
+      "find": "    const startDestroyC = performance.now();\n    for (const id of [...adoptedC].reverse()) {\n      runtime.destroyAdopted(id, ownerC);\n    }",
+      "replace": "    const startDestroyC = performance.now();\n    for (const track of [...adoptedC].reverse()) {\n      track.remove();\n    }"
+    },
+    {
+      "path": "scripts/bench-graph.mjs",
+      "find": "    const ownerD = {};\n    const adoptCountD = 50;\n    const adoptedD = [];\n    const startAdoptD = performance.now();\n    for (let d = 0; d < adoptCountD; d++) {\n      const res = incrementalRuntime.adopt(\n        {\n          id: `edged_incremental_${d}`,\n          keyframes: {\n            x: {\n              stops: [\n                { p: 0, v: 0 },\n                { p: 0.5, v: 50 },\n                { p: 1, v: 100 },\n              ],\n            },\n            y: {\n              stops: [\n                { p: 0, v: 0 },\n                { p: 1, v: 200 },\n              ],\n            },\n          },\n          observes: [{ source: observeTarget }],\n        },\n        ownerD,\n      );\n      adoptedD.push(res.id);\n    }",
+      "replace": "    const adoptCountD = 50;\n    const adoptedD = [];\n    const startAdoptD = performance.now();\n    for (let d = 0; d < adoptCountD; d++) {\n      adoptedD.push(\n        incrementalRuntime.addTrack({\n          id: `edged_incremental_${d}`,\n          keyframes: {\n            x: {\n              stops: [\n                { p: 0, v: 0 },\n                { p: 0.5, v: 50 },\n                { p: 1, v: 100 },\n              ],\n            },\n            y: {\n              stops: [\n                { p: 0, v: 0 },\n                { p: 1, v: 200 },\n              ],\n            },\n          },\n          observes: [{ source: observeTarget }],\n        }),\n      );\n    }"
+    },
+    {
+      "path": "docs/guide/api-reference.md",
+      "find": "- `subscribeNode(nodeId, listener)` returns an unsubscribe function. `subscribe` is the same call under an older name.",
+      "replace": "- `subscribeNode(nodeId, listener)` returns an unsubscribe function, and is the one mechanism for it. The `subscribe` alias that used to sit beside it is deleted rather than discouraged. See ADR-076."
+    },
+    {
+      "path": "docs/guide/api-reference.md",
+      "find": "- A `MotionHandle` exposes `id`, `live`, `definition`, `trackIds`, `setTrigger`, `setStagger`, `addTrack`, `track`, `tryTrack`, `signal`, and `destroy`.",
+      "replace": "- A `MotionHandle` exposes `id`, `live`, `definition`, `trackIds`, `setTrigger`, `setStagger`, `addTrack`, `track`, `tryTrack`, and `destroy`. It carries no `signal`, deliberately: signalling a Motion is the composition root's question and `ProjectHandle.signal` answers it, because the runtime holding those trigger tokens holds no Motion instance to signal."
+    },
+    {
+      "path": "docs/guide/api-reference.md",
+      "find": "- `adopt(track, owner, options?)` and `destroyAdopted(nodeId, owner)` are the superseded owner-based API.\n- `dispose()` releases the project, motions, triggers, and compiled tracks.",
+      "replace": "- `dispose()` releases the project, motions, triggers, and compiled tracks."
+    },
+    {
+      "path": "docs/guide/api-reference.md",
+      "find": "so `mount`, `seek`, `subscribe` and `dispose` are not reachable through it. Reads inside the recipe",
+      "replace": "so `mount`, `seek`, `subscribeNode` and `dispose` are not reachable through it. Reads inside the recipe"
+    },
+    {
+      "path": "docs/guide/runtime-changes.md",
+      "find": "It exposes `id`, `live`, `definition`, `trackIds`, `setTrigger`, `setStagger`, `addTrack`, `track`, `tryTrack`, `signal`, and `destroy`.",
+      "replace": "It exposes `id`, `live`, `definition`, `trackIds`, `setTrigger`, `setStagger`, `addTrack`, `track`, `tryTrack`, and `destroy`, and no `signal`: signalling a Motion is `ProjectHandle.signal`'s question, because the runtime holding those trigger tokens holds no Motion instance to signal."
+    },
+    {
+      "path": "docs/guide/runtime-changes.md",
+      "find": "and nothing else: `mount`, `seek`, `subscribe` and `dispose` are not reachable through it.",
+      "replace": "and nothing else: `mount`, `seek`, `subscribeNode` and `dispose` are not reachable through it."
+    },
+    {
+      "path": "docs/guide/runtime-changes.md",
+      "find": "\n## Compatibility note\n\n`handle.adopt()` and `handle.destroyAdopted()` still exist and still take a caller-invented owner object. They are the older owner-based API that `addTrack` replaced. Prefer handles; the demo consumer has already migrated.\n",
+      "replace": ""
+    },
+    {
+      "path": "docs/LIVE-EDIT-COST.md",
+      "find": "`mount`, `seek`, `subscribe` and `dispose` are absent from the transaction interface",
+      "replace": "`mount`, `seek`, `subscribeNode` and `dispose` are absent from the transaction interface"
+    },
+    {
+      "path": "docs/LIVE-EDIT-COST.md",
+      "find": "\n- Owner-based `adopt` and `destroyAdopted` remain available for existing consumers. New consumer code uses `addTrack` and `TrackHandle`. `adopt` returns `{ id, track }` and keeps that field name: it is a value rather than a live read, so the handle rename does not reach it.\n",
+      "replace": "\n- One question, one mechanism, so there is no second way to do any of this and nothing here prices one. A node subscription is `subscribeNode`. A runtime track is added with `addTrack` and removed through the `TrackHandle` that call answers with. The owner-based `adopt` and `destroyAdopted` pair is deleted rather than documented as discouraged, and the caller-invented owner object goes with it: what refuses a removal is the token the handle captured, which is the mechanism ADR-056 already made total. See ADR-076.\n"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- **Captured:** 2026-09-12, Asia/Jakarta.",
+      "replace": "- **Captured:** 2026-09-13, Asia/Jakarta."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- **Inspected main:** `311c46552015f4690940d861dbd84ffdd6386dff`, after the citation-ownership gate [#364](https://github.com/chahyasantoso/motion5/pull/364). Exact CI and operation evidence belong to their PRs.",
+      "replace": "- **Inspected main:** `c00f1cc8f47cf7cfa60629ada978d06609a1b8c8`, after the enumeration readers [#365](https://github.com/chahyasantoso/motion5/pull/365). Exact CI and operation evidence belong to their PRs."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "## Now\n\n- **Read-budget headroom and its gate landed:**",
+      "replace": "## Now\n\n- **Enumeration readers landed:** [#365](https://github.com/chahyasantoso/motion5/pull/365) is merged: `motionIds()`, `freeTrackIds()` and `mountedNodeIds()` on `ProjectHandle` answer frozen, total arrays in committed order, both demos mount from the runtime's own answer instead of a hand-written id list beside the document, and `#ownedBy` widened by one parameter so the free half and `MotionHandle.trackIds` read one ownership filter. `RA-145` through `RA-154`. Additive: no verb, no tier and no new failure contract.\n- **Read-budget headroom and its gate landed:**"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- **Unmerged enumeration readers:** phase 2 of [#362](https://github.com/chahyasantoso/motion5/issues/362) adds `motionIds()`, `freeTrackIds()` and `mountedNodeIds()` to `ProjectHandle`, each frozen, total and in committed order, so a loaded project is enumerable and neither demo keeps a hand-written id list beside its project definition. Additive: no verb, no tier and no new failure contract, and `#ownedBy` widens by one parameter so the free half and `MotionHandle.trackIds` share one ownership filter. `RA-145` through `RA-154` are its evidence. Review, exact-head CI, and merge remain gates; no landed change is claimed.",
+      "replace": "- **Unmerged surface subtraction:** phases 3 and 4 of [#362](https://github.com/chahyasantoso/motion5/issues/362) delete three public members and add none: `ProjectHandle.subscribe`, which was `subscribeNode` under an older name, and `adopt` / `destroyAdopted`, whose question `addTrack` and `TrackHandle.remove` already answer, which takes the `owner` concept out of `ProjectRuntime` with them. The guide's wrong `MotionHandle.signal` line is corrected in both documents that carried it. Breaking by subtraction, with no alias and no deprecation window on a private `0.0.0` package. `RA-155` through `RA-157` are its evidence, ADR-076 records the removal, and ADR-020 is superseded rather than left contradicting it. Review, exact-head CI, and merge remain gates; no landed change is claimed."
+    },
+    {
+      "path": "docs/DECISIONS.md",
+      "find": "## ADR-020: Runtime adoption is an internal recovery capability\n\n**Status:** Accepted, 2026-08-15\n\n**Decision.** Runtime adoption is internal to ProjectRuntime and safely compiled by Engine.",
+      "replace": "## ADR-020: Runtime adoption is an internal recovery capability\n\n**Status:** Superseded by [ADR-076](./ADR-076-one-mechanism-per-question.md), 2026-09-13.\n\n**Decision.** Runtime adoption is internal to ProjectRuntime and safely compiled by Engine.\n\n**Superseded by [ADR-076](./ADR-076-one-mechanism-per-question.md), 2026-09-13.** The capability this record kept internal was later reached through `ProjectHandle.adopt` and `destroyAdopted`, and `addTrack` plus `TrackHandle` then answered the same question with a live handle rather than a frozen record and a caller-invented owner object. The owner-based pair is deleted rather than kept as an older spelling. What survives of this record is the half ADR-025 and ADR-026 already own: a runtime-created track is an ordinary member of the one track store, compiled by Engine through the injected seam."
+    },
+    {
+      "path": "docs/ADR-076-one-mechanism-per-question.md",
+      "create": "# ADR-076: One mechanism per question on the runtime surface\n\n**Status:** Accepted, 2026-09-13\n\n**Context.** Phase 3 of [issue #362](https://github.com/chahyasantoso/motion5/issues/362) read the whole public runtime surface and found two questions with two mechanisms each. `ProjectHandle.subscribe` and `ProjectHandle.subscribeNode` were the same call: both forwarded to `runtime.graph.registry.subscribeNode` verbatim, one line apart in `createHandle`, and the guide documented the first as \"the same call under an older name\", which is the discouraged-in-prose shape the guardrail refuses. `ProjectHandle.adopt` and `destroyAdopted` answered what `addTrack` and `TrackHandle.remove` already answered, and answered it more weakly: `adopt` returned a frozen `{ id, track }` a caller cannot ask about liveness, where `addTrack` returns a handle carrying a token, and removal was gated on a caller-invented owner object rather than on that token. ADR-026 already decided the token is the mechanism, and ADR-020 predates the handle entirely.\n\n**Decision.** All three members are deleted, from `ProjectHandle` and from `ProjectRuntime`, with no alias and no deprecation window. Deleting the pair deletes the `owner` concept with it: `TrackEntry.owner`, the `#schemaOwner` sentinel and `#addTrack`'s `owner` parameter are gone, because they existed only to answer `destroyAdopted`'s ownership check. A node subscription is `subscribeNode`. A runtime track is added with `addTrack` and removed through the handle that call answers with.\n\n**Alternatives rejected.** Keeping `subscribe` as a documented alias is the thing the guardrail names: a surface with two names for one call cannot be reasoned about for where a third belongs, and prose is not a mechanism. A dated retirement for `adopt` and `destroyAdopted` was refused for the reason a read-budget waiver carries a shrinking ceiling rather than a date: a date does not delete a member, it fails a build on a morning nobody picked, and it is satisfied by editing the date. Neither package is published and both consumers of this surface live in this repository, so there is no external caller a window would protect. Keeping the `owner` parameter on `#addTrack` in case something needs it again is a field with no consumer, which this project deletes and then refuses.\n\n**Consequences.** Breaking, by subtraction, on a private `0.0.0` package. Every reader moves in the same change, because a deletion with no alias is finished at every reader before the push and `typecheck` is the gate that proves it: nineteen test files, one demo app, the graph benchmark and four documents, two of which no gate reads. Two claims travelled with the deleted pair and are restated rather than dropped: `SchemaTransaction`'s docblock named `adopt` and `destroyAdopted` as the structural verbs absent from that surface and now names `ProjectHandle.addTrack` and `TrackHandle.remove`, which is the same fact about the same commit, and `RA-85` asserts it through those two members instead. The owner gate is not replaced, because a stale handle already refuses uniformly under ADR-056. The benchmark keeps its `Adoptions` and `Destroys` output labels on purpose: `docs/BENCH-PHASE5.md` cites its numbers by those labels, and a recorded measurement whose labels moved is no longer comparable to the run that produced it.\n\n**Evidence.** `RA-155` through `RA-157` in `packages/core/test/integration/one-mechanism-per-question.test.ts`. Absence is asserted with `\"name\" in object`, on `RA-16`'s shape, so each case typechecks on both sides of the deletion and fails on an assertion rather than on a compile. Each asserts the surviving spelling is present in the same rig, because a probe against a mistyped receiver answers absent for every name, and each asserts the accepting direction, because a case whose subject is a deletion is green against the deletion alone. `packages/core/test/integration/project-handle-surface.test.ts` keeps owning the handle's total key list, which is where a member added later lands first.\n\n**Also in this slice, and not a decision.** `docs/guide/api-reference.md` and `docs/guide/runtime-changes.md` both listed `signal` as a member of `MotionHandle`. The source declares no such member, deliberately: signalling a Motion is the composition root's question, answered by `ProjectHandle.signal`, and the runtime that holds those trigger tokens holds no Motion instance to signal. Both lists are corrected, and a convenience-API pass would otherwise have propagated that line into a real member.\n"
+    }
+  ]
+}
