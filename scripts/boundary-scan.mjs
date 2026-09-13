@@ -51,6 +51,7 @@ const allowedPublicExports = new Set([
   "MotionHandle",
   "StaleMotionHandleError",
   "SchemaTransaction",
+  "ValueTransaction",
   "LiveValues",
   "LiveValueKeyError",
   "PluginRegistry",
