@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { PatchBatch, ProjectDefinition } from "../../../src/contract/v5";
-import type { AuthoredValues, TrackHandle } from "../../../src/contract/track-handle";
 import { createManualClock } from "../../../src/ports/clock";
 import { GraphPublisher } from "../../../src/runtime/graph-publisher";
 import { ProjectRuntime, type StagedTrack } from "../../../src/runtime/project-runtime";
@@ -14,26 +13,16 @@ import { ProjectRuntime, type StagedTrack } from "../../../src/runtime/project-r
  * the verbs reached inside it stage a seed and answer a deferred batch, and the one publication
  * happens once, when the recipe returns.
  *
- * The whole block is red the day it lands, and that is a property of the slice rather than a target.
- * This is a capability, so nothing answered before: eight of eight fail on assertions rather than on
- * a missing member, which is what the locally declared seam below is for. That declaration is
- * deleted in the commit that lands the source.
+ * The whole block was red the day it landed, and that is a property of the slice rather than a
+ * target. This is a capability, so nothing answered before: eight of eight failed on assertions
+ * rather than on a missing member, because the seam was declared locally and cast until the source
+ * arrived. That declaration is deleted here and the cases read the shipped member instead, which is
+ * what the first assertion in each of them is still asking about.
  *
  * What each case would fail without is named at the case. The one that carries the invariant is
  * `RA-162`, and it is a counter and an oracle in one rig, because a counter cannot see a stale
  * composer while an oracle alone is green against a tier that never batched anything.
  */
-interface ValueRecipe {
-  seek(nodeId: string, progress: number): PatchBatch;
-  setValues(nodeId: string, values: AuthoredValues): PatchBatch;
-  overrideValues(nodeId: string, values: AuthoredValues): PatchBatch;
-  track(nodeId: string): TrackHandle;
-  tryTrack(nodeId: string): TrackHandle | undefined;
-}
-interface ValueBatchSeam {
-  values(recipe: (batch: ValueRecipe) => void): PatchBatch;
-}
-
 const NODES = ["rig/a", "rig/b", "rig/c"] as const;
 
 const PROJECT: ProjectDefinition = {
@@ -86,7 +75,7 @@ function rig(options: { escalate?: boolean } = {}) {
       staged.push(nodeId);
       return { commit: () => undefined, rollback: () => undefined };
     },
-  }) as ProjectRuntime & ValueBatchSeam;
+  });
   for (const nodeId of NODES) runtime.mount(nodeId);
   flushed.mockClear();
   return { runtime, progressed, staged, published: () => publishedValues(runtime) };
@@ -201,7 +190,7 @@ describe("the value tier publishes once for a batch, and refuses every tier that
         expect(() => runtime.invalidate(["rig/a"])).toThrow("value-batch-immediate");
         expect(() => runtime.mount("~/cursor")).toThrow("value-batch-immediate");
         expect(() => runtime.unmount("rig/a")).toThrow("value-batch-immediate");
-        expect(() => runtime.signal("rig", { type: "start" })).toThrow("value-batch-immediate");
+        expect(() => runtime.signal("rig", { type: "manual" })).toThrow("value-batch-immediate");
         // The structural family refuses at the one member all of them reach, and it names the
         // condition rather than a verb, because the caller wrote no verb list.
         expect(() => runtime.addTrack({ id: "d" }, { motionId: "rig" })).toThrow(
@@ -219,7 +208,7 @@ describe("the value tier publishes once for a batch, and refuses every tier that
       expect(() => runtime.invalidate(["rig/a"])).not.toThrow();
       expect(() => runtime.mount("~/cursor")).not.toThrow();
       expect(() => runtime.unmount("rig/a")).not.toThrow();
-      expect(() => runtime.signal("rig", { type: "start" })).not.toThrow();
+      expect(() => runtime.signal("rig", { type: "manual" })).not.toThrow();
       expect(runtime.addTrack({ id: "d" }, { motionId: "rig" }).live).toBe(true);
     } finally {
       runtime.dispose();
