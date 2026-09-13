@@ -1,0 +1,122 @@
+e.adopt is not a function'^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5667735Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5667867Z ^[[32m- Expected:^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5668121Z /observation-self-reference/
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5668292Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5668496Z ^[[31m+ Received:^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5668762Z "handle.adopt is not a function"
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5668926Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5669439Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/mutation-transactionality.test.ts:^[[2m148:48^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5670489Z     ^[[90m146|^[[39m     }^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5670973Z     ^[[90m147|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5671523Z     ^[[90m148|^[[39m     expect(() => handle.adopt(invalid, owner)).toThrow(/observation-se…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5672035Z     ^[[90m   |^[[39m                                                ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5672811Z     ^[[90m149|^[[39m     ^[[35mconst^[[39m replacement ^[[33m=^[[39m handle^[[33m.^[[39m^[[34madopt^[[39m(^[[34madoptable^[[39m(^[[32m"self"^[[39m)^[[33m,^[[39m owner)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5673672Z     ^[[90m150|^[[39m     ^[[34mexpect^[[39m(replacement^[[33m.^[[39mid)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"~/self"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5674103Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5674322Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/55]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5674518Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5676366Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase0-red-baseline.test.ts^[[2m > ^[[22mPhase 0 Red Baseline: Engine Path & Dynamic Correctness^[[2m > ^[[22m1. Engine time playback: project clock tick advances time motion playhead
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5677374Z ^[[31m^[[1mTypeError^[[22m: handle.subscribe is not a function^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5678015Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/phase0-red-baseline.test.ts:^[[2m42:12^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5678744Z     ^[[90m 40|^[[39m     handle^[[33m.^[[39m^[[34mmount^[[39m(^[[32m"spinner/rotation"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5679370Z     ^[[90m 41|^[[39m     ^[[35mlet^[[39m publishedAngle^[[33m:^[[39m number ^[[33m|^[[39m undefined^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5680098Z     ^[[90m 42|^[[39m     handle^[[33m.^[[39m^[[34msubscribe^[[39m(^[[32m"spinner/rotation"^[[39m^[[33m,^[[39m (patch) ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5680615Z     ^[[90m   |^[[39m            ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5681189Z     ^[[90m 43|^[[39m       publishedAngle ^[[33m=^[[39m patch^[[33m.^[[39mvalues^[[33m.^[[39mangle ^[[35mas^[[39m number^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5681695Z     ^[[90m 44|^[[39m     })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5681865Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5682285Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/55]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5682626Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5684622Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase0-red-baseline.test.ts^[[2m > ^[[22mPhase 0 Red Baseline: Engine Path & Dynamic Correctness^[[2m > ^[[22m2. Multi-track publication: driving a Motion with 2 tracks publishes both node patches in 1 batch
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5686491Z ^[[31m^[[1mTypeError^[[22m: handle.subscribe is not a function^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5687409Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/phase0-red-baseline.test.ts:^[[2m98:12^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5687877Z     ^[[90m 96|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5688340Z     ^[[90m 97|^[[39m     ^[[35mconst^[[39m patchesReceived^[[33m:^[[39m string[] ^[[33m=^[[39m []^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5689078Z     ^[[90m 98|^[[39m     handle.subscribe("hero/t1", (patch) => patchesReceived.push(patch.…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5689541Z     ^[[90m   |^[[39m            ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5690021Z     ^[[90m 99|^[[39m     handle.subscribe("hero/t2", (patch) => patchesReceived.push(patch.…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5690436Z     ^[[90m100|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5690565Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5690786Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/55]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5690984Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5692051Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase0-red-baseline.test.ts^[[2m > ^[[22mPhase 0 Red Baseline: Engine Path & Dynamic Correctness^[[2m > ^[[22m3. Adopted-track Engine path: adopted free track compiles keyframes and publishes ready patch
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5693096Z ^[[31m^[[1mTypeError^[[22m: runtime.adopt is not a function^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5693734Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/phase0-red-baseline.test.ts:^[[2m136:31^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5694241Z     ^[[90m134|^[[39m     ^[[35mif^[[39m (runtime) {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5694675Z     ^[[90m135|^[[39m       ^[[35mconst^[[39m owner ^[[33m=^[[39m {}^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5695221Z     ^[[90m136|^[[39m       ^[[35mconst^[[39m adopted ^[[33m=^[[39m runtime^[[33m.^[[39m^[[34madopt^[[39m(
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5695879Z     ^[[90m   |^[[39m                               ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5696220Z     ^[[90m137|^[[39m         {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5696599Z     ^[[90m138|^[[39m           id^[[33m:^[[39m ^[[32m"cursor"^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5696836Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5697051Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/55]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5697244Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5698282Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase0-red-baseline.test.ts^[[2m > ^[[22mPhase 0 Red Baseline: Engine Path & Dynamic Correctness^[[2m > ^[[22m4. Stale scheduled write: paused Motion cancels pending write before scheduler flush
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5700349Z ^[[31m^[[1mTypeError^[[22m: handle.subscribe is not a function^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5701522Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/phase0-red-baseline.test.ts:^[[2m193:12^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5702680Z     ^[[90m191|^[[39m     handle^[[33m.^[[39m^[[34mmount^[[39m(^[[32m"hero/t1"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5703712Z     ^[[90m192|^[[39m     ^[[35mlet^[[39m updateCount ^[[33m=^[[39m ^[[34m0^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5704888Z     ^[[90m193|^[[39m     handle^[[33m.^[[39m^[[34msubscribe^[[39m(^[[32m"hero/t1"^[[39m^[[33m,^[[39m () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5705798Z     ^[[90m   |^[[39m            ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5706507Z     ^[[90m194|^[[39m       updateCount^[[33m++^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5707190Z     ^[[90m195|^[[39m     })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5707491Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5707907Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/55]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5708230Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5710585Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase0-red-baseline.test.ts^[[2m > ^[[22mPhase 0 Red Baseline: Engine Path & Dynamic Correctness^[[2m > ^[[22m5. Trigger burst behavior: multiple progress signals before flush coalesce to latest progress
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5712624Z ^[[31m^[[1mTypeError^[[22m: handle.subscribe is not a function^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5713924Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/phase0-red-baseline.test.ts:^[[2m237:12^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5715169Z     ^[[90m235|^[[39m     handle^[[33m.^[[39m^[[34mmount^[[39m(^[[32m"hero/t1"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5716235Z     ^[[90m236|^[[39m     ^[[35mlet^[[39m lastValue ^[[33m=^[[39m ^[[34m0^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5717528Z     ^[[90m237|^[[39m     handle^[[33m.^[[39m^[[34msubscribe^[[39m(^[[32m"hero/t1"^[[39m^[[33m,^[[39m (patch) ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5718642Z     ^[[90m   |^[[39m            ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5719730Z     ^[[90m238|^[[39m       lastValue ^[[33m=^[[39m patch^[[33m.^[[39mvalues^[[33m.^[[39mx ^[[35mas^[[39m number^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5720665Z     ^[[90m239|^[[39m     })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5720989Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5721439Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/55]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5721803Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5723915Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase2-motion-scheduling.test.ts^[[2m > ^[[22mPhase 2: Motion Scheduling & Coalescing^[[2m > ^[[22m1. Ten signals before Scheduler flush produce exactly 1 Track write with latest progress
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5725970Z ^[[31m^[[1mTypeError^[[22m: handle.subscribe is not a function^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5727334Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/phase2-motion-scheduling.test.ts:^[[2m48:12^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5728271Z     ^[[90m 46|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5729295Z     ^[[90m 47|^[[39m     ^[[35mconst^[[39m trackValues^[[33m:^[[39m number[] ^[[33m=^[[39m []^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5730659Z     ^[[90m 48|^[[39m     handle^[[33m.^[[39m^[[34msubscribe^[[39m(^[[32m"hero/t1"^[[39m^[[33m,^[[39m (patch) ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5731611Z     ^[[90m   |^[[39m            ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5732795Z     ^[[90m 49|^[[39m       trackValues^[[33m.^[[39m^[[34mpush^[[39m(patch^[[33m.^[[39mvalues^[[33m.^[[39mx ^[[35mas^[[39m number)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5733818Z     ^[[90m 50|^[[39m     })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5734428Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5734842Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/55]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5735223Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5737303Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase2-motion-scheduling.test.ts^[[2m > ^[[22mPhase 2: Motion Scheduling & Coalescing^[[2m > ^[[22m2. Pause cancels pending scheduled write and prevents Track mutation on flush
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5739480Z ^[[31m^[[1mTypeError^[[22m: handle.subscribe is not a function^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5740761Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/phase2-motion-scheduling.test.ts:^[[2m81:12^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5741904Z     ^[[90m 79|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5742547Z     ^[[90m 80|^[[39m     ^[[35mlet^[[39m updated ^[[33m=^[[39m ^[[35mfalse^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5743760Z     ^[[90m 81|^[[39m     handle^[[33m.^[[39m^[[34msubscribe^[[39m(^[[32m"hero/t1"^[[39m^[[33m,^[[39m () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5744666Z     ^[[90m   |^[[39m            ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5745397Z     ^[[90m 82|^[[39m       updated ^[[33m=^[[39m ^[[35mtrue^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5746115Z     ^[[90m 83|^[[39m     })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5746415Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5746837Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/55]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5747141Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5748874Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase2-motion-scheduling.test.ts^[[2m > ^[[22mPhase 2: Motion Scheduling & Coalescing^[[2m > ^[[22m5. Burst signals produce exactly 1 published patch batch
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5750819Z ^[[31m^[[1mTypeError^[[22m: handle.subscribe is not a function^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5752276Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/phase2-motion-scheduling.test.ts:^[[2m173:12^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5753237Z     ^[[90m171|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5754085Z     ^[[90m172|^[[39m     ^[[35mconst^[[39m batchHistory^[[33m:^[[39m number[] ^[[33m=^[[39m []^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5755408Z     ^[[90m173|^[[39m     handle^[[33m.^[[39m^[[34msubscribe^[[39m(^[[32m"hero/t1"^[[39m^[[33m,^[[39m (patch) ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5756372Z     ^[[90m   |^[[39m            ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5757361Z     ^[[90m174|^[[39m       batchHistory^[[33m.^[[39m^[[34mpush^[[39m(patch^[[33m.^[[39mrevision)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5758230Z     ^[[90m175|^[[39m     })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5758665Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5759106Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/55]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5759466Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5761438Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/phase3-trigger-port.test.ts^[[2m > ^[[22mPhase 3: TriggerPort Migration & Boundary Neutrality^[[2m > ^[[22m3. Manual and custom trigger ports operate without DOM imports in core
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5763427Z ^[[31m^[[1mTypeError^[[22m: handle.subscribe is not a function^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5764735Z ^[[36m ^[[2m❯^[[22m packages/core/test/integration/phase3-trigger-port.test.ts:^[[2m112:12^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5765958Z     ^[[90m110|^[[39m     handle^[[33m.^[[39m^[[34mmount^[[39m(^[[32m"hero/t1"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5767022Z     ^[[90m111|^[[39m     ^[[35mlet^[[39m patchValue ^[[33m=^[[39m ^[[34m0^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5768289Z     ^[[90m112|^[[39m     handle^[[33m.^[[39m^[[34msubscribe^[[39m(^[[32m"hero/t1"^[[39m^[[33m,^[[39m (patch) ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:10:23.5769349Z     ^[[90m   |^[[39m            ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09
