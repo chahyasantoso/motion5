@@ -1,0 +1,122 @@
+quality (node 24)	Run npm run typecheck	﻿2026-09-13T00:16:03.8789235Z ##[group]Run npm run typecheck
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:03.8789580Z ^[[36;1mnpm run typecheck^[[0m
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:03.8830705Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:03.8831013Z env:
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:03.8831232Z   NODE_VERSION: 24
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:03.8831524Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:03.8831855Z ##[endgroup]
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:03.9897652Z 
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:03.9898402Z > motion5@0.0.0 typecheck
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:03.9899492Z > tsc --noEmit -p tsconfig.json
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:03.9899868Z 
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7029242Z ##[error]apps/ik-playground/src/App.tsx(94,35): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7039137Z ##[error]apps/ik-playground/src/App.tsx(94,76): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7041282Z ##[error]packages/core/test/integration/end-to-end.test.ts(47,13): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7043029Z ##[error]packages/core/test/integration/end-to-end.test.ts(47,36): error TS7006: Parameter 'next' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7045224Z ##[error]packages/core/test/integration/engine-headless.test.ts(39,13): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7046880Z ##[error]packages/core/test/integration/engine-headless.test.ts(39,36): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7049497Z ##[error]packages/core/test/integration/engine-headless.test.ts(79,13): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7051439Z ##[error]packages/core/test/integration/engine-headless.test.ts(79,36): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7053228Z ##[error]packages/core/test/integration/engine-headless.test.ts(95,13): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7054900Z ##[error]packages/core/test/integration/engine-headless.test.ts(95,36): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7056947Z ##[error]packages/core/test/integration/ik-fabrik-chain.test.ts(158,13): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7060209Z ##[error]packages/core/test/integration/ik-fabrik-chain.test.ts(158,28): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7061923Z ##[error]packages/core/test/integration/ik-multi-goal.test.ts(116,15): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7063520Z ##[error]packages/core/test/integration/ik-multi-goal.test.ts(116,30): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7065229Z ##[error]packages/core/test/integration/ik-multi-goal.test.ts(146,13): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7067597Z ##[error]packages/core/test/integration/ik-multi-goal.test.ts(146,42): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7070133Z ##[error]packages/core/test/integration/ik-two-bone.test.ts(112,15): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7072561Z ##[error]packages/core/test/integration/ik-two-bone.test.ts(112,35): error TS7006: Parameter 'p' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7075068Z ##[error]packages/core/test/integration/ik-two-bone.test.ts(200,13): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7077646Z ##[error]packages/core/test/integration/ik-two-bone.test.ts(200,42): error TS7006: Parameter 'p' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7080387Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(42,12): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7083029Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(42,43): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7086024Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(98,12): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7088989Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(98,34): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7091750Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(99,12): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7094371Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(99,34): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7096949Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(136,31): error TS2339: Property 'adopt' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7100185Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(193,12): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7103037Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(237,12): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7105683Z ##[error]packages/core/test/integration/phase0-red-baseline.test.ts(237,34): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7108639Z ##[error]packages/core/test/integration/phase2-motion-scheduling.test.ts(48,12): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7111386Z ##[error]packages/core/test/integration/phase2-motion-scheduling.test.ts(48,34): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7114221Z ##[error]packages/core/test/integration/phase2-motion-scheduling.test.ts(81,12): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7117131Z ##[error]packages/core/test/integration/phase2-motion-scheduling.test.ts(173,12): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7120283Z ##[error]packages/core/test/integration/phase2-motion-scheduling.test.ts(173,34): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7123047Z ##[error]packages/core/test/integration/phase3-trigger-port.test.ts(112,12): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7125610Z ##[error]packages/core/test/integration/phase3-trigger-port.test.ts(112,34): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7128418Z ##[error]packages/core/test/integration/phase4-dynamic-lifecycle.test.ts(21,29): error TS2339: Property 'adopt' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7131186Z ##[error]packages/core/test/integration/phase4-dynamic-lifecycle.test.ts(38,13): error TS2339: Property 'adopt' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7134033Z ##[error]packages/core/test/integration/phase4-dynamic-lifecycle.test.ts(44,26): error TS2339: Property 'adopt' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7136902Z ##[error]packages/core/test/integration/phase4-dynamic-lifecycle.test.ts(73,31): error TS2339: Property 'adopt' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7139997Z ##[error]packages/core/test/integration/phase4-dynamic-lifecycle.test.ts(75,15): error TS2339: Property 'destroyAdopted' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7142943Z ##[error]packages/core/test/integration/phase4-dynamic-lifecycle.test.ts(173,26): error TS2339: Property 'adopt' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7145810Z ##[error]packages/core/test/integration/phase7-walker-demo.test.ts(446,32): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7148741Z ##[error]packages/core/test/integration/project-runtime.test.ts(87,13): error TS2339: Property 'adopt' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7151787Z ##[error]packages/core/test/integration/runtime-motion-lifecycle.test.ts(40,28): error TS2339: Property 'adopt' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7154741Z ##[error]packages/core/test/integration/runtime-motion-lifecycle.test.ts(47,12): error TS2339: Property 'destroyAdopted' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7157732Z ##[error]packages/core/test/integration/runtime-motion-lifecycle.test.ts(56,28): error TS2339: Property 'adopt' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7160664Z ##[error]packages/core/test/integration/runtime-motion-lifecycle.test.ts(59,12): error TS2339: Property 'destroyAdopted' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7163436Z ##[error]packages/core/test/integration/runtime-motion-lifecycle.test.ts(72,25): error TS2339: Property 'adopt' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7200106Z ##[error]packages/core/test/integration/runtime-motion-lifecycle.test.ts(73,26): error TS2339: Property 'adopt' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7203368Z ##[error]packages/core/test/integration/runtime-motion-lifecycle.test.ts(83,12): error TS2339: Property 'destroyAdopted' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7206630Z ##[error]packages/core/test/integration/runtime-motion-lifecycle.test.ts(84,12): error TS2339: Property 'destroyAdopted' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7210114Z ##[error]packages/core/test/integration/t4-runtime-motion-parity.test.ts(158,10): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7213111Z ##[error]packages/core/test/integration/t4-runtime-motion-parity.test.ts(158,29): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7215822Z ##[error]packages/core/test/integration/trigger-time.test.ts(39,12): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7217900Z ##[error]packages/core/test/integration/trigger-time.test.ts(39,41): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7219983Z ##[error]packages/core/test/integration/unified-mutation-surface.test.ts(72,12): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7221674Z ##[error]packages/core/test/integration/unified-mutation-surface.test.ts(72,42): error TS7006: Parameter 'patch' implicitly has an 'any' type.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7223592Z ##[error]packages/core/test/unit/runtime/immediate-verb-refusal.test.ts(348,36): error TS2339: Property 'adopt' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7225432Z ##[error]packages/core/test/unit/runtime/immediate-verb-refusal.test.ts(353,20): error TS2339: Property 'destroyAdopted' does not exist on type 'ProjectRuntime'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7227713Z ##[error]packages/core/test/unit/runtime/motion-consistency.test.ts(332,17): error TS2339: Property 'subscribe' does not exist on type 'ProjectHandle'.
+quality (node 24)	Run npm run typecheck	2026-09-13T00:16:08.7615319Z ##[error]Process completed with exit code 2.
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	﻿2026-09-13T00:16:40.4263529Z ##[group]Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:40.4264144Z ^[[36;1mnpm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs^[[0m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:40.4302877Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:40.4303149Z env:
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:40.4303366Z   NODE_VERSION: 24
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:40.4303648Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:40.4303971Z ##[endgroup]
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:40.5290153Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:40.5290892Z > motion5@0.0.0 test
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:40.5292163Z > vitest run --reporter=default --reporter=./scripts/ci-evidence.mjs
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:40.5292946Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:40.8520986Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:40.8529502Z ^[[1m^[[30m^[[46m RUN ^[[49m^[[39m^[[22m ^[[36mv4.1.10 ^[[39m^[[90m/home/runner/work/motion5/motion5^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:40.8530152Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:41.1908641Z  ^[[32m✓^[[39m packages/core/test/unit/scripts/evidence-case-ids.test.ts ^[[2m(^[[22m^[[2m5 tests^[[22m^[[2m)^[[22m^[[32m 49^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:41.5563810Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/keyframe-property-edit.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 61^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:41.5569044Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/structural-commit-path.test.ts ^[[2m(^[[22m^[[2m40 tests^[[22m^[[2m)^[[22m^[[32m 45^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:41.8719900Z  ^[[32m✓^[[39m packages/core/test/unit/plugins/pivot-offset-solve.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m^[[2m)^[[22m^[[32m 34^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0711419Z ^[[90mstderr^[[2m | packages/core/test/integration/phase7-walker-demo.test.ts^[[2m > ^[[22m^[[2mPhase 7: Walker Demo Integration Suite^[[2m > ^[[22m^[[2m9. Use React usePatch hook at the React boundary
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0728874Z ^[[22m^[[39mreact-test-renderer is deprecated. See https://react.dev/warnings/react-test-renderer
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0780574Z An update to Root inside a test was not wrapped in act(...).
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0780909Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0781266Z When testing, code that causes React state updates should be wrapped into act(...):
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0781626Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0781731Z act(() => {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0782006Z   /* fire events that update state */
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0782303Z });
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0782534Z /* assert on the output */
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0782698Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0783244Z This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0784001Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0956872Z  ^[[31m❯^[[39m packages/core/test/integration/phase7-walker-demo.test.ts ^[[2m(^[[22m^[[2m13 tests^[[22m^[[2m | ^[[22m^[[31m1 failed^[[39m^[[2m)^[[22m^[[32m 142^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0958982Z      ^[[32m✓^[[39m 1. Load valid walker project through Engine with plugin registry^[[32m 39^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0960346Z      ^[[32m✓^[[39m 2. Render walker nodes through createDomPatchAdapter^[[32m 11^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0961682Z      ^[[32m✓^[[39m 3. Demonstrate time playback using single injected browser clock^[[32m 13^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0963038Z      ^[[32m✓^[[39m 4. Demonstrate progress through TriggerPort and manual signals^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0964371Z      ^[[32m✓^[[39m 5. Render multiple tracks from one Motion in one published batch^[[32m 5^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0966627Z      ^[[32m✓^[[39m 6. Demonstrate FK graph observation dependency chain (pelvis -> thigh -> shin)^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0968659Z ^[[31m     ^[[31m×^[[31m 7. Mount, unmount, remount, and dispose without duplicate subscriptions^[[39m^[[32m 10^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0989293Z      ^[[32m✓^[[39m 8. Show blocked/pending/error diagnostics without crashing the app^[[32m 7^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0990906Z      ^[[32m✓^[[39m 9. Use React usePatch hook at the React boundary^[[32m 17^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.0992381Z      ^[[32m✓^[[39m 10. Automated end-to-end integration test passes clean^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.1022740Z      ^[[32m✓^[[39m 11. Convert one arm of walker to IK while asserting FK bones unchanged from baseline^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.1048837Z      ^[[32m✓^[[39m 12. T-C4.1: Dynamic mutation and transactional rollback for solver topology^[[32m 8^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.1072190Z      ^[[32m✓^[[39m 13. A three-bone tail solves iteratively while every other bone stays put^[[32m 6^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.1809839Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/live-value-updates.test.ts ^[[2m(^[[22m^[[2m19 tests^[[22m^[[2m)^[[22m^[[33m 315^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.3953509Z  ^[[32m✓^[[39m packages/core/test/unit/runtime/schema-transaction.test.ts ^[[2m(^[[22m^[[2m9 tests^[[22m^[[2m)^[[22m^[[32m 26^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T00:16:42.4129580Z  ^[[32m✓^[[39m packages/core/test/unit/graph/resolve-solvers.test.ts ^[[2m(^[[22m^[[2m10 tests^[[22m
