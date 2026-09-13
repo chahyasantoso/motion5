@@ -1,0 +1,91 @@
+39m ^[[34mrig^[[39m({ escalate^[[33m:^[[39m ^[[35mtrue^[[39m })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1692526Z     ^[[90m231|^[[39m     ^[[34mexpect^[[39m(^[[35mtypeof^[[39m escalating^[[33m.^[[39mruntime^[[33m.^[[39mvalues)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"function"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1693400Z     ^[[90m   |^[[39m                                              ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1693885Z     ^[[90m232|^[[39m     ^[[35mtry^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1694648Z     ^[[90m233|^[[39m       ^[[35mconst^[[39m batch ^[[33m=^[[39m escalating^[[33m.^[[39mruntime^[[33m.^[[39m^[[34mvalues^[[39m((edit) ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1695123Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1695380Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/8]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1695602Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1696834Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/value-batch.test.ts^[[2m > ^[[22mthe value tier publishes once for a batch, and refuses every tier that is not it^[[2m > ^[[22mRA-167 publishes nothing for a recipe that staged nothing and still answers a batch
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1698153Z ^[[31m^[[1mAssertionError^[[22m: expected 'undefined' to be 'function' // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1698531Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1698754Z Expected: ^[[32m"^[[7mf^[[27mun^[[7mction^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1699178Z Received: ^[[31m"un^[[7mdefined^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1699363Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1699799Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/value-batch.test.ts:^[[2m271:35^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1700496Z     ^[[90m269|^[[39m   it("RA-167 publishes nothing for a recipe that staged nothing and st…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1701140Z     ^[[90m270|^[[39m     ^[[35mconst^[[39m { runtime } ^[[33m=^[[39m ^[[34mrig^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1702183Z     ^[[90m271|^[[39m     ^[[34mexpect^[[39m(^[[35mtypeof^[[39m runtime^[[33m.^[[39mvalues)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"function"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1702901Z     ^[[90m   |^[[39m                                   ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1703284Z     ^[[90m272|^[[39m     ^[[35mtry^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1703950Z     ^[[90m273|^[[39m       ^[[35mconst^[[39m batch ^[[33m=^[[39m runtime^[[33m.^[[39m^[[34mvalues^[[39m(() ^[[33m=>^[[39m undefined)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1704373Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1704624Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/8]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1704845Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1706063Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/value-batch.test.ts^[[2m > ^[[22mthe value tier publishes once for a batch, and refuses every tier that is not it^[[2m > ^[[22mRA-168 leaves no batch open when a recipe throws, and publishes nothing it staged
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1707381Z ^[[31m^[[1mAssertionError^[[22m: expected 'undefined' to be 'function' // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1707781Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1708050Z Expected: ^[[32m"^[[7mf^[[27mun^[[7mction^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1708557Z Received: ^[[31m"un^[[7mdefined^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1708812Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1709825Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/value-batch.test.ts:^[[2m298:35^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1711720Z     ^[[90m296|^[[39m   it("RA-168 leaves no batch open when a recipe throws, and publishes …
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1713910Z     ^[[90m297|^[[39m     ^[[35mconst^[[39m { runtime^[[33m,^[[39m published } ^[[33m=^[[39m ^[[34mrig^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1716882Z     ^[[90m298|^[[39m     ^[[34mexpect^[[39m(^[[35mtypeof^[[39m runtime^[[33m.^[[39mvalues)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"function"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1718613Z     ^[[90m   |^[[39m                                   ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1719710Z     ^[[90m299|^[[39m     ^[[35mtry^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1721468Z     ^[[90m300|^[[39m       ^[[35mconst^[[39m failure ^[[33m=^[[39m ^[[35mnew^[[39m ^[[33mError^[[39m(^[[32m"recipe failed"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1722816Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1723386Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/8]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1723873Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1726261Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/value-batch.test.ts^[[2m > ^[[22mthe value tier publishes once for a batch, and refuses every tier that is not it^[[2m > ^[[22mRA-169 reports a recipe that disposed the project instead of answering it a batch
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1728928Z ^[[31m^[[1mAssertionError^[[22m: expected 'undefined' to be 'function' // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1729632Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1730043Z Expected: ^[[32m"^[[7mf^[[27mun^[[7mction^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1730763Z Received: ^[[31m"un^[[7mdefined^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1731124Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1731905Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/value-batch.test.ts:^[[2m326:35^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1733522Z     ^[[90m324|^[[39m   it("RA-169 reports a recipe that disposed the project instead of ans…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1734739Z     ^[[90m325|^[[39m     ^[[35mconst^[[39m { runtime } ^[[33m=^[[39m ^[[34mrig^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1736258Z     ^[[90m326|^[[39m     ^[[34mexpect^[[39m(^[[35mtypeof^[[39m runtime^[[33m.^[[39mvalues)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"function"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1737518Z     ^[[90m   |^[[39m                                   ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1738133Z     ^[[90m327|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1738732Z     ^[[90m328|^[[39m     ^[[34mexpect^[[39m(() ^[[33m=>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1739148Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1739670Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/8]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1740052Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1740080Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1740941Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m207 passed^[[39m^[[22m^[[90m (208)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1742732Z ^[[2m      Tests ^[[22m ^[[1m^[[31m8 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1217 passed^[[39m^[[22m^[[90m (1225)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1743725Z ^[[2m   Start at ^[[22m 13:05:04
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1744961Z ^[[2m   Duration ^[[22m 32.25s^[[2m (transform 3.05s, setup 1.39s, import 17.16s, tests 42.37s, environment 32ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.1745686Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-13T13:05:37.2384909Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-13T13:05:37.2418245Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-13T13:05:37.2418680Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-13T13:05:37.2454978Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-13T13:05:37.2455265Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-13T13:05:37.2455467Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-13T13:05:37.2455740Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-13T13:05:37.2456059Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-13T13:05:37.2949070Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-13T13:05:37.2949402Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-13T13:05:37.2949544Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-13T13:05:37.2949741Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-13T13:05:37.2995259Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-13T13:05:46.2099518Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:05:46.2100348Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:05:46.2125565Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:05:46.2126423Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:05:46.2126886Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:05:46.2127373Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:05:46.2127876Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:05:46.2247926Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-13T13:05:45.4301222Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:05:45.4302170Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:05:45.4341671Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:05:45.4342514Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:05:45.4342946Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:05:45.4343400Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:05:45.4343868Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-13T13:05:45.4476840Z ##[error]Process completed with exit code 1.
