@@ -45,7 +45,7 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
     handle.mount("hero/t1");
 
     const trackValues: number[] = [];
-    handle.subscribe("hero/t1", (patch) => {
+    handle.subscribeNode("hero/t1", (patch) => {
       trackValues.push(patch.values.x as number);
     });
 
@@ -78,7 +78,7 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
     handle.mount("hero/t1");
 
     let updated = false;
-    handle.subscribe("hero/t1", () => {
+    handle.subscribeNode("hero/t1", () => {
       updated = true;
     });
 
@@ -170,7 +170,7 @@ describe("Phase 2: Motion Scheduling & Coalescing", () => {
     handle.mount("hero/t1");
 
     const batchHistory: number[] = [];
-    handle.subscribe("hero/t1", (patch) => {
+    handle.subscribeNode("hero/t1", (patch) => {
       batchHistory.push(patch.revision);
     });
 

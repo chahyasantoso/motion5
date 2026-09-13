@@ -109,7 +109,7 @@ describe("Phase 3: TriggerPort Migration & Boundary Neutrality", () => {
 
     handle.mount("hero/t1");
     let patchValue = 0;
-    handle.subscribe("hero/t1", (patch) => {
+    handle.subscribeNode("hero/t1", (patch) => {
       patchValue = patch.values.x as number;
     });
 

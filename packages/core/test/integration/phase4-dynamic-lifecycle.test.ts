@@ -15,11 +15,10 @@ const compose = (node: { id: string }) => () => ({
 });
 
 describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
-  it("1. Adoption produces ready patches and publishes through the ordinary graph path", () => {
+  it("1. A runtime add produces ready patches and publishes through the ordinary graph path", () => {
     const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
-    const owner = {};
-    const adopted = runtime.adopt({ id: "cursor" } as TrackDefinition, owner);
-    expect(adopted.id).toBe("~/cursor");
+    const added = runtime.addTrack({ id: "cursor" } as TrackDefinition);
+    expect(added.id).toBe("~/cursor");
 
     // The ordinary graph path, and it is now the commit's own flush rather than the next seek:
     // still one publisher, one batch and one status, which is what this case is about.
@@ -34,14 +33,13 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
 
   it("2. Failed adoption (duplicate id) is observationally atomic — graph, membership, and patches are unchanged", () => {
     const runtime = new ProjectRuntime(project, { clock: createManualClock(), compose });
-    const owner = {};
-    runtime.adopt({ id: "cursor" } as TrackDefinition, owner);
+    runtime.addTrack({ id: "cursor" } as TrackDefinition);
 
     const snapshotBefore = runtime.graph.state.snapshot();
     const countBefore = runtime.instanceCount;
 
-    // Duplicate adopt should fail atomically
-    expect(() => runtime.adopt({ id: "cursor" } as TrackDefinition, {})).toThrow(/already exists/);
+    // A duplicate add should fail atomically
+    expect(() => runtime.addTrack({ id: "cursor" } as TrackDefinition)).toThrow(/already exists/);
 
     // State is byte-identical to pre-mutation snapshot
     const snapshotAfter = runtime.graph.state.snapshot();
@@ -51,7 +49,7 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
     runtime.dispose();
   });
 
-  it("3. Repeated adopt/destroy cycles do not retain dead GraphNode identities or stale compose closures", () => {
+  it("3. Repeated add/remove cycles do not retain dead GraphNode identities or stale compose closures", () => {
     const composeCallNodes = new Set<object>();
     const trackingCompose = (node: { id: string }) => {
       composeCallNodes.add(node);
@@ -66,13 +64,11 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
       clock: createManualClock(),
       compose: trackingCompose,
     });
-    const owner = {};
-
-    // 5 sequential adopt/destroy cycles
+    // 5 sequential add/remove cycles
     for (let i = 0; i < 5; i++) {
-      const adopted = runtime.adopt({ id: `track${i}` } as TrackDefinition, owner);
-      runtime.seek(adopted.id, 0);
-      runtime.destroyAdopted(adopted.id, owner);
+      const added = runtime.addTrack({ id: `track${i}` } as TrackDefinition);
+      runtime.seek(added.id, 0);
+      added.remove();
     }
 
     // After all cycles, observation state should have no lingering nodes
@@ -137,7 +133,7 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
     runtime.dispose();
   });
 
-  it("6. Keyframe validation is shared: malformed adopted stops are rejected before graph commit", () => {
+  it("6. Keyframe validation is shared: malformed stops are rejected before graph commit", () => {
     const compileTrack = vi.fn((track: TrackDefinition) => {
       for (const [, prop] of Object.entries(track.keyframes ?? {})) {
         const stops = (prop as unknown as { stops: { p: number }[] }).stops;
@@ -170,9 +166,9 @@ describe("Phase 4: Dynamic Graph Lifecycle Hardening", () => {
       },
     };
 
-    expect(() => runtime.adopt(badTrack, {})).toThrow(/stop-position|monoton/);
+    expect(() => runtime.addTrack(badTrack)).toThrow(/stop-position|monoton/);
 
-    // Graph state byte-identical after failed adoption
+    // Graph state byte-identical after a failed add
     const snapshotAfter = runtime.graph.state.snapshot();
     expect(snapshotAfter.nodes).toEqual(snapshotBefore.nodes);
 

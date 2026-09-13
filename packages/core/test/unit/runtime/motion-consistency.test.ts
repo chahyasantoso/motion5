@@ -329,7 +329,7 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
     const invalidate = vi.spyOn(test.runtime.graph, "invalidate");
     const seen: (number | undefined)[] = [];
     const reentrant: unknown[] = [];
-    test.handle.subscribe("hero/leg", () => {
+    test.handle.subscribeNode("hero/leg", () => {
       seen.push(motion.definition.stagger);
       reentrant.push(caught(() => motion.setStagger(10)));
     });

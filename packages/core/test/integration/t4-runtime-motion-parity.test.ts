@@ -155,7 +155,7 @@ function load(motions: readonly MotionDefinition[], factory?: TriggerFactory): L
 /** Records published values, then clears the setup publications so only driver output remains. */
 function record(handle: ProjectHandle, nodeId: string): readonly unknown[] {
   const seen: unknown[] = [];
-  handle.subscribe(nodeId, (patch) => seen.push(patch.values));
+  handle.subscribeNode(nodeId, (patch) => seen.push(patch.values));
   seen.length = 0;
   return seen;
 }

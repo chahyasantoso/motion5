@@ -32,31 +32,29 @@ function track(id: string, from: number, to: number, duration?: number): TrackDe
 describe("runtime Motion lifecycle (W4)", () => {
   it("creates a motion, attaches a track, and signals progress from an empty project", () => {
     const { handle, scheduler } = makeRuntime();
-    const owner = {};
 
     const created = handle.addMotion(motion("scene"));
     expect(created.id).toBe("scene");
 
-    const adopted = handle.adopt(track("arm", 0, 100), owner, { motionId: "scene" });
+    const added = handle.addTrack(track("arm", 0, 100), { motionId: "scene" });
     handle.signal("scene", { type: "manual", progress: 0.5 });
     scheduler.flush();
 
-    expect(handle.get(adopted.id)?.status).toBe("ready");
-    expect(handle.get(adopted.id)?.values).toEqual({ x: 50 });
+    expect(handle.get(added.id)?.status).toBe("ready");
+    expect(handle.get(added.id)?.values).toEqual({ x: 50 });
 
-    handle.destroyAdopted(adopted.id, owner);
+    added.remove();
     handle.destroyMotion("scene");
     handle.dispose();
   });
 
   it("rejects motion destruction while it still owns tracks, then allows empty destruction", () => {
     const { handle } = makeRuntime();
-    const owner = {};
     handle.addMotion(motion("scene"));
-    const adopted = handle.adopt(track("arm", 0, 100), owner, { motionId: "scene" });
+    const added = handle.addTrack(track("arm", 0, 100), { motionId: "scene" });
 
     expect(() => handle.destroyMotion("scene")).toThrow(/still has 1 track/);
-    handle.destroyAdopted(adopted.id, owner);
+    added.remove();
     expect(() => handle.destroyMotion("scene")).not.toThrow();
     expect(() => handle.signal("scene", { type: "manual", progress: 0.5 })).toThrow(
       /Unknown motion/,
@@ -66,11 +64,10 @@ describe("runtime Motion lifecycle (W4)", () => {
 
   it("keeps two runtime motions independently signalable", () => {
     const { handle, scheduler } = makeRuntime();
-    const owner = {};
     handle.addMotion(motion("left", 0.1));
     handle.addMotion(motion("right", 0));
-    const left = handle.adopt(track("arm", 0, 100, 1), owner, { motionId: "left" });
-    const right = handle.adopt(track("arm", 0, 200, 1), owner, { motionId: "right" });
+    const left = handle.addTrack(track("arm", 0, 100, 1), { motionId: "left" });
+    const right = handle.addTrack(track("arm", 0, 200, 1), { motionId: "right" });
 
     handle.signal("left", { type: "manual", progress: 0.5 });
     handle.signal("right", { type: "manual", progress: 0.25 });
@@ -80,8 +77,8 @@ describe("runtime Motion lifecycle (W4)", () => {
     expect(handle.get(left.id)?.values).toEqual({ x: 50 });
     expect(handle.get(right.id)?.values).toEqual({ x: 50 });
 
-    handle.destroyAdopted(left.id, owner);
-    handle.destroyAdopted(right.id, owner);
+    left.remove();
+    right.remove();
     handle.destroyMotion("left");
     handle.destroyMotion("right");
     handle.dispose();

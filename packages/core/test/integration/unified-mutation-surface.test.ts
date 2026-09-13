@@ -69,7 +69,7 @@ describe("unified runtime mutation surface (W5)", () => {
     const handle = makeHandle();
     const handleForTrack = handle.addTrack(track("arm", 0, 100));
     const seen: string[] = [];
-    handle.subscribe(handleForTrack.id, (patch) => seen.push(patch.status));
+    handle.subscribeNode(handleForTrack.id, (patch) => seen.push(patch.status));
     handle.seek(handleForTrack.id, 1);
     const beforeRevision = handle.get(handleForTrack.id)?.revision ?? 0;
     handleForTrack.replace(track("arm", 0, 250));

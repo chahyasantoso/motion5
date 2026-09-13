@@ -39,7 +39,7 @@ describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
 
     handle.mount("spinner/rotation");
     let publishedAngle: number | undefined;
-    handle.subscribe("spinner/rotation", (patch) => {
+    handle.subscribeNode("spinner/rotation", (patch) => {
       publishedAngle = patch.values.angle as number;
     });
 
@@ -95,8 +95,8 @@ describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
     handle.mount("hero/t2");
 
     const patchesReceived: string[] = [];
-    handle.subscribe("hero/t1", (patch) => patchesReceived.push(patch.nodeId));
-    handle.subscribe("hero/t2", (patch) => patchesReceived.push(patch.nodeId));
+    handle.subscribeNode("hero/t1", (patch) => patchesReceived.push(patch.nodeId));
+    handle.subscribeNode("hero/t2", (patch) => patchesReceived.push(patch.nodeId));
 
     handle.signal("hero", { type: "manual", progress: 0.5 });
     scheduler.flush();
@@ -107,7 +107,7 @@ describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
     handle.dispose();
   });
 
-  it("3. Adopted-track Engine path: adopted free track compiles keyframes and publishes ready patch", () => {
+  it("3. Runtime-track Engine path: an added free track compiles keyframes and publishes ready patch", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
     const project: ProjectDefinition = {
@@ -132,21 +132,17 @@ describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
     const runtime = (handle as unknown as { _runtime?: ProjectRuntime })._runtime;
 
     if (runtime) {
-      const owner = {};
-      const adopted = runtime.adopt(
-        {
-          id: "cursor",
-          keyframes: {
-            opacity: [
-              { p: 0, v: 0 },
-              { p: 1, v: 1 },
-            ],
-          },
+      const added = runtime.addTrack({
+        id: "cursor",
+        keyframes: {
+          opacity: [
+            { p: 0, v: 0 },
+            { p: 1, v: 1 },
+          ],
         },
-        owner,
-      );
+      });
 
-      expect(adopted.id).toBe("~/cursor");
+      expect(added.id).toBe("~/cursor");
       const batch = runtime.seek("~/cursor", 0.5);
       const patch = batch.patches.find((p) => p.nodeId === "~/cursor");
       expect(patch?.status).toBe("ready");
@@ -190,7 +186,7 @@ describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
 
     handle.mount("hero/t1");
     let updateCount = 0;
-    handle.subscribe("hero/t1", () => {
+    handle.subscribeNode("hero/t1", () => {
       updateCount++;
     });
 
@@ -234,7 +230,7 @@ describe("Phase 0 Red Baseline: Engine Path & Dynamic Correctness", () => {
 
     handle.mount("hero/t1");
     let lastValue = 0;
-    handle.subscribe("hero/t1", (patch) => {
+    handle.subscribeNode("hero/t1", (patch) => {
       lastValue = patch.values.x as number;
     });
 
