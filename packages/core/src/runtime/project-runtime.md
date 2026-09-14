@@ -36,6 +36,12 @@ The retained pair; #motions follows the same rule. Maps are mutable fields becau
 
 Present only while recipe code is running. edit clears it in finally before committing or propagating an exception. A recipe may dispose the project; edit rechecks liveness after the callback and returns the recipe's answer without committing anything. During a commit this field is necessarily absent, so it cannot detect reentrant commits. #inFlight supplies that separate condition. See ADR-064, ADR-068 and ADR-070.
 
+## #valueSeeds
+
+The seed list one value batch collects, present only while its recipe is running. A plain array rather than a record, because a wrapper that exists only to hold one value is deleted and the thing it held becomes the value, and named for what it holds rather than for the first verb that filled it. values clears it in finally before re-asking liveness and publishing, so a recipe that threw leaves no batch open and the next call is an ordinary one rather than a reentrancy refusal against a batch nothing closed.
+
+A batch stages publication rather than state, so every read inside one answers exactly what it answers outside one and no accessor gains a second meaning. Duplicate seeds stay in place because GraphRuntime.flush already deduplicates and a second owner of that would be a second answer. Structural verbs and the immediate family read this field through their own rungs rather than inspecting it. See ADR-078.
+
 ## #inFlight
 
 Depth of boundaries whose work still needs the live graph/composition. Structural commits and immediate edits share it: naming it only for commits would hide the direct-write disposal hazard. A boundary raises it before derivation because plugin resolution is injected code too. Public mutation/publication paths refuse while it is raised; reads remain available and disposal is deferred.
@@ -124,9 +130,17 @@ Projects a frozen current definition, including children from #ownedBy rather th
 
 Requires that the readable motion own no tracks, then removes it from a staged map. Within a recipe, removing its last child first makes destruction legal. No resource hook runs here; #derive owns the final candidate's work. See ADR-064.
 
+## #refuseValueReentrant
+
+The lower rung of a two-step ladder, and the two conditions the immediate family has always asked, in the order it has always asked them: an open recipe as schema-transaction-immediate naming the verb, then an in-flight boundary as schema-commit-reentrant. The four value verbs and seek ask this one and stop here, because staging their publication is what a value batch is for.
+
+A split rather than a third condition inside the existing rung, and rather than the same condition copied up to each entry point. Adding it below would refuse the tier the batch exists for; moving the rung out of #writeValues up to its four callers would spread one ordering across five sites, which is the shape issues #298 and #310 both closed. A ladder is the idiom #liveEntry and #writableEntry already are. See ADR-078.
+
 ## #refuseReentrant
 
-The shared rung for immediate mutation/publication: first refuse an open recipe with schema-transaction-immediate naming the verb, then an in-flight boundary with schema-commit-reentrant. The first condition concerns caller-authored recipes; the second concerns callbacks an owning operation invoked. They currently cannot both be true, but the precedence remains explicit.
+The shared rung for immediate mutation/publication, and the upper rung of that ladder: it asks #refuseValueReentrant first, then refuses an open value batch with value-batch-immediate naming the verb. The first condition concerns caller-authored recipes, the second concerns callbacks an owning operation invoked, and the third concerns a caller-authored value batch. The precedence stays explicit even where two of them cannot both be true, because two conditions nothing orders are two conditions the next slice picks between by accident.
+
+mount, unmount, signal, invalidate, #setTrigger and #setStagger reach the new refusal through this member with no call site edited, and values asks it too, so a batch inside a batch needs no second spelling. invalidate is refused rather than joined: it carries no bookkeeping of its own, so inside a batch that publishes once it is either a no-op or a second publication, and it is the verb a Motion driver reaches. See ADR-078.
 
 The guard stays outside #boundary and before argument-dependent entry resolution, so an operation cannot refuse itself or falsely report an unknown node that its owning commit is still adding. Structural writes have their own shared rung in #commit; no entry path is common to both verb families. Both rungs use the same refusal function. See ADR-064, ADR-068 and ADR-070.
 
@@ -172,7 +186,7 @@ Validates the complete replacement and requires the same qualified id. Preserves
 
 ## #commit
 
-The only path by which structural work either waits in a recipe or applies. An open recipe has already written its pending pair, so this returns without effects. Otherwise an in-flight boundary refuses before #apply. A recipe started by a hook can stage normally but is refused when it attempts to commit; this keeps one owner for structural reentrancy.
+The only path by which structural work either waits in a recipe or applies. An open recipe has already written its pending pair, so this returns without effects. Otherwise an in-flight boundary refuses before #apply. A recipe started by a hook can stage normally but is refused when it attempts to commit; this keeps one owner for structural reentrancy. An open value batch refuses after that, as value-batch-structural, at this one member rather than at the six verbs that reach it: the two tiers do not nest in either direction, because a commit derives effects, replaces the graph and adopts a pair while a batch holds a seed list and nothing else. Placing the new condition after the in-flight one leaves every answer that existed before unchanged and adds only the case where a structural verb is reached from the recipe body itself. See ADR-078.
 
 Do not merge reentrant operations into #open. The owning commit keeps its pair in a local, has already derived/applied work against it, and cannot honor the meaning of an open recipe. Reentry could overwrite accepted definitions or leave compiled/mounted resources with no retained owner. Both effect and settlement phases refuse; a second phase flag would make the contract hook-dependent. Teardown drainage does not belong here because the early return would skip it for recipes. See ADR-064, ADR-067 and ADR-068.
 
@@ -192,7 +206,7 @@ edit rechecks disposal after its recipe, and all other entry paths establish liv
 
 ## #flush
 
-One internal publication attempt for a supplied seed list. Skips a disposed runtime or empty list, otherwise invalidates the graph and records returned diagnostics. It has no error boundary: its owning completion collector preserves any synchronous exception with preceding failures. Unlike #invalidateOne it returns no batch and skips disposal instead of asserting. Structural commits and accepted stagger changes share this mechanism, not their topology semantics. See ADR-064, ADR-069 and ADR-071.
+One internal publication attempt for a supplied seed list. Skips a disposed runtime or empty list, otherwise invalidates the graph and records returned diagnostics. It has no error boundary: its owning completion collector preserves any synchronous exception with preceding failures. Unlike #invalidateOne it skips disposal instead of asserting. It answers the batch it published, or nothing when it published none, which is what lets values report an empty recipe from this one owner of the empty-seed decision rather than restating it; the three callers that own no answer ignore the return. Structural commits, accepted stagger changes and the value batch share this mechanism, not their topology semantics. See ADR-064, ADR-069, ADR-071 and ADR-078.
 
 ## #assertSameLifetimes
 
@@ -222,7 +236,7 @@ The whole operation is inside #boundary, including injected calls and publicatio
 
 ## #completeWrite
 
-After adoption, attempt staged finalization, optional re-seek to captured progress, and #invalidateOne through runSettleSteps. A static/no-escalation path uses the existing flush directly. Success returns the actual batch; failure preserves ordered thrown values and does not invent rollback. Engine stages by installing a replacement and marks its stage settled before disposing the old Track, so a throwing commit may already be irreversible. Guarantee attempts and publish actual progress if a host re-seek fails, never an invented old value. See issue #313, LV-19 through LV-21, and PK-20 through PK-22.
+After adoption, attempt staged finalization, optional re-seek to captured progress, and #publishValue through runSettleSteps. A static/no-escalation path reaches #publishValue directly. Both endings therefore route through the one member that decides whether a value publication happens now or joins an open batch, so neither of them owns that condition. Success returns the actual batch; failure preserves ordered thrown values and does not invent rollback. Engine stages by installing a replacement and marks its stage settled before disposing the old Track, so a throwing commit may already be irreversible. Guarantee attempts and publish actual progress if a host re-seek fails, never an invented old value. See issue #313, LV-19 through LV-21, and PK-20 through PK-22.
 
 ## #boundGroup
 
@@ -230,7 +244,15 @@ The shared precondition for editing a property or binding inside an authored plu
 
 ## #invalidateOne
 
-The value tier's single-node flush and disposal report. Assert runtime liveness before invalidating; a disposed project must not publish, advance sequence or drain pending seeds, and an empty batch would falsely claim publication. Records returned diagnostics and returns the actual batch. Both value-write paths use this owner rather than inline copies or public invalidate. See ADR-064, ADR-069 and ADR-070.
+The value tier's single-node flush and disposal report. Assert runtime liveness before invalidating; a disposed project must not publish, advance sequence or drain pending seeds, and an empty batch would falsely claim publication. Records returned diagnostics and returns the actual batch. Both value-write paths reach this owner rather than inline copies or public invalidate.
+
+Its body is unchanged by the value batch, deliberately. Four records and two shipped cases name this member as the published single-node value flush, so the batch decision goes in front of it in #publishValue rather than moving these two lines one member down, which would have turned two green cases red for no behavioural reason. It is still the only place a single-node value publication happens; it is no longer the only ending a value write can have. See ADR-064, ADR-069, ADR-070 and ADR-078.
+
+## #publishValue
+
+The one owner of whether a value write publishes now or joins an open batch. With no batch open it delegates to #invalidateOne and nothing about the single-node path moves. With one open it asserts runtime liveness, records the node as a seed, and answers the deferred batch: the node named, no patches, and one value-batch-deferred warning saying the publication was queued.
+
+Its callers are both endings of #completeWrite, #removeKeyframe's no-op, and seek, which stops copying invalidate plus recordAll inline and routes through this owner instead, so adding the tier deleted a copy rather than adding one. Liveness is asserted on the staging path too, because a recipe may dispose the project and a seed pushed onto a dead runtime would be published by a batch that must not publish at all. See ADR-078.
 
 ## #recompileKeyframes
 
@@ -263,6 +285,12 @@ Writes the authored record through withKeyframes, then delegates replacement. Em
 ## #snapshot
 
 One pass over tracks builds free tracks and buckets motion-owned tracks, then one pass projects motions. Avoids repeated per-motion filtering without creating another persistent ownership cache. Entries preserve committed order and untouched definition identity, and the snapshot comes from the same pair adoption will retain. See ADR-058 and ADR-064.
+
+## #valueTransaction
+
+A frozen projection of existing runtime verbs, not another implementation, exactly as #transaction is. Narrowing is not a fence: a recipe closes over the project handle, so every verb enforces its own refusal regardless of how it was reached, and what may not run while a batch is open is answered at the verb rather than by the absence of a member here.
+
+track and tryTrack hand back the ordinary TrackHandle, whose value members join the batch through #publishValue while its structural members refuse at #commit. No node-addressed setKeyframe is projected: that spelling would lose the lifetime token the handle captured, and it would be a second owner of a verb TrackHandle already owns. See ADR-056, ADR-064 and ADR-078.
 
 ## #teardown
 

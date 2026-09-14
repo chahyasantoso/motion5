@@ -24,7 +24,8 @@ describe("public project handle surface (P1-9)", () => {
     // of the same issue, and the three enumeration readers arrived with phase 2 of issue #362.
     // Phase 3 subtracted three: `adopt` and `destroyAdopted`, whose question `addTrack` and
     // `TrackHandle.remove` already answered, and `subscribe`, which was `subscribeNode` under an
-    // older name. Nothing else moved.
+    // older name. Phase 6 of that issue then added `values`, the value tier's transaction
+    // beside `edit`. Nothing else moved.
     expect(Object.keys(runtime).sort()).toEqual([
       "addMotion",
       "addTrack",
@@ -46,6 +47,7 @@ describe("public project handle surface (P1-9)", () => {
       "tryMotion",
       "tryTrack",
       "unmount",
+      "values",
     ]);
     runtime.dispose();
   });

@@ -68,6 +68,27 @@ The recipe is handed a `SchemaTransaction`, which carries `addMotion`, `motion`,
 
 Two refusals name where a call was made rather than what it does. A recipe opened inside a recipe is `schema-transaction-nested`. A verb that applies immediately is `schema-transaction-immediate`, named at the verb, which covers `setTrigger` and `setStagger` on a `MotionHandle` and `overrideValues`, `setValues`, `setKeyframe` and `removeKeyframe` on a `TrackHandle`: a settle step cannot refuse, so deferring one of those into the transaction would move its failure to after the graph had committed. See ADR-064.
 
+## Many value writes, one publication
+
+`handle.edit(recipe)` batches structural work. `handle.values(recipe)` batches the other tier, and what it batches is the publication rather than the write:
+
+```ts
+handle.values((batch) => {
+  for (const rig of rigs) {
+    batch.track(rig.goal).setValues({ x: rig.x, y: rig.y });
+    batch.track(rig.solver).setKeyframe("ik", "flip", rig.flip);
+  }
+});
+```
+
+Outside a batch each of those writes publishes on its own, so `n` rigs cost `n` invalidations, `n` rounds of subscriber notification and `n` sequence moves. Inside one they cost one of each, and the call answers the `PatchBatch` that single publication produced. That is the whole saving, stated as narrowly as it deserves: a batch does not make a write cheaper. Each verb still validates on entry, still applies its write when you call it, and still escalates to a staged Track and a re-seek per node when the interpolator declines a per-key write, because what a backend can patch has nothing to do with how many nodes you are writing.
+
+The recipe is handed a `ValueTransaction` carrying `seek`, `setValues` and `overrideValues` addressed by node id, plus `track` and `tryTrack`. Those two answer the ordinary `TrackHandle`, so `setValues`, `overrideValues`, `setKeyframe` and `removeKeyframe` on it join the batch as well, and there is deliberately no node-addressed `setKeyframe` here: that spelling would throw away the lifetime token the handle captured, which is the whole mechanism behind `StaleTrackHandleError`.
+
+A verb reached inside a batch answers a deferred batch rather than nothing: your own node as the only seed, no patches, and one warning whose `ruleId` is `value-batch-deferred`, saying the publication was queued. A `TrackHandle` is one interface whether or not a batch is open, so a member that answered `undefined` in one case would be a value nobody checks. A recipe that staged nothing publishes nothing at all and answers an empty batch, for the same reason a commit with no seeds does not call `invalidate`: an empty batch still opens one, notifies every batch subscriber and moves the sequence.
+
+Two refusals, and they name where the call was made rather than what it does. Everything that publishes or mounts is `value-batch-immediate` inside a batch, named at the verb, which covers `invalidate`, `mount`, `unmount`, `signal`, and `setTrigger` and `setStagger` reached on the handle itself, and a second `values`. `seek` is deliberately not one of them: it is a value verb, so inside a batch it stages its own node and joins the one publication exactly as the other four do. Every structural verb is `value-batch-structural`, at the one member all of them reach, and it stages nothing, so a refused `addTrack` or `remove()` leaves the project exactly as it was. Going the other way, a value verb inside `edit(recipe)` is still `schema-transaction-immediate`: the two tiers do not nest, in either direction. A recipe that disposes the project is answered with `ProjectRuntime is disposed.` in place of the batch, because the batch is the answer to the call and there is no batch. See ADR-078.
+
 ## Changing values without rebuilding the graph
 
 `replace()` is for topology. To move a value, use the two cheap members, which stage no Track and rebuild no graph:

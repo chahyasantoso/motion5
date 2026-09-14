@@ -13,6 +13,7 @@ import { readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { StaleMotionHandleError, type MotionHandle } from "../contract/motion-handle";
 import type { SchemaTransaction } from "../contract/schema-transaction";
+import type { ValueTransaction } from "../contract/value-transaction";
 import {
   StaleTrackHandleError,
   type AuthoredValues,
@@ -49,8 +50,11 @@ import {
   propertyEntry,
   reservedGoalSlot,
   unboundGroup,
+  valueBatchImmediate,
+  valueBatchStructural,
 } from "./schema-refusals";
 import { collect, report, rejectAfterRollback, runRollbackSteps, runSettleSteps } from "./rollback";
+import { deferredValueBatch, emptyValueBatch } from "./value-batch";
 import {
   EMPTY_KEYFRAMES,
   NO_OVERLAY,
@@ -208,6 +212,7 @@ export class ProjectRuntime {
   #nextToken = 1;
 
   #open: OpenTransaction | undefined;
+  #valueSeeds: string[] | undefined;
   readonly #diagnostics: Diagnostics;
   readonly #setProgress: (nodeId: string, progress: number) => void;
   readonly #writeValuesHook: LiveValueWriter;
@@ -597,9 +602,14 @@ export class ProjectRuntime {
     this.#commit({ motions });
   }
 
-  #refuseReentrant(verb: string): void {
+  #refuseValueReentrant(verb: string): void {
     if (this.#open !== undefined) immediateInTransaction(verb);
     if (this.#inFlight > 0) commitInFlight();
+  }
+
+  #refuseReentrant(verb: string): void {
+    this.#refuseValueReentrant(verb);
+    if (this.#valueSeeds !== undefined) valueBatchImmediate(verb);
   }
 
   #setTrigger(id: string, token: number, trigger: MotionDefinition["trigger"]): void {
@@ -759,6 +769,7 @@ export class ProjectRuntime {
   #commit(plan: SchemaPlan): void {
     if (this.#open !== undefined) return;
     if (this.#inFlight > 0) commitInFlight();
+    if (this.#valueSeeds !== undefined) valueBatchStructural();
     this.#apply(plan);
   }
 
@@ -798,10 +809,11 @@ export class ProjectRuntime {
     });
   }
 
-  #flush(touched: readonly string[]): void {
-    if (this.#disposed || touched.length === 0) return;
+  #flush(touched: readonly string[]): PatchBatch | undefined {
+    if (this.#disposed || touched.length === 0) return undefined;
     const batch = this.#graph.invalidate(touched);
     this.#diagnostics.recordAll(batch.diagnostics);
+    return batch;
   }
 
   #assertSameLifetimes<E extends { readonly token: number }>(
@@ -897,7 +909,7 @@ export class ProjectRuntime {
     values: AuthoredValues,
     rebase: boolean,
   ) {
-    this.#refuseReentrant(rebase ? "setValues" : "overrideValues");
+    this.#refuseValueReentrant(rebase ? "setValues" : "overrideValues");
     return this.#boundary(() => {
       const entry = resolveEntry();
       const { statics, animated } = splitAuthoredValues(values);
@@ -931,7 +943,7 @@ export class ProjectRuntime {
     staged: StagedTrack | undefined,
     progress: number | undefined,
   ): PatchBatch {
-    if (staged === undefined && progress === undefined) return this.#invalidateOne(nodeId);
+    if (staged === undefined && progress === undefined) return this.#publishValue(nodeId);
     let batch!: PatchBatch;
     runSettleSteps([
       () => staged?.commit(),
@@ -939,7 +951,7 @@ export class ProjectRuntime {
         if (progress !== undefined) this.#setProgress(nodeId, progress);
       },
       () => {
-        batch = this.#invalidateOne(nodeId);
+        batch = this.#publishValue(nodeId);
       },
     ]);
     return batch;
@@ -961,6 +973,14 @@ export class ProjectRuntime {
     const batch = this.#graph.invalidate([nodeId]);
     this.#diagnostics.recordAll(batch.diagnostics);
     return batch;
+  }
+
+  #publishValue(nodeId: string): PatchBatch {
+    const open = this.#valueSeeds;
+    if (open === undefined) return this.#invalidateOne(nodeId);
+    this.#assertLive();
+    open.push(nodeId);
+    return deferredValueBatch(this.#graph.sequence, [nodeId]);
   }
 
   #recompileKeyframes(
@@ -1004,7 +1024,7 @@ export class ProjectRuntime {
     key: string,
     value: AuthoredProperty,
   ) {
-    this.#refuseReentrant("setKeyframe");
+    this.#refuseValueReentrant("setKeyframe");
     const entry = this.#writableEntry(nodeId, token);
     const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
     if (Object.hasOwn(readPluginValues(bound.group), key))
@@ -1013,11 +1033,11 @@ export class ProjectRuntime {
     return this.#recompileKeyframes(nodeId, entry, edited, "setKeyframe");
   }
   #removeKeyframe(nodeId: string, token: number, plugin: string, key: string) {
-    this.#refuseReentrant("removeKeyframe");
+    this.#refuseValueReentrant("removeKeyframe");
     const entry = this.#writableEntry(nodeId, token);
     const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
     const edited = removeAuthoredKeyframe(keyframes, bound, key);
-    if (edited === keyframes) return this.#invalidateOne(nodeId);
+    if (edited === keyframes) return this.#publishValue(nodeId);
     return this.#recompileKeyframes(nodeId, entry, edited, "removeKeyframe");
   }
   #replaceWithObservation(
@@ -1146,11 +1166,9 @@ export class ProjectRuntime {
   }
   seek(nodeId: string, progress: number) {
     this.#assertLive();
-    this.#refuseReentrant("seek");
+    this.#refuseValueReentrant("seek");
     this.#setProgress(nodeId, progress);
-    const batch = this.#graph.invalidate([nodeId]);
-    this.#diagnostics.recordAll(batch.diagnostics);
-    return batch;
+    return this.#publishValue(nodeId);
   }
   /**
    * Writes `nodeId`'s values, leaving the authored definition exactly as it was.
@@ -1173,6 +1191,47 @@ export class ProjectRuntime {
   setValues(nodeId: string, values: AuthoredValues) {
     this.#assertLive();
     return this.#writeValues(nodeId, () => this.#entryOf(nodeId), values, true);
+  }
+  /**
+   * Runs `recipe` as one value batch and publishes what it staged exactly once.
+   *
+   * The second tier, and what `edit(recipe)` is for the structural one. Every verb reached inside
+   * still applies its own write immediately and still refuses on its own terms; what the batch owns
+   * is the publication. So `n` writes across `n` nodes cost one invalidate, one notification per
+   * affected node and one sequence move, where the same sequence spelled one write at a time costs
+   * `n` of each, and the answer is the batch that one publication produced. What a staged verb
+   * answers in the meantime is a deferred batch naming its own node.
+   *
+   * A recipe that staged nothing publishes nothing and answers an empty batch, because an empty seed
+   * list still opens a batch, notifies every batch subscriber and moves the sequence. A recipe that
+   * disposed the project is reported rather than answered, with `ProjectRuntime is disposed.` in
+   * place of the batch, because the batch is the answer to this call and there is no batch: that
+   * keeps the value tier's one failure contract. See ADR-078, ADR-064 and issue #288.
+   */
+  values(recipe: (transaction: ValueTransaction) => void): PatchBatch {
+    this.#assertLive();
+    this.#refuseReentrant("values");
+    const seeds: string[] = [];
+    this.#valueSeeds = seeds;
+    try {
+      recipe(this.#valueTransaction());
+    } finally {
+      this.#valueSeeds = undefined;
+    }
+    this.#assertLive();
+    return this.#boundary(() => this.#flush(seeds) ?? emptyValueBatch(this.#graph.sequence));
+  }
+
+  #valueTransaction(): ValueTransaction {
+    const runtime = this;
+    return Object.freeze({
+      seek: (nodeId: string, progress: number) => runtime.seek(nodeId, progress),
+      setValues: (nodeId: string, values: AuthoredValues) => runtime.setValues(nodeId, values),
+      overrideValues: (nodeId: string, values: AuthoredValues) =>
+        runtime.overrideValues(nodeId, values),
+      track: (nodeId: string) => runtime.track(nodeId),
+      tryTrack: (nodeId: string) => runtime.tryTrack(nodeId),
+    });
   }
   invalidate(nodeIds: readonly string[]) {
     this.#assertLive();

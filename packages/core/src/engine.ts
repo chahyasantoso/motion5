@@ -10,6 +10,7 @@ import type {
 } from "./contract/v5";
 import type { MotionHandle } from "./contract/motion-handle";
 import type { SchemaTransaction } from "./contract/schema-transaction";
+import type { ValueTransaction } from "./contract/value-transaction";
 import type { TrackHandle } from "./contract/track-handle";
 import { describeDiagnostics } from "./contract/diagnostics";
 import { resolveTriggerDefinition, validateV5 } from "./contract/validate-v5";
@@ -52,6 +53,18 @@ export interface ProjectHandle {
    * and which verbs refuse are ADR-064's. See ADR-064.
    */
   edit<T>(recipe: (transaction: SchemaTransaction) => T): T;
+  /**
+   * Runs `recipe` as one value batch and publishes what it staged exactly once.
+   *
+   * The value tier's transaction, and `edit`'s counterpart rather than its cousin: this one defers
+   * publication instead of deferring the write, so every verb inside still applies immediately and
+   * still refuses on its own terms. `ValueTransaction` is the narrowed surface the recipe is handed,
+   * and it is a surface rather than a fence for exactly the reason `edit`'s is: the recipe closes
+   * over this handle too, so a verb that publishes, mounts or commits refuses by name while a batch
+   * is open, with `value-batch-immediate` for the immediate family and `value-batch-structural` for
+   * every structural verb. What one costs and what it answers are ADR-078's. See ADR-078.
+   */
+  values(recipe: (transaction: ValueTransaction) => void): PatchBatch;
   addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle;
   track(nodeId: string): TrackHandle;
   /**
@@ -101,6 +114,7 @@ function createHandle(
     edit<T>(recipe: (transaction: SchemaTransaction) => T) {
       return runtime.edit(recipe);
     },
+    values: (recipe) => runtime.values(recipe),
     addTrack: (track, options) => runtime.addTrack(track, options),
     track: (nodeId) => runtime.track(nodeId),
     tryTrack: (nodeId) => runtime.tryTrack(nodeId),

@@ -65,6 +65,42 @@ export function commitInFlight(): never {
   throw new TypeError(`schema-commit-reentrant: A structural commit is already in flight. ${use}`);
 }
 /**
+ * Refuses an immediate verb asked for while a value batch is open.
+ *
+ * The third condition on the shared immediate rung, and a third rather than a widening of the first
+ * because which callback the caller wrote is what differs. `schema-transaction-immediate` names a
+ * verb that cannot travel with a structural recipe at all; this one names a verb that cannot travel
+ * with a value batch, which the four value verbs and `seek` can, since staging their publication is
+ * the whole point of opening one. So the message names the verb, exactly as the recipe refusal does:
+ * the caller wrote both the `values()` and the call, and has to know which of the two to move.
+ *
+ * `invalidate` is refused here rather than joined to the batch, deliberately. It carries no
+ * bookkeeping of its own, so inside a batch that publishes once it is either a no-op or a second
+ * publication, and it is the verb a Motion driver reaches, which is the reentrancy this condition
+ * exists to refuse. A batch asked for inside a batch reaches this same refusal, so nesting needs no
+ * second spelling. See ADR-078.
+ */
+export function valueBatchImmediate(verb: string): never {
+  const detail = `"${verb}" publishes or mounts and cannot travel with a value batch.`;
+  throw new TypeError(`value-batch-immediate: ${detail} Call it outside values().`);
+}
+/**
+ * Refuses a structural commit asked for while a value batch is open.
+ *
+ * `commitInFlight`'s twin, at the one member every structural verb reaches and for the same reason
+ * it names the condition rather than the verb: the caller wrote no verb list, and a per-verb
+ * spelling would cost a string literal at six call sites to say what the stack already says.
+ *
+ * A refusal rather than a deferral, because the two tiers do not nest in either direction. A
+ * structural commit derives effects, replaces the graph and adopts a pair; a value batch holds a
+ * seed list and nothing else, so there is no pair for one to stage inside the other and no inverse
+ * for a settle step to run. See ADR-078.
+ */
+export function valueBatchStructural(): never {
+  const use = "Ask for it once values() has returned.";
+  throw new TypeError(`value-batch-structural: A value batch is open. ${use}`);
+}
+/**
  * Refuses a binding edit addressed at a plugin this node authors no group for.
  *
  * The boundary between this tier's two levels, and it is a refusal rather than a creation on

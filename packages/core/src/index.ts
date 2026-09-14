@@ -90,6 +90,17 @@ export type { MotionHandle } from "./contract/motion-handle";
  */
 export type { SchemaTransaction } from "./contract/schema-transaction";
 /**
+ * The value authoring surface one batch is handed, exported on the same half of the
+ * declaration-surface rule as the structural one above: `ProjectHandle.values` takes a function of
+ * this type, and a member the entry exposes is unusable if its argument type cannot be imported.
+ * Declared in `contract/` for the reason the gate enforces, so naming it here adds no `runtime/`
+ * module to the entry's declaration closure. Its two refusals travel as `TypeError` under
+ * `value-batch-immediate` and `value-batch-structural`, and the diagnostic a staged write carries is
+ * `value-batch-deferred`, so nothing new has to be exported to catch or to branch on them. See
+ * ADR-078.
+ */
+export type { ValueTransaction } from "./contract/value-transaction";
+/**
  * The refusal a live value write reports, exported on exactly the rule above: a caller cannot
  * `instanceof` a type it cannot name, and `ruleId` is what it branches on. `Track` is not exported
  * beside it and never has been, so the only thing crossing the entry from the domain layer is the

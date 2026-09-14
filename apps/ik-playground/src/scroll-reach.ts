@@ -15,7 +15,7 @@ export function initialGoals(): PendingGoals {
 }
 
 /** Owns pending intent. Only commit writes the runtime; the UI renders immutable snapshots. */
-export function createScrollReach(project: Pick<ProjectHandle, "track">) {
+export function createScrollReach(project: Pick<ProjectHandle, "values">) {
   let goals = initialGoals();
   let appliedGoals = goals;
   const flips = new Map(RIGS.map((rig) => [rig.solverTrack, false]));
@@ -37,19 +37,20 @@ export function createScrollReach(project: Pick<ProjectHandle, "track">) {
     },
     commit(): void {
       // Only pending intent is authored here. Motion owns progress and interpolated FK weights.
-      // Each value write owns its invalidate; this is not a multi-track transaction.
-
-      for (const rig of RIGS) {
-        const next = goals[rig.goalTrack]!;
-        const previous = appliedGoals[rig.goalTrack]!;
-        if (next.x !== previous.x || next.y !== previous.y) {
-          project.track(nodeId(rig.goalTrack)).setValues({ x: next.x, y: next.y });
+      // One batch per qualifying scroll update, so every rig that moved publishes together.
+      project.values((batch) => {
+        for (const rig of RIGS) {
+          const next = goals[rig.goalTrack]!;
+          const previous = appliedGoals[rig.goalTrack]!;
+          if (next.x !== previous.x || next.y !== previous.y) {
+            batch.track(nodeId(rig.goalTrack)).setValues({ x: next.x, y: next.y });
+          }
+          const flip = flips.get(rig.solverTrack)!;
+          if (flip !== appliedFlips.get(rig.solverTrack)) {
+            batch.track(nodeId(rig.solverTrack)).setKeyframe("ik", "flip", flip);
+          }
         }
-        const flip = flips.get(rig.solverTrack)!;
-        if (flip !== appliedFlips.get(rig.solverTrack)) {
-          project.track(nodeId(rig.solverTrack)).setKeyframe("ik", "flip", flip);
-        }
-      }
+      });
       appliedGoals = goals;
       for (const [id, value] of flips) appliedFlips.set(id, value);
     },
