@@ -1241,10 +1241,20 @@ export class ProjectRuntime {
       tryTrack: (nodeId: string) => runtime.tryTrack(nodeId),
     });
   }
+  /**
+   * Publishes for `nodeIds` and answers the batch that publication produced.
+   *
+   * A list that names nothing is answered rather than published, through the one owner of what an
+   * empty seed list means, which is the member `values(recipe)` publishes through too. An empty
+   * list still opens a batch, notifies every batch subscriber and moves the sequence, and a caller
+   * that asked for nothing to be invalidated is owed none of that. What a caller can read is
+   * unchanged: this verb always answers a real `PatchBatch`, and for an empty list that batch
+   * carries the sequence the graph is already on. See ADR-080 and issue #371.
+   */
   invalidate(nodeIds: readonly string[]) {
     this.#assertLive();
     this.#refuseReentrant("invalidate");
-    return this.#invalidateSeeds(nodeIds);
+    return this.#publishSeeds(nodeIds);
   }
   /**
    * Tears this project down, once, and refuses everything from the moment it is called.
