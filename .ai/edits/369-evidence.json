@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "operation": "apply",
+  "expected_head": "6674feb59ea8cc8a543ab6f35cf7cbf2f9b96c47",
+  "expected_blobs": {
+    "packages/core/test/unit/runtime/live-value-updates.test.ts": "f3b60d77d8ceaaef0e1bc6d200da8944ea8aafc4",
+    "packages/core/test/unit/runtime/value-batch.test.ts": "5947d703e32fcafa1dd16f0e49a902abaffba2f1"
+  },
+  "message": "test(runtime): pin the batch's recompile ending and re-address the one invalidate owner",
+  "edits": [
+    {
+      "path": "packages/core/test/unit/runtime/live-value-updates.test.ts",
+      "find": "    const write = member(code(RUNTIME_SOURCE), \"#writeValues(\");\n    const flush = member(code(RUNTIME_SOURCE), \"#invalidateOne(\");\n    expect(write).not.toContain(\"this.#graph.invalidate(\");\n    expect(write).not.toContain(\"this.#diagnostics.recordAll(\");\n    expect(flush).toContain(\"this.#graph.invalidate([nodeId])\");\n    expect(flush).toContain(\"this.#diagnostics.recordAll(batch.diagnostics)\");\n    // The report lives in the same member as the flush, which is what makes skipping and reporting\n    // one statement rather than two that could disagree.\n    expect(flush).toContain(\"this.#assertLive()\");",
+      "replace": "    const source = code(RUNTIME_SOURCE);\n    const write = member(source, \"#writeValues(\");\n    const owner = member(source, \"#invalidateSeeds(\");\n    const flush = member(source, \"#invalidateOne(\");\n    expect(write).not.toContain(\"this.#graph.invalidate(\");\n    expect(write).not.toContain(\"this.#diagnostics.recordAll(\");\n    // One owner, asserted as a count over the whole file rather than as a presence inside one\n    // member, which is strictly stronger than the form this replaces: that one stayed green while a\n    // second and a third copy of the same pair sat in the seed-list flush and in public invalidate.\n    // Issue #369 found the third, so the pair has one owner now and this is what says so.\n    expect(source.split(\"this.#graph.invalidate(\")).toHaveLength(2);\n    expect(owner).toContain(\"this.#graph.invalidate(nodeIds)\");\n    expect(owner).toContain(\"this.#diagnostics.recordAll(batch.diagnostics)\");\n    // The report still lives with the flush that reports it, which is what keeps skipping and\n    // reporting one decision rather than two that could disagree: this member asserts liveness\n    // itself and then ends at the one owner above.\n    expect(flush).toContain(\"this.#assertLive()\");\n    expect(flush).toContain(\"this.#invalidateSeeds([nodeId])\");"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/value-batch.test.ts",
+      "find": "  freeTracks: [{ id: \"cursor\" }],\n};",
+      "replace": "  freeTracks: [{ id: \"cursor\" }],\n};\n\n/**\n * The same three nodes with an authored plugin group, so `setKeyframe` has both of its paths here.\n *\n * A key the group already carries is the live-write path; one it does not is the recompile, and that\n * is the ending `RA-170` is about. Separate from `PROJECT` rather than added to it, because\n * authoring a group changes what every other case's static write masks over, and no case should pay\n * for the one that needed it.\n */\nconst KEYFRAMED: ProjectDefinition = {\n  ...PROJECT,\n  motions: [\n    {\n      id: \"rig\",\n      trigger: { type: \"manual\" },\n      tracks: [\n        { id: \"a\", keyframes: { fk: { values: { x: 200 } } } },\n        { id: \"b\", keyframes: { fk: { values: { x: 200 } } } },\n        { id: \"c\", keyframes: { fk: { values: { x: 200 } } } },\n      ],\n    },\n  ],\n};"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/value-batch.test.ts",
+      "find": "function rig(options: { escalate?: boolean } = {}) {",
+      "replace": "function rig(options: { escalate?: boolean; project?: ProjectDefinition } = {}) {"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/value-batch.test.ts",
+      "find": "  const runtime = new ProjectRuntime(PROJECT, {",
+      "replace": "  const runtime = new ProjectRuntime(options.project ?? PROJECT, {"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/value-batch.test.ts",
+      "find": "    expect(() => runtime.values(() => undefined)).toThrow(\"ProjectRuntime is disposed.\");\n  });\n});",
+      "replace": "    expect(() => runtime.values(() => undefined)).toThrow(\"ProjectRuntime is disposed.\");\n  });\n\n  it(\"RA-170 joins the batch from setKeyframe's recompile, the ending the shipped consumer takes\", () => {\n    const { runtime, staged } = rig({ project: KEYFRAMED });\n    expect(typeof runtime.values).toBe(\"function\");\n    try {\n      let recompiled: PatchBatch | undefined;\n      let masked: PatchBatch | undefined;\n      const batch = runtime.values((edit) => {\n        // `y` is a key the authored group does not carry, so this is the recompile rather than the\n        // mask, and it is the call `apps/ik-playground/src/scroll-reach.ts` makes through the batch\n        // it now opens. The review that deferred this traced the path by hand and found it correct;\n        // what it could not say is that any run had ever driven it.\n        recompiled = edit.track(\"rig/a\").setKeyframe(\"fk\", \"y\", 300);\n        // The same verb's other path, in the same batch, because the recompile is only interesting\n        // beside the ending that stages nothing.\n        masked = edit.track(\"rig/b\").setKeyframe(\"fk\", \"x\", 5);\n      });\n\n      // The recompile really happened: it is the one of the two paths that stages a Track, and the\n      // authored record moved rather than an overlay.\n      expect(staged).toEqual([\"rig/a\"]);\n      expect(runtime.track(\"rig/a\").definition.keyframes).toEqual({\n        fk: { values: { x: 200, y: 300 } },\n      });\n\n      // Both endings deferred instead of publishing, which is the claim this case exists for.\n      expect(recompiled?.seeds).toEqual([\"rig/a\"]);\n      expect(masked?.seeds).toEqual([\"rig/b\"]);\n      for (const deferred of [recompiled, masked]) {\n        expect(deferred?.patches).toEqual([]);\n        expect(deferred?.diagnostics.map((diagnostic) => diagnostic.ruleId)).toEqual([\n          \"value-batch-deferred\",\n        ]);\n      }\n      expect(flushed).toHaveBeenCalledTimes(1);\n      expect([...batch.seeds].sort()).toEqual([\"rig/a\", \"rig/b\"]);\n    } finally {\n      runtime.dispose();\n    }\n  });\n});"
+    }
+  ]
+}
