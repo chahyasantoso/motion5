@@ -392,4 +392,35 @@ describe("the value tier publishes once for a batch, and refuses every tier that
       runtime.dispose();
     }
   });
+
+  it("RA-171 answers an empty invalidate the empty batch, and publishes only for a named node", () => {
+    const { runtime } = rig();
+    expect(typeof runtime.invalidate).toBe("function");
+    try {
+      const before = runtime.graph.sequence;
+      const empty = runtime.invalidate([]);
+
+      // Issue #371, and the same rule `RA-167` reads one tier over, read at the public verb this
+      // time. A list that names nothing is answered rather than published, so nothing opens a
+      // batch, notifies a subscriber or moves the sequence, and the batch carries the sequence the
+      // graph is still on. What this case fails without is the route: a verb that reaches the
+      // publication mechanics directly pays for a publication here, which is what it did before.
+      expect(flushed).not.toHaveBeenCalled();
+      expect(runtime.graph.sequence).toBe(before);
+      expect(empty.tick).toBe(before);
+      expect(empty.seeds).toEqual([]);
+      expect(empty.patches).toEqual([]);
+      expect(empty.diagnostics).toEqual([]);
+
+      // The other direction, in the same rig, because a verb that answered an empty batch for
+      // every list would satisfy every assertion above. A named node still publishes exactly once
+      // and is still answered the batch that publication produced.
+      const named = runtime.invalidate(["rig/a"]);
+      expect(flushed).toHaveBeenCalledTimes(1);
+      expect(runtime.graph.sequence).toBe(before + 1);
+      expect(named.seeds).toEqual(["rig/a"]);
+    } finally {
+      runtime.dispose();
+    }
+  });
 });
