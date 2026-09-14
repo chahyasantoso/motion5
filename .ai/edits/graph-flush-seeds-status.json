@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "expected_head": "33fe0a26a6d6140f4e3461dbc1ebe16f3d346881",
+  "expected_blobs": {
+    "docs/SESSION-STATUS.md": "0f87477a74c2f81a7f4746f3f5f05eda8d3905bc"
+  },
+  "message": "docs(status): name the stacked pair on issue #371 under Next in line",
+  "edits": [
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- **Unmerged empty-invalidation cost:** [#372](https://github.com/chahyasantoso/motion5/pull/372) implements [#371](https://github.com/chahyasantoso/motion5/issues/371): public `invalidate` publishes through `#publishSeeds` rather than through `#invalidateSeeds`, so a list that names nothing is answered with the empty batch at the sequence the graph is already on instead of paying a publication, a notification for every batch subscriber and a sequence move for an invalidation that touches nothing. One line of source and one public docblock, no new member and no public surface: the verb still always answers a real `PatchBatch`, and it has no caller in either application or in `packages/react`, so this is cost hygiene on unused public API rather than a behaviour fix. `RA-171` is red on the evidence commit. ADR-080 records it and retires the premise ADR-079's third decision reasoned from without reversing that decision, because `#flush` answers nothing and folding a public verb into it stays refused. Review, exact-head CI, and merge remain gates; no landed change is claimed.",
+      "replace": "- **Unmerged, one stacked pair on [#371](https://github.com/chahyasantoso/motion5/issues/371):** [#372](https://github.com/chahyasantoso/motion5/pull/372) makes public `invalidate` publish through `#publishSeeds` rather than `#invalidateSeeds`, so a list naming nothing is answered the empty batch at the sequence the graph is on instead of paying a publication, a notification per batch subscriber and a sequence move for an invalidation that touches nothing; `RA-171`, and ADR-080 retires the premise ADR-079's third decision reasoned from without reversing it. [#373](https://github.com/chahyasantoso/motion5/pull/373) stacks on it for the graph tier of the same issue's follow-up: `GraphRuntime.flush` loses its member-set default, so no caller buys a full recompute by saying nothing, and `invalidate` keeps its declaration and loses its duplicate liveness assertion, because it is `flush` without the clock's `tick` and deleting it would widen what the project tier reaches. ADR-081 also records that membership gates the seed list rather than the publication. Neither moves public surface. Review, exact-head CI, and merge remain gates; no landed change is claimed, and #373 must not merge before #372."
+    }
+  ]
+}
