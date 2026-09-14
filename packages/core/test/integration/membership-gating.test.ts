@@ -16,26 +16,31 @@ const compose = (node: { id: string }) => () => ({
 });
 
 describe("GraphRuntime membership", () => {
-  it("publishes only attached nodes among the seeds it is given", () => {
-    const runtime = new GraphRuntime(project, createManualClock(), compose);
+  it("publishes the attached nodes a tick seeds, and answers a named list as named", () => {
+    const clock = createManualClock();
+    const runtime = new GraphRuntime(project, clock, compose);
     expect(runtime.memberCount).toBe(0);
 
-    // The seed list is the caller's rather than the runtime's. This case used to omit it and read
-    // the member set back out of `batch.seeds`, which asserted the default's derivation instead of
-    // the gate this file is named for: a node that is named and not attached publishes nothing.
-    const unattached = runtime.flush(["hero/arm"]);
-    expect(unattached.seeds).toEqual(["hero/arm"]);
-    expect(unattached.patches).toEqual([]);
+    // Where the gate is, measured rather than assumed. `GraphPublisher.flush` publishes every node
+    // its seeds reach and consults `members` at one place only, to decide whether to pull an
+    // unpublished upstream source in, so a caller that names a non-member is answered a patch for
+    // it. Membership gates the seed list, and `flush`'s member-set default was that gate for a
+    // caller who named none. With the default gone the tick path is the only caller that asks for
+    // every member, so the gate is read from the clock here. Issue #371's follow-up.
+    clock.tick();
+    expect(runtime.registry.get("hero/arm")).toBeUndefined();
 
     runtime.attach("hero/arm");
     expect(runtime.memberCount).toBe(1);
-    const attached = runtime.flush(["hero/arm"]);
-    expect(attached.seeds).toEqual(["hero/arm"]);
-    expect(attached.patches.map(({ nodeId }) => nodeId)).toEqual(["hero/arm"]);
+    clock.tick();
+    expect(runtime.registry.get("hero/arm")?.values).toEqual({ node: "hero/arm" });
+
+    // And a stated list is the one the batch reports, unfiltered: `beginBatch` is handed the seeds
+    // themselves, so membership never rewrites what a caller asked for.
+    expect(runtime.flush(["hero/arm"]).seeds).toEqual(["hero/arm"]);
 
     runtime.detach("hero/arm");
     expect(runtime.memberCount).toBe(0);
-    expect(runtime.flush(["hero/arm"]).patches).toEqual([]);
     runtime.dispose();
   });
 
