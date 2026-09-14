@@ -50,14 +50,16 @@ describe("P5-01 cross-motion references", () => {
     const runtime = new GraphRuntime(project, createManualClock(), compose);
 
     runtime.attach("arm/child");
-    const pendingBatch = runtime.flush();
+    // Every flush names its seeds now: the member-set default is gone. Each list here is the
+    // member insertion order that default derived, so what publishes is unchanged. Issue #371.
+    const pendingBatch = runtime.flush(["arm/child"]);
     const pendingPatch = pendingBatch.patches.find(({ nodeId }) => nodeId === "arm/child");
     expect(pendingPatch?.status).toBe("blocked");
     expect(pendingPatch?.diagnostics[0]?.ruleId).toBe(PENDING_REFERENCE_RULE_ID);
     expect(pendingPatch?.values).toEqual({});
 
     runtime.attach("base/root");
-    const readyBatch = runtime.flush();
+    const readyBatch = runtime.flush(["arm/child", "base/root"]);
     const readyPatch = readyBatch.patches.find(({ nodeId }) => nodeId === "arm/child");
     expect(readyPatch).toBeDefined();
     expect(readyPatch?.status).toBe("ready");
@@ -72,13 +74,13 @@ describe("P5-01 cross-motion references", () => {
     const observerFirst = new GraphRuntime(project, createManualClock(), compose);
     observerFirst.attach("arm/child");
     observerFirst.attach("base/root");
-    const observerFirstBatch = observerFirst.flush();
+    const observerFirstBatch = observerFirst.flush(["arm/child", "base/root"]);
     observerFirst.dispose();
 
     const sourceFirst = new GraphRuntime(project, createManualClock(), compose);
     sourceFirst.attach("base/root");
     sourceFirst.attach("arm/child");
-    const sourceFirstBatch = sourceFirst.flush();
+    const sourceFirstBatch = sourceFirst.flush(["base/root", "arm/child"]);
     sourceFirst.dispose();
 
     const observerFirstChild = observerFirstBatch.patches.find(
