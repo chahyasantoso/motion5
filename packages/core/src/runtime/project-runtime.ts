@@ -602,13 +602,13 @@ export class ProjectRuntime {
     this.#commit({ motions });
   }
 
-  #refuseValueReentrant(verb: string): void {
+  #refuseImmediateReentrant(verb: string): void {
     if (this.#open !== undefined) immediateInTransaction(verb);
     if (this.#inFlight > 0) commitInFlight();
   }
 
   #refuseReentrant(verb: string): void {
-    this.#refuseValueReentrant(verb);
+    this.#refuseImmediateReentrant(verb);
     if (this.#valueSeeds !== undefined) valueBatchImmediate(verb);
   }
 
@@ -809,9 +809,19 @@ export class ProjectRuntime {
     });
   }
 
-  #flush(touched: readonly string[]): PatchBatch | undefined {
-    if (this.#disposed || touched.length === 0) return undefined;
-    const batch = this.#graph.invalidate(touched);
+  #flush(touched: readonly string[]): void {
+    if (this.#disposed) return;
+    this.#publishSeeds(touched);
+  }
+
+  #publishSeeds(seeds: readonly string[]): PatchBatch {
+    this.#assertLive();
+    if (seeds.length === 0) return emptyValueBatch(this.#graph.sequence);
+    return this.#invalidateSeeds(seeds);
+  }
+
+  #invalidateSeeds(nodeIds: readonly string[]): PatchBatch {
+    const batch = this.#graph.invalidate(nodeIds);
     this.#diagnostics.recordAll(batch.diagnostics);
     return batch;
   }
@@ -909,7 +919,7 @@ export class ProjectRuntime {
     values: AuthoredValues,
     rebase: boolean,
   ) {
-    this.#refuseValueReentrant(rebase ? "setValues" : "overrideValues");
+    this.#refuseImmediateReentrant(rebase ? "setValues" : "overrideValues");
     return this.#boundary(() => {
       const entry = resolveEntry();
       const { statics, animated } = splitAuthoredValues(values);
@@ -970,9 +980,7 @@ export class ProjectRuntime {
 
   #invalidateOne(nodeId: string) {
     this.#assertLive();
-    const batch = this.#graph.invalidate([nodeId]);
-    this.#diagnostics.recordAll(batch.diagnostics);
-    return batch;
+    return this.#invalidateSeeds([nodeId]);
   }
 
   #publishValue(nodeId: string): PatchBatch {
@@ -1024,7 +1032,7 @@ export class ProjectRuntime {
     key: string,
     value: AuthoredProperty,
   ) {
-    this.#refuseValueReentrant("setKeyframe");
+    this.#refuseImmediateReentrant("setKeyframe");
     const entry = this.#writableEntry(nodeId, token);
     const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
     if (Object.hasOwn(readPluginValues(bound.group), key))
@@ -1033,7 +1041,7 @@ export class ProjectRuntime {
     return this.#recompileKeyframes(nodeId, entry, edited, "setKeyframe");
   }
   #removeKeyframe(nodeId: string, token: number, plugin: string, key: string) {
-    this.#refuseValueReentrant("removeKeyframe");
+    this.#refuseImmediateReentrant("removeKeyframe");
     const entry = this.#writableEntry(nodeId, token);
     const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
     const edited = removeAuthoredKeyframe(keyframes, bound, key);
@@ -1166,7 +1174,7 @@ export class ProjectRuntime {
   }
   seek(nodeId: string, progress: number) {
     this.#assertLive();
-    this.#refuseValueReentrant("seek");
+    this.#refuseImmediateReentrant("seek");
     this.#setProgress(nodeId, progress);
     return this.#publishValue(nodeId);
   }
@@ -1219,7 +1227,7 @@ export class ProjectRuntime {
       this.#valueSeeds = undefined;
     }
     this.#assertLive();
-    return this.#boundary(() => this.#flush(seeds) ?? emptyValueBatch(this.#graph.sequence));
+    return this.#boundary(() => this.#publishSeeds(seeds));
   }
 
   #valueTransaction(): ValueTransaction {
@@ -1236,9 +1244,7 @@ export class ProjectRuntime {
   invalidate(nodeIds: readonly string[]) {
     this.#assertLive();
     this.#refuseReentrant("invalidate");
-    const batch = this.#graph.invalidate(nodeIds);
-    this.#diagnostics.recordAll(batch.diagnostics);
-    return batch;
+    return this.#invalidateSeeds(nodeIds);
   }
   /**
    * Tears this project down, once, and refuses everything from the moment it is called.
@@ -1268,6 +1274,7 @@ export class ProjectRuntime {
         this.#tracks.clear();
         this.#motions.clear();
         this.#open = undefined;
+        this.#valueSeeds = undefined;
       },
       () => this.#graph.dispose(),
       () => this.#disposeComposition(),

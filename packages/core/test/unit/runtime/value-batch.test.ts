@@ -37,6 +37,29 @@ const PROJECT: ProjectDefinition = {
   freeTracks: [{ id: "cursor" }],
 };
 
+/**
+ * The same three nodes with an authored plugin group, so `setKeyframe` has both of its paths here.
+ *
+ * A key the group already carries is the live-write path; one it does not is the recompile, and that
+ * is the ending `RA-170` is about. Separate from `PROJECT` rather than added to it, because
+ * authoring a group changes what every other case's static write masks over, and no case should pay
+ * for the one that needed it.
+ */
+const KEYFRAMED: ProjectDefinition = {
+  ...PROJECT,
+  motions: [
+    {
+      id: "rig",
+      trigger: { type: "manual" },
+      tracks: [
+        { id: "a", keyframes: { fk: { values: { x: 200 } } } },
+        { id: "b", keyframes: { fk: { values: { x: 200 } } } },
+        { id: "c", keyframes: { fk: { values: { x: 200 } } } },
+      ],
+    },
+  ],
+};
+
 // The prototype rather than the instance, because `GraphRuntime` owns its publisher and never hands
 // it out. `vi.spyOn` keeps the original implementation, so every publication below really runs.
 const flushed = vi.spyOn(GraphPublisher.prototype, "flush");
@@ -53,11 +76,11 @@ function publishedValues(runtime: ProjectRuntime): Record<string, unknown> {
  * That is deliberate for the oracle, which compares what was published rather than what was called,
  * because a spy on the hook cannot tell a correct batch from one that published stale values.
  */
-function rig(options: { escalate?: boolean } = {}) {
+function rig(options: { escalate?: boolean; project?: ProjectDefinition } = {}) {
   const state = new Map<string, Record<string, unknown>>();
   const progressed: (readonly [string, number])[] = [];
   const staged: string[] = [];
-  const runtime = new ProjectRuntime(PROJECT, {
+  const runtime = new ProjectRuntime(options.project ?? PROJECT, {
     clock: createManualClock(),
     compose: (node) => () => ({
       values: { ...(state.get(node.id) ?? {}) },
@@ -328,5 +351,45 @@ describe("the value tier publishes once for a batch, and refuses every tier that
     // The same string every other value verb answers on a disposed project, so the two tiers do
     // not start answering one condition two ways.
     expect(() => runtime.values(() => undefined)).toThrow("ProjectRuntime is disposed.");
+  });
+
+  it("RA-170 joins the batch from setKeyframe's recompile, the ending the shipped consumer takes", () => {
+    const { runtime, staged } = rig({ project: KEYFRAMED });
+    expect(typeof runtime.values).toBe("function");
+    try {
+      let recompiled: PatchBatch | undefined;
+      let masked: PatchBatch | undefined;
+      const batch = runtime.values((edit) => {
+        // `y` is a key the authored group does not carry, so this is the recompile rather than the
+        // mask, and it is the call `apps/ik-playground/src/scroll-reach.ts` makes through the batch
+        // it now opens. The review that deferred this traced the path by hand and found it correct;
+        // what it could not say is that any run had ever driven it.
+        recompiled = edit.track("rig/a").setKeyframe("fk", "y", 300);
+        // The same verb's other path, in the same batch, because the recompile is only interesting
+        // beside the ending that stages nothing.
+        masked = edit.track("rig/b").setKeyframe("fk", "x", 5);
+      });
+
+      // The recompile really happened: it is the one of the two paths that stages a Track, and the
+      // authored record moved rather than an overlay.
+      expect(staged).toEqual(["rig/a"]);
+      expect(runtime.track("rig/a").definition.keyframes).toEqual({
+        fk: { values: { x: 200, y: 300 } },
+      });
+
+      // Both endings deferred instead of publishing, which is the claim this case exists for.
+      expect(recompiled?.seeds).toEqual(["rig/a"]);
+      expect(masked?.seeds).toEqual(["rig/b"]);
+      for (const deferred of [recompiled, masked]) {
+        expect(deferred?.patches).toEqual([]);
+        expect(deferred?.diagnostics.map((diagnostic) => diagnostic.ruleId)).toEqual([
+          "value-batch-deferred",
+        ]);
+      }
+      expect(flushed).toHaveBeenCalledTimes(1);
+      expect([...batch.seeds].sort()).toEqual(["rig/a", "rig/b"]);
+    } finally {
+      runtime.dispose();
+    }
   });
 });

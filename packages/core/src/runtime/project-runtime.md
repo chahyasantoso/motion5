@@ -38,7 +38,7 @@ Present only while recipe code is running. edit clears it in finally before comm
 
 ## #valueSeeds
 
-The seed list one value batch collects, present only while its recipe is running. A plain array rather than a record, because a wrapper that exists only to hold one value is deleted and the thing it held becomes the value, and named for what it holds rather than for the first verb that filled it. values clears it in finally before re-asking liveness and publishing, so a recipe that threw leaves no batch open and the next call is an ordinary one rather than a reentrancy refusal against a batch nothing closed.
+The seed list one value batch collects, present only while its recipe is running. A plain array rather than a record, because a wrapper that exists only to hold one value is deleted and the thing it held becomes the value, and named for what it holds rather than for the first verb that filled it. values clears it in finally before re-asking liveness and publishing, so a recipe that threw leaves no batch open and the next call is an ordinary one rather than a reentrancy refusal against a batch nothing closed. #teardown clears it beside #open, for the reason it clears the retained maps: both halves of open transaction state belong to the member that claims that concept, and leaving one of them to another code path made the claim half true.
 
 A batch stages publication rather than state, so every read inside one answers exactly what it answers outside one and no accessor gains a second meaning. Duplicate seeds stay in place because GraphRuntime.flush already deduplicates and a second owner of that would be a second answer. Structural verbs and the immediate family read this field through their own rungs rather than inspecting it. See ADR-078.
 
@@ -130,21 +130,23 @@ Projects a frozen current definition, including children from #ownedBy rather th
 
 Requires that the readable motion own no tracks, then removes it from a staged map. Within a recipe, removing its last child first makes destruction legal. No resource hook runs here; #derive owns the final candidate's work. See ADR-064.
 
-## #refuseValueReentrant
+## #refuseImmediateReentrant
 
 The lower rung of a two-step ladder, and the two conditions the immediate family has always asked, in the order it has always asked them: an open recipe as schema-transaction-immediate naming the verb, then an in-flight boundary as schema-commit-reentrant. The four value verbs and seek ask this one and stop here, because staging their publication is what a value batch is for.
+
+Named for the family that asks it rather than for the tier that stops at it. Its first spelling read as a refusal of value-verb reentrancy, which is the opposite of what it does: these are the two conditions a value verb must pass in order to be allowed to join a batch, and both of them are about the immediate family every verb in this class belongs to, which is the vocabulary immediateInTransaction and the immediate-verb refusal cases already use. A rung whose name describes the caller it refuses rather than the callers it serves is a rung the next slice adds a condition to for the wrong reason. See ADR-079.
 
 A split rather than a third condition inside the existing rung, and rather than the same condition copied up to each entry point. Adding it below would refuse the tier the batch exists for; moving the rung out of #writeValues up to its four callers would spread one ordering across five sites, which is the shape issues #298 and #310 both closed. A ladder is the idiom #liveEntry and #writableEntry already are. See ADR-078.
 
 ## #refuseReentrant
 
-The shared rung for immediate mutation/publication, and the upper rung of that ladder: it asks #refuseValueReentrant first, then refuses an open value batch with value-batch-immediate naming the verb. The first condition concerns caller-authored recipes, the second concerns callbacks an owning operation invoked, and the third concerns a caller-authored value batch. The precedence stays explicit even where two of them cannot both be true, because two conditions nothing orders are two conditions the next slice picks between by accident.
+The shared rung for immediate mutation/publication, and the upper rung of that ladder: it asks #refuseImmediateReentrant first, then refuses an open value batch with value-batch-immediate naming the verb. The first condition concerns caller-authored recipes, the second concerns callbacks an owning operation invoked, and the third concerns a caller-authored value batch. The precedence stays explicit even where two of them cannot both be true, because two conditions nothing orders are two conditions the next slice picks between by accident.
 
 mount, unmount, signal, invalidate, #setTrigger and #setStagger reach the new refusal through this member with no call site edited, and values asks it too, so a batch inside a batch needs no second spelling. invalidate is refused rather than joined: it carries no bookkeeping of its own, so inside a batch that publishes once it is either a no-op or a second publication, and it is the verb a Motion driver reaches. See ADR-078.
 
 The guard stays outside #boundary and before argument-dependent entry resolution, so an operation cannot refuse itself or falsely report an unknown node that its owning commit is still adding. Structural writes have their own shared rung in #commit; no entry path is common to both verb families. Both rungs use the same refusal function. See ADR-064, ADR-068 and ADR-070.
 
-Owning work never goes through guarded public verbs. Settlement mounts via #mountNode; structural and stagger publication use #flush; value publication uses #invalidateOne. Ordinary Engine driver callbacks still reach public invalidate. Only the owning stagger re-seed receives its explicit no-op callback and is followed by runtime-owned publication. A global bypass or lowered guard would admit actual caller reentrancy and is not equivalent. Issue #341.
+Owning work never goes through guarded public verbs. Settlement mounts via #mountNode; structural and stagger publication use #flush; value publication uses #invalidateOne or #publishValue, and every one of those ends at #invalidateSeeds. Ordinary Engine driver callbacks still reach public invalidate. Only the owning stagger re-seed receives its explicit no-op callback and is followed by runtime-owned publication. A global bypass or lowered guard would admit actual caller reentrancy and is not equivalent. Issue #341.
 
 The duplicate guard on the setKeyframe-to-writeValues path is intentional: both public-capability entries need the rung, and two side-effect-free reads are cheaper and safer than an unchecked variant of the write mechanism. #recompileKeyframes is a tail whose callers already checked. See ADR-070.
 
@@ -206,7 +208,19 @@ edit rechecks disposal after its recipe, and all other entry paths establish liv
 
 ## #flush
 
-One internal publication attempt for a supplied seed list. Skips a disposed runtime or empty list, otherwise invalidates the graph and records returned diagnostics. It has no error boundary: its owning completion collector preserves any synchronous exception with preceding failures. Unlike #invalidateOne it skips disposal instead of asserting. It answers the batch it published, or nothing when it published none, which is what lets values report an empty recipe from this one owner of the empty-seed decision rather than restating it; the three callers that own no answer ignore the return. Structural commits, accepted stagger changes and the value batch share this mechanism, not their topology semantics. See ADR-064, ADR-069, ADR-071 and ADR-078.
+One internal publication attempt for a supplied seed list, and the owner of exactly one decision: a disposed runtime is skipped rather than reported. Unlike #invalidateOne it skips disposal instead of asserting, which is the split ADR-071 decided and this member keeps. Everything else it used to decide now belongs to #publishSeeds, which it delegates to. It answers nothing, and that is the point: it used to answer undefined for a disposed runtime and for an empty seed list alike, so its one caller that read the answer collapsed two conditions into one empty batch and was correct only because liveness was asserted immediately before it at every call site. Safe by statement ordering is not safe by construction, and a sentinel that carries two meanings is deleted rather than documented. It has no error boundary: its owning completion collector preserves any synchronous exception with preceding failures. Structural commits, accepted stagger changes and the value batch share this mechanism, not their topology semantics. See ADR-064, ADR-069, ADR-071, ADR-078 and ADR-079.
+
+## #publishSeeds
+
+The one owner of what an empty seed list means, and the member values publishes through. A list that names nothing is not a publication, because even an empty batch opens one, notifies every batch subscriber and advances sequence, so it answers the empty batch rather than making one. A list that names anything goes to #invalidateSeeds. Seeds are not deduplicated here; GraphRuntime.flush already does that and a second owner of it would be a second answer.
+
+It asserts runtime liveness itself rather than trusting its caller to have asked, which is what makes its answer unambiguous by construction: every batch it hands back is one it published or one that had nothing to publish, and a disposed project reaches neither. values asks liveness too, after its recipe and for a different reason, and both calls are load-bearing rather than one of them redundant: that one is the re-ask a callback invalidated, this one is the precondition of the answer, and two side-effect-free field reads cannot disagree. #flush answers its own condition before delegating, so its skip never reaches this assertion. See ADR-079, ADR-064 and ADR-071.
+
+## #invalidateSeeds
+
+The one place a seed list becomes a published, recorded batch: invalidate the graph, record the returned diagnostics, answer the batch. Three members carried that pair as three copies, #flush, #invalidateOne and public invalidate, and the third had been left standing by reasoning inherited from the second rather than by evidence of its own.
+
+Every caller keeps its own preconditions and its own failure contract, which is the merge ADR-071 refused and is not this one: #flush skips a disposed runtime, #invalidateOne reports one, public invalidate additionally refuses reentrancy, and #publishSeeds decides emptiness. What none of them owns any more is the publication mechanics. Public invalidate is deliberately not folded into #flush: a caller may pass an empty list and still be answered the batch that publication produced, so folding it would change a public answer and make a public verb's return optional, which is a second failure contract rather than a deduplication. See ADR-079.
 
 ## #assertSameLifetimes
 
@@ -246,7 +260,7 @@ The shared precondition for editing a property or binding inside an authored plu
 
 The value tier's single-node flush and disposal report. Assert runtime liveness before invalidating; a disposed project must not publish, advance sequence or drain pending seeds, and an empty batch would falsely claim publication. Records returned diagnostics and returns the actual batch. Both value-write paths reach this owner rather than inline copies or public invalidate.
 
-Its body is unchanged by the value batch, deliberately. Four records and two shipped cases name this member as the published single-node value flush, so the batch decision goes in front of it in #publishValue rather than moving these two lines one member down, which would have turned two green cases red for no behavioural reason. It is still the only place a single-node value publication happens; it is no longer the only ending a value write can have. See ADR-064, ADR-069, ADR-070 and ADR-078.
+Still the only place a single-node value publication happens, still not the only ending a value write can have, and no longer a member that names the graph call: it asserts liveness and delegates the pair to #invalidateSeeds. ADR-078 kept the body on the measurement that two shipped cases read this declaration; remeasured, one does. PK-17 reads #writeValues, for its validation ordering rather than for any flush, so the cost of the move was one re-addressed case rather than two, and a third copy of the pair was found afterwards, which turns a tidy-up into an ownership defect. What the four records name is the assertion and the single-node answer, and both are unchanged. See ADR-064, ADR-069, ADR-070, ADR-078 and ADR-079.
 
 ## #publishValue
 
@@ -294,7 +308,7 @@ track and tryTrack hand back the ordinary TrackHandle, whose value members join 
 
 ## #teardown
 
-Release resources exactly once after marking the runtime dead. Capture whether the release is deferred, clear the pending flag, attempt each mounted-node detach separately, clear native instances and retained maps/open transaction state, then dispose graph and composition as separate steps. Independent failure never skips later release attempts. Retry is not safe for an arbitrary host that may have partially released; the guarantee is exactly-once attempts. See ADR-067 and issue #312.
+Release resources exactly once after marking the runtime dead. Capture whether the release is deferred, clear the pending flag, attempt each mounted-node detach separately, clear native instances, retained maps and both halves of open transaction state, a recipe's pending pair and a value batch's seed list, then dispose graph and composition as separate steps. Independent failure never skips later release attempts. Retry is not safe for an arbitrary host that may have partially released; the guarantee is exactly-once attempts. See ADR-067 and issue #312.
 
 The shared collector preserves failure identity and occurrence order. Every failure is recorded in bounded diagnostics as project-release-failed at dispose. Nested aggregate causes appear in diagnostic messages without flattening the actual thrown objects; cycles and hostile stringification cannot escape teardown. Direct disposal reports failures through the shared reporter. Deferred disposal records them without throwing over the original operation, its rollback error or its successful return. This preserves Engine failed-load cleanup attachment and the observable contracts exercised by RA-140 through RA-144.
 

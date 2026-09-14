@@ -468,15 +468,24 @@ describe("live values reach the graph without replacing it", () => {
     // have satisfied just as well. Now that the flush has a named owner it is asserted as an absence
     // at the caller and a presence at the owner, which is unwritable against a region bounded by a
     // neighbour because both members would sit in one window. See ADR-069.
-    const write = member(code(RUNTIME_SOURCE), "#writeValues(");
-    const flush = member(code(RUNTIME_SOURCE), "#invalidateOne(");
+    const source = code(RUNTIME_SOURCE);
+    const write = member(source, "#writeValues(");
+    const owner = member(source, "#invalidateSeeds(");
+    const flush = member(source, "#invalidateOne(");
     expect(write).not.toContain("this.#graph.invalidate(");
     expect(write).not.toContain("this.#diagnostics.recordAll(");
-    expect(flush).toContain("this.#graph.invalidate([nodeId])");
-    expect(flush).toContain("this.#diagnostics.recordAll(batch.diagnostics)");
-    // The report lives in the same member as the flush, which is what makes skipping and reporting
-    // one statement rather than two that could disagree.
+    // One owner, asserted as a count over the whole file rather than as a presence inside one
+    // member, which is strictly stronger than the form this replaces: that one stayed green while a
+    // second and a third copy of the same pair sat in the seed-list flush and in public invalidate.
+    // Issue #369 found the third, so the pair has one owner now and this is what says so.
+    expect(source.split("this.#graph.invalidate(")).toHaveLength(2);
+    expect(owner).toContain("this.#graph.invalidate(nodeIds)");
+    expect(owner).toContain("this.#diagnostics.recordAll(batch.diagnostics)");
+    // The report still lives with the flush that reports it, which is what keeps skipping and
+    // reporting one decision rather than two that could disagree: this member asserts liveness
+    // itself and then ends at the one owner above.
     expect(flush).toContain("this.#assertLive()");
+    expect(flush).toContain("this.#invalidateSeeds([nodeId])");
     handle.dispose();
   });
 
