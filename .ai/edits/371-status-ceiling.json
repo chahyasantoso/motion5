@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "expected_head": "c4ae9e076db334a4c56eaf68c1a268f3ae748e6a",
+  "expected_blobs": {
+    "docs/SESSION-STATUS.md": "e5161ca7f11cbd914c9f76c3e4e09f44535410df"
+  },
+  "message": "docs(status): leave the closed follow-up narrative to its own record, issue #371",
+  "edits": [
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "Its remainders are the `CITATION_PENDING` ratchet and [#371](https://github.com/chahyasantoso/motion5/issues/371); the six findings [#369](https://github.com/chahyasantoso/motion5/issues/369) deferred landed whole in [#370](https://github.com/chahyasantoso/motion5/pull/370) under ADR-079, so `#invalidateSeeds` is the one place a seed list becomes a published, recorded batch, `#publishSeeds` owns what an empty list means, `#flush` answers nothing, and that issue is closed.",
+      "replace": "Its remainders are the `CITATION_PENDING` ratchet and [#371](https://github.com/chahyasantoso/motion5/issues/371); [#369](https://github.com/chahyasantoso/motion5/issues/369) landed whole in [#370](https://github.com/chahyasantoso/motion5/pull/370) under ADR-079 and is closed."
+    }
+  ]
+}
