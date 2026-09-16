@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "operation": "apply",
+  "expected_head": "050530097819b5b1c2fc30f19d30a0fd599e2c3d",
+  "expected_blobs": {
+    "packages/core/src/runtime/graph-runtime.ts": "86d3f100fb23aa2ddc2925c77ca7e5f70729fc52"
+  },
+  "message": "docs(runtime): keep graph-runtime.ts under the sister doc trigger by citing its state owner",
+  "edits": [
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "    // Whether teardown has begun, not whether it finished, which is issue #408: the guard read\n    // `isDisposed` while the phase went terminal only after `#releaseBooking` had called host\n    // `Cancel.cancel`, so a cancel that re-entered `dispose` found a live runtime and ran this body\n    // twice. See ADR-090.\n    if (isRetiring(this.#phase)) return;\n    // Raised before the port is touched, which is what the guard above needs. Retiring rather than\n    // terminal, because the cancellation failure below is still this runtime's to report.\n    this.#phase = retiring(this.#phase);\n",
+      "replace": "    if (isRetiring(this.#phase)) return;\n    this.#phase = retiring(this.#phase);\n"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "    // Retiring counts, because teardown is what this job would publish over. Issue #408.\n    if (isRetiring(this.#phase) || !isPending(this.#pending)) return;",
+      "replace": "    if (isRetiring(this.#phase) || !isPending(this.#pending)) return;"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "    // A tick can arrive during teardown, because `unsubscribe` runs after the port is touched. #408.\n    if (isRetiring(this.#phase)) return;\n    if (event.tick <= this.#lastTick) {",
+      "replace": "    if (isRetiring(this.#phase)) return;\n    if (event.tick <= this.#lastTick) {"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "    // Retiring is refused too, so a verb called from inside a host `Cancel.cancel` cannot publish\n    // over a registry the statements below it are about to dispose. The message does not move. #408.\n    if (isRetiring(this.#phase)) throw new Error(\"GraphRuntime is disposed.\");",
+      "replace": "    // Retiring too, and the message does not move: it is still a runtime a caller may not use.\n    if (isRetiring(this.#phase)) throw new Error(\"GraphRuntime is disposed.\");"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "   * already accepted is cancelled rather than left to run and be refused, since issue #389 made the\n   * booking a claim about the scheduler; `#drainScheduled` still refuses on the one discriminant,\n   * for a job a port declined to cancel. See ADR-083 and ADR-084.\n   */",
+      "replace": "   * already accepted is cancelled rather than left to run and be refused, since issue #389 made the\n   * booking a claim about the scheduler; `#drainScheduled` still refuses on the one discriminant,\n   * for a job a port declined to cancel. See ADR-083 and ADR-084.\n   *\n   * Once, however host code re-enters it: `isRetiring` is asked rather than `isDisposed`, and the\n   * phase is raised before the port is touched. `graph-runtime-state.ts` owns why. Issue #408, and\n   * see ADR-090.\n   */"
+    }
+  ]
+}
