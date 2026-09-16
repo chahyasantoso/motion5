@@ -4,7 +4,7 @@ import { GraphBinding } from "../graph/binding";
 import type { GraphNode, GraphIR } from "../graph/ir";
 import { GraphPublisher, type PublisherNode, type PublisherSnapshot } from "./graph-publisher";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
-import type { Cancel, Scheduler } from "../ports/scheduler";
+import { deferredScheduler, type Cancel, type Scheduler } from "../ports/scheduler";
 import {
   COLD_MEMO,
   DISPOSED,
@@ -49,13 +49,21 @@ export interface GraphRuntimeOptions {
    */
   readonly interpolated?: (node: GraphNode) => () => MemberState;
 }
-function deferredBatch(sequence: number, seeds: readonly string[]): PatchBatch {
+/**
+ * Answers the batch a deferred publication hands back, and which of two futures the work has.
+ *
+ * `scheduled` is a question only `#scheduleDrain` can answer, and issue #383 is that the message
+ * answered it wrongly in both halves: it named an `invalidate` ADR-082 retired from this tier, and
+ * it named a scheduler a runtime built without one does not have. The rule id does not move.
+ */
+function deferredBatch(sequence: number, seeds: readonly string[], scheduled: boolean): PatchBatch {
   const ids = Object.freeze([...seeds]);
   const diagnostic: Diagnostic = Object.freeze({
     ruleId: DEFERRED_FLUSH_RULE,
     path: "deferred-flush",
-    message:
-      "A flush requested while subscribers were being notified was queued as one follow-up invalidation for the scheduler.",
+    message: scheduled
+      ? "A flush requested while subscribers were being notified was queued as one follow-up publication for a scheduled drain."
+      : "A flush requested while subscribers were being notified was queued as one follow-up publication carried by the next flush.",
     severity: "warning",
     ids,
   });
@@ -145,7 +153,9 @@ export class GraphRuntime {
     this.#clock = clock;
     this.#compose = compose;
     this.#interpolated = options.interpolated;
-    this.#scheduler = options.scheduler;
+    // Wrapped once here rather than guarded at every call site below. Issue #377, and see ADR-086.
+    this.#scheduler =
+      options.scheduler === undefined ? undefined : deferredScheduler(options.scheduler);
     this.#onFlushError = options.onFlushError;
     this.#onClockTick = options.onClockTick;
     this.#unsubscribe = this.#clock.subscribe((event) => this.#onTick(event));
@@ -277,8 +287,9 @@ export class GraphRuntime {
   #deferIfFlushing(seeds: readonly string[], tick?: number): PatchBatch | undefined {
     if (!isFlushing(this.#phase)) return undefined;
     this.#pending = deferring(this.#pending, seeds, tick);
-    this.#scheduleDrain();
-    return deferredBatch(this.#sequence, seeds);
+    // The batch says which future the work has, and the member that books is the one that knows.
+    const scheduled = this.#scheduleDrain();
+    return deferredBatch(this.#sequence, seeds, scheduled);
   }
   /**
    * Records `tick` as the frame number this runtime has reached, having re-asked that it may.
@@ -308,8 +319,10 @@ export class GraphRuntime {
    * reentrancy answer and no clock transition, because each of those has an owner above. Its one
    * precondition is asserted rather than stated, because an assertion is not a second owner of a
    * decision, it is the check that the decision held: it must not be called in the `flushing`
-   * phase, which `#deferIfFlushing` answers for both callers. A publisher failure re-queues the
-   * seeds this call was carrying and rethrows, so the work is deferred rather than dropped.
+   * phase, which `#deferIfFlushing` answers for both callers. Any failure between taking the
+   * pending payload and publishing re-queues the seeds this call was carrying and rethrows, so the
+   * work is deferred rather than dropped. Issue #378 is that the boundary used to begin after the
+   * snapshot was derived, and derivation runs injected caller code.
    */
   #flushSeeds(seeds: readonly string[]): PatchBatch {
     // Asked before anything moves, which is the whole of issue #382. A caller reaching here during
@@ -321,10 +334,15 @@ export class GraphRuntime {
     this.#pending = NOTHING_PENDING;
     this.#releaseBooking();
     const effectiveSeeds = [...new Set([...seeds, ...carried])];
-    const snapshot = this.#snapshotFor();
-    this.#sequence += 1;
-    this.#phase = beginFlush(this.#phase);
     try {
+      // Inside the boundary, which is the whole of issue #378: deriving a snapshot builds publisher
+      // nodes on a cold memo, and building one calls the injected `compose` and `interpolated`
+      // suppliers, so caller code throws here. `#sequence` moves inside with it and nothing
+      // observable moves with that. `beginFlush` does not, because the reentrancy window has to
+      // stay exactly where it is.
+      const snapshot = this.#snapshotFor();
+      this.#sequence += 1;
+      this.#phase = beginFlush(this.#phase);
       return this.#publisher.flush(snapshot, effectiveSeeds, this.#sequence);
     } catch (error) {
       // The frame, if there was one, was consumed before this call, so the requeue carries none.
@@ -441,12 +459,19 @@ export class GraphRuntime {
    * second job for one drain, which is the coalescing `scheduler-reentrancy` measures. A
    * transition rather than a boolean, for the reason `#deferIfFlushing` hands back a batch: two
    * callers that had to ask and then act could act differently. See ADR-083.
+   *
+   * It answers whether the scheduler is now holding a job for this runtime, because the diagnostic
+   * a deferral hands back has to say so and this is the only member that knows. Issue #383.
    */
-  #scheduleDrain(): void {
+  #scheduleDrain(): boolean {
     const scheduler = this.#scheduler;
-    if (scheduler === undefined) return;
+    if (scheduler === undefined) return false;
     const booked = bookingDrain(this.#phase);
-    if (booked === undefined) return;
+    // The handle is the answer rather than a fourth branch: the port holds a job for this runtime
+    // exactly when it is set, so a booking already held answers true where `bookingDrain` declined,
+    // a disposed runtime answers false, and a `schedule` that threw answers false because the
+    // boundary below released it. Issue #383.
+    if (booked === undefined) return this.#drainHandle !== undefined;
     this.#phase = booked;
     try {
       this.#drainHandle = scheduler.schedule(() => this.#drainScheduled());
@@ -454,6 +479,7 @@ export class GraphRuntime {
       this.#releaseBooking();
       this.#report(SCHEDULER_FAILURE_RULE, `Deferred flush scheduling failed: ${describe(error)}`);
     }
+    return this.#drainHandle !== undefined;
   }
 
   /**
