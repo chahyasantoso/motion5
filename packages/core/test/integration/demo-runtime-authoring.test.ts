@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { statedPublications } from "../helpers/publication-spy";
 import {
   ALL_NODE_IDS,
   ARM,
@@ -85,16 +86,17 @@ describe("demo runtime authoring", () => {
       test.flush();
       const chest = handle.get("walk/chest");
       const replace = vi.spyOn(runtime.graph, "replaceGraph");
-      const invalidate = vi.spyOn(runtime.graph, "flush");
+      const publication = vi.spyOn(runtime.graph, "flush");
       for (let cycle = 0; cycle < 2; cycle++) {
         replace.mockClear();
-        invalidate.mockClear();
+        publication.mockClear();
         const arms = handle.edit((tx) => {
           const walk = tx.motion("walk");
           return armTracks.map((track) => walk.addTrack(track));
         });
         expect(replace).toHaveBeenCalledTimes(1);
-        expect(invalidate).toHaveBeenCalledTimes(1);
+        // Caller-stated publications only, so a scheduled drain cannot supply this one. Issue #381.
+        expect(statedPublications(publication)).toHaveLength(1);
         expect(handle.motion("walk").trackIds).toHaveLength(13);
         for (const arm of arms) {
           expect(arm.live).toBe(true);
@@ -131,15 +133,15 @@ describe("demo runtime authoring", () => {
     const reference = playground();
     try {
       const replace = vi.spyOn(actual.runtime.graph, "replaceGraph");
-      const invalidate = vi.spyOn(actual.runtime.graph, "flush");
+      const publication = vi.spyOn(actual.runtime.graph, "flush");
       const track = actual.handle.track(nodeId(rig.goalTrack));
       const requires = track.requires;
       for (const offset of [10, -15]) {
         const x = rig.goal.x + offset;
         const y = rig.goal.y - offset;
-        invalidate.mockClear();
+        publication.mockClear();
         track.setValues({ x, y });
-        expect(invalidate).toHaveBeenCalledTimes(1);
+        expect(statedPublications(publication)).toHaveLength(1);
         expect(replace).not.toHaveBeenCalled();
         expect(track.requires).toEqual(requires);
         expect(track.definition.keyframes).toMatchObject({
@@ -163,13 +165,13 @@ describe("demo runtime authoring", () => {
     const reference = playground();
     try {
       const replace = vi.spyOn(actual.runtime.graph, "replaceGraph");
-      const invalidate = vi.spyOn(actual.runtime.graph, "flush");
+      const publication = vi.spyOn(actual.runtime.graph, "flush");
       const track = actual.handle.track(nodeId(rig.solverTrack));
       const requires = track.requires;
       for (const flip of [true, false]) {
-        invalidate.mockClear();
+        publication.mockClear();
         track.setKeyframe("ik", "flip", flip);
-        expect(invalidate).toHaveBeenCalledTimes(1);
+        expect(statedPublications(publication)).toHaveLength(1);
         expect(replace).not.toHaveBeenCalled();
         expect(track.requires).toEqual(requires);
         expect(track.definition.keyframes).toMatchObject({ ik: { values: { flip } } });

@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { fileURLToPath } from "node:url";
-import type { AuthoredStop, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+import type {
+  AuthoredStop,
+  Diagnostic,
+  ProjectDefinition,
+  TrackDefinition,
+} from "../../../src/contract/v5";
 import { StaleTrackHandleError, type TrackHandle } from "../../../src/contract/track-handle";
 import { PluginRegistry } from "../../../src/domain/plugins";
 import { Engine, type ProjectHandle } from "../../../src/engine";
@@ -14,6 +19,7 @@ import {
 } from "../../../src/runtime/project-runtime";
 import { createFakeInterpolator, createFakeScheduler } from "../../../src/testing/fakes";
 import { code, member } from "../../helpers/source-region";
+import { publicationsFor, statedPublications } from "../../helpers/publication-spy";
 
 /**
  * Issue #218, part B of #212, extended by issue #231. The two runtime entry points, neither of which
@@ -211,11 +217,11 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
     const arm = runtime.track(ARM);
     const before = arm.definition;
     const patch = runtime.graph.registry.get(ARM);
-    const invalidate = vi.spyOn(runtime.graph, "flush");
+    const publication = vi.spyOn(runtime.graph, "flush");
     expect(thrownBy(() => arm.setValues({ x: 260 }))).toBe(failure);
     expect(arm.definition).toBe(before);
     expect(runtime.graph.registry.get(ARM)).toBe(patch);
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(publication).not.toHaveBeenCalled();
     refuse = false;
     expect(arm.setValues({ x: 260 }).seeds).toEqual([ARM]);
     expect(arm.definition).not.toBe(before);
@@ -232,7 +238,7 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
     const before = arm.definition;
     const published = handle.get(ARM);
     const failure = new Error("build refused");
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
+    const publication = vi.spyOn(runtimeOf(handle).graph, "flush");
     const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
     create.mockImplementationOnce(() => {
       throw failure;
@@ -240,7 +246,7 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
     expect(thrownBy(() => arm.setValues({ rotation: FASTER }))).toBe(failure);
     expect(arm.definition).toBe(before);
     expect(handle.get(ARM)).toBe(published);
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(publication).not.toHaveBeenCalled();
     handle.seek(ARM, 0.5);
     expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 45 });
     arm.setValues({ rotation: FASTER });
@@ -263,7 +269,7 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
       kill();
       throw failure;
     });
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
+    const publication = vi.spyOn(runtimeOf(handle).graph, "flush");
     const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
     expect(thrownBy(() => arm.setValues({ rotation: FASTER }))).toBe(failure);
     // Engine installs at stage time and marks settled before kill. Rollback here is a no-op,
@@ -271,7 +277,9 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
     expect(retained(arm)).toEqual({ values: { x: 200, y: 300, rotation: FASTER } });
     expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 90 });
     expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
-    expect(invalidate).toHaveBeenCalledTimes(1);
+    // Caller-stated publications only, so a scheduled drain's empty seed list cannot supply the one
+    // this case is about. Issue #381.
+    expect(statedPublications(publication)).toHaveLength(1);
     expect(replaceGraph).not.toHaveBeenCalled();
     arm.setValues({ x: 260 });
     expect(values(handle, ARM)).toEqual({ x: 260, y: 300, rotation: 90 });
@@ -359,12 +367,12 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
       },
     });
     runtime.mount(ARM);
-    const invalidate = vi.spyOn(runtime.graph, "flush");
+    const publication = vi.spyOn(runtime.graph, "flush");
     const arm = runtime.track(ARM);
     expect(thrownBy(() => arm.setValues({ x: 260 }))).toBe(failure);
     expect(commit).toHaveBeenCalledTimes(1);
     expect(rollback).not.toHaveBeenCalled();
-    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(statedPublications(publication)).toHaveLength(1);
     expect(runtime.graph.registry.get(ARM)?.values.x).toBe(260);
     expect(runtime.graph.registry.get(ARM)?.sourceProgress).toBe(0);
     expect(arm.definition.keyframes?.fk).toEqual({ values: { x: 260 } });
@@ -444,48 +452,48 @@ describe("live values reach the graph without replacing it", () => {
     handle.dispose();
   });
 
-  it("LV-5 invalidates exactly once and returns that batch", () => {
+  it("LV-5 publishes exactly once for the node it named, and answers that batch", () => {
     const handle = load();
     const track = handle.track(ARM);
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
+    const publication = vi.spyOn(runtimeOf(handle).graph, "flush");
 
     const batch = track.overrideValues({ x: 260 });
 
-    expect(invalidate).toHaveBeenCalledTimes(1);
-    expect(invalidate).toHaveBeenCalledWith([ARM]);
-    expect(batch).toBe(invalidate.mock.results[0]?.value);
+    // Filtered by the seed list this write stated, rather than counted. A spy on `flush` sees every
+    // publication of any origin and a scheduled drain publishes through `flush([])`, so a bare count
+    // asserts "one publication" where this case means "one live write reached the graph once". The
+    // rename came with it: `invalidate` has not existed in this tier since #374. Issue #381.
+    expect(publicationsFor(publication, [ARM])).toHaveLength(1);
+    expect(statedPublications(publication)).toHaveLength(1);
+    expect(batch).toBe(publication.mock.results[0]?.value);
     expect(batch.seeds).toEqual([ARM]);
 
-    // One invalidate owner and one diagnostics channel, which is a claim about the code and is
-    // asserted as one: a healthy flush has nothing to record. Addressed by the member that owns the
-    // claim rather than by the next member's name, and that is not a tidy-up: the retired bounds
-    // read from the `#writeValues(` call inside `#handle`, which is declared earlier, to the
-    // `#replaceWithObservation` declaration, so this one-owner claim was being measured over a
-    // fifteen-member window containing `#apply` and `#invalidateOne`. See issue #314.
-    // Strictly stronger than the form this replaces, and the reason #314 landed first. The claim was
-    // always "one invalidate owner and one diagnostics channel"; it used to be asserted as two
-    // presences inside the caller, which a second flush statement elsewhere in the same member would
-    // have satisfied just as well. Now that the flush has a named owner it is asserted as an absence
-    // at the caller and a presence at the owner, which is unwritable against a region bounded by a
-    // neighbour because both members would sit in one window. See ADR-069.
-    const source = code(RUNTIME_SOURCE);
-    const write = member(source, "#writeValues(");
-    const owner = member(source, "#invalidateSeeds(");
-    const flush = member(source, "#invalidateOne(");
-    expect(write).not.toContain("this.#graph.flush(");
-    expect(write).not.toContain("this.#diagnostics.recordAll(");
-    // One owner, asserted as a count over the whole file rather than as a presence inside one
-    // member, which is strictly stronger than the form this replaces: that one stayed green while a
-    // second and a third copy of the same pair sat in the seed-list flush and in public invalidate.
-    // Issue #369 found the third, so the pair has one owner now and this is what says so.
-    expect(source.split("this.#graph.flush(")).toHaveLength(2);
-    expect(owner).toContain("this.#graph.flush(nodeIds)");
-    expect(owner).toContain("this.#diagnostics.recordAll(batch.diagnostics)");
-    // The report still lives with the flush that reports it, which is what keeps skipping and
-    // reporting one decision rather than two that could disagree: this member asserts liveness
-    // itself and then ends at the one owner above.
-    expect(flush).toContain("this.#assertLive()");
-    expect(flush).toContain("this.#invalidateSeeds([nodeId])");
+    // The diagnostics half of the same claim, behaviourally. Issue #379: "one diagnostics channel"
+    // is a statement about what the runtime does with a batch, and the source-text assertions that
+    // used to stand here were a proxy for it that could fail for a legal change and pass for the
+    // illegal one they were written to catch. A publication carrying a diagnostic is recorded once,
+    // through the one channel, which is what the claim always meant.
+    const probe: Diagnostic = Object.freeze({
+      ruleId: "lv5-probe",
+      path: ARM,
+      message: "One recording per publication.",
+      severity: "warning",
+      ids: Object.freeze([ARM]),
+    });
+    const before = runtimeOf(handle).diagnostics.entries.length;
+    publication.mockReturnValueOnce(
+      Object.freeze({ ...batch, diagnostics: Object.freeze([probe]) }),
+    );
+    track.overrideValues({ x: 261 });
+
+    expect(
+      runtimeOf(handle).diagnostics.entries.filter((entry) => entry.ruleId === "lv5-probe"),
+    ).toHaveLength(1);
+    expect(runtimeOf(handle).diagnostics.entries).toHaveLength(before + 1);
+
+    // The mechanical ownership scan this case used to carry lives in
+    // `publication-ownership.test.ts`, which is named after what it scans and states its own scope,
+    // so a legitimate new call site fails a scan rather than a case named after live values.
     handle.dispose();
   });
 
@@ -594,7 +602,7 @@ describe("live values reach the graph without replacing it", () => {
     handle.seek(ARM, 0.5);
     const before = arm.definition;
     const published = values(handle, ARM);
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
+    const publication = vi.spyOn(runtimeOf(handle).graph, "flush");
     // Definition-shaped input, so `validateKeyframes` owns its shape and this is the one write that
     // has to reach it. A stop with no position is `stop-position`.
     const malformed = [{ v: 1 }] as unknown as readonly AuthoredStop[];
@@ -604,12 +612,12 @@ describe("live values reach the graph without replacing it", () => {
 
     expect(arm.definition).toBe(before);
     expect(values(handle, ARM)).toEqual(published);
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(publication).not.toHaveBeenCalled();
 
     // The static-only path is asserted not to reach the validator at all, which is what keeps its
     // cost exactly what it was.
     arm.setValues({ x: 260 });
-    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(publicationsFor(publication, [ARM])).toHaveLength(1);
     // Bounded by the member the claim is about rather than by a neighbour's name. See issue #314.
     const write = member(code(RUNTIME_SOURCE), "#writeValues(");
     expect(write).toContain("if (involved)");
@@ -657,20 +665,26 @@ describe("live values reach the graph without replacing it", () => {
 
   it("LV-15 reports the disposal from the owner that decided it, and publishes nothing", () => {
     const rig = directRig("writeValues");
-    const invalidate = vi.spyOn(rig.runtime.graph, "flush");
+    const publication = vi.spyOn(rig.runtime.graph, "flush");
 
     const thrown = thrownBy(() => rig.runtime.setValues(ARM, { x: 260 }));
 
-    // The layer that owns project lifecycle rather than the one that noticed. Today this reads
-    // `Error: GraphRuntime is disposed.`, because `#writeValues` ends at an inline
-    // `this.#graph.invalidate` that reaches `GraphRuntime`'s own liveness check, and it gets there
-    // after the retained entry has been written back into a map the teardown already cleared. Issue
-    // #288 corrected exactly this for `edit` and #303 for a commit; this is where it survived.
+    // The layer that owns project lifecycle rather than the one that noticed, and it reads
+    // `ProjectRuntime is disposed.` because that owner asserts its own liveness before the graph is
+    // asked anything: this write reaches `#writeValues`, whose publication ends at `#publishValue`
+    // and then `#invalidateOne` and `#invalidateSeeds`, and none of the three runs.
+    //
+    // The explanation this replaces described an inline `this.#graph.invalidate` inside
+    // `#writeValues`. ADR-078 moved that publication two records ago and #374 then deleted the
+    // member outright, so a reader could not find the thing the paragraph was about. The #288 and
+    // #303 provenance goes with it: both corrected a lower layer reporting a disposal it merely
+    // noticed, and the claim here is that the owner refuses up front, which is a different one.
+    // Issue #385.
     expect((thrown as Error).message).toBe("ProjectRuntime is disposed.");
     // Nothing published. A batch nobody can read still opens one, notifies every subscriber, moves
     // the sequence and drains whatever a deferred flush was holding, which is why the flush is the
     // one thing a disposal skips rather than completes.
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(publication).not.toHaveBeenCalled();
     // The phase itself completed rather than being abandoned part-way, and that is the deferral's
     // whole point: this path has no revert, so a guard between the seam and the retained write would
     // leave the mask on the compiled Track with no retained definition naming it. Green on both
