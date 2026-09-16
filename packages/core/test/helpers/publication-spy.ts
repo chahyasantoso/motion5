@@ -9,20 +9,37 @@
  * `toHaveBeenCalledTimes(1)` therefore asserts "one publication of any origin" while the case around
  * it says "one live write reached the graph once".
  *
- * These three answers close that gap by reading the seed list each call stated, which is the one
- * thing that tells the two origins apart. Issue #381, and see ADR-087.
+ * These answers close that gap by reading the seed list each call stated, which is the one thing
+ * about a call this tier can actually check. Issue #381, and see ADR-087.
+ *
+ * What a seed list cannot do is name an origin, and claiming it could was issue #404. `flush` is
+ * public and an empty list is a real publication its own docblock insists is not a cheap one, so a
+ * direct `flush([])` states exactly what a drain's replay states; and since ADR-088 a deferral that
+ * carried a frame replays through `flushAtTick`, which a spy on `flush` does not see at all. Origin
+ * is `publication-origin.test.ts`'s question, because it is the one case that watches the scheduler
+ * callback itself, and these answers are named for the reading they perform rather than for the
+ * origin they cannot prove.
  */
 
-/** The shape these read, so nothing here has to name vitest's generic mock type. */
-export interface PublicationSpy {
-  readonly mock: { readonly calls: ReadonlyArray<readonly unknown[]> };
-}
+/** One recorded call: the seed list it stated, and whatever else the member it watches takes. */
+export type Publication = readonly [readonly string[], ...unknown[]];
 
-/** The stated seed list of one recorded call, or `undefined` when the first argument is not one. */
-function seedsOf(call: readonly unknown[]): readonly string[] | undefined {
-  const first = call[0];
-  if (!Array.isArray(first)) return undefined;
-  return first.every((id) => typeof id === "string") ? (first as readonly string[]) : undefined;
+/**
+ * The shape these read: a spy on a member that states its seed list first.
+ *
+ * Tied to the call shape rather than to `unknown`, which is the second half of #404. A spy on
+ * `replaceGraph` was structurally assignable, and several of the migrated cases hold one in the same
+ * scope as a publication spy, so the wrong variable was one character away: `seedsOf` answered
+ * `undefined` for every call, every answer below was empty, and a negative assertion passed while
+ * watching the wrong member. The tuple is what refuses that, and it is still not vitest's generic
+ * mock type, so nothing here has to name one.
+ *
+ * `seedsOf` is deleted with it. A runtime guard asking whether the first argument is a string array
+ * is a second answer to a question the type now answers, and its `undefined` branch was the thing
+ * that made watching the wrong member quiet.
+ */
+export interface PublicationSpy {
+  readonly mock: { readonly calls: ReadonlyArray<Publication> };
 }
 
 /**
@@ -34,25 +51,32 @@ function seedsOf(call: readonly unknown[]): readonly string[] | undefined {
 export function publicationsFor(
   spy: PublicationSpy,
   seeds: readonly string[],
-): ReadonlyArray<readonly unknown[]> {
-  return spy.mock.calls.filter((call) => {
-    const stated = seedsOf(call);
-    if (stated === undefined || stated.length !== seeds.length) return false;
-    return seeds.every((seed, index) => stated[index] === seed);
-  });
+): ReadonlyArray<Publication> {
+  return spy.mock.calls.filter(
+    ([stated]) =>
+      stated.length === seeds.length && seeds.every((seed, index) => stated[index] === seed),
+  );
 }
 
 /**
- * Answers every publication that stated at least one seed, which is every caller-stated one.
+ * Answers every publication that named at least one node, which is what a write asks for.
  *
- * The drain is the only publication in this tier that states nothing, so this is the count a case
- * about a write actually means. Use it where the origin is the point and the exact list is not.
+ * No publication a drain replays names one, so this is the count a case about a write means. It is
+ * a claim about the seed list and not about where the call came from, which its own docblock also
+ * used to get wrong: use it where the exact list is not the point.
  */
-export function statedPublications(spy: PublicationSpy): ReadonlyArray<readonly unknown[]> {
-  return spy.mock.calls.filter((call) => (seedsOf(call)?.length ?? 0) > 0);
+export function statedPublications(spy: PublicationSpy): ReadonlyArray<Publication> {
+  return spy.mock.calls.filter(([seeds]) => seeds.length > 0);
 }
 
-/** Answers every publication that stated no seeds: a scheduled drain, and nothing else. */
-export function drains(spy: PublicationSpy): ReadonlyArray<readonly unknown[]> {
-  return spy.mock.calls.filter((call) => seedsOf(call)?.length === 0);
+/**
+ * Answers every publication that stated no seeds, and says nothing about what made them.
+ *
+ * `drains`, and "a scheduled drain, and nothing else", until issue #404: a name and a docblock that
+ * both claimed an origin this mechanism cannot see. A direct `flush([])` is indistinguishable here,
+ * and a drain that carried a frame replays through `flushAtTick` and is not here at all. The reading
+ * is a useful one and it is the only thing being answered, so it is what the name says.
+ */
+export function emptySeedPublications(spy: PublicationSpy): ReadonlyArray<Publication> {
+  return spy.mock.calls.filter(([seeds]) => seeds.length === 0);
 }
