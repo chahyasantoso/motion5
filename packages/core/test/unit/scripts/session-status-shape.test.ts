@@ -34,34 +34,62 @@ import { describe, expect, it } from "vitest";
  *
  * A section that may hold one entry cannot accumulate a log at all, which is the property the
  * closed list above already had for headings, applied one level down to the place all three
- * departed logs actually grew. It also refuses the staleness a ceiling cannot see: **Now** held six
- * entries and five described closed work, and two of the three under **Next in line** called
- * merged pull requests unmerged. The phase bullet was a second Now with a different name and the
- * longest half-life of anything in the file, so it is refused by name. See ADR-085.
+ * departed logs actually grew. What it refuses is an accumulated log, by cardinality, and that is
+ * what all three of them were: **Now** held six entries and five described closed work, and two of
+ * the three under **Next in line** called merged pull requests unmerged. Cardinality is the whole
+ * of it, which is issue #423. One entry that is false satisfies every case in this file, so
+ * freshness is not gated here and is not claimed to be: it is the human check `AGENTS.md` names and
+ * ADR-085's decision four owns, and a gate that claims more than it checks invites the reader to
+ * stop being the mechanism that does. The phase bullet was a second Now with a different name and
+ * the longest half-life of anything in the file, so it is refused by name. See ADR-085.
  *
  * Issue #403 is that gate's own machinery rather than its policy. The section reader answered from
  * an arbitrary byte offset for a heading it could not find, a bare marker counted as an entry, and
  * the phase rule refused one formatting of the label rather than the label itself. A gate that
  * answers confidently from the wrong place is the defect this file exists to refuse, so the reader
  * is total, an entry has to state something, and the label is read where a label goes. See ADR-085.
+ *
+ * Issues #420, #421 and #422 are the same layer again, and they are why the grammar is now written
+ * down rather than inferred. The reader had a line grammar narrower than Markdown and said so
+ * nowhere, so it depended on Prettier for two thirds of it while `core.autocrlf` was never a
+ * formatter question at all. One bullet set answered two questions and carried the entry count's
+ * nested exemption across to the label rule, which had never argued for one. And the label was
+ * terminated by a list of four characters with no room for the number a writer puts after the word.
+ * See ADR-085.
  */
 
 const DOCS = fileURLToPath(new URL("../../../../../docs/", import.meta.url));
 const STATUS = join(DOCS, "SESSION-STATUS.md");
 const LINK = /\]\((\.\/[^)]+\.md)\)/g;
-const HEADING = /^## .*$/gm;
 const COMMENTS = /<!--[\s\S]*?-->/g;
 const EMPHASIS = /[*_]/g;
+const LINE_END = /\s+$/;
+const LABEL_LEAD = /^\W+/;
+const SECTION_MARKER = "## ";
+const BULLET = "- ";
 
 /**
  * The forbidden bullet's label, in the label position and read case-insensitively.
  *
- * Optionally `current`, then `phase`, then the end of the label rather than more words: a colon, a
- * hyphen, an en dash, an em dash or nothing at all end it, because the spellings issue #403 found
- * use every one of them. Prose that mentions a phase further along a real entry is not a label and
+ * Optionally `current`, then `phase`, then an optional numeric designator, then the end of the label
+ * rather than more words. Prose that mentions a phase further along a real entry is not a label and
  * is not refused, and this file's own **Open, and not scheduled** section relies on that.
+ *
+ * Issue #422 is the two halves of that sentence an enumeration could not reach. `Phase 6:` was
+ * allowed, because the number sat between the label and the colon the rule was looking for, so a
+ * writer could satisfy the gate by numbering the phase they were already numbering; #384 exists
+ * because a reminder was not enough, and a rule satisfied by numbering is a reminder again. And the
+ * terminator was a list of four characters, so `Phase = live editing` and `Phase / live editing`
+ * passed a rule whose own issue existed to lengthen that list. Any character that is neither a word
+ * character nor whitespace ends the label now, which is the answer that stops the list from being
+ * the thing maintained. Naming a closed set of terminators here instead is refused for that reason.
+ *
+ * The distinction the live file depends on survives both widenings, and it is the same one the rule
+ * already drew without a number. `Phase 6 packaging follows the current phase.` is a real entry
+ * under **Open, and not scheduled** and stays allowed, because no separator follows its designator.
+ * The label is refused; the noun is not. See ADR-085.
  */
-const PHASE_LABEL = /^(?:current\s+)?phase\s*(?:[:\u2013\u2014-]|$)/i;
+const PHASE_LABEL = /^(?:current\s+)?phase(?:\s*\d+)?\s*(?:[^\w\s]|$)/i;
 
 /**
  * Comfortably above the rewritten file and far below any of the three logs that left it. The number
@@ -100,19 +128,60 @@ const SINGLE_ENTRY = ["## Now", "## Next in line"];
  *
  * Lines rather than bytes, so a heading on the last line of the file is found like any other and
  * the arithmetic that caused the defect is deleted rather than corrected.
+ *
+ * The lines arrive normalised, which is issue #421: exact equality is the right comparison for a
+ * closed section list and the wrong one for a line a checkout may have added a carriage return to.
  */
 function sectionLines(text: string, heading: string): readonly string[] {
-  const lines = text.split("\n");
+  const lines = statusLines(text);
   const start = lines.indexOf(heading);
   if (start === -1) throw new Error(`${heading} is absent, so its entries cannot be counted.`);
   const rest = lines.slice(start + 1);
-  const end = rest.findIndex((line) => line.startsWith("## "));
+  const end = rest.findIndex((line) => line.startsWith(SECTION_MARKER));
   return end === -1 ? rest : rest.slice(0, end);
 }
 
-/** The top-level bullets in `lines`, so every rule below reads a bullet the same way. */
+/**
+ * The file as lines, with the trailing whitespace a checkout or an unformatted edit can add removed.
+ *
+ * The one owner of how this file becomes lines, and the first half of issue #421. Each reader used
+ * to split for itself and compare a heading by exact equality, so a Windows checkout with
+ * `core.autocrlf` stored the first line as `## Now` followed by a carriage return, the heading was
+ * absent, and the gate refused a file that has it while naming a section it had never found. A
+ * heading a writer left a trailing space on read the same way, and Prettier strips that one, which
+ * is the actual finding: the gate depended on the formatter for its grammar and said so nowhere.
+ *
+ * Two things it deliberately does not normalise, stated here rather than assumed. A list marker is a
+ * hyphen, because Prettier normalises `*` and `+` to `-`: one marker in one file is a contract worth
+ * defending and three markers is a parser a status file does not need. Prose is fence-free, because
+ * an unindented section marker inside a fenced code block is read as a real boundary; this file has
+ * never had a fenced block, and what that produces is a loud failure against the section list rather
+ * than a bypass of anything, which is why it is the part left alone. See ADR-085.
+ */
+function statusLines(text: string): readonly string[] {
+  return text.split("\n").map((line) => line.replace(LINE_END, ""));
+}
+
+/** The top-level bullets in `lines`, which is what the entry count reads and only it. */
 function topLevelBullets(lines: readonly string[]): readonly string[] {
-  return lines.filter((line) => line.startsWith("- "));
+  return lines.filter((line) => line.startsWith(BULLET));
+}
+
+/**
+ * Every list bullet in `lines`, at any indentation, answered without its indent.
+ *
+ * The phase rule read `topLevelBullets`, and issue #420 is what one bullet set answering two
+ * questions cost. The nested exemption was argued for the entry count, where the rule is one entry
+ * rather than one line, and it was never argued for the label, so a phase bullet indented once under
+ * a real entry was counted by nothing, refused by nothing, and fully visible to every reader of the
+ * file. The bypass cost one indent and no argument. The entry count stays top-level and the label is
+ * read on every bullet, which is the honest shape: an entry may need a sub-list, and no part of an
+ * entry may be labelled a phase. Amending ADR-085 to permit a nested phase bullet is refused,
+ * because the nested text is exactly as readable as the top-level one, so it recreates the stale
+ * second **Now** that decision removed. See ADR-085.
+ */
+function allBullets(lines: readonly string[]): readonly string[] {
+  return lines.map((line) => line.trimStart()).filter((line) => line.startsWith(BULLET));
 }
 
 /**
@@ -123,7 +192,7 @@ function topLevelBullets(lines: readonly string[]): readonly string[] {
  * nothing a reader can check or a later slice can replace. Issue #403.
  */
 function isEntry(bullet: string): boolean {
-  return bullet.slice("- ".length).replace(COMMENTS, "").trim() !== "";
+  return bullet.slice(BULLET.length).replace(COMMENTS, "").trim() !== "";
 }
 
 /**
@@ -145,9 +214,17 @@ function entriesUnder(text: string, heading: string): readonly string[] {
  * and a `Current phase` bullet all passed the gate that exists to refuse them. Emphasis is stripped
  * and the label is matched in the label position only, which is narrower than matching the word on
  * purpose: the noun is allowed anywhere in an entry, the label is allowed nowhere. Issue #403.
+ *
+ * Leading non-word characters are stripped before the match, which is the decoration half of issue
+ * #422 decided rather than left to omission. A decorated label is still a label, so an emoji before
+ * the word and a bare `[Phase](./IMPLEMENTATION-PLAN.md):` are both refused. A link inside a
+ * sentence is not a label and stays allowed, because stripping only what leads the bullet cannot
+ * reach it. See ADR-085.
  */
 function statesPhase(bullet: string): boolean {
-  return PHASE_LABEL.test(bullet.slice("- ".length).replace(EMPHASIS, "").trim());
+  return PHASE_LABEL.test(
+    bullet.slice(BULLET.length).replace(EMPHASIS, "").trim().replace(LABEL_LEAD, ""),
+  );
 }
 
 async function status(): Promise<string> {
@@ -156,7 +233,7 @@ async function status(): Promise<string> {
 
 describe("session status shape", () => {
   it("carries exactly the sections a status file owns, and in that order", async () => {
-    const headings = [...(await status()).matchAll(HEADING)].map((match) => match[0]);
+    const headings = statusLines(await status()).filter((line) => line.startsWith(SECTION_MARKER));
     expect(headings).toEqual(SECTIONS);
   });
 
@@ -176,7 +253,9 @@ describe("session status shape", () => {
   });
 
   it("states no phase, because a phase is a second Now with a longer half-life", async () => {
-    const bullets = topLevelBullets((await status()).split("\n"));
+    // Every bullet at any indent, which is issue #420: the nested exemption was argued for the
+    // entry count, and the label was never part of that argument.
+    const bullets = allBullets(statusLines(await status()));
     expect(bullets.filter(statesPhase)).toEqual([]);
   });
 
@@ -219,6 +298,51 @@ describe("the shape gate reads a section totally", () => {
     expect(entriesUnder("## Now\n- one\n  - detail\n  - more detail\n", "## Now")).toHaveLength(1);
     expect(entriesUnder("## Now\n- one\n- two\n", "## Now")).toHaveLength(2);
   });
+
+  it("reads a section a Windows checkout handed it with carriage returns", () => {
+    expect(entriesUnder("## Now\r\n- one\r\n", "## Now")).toEqual(["- one"]);
+  });
+
+  it("reads a heading an unformatted edit left a trailing space on", () => {
+    expect(entriesUnder("## Now \n- one\n", "## Now")).toEqual(["- one"]);
+  });
+
+  it("counts hyphen markers only, because one marker in one file is the contract", () => {
+    expect(entriesUnder("## Now\n* one\n+ two\n", "## Now")).toEqual([]);
+  });
+
+  it("counts the hyphen entry in a mixed section, which is what that contract costs", () => {
+    // Two visible entries and one counted, so the one-entry rule passes on a section that breaks it.
+    // Recognising `*` and `+` is refused, and this is the cost of that refusal pinned rather than
+    // discovered: Prettier normalises markers before this gate ever reads them, and the case exists
+    // so that dependency is written down instead of assumed. Issue #421.
+    expect(entriesUnder("## Now\n- one\n* two\n", "## Now")).toEqual(["- one"]);
+  });
+
+  it("treats a section marker inside a fence as a real boundary, loudly rather than quietly", () => {
+    // Left alone rather than fixed, and the least valuable of the four: it produces a
+    // correct-looking failure against the section list rather than a bypass, and this file has never
+    // had a fenced block. Issue #421.
+    const fenced = "## Now\n- one\n\n```md\n## Next in line\n```\n";
+    expect(entriesUnder(fenced, "## Now")).toEqual(["- one"]);
+  });
+
+  it("counts one entry and refuses a phase nested under it", () => {
+    // The two readings split, which is issue #420. The entry count keeps its nested exemption; the
+    // label rule never had one to keep.
+    const nested = "## Now\n- one\n  - **Phase:** live editing\n";
+    expect(entriesUnder(nested, "## Now")).toEqual(["- one"]);
+    expect(allBullets(statusLines(nested)).filter(statesPhase)).toEqual([
+      "- **Phase:** live editing",
+    ]);
+  });
+
+  it("leaves an ordinary nested bullet uncounted and unrefused", () => {
+    // The widening reads every bullet for a label, and starts counting none of them as entries.
+    const nested = "## Now\n- one\n  - a detail that is not a label\n";
+    expect(entriesUnder(nested, "## Now")).toEqual(["- one"]);
+    expect(allBullets(statusLines(nested)).filter(statesPhase)).toEqual([]);
+  });
 });
 
 describe("the shape gate refuses the phase label rather than one spelling of it", () => {
@@ -239,7 +363,38 @@ describe("the shape gate refuses the phase label rather than one spelling of it"
       "- Phase 6 packaging follows the current phase.",
       "- **The publication seam is the live area:** the second pass is landing on one base.",
       "- A phase with no inverse completes rather than refusing partway.",
+      "- A slice that [names a phase](./IMPLEMENTATION-PLAN.md) is not labelling one.",
     ];
     for (const bullet of allowed) expect(statesPhase(bullet), bullet).toBe(false);
+  });
+
+  it("refuses a numbered label, which is the spelling a writer reaches for first", () => {
+    // The live file's legitimate entry and the forbidden label differed by a colon the old rule
+    // could not see, because the number sat between the label and it. Issue #422.
+    const numbered = [
+      "- Phase 6: live editing",
+      "- Phase\u00a06: live editing",
+      "- **Phase 6 \u2014** live editing",
+    ];
+    for (const bullet of numbered) expect(statesPhase(bullet), bullet).toBe(true);
+  });
+
+  it("refuses a decorated label, because a decorated label is still a label", () => {
+    const decorated = [
+      "- \u{1f9ed} Phase: live editing",
+      "- [Phase](./IMPLEMENTATION-PLAN.md): live editing",
+      "- \u2192 Phase: live editing",
+    ];
+    for (const bullet of decorated) expect(statesPhase(bullet), bullet).toBe(true);
+  });
+
+  it("ends the label at any separator rather than at a list of four", () => {
+    const separated = [
+      "- Phase = live editing",
+      "- Phase / live editing",
+      "- Phase | live editing",
+      "- Phase\u00a0: live editing",
+    ];
+    for (const bullet of separated) expect(statesPhase(bullet), bullet).toBe(true);
   });
 });
