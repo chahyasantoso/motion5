@@ -55,3 +55,9 @@ A flaky test is fixed or deleted in the same working session. Skipping a test to
 ## Coverage policy
 
 Coverage is reported but not the release gate. The release gate is the invariant matrix, public package consumer, migration suite, contract suites, integration behavior, and deterministic benchmarks.
+
+## Mutation policy
+
+`stryker.config.json` holds an explicit `mutate` list rather than a directory glob, and that is deliberate: a glob would adopt every future module without anyone deciding to. What follows from it is that the list has to be maintained when logic moves, and [issue #419](https://github.com/chahyasantoso/motion5/issues/419) is what happens when it is not. The second quality pass over the runtime publication seam moved the interesting logic out of `graph-runtime.ts` into `graph-runtime-state.ts`, `diagnostic-report.ts` and `ports/scheduler.ts`, so every invariant that pass decided lived where no mutant was generated. That is not a gate failure, because the mutation run is not a required check. It is a coverage-honesty problem, because a score that did not move for want of an owner in the list reads exactly like a score that did not move because nothing regressed. The three paths are named explicitly, and `packages/core/test/unit/scripts/mutation-config.test.ts` is what keeps the list from drifting again silently.
+
+The thresholds predate that widening and the first run after it is a baseline rather than a regression. `break` is left at the number it was, deliberately, because a number nobody has measured is worse than one that is honestly stale: the score is expected to move, the new state module to score well, and the two boundaries to expose gaps, since a `catch` that swallows and a flag that is read once are the shapes mutation testing is good at. Re-pin the thresholds from a measured run, in the pull request that measures it, and never adjust them to keep a run green.
