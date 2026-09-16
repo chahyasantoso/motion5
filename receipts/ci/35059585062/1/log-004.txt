@@ -1,0 +1,16 @@
+ccess
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-16T05:29:03.5504646Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-16T05:29:03.5550362Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-16T05:29:03.5551703Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-16T05:29:03.5552466Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-16T05:29:03.5553121Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-16T05:29:03.5553884Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-16T05:29:03.5715406Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-16T05:29:04.7064628Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-16T05:29:04.7065391Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-16T05:29:04.7105098Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-16T05:29:04.7105917Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-16T05:29:04.7106607Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-16T05:29:04.7107065Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-16T05:29:04.7107528Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-16T05:29:04.7238981Z ##[error]Process completed with exit code 1.
