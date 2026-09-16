@@ -4,8 +4,9 @@
  * #375 retargeted twenty spies from the retired `GraphRuntime.invalidate` to `flush` and kept the
  * old local name. ADR-081 priced that move and ADR-082 answered half of its worry correctly: after
  * the split, `flush` is no longer the tick path, so a spy on it sees strictly less than it did
- * before. The surviving half is the drain. `#scheduleDrain` replays through `flush([])`, so a spy on
- * `flush` observes both the caller-stated publication a case is about and any scheduled drain, and
+ * before. The surviving half is the drain: `#drainScheduled` replays through `flush([])` when the
+ * deferral it consumes carried no frame, so a spy on `flush` observes both the caller-stated
+ * publication a case is about and a scheduled drain of that shape, and
  * `toHaveBeenCalledTimes(1)` therefore asserts "one publication of any origin" while the case around
  * it says "one live write reached the graph once".
  *
