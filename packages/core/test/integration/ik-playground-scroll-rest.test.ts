@@ -186,7 +186,7 @@ describe("IK playground scroll-only rest blending", () => {
       expect(pose(handle)).toEqual(rest);
       expect(ALL_NODE_IDS.map((id) => handle.track(id).requires)).toEqual(bindings);
       expect(replace).not.toHaveBeenCalled();
-      const invalidate = vi.spyOn(runtime.graph, "invalidate");
+      const invalidate = vi.spyOn(runtime.graph, "flush");
       controller.commit();
       expect(invalidate).not.toHaveBeenCalled();
     } finally {

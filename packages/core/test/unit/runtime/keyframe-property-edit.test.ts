@@ -189,7 +189,7 @@ describe("keyframe recompilation finalizes the stage it actually owns", () => {
       kill();
       throw failure;
     });
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
+    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
     const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
     expect(thrownBy(() => arm.setKeyframe("transform", "y", 300))).toBe(failure);
     expect(retained(arm)).toEqual({ values: { x: 200, y: 300, rotation: AUTHORED_ROTATION } });
@@ -214,7 +214,7 @@ describe("keyframe recompilation finalizes the stage it actually owns", () => {
     const before = arm.definition;
     const published = handle.get(ARM);
     const failure = new Error("new leaf refused to build");
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
+    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
     create.mockImplementationOnce(() => {
       throw failure;
     });
@@ -234,7 +234,7 @@ describe("one authored property, inside a group this node already authors", () =
     const handle = load();
     const arm = declaring(handle, ARM);
     const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
+    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
 
     const batch = arm.setKeyframe("transform", "x", 260);
 
@@ -349,7 +349,7 @@ describe("one authored property, inside a group this node already authors", () =
     const before = arm.definition;
     const published = values(handle, ARM);
     const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
+    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
 
     const thrown = thrownBy(() => arm.setKeyframe("fk", "length", 5));
 
@@ -389,7 +389,7 @@ describe("one authored property, inside a group this node already authors", () =
     const arm = declaring(handle, ARM);
     const before = arm.definition;
     const published = values(handle, ARM);
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
+    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
 
     const staticAtAnimated = thrownBy(() => arm.setKeyframe("transform", "rotation", 5));
     const stopsAtStatic = thrownBy(() => arm.setKeyframe("transform", "x", FASTER));

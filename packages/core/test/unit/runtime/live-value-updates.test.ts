@@ -211,7 +211,7 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
     const arm = runtime.track(ARM);
     const before = arm.definition;
     const patch = runtime.graph.registry.get(ARM);
-    const invalidate = vi.spyOn(runtime.graph, "invalidate");
+    const invalidate = vi.spyOn(runtime.graph, "flush");
     expect(thrownBy(() => arm.setValues({ x: 260 }))).toBe(failure);
     expect(arm.definition).toBe(before);
     expect(runtime.graph.registry.get(ARM)).toBe(patch);
@@ -232,7 +232,7 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
     const before = arm.definition;
     const published = handle.get(ARM);
     const failure = new Error("build refused");
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
+    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
     const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
     create.mockImplementationOnce(() => {
       throw failure;
@@ -263,7 +263,7 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
       kill();
       throw failure;
     });
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
+    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
     const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
     expect(thrownBy(() => arm.setValues({ rotation: FASTER }))).toBe(failure);
     // Engine installs at stage time and marks settled before kill. Rollback here is a no-op,
@@ -359,7 +359,7 @@ describe("direct-write failures respect the actual stage lifecycle", () => {
       },
     });
     runtime.mount(ARM);
-    const invalidate = vi.spyOn(runtime.graph, "invalidate");
+    const invalidate = vi.spyOn(runtime.graph, "flush");
     const arm = runtime.track(ARM);
     expect(thrownBy(() => arm.setValues({ x: 260 }))).toBe(failure);
     expect(commit).toHaveBeenCalledTimes(1);
@@ -447,7 +447,7 @@ describe("live values reach the graph without replacing it", () => {
   it("LV-5 invalidates exactly once and returns that batch", () => {
     const handle = load();
     const track = handle.track(ARM);
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
+    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
 
     const batch = track.overrideValues({ x: 260 });
 
@@ -472,14 +472,14 @@ describe("live values reach the graph without replacing it", () => {
     const write = member(source, "#writeValues(");
     const owner = member(source, "#invalidateSeeds(");
     const flush = member(source, "#invalidateOne(");
-    expect(write).not.toContain("this.#graph.invalidate(");
+    expect(write).not.toContain("this.#graph.flush(");
     expect(write).not.toContain("this.#diagnostics.recordAll(");
     // One owner, asserted as a count over the whole file rather than as a presence inside one
     // member, which is strictly stronger than the form this replaces: that one stayed green while a
     // second and a third copy of the same pair sat in the seed-list flush and in public invalidate.
     // Issue #369 found the third, so the pair has one owner now and this is what says so.
-    expect(source.split("this.#graph.invalidate(")).toHaveLength(2);
-    expect(owner).toContain("this.#graph.invalidate(nodeIds)");
+    expect(source.split("this.#graph.flush(")).toHaveLength(2);
+    expect(owner).toContain("this.#graph.flush(nodeIds)");
     expect(owner).toContain("this.#diagnostics.recordAll(batch.diagnostics)");
     // The report still lives with the flush that reports it, which is what keeps skipping and
     // reporting one decision rather than two that could disagree: this member asserts liveness
@@ -594,7 +594,7 @@ describe("live values reach the graph without replacing it", () => {
     handle.seek(ARM, 0.5);
     const before = arm.definition;
     const published = values(handle, ARM);
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "invalidate");
+    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
     // Definition-shaped input, so `validateKeyframes` owns its shape and this is the one write that
     // has to reach it. A stop with no position is `stop-position`.
     const malformed = [{ v: 1 }] as unknown as readonly AuthoredStop[];
@@ -657,7 +657,7 @@ describe("live values reach the graph without replacing it", () => {
 
   it("LV-15 reports the disposal from the owner that decided it, and publishes nothing", () => {
     const rig = directRig("writeValues");
-    const invalidate = vi.spyOn(rig.runtime.graph, "invalidate");
+    const invalidate = vi.spyOn(rig.runtime.graph, "flush");
 
     const thrown = thrownBy(() => rig.runtime.setValues(ARM, { x: 260 }));
 

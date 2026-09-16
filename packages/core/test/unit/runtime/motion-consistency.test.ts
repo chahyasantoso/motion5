@@ -217,7 +217,7 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
       seen.push(motion.definition.stagger);
       throw failure;
     };
-    const invalidate = vi.spyOn(test.runtime.graph, "invalidate");
+    const invalidate = vi.spyOn(test.runtime.graph, "flush");
     expect(caught(() => motion.setStagger(250))).toBe(failure);
     expect(seen).toEqual([250]);
     expect(motion.definition.stagger).toBe(250);
@@ -245,7 +245,7 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
       throw failure;
     });
     intercept = disposeDuringProgress;
-    const invalidate = vi.spyOn(test.runtime.graph, "invalidate");
+    const invalidate = vi.spyOn(test.runtime.graph, "flush");
     const result = caught(() => motion.setStagger(250));
     expect(disposeDuringProgress).toHaveBeenCalledTimes(1);
     expect(result).toBeInstanceOf(AggregateError);

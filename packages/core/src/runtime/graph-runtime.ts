@@ -169,28 +169,81 @@ export class GraphRuntime {
   /**
    * Publishes for `seeds`, unioned with whatever a deferred drain left pending, and answers it.
    *
-   * `seeds` has no default. It defaulted to `[...this.#members]` until issue #371's follow-up, so
-   * an omitted argument asked for a full graph recompute: the most expensive answer this method
-   * has, selected by saying nothing. A default is what an unthinking call gets, so it may not be
-   * the worst case. Every caller states its list, and the one that wants every member says so.
+   * The seed-list entry, and the whole of it: this verb cannot reach the clock's frame number.
+   * `flush(seeds, tick?)` carried both operations behind one name until issue #374, so which of the
+   * two a caller meant was stated by whether a second argument was present, and the one that
+   * consumes a frame number the clock will reuse was the one reachable by accident. `flushAtTick`
+   * owns that transition now and states it as a required parameter. See ADR-082.
+   *
+   * `seeds` has no default either, since issue #371's follow-up: an omitted argument used to ask
+   * for a full graph recompute, the most expensive answer this class has, selected by saying
+   * nothing. Every caller states its list, and the one that wants every member says so.
    *
    * An empty list is not a cheap flush and is not treated as one. It still derives the snapshot,
    * moves `#sequence` and notifies every batch subscriber, because `#scheduleDrain` calls
    * `flush([])` precisely so a deferred drain publishes what `#pendingSeeds` carried. Emptiness is
-   * a project-tier question and `ProjectRuntime.#publishSeeds` owns it. See ADR-081 and ADR-080.
+   * a project-tier question and `ProjectRuntime.#publishSeeds` owns it. See ADR-080.
    */
-  flush(seeds: readonly string[], tick?: number): PatchBatch {
+  flush(seeds: readonly string[]): PatchBatch {
     this.#assertLive();
-    if (this.#flushing) {
-      for (const seed of seeds) this.#pendingSeeds.add(seed);
-      this.#scheduleDrain();
-      return deferredBatch(this.#sequence, seeds);
-    }
-    if (tick !== undefined) {
-      if (!Number.isFinite(tick)) throw new TypeError("Runtime ticks must be finite.");
-      if (tick < this.#lastTick) throw new RangeError("Runtime ticks must be monotonic.");
-      this.#lastTick = tick;
-    }
+    return this.#deferIfFlushing(seeds) ?? this.#flushSeeds(seeds);
+  }
+  /**
+   * Publishes for `seeds` at `tick`, advancing the clock's frame number, and answers that batch.
+   *
+   * The clock's entry, and the only member that may move `#lastTick`. `#flushTick` is its only
+   * caller in `src`, which is what keeps a live edit structurally unable to consume a frame number
+   * the clock will reuse on its next frame: the verb the project tier holds has no such parameter,
+   * and `clock-tick-identity` reads that separation from the other side. The transition is required
+   * rather than optional, so it can never be selected by omission. See ADR-082.
+   *
+   * A reentrant call is answered before the tick is consumed, deliberately and in that order. A
+   * flush requested while subscribers are being notified publishes nothing now, so moving the frame
+   * number for it would record a frame that did not run. `publisher-reentrancy` reads that.
+   */
+  flushAtTick(seeds: readonly string[], tick: number): PatchBatch {
+    this.#assertLive();
+    const deferred = this.#deferIfFlushing(seeds);
+    if (deferred !== undefined) return deferred;
+    this.#advanceTick(tick);
+    return this.#flushSeeds(seeds);
+  }
+  /**
+   * Answers the deferred batch for a flush requested inside one, or `undefined` when none is open.
+   *
+   * The one owner of the reentrancy answer, for both public verbs. Queueing the seeds and scheduling
+   * the drain is the answer rather than a step before it, which is why this hands back the batch and
+   * not a boolean: two callers that had to ask and then act could act differently.
+   */
+  #deferIfFlushing(seeds: readonly string[]): PatchBatch | undefined {
+    if (!this.#flushing) return undefined;
+    for (const seed of seeds) this.#pendingSeeds.add(seed);
+    this.#scheduleDrain();
+    return deferredBatch(this.#sequence, seeds);
+  }
+  /**
+   * Validates `tick` and records it as the frame number this runtime has reached.
+   *
+   * The one owner of tick validity and the one write to `#lastTick`. A non-finite value is a
+   * `TypeError` and a value that does not advance is a `RangeError`, and both refuse before the
+   * field moves, so a rejected tick leaves the runtime on the frame it was already on.
+   */
+  #advanceTick(tick: number): void {
+    if (!Number.isFinite(tick)) throw new TypeError("Runtime ticks must be finite.");
+    if (tick < this.#lastTick) throw new RangeError("Runtime ticks must be monotonic.");
+    this.#lastTick = tick;
+  }
+  /**
+   * Publishes for `seeds` plus whatever a deferred drain left pending, and answers that batch.
+   *
+   * The publication mechanics both public verbs share, and nothing else: no liveness answer, no
+   * reentrancy answer and no clock transition, because each of those has an owner above. Its one
+   * precondition is stated rather than re-asked here, because a second copy of a decided question is
+   * a second owner of it: it must not be called while `#flushing`, which is what `#deferIfFlushing`
+   * answers for both callers. A publisher failure re-queues the seeds this call was carrying and
+   * rethrows, so the work is deferred rather than dropped.
+   */
+  #flushSeeds(seeds: readonly string[]): PatchBatch {
     const carried = [...this.#pendingSeeds];
     this.#pendingSeeds.clear();
     this.#scheduledDrain = false;
@@ -207,22 +260,6 @@ export class GraphRuntime {
       this.#flushing = false;
       if (this.#pendingSeeds.size > 0) this.#scheduleDrain();
     }
-  }
-  /**
-   * Publishes for `seeds` without reaching the clock's frame number.
-   *
-   * The project tier's entry, narrower than `flush` on purpose rather than by accident: it cannot
-   * be handed a `tick`, so a live edit can never consume a frame number the clock will reuse on
-   * its next frame. `clock-tick-identity` reads that separation from the other side. It is also
-   * why issue #371's follow-up proposal to delete this member and let `#invalidateSeeds` reach
-   * `flush` directly is refused: it would widen what the project tier can reach while claiming to
-   * narrow this class's surface. See ADR-081.
-   *
-   * It asserts no liveness of its own. `flush` asserts the same condition as its first statement,
-   * with nothing in between that could change the answer, so the second copy decided nothing.
-   */
-  invalidate(seeds: readonly string[]): PatchBatch {
-    return this.flush(seeds);
   }
   dispose(): void {
     if (this.#disposed) return;
@@ -374,7 +411,7 @@ export class GraphRuntime {
   #flushTick(event: ClockTick): void {
     if (this.#disposed) return;
     try {
-      this.flush([...this.#members], event.tick);
+      this.flushAtTick([...this.#members], event.tick);
     } catch (error) {
       this.#report(
         FLUSH_FAILURE_RULE,

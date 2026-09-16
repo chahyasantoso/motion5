@@ -821,7 +821,7 @@ export class ProjectRuntime {
   }
 
   #invalidateSeeds(nodeIds: readonly string[]): PatchBatch {
-    const batch = this.#graph.invalidate(nodeIds);
+    const batch = this.#graph.flush(nodeIds);
     this.#diagnostics.recordAll(batch.diagnostics);
     return batch;
   }
