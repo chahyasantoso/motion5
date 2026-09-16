@@ -5,6 +5,21 @@ import type { GraphNode, GraphIR } from "../graph/ir";
 import { GraphPublisher, type PublisherNode, type PublisherSnapshot } from "./graph-publisher";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
 import type { Scheduler } from "../ports/scheduler";
+import {
+  COLD_MEMO,
+  DISPOSED,
+  IDLE,
+  beginFlush,
+  bookingDrain,
+  endFlush,
+  isDisposed,
+  isFlushing,
+  memoHit,
+  unbookDrain,
+  warmMemo,
+  type RuntimePhase,
+  type SnapshotMemo,
+} from "./graph-runtime-state";
 export type ComposeNode = PublisherNode["compose"];
 export type ComposeResolver = (node: GraphNode) => ComposeNode;
 export const DEFERRED_FLUSH_RULE = "reentrant-flush-deferred";
@@ -77,16 +92,29 @@ export class GraphRuntime {
   readonly #members = new Set<string>();
   readonly #pendingSeeds = new Set<string>();
   readonly #publisherNodes = new Map<GraphNode, PublisherNode>();
-  #snapshot: PublisherSnapshot | undefined;
-  #snapshotGraph: GraphIR | undefined;
-  #snapshotMembers = -1;
+  /**
+   * This runtime's whole lifecycle, as one value.
+   *
+   * `#disposed`, `#flushing` and `#scheduledDrain` held it until issue #376, and two of their
+   * eight combinations meant nothing. Every combination this one can hold is real, including a
+   * flushing runtime that already owes the scheduler a drain, which is what a reentrant deferral
+   * creates and what a `draining` phase beside `flushing` could not have expressed. `disposed`
+   * carries nothing, so a retired runtime cannot be mid-flush or hold a booking. See ADR-083.
+   */
+  #phase: RuntimePhase = IDLE;
+  /**
+   * The memoised publisher snapshot and the whole of the key it is answered by, as one value.
+   *
+   * `#snapshot`, `#snapshotGraph` and `#snapshotMembers` held it until issue #376, with `-1` for
+   * cold, and `replaceGraph` cleared two of the three. A key that can be half-cleared is what
+   * this retires: the value and its key are assigned together or not at all. See ADR-058 and
+   * ADR-083.
+   */
+  #memo: SnapshotMemo = COLD_MEMO;
   #membersRevision = 0;
   #lastTick = 0;
   #sequence = 0;
   #lastFlushError: Diagnostic | undefined;
-  #flushing = false;
-  #scheduledDrain = false;
-  #disposed = false;
   constructor(
     project: ProjectDefinition,
     clock: Clock,
@@ -162,9 +190,11 @@ export class GraphRuntime {
     this.#publisherNodes.clear();
     // The memo goes with them, and for the same reason rather than for correctness: it is keyed on
     // the graph identity, so an entry from the replaced graph could never be read, but holding one
-    // would retain every node the clear above exists to release.
-    this.#snapshot = undefined;
-    this.#snapshotGraph = undefined;
+    // would retain every node the clear above exists to release. One assignment, and the key
+    // leaves with the value it belongs to: this used to clear two of the memo's three fields and
+    // leave the membership revision behind, which stayed harmless only because warmth also needed
+    // the value. See ADR-083.
+    this.#memo = COLD_MEMO;
   }
   /**
    * Publishes for `seeds`, unioned with whatever a deferred drain left pending, and answers it.
@@ -216,7 +246,7 @@ export class GraphRuntime {
    * not a boolean: two callers that had to ask and then act could act differently.
    */
   #deferIfFlushing(seeds: readonly string[]): PatchBatch | undefined {
-    if (!this.#flushing) return undefined;
+    if (!isFlushing(this.#phase)) return undefined;
     for (const seed of seeds) this.#pendingSeeds.add(seed);
     this.#scheduleDrain();
     return deferredBatch(this.#sequence, seeds);
@@ -239,38 +269,48 @@ export class GraphRuntime {
    * The publication mechanics both public verbs share, and nothing else: no liveness answer, no
    * reentrancy answer and no clock transition, because each of those has an owner above. Its one
    * precondition is stated rather than re-asked here, because a second copy of a decided question is
-   * a second owner of it: it must not be called while `#flushing`, which is what `#deferIfFlushing`
+   * a second owner of it: it must not be called in the `flushing` phase, which `#deferIfFlushing`
    * answers for both callers. A publisher failure re-queues the seeds this call was carrying and
    * rethrows, so the work is deferred rather than dropped.
    */
   #flushSeeds(seeds: readonly string[]): PatchBatch {
     const carried = [...this.#pendingSeeds];
     this.#pendingSeeds.clear();
-    this.#scheduledDrain = false;
+    this.#phase = unbookDrain(this.#phase);
     const effectiveSeeds = [...new Set([...seeds, ...carried])];
     const snapshot = this.#snapshotFor();
     this.#sequence += 1;
-    this.#flushing = true;
+    this.#phase = beginFlush(this.#phase);
     try {
       return this.#publisher.flush(snapshot, effectiveSeeds, this.#sequence);
     } catch (error) {
       for (const seed of effectiveSeeds) this.#pendingSeeds.add(seed);
       throw error;
     } finally {
-      this.#flushing = false;
+      // `endFlush` is total and disposal is terminal, so a subscriber that disposed the runtime
+      // mid-flush leaves it disposed here rather than idle, and the booking below is refused for
+      // the same reason. Both of those were hand-cleared boolean writes before ADR-083.
+      this.#phase = endFlush(this.#phase);
       if (this.#pendingSeeds.size > 0) this.#scheduleDrain();
     }
   }
+  /**
+   * Retires this runtime, once.
+   *
+   * `disposed` is terminal and carries nothing, so two of the states this used to clear by hand
+   * are gone rather than cleared: a retired runtime cannot be mid-flush and cannot hold a drain
+   * booking, because neither is representable beside that discriminant. A drain the scheduler
+   * already accepted still runs, and `#drainScheduled` refuses it on the one discriminant rather
+   * than on a flag this method remembered to clear. See ADR-083.
+   */
   dispose(): void {
-    if (this.#disposed) return;
-    this.#disposed = true;
+    if (isDisposed(this.#phase)) return;
+    this.#phase = DISPOSED;
     this.#unsubscribe();
     this.#members.clear();
     this.#pendingSeeds.clear();
     this.#publisherNodes.clear();
-    this.#snapshot = undefined;
-    this.#snapshotGraph = undefined;
-    this.#scheduledDrain = false;
+    this.#memo = COLD_MEMO;
     this.#registry.dispose();
   }
   /**
@@ -287,17 +327,15 @@ export class GraphRuntime {
    * aliased: the snapshot carries a copy of the member set and `#membersRevision` is what the memo
    * is keyed on. Handing over the live set inside a frozen object would be a cache whose answer
    * changes without its key changing, and it would let a memo keyed on the graph alone look correct.
-   * See ADR-058.
+   *
+   * Both halves of that key now travel with the snapshot as one value, so warmth is one question
+   * asked once rather than a three-part conjunction over fields that could be cleared apart. See
+   * ADR-058 and ADR-083.
    */
   #snapshotFor(): PublisherSnapshot {
     const graph = this.#binding.graph;
-    const cached = this.#snapshot;
-    if (
-      cached !== undefined &&
-      this.#snapshotGraph === graph &&
-      this.#snapshotMembers === this.#membersRevision
-    )
-      return cached;
+    const warm = memoHit(this.#memo, graph, this.#membersRevision);
+    if (warm !== undefined) return warm;
     const nodes = graph.nodes.map((node) => this.#publisherNode(node));
     const nodeById: Record<string, PublisherNode> = {};
     for (const node of nodes) nodeById[node.id] = node;
@@ -307,9 +345,7 @@ export class GraphRuntime {
       nodeById: Object.freeze(nodeById),
       members: new Set(this.#members),
     });
-    this.#snapshot = snapshot;
-    this.#snapshotGraph = graph;
-    this.#snapshotMembers = this.#membersRevision;
+    this.#memo = warmMemo(snapshot, graph, this.#membersRevision);
     return snapshot;
   }
   /**
@@ -348,26 +384,51 @@ export class GraphRuntime {
     if (!this.#members.delete(nodeId)) return;
     this.#membersRevision += 1;
   }
+  /**
+   * Books one follow-up drain with the scheduler, or answers that there is nothing to book.
+   *
+   * `bookingDrain` is the whole question, asked once. It hands back the phase that carries the
+   * booking, or `undefined` for the two cases that used to be two more terms in a conjunction: a
+   * disposed runtime has no follow-up to run, and a phase already carrying a booking would book a
+   * second job for one drain, which is the coalescing `scheduler-reentrancy` measures. A
+   * transition rather than a boolean, for the reason `#deferIfFlushing` hands back a batch: two
+   * callers that had to ask and then act could act differently. See ADR-083.
+   */
   #scheduleDrain(): void {
-    if (this.#scheduler === undefined || this.#scheduledDrain || this.#disposed) return;
-    this.#scheduledDrain = true;
+    const scheduler = this.#scheduler;
+    if (scheduler === undefined) return;
+    const booked = bookingDrain(this.#phase);
+    if (booked === undefined) return;
+    this.#phase = booked;
     try {
-      this.#scheduler.schedule(() => {
-        this.#scheduledDrain = false;
-        if (this.#disposed || this.#pendingSeeds.size === 0) return;
-        try {
-          this.flush([]);
-        } catch (error) {
-          this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describe(error)}`);
-        }
-      });
+      scheduler.schedule(() => this.#drainScheduled());
     } catch (error) {
-      this.#scheduledDrain = false;
+      this.#phase = unbookDrain(this.#phase);
       this.#report(SCHEDULER_FAILURE_RULE, `Deferred flush scheduling failed: ${describe(error)}`);
     }
   }
+
+  /**
+   * Runs the booked drain: releases the booking, then publishes whatever `#pendingSeeds` carries.
+   *
+   * The order is the one the boolean pair had, and it is load-bearing in both directions.
+   * Releasing first is what lets the flush below book its own follow-up when a subscriber defers
+   * again; asking about disposal after is what keeps a job the scheduler accepted before
+   * `dispose` from publishing over a retired registry. `flush([])` rather than `#flushSeeds` for
+   * the reason ADR-082 gives: nothing guarantees a scheduler cannot run this while a flush is in
+   * flight, and the deferral fallback that protects it lives in the public verb.
+   */
+  #drainScheduled(): void {
+    this.#phase = unbookDrain(this.#phase);
+    if (isDisposed(this.#phase) || this.#pendingSeeds.size === 0) return;
+    try {
+      this.flush([]);
+    } catch (error) {
+      this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describe(error)}`);
+    }
+  }
   #onTick(event: ClockTick): void {
-    if (this.#disposed) return;
+    if (isDisposed(this.#phase)) return;
     if (event.tick <= this.#lastTick) {
       this.#report(
         CLOCK_REGRESSION_RULE,
@@ -409,7 +470,7 @@ export class GraphRuntime {
    * would only refuse with a failure this tick did not cause.
    */
   #flushTick(event: ClockTick): void {
-    if (this.#disposed) return;
+    if (isDisposed(this.#phase)) return;
     try {
       this.flushAtTick([...this.#members], event.tick);
     } catch (error) {
@@ -440,6 +501,6 @@ export class GraphRuntime {
     this.#onFlushError?.(diagnostic);
   }
   #assertLive(): void {
-    if (this.#disposed) throw new Error("GraphRuntime is disposed.");
+    if (isDisposed(this.#phase)) throw new Error("GraphRuntime is disposed.");
   }
 }
