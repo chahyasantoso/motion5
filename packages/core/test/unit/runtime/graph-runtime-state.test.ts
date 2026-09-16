@@ -19,9 +19,11 @@ import {
   isDisposed,
   isFlushing,
   isPending,
+  isRetiring,
   memoHit,
   requeuing,
   retaining,
+  retiring,
   unbookDrain,
   warmMemo,
   type PendingPublication,
@@ -89,6 +91,7 @@ const TRANSITIONS: readonly ((phase: RuntimePhase) => RuntimePhase)[] = [
   beginFlush,
   endFlush,
   unbookDrain,
+  retiring,
   (phase) => bookingDrain(phase) ?? phase,
 ];
 
@@ -108,13 +111,17 @@ function reachableFrom(...seeds: readonly RuntimePhase[]): readonly RuntimePhase
 }
 
 describe("the runtime lifecycle is one value rather than three booleans", () => {
-  it("reaches the five phases that mean something, and no combination that means nothing", () => {
+  it("reaches the seven phases that mean something, and no combination that means nothing", () => {
     const reachable = reachableFrom(IDLE, DISPOSED);
 
-    // Four live phases and one terminal one. The two the booleans could spell and this cannot are
-    // a disposed runtime mid-flush and a disposed runtime still owing the scheduler a drain.
+    // Four live phases, two retiring ones and one terminal. The two the booleans could spell and
+    // this cannot are a disposed runtime mid-flush and one still owing the scheduler a drain. The
+    // retiring pair is issue #408's: teardown is a state a runtime is in, so `dispose` can ask
+    // whether it has begun rather than only whether it finished. See ADR-090.
     expect(reachable.map(label).sort()).toEqual([
       "disposed",
+      "disposing/booked",
+      "disposing/unbooked",
       "flushing/booked",
       "flushing/unbooked",
       "idle/booked",
@@ -122,7 +129,7 @@ describe("the runtime lifecycle is one value rather than three booleans", () => 
     ]);
     // Closed under every transition, so each of them is total: nothing here leaves the machine and
     // nothing throws on a phase it was not written for.
-    expect(reachable).toHaveLength(5);
+    expect(reachable).toHaveLength(7);
     expect(reachable.every((phase) => Object.isFrozen(phase))).toBe(true);
   });
 
@@ -135,6 +142,35 @@ describe("the runtime lifecycle is one value rather than three booleans", () => 
     // And a subscriber that disposes mid-flush leaves the runtime disposed rather than idle.
     expect(endFlush(DISPOSED)).toBe(DISPOSED);
     expect(unbookDrain(DISPOSED)).toBe(DISPOSED);
+  });
+
+  it("holds a runtime that is retiring, and lets nothing walk it back to a live phase", () => {
+    const retiringPhase = retiring(IDLE);
+
+    // Not yet terminal, which is the distinction the whole of issue #408 turns on: `dispose` asks
+    // whether teardown has begun and `#report` asks whether it finished, so a port that refuses to
+    // cancel during an ordinary disposal is still reported by the runtime that asked it to.
+    expect(isRetiring(retiringPhase)).toBe(true);
+    expect(isDisposed(retiringPhase)).toBe(false);
+    expect(isFlushing(retiringPhase)).toBe(false);
+    expect(isRetiring(IDLE)).toBe(false);
+    expect(isRetiring(DISPOSED)).toBe(true);
+
+    // Idempotent, so a reentrant `dispose` cannot raise it twice, and it never lowers.
+    expect(retiring(retiringPhase)).toBe(retiringPhase);
+    expect(retiring(DISPOSED)).toBe(DISPOSED);
+    // Every other transition leaves it where it is, so a reentrant publication or a drain arriving
+    // mid-teardown cannot resurrect it.
+    expect(beginFlush(retiringPhase)).toBe(retiringPhase);
+    expect(endFlush(retiringPhase)).toBe(retiringPhase);
+    expect(bookingDrain(retiringPhase)).toBeUndefined();
+
+    // The booking travels into it, because it is released after this transition rather than before,
+    // and lowering it keeps the runtime retiring rather than resolving it to an idle one.
+    const booked = retiring(bookingDrain(IDLE) ?? IDLE);
+    expect(label(booked)).toBe("disposing/booked");
+    expect(label(unbookDrain(booked))).toBe("disposing/unbooked");
+    expect(bookingDrain(booked)).toBeUndefined();
   });
 
   it("carries a booking through the flush it was made inside, as a fourth phase could not", () => {
