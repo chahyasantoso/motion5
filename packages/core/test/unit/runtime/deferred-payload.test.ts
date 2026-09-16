@@ -20,6 +20,12 @@ import { GraphRuntime } from "../../../src/runtime/graph-runtime";
  * a frame and no seeds is invisible to that getter by construction. `runtime.tick` is what says the
  * frame was reached and `runtime.sequence` is what says a publication happened, and neither depends
  * on whether a patch changed. See ADR-088.
+ *
+ * Issue #412 adds the last case, and it is coverage rather than a regression. Both behavioural frame
+ * cases above configure a scheduler, so the one branch `#scheduleDrain` answers differently, a
+ * runtime built with no scheduler at all, was never driven with a frame-only payload. That is the
+ * branch where nothing will ever drain, so it is where a frame could sit pending forever while
+ * `isPending` keeps answering true. See ADR-080.
  */
 
 const project: ProjectDefinition = {
@@ -100,6 +106,52 @@ describe("an empty deferred publication is still a publication", () => {
     // Red before this change in both assertions: the live write cleared the whole payload, so no
     // drain was booked and frame 3 was dropped by a verb that could not have published it.
     expect(runtime.tick).toBe(3);
+    expect(runtime.lastFlushError).toBeUndefined();
+    runtime.dispose();
+  });
+
+  it("carries a frame-only payload on the next flush when there is no scheduler to drain it", () => {
+    const clock = createManualClock();
+    const received: Diagnostic[] = [];
+    // No scheduler, which is the whole point: `#scheduleDrain` returns false without booking, and
+    // the deferral diagnostic says the work is carried by the next flush rather than by a drain.
+    const runtime = new GraphRuntime(project, clock, compose, {
+      onFlushError: (diagnostic) => received.push(diagnostic),
+    });
+    runtime.attach("hero/arm");
+
+    let acted = false;
+    runtime.registry.subscribeNode("hero/arm", () => {
+      if (acted) return;
+      acted = true;
+      runtime.flushAtTick([], 2);
+    });
+
+    clock.tick();
+
+    // Nothing was booked and nothing was reported for not booking: a runtime with no scheduler is
+    // configured that way, so the absent port is not a `scheduler-failure`.
+    expect(runtime.tick).toBe(1);
+    expect(runtime.sequence).toBe(1);
+    expect(runtime.pendingSeeds).toEqual([]);
+    expect(received).toEqual([]);
+    expect(runtime.lastFlushError).toBeUndefined();
+
+    // A live flush cannot reach frame 2, so it publishes without consuming it. This is `retaining`
+    // on the branch that has no drain to hand the frame to, and it must not re-attempt a booking
+    // there is no port for.
+    runtime.flush([]);
+    expect(runtime.tick).toBe(1);
+    expect(runtime.sequence).toBe(2);
+    expect(runtime.pendingSeeds).toEqual([]);
+    expect(received).toEqual([]);
+
+    // And the verb that can reach it consumes it and clears the payload, so the frame was carried
+    // by the next flush rather than left pending forever.
+    runtime.flushAtTick([], 2);
+    expect(runtime.tick).toBe(2);
+    expect(runtime.sequence).toBe(3);
+    expect(received).toEqual([]);
     expect(runtime.lastFlushError).toBeUndefined();
     runtime.dispose();
   });
