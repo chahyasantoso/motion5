@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
 import { createFakeScheduler } from "../../../src/testing/fakes";
+import { GraphPublisher } from "../../../src/runtime/graph-publisher";
 import { GraphRuntime } from "../../../src/runtime/graph-runtime";
 import {
   emptySeedPublications,
@@ -135,6 +136,36 @@ describe("an empty seed list is a reading rather than an origin", () => {
     const right: PublicationSpy = vi.spyOn(runtime, "flush");
     expect(wrong.mock.calls).toEqual([]);
     expect(emptySeedPublications(right)).toEqual([]);
+    runtime.dispose();
+  });
+
+  it("refuses a member that states no seed list first, and accepts the verb that does", () => {
+    const runtime = new GraphRuntime(project, createManualClock(), compose);
+    // Issue #424 asks the boundary to be pinned rather than exemplified, because the case above
+    // refuses one member and the tuple refuses a whole shape. These three are the surface: the
+    // widest spy there is, the same verb one tier down, and the other verb that does state a seed
+    // list first. Each error is the assignment; no spy here is ever called.
+    //
+    // An untyped mock states nothing first, so its `any[]` call tuple is not assignable to a tuple
+    // with a required first element. That is what makes the deleted `seedsOf` guard unnecessary
+    // rather than merely unwanted: the shape it used to answer `undefined` for cannot be handed to
+    // these readers by a typed consumer at all.
+    // @ts-expect-error an untyped mock records no seed list first.
+    const untyped: PublicationSpy = vi.fn();
+    // `GraphPublisher.flush` is the same verb one tier down and states a snapshot first, so it is
+    // the near miss `replaceGraph` is not: a reader watching the publisher rather than the runtime
+    // is watching a real publication and still cannot be answered by a seed-list filter.
+    const publisherFlush = vi.spyOn(GraphPublisher.prototype, "flush");
+    // @ts-expect-error the publisher's flush states a snapshot first.
+    const publisher: PublicationSpy = publisherFlush;
+    // And `flushAtTick` is accepted, which keeps the two refusals about the first argument rather
+    // than about which member this tier happens to name. It is also the verb a frame-carrying
+    // deferral replays through, so the type does not stand between a case and the member it needs.
+    const atTick: PublicationSpy = vi.spyOn(runtime, "flushAtTick");
+    expect(untyped.mock.calls).toEqual([]);
+    expect(publisher.mock.calls).toEqual([]);
+    expect(statedPublications(atTick)).toEqual([]);
+    publisherFlush.mockRestore();
     runtime.dispose();
   });
 });
