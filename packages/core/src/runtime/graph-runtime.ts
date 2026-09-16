@@ -321,9 +321,8 @@ export class GraphRuntime {
     // failure misattributed. Unreachable today, and one branch is what that costs.
     if (isFlushing(this.#phase)) throw new Error("GraphRuntime is already flushing.");
     const carried = deferredSeeds(this.#pending);
-    // The seeds are taken and a frame this verb cannot reach is not. `flush` has no parameter to
-    // publish one with, so clearing the whole payload here dropped a frame a deferred `flushAtTick`
-    // asked for, and the drain the `finally` books below is what replays it. Issue #392.
+    // The seeds are taken and a frame this verb cannot reach is not: `flush` cannot publish one, so
+    // the drain the `finally` books below replays it. Issue #392, and see ADR-088.
     this.#pending = retaining(this.#pending, this.#lastTick);
     this.#releaseBooking();
     const effectiveSeeds = [...new Set([...seeds, ...carried])];
@@ -339,10 +338,8 @@ export class GraphRuntime {
       return this.#publisher.flush(snapshot, effectiveSeeds, this.#sequence);
     } catch (error) {
       // The frame, if there was one, was consumed before this call, so the requeue carries none.
-      // It re-queues onto a live runtime only, which is issue #401: derivation above runs caller
-      // code, caller code may dispose this runtime and then throw, and a terminal runtime holding
-      // work no phase can ever book a drain for disagrees with the record instead of preserving
-      // anything.
+      // And onto a live runtime only: derivation above runs caller code, which may dispose this
+      // runtime before it throws. Issue #401, and ADR-088 owns the rest.
       this.#pending = requeuing(this.#phase, this.#pending, effectiveSeeds);
       throw error;
     } finally {
@@ -598,18 +595,9 @@ export class GraphRuntime {
    * consumer failure happens before `flush` advances `#lastTick`, so the default would file it
    * under the previous frame and undo the attribution this exists for.
    *
-   * Building the diagnostic and handing it over belong to `diagnostic-report.ts`, which is the one
-   * owner of what a host may do to a runtime failure. Issue #400: `#onFlushError` is host code with
-   * no boundary of its own, so a sink that threw left through whichever of these five callers was
-   * reporting, and from `#releaseBooking` that position is after the deferred payload has been
-   * taken and before the publication boundary that would have put it back.
-   *
-   * A terminal runtime reports nothing new, which is issue #393. `dispose` releases its booking
-   * before the phase goes terminal, so an ordinary disposal still reports a port that refuses to
-   * cancel; what this refuses is the reentrant case, where the handler for one failure retires the
-   * runtime and the failure still unwinding then files a diagnostic against an object that has
-   * already stopped being able to act on one. `disposed` carries nothing, and a diagnostic on a
-   * retired runtime is something it would carry for the life of the object. See ADR-083.
+   * Building a diagnostic and handing it to the host belong to `diagnostic-report.ts`, which owns
+   * that boundary for all five callers, and a terminal runtime files nothing new. ADR-088 owns both
+   * reasons: issues #400 and #393.
    */
   #report(ruleId: string, message: string, tick: number = this.#lastTick): void {
     if (isDisposed(this.#phase)) return;
