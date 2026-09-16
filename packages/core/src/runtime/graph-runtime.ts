@@ -201,9 +201,11 @@ export class GraphRuntime {
    * nothing. Every caller states its list, and the one that wants every member says so.
    *
    * An empty list is not a cheap flush and is not treated as one. It still derives the snapshot,
-   * moves `#sequence` and notifies every batch subscriber, because `#scheduleDrain` calls
-   * `flush([])` precisely so a deferred drain publishes what `#pendingSeeds` carried. Emptiness is
-   * a project-tier question and `ProjectRuntime.#publishSeeds` owns it. See ADR-080.
+   * moves `#sequence` and notifies every batch subscriber, because `#drainScheduled` replays a
+   * deferral that carried no frame through `flush([])`, precisely so the drain publishes what the
+   * pending payload carried. A deferral that carried a frame replays through `flushAtTick` instead,
+   * so this verb is one of the two branches rather than the whole of the drain. Emptiness is a
+   * project-tier question and `ProjectRuntime.#publishSeeds` owns it. See ADR-080 and ADR-088.
    */
   flush(seeds: readonly string[]): PatchBatch {
     this.#assertLive();
@@ -277,8 +279,9 @@ export class GraphRuntime {
    * are gone rather than cleared: a retired runtime cannot be mid-flush and cannot hold a drain
    * booking, because neither is representable beside that discriminant. A drain the scheduler
    * already accepted is cancelled rather than left to run and be refused, since issue #389 made the
-   * booking a claim about the scheduler; `#drainScheduled` still refuses on the one discriminant,
-   * for a job a port declined to cancel. See ADR-083 and ADR-084.
+   * booking a claim about the scheduler; `#drainScheduled` still refuses a job a port declined to
+   * cancel, and since issue #408 it refuses on `isRetiring` rather than on the one discriminant, so
+   * a job arriving while teardown is still running is refused too. See ADR-083, ADR-084 and ADR-090.
    */
   dispose(): void {
     if (isRetiring(this.#phase)) return;

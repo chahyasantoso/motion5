@@ -460,9 +460,11 @@ describe("live values reach the graph without replacing it", () => {
     const batch = track.overrideValues({ x: 260 });
 
     // Filtered by the seed list this write stated, rather than counted. A spy on `flush` sees every
-    // publication of any origin and a scheduled drain publishes through `flush([])`, so a bare count
-    // asserts "one publication" where this case means "one live write reached the graph once". The
-    // rename came with it: `invalidate` has not existed in this tier since #374. Issue #381.
+    // publication of any origin, and `#drainScheduled` publishes through `flush([])` when the
+    // deferral it replays carried no frame, so a bare count asserts "one publication" where this
+    // case means "one live write reached the graph once". A deferral that carried a frame replays
+    // through `flushAtTick` instead, which a spy on `flush` never sees at all. The rename came with
+    // it: `invalidate` has not existed in this tier since #374. Issues #381 and #418.
     expect(publicationsFor(publication, [ARM])).toHaveLength(1);
     expect(statedPublications(publication)).toHaveLength(1);
     expect(batch).toBe(publication.mock.results[0]?.value);
