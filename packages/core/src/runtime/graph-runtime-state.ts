@@ -55,12 +55,18 @@ interface FlushingShape {
   readonly drain: DrainBooking;
 }
 
+interface DisposingShape {
+  readonly kind: "disposing";
+  readonly drain: DrainBooking;
+}
+
 interface DisposedShape {
   readonly kind: "disposed";
 }
 
 type IdlePhase = IdleShape & PhaseBrand;
 type FlushingPhase = FlushingShape & PhaseBrand;
+type DisposingPhase = DisposingShape & PhaseBrand;
 type DisposedPhase = DisposedShape & PhaseBrand;
 
 /**
@@ -78,7 +84,7 @@ type DisposedPhase = DisposedShape & PhaseBrand;
  * `disposed` is terminal and carries nothing, so both illegal combinations are gone rather than
  * avoided. See ADR-083.
  */
-export type RuntimePhase = IdlePhase | FlushingPhase | DisposedPhase;
+export type RuntimePhase = IdlePhase | FlushingPhase | DisposingPhase | DisposedPhase;
 
 // Interned, so a transition is a lookup rather than an allocation, and so identity is stable enough
 // to enumerate the reachable state space in a test. The four live values are reachable only through
@@ -87,6 +93,8 @@ const IDLE_UNBOOKED = mintPhase<IdleShape>({ kind: "idle", drain: "unbooked" });
 const IDLE_BOOKED = mintPhase<IdleShape>({ kind: "idle", drain: "booked" });
 const FLUSHING_UNBOOKED = mintPhase<FlushingShape>({ kind: "flushing", drain: "unbooked" });
 const FLUSHING_BOOKED = mintPhase<FlushingShape>({ kind: "flushing", drain: "booked" });
+const DISPOSING_UNBOOKED = mintPhase<DisposingShape>({ kind: "disposing", drain: "unbooked" });
+const DISPOSING_BOOKED = mintPhase<DisposingShape>({ kind: "disposing", drain: "booked" });
 
 /** The phase a runtime starts in: live, publishing nothing, and owing the scheduler nothing. */
 export const IDLE: RuntimePhase = IDLE_UNBOOKED;
@@ -97,6 +105,35 @@ export const DISPOSED: RuntimePhase = mintPhase<DisposedShape>({ kind: "disposed
 /** Answers whether this runtime is retired, for every reader that has to ask. */
 export function isDisposed(phase: RuntimePhase): boolean {
   return phase.kind === "disposed";
+}
+
+/**
+ * Answers the phase a runtime is in while it is being retired, carrying whatever booking it had.
+ *
+ * The member issue #408 asked for. `dispose` guarded on completed disposal and then called host
+ * code, `Cancel.cancel`, before the phase went terminal, so a cancel that re-entered `dispose` found
+ * a live runtime and ran the whole teardown a second time: a second `unsubscribe`, which the `Clock`
+ * contract does not promise is idempotent, and a second registry disposal. A flag beside the phase
+ * would answer it, and a member of the union is how ADR-083 already answers this kind of question,
+ * so the state a runtime is in while retiring is a state it can be in. See ADR-090.
+ *
+ * Idempotent, so a reentrant `dispose` cannot raise it twice, and terminal disposal is left alone.
+ */
+export function retiring(phase: RuntimePhase): RuntimePhase {
+  if (phase.kind === "disposed" || phase.kind === "disposing") return phase;
+  return phase.drain === "booked" ? DISPOSING_BOOKED : DISPOSING_UNBOOKED;
+}
+
+/**
+ * Answers whether teardown has begun, which is the question `dispose` asks to run exactly once.
+ *
+ * Distinct from `isDisposed` on purpose, and that distinction is what keeps ADR-088's decision six
+ * intact: a runtime being retired still reports the port that refused to cancel, because that
+ * failure is the last thing it knows and it is still the object that knows it. Only a runtime that
+ * has finished retiring reports nothing new. See ADR-090.
+ */
+export function isRetiring(phase: RuntimePhase): boolean {
+  return phase.kind === "disposing" || phase.kind === "disposed";
 }
 
 /** Answers whether subscribers are being notified, which is the reentrancy question. */
@@ -111,13 +148,15 @@ export function isFlushing(phase: RuntimePhase): boolean {
  * disposed rather than pushing it back through a live phase.
  */
 export function beginFlush(phase: RuntimePhase): RuntimePhase {
-  if (phase.kind === "disposed") return phase;
+  // Retiring is terminal for this transition as well, so nothing walks a runtime being torn down
+  // back into a live phase. Issue #408, and see ADR-090.
+  if (phase.kind === "disposed" || phase.kind === "disposing") return phase;
   return phase.drain === "booked" ? FLUSHING_BOOKED : FLUSHING_UNBOOKED;
 }
 
 /** Answers the phase a publication closes into, keeping the booking and the terminal state. */
 export function endFlush(phase: RuntimePhase): RuntimePhase {
-  if (phase.kind === "disposed") return phase;
+  if (phase.kind === "disposed" || phase.kind === "disposing") return phase;
   return phase.drain === "booked" ? IDLE_BOOKED : IDLE_UNBOOKED;
 }
 
@@ -131,13 +170,19 @@ export function endFlush(phase: RuntimePhase): RuntimePhase {
  * that had to ask and then act could act differently.
  */
 export function bookingDrain(phase: RuntimePhase): RuntimePhase | undefined {
-  if (phase.kind === "disposed" || phase.drain === "booked") return undefined;
+  // A runtime being retired has no follow-up to run either, and for the same reason a retired one
+  // has none: the teardown below it is what that drain would publish over. Issue #408.
+  if (phase.kind === "disposed" || phase.kind === "disposing") return undefined;
+  if (phase.drain === "booked") return undefined;
   return phase.kind === "flushing" ? FLUSHING_BOOKED : IDLE_BOOKED;
 }
 
 /** Releases a booking, keeping the phase it was carried by. Total, and terminal-safe. */
 export function unbookDrain(phase: RuntimePhase): RuntimePhase {
   if (phase.kind === "disposed") return phase;
+  // Lowered in place rather than resolved to a live phase, because a runtime that is retiring stays
+  // retiring: this is the transition `dispose` itself runs, and it must not undo the one above it.
+  if (phase.kind === "disposing") return DISPOSING_UNBOOKED;
   return phase.kind === "flushing" ? FLUSHING_UNBOOKED : IDLE_UNBOOKED;
 }
 

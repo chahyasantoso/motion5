@@ -20,9 +20,11 @@ import {
   isDisposed,
   isFlushing,
   isPending,
+  isRetiring,
   memoHit,
   requeuing,
   retaining,
+  retiring,
   unbookDrain,
   warmMemo,
   type PendingPublication,
@@ -361,7 +363,14 @@ export class GraphRuntime {
    * for a job a port declined to cancel. See ADR-083 and ADR-084.
    */
   dispose(): void {
-    if (isDisposed(this.#phase)) return;
+    // Whether teardown has begun, not whether it finished, which is issue #408: the guard read
+    // `isDisposed` while the phase went terminal only after `#releaseBooking` had called host
+    // `Cancel.cancel`, so a cancel that re-entered `dispose` found a live runtime and ran this body
+    // twice. See ADR-090.
+    if (isRetiring(this.#phase)) return;
+    // Raised before the port is touched, which is what the guard above needs. Retiring rather than
+    // terminal, because the cancellation failure below is still this runtime's to report.
+    this.#phase = retiring(this.#phase);
     // Before the phase goes terminal, because a retired runtime should not leave the scheduler
     // holding a job it will only refuse.
     this.#releaseBooking();
@@ -521,7 +530,8 @@ export class GraphRuntime {
    */
   #drainScheduled(): void {
     this.#releaseBooking();
-    if (isDisposed(this.#phase) || !isPending(this.#pending)) return;
+    // Retiring counts, because teardown is what this job would publish over. Issue #408.
+    if (isRetiring(this.#phase) || !isPending(this.#pending)) return;
     // Replayed through the verb that owns clock transitions, so the frame a reentrant call arrived
     // with is recorded by the publication that finally runs. It cannot have been overtaken: the
     // only writer of `#lastTick` is a publication that also takes this payload. Issue #380.
@@ -534,7 +544,8 @@ export class GraphRuntime {
     }
   }
   #onTick(event: ClockTick): void {
-    if (isDisposed(this.#phase)) return;
+    // A tick can arrive during teardown, because `unsubscribe` runs after the port is touched. #408.
+    if (isRetiring(this.#phase)) return;
     if (event.tick <= this.#lastTick) {
       this.#report(
         CLOCK_REGRESSION_RULE,
@@ -576,7 +587,7 @@ export class GraphRuntime {
    * would only refuse with a failure this tick did not cause.
    */
   #flushTick(event: ClockTick): void {
-    if (isDisposed(this.#phase)) return;
+    if (isRetiring(this.#phase)) return;
     try {
       this.flushAtTick([...this.#members], event.tick);
     } catch (error) {
@@ -606,6 +617,8 @@ export class GraphRuntime {
     ]);
   }
   #assertLive(): void {
-    if (isDisposed(this.#phase)) throw new Error("GraphRuntime is disposed.");
+    // Retiring is refused too, so a verb called from inside a host `Cancel.cancel` cannot publish
+    // over a registry the statements below it are about to dispose. The message does not move. #408.
+    if (isRetiring(this.#phase)) throw new Error("GraphRuntime is disposed.");
   }
 }
