@@ -12,19 +12,56 @@ import type { PublisherSnapshot } from "./graph-publisher";
  */
 export type DrainBooking = "unbooked" | "booked";
 
-interface IdlePhase {
+declare const PHASE_BRAND: unique symbol;
+declare const MEMO_BRAND: unique symbol;
+
+/**
+ * The mint marks that keep the two unions below closed as well as discriminated.
+ *
+ * A variant declaring only its discriminant is not closed. TypeScript's excess-property check reads
+ * a fresh object literal and not a value arriving through a variable, so a disposed phase carrying
+ * a booking was assignable to `RuntimePhase` through one intermediate const, and a cold memo
+ * carrying half a key was assignable to `SnapshotMemo` the same way. Neither was reachable, since
+ * both fields are private and every write goes through a transition below, but ADR-083 claims those
+ * combinations are unrepresentable rather than unreached and that is a claim about the type. These
+ * symbols are declared, never exported and never assigned at runtime, so no other module can name
+ * the key and no property exists to carry. Issue #387, and see ADR-084.
+ */
+interface PhaseBrand {
+  readonly [PHASE_BRAND]: true;
+}
+
+interface MemoBrand {
+  readonly [MEMO_BRAND]: true;
+}
+
+/** Mints one phase, and is the only expression in the program that produces a `RuntimePhase`. */
+function mintPhase<Shape extends { readonly kind: string }>(shape: Shape): Shape & PhaseBrand {
+  return Object.freeze(shape) as unknown as Shape & PhaseBrand;
+}
+
+/** Mints one memo, and is the only expression in the program that produces a `SnapshotMemo`. */
+function mintMemo<Shape extends { readonly kind: string }>(shape: Shape): Shape & MemoBrand {
+  return Object.freeze(shape) as unknown as Shape & MemoBrand;
+}
+
+interface IdleShape {
   readonly kind: "idle";
   readonly drain: DrainBooking;
 }
 
-interface FlushingPhase {
+interface FlushingShape {
   readonly kind: "flushing";
   readonly drain: DrainBooking;
 }
 
-interface DisposedPhase {
+interface DisposedShape {
   readonly kind: "disposed";
 }
+
+type IdlePhase = IdleShape & PhaseBrand;
+type FlushingPhase = FlushingShape & PhaseBrand;
+type DisposedPhase = DisposedShape & PhaseBrand;
 
 /**
  * The lifecycle of one `GraphRuntime`, as one value.
@@ -46,16 +83,16 @@ export type RuntimePhase = IdlePhase | FlushingPhase | DisposedPhase;
 // Interned, so a transition is a lookup rather than an allocation, and so identity is stable enough
 // to enumerate the reachable state space in a test. The four live values are reachable only through
 // the transitions below, which keeps this module the one owner of what a legal phase is.
-const IDLE_UNBOOKED = Object.freeze<IdlePhase>({ kind: "idle", drain: "unbooked" });
-const IDLE_BOOKED = Object.freeze<IdlePhase>({ kind: "idle", drain: "booked" });
-const FLUSHING_UNBOOKED = Object.freeze<FlushingPhase>({ kind: "flushing", drain: "unbooked" });
-const FLUSHING_BOOKED = Object.freeze<FlushingPhase>({ kind: "flushing", drain: "booked" });
+const IDLE_UNBOOKED = mintPhase<IdleShape>({ kind: "idle", drain: "unbooked" });
+const IDLE_BOOKED = mintPhase<IdleShape>({ kind: "idle", drain: "booked" });
+const FLUSHING_UNBOOKED = mintPhase<FlushingShape>({ kind: "flushing", drain: "unbooked" });
+const FLUSHING_BOOKED = mintPhase<FlushingShape>({ kind: "flushing", drain: "booked" });
 
 /** The phase a runtime starts in: live, publishing nothing, and owing the scheduler nothing. */
 export const IDLE: RuntimePhase = IDLE_UNBOOKED;
 
 /** The one terminal phase, and it carries nothing. That is what retires two hand-written clears. */
-export const DISPOSED: RuntimePhase = Object.freeze<DisposedPhase>({ kind: "disposed" });
+export const DISPOSED: RuntimePhase = mintPhase<DisposedShape>({ kind: "disposed" });
 
 /** Answers whether this runtime is retired, for every reader that has to ask. */
 export function isDisposed(phase: RuntimePhase): boolean {
@@ -104,16 +141,19 @@ export function unbookDrain(phase: RuntimePhase): RuntimePhase {
   return phase.kind === "flushing" ? FLUSHING_UNBOOKED : IDLE_UNBOOKED;
 }
 
-interface ColdMemo {
+interface ColdShape {
   readonly kind: "cold";
 }
 
-interface WarmMemo {
+interface WarmShape {
   readonly kind: "warm";
   readonly snapshot: PublisherSnapshot;
   readonly graph: GraphIR;
   readonly membersRevision: number;
 }
+
+type ColdMemo = ColdShape & MemoBrand;
+type WarmMemo = WarmShape & MemoBrand;
 
 /**
  * The memoised publisher snapshot and the whole of the key it is answered by.
@@ -130,7 +170,7 @@ interface WarmMemo {
 export type SnapshotMemo = ColdMemo | WarmMemo;
 
 /** No snapshot and no key. The initial memo, and the one `replaceGraph` and `dispose` assign. */
-export const COLD_MEMO: SnapshotMemo = Object.freeze<ColdMemo>({ kind: "cold" });
+export const COLD_MEMO: SnapshotMemo = mintMemo<ColdShape>({ kind: "cold" });
 
 /** Answers a warm memo. Every part of the key is required, so a partial one cannot be built. */
 export function warmMemo(
@@ -138,7 +178,7 @@ export function warmMemo(
   graph: GraphIR,
   membersRevision: number,
 ): SnapshotMemo {
-  return Object.freeze<WarmMemo>({ kind: "warm", snapshot, graph, membersRevision });
+  return mintMemo<WarmShape>({ kind: "warm", snapshot, graph, membersRevision });
 }
 
 /**
@@ -156,4 +196,56 @@ export function memoHit(
   if (memo.kind === "cold") return undefined;
   if (memo.graph !== graph || memo.membersRevision !== membersRevision) return undefined;
   return memo.snapshot;
+}
+
+/**
+ * The publication a reentrant call deferred: the seeds it asked for, and the frame it carried.
+ *
+ * A bare seed set held this until issue #380, and the frame a deferred `flushAtTick` arrived with
+ * was dropped: the seeds were queued, the drain published them through `flush([])`, and that verb
+ * has no tick parameter at all. So the work survived a deferral and the frame it belonged to did
+ * not. The two travel together here for the reason the memo carries its whole key: half a payload
+ * is not a payload. See ADR-084.
+ */
+export interface PendingPublication {
+  readonly seeds: ReadonlySet<string>;
+  readonly tick: number | undefined;
+}
+
+/** Nothing deferred: no seeds, and therefore no frame to reach. */
+export const NOTHING_PENDING: PendingPublication = Object.freeze({
+  seeds: new Set<string>() as ReadonlySet<string>,
+  tick: undefined,
+});
+
+/**
+ * Answers the pending publication with `seeds` and `tick` added to it.
+ *
+ * The later of two frames wins, which is the rule issue #380 asks for when two deferred ticks
+ * arrive inside one flush: a frame number only ever advances, so replaying the earlier of them
+ * would be refused by the guard the deferral exists to preserve. A deferral carrying no frame
+ * leaves whatever frame is already pending alone rather than erasing it, because `flush` cannot
+ * name one and must not answer for one. A fresh set each time, so nothing holds the pending one.
+ */
+export function deferring(
+  pending: PendingPublication,
+  seeds: readonly string[],
+  tick: number | undefined,
+): PendingPublication {
+  const merged = new Set(pending.seeds);
+  for (const seed of seeds) merged.add(seed);
+  return Object.freeze({
+    seeds: merged as ReadonlySet<string>,
+    tick: tick === undefined ? pending.tick : Math.max(pending.tick ?? tick, tick),
+  });
+}
+
+/**
+ * Answers whether anything is deferred, and the seeds are the whole question.
+ *
+ * A frame number with no seeds behind it publishes nothing, so it is not pending work. That is the
+ * answer an empty seed set already gave, and it does not move here.
+ */
+export function isPending(pending: PendingPublication): boolean {
+  return pending.seeds.size > 0;
 }
