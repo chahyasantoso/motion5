@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "expected_head": "d19f9b4dedc09854386f8436879491cd0dba39bc",
+  "expected_blobs": {
+    "packages/core/test/helpers/publication-spy.ts": "535ad027e60bc91338696fa11bdfe2f38d701396"
+  },
+  "message": "docs(runtime): statedPublications reads the seed list a call stated, not what reached the publisher",
+  "edits": [
+    {
+      "path": "packages/core/test/helpers/publication-spy.ts",
+      "find": " * Answers every publication that named at least one node, which is what a write asks for.\n *\n * No publication a drain replays names one, so this is the count a case about a write means. It is\n * a claim about the seed list and not about where the call came from, which its own docblock also\n * used to get wrong: use it where the exact list is not the point.\n */",
+      "replace": " * Answers every call whose stated seed list named at least one node, which is what a write asks for.\n *\n * A claim about the list a call stated, and about nothing else. No call a drain replays states one,\n * so this is the count a case about a write means; what a drain was carrying is merged into the\n * effective seeds inside `#flushSeeds` and reaches the publisher, one layer below anything a spy on\n * this verb can see. Origin is not the only thing a seed list cannot prove, and neither is the\n * content of the publication that followed. Use it where the exact list is not the point.\n */"
+    }
+  ]
+}
