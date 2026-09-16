@@ -38,6 +38,14 @@ export type Publication = readonly [readonly string[], ...unknown[]];
  * `seedsOf` is deleted with it. A runtime guard asking whether the first argument is a string array
  * is a second answer to a question the type now answers, and its `undefined` branch was the thing
  * that made watching the wrong member quiet.
+ *
+ * So the tuple is the contract, and issue #424 is that the sentence saying so was never written. A
+ * call outside it is not answered: every reader below destructures `[seeds]` and reads its length,
+ * so a call recorded as `[]` throws a `TypeError` here rather than being skipped the way `seedsOf`
+ * once skipped it. A typed consumer cannot record one, an untyped `vi.fn()` included, and a cast
+ * that widens past the tuple is the caller's decision rather than a case this tier answers.
+ * Restoring the guard is refused for the reason above, and `publication-origin.test.ts` pins the
+ * boundary at compile time rather than describing it.
  */
 export interface PublicationSpy {
   readonly mock: { readonly calls: ReadonlyArray<Publication> };
