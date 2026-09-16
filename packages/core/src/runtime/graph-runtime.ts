@@ -361,15 +361,13 @@ export class GraphRuntime {
    * already accepted is cancelled rather than left to run and be refused, since issue #389 made the
    * booking a claim about the scheduler; `#drainScheduled` still refuses on the one discriminant,
    * for a job a port declined to cancel. See ADR-083 and ADR-084.
+   *
+   * Once, however host code re-enters it: `isRetiring` is asked rather than `isDisposed`, and the
+   * phase is raised before the port is touched. `graph-runtime-state.ts` owns why. Issue #408, and
+   * see ADR-090.
    */
   dispose(): void {
-    // Whether teardown has begun, not whether it finished, which is issue #408: the guard read
-    // `isDisposed` while the phase went terminal only after `#releaseBooking` had called host
-    // `Cancel.cancel`, so a cancel that re-entered `dispose` found a live runtime and ran this body
-    // twice. See ADR-090.
     if (isRetiring(this.#phase)) return;
-    // Raised before the port is touched, which is what the guard above needs. Retiring rather than
-    // terminal, because the cancellation failure below is still this runtime's to report.
     this.#phase = retiring(this.#phase);
     // Before the phase goes terminal, because a retired runtime should not leave the scheduler
     // holding a job it will only refuse.
@@ -530,7 +528,6 @@ export class GraphRuntime {
    */
   #drainScheduled(): void {
     this.#releaseBooking();
-    // Retiring counts, because teardown is what this job would publish over. Issue #408.
     if (isRetiring(this.#phase) || !isPending(this.#pending)) return;
     // Replayed through the verb that owns clock transitions, so the frame a reentrant call arrived
     // with is recorded by the publication that finally runs. It cannot have been overtaken: the
@@ -544,7 +541,6 @@ export class GraphRuntime {
     }
   }
   #onTick(event: ClockTick): void {
-    // A tick can arrive during teardown, because `unsubscribe` runs after the port is touched. #408.
     if (isRetiring(this.#phase)) return;
     if (event.tick <= this.#lastTick) {
       this.#report(
@@ -617,8 +613,7 @@ export class GraphRuntime {
     ]);
   }
   #assertLive(): void {
-    // Retiring is refused too, so a verb called from inside a host `Cancel.cancel` cannot publish
-    // over a registry the statements below it are about to dispose. The message does not move. #408.
+    // Retiring too, and the message does not move: it is still a runtime a caller may not use.
     if (isRetiring(this.#phase)) throw new Error("GraphRuntime is disposed.");
   }
 }
