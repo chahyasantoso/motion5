@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "operation": "apply",
+  "expected_head": "56315e9cc777d9972ea365f9739956b09b7500b8",
+  "expected_blobs": {
+    "packages/core/src/runtime/graph-runtime.ts": "8c8c99023b050c9ebd6723149408eb7543f00d21"
+  },
+  "message": "docs(runtime): leave the disposal reasoning with the module that owns the phase",
+  "edits": [
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "   *\n   * Once, however host code re-enters it: `isRetiring` is asked rather than `isDisposed`, and the\n   * phase is raised before the port is touched. `graph-runtime-state.ts` owns why. Issue #408, and\n   * see ADR-090.\n   */",
+      "replace": "   */"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "    // Retiring too, and the message does not move: it is still a runtime a caller may not use.\n    if (isRetiring(this.#phase)) throw new Error(\"GraphRuntime is disposed.\");",
+      "replace": "    if (isRetiring(this.#phase)) throw new Error(\"GraphRuntime is disposed.\");"
+    }
+  ]
+}
