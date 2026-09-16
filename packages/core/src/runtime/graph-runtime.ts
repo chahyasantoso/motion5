@@ -166,7 +166,20 @@ export class GraphRuntime {
     this.#snapshot = undefined;
     this.#snapshotGraph = undefined;
   }
-  flush(seeds: readonly string[] = [...this.#members], tick?: number): PatchBatch {
+  /**
+   * Publishes for `seeds`, unioned with whatever a deferred drain left pending, and answers it.
+   *
+   * `seeds` has no default. It defaulted to `[...this.#members]` until issue #371's follow-up, so
+   * an omitted argument asked for a full graph recompute: the most expensive answer this method
+   * has, selected by saying nothing. A default is what an unthinking call gets, so it may not be
+   * the worst case. Every caller states its list, and the one that wants every member says so.
+   *
+   * An empty list is not a cheap flush and is not treated as one. It still derives the snapshot,
+   * moves `#sequence` and notifies every batch subscriber, because `#scheduleDrain` calls
+   * `flush([])` precisely so a deferred drain publishes what `#pendingSeeds` carried. Emptiness is
+   * a project-tier question and `ProjectRuntime.#publishSeeds` owns it. See ADR-081 and ADR-080.
+   */
+  flush(seeds: readonly string[], tick?: number): PatchBatch {
     this.#assertLive();
     if (this.#flushing) {
       for (const seed of seeds) this.#pendingSeeds.add(seed);
@@ -195,8 +208,20 @@ export class GraphRuntime {
       if (this.#pendingSeeds.size > 0) this.#scheduleDrain();
     }
   }
+  /**
+   * Publishes for `seeds` without reaching the clock's frame number.
+   *
+   * The project tier's entry, narrower than `flush` on purpose rather than by accident: it cannot
+   * be handed a `tick`, so a live edit can never consume a frame number the clock will reuse on
+   * its next frame. `clock-tick-identity` reads that separation from the other side. It is also
+   * why issue #371's follow-up proposal to delete this member and let `#invalidateSeeds` reach
+   * `flush` directly is refused: it would widen what the project tier can reach while claiming to
+   * narrow this class's surface. See ADR-081.
+   *
+   * It asserts no liveness of its own. `flush` asserts the same condition as its first statement,
+   * with nothing in between that could change the answer, so the second copy decided nothing.
+   */
   invalidate(seeds: readonly string[]): PatchBatch {
-    this.#assertLive();
     return this.flush(seeds);
   }
   dispose(): void {
