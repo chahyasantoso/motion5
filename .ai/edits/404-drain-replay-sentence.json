@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "expected_head": "4bb00edcd3105ac0e456001a07699f524d498007",
+  "expected_blobs": {
+    "packages/core/test/helpers/publication-spy.ts": "116fbfd913fb94f5eebf3d1a0fc72a1c70ba3237"
+  },
+  "message": "docs(runtime): name the verb that replays a drain, and the shape of drain a flush spy sees",
+  "edits": [
+    {
+      "path": "packages/core/test/helpers/publication-spy.ts",
+      "find": " * before. The surviving half is the drain. `#scheduleDrain` replays through `flush([])`, so a spy on\n * `flush` observes both the caller-stated publication a case is about and any scheduled drain, and",
+      "replace": " * before. The surviving half is the drain: `#drainScheduled` replays through `flush([])` when the\n * deferral it consumes carried no frame, so a spy on `flush` observes both the caller-stated\n * publication a case is about and a scheduled drain of that shape, and"
+    }
+  ]
+}
