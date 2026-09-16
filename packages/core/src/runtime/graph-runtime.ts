@@ -361,10 +361,6 @@ export class GraphRuntime {
    * already accepted is cancelled rather than left to run and be refused, since issue #389 made the
    * booking a claim about the scheduler; `#drainScheduled` still refuses on the one discriminant,
    * for a job a port declined to cancel. See ADR-083 and ADR-084.
-   *
-   * Once, however host code re-enters it: `isRetiring` is asked rather than `isDisposed`, and the
-   * phase is raised before the port is touched. `graph-runtime-state.ts` owns why. Issue #408, and
-   * see ADR-090.
    */
   dispose(): void {
     if (isRetiring(this.#phase)) return;
@@ -613,7 +609,6 @@ export class GraphRuntime {
     ]);
   }
   #assertLive(): void {
-    // Retiring too, and the message does not move: it is still a runtime a caller may not use.
     if (isRetiring(this.#phase)) throw new Error("GraphRuntime is disposed.");
   }
 }
