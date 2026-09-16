@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "expected_head": "22ebb5dafda95eddcb08f2c6dd1e3a439b9ae765",
+  "expected_blobs": {
+    "packages/core/test/integration/demo-runtime-authoring.test.ts": "f14262e2e7fd4255b1145c926ad103ebbb618689",
+    "packages/core/test/unit/runtime/motion-consistency.test.ts": "3a045af45979014cdc4c74d151cb8c803a9bd7fe"
+  },
+  "message": "fix(test): retarget the last three graph publication spies at flush",
+  "edits": [
+    {
+      "path": "packages/core/test/integration/demo-runtime-authoring.test.ts",
+      "find": "      const replace = vi.spyOn(actual.runtime.graph, \"replaceGraph\");\n      const invalidate = vi.spyOn(actual.runtime.graph, \"invalidate\");\n      const track = actual.handle.track(nodeId(rig.solverTrack));\n",
+      "replace": "      const replace = vi.spyOn(actual.runtime.graph, \"replaceGraph\");\n      const invalidate = vi.spyOn(actual.runtime.graph, \"flush\");\n      const track = actual.handle.track(nodeId(rig.solverTrack));\n"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/motion-consistency.test.ts",
+      "find": "    const replace = vi.spyOn(test.runtime.graph, \"replaceGraph\");\n    const invalidate = vi.spyOn(test.runtime.graph, \"invalidate\");\n    const seen: (number | undefined)[] = [];\n",
+      "replace": "    const replace = vi.spyOn(test.runtime.graph, \"replaceGraph\");\n    const invalidate = vi.spyOn(test.runtime.graph, \"flush\");\n    const seen: (number | undefined)[] = [];\n"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/motion-consistency.test.ts",
+      "find": "    const motion = test.handle.motion(\"hero\");\n    const invalidate = vi.spyOn(test.runtime.graph, \"invalidate\");\n    for (const value of [-1, NaN, Infinity])\n",
+      "replace": "    const motion = test.handle.motion(\"hero\");\n    const invalidate = vi.spyOn(test.runtime.graph, \"flush\");\n    for (const value of [-1, NaN, Infinity])\n"
+    }
+  ]
+}
