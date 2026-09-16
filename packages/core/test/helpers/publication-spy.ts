@@ -60,11 +60,13 @@ export function publicationsFor(
 }
 
 /**
- * Answers every publication that named at least one node, which is what a write asks for.
+ * Answers every call whose stated seed list named at least one node, which is what a write asks for.
  *
- * No publication a drain replays names one, so this is the count a case about a write means. It is
- * a claim about the seed list and not about where the call came from, which its own docblock also
- * used to get wrong: use it where the exact list is not the point.
+ * A claim about the list a call stated, and about nothing else. No call a drain replays states one,
+ * so this is the count a case about a write means; what a drain was carrying is merged into the
+ * effective seeds inside `#flushSeeds` and reaches the publisher, one layer below anything a spy on
+ * this verb can see. Origin is not the only thing a seed list cannot prove, and neither is the
+ * content of the publication that followed. Use it where the exact list is not the point.
  */
 export function statedPublications(spy: PublicationSpy): ReadonlyArray<Publication> {
   return spy.mock.calls.filter(([seeds]) => seeds.length > 0);
