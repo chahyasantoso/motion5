@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ProjectDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
-import { INLINE_JOB_MESSAGE, deferredScheduler, type Cancel } from "../../src/ports/scheduler";
+import {
+  INLINE_JOB_MESSAGE,
+  deferredScheduler,
+  type Cancel,
+  type Scheduler,
+} from "../../src/ports/scheduler";
 import { GraphRuntime } from "../../src/runtime/graph-runtime";
 import type { PatchBatch } from "../../src/runtime/patch-registry";
 
@@ -121,6 +126,84 @@ describe("a Scheduler defers, and the port is what says so", () => {
     // because it is only read on entry to `schedule`.
     expect(() => retained?.()).not.toThrow();
     expect(ran).toBe(0);
+  });
+
+  it("refuses a callback whose own call has not returned, after a nested schedule completed", () => {
+    let ran = 0;
+    let calls = 0;
+    const port: { guarded?: Scheduler<() => void> } = {};
+    const guarded = deferredScheduler({
+      schedule(job: () => void): Cancel {
+        calls += 1;
+        if (calls > 1) return { cancel() {} };
+        // A nested call that begins and ends inside this one, and a compliant one, so nothing about
+        // it is refused. It is the whole mechanism of issue #416: its own `finally` lowered the
+        // single shared flag that the outer call's callback reads.
+        port.guarded?.schedule(() => undefined);
+        // Still inside the outer `schedule`, so this is the inline execution a refusal is owed for.
+        job();
+        return { cancel() {} };
+      },
+    });
+    port.guarded = guarded;
+
+    // Red before this change: the nested call lowered the flag, the outer callback read a call that
+    // had returned, and the job ran inside the `schedule` still running above it. Nothing was
+    // refused, and the outer call answered a handle for a job that had already been spent.
+    expect(() => guarded.schedule(() => (ran += 1))).toThrow(INLINE_JOB_MESSAGE);
+    expect(ran).toBe(0);
+    expect(calls).toBe(2);
+
+    // And the latch is what the port earned by running one job inline, so a later call is refused
+    // on entry whether it nests or not.
+    expect(() => guarded.schedule(() => undefined)).toThrow(INLINE_JOB_MESSAGE);
+    expect(calls).toBe(2);
+  });
+
+  it("answers a compliant call its port's own handle when a nested call was the refused one", () => {
+    let ran = 0;
+    let cancelled = 0;
+    let calls = 0;
+    const outerJobs: (() => void)[] = [];
+    const port: { guarded?: Scheduler<() => void> } = {};
+    const guarded = deferredScheduler({
+      schedule(job: () => void): Cancel {
+        calls += 1;
+        if (calls > 1) {
+          // The nested call is the one out of contract, and its refusal is its own to report.
+          job();
+          return { cancel() {} };
+        }
+        outerJobs.push(job);
+        try {
+          port.guarded?.schedule(() => undefined);
+        } catch {
+          // A real nested caller owns this; swallowed here so the outer call is observed alone.
+        }
+        return {
+          cancel() {
+            cancelled += 1;
+          },
+        };
+      },
+    });
+    port.guarded = guarded;
+
+    // The outer call never ran its job inline, so it is owed its port's real handle. Red before this
+    // change, where the post-schedule check read the shared latch: the nested refusal set it, and
+    // this call's handle was cancelled and its refusal thrown for something it had not done.
+    const handle = guarded.schedule(() => (ran += 1));
+    expect(cancelled).toBe(0);
+    expect(outerJobs).toHaveLength(1);
+
+    // It is a real handle, and the job it names still runs now that the call has returned.
+    outerJobs[0]?.();
+    expect(ran).toBe(1);
+    handle.cancel();
+    expect(cancelled).toBe(1);
+
+    // The latch is unchanged by any of that, because the port did run one job inline.
+    expect(() => guarded.schedule(() => undefined)).toThrow(INLINE_JOB_MESSAGE);
   });
 
   it("bounds a runtime composed over a synchronous port, and keeps that runtime's work", () => {
