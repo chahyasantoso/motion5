@@ -26,6 +26,11 @@ import { GraphRuntime } from "../../../src/runtime/graph-runtime";
  * runtime built with no scheduler at all, was never driven with a frame-only payload. That is the
  * branch where nothing will ever drain, so it is where a frame could sit pending forever while
  * `isPending` keeps answering true. See ADR-080.
+ *
+ * Issue #409 narrows the last of those claims rather than reversing it. A retired runtime hands a
+ * host nothing, which is what an empty `received` reads; it does not also forget. Retention is
+ * total across phases and delivery stays guarded, so the drain case below reads an empty sink
+ * beside a retained `flush-failure` where it used to read both as absent. See ADR-091.
  */
 
 const project: ProjectDefinition = {
@@ -209,7 +214,7 @@ describe("a host that cannot receive a diagnostic cannot reroute the runtime", (
   });
 });
 
-describe("a retired runtime carries neither work nor a diagnostic", () => {
+describe("a retired runtime carries no work, and withholds rather than loses a diagnostic", () => {
   it("leaves nothing pending when caller composition disposes it and then throws", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
@@ -253,7 +258,7 @@ describe("a retired runtime carries neither work nor a diagnostic", () => {
     expect(runtime.lastFlushError).toBeUndefined();
   });
 
-  it("reports nothing once caller composition has retired it inside a scheduled drain", () => {
+  it("hands a retired runtime's host nothing, and still retains why the drain failed", () => {
     const clock = createManualClock();
     const scheduler = createFakeScheduler();
     const holder: { runtime?: GraphRuntime } = {};
@@ -292,8 +297,14 @@ describe("a retired runtime carries neither work nor a diagnostic", () => {
     // reported to had been retired by that same composition. Red before this change in both
     // halves: a `flush-failure` was filed against a terminal runtime, which is issue #393, and the
     // drained seeds were re-queued onto it, which is issue #401 from the drain's side.
+    //
+    // Withheld from the host rather than discarded, which is issue #409 and the half this case used
+    // to overstate. Delivery is what a terminal phase refuses, so the sink stays empty; the reason
+    // the work failed is still readable by whoever asks. Red in the last two assertions before that
+    // change, when one guard dropped the retention along with the handover.
     expect(received).toEqual([]);
-    expect(runtime.lastFlushError).toBeUndefined();
+    expect(runtime.lastFlushError?.ruleId).toBe("flush-failure");
+    expect(runtime.lastFlushError?.message).toMatch(/Scheduled flush failed/);
     expect(runtime.pendingSeeds).toEqual([]);
     expect(scheduler.pending).toHaveLength(0);
   });

@@ -6,7 +6,7 @@ import type { GraphNode, GraphIR } from "../graph/ir";
 import { GraphPublisher, type PublisherNode, type PublisherSnapshot } from "./graph-publisher";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
 import { deferredScheduler, type Cancel, type Scheduler } from "../ports/scheduler";
-import { describeError, reportDiagnostic } from "./diagnostic-report";
+import { describeError, reportDiagnostic, type DiagnosticRetention } from "./diagnostic-report";
 import {
   COLD_MEMO,
   DISPOSED,
@@ -97,6 +97,15 @@ export class GraphRuntime {
   #lastTick = 0;
   #sequence = 0;
   #lastFlushError: Diagnostic | undefined;
+  #lastSinkError: Diagnostic | undefined;
+  readonly #retention: DiagnosticRetention = {
+    retain: (diagnostic: Diagnostic) => {
+      this.#lastFlushError = diagnostic;
+    },
+    retainSinkFailure: (diagnostic: Diagnostic) => {
+      this.#lastSinkError = diagnostic;
+    },
+  };
   constructor(
     project: ProjectDefinition,
     clock: Clock,
@@ -132,6 +141,18 @@ export class GraphRuntime {
   }
   get lastFlushError(): Diagnostic | undefined {
     return this.#lastFlushError;
+  }
+  /**
+   * The diagnostic describing a failed handover, or `undefined` until a handover has failed.
+   *
+   * A host whose `onFlushError` throws is contained rather than allowed to reroute a runtime
+   * failure, and this is where the containment leaves a trace instead of erasing one. The sink's
+   * own exception is retained here, is never delivered anywhere, and never replaces the runtime
+   * diagnostic it failed to carry. A distinct hook was refused because a hook is a second sink and
+   * therefore a second thing that can throw. Issue #410, and see ADR-091.
+   */
+  get lastSinkError(): Diagnostic | undefined {
+    return this.#lastSinkError;
   }
   get memberCount(): number {
     return this.#members.size;
@@ -390,10 +411,10 @@ export class GraphRuntime {
     }
   }
   #report(ruleId: string, message: string, tick: number = this.#lastTick): void {
-    if (isDisposed(this.#phase)) return;
-    this.#lastFlushError = reportDiagnostic(this.#onFlushError, ruleId, message, tick, [
-      ...this.#members,
-    ]);
+    // The phase selects the sink and nothing else: retention below is total, so a retired runtime
+    // withholds rather than discards.
+    const sink = isDisposed(this.#phase) ? undefined : this.#onFlushError;
+    reportDiagnostic(sink, this.#retention, ruleId, message, tick, [...this.#members]);
   }
   #assertLive(): void {
     if (isRetiring(this.#phase)) throw new Error("GraphRuntime is disposed.");

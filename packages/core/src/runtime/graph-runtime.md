@@ -46,6 +46,14 @@ The memoised publisher snapshot and the whole of the key it is answered by, as o
 
 `replaceGraph` clears it with `#publisherNodes`, and for the same reason rather than for correctness: it is keyed on the graph identity, so an entry from the replaced graph could never be read, but holding one would retain every node that clear exists to release. One assignment, and the key leaves with the value it belongs to: this used to clear two of the memo's three fields and leave the membership revision behind, which stayed harmless only because warmth also needed the value. See ADR-083.
 
+## #retention
+
+The two slots this runtime keeps diagnostics in, handed to the boundary that owns the order they are filled in.
+
+Retention used to be an assignment from `reportDiagnostic`'s return value, which put it after the handover, and issue #415 is what that cost: a sink that re-enters and causes a second report files the newer diagnostic from the nested call, and then the outer assignment overwrites it with the older one, so `lastFlushError` stopped naming the latest failure and lost precisely the newer one. The boundary retains before it hands over now, and this object is what it retains into. The ordering is not stated here because it is not this module's to state: `diagnostic-report.ts` owns the handover, so it owns the rule, and only the storage is here. See ADR-091.
+
+The second slot answers `lastSinkError`, and it exists because containing a throwing sink is not the same as erasing it. Issue #410. It is never delivered: the only sink available is the one that has just thrown, so a report about it would be a loop rather than a report, and a distinct hook was refused for the same reason, since a hook is a second sink and therefore a second thing that can throw.
+
 ## #deferIfFlushing
 
 Answers the deferred batch for a flush requested inside one, or `undefined` when none is open.
@@ -152,10 +160,12 @@ The flush runs whether or not a consumer threw. A boundary that also cancelled t
 
 ## #report
 
-Records one diagnostic and hands it to the host once, and answers nothing once retired.
+Records one diagnostic whatever the phase, and hands it to the host only while there is still a host to hand it to.
 
 `tick` defaults to the last flushed tick, which is what a scheduled drain or a rejected clock regression is about. The two tick boundaries pass the tick they are handling instead: a consumer failure happens before `flush` advances `#lastTick`, so the default would file it under the previous frame and undo the attribution this exists for.
 
-Building a diagnostic and handing it to the host belong to `diagnostic-report.ts`, which owns that boundary for all five callers, and a terminal runtime files nothing new. ADR-088 owns both reasons: issues #400 and #393.
+Building a diagnostic, retaining it and handing it to the host belong to `diagnostic-report.ts`, which owns that boundary for all five callers. ADR-088 owns the handover: issues #400 and #393.
 
-It asks `isDisposed` rather than `isRetiring`, which is the distinction issue #408 turns on: a runtime discovering that its port refuses to cancel is still the object that knows that, so only a runtime that has finished retiring files nothing. See ADR-090.
+Retention and delivery are two questions and the phase answers only the second, which is issue #409. One guard used to answer both by returning early, so a flush failure a scheduled drain discovered after caller code retired the runtime was not withheld from the host, it was discarded: `#lastFlushError` was never written either, so the evidence that the work failed was gone rather than unpublished. Recording what happened is observation rather than action, and a runtime that can no longer publish can still hold the reason it stopped. So the phase selects the sink, and a terminal runtime hands a host nothing while still answering whoever asks. Whether delivery after disposal is wanted is a separate question, and it is left undecided here rather than inherited from a guard that was answering something else. See ADR-091.
+
+It asks `isDisposed` rather than `isRetiring` for that selection, which is the distinction issue #408 turns on: a runtime discovering that its port refuses to cancel is still the object that knows that, so only a runtime that has finished retiring withholds. See ADR-090.
