@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "expected_head": "1a2438d2b54bdc1242e53b3e420a6732c196395a",
+  "expected_blobs": {
+    "packages/core/src/runtime/graph-runtime.ts": "bdb2a0fed77ef5f2a2bd97d1d6fdc1017843838a"
+  },
+  "message": "docs(runtime): keep graph-runtime.ts under the sister doc trigger by citing ADR-088",
+  "edits": [
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "   *\n   * Building the diagnostic and handing it over belong to `diagnostic-report.ts`, which is the one\n   * owner of what a host may do to a runtime failure. Issue #400: `#onFlushError` is host code with\n   * no boundary of its own, so a sink that threw left through whichever of these five callers was\n   * reporting, and from `#releaseBooking` that position is after the deferred payload has been\n   * taken and before the publication boundary that would have put it back.\n   *\n   * A terminal runtime reports nothing new, which is issue #393. `dispose` releases its booking\n   * before the phase goes terminal, so an ordinary disposal still reports a port that refuses to\n   * cancel; what this refuses is the reentrant case, where the handler for one failure retires the\n   * runtime and the failure still unwinding then files a diagnostic against an object that has\n   * already stopped being able to act on one. `disposed` carries nothing, and a diagnostic on a\n   * retired runtime is something it would carry for the life of the object. See ADR-083.",
+      "replace": "   *\n   * Building a diagnostic and handing it to the host belong to `diagnostic-report.ts`, which owns\n   * that boundary for all five callers, and a terminal runtime files nothing new. ADR-088 owns both\n   * reasons: issues #400 and #393."
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "      // It re-queues onto a live runtime only, which is issue #401: derivation above runs caller\n      // code, caller code may dispose this runtime and then throw, and a terminal runtime holding\n      // work no phase can ever book a drain for disagrees with the record instead of preserving\n      // anything.",
+      "replace": "      // And onto a live runtime only: derivation above runs caller code, which may dispose this\n      // runtime before it throws. Issue #401, and ADR-088 owns the rest."
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "    // The seeds are taken and a frame this verb cannot reach is not. `flush` has no parameter to\n    // publish one with, so clearing the whole payload here dropped a frame a deferred `flushAtTick`\n    // asked for, and the drain the `finally` books below is what replays it. Issue #392.",
+      "replace": "    // The seeds are taken and a frame this verb cannot reach is not: `flush` cannot publish one, so\n    // the drain the `finally` books below replays it. Issue #392, and see ADR-088."
+    }
+  ]
+}
