@@ -3,6 +3,7 @@ import type { ProjectDefinition } from "../../src/contract/v5";
 import { createManualClock } from "../../src/ports/clock";
 import { INLINE_JOB_MESSAGE, deferredScheduler, type Cancel } from "../../src/ports/scheduler";
 import { GraphRuntime } from "../../src/runtime/graph-runtime";
+import type { PatchBatch } from "../../src/runtime/patch-registry";
 
 /**
  * Issue #377, found by the quality pass over #375.
@@ -71,23 +72,55 @@ describe("a Scheduler defers, and the port is what says so", () => {
     expect(ran).toBe(0);
   });
 
-  it("refuses every later call once a port has run one job inline", () => {
+  it("refuses the call whose refusal a port swallowed, and every later call with it", () => {
     let attempts = 0;
+    const cancelled: number[] = [];
     const guarded = deferredScheduler({
       schedule(job: () => void): Cancel {
         attempts += 1;
         try {
           job();
         } catch {
-          // A port that swallows the refusal must not buy a second inline pass with it.
+          // Out of contract twice: it ran the job inline and then hid the refusal.
         }
-        return { cancel() {} };
+        return {
+          cancel() {
+            cancelled.push(attempts);
+          },
+        };
       },
     });
 
-    expect(() => guarded.schedule(() => undefined)).not.toThrow();
+    // Red before this change, and the whole of issue #402's first interleaving: the refusal was only
+    // visible to a caller through a port that propagated it, so this call answered that port's own
+    // handle and a runtime storing it believed a drain was booked that nothing would ever run.
+    expect(() => guarded.schedule(() => undefined)).toThrow(INLINE_JOB_MESSAGE);
+    // And the handle it offered is cancelled rather than leaked, because the job it names has
+    // already run and been refused.
+    expect(cancelled).toEqual([1]);
     expect(() => guarded.schedule(() => undefined)).toThrow(INLINE_JOB_MESSAGE);
     expect(attempts).toBe(1);
+  });
+
+  it("invalidates a callback a port retained after schedule threw", () => {
+    let ran = 0;
+    let retained: (() => void) | undefined;
+    const guarded = deferredScheduler({
+      schedule(job: () => void): Cancel {
+        retained = job;
+        throw new Error("port refused after taking the job");
+      },
+    });
+
+    expect(() => guarded.schedule(() => (ran += 1))).toThrow(/after taking the job/);
+    expect(retained).toBeDefined();
+
+    // Red before this change, and issue #402's second interleaving: `scheduling` was already false
+    // by the time the port invoked what it kept, so the wrapper ran the job against a caller that
+    // had been told its booking failed and had released it. The permanent latch does not help,
+    // because it is only read on entry to `schedule`.
+    expect(() => retained?.()).not.toThrow();
+    expect(ran).toBe(0);
   });
 
   it("bounds a runtime composed over a synchronous port, and keeps that runtime's work", () => {
@@ -120,6 +153,52 @@ describe("a Scheduler defers, and the port is what says so", () => {
     // The work is not dropped. It stays pending and the next publication carries it, which is
     // exactly what a runtime given no scheduler at all already does.
     expect(runtime.pendingSeeds).toEqual(["caption/label"]);
+    runtime.flush([]);
+    expect(runtime.pendingSeeds).toEqual([]);
+    expect(runtime.registry.get("caption/label")?.values.node).toBe("caption/label");
+    runtime.dispose();
+  });
+
+  it("keeps the work and claims no scheduled drain when a port swallows the refusal", () => {
+    const clock = createManualClock();
+    let attempts = 0;
+    const runtime = new GraphRuntime(project, clock, compose, {
+      scheduler: {
+        schedule(job: () => void): Cancel {
+          attempts += 1;
+          try {
+            job();
+          } catch {
+            // Out of contract twice: it ran the job inline and then hid the refusal.
+          }
+          return { cancel() {} };
+        },
+      },
+    });
+    runtime.attach("hero/arm");
+
+    let deferred: PatchBatch | undefined;
+    let acted = false;
+    runtime.registry.subscribeNode("hero/arm", () => {
+      if (acted) return;
+      acted = true;
+      deferred = runtime.flush(["caption/label"]);
+    });
+
+    expect(() => clock.tick()).not.toThrow();
+    expect(attempts).toBe(1);
+
+    // The evidence issue #402 asks for, and every line of it was red before this change: the port
+    // answered a handle, so the booking was held, no `scheduler-failure` was reported, and the batch
+    // the deferral handed back told the caller a scheduled drain would publish this.
+    expect(runtime.lastFlushError?.ruleId).toBe("scheduler-failure");
+    expect(runtime.lastFlushError?.message).toMatch(/before schedule\(\) returns/);
+    expect(deferred?.diagnostics[0]?.ruleId).toBe("reentrant-flush-deferred");
+    expect(deferred?.diagnostics[0]?.message).toMatch(/carried by the next flush/);
+    expect(runtime.pendingSeeds).toEqual(["caption/label"]);
+
+    // And the work is not dropped. The next publication carries it, which is what a runtime given no
+    // scheduler at all already does, and which is why this refusal is safe to make total.
     runtime.flush([]);
     expect(runtime.pendingSeeds).toEqual([]);
     expect(runtime.registry.get("caption/label")?.values.node).toBe("caption/label");
