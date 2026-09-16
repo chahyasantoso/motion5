@@ -44,32 +44,41 @@ describe("GraphRuntime membership", () => {
     runtime.dispose();
   });
 
-  it("declares the seeds it flushes rather than defaulting to every member", () => {
+  it("separates the seed list from the clock transition, and keeps one name per operation", () => {
     const runtime = new GraphRuntime(project, createManualClock(), compose);
     runtime.attach("hero/arm");
 
-    // Issue #371's follow-up, finding 2. `flush` defaulted its seed list to `[...this.#members]`,
-    // so an omitted argument asked for the most expensive answer this method has, a full graph
-    // recompute, and chose it by saying nothing. The parameter carries no default now, so a flush
-    // costs the seeds its caller named. `Function.length` counts the parameters before the first
-    // one with a default, so it reads 0 while `seeds` carries one and 2 once neither does.
-    expect(GraphRuntime.prototype.flush.length).toBe(2);
+    // Issue #374. `flush(seeds, tick?)` carried two operations behind one name: publish, and
+    // publish while advancing and validating `#lastTick`. An optional parameter is the weakest
+    // possible statement of which of the two a caller meant, and the clock-owning one was the one
+    // reachable by accident. `flush(seeds)` states its seeds and nothing else, `flushAtTick(seeds,
+    // tick)` states both and makes the clock transition mandatory rather than optional, and one
+    // private owns the publication machinery the two of them share.
+    //
+    // Read through a cast rather than through the declarations, so the red this commit is pushed
+    // for is a failing assertion in a real run rather than a compile error that never gets to run.
+    // `Function.length` counts the parameters before the first one carrying a default, so it reads
+    // 2 for a flush that also accepts the clock's frame number and 1 once it cannot.
+    const api = GraphRuntime.prototype as unknown as Record<string, (...args: never[]) => unknown>;
+    expect(api.flush.length).toBe(1);
+    expect(typeof api.flushAtTick).toBe("function");
+    expect(api.flushAtTick.length).toBe(2);
 
-    // @ts-expect-error `flush` states its seeds, so there is no default left to omit.
-    const omitted = () => runtime.flush();
-    expect(typeof omitted).toBe("function");
+    // And one operation keeps one name. `invalidate` was `flush` with the clock's parameter
+    // removed, which is exactly what `flush` is now, so retaining it would be a second name for a
+    // single operation rather than the narrower entry ADR-081 kept it as. That record held the tick
+    // out of the project tier by keeping a second member; this one holds it out of `flush` itself,
+    // so the member is no longer what carries the segregation and stops paying for itself.
+    expect(api.invalidate).toBeUndefined();
+    expect(Object.getOwnPropertyNames(GraphRuntime.prototype)).not.toContain("invalidate");
 
-    // `invalidate` survives finding 1 rather than being folded into `flush`. It is the entry the
-    // project tier reaches and the one that cannot carry a tick, so a publication through it
-    // leaves the clock's own frame number where it was.
-    const batch = runtime.invalidate(["hero/arm"]);
-    expect(batch.seeds).toEqual(["hero/arm"]);
+    // What a caller states is what the batch reports, and the seed-list entry still cannot move the
+    // clock's frame number. Both halves are unchanged by the split, which is the point of it.
+    expect(runtime.flush(["hero/arm"]).seeds).toEqual(["hero/arm"]);
     expect(runtime.tick).toBe(0);
 
-    // And it still refuses a disposed runtime, which is what makes deleting its own second
-    // liveness assertion a deduplication rather than a hole: `flush` asserts the same condition as
-    // its first statement, with nothing in between that could change the answer.
+    // And it refuses a disposed runtime through its own first statement.
     runtime.dispose();
-    expect(() => runtime.invalidate(["hero/arm"])).toThrow("GraphRuntime is disposed.");
+    expect(() => runtime.flush(["hero/arm"])).toThrow("GraphRuntime is disposed.");
   });
 });
