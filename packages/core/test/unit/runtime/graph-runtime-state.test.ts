@@ -345,7 +345,38 @@ describe("the deferred payload carries something, or it is nothing at all", () =
     // set a deferral holds.
     expect(Object.keys(NOTHING_PENDING)).toEqual(["kind"]);
     const deferred = deferring(NOTHING_PENDING, ["hero/arm"], undefined);
+    // Allocation identity, kept beside the three cases below because it is cheap, and no longer the
+    // assertion carrying the claim: any implementation that spreads answers two objects, including
+    // one that leaks by another route. Issue #425.
     expect(deferredSeeds(deferred)).not.toBe(deferredSeeds(deferred));
+  });
+
+  it("answers a copy a caller may wreck, so the payload it came from is unchanged", () => {
+    // The claim #396 actually paid for, asserted rather than approximated. A caller mutating what it
+    // was handed is what corrupted every runtime in the process, and two calls answering different
+    // objects does not say that: a frozen view or a `ReadonlySet` cast reintroduced one layer down
+    // would keep the identity assertion green and bring the leak back. Issue #425.
+    const deferred = deferring(NOTHING_PENDING, ["hero/arm"], undefined);
+    (deferredSeeds(deferred) as string[]).push("caption/label");
+    expect(deferredSeeds(deferred)).toEqual(["hero/arm"]);
+  });
+
+  it("hands out nothing shared for the empty payload every runtime holds", () => {
+    // The shared empty is the object that actually leaked, so it is the one that has to be asked
+    // twice. It carries no collection at all now, which is the structural half of the answer, and
+    // this is the half that reads it from outside. Issue #425.
+    (deferredSeeds(NOTHING_PENDING) as string[]).push("hero/arm");
+    expect(deferredSeeds(NOTHING_PENDING)).toEqual([]);
+  });
+
+  it("copies the set when deferring derives a payload, so mutating one cannot reach the other", () => {
+    // The path that copies a set into a new one, which is where a shared reference would survive a
+    // spread at the answer. Issue #425.
+    const first = deferring(NOTHING_PENDING, ["hero/arm"], undefined);
+    const second = deferring(first, ["caption/label"], undefined);
+    (deferredSeeds(second) as string[]).push("hero/leg");
+    expect(deferredSeeds(first)).toEqual(["hero/arm"]);
+    expect([...deferredSeeds(second)].sort()).toEqual(["caption/label", "hero/arm"]);
   });
 
   it("is pending when it carries a frame and no seeds, which is what a drain replays", () => {
