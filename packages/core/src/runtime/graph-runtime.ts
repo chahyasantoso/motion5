@@ -5,6 +5,7 @@ import type { GraphNode, GraphIR } from "../graph/ir";
 import { GraphPublisher, type PublisherNode, type PublisherSnapshot } from "./graph-publisher";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
 import { deferredScheduler, type Cancel, type Scheduler } from "../ports/scheduler";
+import { describeError, reportDiagnostic } from "./diagnostic-report";
 import {
   COLD_MEMO,
   DISPOSED,
@@ -12,12 +13,16 @@ import {
   NOTHING_PENDING,
   beginFlush,
   bookingDrain,
+  deferredSeeds,
+  deferredTick,
   deferring,
   endFlush,
   isDisposed,
   isFlushing,
   isPending,
   memoHit,
+  requeuing,
+  retaining,
   unbookDrain,
   warmMemo,
   type PendingPublication,
@@ -74,22 +79,7 @@ function deferredBatch(sequence: number, seeds: readonly string[], scheduled: bo
     diagnostics: Object.freeze([diagnostic]),
   }) as PatchBatch;
 }
-/**
- * Renders `error` for a diagnostic message, keeping every original cause.
- *
- * An `AggregateError` is flattened rather than printed by its own message. The clock consumer
- * fanout reports two or more failures as one aggregate whose message is only the boundary's
- * context string, so printing that alone would name the boundary and drop every cause it
- * collected, which is the same attribution loss this module is fixing one level up. Recursive, so
- * a nested aggregate flattens too. Issue #154.
- */
-function describe(error: unknown): string {
-  if (error instanceof AggregateError) {
-    const causes = error.errors.map((cause: unknown) => describe(cause)).join("; ");
-    return [error.message, causes].filter((part) => part.length > 0).join(" ");
-  }
-  return error instanceof Error ? error.message : String(error);
-}
+
 export class GraphRuntime {
   readonly #binding: GraphBinding;
   readonly #registry: PatchRegistry;
@@ -182,7 +172,7 @@ export class GraphRuntime {
     return this.#members.size;
   }
   get pendingSeeds(): readonly string[] {
-    return [...this.#pending.seeds];
+    return deferredSeeds(this.#pending);
   }
   attach(nodeId: string): void {
     this.#assertLive();
@@ -330,8 +320,10 @@ export class GraphRuntime {
     // `#sequence` before failing deeper down under a lower-level message: mutated state, and the
     // failure misattributed. Unreachable today, and one branch is what that costs.
     if (isFlushing(this.#phase)) throw new Error("GraphRuntime is already flushing.");
-    const carried = [...this.#pending.seeds];
-    this.#pending = NOTHING_PENDING;
+    const carried = deferredSeeds(this.#pending);
+    // The seeds are taken and a frame this verb cannot reach is not: `flush` cannot publish one, so
+    // the drain the `finally` books below replays it. Issue #392, and see ADR-088.
+    this.#pending = retaining(this.#pending, this.#lastTick);
     this.#releaseBooking();
     const effectiveSeeds = [...new Set([...seeds, ...carried])];
     try {
@@ -346,7 +338,9 @@ export class GraphRuntime {
       return this.#publisher.flush(snapshot, effectiveSeeds, this.#sequence);
     } catch (error) {
       // The frame, if there was one, was consumed before this call, so the requeue carries none.
-      this.#pending = deferring(this.#pending, effectiveSeeds, undefined);
+      // And onto a live runtime only: derivation above runs caller code, which may dispose this
+      // runtime before it throws. Issue #401, and ADR-088 owns the rest.
+      this.#pending = requeuing(this.#phase, this.#pending, effectiveSeeds);
       throw error;
     } finally {
       // `endFlush` is total and disposal is terminal, so a subscriber that disposed the runtime
@@ -477,7 +471,10 @@ export class GraphRuntime {
       this.#drainHandle = scheduler.schedule(() => this.#drainScheduled());
     } catch (error) {
       this.#releaseBooking();
-      this.#report(SCHEDULER_FAILURE_RULE, `Deferred flush scheduling failed: ${describe(error)}`);
+      this.#report(
+        SCHEDULER_FAILURE_RULE,
+        `Deferred flush scheduling failed: ${describeError(error)}`,
+      );
     }
     return this.#drainHandle !== undefined;
   }
@@ -505,7 +502,7 @@ export class GraphRuntime {
     } catch (error) {
       this.#report(
         SCHEDULER_FAILURE_RULE,
-        `Deferred flush cancellation failed: ${describe(error)}`,
+        `Deferred flush cancellation failed: ${describeError(error)}`,
       );
     }
   }
@@ -528,12 +525,12 @@ export class GraphRuntime {
     // Replayed through the verb that owns clock transitions, so the frame a reentrant call arrived
     // with is recorded by the publication that finally runs. It cannot have been overtaken: the
     // only writer of `#lastTick` is a publication that also takes this payload. Issue #380.
-    const tick = this.#pending.tick;
+    const tick = deferredTick(this.#pending);
     try {
       if (tick === undefined) this.flush([]);
       else this.flushAtTick([], tick);
     } catch (error) {
-      this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describe(error)}`);
+      this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describeError(error)}`);
     }
   }
   #onTick(event: ClockTick): void {
@@ -564,7 +561,7 @@ export class GraphRuntime {
     } catch (error) {
       this.#report(
         CLOCK_CONSUMER_FAILURE_RULE,
-        `Clock consumers at tick ${event.tick} failed: ${describe(error)}`,
+        `Clock consumers at tick ${event.tick} failed: ${describeError(error)}`,
         event.tick,
       );
     }
@@ -585,29 +582,28 @@ export class GraphRuntime {
     } catch (error) {
       this.#report(
         FLUSH_FAILURE_RULE,
-        `Flush at tick ${event.tick} failed: ${describe(error)}`,
+        `Flush at tick ${event.tick} failed: ${describeError(error)}`,
         event.tick,
       );
     }
   }
   /**
-   * Records one diagnostic and hands it to the host once.
+   * Records one diagnostic and hands it to the host once, and answers nothing once retired.
    *
    * `tick` defaults to the last flushed tick, which is what a scheduled drain or a rejected clock
    * regression is about. The two tick boundaries pass the tick they are handling instead: a
    * consumer failure happens before `flush` advances `#lastTick`, so the default would file it
    * under the previous frame and undo the attribution this exists for.
+   *
+   * Building a diagnostic and handing it to the host belong to `diagnostic-report.ts`, which owns
+   * that boundary for all five callers, and a terminal runtime files nothing new. ADR-088 owns both
+   * reasons: issues #400 and #393.
    */
   #report(ruleId: string, message: string, tick: number = this.#lastTick): void {
-    const diagnostic: Diagnostic = Object.freeze({
-      ruleId,
-      path: String(tick),
-      message,
-      severity: "error",
-      ids: Object.freeze([...this.#members]),
-    });
-    this.#lastFlushError = diagnostic;
-    this.#onFlushError?.(diagnostic);
+    if (isDisposed(this.#phase)) return;
+    this.#lastFlushError = reportDiagnostic(this.#onFlushError, ruleId, message, tick, [
+      ...this.#members,
+    ]);
   }
   #assertLive(): void {
     if (isDisposed(this.#phase)) throw new Error("GraphRuntime is disposed.");

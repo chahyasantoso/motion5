@@ -38,12 +38,30 @@ import { describe, expect, it } from "vitest";
  * entries and five described closed work, and two of the three under **Next in line** called
  * merged pull requests unmerged. The phase bullet was a second Now with a different name and the
  * longest half-life of anything in the file, so it is refused by name. See ADR-085.
+ *
+ * Issue #403 is that gate's own machinery rather than its policy. The section reader answered from
+ * an arbitrary byte offset for a heading it could not find, a bare marker counted as an entry, and
+ * the phase rule refused one formatting of the label rather than the label itself. A gate that
+ * answers confidently from the wrong place is the defect this file exists to refuse, so the reader
+ * is total, an entry has to state something, and the label is read where a label goes. See ADR-085.
  */
 
 const DOCS = fileURLToPath(new URL("../../../../../docs/", import.meta.url));
 const STATUS = join(DOCS, "SESSION-STATUS.md");
 const LINK = /\]\((\.\/[^)]+\.md)\)/g;
 const HEADING = /^## .*$/gm;
+const COMMENTS = /<!--[\s\S]*?-->/g;
+const EMPHASIS = /[*_]/g;
+
+/**
+ * The forbidden bullet's label, in the label position and read case-insensitively.
+ *
+ * Optionally `current`, then `phase`, then the end of the label rather than more words: a colon, a
+ * hyphen, an en dash, an em dash or nothing at all end it, because the spellings issue #403 found
+ * use every one of them. Prose that mentions a phase further along a real entry is not a label and
+ * is not refused, and this file's own **Open, and not scheduled** section relies on that.
+ */
+const PHASE_LABEL = /^(?:current\s+)?phase\s*(?:[:\u2013\u2014-]|$)/i;
 
 /**
  * Comfortably above the rewritten file and far below any of the three logs that left it. The number
@@ -70,19 +88,66 @@ const SECTIONS = [
 const SINGLE_ENTRY = ["## Now", "## Next in line"];
 
 /**
- * Answers the top-level bullets under `heading`, and nothing about what they say.
+ * The lines under `heading`, up to the next level-two heading or to the end of the file.
+ *
+ * Total, and that is the first half of issue #403. This sliced by byte offset from `indexOf`, so a
+ * heading the file does not have made the offset `-1`, the slice began `heading.length - 1` bytes
+ * in, and the helper counted bullets from an arbitrary place while the failure message named a
+ * section it had never found. The section-list case catches a missing heading first today, so it
+ * was latent rather than live, and a helper that answers confidently from the wrong place is the
+ * shape of defect this file exists to refuse. A heading that is absent is not a section with no
+ * entries, so it is refused here rather than answered.
+ *
+ * Lines rather than bytes, so a heading on the last line of the file is found like any other and
+ * the arithmetic that caused the defect is deleted rather than corrected.
+ */
+function sectionLines(text: string, heading: string): readonly string[] {
+  const lines = text.split("\n");
+  const start = lines.indexOf(heading);
+  if (start === -1) throw new Error(`${heading} is absent, so its entries cannot be counted.`);
+  const rest = lines.slice(start + 1);
+  const end = rest.findIndex((line) => line.startsWith("## "));
+  return end === -1 ? rest : rest.slice(0, end);
+}
+
+/** The top-level bullets in `lines`, so every rule below reads a bullet the same way. */
+function topLevelBullets(lines: readonly string[]): readonly string[] {
+  return lines.filter((line) => line.startsWith("- "));
+}
+
+/**
+ * Whether `bullet` states something, which is what makes it an entry rather than a line.
+ *
+ * `- ` alone and `- <!-- placeholder -->` are both bullets and neither is an entry: the rule ADR-085
+ * wrote down is one entry, and a marker with nothing after it satisfies a counter while stating
+ * nothing a reader can check or a later slice can replace. Issue #403.
+ */
+function isEntry(bullet: string): boolean {
+  return bullet.slice("- ".length).replace(COMMENTS, "").trim() !== "";
+}
+
+/**
+ * Answers the entries under `heading`, and nothing about what they say.
  *
  * A nested bullet is deliberately not counted. The rule is one entry, not one line, and an entry
  * that genuinely needs a sub-list is still one entry; forbidding that would be a budget shaping the
- * writing again, one level further down. The slice runs to the next level-two heading or to the end
- * of the file, which is why the section list is asserted before this is trusted.
+ * writing again, one level further down.
  */
-function bulletsUnder(text: string, heading: string): string[] {
-  const start = text.indexOf(`${heading}\n`);
-  const rest = text.slice(start + heading.length);
-  const end = rest.indexOf("\n## ");
-  const body = end === -1 ? rest : rest.slice(0, end);
-  return body.split("\n").filter((line) => line.startsWith("- "));
+function entriesUnder(text: string, heading: string): readonly string[] {
+  return topLevelBullets(sectionLines(text, heading)).filter(isEntry);
+}
+
+/**
+ * Whether `bullet` is the phase bullet, read by its label rather than by one formatting of it.
+ *
+ * ADR-085 says the gate refuses the bullet by its own label, and it read one spelling of it: bold,
+ * capitalised, and terminated by a colon or an asterisk. An unbolded, a lowercase, a dash-separated
+ * and a `Current phase` bullet all passed the gate that exists to refuse them. Emphasis is stripped
+ * and the label is matched in the label position only, which is narrower than matching the word on
+ * purpose: the noun is allowed anywhere in an entry, the label is allowed nowhere. Issue #403.
+ */
+function statesPhase(bullet: string): boolean {
+  return PHASE_LABEL.test(bullet.slice("- ".length).replace(EMPHASIS, "").trim());
 }
 
 async function status(): Promise<string> {
@@ -106,13 +171,13 @@ describe("session status shape", () => {
     for (const heading of SINGLE_ENTRY) {
       // Exactly one rather than at most one: a project with nothing queued still has to say so in a
       // sentence a reader can check, and an empty section reads the same as an unupdated one.
-      expect(bulletsUnder(text, heading), `${heading} states exactly one entry`).toHaveLength(1);
+      expect(entriesUnder(text, heading), `${heading} states exactly one entry`).toHaveLength(1);
     }
   });
 
   it("states no phase, because a phase is a second Now with a longer half-life", async () => {
-    const bullets = (await status()).split("\n").filter((line) => line.startsWith("- "));
-    expect(bullets.filter((line) => /^- \*\*Phase[:*]/.test(line))).toEqual([]);
+    const bullets = topLevelBullets((await status()).split("\n"));
+    expect(bullets.filter(statesPhase)).toEqual([]);
   });
 
   it("hands the reader a real file for each log it stopped keeping", async () => {
@@ -121,5 +186,60 @@ describe("session status shape", () => {
     expect(targets).toContain("./LIVE-EDIT-COST.md");
     expect(existsSync(join(DOCS, "GUARDRAILS.md"))).toBe(true);
     expect(existsSync(join(DOCS, "LIVE-EDIT-COST.md"))).toBe(true);
+  });
+});
+
+/**
+ * The gate's own machinery, exercised directly rather than through the file it guards.
+ *
+ * Both halves of issue #403 are latent: the section-list case catches a missing heading before the
+ * reader can misread one, and the live file is clean of every phase spelling today. A latent defect
+ * is only pinned where the helper is handed the input the live file never has, so these cases hand
+ * it that input rather than arguing about it. See ADR-085.
+ */
+describe("the shape gate reads a section totally", () => {
+  it("refuses a heading it cannot find rather than counting from an arbitrary offset", () => {
+    expect(() => entriesUnder("# Title\n\n- one\n", "## Now")).toThrow(/## Now is absent/);
+  });
+
+  it("answers no entries for a heading on the last line of the file", () => {
+    expect(entriesUnder("## Now\n- one\n\n## Next in line", "## Next in line")).toEqual([]);
+  });
+
+  it("stops at the next section rather than reading on to the end of the file", () => {
+    expect(entriesUnder("## Now\n- one\n\n## Next in line\n- two\n", "## Now")).toHaveLength(1);
+  });
+
+  it("counts a bullet that states something, and not a marker that states nothing", () => {
+    expect(entriesUnder("## Now\n- \n- <!-- placeholder -->\n", "## Now")).toEqual([]);
+    expect(entriesUnder("## Now\n- one\n", "## Now")).toEqual(["- one"]);
+  });
+
+  it("counts an entry that needs a sub-list once, and two entries twice", () => {
+    expect(entriesUnder("## Now\n- one\n  - detail\n  - more detail\n", "## Now")).toHaveLength(1);
+    expect(entriesUnder("## Now\n- one\n- two\n", "## Now")).toHaveLength(2);
+  });
+});
+
+describe("the shape gate refuses the phase label rather than one spelling of it", () => {
+  it("reads the label whatever emphasis and case the writing gave it", () => {
+    const labelled = [
+      "- **Phase:** live editing",
+      "- Phase: live editing",
+      "- **phase:** live editing",
+      "- **Phase \u2014** live editing",
+      "- Current phase: live editing",
+      "- **Current Phase**",
+    ];
+    for (const bullet of labelled) expect(statesPhase(bullet), bullet).toBe(true);
+  });
+
+  it("allows an entry whose prose mentions a phase, because the label position is the rule", () => {
+    const allowed = [
+      "- Phase 6 packaging follows the current phase.",
+      "- **The publication seam is the live area:** the second pass is landing on one base.",
+      "- A phase with no inverse completes rather than refusing partway.",
+    ];
+    for (const bullet of allowed) expect(statesPhase(bullet), bullet).toBe(false);
   });
 });

@@ -9,14 +9,22 @@ import {
   COLD_MEMO,
   DISPOSED,
   IDLE,
+  NOTHING_PENDING,
   beginFlush,
   bookingDrain,
+  deferredSeeds,
+  deferredTick,
+  deferring,
   endFlush,
   isDisposed,
   isFlushing,
+  isPending,
   memoHit,
+  requeuing,
+  retaining,
   unbookDrain,
   warmMemo,
+  type PendingPublication,
   type RuntimePhase,
   type SnapshotMemo,
 } from "../../../src/runtime/graph-runtime-state";
@@ -271,5 +279,108 @@ describe("what the runtime does with them does not move", () => {
     expect(() => scheduler.flush()).not.toThrow();
     expect(batches).toEqual([1]);
     expect(runtime.lastFlushError).toBeUndefined();
+  });
+});
+
+/**
+ * Issues #392, #396 and #401, found by the quality passes over #390 and #398.
+ *
+ * The third value this module owns, held to the same standard as the two above. It was an interface
+ * rather than a union, and the three findings are what that cost: liveness was the seed count, so a
+ * payload carrying a frame and no seeds was not pending and its frame was never replayed; the empty
+ * constant carried one live `Set` behind a `ReadonlySet` type and every runtime in the process
+ * shared it; and a failed publication re-queued its seeds without asking whether the runtime it was
+ * re-queueing onto still existed.
+ *
+ * These cases are the state space again rather than the behaviour, for the reason the file's
+ * preamble already gives. `deferred-payload.test.ts` is the behavioural half and it is red before
+ * the change; two of the cases here are red as well, because a frame with no seeds answered false
+ * and `retaining` and `requeuing` did not exist. See ADR-088.
+ */
+describe("the deferred payload carries something, or it is nothing at all", () => {
+  it("answers nothing pending as a variant rather than as an empty seed set", () => {
+    expect(isPending(NOTHING_PENDING)).toBe(false);
+    expect(deferredSeeds(NOTHING_PENDING)).toEqual([]);
+    expect(deferredTick(NOTHING_PENDING)).toBeUndefined();
+    expect(Object.isFrozen(NOTHING_PENDING)).toBe(true);
+    // Issue #396: this constant used to cast one live `Set` through `ReadonlySet` and hand the same
+    // object to every runtime in the process, so one caller that mutated it poisoned all of them.
+    // There is no collection here to hand out, and the reader below answers a copy rather than the
+    // set a deferral holds.
+    expect(Object.keys(NOTHING_PENDING)).toEqual(["kind"]);
+    const deferred = deferring(NOTHING_PENDING, ["hero/arm"], undefined);
+    expect(deferredSeeds(deferred)).not.toBe(deferredSeeds(deferred));
+  });
+
+  it("is pending when it carries a frame and no seeds, which is what a drain replays", () => {
+    const frameOnly = deferring(NOTHING_PENDING, [], 2);
+
+    // Red before this change: liveness was `seeds.size > 0`, so this payload stored a frame the
+    // drain refused to replay and the booked job was spent on nothing. Issue #392.
+    expect(isPending(frameOnly)).toBe(true);
+    expect(deferredSeeds(frameOnly)).toEqual([]);
+    expect(deferredTick(frameOnly)).toBe(2);
+    // Nothing asked for stays nothing deferred, so the empty answer is still one interned value.
+    expect(deferring(NOTHING_PENDING, [], undefined)).toBe(NOTHING_PENDING);
+  });
+
+  it("merges the seeds, keeps the later frame, and holds no caller's array", () => {
+    const asked = ["hero/arm"];
+    const first = deferring(NOTHING_PENDING, asked, 3);
+    asked.push("caption/label");
+
+    expect(deferredSeeds(first)).toEqual(["hero/arm"]);
+    const merged = deferring(first, ["caption/label"], 2);
+    expect([...deferredSeeds(merged)].sort()).toEqual(["caption/label", "hero/arm"]);
+    // A frame number only ever advances, so replaying the earlier of two would be refused by the
+    // guard the deferral exists to preserve, and a deferral naming none erases neither.
+    expect(deferredTick(merged)).toBe(3);
+    expect(deferredTick(deferring(first, [], undefined))).toBe(3);
+  });
+
+  it("retains a frame a publication has not reached, and nothing it has", () => {
+    const carried = deferring(NOTHING_PENDING, ["hero/arm"], 3);
+
+    // The seeds are taken by the publication that is about to state them; the frame it has no
+    // parameter to name is what stays behind for the drain. Issue #392.
+    const kept = retaining(carried, 1);
+    expect(deferredSeeds(kept)).toEqual([]);
+    expect(deferredTick(kept)).toBe(3);
+    expect(isPending(kept)).toBe(true);
+    // And a frame this publication reached is nothing to carry, which is a drain replaying its own
+    // deferral through the verb that owns clock transitions.
+    expect(retaining(carried, 3)).toBe(NOTHING_PENDING);
+    expect(retaining(NOTHING_PENDING, 0)).toBe(NOTHING_PENDING);
+  });
+
+  it("re-queues onto a live runtime only, because a retired one owes no follow-up", () => {
+    const requeued = requeuing(IDLE, NOTHING_PENDING, ["hero/arm"]);
+    expect(deferredSeeds(requeued)).toEqual(["hero/arm"]);
+
+    // Issue #401: `disposed` is terminal and carries nothing, and pending work is something. The
+    // payload is a field beside the phase rather than a member of it, so this is the guard that
+    // says what the phase would have said if it owned the payload.
+    expect(requeuing(DISPOSED, NOTHING_PENDING, ["hero/arm"])).toBe(NOTHING_PENDING);
+    expect(requeuing(DISPOSED, requeued, ["caption/label"])).toBe(NOTHING_PENDING);
+  });
+
+  it("refuses a payload that states a frame beside no deferral at all", () => {
+    // The closedness half, in the shape issue #387 asked for one union across: an excess property
+    // arriving through a variable is not checked, so the brand is what keeps this union closed as
+    // well as discriminated. Both arrows are deliberately never called.
+    const assignNothingCarryingAFrame = () => {
+      const loose = { kind: "nothing", tick: 2 } as const;
+      // @ts-expect-error nothing pending carries no frame, however the value arrives.
+      const pending: PendingPublication = loose;
+      return pending;
+    };
+    const assignDeferralWithoutItsSeeds = () => {
+      const loose = { kind: "deferred", tick: 2 } as const;
+      // @ts-expect-error a deferral states its seeds, even when that set is empty.
+      const pending: PendingPublication = loose;
+      return pending;
+    };
+    expect(typeof assignNothingCarryingAFrame).toBe("function");
+    expect(typeof assignDeferralWithoutItsSeeds).toBe("function");
   });
 });

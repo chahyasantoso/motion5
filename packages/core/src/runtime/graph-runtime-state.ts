@@ -198,24 +198,60 @@ export function memoHit(
   return memo.snapshot;
 }
 
+declare const PENDING_BRAND: unique symbol;
+
 /**
- * The publication a reentrant call deferred: the seeds it asked for, and the frame it carried.
+ * The mint mark that keeps the payload union below closed as well as discriminated.
  *
- * A bare seed set held this until issue #380, and the frame a deferred `flushAtTick` arrived with
- * was dropped: the seeds were queued, the drain published them through `flush([])`, and that verb
- * has no tick parameter at all. So the work survived a deferral and the frame it belonged to did
- * not. The two travel together here for the reason the memo carries its whole key: half a payload
- * is not a payload. See ADR-084.
+ * The same device the two unions above use, for the reason issue #387 gave: a variant declaring
+ * only its discriminant is not closed, because TypeScript's excess-property check reads a fresh
+ * object literal and not a value arriving through a variable. Declared, never exported and never
+ * assigned at runtime, so no other module can name the key and no property exists to carry.
  */
-export interface PendingPublication {
+interface PendingBrand {
+  readonly [PENDING_BRAND]: true;
+}
+
+interface NothingPendingShape {
+  readonly kind: "nothing";
+}
+
+interface DeferredShape {
+  readonly kind: "deferred";
   readonly seeds: ReadonlySet<string>;
   readonly tick: number | undefined;
 }
 
-/** Nothing deferred: no seeds, and therefore no frame to reach. */
-export const NOTHING_PENDING: PendingPublication = Object.freeze({
-  seeds: new Set<string>() as ReadonlySet<string>,
-  tick: undefined,
+type NothingPending = NothingPendingShape & PendingBrand;
+type DeferredPublication = DeferredShape & PendingBrand;
+
+/**
+ * What a reentrant call deferred, as one closed value: nothing at all, or a publication that is
+ * owed.
+ *
+ * A bare seed set held this until issue #380, which dropped the frame a deferred `flushAtTick`
+ * arrived with. The two then travelled together in one interface, and issue #392 is that this was
+ * still half a decision: liveness was the seed count alone, so a deferral carrying a frame and no
+ * seeds stored a frame nothing would replay, while this tier's own empty-flush contract says an
+ * empty seed list is a publication rather than a cheap no-op.
+ *
+ * So nothing pending is a variant rather than an empty instance of the other one, and two things
+ * follow. There is no shared empty collection to hand out, which is issue #396: `NOTHING_PENDING`
+ * cast one live `Set` through `ReadonlySet` and every runtime in the process held that object, so a
+ * single caller that mutated it corrupted all of them. And a deferral is pending exactly when it
+ * exists, so `isPending` reads the discriminant rather than a conjunction over two fields that
+ * could disagree about the same question. See ADR-084 and ADR-088.
+ */
+export type PendingPublication = NothingPending | DeferredPublication;
+
+/** Mints one payload, and is the only expression in the program that produces a pending one. */
+function mintPending<Shape extends { readonly kind: string }>(shape: Shape): Shape & PendingBrand {
+  return Object.freeze(shape) as unknown as Shape & PendingBrand;
+}
+
+/** Nothing deferred, carrying no collection at all rather than an empty one to share. */
+export const NOTHING_PENDING: PendingPublication = mintPending<NothingPendingShape>({
+  kind: "nothing",
 });
 
 /**
@@ -232,20 +268,79 @@ export function deferring(
   seeds: readonly string[],
   tick: number | undefined,
 ): PendingPublication {
-  const merged = new Set(pending.seeds);
+  const carried = deferredTick(pending);
+  const merged = new Set(deferredSeeds(pending));
   for (const seed of seeds) merged.add(seed);
-  return Object.freeze({
-    seeds: merged as ReadonlySet<string>,
-    tick: tick === undefined ? pending.tick : Math.max(pending.tick ?? tick, tick),
-  });
+  const frame = tick === undefined ? carried : Math.max(carried ?? tick, tick);
+  // Nothing asked for is nothing deferred, so the empty answer is the variant that says so rather
+  // than a deferral which exists and owes nothing. Issue #392.
+  if (merged.size === 0 && frame === undefined) return NOTHING_PENDING;
+  return mintPending<DeferredShape>({ kind: "deferred", seeds: merged, tick: frame });
 }
 
 /**
- * Answers whether anything is deferred, and the seeds are the whole question.
+ * Answers whether anything is deferred, which is the discriminant and nothing else.
  *
- * A frame number with no seeds behind it publishes nothing, so it is not pending work. That is the
- * answer an empty seed set already gave, and it does not move here.
+ * The seed count was the whole question until issue #392, so a frame with no seeds behind it was
+ * not pending work: a reentrant `flushAtTick([], tick)` stored a frame, booked a drain and answered
+ * a deferred batch, and then the drain found nothing to do, the booked job was spent on nothing,
+ * and the frame stayed stranded until some later publication cleared the payload. This tier states
+ * that an empty seed list still derives the snapshot, moves the sequence and notifies every batch
+ * subscriber, so a frame is work by itself and the drain replays it. See ADR-080 and ADR-088.
  */
 export function isPending(pending: PendingPublication): boolean {
-  return pending.seeds.size > 0;
+  return pending.kind === "deferred";
+}
+
+/**
+ * The seeds a deferral is carrying, or none, and always as a copy.
+ *
+ * The one reader of a payload's seed set, so the set itself never leaves this module. That is the
+ * other half of issue #396: a collection nobody outside can reach is one nobody outside can
+ * mutate, which a `ReadonlySet` type alone never promised at runtime.
+ */
+export function deferredSeeds(pending: PendingPublication): readonly string[] {
+  return pending.kind === "deferred" ? [...pending.seeds] : [];
+}
+
+/** The frame a deferral is carrying, or `undefined` for a deferral that named none and for none. */
+export function deferredTick(pending: PendingPublication): number | undefined {
+  return pending.kind === "deferred" ? pending.tick : undefined;
+}
+
+/**
+ * Answers what a publication that reached frame `reached` leaves of the payload it just took.
+ *
+ * The seeds are taken whole, because the publication is about to state them. The frame is not, and
+ * that is the half issue #392's decision creates rather than closes: a frame is pending work now,
+ * and `flush` has no parameter to reach one with, so a live write that cleared the whole payload
+ * would drop a frame it cannot publish. A frame this publication has already reached is nothing to
+ * carry, which is the ordinary case of a drain replaying its own deferral through `flushAtTick`.
+ * See ADR-082 and ADR-088.
+ */
+export function retaining(pending: PendingPublication, reached: number): PendingPublication {
+  const tick = deferredTick(pending);
+  if (tick === undefined || tick <= reached) return NOTHING_PENDING;
+  return mintPending<DeferredShape>({ kind: "deferred", seeds: new Set<string>(), tick });
+}
+
+/**
+ * Answers the payload a failed publication leaves behind, which is nothing once the runtime is
+ * retired.
+ *
+ * Re-queueing the seeds a publication was carrying is what keeps a publisher failure from dropping
+ * work, and it is right for as long as this runtime can still publish. Issue #401 is the case where
+ * it cannot: snapshot derivation runs caller-supplied composition, caller code may dispose the
+ * runtime and then throw, and the boundary then put the seeds back onto an object whose phase is
+ * terminal and whose drain `bookingDrain` will decline forever. ADR-083's claim is that `disposed`
+ * is terminal and carries nothing; this is the same claim about the payload beside the phase, which
+ * is a field rather than a member of it. See ADR-088.
+ */
+export function requeuing(
+  phase: RuntimePhase,
+  pending: PendingPublication,
+  seeds: readonly string[],
+): PendingPublication {
+  if (isDisposed(phase)) return NOTHING_PENDING;
+  return deferring(pending, seeds, undefined);
 }
