@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { publicationsFor, statedPublications } from "../../helpers/publication-spy";
 import type { AuthoredStop, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import type { TrackHandle } from "../../../src/contract/track-handle";
 import { PluginRegistry } from "../../../src/domain/plugins";
@@ -189,13 +190,15 @@ describe("keyframe recompilation finalizes the stage it actually owns", () => {
       kill();
       throw failure;
     });
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
+    const publication = vi.spyOn(runtimeOf(handle).graph, "flush");
     const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
     expect(thrownBy(() => arm.setKeyframe("transform", "y", 300))).toBe(failure);
     expect(retained(arm)).toEqual({ values: { x: 200, y: 300, rotation: AUTHORED_ROTATION } });
     expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 45 });
     expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
-    expect(invalidate).toHaveBeenCalledTimes(1);
+    // Caller-stated publications only, so a scheduled drain cannot supply the one this case is
+    // about. Issue #381.
+    expect(statedPublications(publication)).toHaveLength(1);
     expect(replaceGraph).not.toHaveBeenCalled();
     arm.setKeyframe("transform", "x", 260);
     expect(values(handle, ARM)).toEqual({ x: 260, y: 300, rotation: 45 });
@@ -214,14 +217,14 @@ describe("keyframe recompilation finalizes the stage it actually owns", () => {
     const before = arm.definition;
     const published = handle.get(ARM);
     const failure = new Error("new leaf refused to build");
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
+    const publication = vi.spyOn(runtimeOf(handle).graph, "flush");
     create.mockImplementationOnce(() => {
       throw failure;
     });
     expect(thrownBy(() => arm.setKeyframe("transform", "y", 300))).toBe(failure);
     expect(arm.definition).toBe(before);
     expect(handle.get(ARM)).toBe(published);
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(publication).not.toHaveBeenCalled();
     arm.setKeyframe("transform", "y", 300);
     expect(values(handle, ARM)).toEqual({ x: 200, y: 300, rotation: 45 });
     expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
@@ -234,7 +237,7 @@ describe("one authored property, inside a group this node already authors", () =
     const handle = load();
     const arm = declaring(handle, ARM);
     const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
+    const publication = vi.spyOn(runtimeOf(handle).graph, "flush");
 
     const batch = arm.setKeyframe("transform", "x", 260);
 
@@ -245,11 +248,13 @@ describe("one authored property, inside a group this node already authors", () =
     expect(values(handle, ARM)).toEqual({ x: 260, rotation: 45 });
     expect(handle.get(ARM)?.sourceProgress).toBe(0.5);
     expect(replaceGraph).not.toHaveBeenCalled();
-    // The return type carries the tier: the value tier answers with the batch of its one invalidate,
-    // where every structural verb answers `void` because it replaced the graph.
-    expect(invalidate).toHaveBeenCalledTimes(1);
-    expect(invalidate).toHaveBeenCalledWith([ARM]);
-    expect(batch).toBe(invalidate.mock.results[0]?.value);
+    // The return type carries the tier: the value tier answers with the batch of its one
+    // publication, where every structural verb answers `void` because it replaced the graph. The
+    // seed list is filtered rather than counted, so a scheduled drain's empty one cannot stand in
+    // for the write's own. Issue #381.
+    expect(publicationsFor(publication, [ARM])).toHaveLength(1);
+    expect(statedPublications(publication)).toHaveLength(1);
+    expect(batch).toBe(publication.mock.results[0]?.value);
     // The dependent is reached by the same flush, so a property edit publishes downstream without an
     // edge being rebuilt for it.
     expect(batch.patches.map((patch) => patch.nodeId)).toContain(LEG);
@@ -349,7 +354,7 @@ describe("one authored property, inside a group this node already authors", () =
     const before = arm.definition;
     const published = values(handle, ARM);
     const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGraph");
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
+    const publication = vi.spyOn(runtimeOf(handle).graph, "flush");
 
     const thrown = thrownBy(() => arm.setKeyframe("fk", "length", 5));
 
@@ -371,14 +376,14 @@ describe("one authored property, inside a group this node already authors", () =
 
     expect(arm.definition).toBe(before);
     expect(values(handle, ARM)).toEqual(published);
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(publication).not.toHaveBeenCalled();
     expect(replaceGraph).not.toHaveBeenCalled();
 
     // The accepting direction in the same rig, so this case is not green against a verb that refuses
     // everything.
     arm.setKeyframe("transform", "x", 260);
 
-    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(publicationsFor(publication, [ARM])).toHaveLength(1);
     expect(retained(arm)).toEqual({ values: { x: 260, rotation: AUTHORED_ROTATION } });
 
     handle.dispose();
@@ -389,7 +394,7 @@ describe("one authored property, inside a group this node already authors", () =
     const arm = declaring(handle, ARM);
     const before = arm.definition;
     const published = values(handle, ARM);
-    const invalidate = vi.spyOn(runtimeOf(handle).graph, "flush");
+    const publication = vi.spyOn(runtimeOf(handle).graph, "flush");
 
     const staticAtAnimated = thrownBy(() => arm.setKeyframe("transform", "rotation", 5));
     const stopsAtStatic = thrownBy(() => arm.setKeyframe("transform", "x", FASTER));
@@ -409,13 +414,13 @@ describe("one authored property, inside a group this node already authors", () =
     expect((stopsAtStatic as LiveValueKeyError).key).toBe("x");
     expect(arm.definition).toBe(before);
     expect(values(handle, ARM)).toEqual(published);
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(publication).not.toHaveBeenCalled();
 
     // No `keyframe-key-animated` beside it, and that union member is gone rather than declared: an
     // animated key is written through the same verb, which is the accepting direction here.
     arm.setKeyframe("transform", "rotation", FASTER);
 
-    expect(invalidate).toHaveBeenCalledTimes(1);
+    expect(publicationsFor(publication, [ARM])).toHaveLength(1);
     expect(values(handle, ARM)).toEqual({ x: 200, rotation: 90 });
 
     handle.dispose();

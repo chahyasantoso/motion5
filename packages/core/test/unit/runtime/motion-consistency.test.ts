@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { statedPublications } from "../../helpers/publication-spy";
 import { Engine } from "../../../src/engine";
 import type { ProjectDefinition } from "../../../src/contract/v5";
 import type { MotionHandle } from "../../../src/contract/motion-handle";
@@ -217,11 +218,12 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
       seen.push(motion.definition.stagger);
       throw failure;
     };
-    const invalidate = vi.spyOn(test.runtime.graph, "flush");
+    const publication = vi.spyOn(test.runtime.graph, "flush");
     expect(caught(() => motion.setStagger(250))).toBe(failure);
     expect(seen).toEqual([250]);
     expect(motion.definition.stagger).toBe(250);
-    expect(invalidate).toHaveBeenCalledTimes(1);
+    // Caller-stated publications only, so a scheduled drain cannot supply this count. Issue #381.
+    expect(statedPublications(publication)).toHaveLength(1);
     expect(test.handle.get("hero/arm")?.sourceProgress).toBeCloseTo(0.75);
     intercept = () => undefined;
     motion.setStagger();
@@ -245,14 +247,14 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
       throw failure;
     });
     intercept = disposeDuringProgress;
-    const invalidate = vi.spyOn(test.runtime.graph, "flush");
+    const publication = vi.spyOn(test.runtime.graph, "flush");
     const result = caught(() => motion.setStagger(250));
     expect(disposeDuringProgress).toHaveBeenCalledTimes(1);
     expect(result).toBeInstanceOf(AggregateError);
     expect((result as AggregateError).errors[0]).toBe(failure);
     expect((result as AggregateError).errors[1].message).toBe("ProjectRuntime is disposed.");
     expect(motion.live).toBe(false);
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(publication).not.toHaveBeenCalled();
     for (const kill of test.kills) expect(kill).toHaveBeenCalledTimes(1);
   });
 
@@ -326,7 +328,7 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
     test.flush();
     const motion = test.handle.motion("hero");
     const replace = vi.spyOn(test.runtime.graph, "replaceGraph");
-    const invalidate = vi.spyOn(test.runtime.graph, "flush");
+    const publication = vi.spyOn(test.runtime.graph, "flush");
     const seen: (number | undefined)[] = [];
     const reentrant: unknown[] = [];
     test.handle.subscribeNode("hero/leg", () => {
@@ -344,7 +346,9 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
     expect(test.handle.get("hero/leg")?.sourceProgress).toBeCloseTo(0.75);
     expect(seen).toEqual([250, undefined]);
     expect(motion.definition).not.toHaveProperty("stagger");
-    expect(invalidate).toHaveBeenCalledTimes(2);
+    // Two caller-stated publications, one per adopted definition, and neither is a drain. Issue
+    // #381: the count used to admit a publication of any origin.
+    expect(statedPublications(publication)).toHaveLength(2);
     expect(replace).not.toHaveBeenCalled();
     expect(test.kills.every((kill) => kill.mock.calls.length === 0)).toBe(true);
     test.handle.dispose();
@@ -353,12 +357,12 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
   it("refuses invalid stagger and skips unchanged stagger without publication", () => {
     const test = rig();
     const motion = test.handle.motion("hero");
-    const invalidate = vi.spyOn(test.runtime.graph, "flush");
+    const publication = vi.spyOn(test.runtime.graph, "flush");
     for (const value of [-1, NaN, Infinity])
       expect(() => motion.setStagger(value)).toThrow(/finite non-negative/);
     motion.setStagger();
     expect(motion.definition).not.toHaveProperty("stagger");
-    expect(invalidate).not.toHaveBeenCalled();
+    expect(publication).not.toHaveBeenCalled();
     test.handle.dispose();
   });
 
