@@ -43,6 +43,14 @@ import {
  * The behavioural case at the end is deliberately green before and after. It is the regression that
  * keeps the decision honest, because the point of this slice is that nothing a caller can observe
  * moves. See ADR-083.
+ *
+ * Issue #387 then found that the compile-time half was weaker than the record it was evidence for.
+ * All three `@ts-expect-error` arrows above read a property, and none reads an assignment, which is
+ * the shape TypeScript's excess-property check does not cover: a value arriving through an
+ * intermediate variable was assignable to either union even when it spelled a combination ADR-083
+ * calls unrepresentable. The two cases added for that read the assignment instead, and they are red
+ * before the unions are branded for the honest reason that the assignment they forbid compiles.
+ * See ADR-084.
  */
 
 const project: ProjectDefinition = {
@@ -162,6 +170,25 @@ describe("the runtime lifecycle is one value rather than three booleans", () => 
     };
     expect(typeof readBookingOfDisposed).toBe("function");
   });
+
+  it("refuses an illegal phase combination assigned through a variable", () => {
+    // The gap issue #387 found. Excess-property checking reads a fresh object literal, so both of
+    // these compiled before the union was branded and ADR-083's claim held only for the call graph.
+    const assignDisposedCarryingABooking = () => {
+      const loose = { kind: "disposed", drain: "booked" } as const;
+      // @ts-expect-error a disposed runtime carries no booking, however the value arrives.
+      const phase: RuntimePhase = loose;
+      return phase;
+    };
+    const assignLivePhaseWithoutItsBooking = () => {
+      const loose = { kind: "flushing" } as const;
+      // @ts-expect-error a live phase carries its booking; there is no half-stated phase.
+      const phase: RuntimePhase = loose;
+      return phase;
+    };
+    expect(typeof assignDisposedCarryingABooking).toBe("function");
+    expect(typeof assignLivePhaseWithoutItsBooking).toBe("function");
+  });
 });
 
 describe("the snapshot memo carries its whole key or nothing", () => {
@@ -193,6 +220,25 @@ describe("the snapshot memo carries its whole key or nothing", () => {
     };
     expect(typeof halfWarmed).toBe("function");
     expect(typeof readSnapshotOfCold).toBe("function");
+  });
+
+  it("refuses a half-cleared memo key assigned through a variable", () => {
+    // The memo half of issue #387, and the more interesting one: the object this used to admit is
+    // exactly the key `replaceGraph` left behind: a cold memo still carrying a membership revision.
+    const assignStaleColdMemo = () => {
+      const loose = { kind: "cold", membersRevision: 3 } as const;
+      // @ts-expect-error a cold memo carries no key, so there is no stale half of one to hold.
+      const memo: SnapshotMemo = loose;
+      return memo;
+    };
+    const assignWarmMemoMissingItsRevision = () => {
+      const loose = { kind: "warm", snapshot: snapshotA, graph: graphA } as const;
+      // @ts-expect-error a warm memo carries its whole key; membership is not optional.
+      const memo: SnapshotMemo = loose;
+      return memo;
+    };
+    expect(typeof assignStaleColdMemo).toBe("function");
+    expect(typeof assignWarmMemoMissingItsRevision).toBe("function");
   });
 });
 

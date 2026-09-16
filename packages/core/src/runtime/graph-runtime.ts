@@ -4,19 +4,23 @@ import { GraphBinding } from "../graph/binding";
 import type { GraphNode, GraphIR } from "../graph/ir";
 import { GraphPublisher, type PublisherNode, type PublisherSnapshot } from "./graph-publisher";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
-import type { Scheduler } from "../ports/scheduler";
+import type { Cancel, Scheduler } from "../ports/scheduler";
 import {
   COLD_MEMO,
   DISPOSED,
   IDLE,
+  NOTHING_PENDING,
   beginFlush,
   bookingDrain,
+  deferring,
   endFlush,
   isDisposed,
   isFlushing,
+  isPending,
   memoHit,
   unbookDrain,
   warmMemo,
+  type PendingPublication,
   type RuntimePhase,
   type SnapshotMemo,
 } from "./graph-runtime-state";
@@ -90,8 +94,22 @@ export class GraphRuntime {
   readonly #onClockTick: ((event: ClockTick) => void) | undefined;
   readonly #unsubscribe: () => void;
   readonly #members = new Set<string>();
-  readonly #pendingSeeds = new Set<string>();
   readonly #publisherNodes = new Map<GraphNode, PublisherNode>();
+  /**
+   * What a reentrant call deferred: its seeds and the frame number it carried, as one value.
+   *
+   * A bare seed set held this until issue #380, so a deferred `flushAtTick` kept its work and lost
+   * the frame it was asked to reach. See ADR-084.
+   */
+  #pending: PendingPublication = NOTHING_PENDING;
+  /**
+   * The scheduler's own handle on the drain this runtime booked, held as long as the booking is.
+   *
+   * A booking is a claim about the scheduler, not about `#phase` alone, which is what issue #389
+   * found: the handle was discarded, so a publication that consumed the drain left the job
+   * outstanding and the next deferral booked a second for one drain. See ADR-084 and ADR-038.
+   */
+  #drainHandle: Cancel | undefined;
   /**
    * This runtime's whole lifecycle, as one value.
    *
@@ -154,7 +172,7 @@ export class GraphRuntime {
     return this.#members.size;
   }
   get pendingSeeds(): readonly string[] {
-    return [...this.#pendingSeeds];
+    return [...this.#pending.seeds];
   }
   attach(nodeId: string): void {
     this.#assertLive();
@@ -230,10 +248,17 @@ export class GraphRuntime {
    * A reentrant call is answered before the tick is consumed, deliberately and in that order. A
    * flush requested while subscribers are being notified publishes nothing now, so moving the frame
    * number for it would record a frame that did not run. `publisher-reentrancy` reads that.
+   *
+   * The frame is carried rather than dropped, which is the half issue #380 left undecided. It
+   * travels with the deferred seeds and is recorded by the publication that does run, so nothing
+   * claims a frame that did not happen and nothing loses one that was asked for. See ADR-084.
    */
   flushAtTick(seeds: readonly string[], tick: number): PatchBatch {
     this.#assertLive();
-    const deferred = this.#deferIfFlushing(seeds);
+    // Validity before the reentrancy question, so a frame this runtime could never reach is refused
+    // rather than queued. Recording it stays the separate act it was.
+    this.#assertTick(tick);
+    const deferred = this.#deferIfFlushing(seeds, tick);
     if (deferred !== undefined) return deferred;
     this.#advanceTick(tick);
     return this.#flushSeeds(seeds);
@@ -244,39 +269,57 @@ export class GraphRuntime {
    * The one owner of the reentrancy answer, for both public verbs. Queueing the seeds and scheduling
    * the drain is the answer rather than a step before it, which is why this hands back the batch and
    * not a boolean: two callers that had to ask and then act could act differently.
+   *
+   * `tick` is optional because one of the two verbs has no frame to hand over, not because a caller
+   * may choose: `flush` cannot name one, `flushAtTick` states its own. That keeps the deferred
+   * payload one owner rather than a seed set here and a frame number beside it. Issue #380.
    */
-  #deferIfFlushing(seeds: readonly string[]): PatchBatch | undefined {
+  #deferIfFlushing(seeds: readonly string[], tick?: number): PatchBatch | undefined {
     if (!isFlushing(this.#phase)) return undefined;
-    for (const seed of seeds) this.#pendingSeeds.add(seed);
+    this.#pending = deferring(this.#pending, seeds, tick);
     this.#scheduleDrain();
     return deferredBatch(this.#sequence, seeds);
   }
   /**
-   * Validates `tick` and records it as the frame number this runtime has reached.
+   * Records `tick` as the frame number this runtime has reached, having re-asked that it may.
    *
-   * The one owner of tick validity and the one write to `#lastTick`. A non-finite value is a
-   * `TypeError` and a value that does not advance is a `RangeError`, and both refuse before the
-   * field moves, so a rejected tick leaves the runtime on the frame it was already on.
+   * The one write to `#lastTick`. Validity is `#assertTick`'s question, so a rejected tick leaves
+   * the runtime on the frame it was already on.
    */
   #advanceTick(tick: number): void {
+    this.#assertTick(tick);
+    this.#lastTick = tick;
+  }
+  /**
+   * Refuses a frame number this runtime cannot reach, and answers nothing when it can.
+   *
+   * The one owner of tick validity, asked twice on purpose: once by `flushAtTick` before it decides
+   * whether to defer, so an impossible frame is refused rather than queued, and once by the one
+   * write above, which cannot be reached without it. Issue #380.
+   */
+  #assertTick(tick: number): void {
     if (!Number.isFinite(tick)) throw new TypeError("Runtime ticks must be finite.");
     if (tick < this.#lastTick) throw new RangeError("Runtime ticks must be monotonic.");
-    this.#lastTick = tick;
   }
   /**
    * Publishes for `seeds` plus whatever a deferred drain left pending, and answers that batch.
    *
    * The publication mechanics both public verbs share, and nothing else: no liveness answer, no
    * reentrancy answer and no clock transition, because each of those has an owner above. Its one
-   * precondition is stated rather than re-asked here, because a second copy of a decided question is
-   * a second owner of it: it must not be called in the `flushing` phase, which `#deferIfFlushing`
-   * answers for both callers. A publisher failure re-queues the seeds this call was carrying and
-   * rethrows, so the work is deferred rather than dropped.
+   * precondition is asserted rather than stated, because an assertion is not a second owner of a
+   * decision, it is the check that the decision held: it must not be called in the `flushing`
+   * phase, which `#deferIfFlushing` answers for both callers. A publisher failure re-queues the
+   * seeds this call was carrying and rethrows, so the work is deferred rather than dropped.
    */
   #flushSeeds(seeds: readonly string[]): PatchBatch {
-    const carried = [...this.#pendingSeeds];
-    this.#pendingSeeds.clear();
-    this.#phase = unbookDrain(this.#phase);
+    // Asked before anything moves, which is the whole of issue #382. A caller reaching here during
+    // a publication would otherwise take the pending payload, release the booking and move
+    // `#sequence` before failing deeper down under a lower-level message: mutated state, and the
+    // failure misattributed. Unreachable today, and one branch is what that costs.
+    if (isFlushing(this.#phase)) throw new Error("GraphRuntime is already flushing.");
+    const carried = [...this.#pending.seeds];
+    this.#pending = NOTHING_PENDING;
+    this.#releaseBooking();
     const effectiveSeeds = [...new Set([...seeds, ...carried])];
     const snapshot = this.#snapshotFor();
     this.#sequence += 1;
@@ -284,14 +327,15 @@ export class GraphRuntime {
     try {
       return this.#publisher.flush(snapshot, effectiveSeeds, this.#sequence);
     } catch (error) {
-      for (const seed of effectiveSeeds) this.#pendingSeeds.add(seed);
+      // The frame, if there was one, was consumed before this call, so the requeue carries none.
+      this.#pending = deferring(this.#pending, effectiveSeeds, undefined);
       throw error;
     } finally {
       // `endFlush` is total and disposal is terminal, so a subscriber that disposed the runtime
       // mid-flush leaves it disposed here rather than idle, and the booking below is refused for
       // the same reason. Both of those were hand-cleared boolean writes before ADR-083.
       this.#phase = endFlush(this.#phase);
-      if (this.#pendingSeeds.size > 0) this.#scheduleDrain();
+      if (isPending(this.#pending)) this.#scheduleDrain();
     }
   }
   /**
@@ -300,15 +344,19 @@ export class GraphRuntime {
    * `disposed` is terminal and carries nothing, so two of the states this used to clear by hand
    * are gone rather than cleared: a retired runtime cannot be mid-flush and cannot hold a drain
    * booking, because neither is representable beside that discriminant. A drain the scheduler
-   * already accepted still runs, and `#drainScheduled` refuses it on the one discriminant rather
-   * than on a flag this method remembered to clear. See ADR-083.
+   * already accepted is cancelled rather than left to run and be refused, since issue #389 made the
+   * booking a claim about the scheduler; `#drainScheduled` still refuses on the one discriminant,
+   * for a job a port declined to cancel. See ADR-083 and ADR-084.
    */
   dispose(): void {
     if (isDisposed(this.#phase)) return;
+    // Before the phase goes terminal, because a retired runtime should not leave the scheduler
+    // holding a job it will only refuse.
+    this.#releaseBooking();
     this.#phase = DISPOSED;
     this.#unsubscribe();
     this.#members.clear();
-    this.#pendingSeeds.clear();
+    this.#pending = NOTHING_PENDING;
     this.#publisherNodes.clear();
     this.#memo = COLD_MEMO;
     this.#registry.dispose();
@@ -401,28 +449,63 @@ export class GraphRuntime {
     if (booked === undefined) return;
     this.#phase = booked;
     try {
-      scheduler.schedule(() => this.#drainScheduled());
+      this.#drainHandle = scheduler.schedule(() => this.#drainScheduled());
     } catch (error) {
-      this.#phase = unbookDrain(this.#phase);
+      this.#releaseBooking();
       this.#report(SCHEDULER_FAILURE_RULE, `Deferred flush scheduling failed: ${describe(error)}`);
     }
   }
 
   /**
-   * Runs the booked drain: releases the booking, then publishes whatever `#pendingSeeds` carries.
+   * Releases the drain booking and cancels the job it was a claim about.
    *
-   * The order is the one the boolean pair had, and it is load-bearing in both directions.
-   * Releasing first is what lets the flush below book its own follow-up when a subscriber defers
-   * again; asking about disposal after is what keeps a job the scheduler accepted before
-   * `dispose` from publishing over a retired registry. `flush([])` rather than `#flushSeeds` for
-   * the reason ADR-082 gives: nothing guarantees a scheduler cannot run this while a flush is in
-   * flight, and the deferral fallback that protects it lives in the public verb.
+   * The one owner of "this runtime no longer owes a follow-up", and the whole of issue #389: the
+   * booking was a claim about `#phase` while the handle `schedule` answered with was thrown away,
+   * so a publication that consumed the drain left the job outstanding and the next deferral booked
+   * a second for one drain.
+   *
+   * The phase is lowered before the port is touched, so a `cancel` that throws cannot leave this
+   * runtime believing it still owes a drain. Cancelling a job already running is the no-op the
+   * `Cancel` contract allows, which is what `#drainScheduled` does to the booking it consumes. See
+   * ADR-084 and ADR-038.
+   */
+  #releaseBooking(): void {
+    const handle = this.#drainHandle;
+    this.#drainHandle = undefined;
+    this.#phase = unbookDrain(this.#phase);
+    if (handle === undefined) return;
+    try {
+      handle.cancel();
+    } catch (error) {
+      this.#report(
+        SCHEDULER_FAILURE_RULE,
+        `Deferred flush cancellation failed: ${describe(error)}`,
+      );
+    }
+  }
+
+  /**
+   * Runs the booked drain: releases the booking, then publishes whatever was deferred.
+   *
+   * The order is the one the boolean pair had, and it is load-bearing in both directions. Releasing
+   * first is what lets the flush below book its own follow-up when a subscriber defers again;
+   * asking about disposal after is what keeps a job the scheduler accepted before `dispose` from
+   * publishing over a retired registry. A public verb rather than `#flushSeeds` for the reason
+   * ADR-082 gives: nothing guarantees a scheduler cannot run this while a flush is in flight, and
+   * the deferral fallback that protects it lives in the public verb, which is also what carries a
+   * still-pending frame forward into the next deferral. Which of the two verbs runs is decided by
+   * whether the deferral carried a frame, never by this member's convenience.
    */
   #drainScheduled(): void {
-    this.#phase = unbookDrain(this.#phase);
-    if (isDisposed(this.#phase) || this.#pendingSeeds.size === 0) return;
+    this.#releaseBooking();
+    if (isDisposed(this.#phase) || !isPending(this.#pending)) return;
+    // Replayed through the verb that owns clock transitions, so the frame a reentrant call arrived
+    // with is recorded by the publication that finally runs. It cannot have been overtaken: the
+    // only writer of `#lastTick` is a publication that also takes this payload. Issue #380.
+    const tick = this.#pending.tick;
     try {
-      this.flush([]);
+      if (tick === undefined) this.flush([]);
+      else this.flushAtTick([], tick);
     } catch (error) {
       this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describe(error)}`);
     }
