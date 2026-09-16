@@ -52,36 +52,47 @@ export const INLINE_JOB_MESSAGE =
  * The job is refused rather than run, because running it is the recursion, and the permanent latch
  * means every later `schedule` is refused too.
  *
- * Issues #377, #394 and #402, and see ADR-086 and ADR-089.
+ * Every question about one call is asked of that call's own state, which is issue #416. One shared
+ * in-flight flag answered whether a call had returned yet for every call at once, so a nested
+ * schedule that began and ended inside an outer one lowered the outer's flag, and the outer
+ * callback was then run rather than refused. The latch stays shared, because a port that has run one
+ * job inline has disqualified itself from every later one, and that is a claim about the port.
+ *
+ * Issues #377, #394, #402 and #416, and see ADR-086 and ADR-089.
  */
 export function deferredScheduler<Options = unknown>(
   scheduler: Scheduler<() => void, Options>,
 ): Scheduler<() => void, Options> {
-  let scheduling = false;
   let refused = false;
   return {
     schedule(job: () => void, options?: Options): Cancel {
       if (refused) throw new TypeError(INLINE_JOB_MESSAGE);
-      // One flag per wrapped callback, beside the permanent latch. The latch is read on entry and
-      // therefore says nothing about the call already in flight, which is the fail-open half of
-      // issue #402. This is what closes it, and it is per call because the callback it invalidates
-      // is per call.
+      // Three answers, all of them about this call and none of them about any other, beside the one
+      // permanent latch. `inFlight` is whether this call has returned, `ranInline` is whether this
+      // call's own callback fired before it did, and `live` is whether that callback may still run.
+      // Issue #416 is what a shared in-flight flag cost: a nested schedule lowered it in its own
+      // `finally`, so an outer callback invoked before its own `schedule` returned read a call that
+      // had returned, and the job that should have been refused ran.
+      let inFlight = true;
+      let ranInline = false;
       let live = true;
-      scheduling = true;
       try {
         const handle = scheduler.schedule(() => {
-          if (scheduling) {
+          if (inFlight) {
             refused = true;
+            ranInline = true;
             live = false;
             throw new TypeError(INLINE_JOB_MESSAGE);
           }
           if (!live) return;
           job();
         }, options);
-        if (!refused) return handle;
+        if (!ranInline) return handle;
         // The port ran the job inline and swallowed the refusal, so it may not be answered with a
         // handle for a job that has already been refused. The handle it offered is cancelled and
-        // the refusal leaves through `schedule` after all.
+        // the refusal leaves through `schedule` after all. Read from this call's own flag rather
+        // than from the latch: a nested call's refusal sets the latch without this call having run
+        // anything, and a call whose job was never run inline is owed its port's real handle.
         live = false;
         cancelQuietly(handle);
         throw new TypeError(INLINE_JOB_MESSAGE);
@@ -91,7 +102,7 @@ export function deferredScheduler<Options = unknown>(
         live = false;
         throw error;
       } finally {
-        scheduling = false;
+        inFlight = false;
       }
     },
   };
