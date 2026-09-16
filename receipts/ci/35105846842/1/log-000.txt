@@ -1,0 +1,24 @@
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	﻿2026-09-16T14:02:47.8622192Z ##[group]Run node scripts/read-budget-scan.mjs
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	2026-09-16T14:02:47.8622609Z ^[[36;1mnode scripts/read-budget-scan.mjs^[[0m
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	2026-09-16T14:02:47.8664944Z shell: /usr/bin/bash -e {0}
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	2026-09-16T14:02:47.8665225Z env:
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	2026-09-16T14:02:47.8665451Z   NODE_VERSION: 24
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	2026-09-16T14:02:47.8665680Z ##[endgroup]
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	2026-09-16T14:02:47.9141122Z packages/core/src/runtime/graph-runtime.ts: over the 30000 byte sister doc trigger with no packages/core/src/runtime/graph-runtime.md
+read-budget (node 24)	Run node scripts/read-budget-scan.mjs	2026-09-16T14:02:47.9201479Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-16T14:03:45.8795801Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-16T14:03:45.8796681Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-16T14:03:45.8838272Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-16T14:03:45.8839178Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-16T14:03:45.8839665Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-16T14:03:45.8840163Z   SUITE_RESULT: cancelled
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-16T14:03:45.8840683Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-16T14:03:45.8981106Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-16T14:03:43.7625375Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-16T14:03:43.7626114Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-16T14:03:43.7666119Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-16T14:03:43.7666931Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-16T14:03:43.7667378Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-16T14:03:43.7667845Z   SUITE_RESULT: cancelled
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-16T14:03:43.7668332Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-16T14:03:43.7795019Z ##[error]Process completed with exit code 1.
