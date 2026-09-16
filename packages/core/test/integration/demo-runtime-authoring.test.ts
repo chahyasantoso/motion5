@@ -163,7 +163,7 @@ describe("demo runtime authoring", () => {
     const reference = playground();
     try {
       const replace = vi.spyOn(actual.runtime.graph, "replaceGraph");
-      const invalidate = vi.spyOn(actual.runtime.graph, "invalidate");
+      const invalidate = vi.spyOn(actual.runtime.graph, "flush");
       const track = actual.handle.track(nodeId(rig.solverTrack));
       const requires = track.requires;
       for (const flip of [true, false]) {

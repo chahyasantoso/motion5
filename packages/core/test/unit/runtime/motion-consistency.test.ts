@@ -326,7 +326,7 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
     test.flush();
     const motion = test.handle.motion("hero");
     const replace = vi.spyOn(test.runtime.graph, "replaceGraph");
-    const invalidate = vi.spyOn(test.runtime.graph, "invalidate");
+    const invalidate = vi.spyOn(test.runtime.graph, "flush");
     const seen: (number | undefined)[] = [];
     const reentrant: unknown[] = [];
     test.handle.subscribeNode("hero/leg", () => {
@@ -353,7 +353,7 @@ describe("Engine motion edits preserve accepted state and entity lifetimes", () 
   it("refuses invalid stagger and skips unchanged stagger without publication", () => {
     const test = rig();
     const motion = test.handle.motion("hero");
-    const invalidate = vi.spyOn(test.runtime.graph, "invalidate");
+    const invalidate = vi.spyOn(test.runtime.graph, "flush");
     for (const value of [-1, NaN, Infinity])
       expect(() => motion.setStagger(value)).toThrow(/finite non-negative/);
     motion.setStagger();
