@@ -53,7 +53,7 @@ describe("clock and batch identity are independent (P0-1)", () => {
     runtime.registry.subscribeBatch((batch) => batchTicks.push(batch.tick));
 
     clock.tick(16);
-    runtime.invalidate(["hero/arm"]);
+    runtime.flush(["hero/arm"]);
     clock.tick(16);
 
     // Two frames happened, so the clock advanced twice and no more.

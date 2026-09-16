@@ -85,7 +85,7 @@ describe("demo runtime authoring", () => {
       test.flush();
       const chest = handle.get("walk/chest");
       const replace = vi.spyOn(runtime.graph, "replaceGraph");
-      const invalidate = vi.spyOn(runtime.graph, "invalidate");
+      const invalidate = vi.spyOn(runtime.graph, "flush");
       for (let cycle = 0; cycle < 2; cycle++) {
         replace.mockClear();
         invalidate.mockClear();
@@ -131,7 +131,7 @@ describe("demo runtime authoring", () => {
     const reference = playground();
     try {
       const replace = vi.spyOn(actual.runtime.graph, "replaceGraph");
-      const invalidate = vi.spyOn(actual.runtime.graph, "invalidate");
+      const invalidate = vi.spyOn(actual.runtime.graph, "flush");
       const track = actual.handle.track(nodeId(rig.goalTrack));
       const requires = track.requires;
       for (const offset of [10, -15]) {
@@ -163,7 +163,7 @@ describe("demo runtime authoring", () => {
     const reference = playground();
     try {
       const replace = vi.spyOn(actual.runtime.graph, "replaceGraph");
-      const invalidate = vi.spyOn(actual.runtime.graph, "invalidate");
+      const invalidate = vi.spyOn(actual.runtime.graph, "flush");
       const track = actual.handle.track(nodeId(rig.solverTrack));
       const requires = track.requires;
       for (const flip of [true, false]) {

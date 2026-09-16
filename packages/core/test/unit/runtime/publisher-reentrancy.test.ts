@@ -58,7 +58,7 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
     let notifications = 0;
     runtime.registry.subscribeNode("hero/arm", () => {
       notifications += 1;
-      if (notifications === 1) deferred = runtime.invalidate(["caption/label"]);
+      if (notifications === 1) deferred = runtime.flush(["caption/label"]);
     });
 
     clock.tick();
@@ -91,7 +91,7 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
     let notifications = 0;
     runtime.registry.subscribeNode("hero/arm", () => {
       notifications += 1;
-      if (notifications === 1) runtime.invalidate(["caption/label"]);
+      if (notifications === 1) runtime.flush(["caption/label"]);
     });
 
     clock.tick();
@@ -125,9 +125,9 @@ describe("subscriber-triggered reentrancy (recovery A3)", () => {
     runtime.registry.subscribeNode("hero/arm", () => {
       notifications += 1;
       if (notifications > 1) return;
-      runtime.invalidate(["caption/label"]);
-      runtime.invalidate(["caption/label"]);
-      runtime.invalidate(["hero/arm"]);
+      runtime.flush(["caption/label"]);
+      runtime.flush(["caption/label"]);
+      runtime.flush(["hero/arm"]);
     });
 
     clock.tick();

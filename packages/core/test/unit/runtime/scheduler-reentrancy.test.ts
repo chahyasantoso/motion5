@@ -28,7 +28,7 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
     let notifications = 0;
     runtime.registry.subscribeNode("hero/arm", () => {
       notifications += 1;
-      if (notifications === 1) runtime.invalidate(["caption/label"]);
+      if (notifications === 1) runtime.flush(["caption/label"]);
     });
 
     clock.tick();
@@ -53,9 +53,9 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
     runtime.registry.subscribeNode("hero/arm", () => {
       notifications += 1;
       if (notifications !== 1) return;
-      runtime.invalidate(["caption/label"]);
-      runtime.invalidate(["caption/label"]);
-      runtime.invalidate(["hero/arm"]);
+      runtime.flush(["caption/label"]);
+      runtime.flush(["caption/label"]);
+      runtime.flush(["hero/arm"]);
     });
 
     clock.tick();
@@ -81,12 +81,12 @@ describe("scheduler-driven reentrancy (P1-7/P1-8)", () => {
     runtime.attach("hero/arm");
     const diagnostics: string[] = [];
     runtime.registry.subscribeNode("hero/arm", () => {
-      runtime.invalidate(["caption/label"]);
-      runtime.invalidate(["caption/label"]);
+      runtime.flush(["caption/label"]);
+      runtime.flush(["caption/label"]);
     });
 
     runtime.registry.subscribeBatch(() => undefined);
-    runtime.flush(["hero/arm"], 1);
+    runtime.flushAtTick(["hero/arm"], 1);
 
     expect(attempts).toBe(2);
     expect(runtime.lastFlushError?.ruleId).toBe("scheduler-failure");
