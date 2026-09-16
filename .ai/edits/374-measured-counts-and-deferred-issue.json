@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "expected_head": "abc9106c5b9eb7ba6952576379782d9672cfd5f5",
+  "expected_blobs": {
+    "docs/ADR-082-a-flush-states-its-seeds-and-the-clock-is-its-own-verb.md": "1bef5288f06f74ee0583bea0fbd08c09ef10905a",
+    "docs/SESSION-STATUS.md": "2820b29cbf5486afcd5ccf1413a9e86f87d86d8a"
+  },
+  "message": "docs(runtime): measured call sites, measured size, and an issue for the deferred state machine",
+  "edits": [
+    {
+      "path": "docs/ADR-082-a-flush-states-its-seeds-and-the-clock-is-its-own-verb.md",
+      "find": "Thirty-one call sites move, all in tests.",
+      "replace": "Thirty-three call sites move, all in tests, and that count is measured on the final head rather than estimated before it: twenty `vi.spyOn(..., \"invalidate\")` retargets across five files, and thirteen direct `GraphRuntime` calls across three. `membership-gating`'s seed-contract case is rewritten wholesale rather than moved, so it is counted apart from those thirty-three rather than folded into them. The thirty-one this record first carried undercounted the spies by three, because a bounded text search returns a limited number of matches per file and both `motion-consistency` and `demo-runtime-authoring` hold more than it returned. `tsc` named all three exactly, which is the useful half of that mistake: after decision one a spy on a member `GraphRuntime` no longer declares is a compile error rather than a silent runtime throw, so the type system is the exhaustive oracle for an inventory of this shape and a search is not."
+    },
+    {
+      "path": "docs/ADR-082-a-flush-states-its-seeds-and-the-clock-is-its-own-verb.md",
+      "find": "the seventeen `vi.spyOn(..., \"invalidate\")` spies that move to",
+      "replace": "the twenty `vi.spyOn(..., \"invalidate\")` spies that move to"
+    },
+    {
+      "path": "docs/ADR-082-a-flush-states-its-seeds-and-the-clock-is-its-own-verb.md",
+      "find": "and seventeen spies pointing at an alias",
+      "replace": "and twenty spies pointing at an alias"
+    },
+    {
+      "path": "docs/ADR-082-a-flush-states-its-seeds-and-the-clock-is-its-own-verb.md",
+      "find": "landing it on top of thirty-one moving call sites",
+      "replace": "landing it on top of thirty-three moving call sites"
+    },
+    {
+      "path": "docs/ADR-082-a-flush-states-its-seeds-and-the-clock-is-its-own-verb.md",
+      "find": "`graph-runtime.ts` is under the 30,000 bytes that would oblige a sister document",
+      "replace": "`graph-runtime.ts` is 19,528 bytes at the final head, under the 30,000 that would oblige a sister document"
+    },
+    {
+      "path": "docs/ADR-082-a-flush-states-its-seeds-and-the-clock-is-its-own-verb.md",
+      "find": "It is deferred to its own slice rather than declined, because it is a second invariant",
+      "replace": "It is deferred to its own slice rather than declined, and [issue #376](https://github.com/chahyasantoso/motion5/issues/376) carries the sketch above with its measured blast radius and its acceptance, because it is a second invariant"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "Thirty-one call sites move, every one a test",
+      "replace": "Thirty-three call sites move, every one a test"
+    }
+  ]
+}
