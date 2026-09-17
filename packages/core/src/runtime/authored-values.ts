@@ -23,7 +23,13 @@ import type { AuthoredKeyframes } from "../domain/authoring/keyframes";
  * key came from, and `readPluginBindings` stays the one reader of the authored group shape. Every
  * function below reads one of those answers rather than deriving its own.
  */
-/** No animated write. One frozen value, so the common entry allocates nothing. */
+/**
+ * The empty overlay: a live write that clears every animated key, rather than one involving none.
+ *
+ * One frozen value, so a clear allocates nothing. It no longer stands in for a retained entry's
+ * animated half, because `value-state.ts` answers whether one is standing and the interpolator owns
+ * the keys, so the recompile that hands this to the writer is the one caller left. See ADR-060.
+ */
 export const NO_OVERLAY: Readonly<Record<string, unknown>> = Object.freeze({});
 /**
  * No authored record. One frozen value, so a track that authors nothing allocates nothing.

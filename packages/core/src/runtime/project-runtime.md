@@ -4,7 +4,7 @@ Private ownership and ordering for ProjectRuntime. Exported API documentation re
 
 ## TrackEntry
 
-The retained track, optional motion owner, lifetime token, animated overlay, and conservative live-write marker, recorded from the write being asked for rather than from what the backend answered, so nothing can under-report. The overlay records the last animated live write; it is not authored state. A live write can survive a refused escalation because the writer has no inverse. Only a successful fresh compilation removes its effect, so structural derivation must build when retained.liveWrite is true even if compiled inputs compare equal. Candidate validation is never short-circuited by that marker. See ADR-060, ADR-062 and ADR-066.
+The retained track, optional motion owner, lifetime token, and the state of its live values. That last field replaces an overlay record beside a live-write boolean, whose four combinations included one nothing could reach; value-state.ts states the three that remain and mints them from the write being asked for rather than from what the backend answered, so nothing can under-report. A live write can survive a refused escalation because the writer has no inverse. Only a successful fresh compilation removes its effect, so structural derivation must build while buildOwed answers true even if compiled inputs compare equal. Candidate validation is never short-circuited by that answer. The overlay's keys are not retained here at all: the interpolator was handed them and owns the timeline they patched, and both readers of this state ask only whether one is standing, so a copy beside the owner would be a second owner. See ADR-059, ADR-060, ADR-062 and ADR-066.
 
 ## MotionEntry
 
@@ -158,11 +158,11 @@ Forwards the candidate authored keyframes to the injected registry resolver, or 
 
 ## #needsTimelineBuild
 
-Always resolves and validates the candidate before deciding whether compilation is skippable. Compares complete compiled inputs through sameCompiledTrackInput, resolving the retained definition rather than caching registry-dependent data. The candidate resolve cannot be skipped even when liveWrite already forces a build: doing so would remove a validator. Asked once per final replacement, not once per recipe operation. This injected callback runs within the boundary and before effects. Spelling the condition with the retained marker first would short-circuit the resolve, which deletes a validator rather than a cost. See RA-103, RA-105, ADR-062, ADR-064 and ADR-066.
+Always resolves and validates the candidate before deciding whether compilation is skippable. Compares complete compiled inputs through sameCompiledTrackInput, resolving the retained definition rather than caching registry-dependent data. The candidate resolve cannot be skipped even when the retained value state already forces a build: doing so would remove a validator. Asked once per final replacement, not once per recipe operation. This injected callback runs within the boundary and before effects. Spelling the condition with the retained marker first would short-circuit the resolve, which deletes a validator rather than a cost. See RA-103, RA-105, ADR-062, ADR-064 and ADR-066.
 
 ## #replaceTrack
 
-Validates the complete replacement and requires the same qualified id. Preserves the entry token, resets overlay/live-write declarations, and stages the definition. Derivation still observes the retained live-write marker and pays the build necessary to remove its compiled effects. Hooks and inverse order are not authored here. See ADR-064 and ADR-066.
+Validates the complete replacement and requires the same qualified id. Preserves the entry token, resets the value state to authored, and stages the definition. Derivation still observes the state the entry arrived with and pays the build necessary to remove its compiled effects. Hooks and inverse order are not authored here. See ADR-064 and ADR-066.
 
 ## #commit
 
@@ -216,13 +216,13 @@ Removal seeds readers from the old graph, including solver dependants, not merel
 
 ## #adoptMaps
 
-Adopts the accepted maps by pointer. No per-entry rewrite, merge or second snapshot derivation. Immediate edits are refused throughout the boundary, so no live-write overlay or authored update can race this assignment. Merging would falsely associate an old live-write marker with a newly compiled definition. A pre-acceptance disposal refusal never reaches adoption. See ADR-064, ADR-067 and ADR-070.
+Adopts the accepted maps by pointer. No per-entry rewrite, merge or second snapshot derivation. Immediate edits are refused throughout the boundary, so no live-write overlay or authored update can race this assignment. Merging would falsely associate an old value state with a newly compiled definition. A pre-acceptance disposal refusal never reaches adoption. See ADR-064, ADR-067 and ADR-070.
 
 ## #writeValues
 
 One mechanism for setValues and overrideValues; rebase decides whether the authored definition moves. Resolve the entry lazily after reentrancy refusal, preserving the correct diagnosis for a node an owning commit is still adding. Split static and animated values, validate animated candidates, call the writer, stage a replacement if it declines patching, adopt retained state, then #completeWrite. No graph replacement on either path. See ADR-059, ADR-060 and ADR-070.
 
-A static-only write needs neither validation nor staging. If an animated key is involved now or was involved in the previous overlay, wholesale replacement may need to clear old compiled effects. Read returned progress before staging, since a result getter can throw too. Once a writer succeeds it has no inverse: mark retained.liveWrite conservatively before a fallible escalation. A refused stage preserves the old definition/overlay but does not pretend the successful mask vanished. Accepted finalization failure never restores stale definitions over an installed replacement. See ADR-066 and issue #313.
+A static-only write needs neither validation nor staging. Whether an animated key is involved is one question asked of two states, the one this write mints and the one the entry holds, rather than two emptiness tests spelled here. Read returned progress before staging, since a result getter can throw too. Once a writer succeeds it has no inverse, so the state it left is recorded exactly once, on the way out of the try that performs the escalation, and the second map write that insured a boolean across a throwing getter is gone with the boolean. A refused stage therefore preserves the old definition and records the overlay the seam had already applied, which is what keeps an animated override revertible: recording the previous overlay instead leaves a cleared record over a still-patched timeline, and that is the freeze ADR-066 and issue #313 name. Accepted finalization failure never restores stale definitions over an installed replacement. See ADR-066 and issue #313.
 
 The whole operation is inside #boundary, including injected calls and publication. Disposal is reported by the shared direct-write flush and resource release waits until completion ends. The handle factory owns no sequencing.
 
@@ -248,7 +248,7 @@ Its callers are both endings of #completeWrite, #removeKeyframe's no-op, and see
 
 ## #recompileKeyframes
 
-For authored leaves that cannot be expressed as a live mask: edit the pure record, validate it and resolve plugins, ask the writer, stage a replacement, adopt the accepted definition with overlay/liveWrite cleared, then #completeWrite. Capture prior progress so the new compiled Track resumes at that playhead. The boundary includes resolution and all injected work. A successful writer is conservatively recorded before a refused stage; an accepted stage is never rolled back because finalization cleanup threw. No topology operation is involved. See ADR-065, ADR-066, ADR-069 and issue #313.
+For authored leaves that cannot be expressed as a live mask: edit the pure record, validate it and resolve plugins, ask the writer, stage a replacement, adopt the accepted definition with its value state back to authored, then #completeWrite. Capture prior progress so the new compiled Track resumes at that playhead. The boundary includes resolution and all injected work. A successful writer is conservatively recorded on the way out of a refused stage; an accepted stage is never rolled back because finalization cleanup threw. No topology operation is involved. See ADR-065, ADR-066, ADR-069 and issue #313.
 
 ## #setKeyframe
 

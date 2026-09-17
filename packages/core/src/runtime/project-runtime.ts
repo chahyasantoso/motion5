@@ -77,6 +77,7 @@ import {
   type Resolved,
 } from "./results";
 import { deferredValueBatch, emptyValueBatch } from "./value-batch";
+import { AUTHORED, buildOwed, isOverlaid, liveWritten, type ValueState } from "./value-state";
 import {
   EMPTY_KEYFRAMES,
   NO_OVERLAY,
@@ -98,8 +99,7 @@ type TrackEntry = {
   track: TrackDefinition;
   motionId?: string;
   token: number;
-  overlay: Readonly<Record<string, unknown>>;
-  liveWrite: boolean;
+  valueState: ValueState;
 };
 
 type MotionEntry = {
@@ -263,16 +263,14 @@ export class ProjectRuntime {
           track,
           motionId: motion.id,
           token: this.#nextToken++,
-          overlay: NO_OVERLAY,
-          liveWrite: false,
+          valueState: AUTHORED,
         });
     }
     for (const track of project.freeTracks ?? [])
       this.#tracks.set(qualifyFreeTrack(track.id).value, {
         track,
         token: this.#nextToken++,
-        overlay: NO_OVERLAY,
-        liveWrite: false,
+        valueState: AUTHORED,
       });
     this.#setProgress = options.setProgress ?? (() => undefined);
     this.#writeValuesHook = options.writeValues ?? (() => undefined);
@@ -525,8 +523,7 @@ export class ProjectRuntime {
       track: accepted,
       motionId,
       token,
-      overlay: NO_OVERLAY,
-      liveWrite: false,
+      valueState: AUTHORED,
     });
     this.#commit({ tracks });
     return this.#handle(id, token);
@@ -760,8 +757,7 @@ export class ProjectRuntime {
     tracks.set(id, {
       ...entry,
       track: accepted,
-      overlay: NO_OVERLAY,
-      liveWrite: false,
+      valueState: AUTHORED,
     });
     this.#commit({ tracks });
   }
@@ -888,7 +884,7 @@ export class ProjectRuntime {
       const next = entry.track;
       let staged: StagedTrack | undefined;
       const needsBuild = this.#needsTimelineBuild(nodeId, previous, next);
-      if (needsBuild || retained.liveWrite)
+      if (needsBuild || buildOwed(retained.valueState))
         effects.push({
           apply: () => {
             staged = this.#stageTrack?.(next, nodeId);
@@ -921,7 +917,8 @@ export class ProjectRuntime {
     return this.#boundary(() => {
       const entry = resolveEntry();
       const { statics, animated } = splitAuthoredValues(values);
-      const involved = Object.keys(animated).length > 0 || Object.keys(entry.overlay).length > 0;
+      const writing = liveWritten(animated);
+      const involved = isOverlaid(writing) || isOverlaid(entry.valueState);
       const rewritten = rebase || involved ? withAuthoredValues(entry.track, values) : entry.track;
       // Validated and then discarded: this write stages no definition, so the refusal is the
       // whole of what validating the candidate is for here.
@@ -929,19 +926,22 @@ export class ProjectRuntime {
         expectValid(validated(validateTrackDefinition(rewritten, `writeValues(${nodeId})`)));
       const mask = { ...authoredValues(entry.track), ...statics };
       const written = this.#writeValuesHook(nodeId, mask, involved ? animated : undefined, rebase);
+      // The seam has taken the write and carries no inverse, so the state it left is recorded on
+      // the way out, whichever of the two fallible reads below is the last one reached. The
+      // definition is adopted inside the try, because a replacement that never staged is one this
+      // entry may not claim.
+      let adopted: TrackEntry = { ...entry, valueState: writing };
       let staged: StagedTrack | undefined;
       let progress: number | undefined;
-      if (written !== undefined && !written.patched) {
-        this.#tracks.set(nodeId, { ...entry, liveWrite: true });
-        progress = written.progress;
-        staged = this.#stageTrack?.(rewritten, nodeId);
+      try {
+        if (written !== undefined && !written.patched) {
+          progress = written.progress;
+          staged = this.#stageTrack?.(rewritten, nodeId);
+        }
+        if (rebase) adopted = { ...adopted, track: rewritten };
+      } finally {
+        this.#tracks.set(nodeId, adopted);
       }
-      this.#tracks.set(nodeId, {
-        ...entry,
-        track: rebase ? rewritten : entry.track,
-        overlay: animated,
-        liveWrite: true,
-      });
       return this.#completeWrite(nodeId, staged, progress);
     });
   }
@@ -1001,21 +1001,21 @@ export class ProjectRuntime {
       const resolved = this.#resolve(nodeId, accepted);
       if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
         refuse({ kind: "invalid-definition", diagnostics: resolved.diagnostics });
-      const written = this.#writeValuesHook(
-        nodeId,
-        authoredValues(entry.track),
-        Object.keys(entry.overlay).length === 0 ? undefined : NO_OVERLAY,
-        true,
-      );
-      this.#tracks.set(nodeId, { ...entry, liveWrite: true });
-      const progress = written?.progress;
-      const staged = this.#stageTrack?.(accepted, nodeId);
-      this.#tracks.set(nodeId, {
-        ...entry,
-        track: accepted,
-        overlay: NO_OVERLAY,
-        liveWrite: false,
-      });
+      const clear = isOverlaid(entry.valueState) ? NO_OVERLAY : undefined;
+      const written = this.#writeValuesHook(nodeId, authoredValues(entry.track), clear, true);
+      // The recording the mask path makes, for the same reason and on the same way out. A stage
+      // that survives is what earns the accepted definition and the state saying the build removed
+      // every live write standing on this node.
+      let adopted: TrackEntry = { ...entry, valueState: liveWritten(clear) };
+      let staged: StagedTrack | undefined;
+      let progress: number | undefined;
+      try {
+        progress = written?.progress;
+        staged = this.#stageTrack?.(accepted, nodeId);
+        adopted = { ...entry, track: accepted, valueState: AUTHORED };
+      } finally {
+        this.#tracks.set(nodeId, adopted);
+      }
       return this.#completeWrite(nodeId, staged, progress);
     });
   }
