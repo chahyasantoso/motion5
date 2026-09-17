@@ -1,5 +1,6 @@
 import type { GraphIR } from "../graph/ir";
 import type { PublisherSnapshot } from "./graph-publisher";
+import { unreachable } from "../domain/exhaustive";
 
 /**
  * Whether a follow-up drain is booked with the scheduler.
@@ -96,6 +97,21 @@ const FLUSHING_BOOKED = mintPhase<FlushingShape>({ kind: "flushing", drain: "boo
 const DISPOSING_UNBOOKED = mintPhase<DisposingShape>({ kind: "disposing", drain: "unbooked" });
 const DISPOSING_BOOKED = mintPhase<DisposingShape>({ kind: "disposing", drain: "booked" });
 
+/**
+ * The two axes of a live phase as the table they always were, so a transition is a lookup.
+ *
+ * `kind` and `drain` are independent, and every transition below moves one while carrying the other,
+ * which is why each of them used to end in `phase.drain === "booked" ? X_BOOKED : X_UNBOOKED`. Read
+ * that way the table was six constants and five ternaries the reader reassembled, and the answer for
+ * `idle` was whatever the last arm fell through to. Stated once here, indexed by the axis being
+ * carried, it is the thing the switches below select a row of. Issue #437, and see ADR-092.
+ */
+const PHASES = {
+  idle: { unbooked: IDLE_UNBOOKED, booked: IDLE_BOOKED },
+  flushing: { unbooked: FLUSHING_UNBOOKED, booked: FLUSHING_BOOKED },
+  disposing: { unbooked: DISPOSING_UNBOOKED, booked: DISPOSING_BOOKED },
+} as const;
+
 /** The phase a runtime starts in: live, publishing nothing, and owing the scheduler nothing. */
 export const IDLE: RuntimePhase = IDLE_UNBOOKED;
 
@@ -104,7 +120,16 @@ export const DISPOSED: RuntimePhase = mintPhase<DisposedShape>({ kind: "disposed
 
 /** Answers whether this runtime is retired, for every reader that has to ask. */
 export function isDisposed(phase: RuntimePhase): boolean {
-  return phase.kind === "disposed";
+  switch (phase.kind) {
+    case "idle":
+    case "flushing":
+    case "disposing":
+      return false;
+    case "disposed":
+      return true;
+    default:
+      return unreachable(phase);
+  }
 }
 
 /**
@@ -120,8 +145,18 @@ export function isDisposed(phase: RuntimePhase): boolean {
  * Idempotent, so a reentrant `dispose` cannot raise it twice, and terminal disposal is left alone.
  */
 export function retiring(phase: RuntimePhase): RuntimePhase {
-  if (phase.kind === "disposed" || phase.kind === "disposing") return phase;
-  return phase.drain === "booked" ? DISPOSING_BOOKED : DISPOSING_UNBOOKED;
+  switch (phase.kind) {
+    case "idle":
+    case "flushing":
+      return PHASES.disposing[phase.drain];
+    // Idempotent, and terminal disposal is left alone: raising this twice is what a reentrant
+    // `dispose` would do, and lowering it is what nothing may do.
+    case "disposing":
+    case "disposed":
+      return phase;
+    default:
+      return unreachable(phase);
+  }
 }
 
 /**
@@ -133,12 +168,30 @@ export function retiring(phase: RuntimePhase): RuntimePhase {
  * has finished retiring reports nothing new. See ADR-090.
  */
 export function isRetiring(phase: RuntimePhase): boolean {
-  return phase.kind === "disposing" || phase.kind === "disposed";
+  switch (phase.kind) {
+    case "idle":
+    case "flushing":
+      return false;
+    case "disposing":
+    case "disposed":
+      return true;
+    default:
+      return unreachable(phase);
+  }
 }
 
 /** Answers whether subscribers are being notified, which is the reentrancy question. */
 export function isFlushing(phase: RuntimePhase): boolean {
-  return phase.kind === "flushing";
+  switch (phase.kind) {
+    case "flushing":
+      return true;
+    case "idle":
+    case "disposing":
+    case "disposed":
+      return false;
+    default:
+      return unreachable(phase);
+  }
 }
 
 /**
@@ -148,16 +201,32 @@ export function isFlushing(phase: RuntimePhase): boolean {
  * disposed rather than pushing it back through a live phase.
  */
 export function beginFlush(phase: RuntimePhase): RuntimePhase {
-  // Retiring is terminal for this transition as well, so nothing walks a runtime being torn down
-  // back into a live phase. Issue #408, and see ADR-090.
-  if (phase.kind === "disposed" || phase.kind === "disposing") return phase;
-  return phase.drain === "booked" ? FLUSHING_BOOKED : FLUSHING_UNBOOKED;
+  switch (phase.kind) {
+    case "idle":
+    case "flushing":
+      return PHASES.flushing[phase.drain];
+    // Retiring is terminal for this transition as well, so nothing walks a runtime being torn down
+    // back into a live phase. Issue #408, and see ADR-090.
+    case "disposing":
+    case "disposed":
+      return phase;
+    default:
+      return unreachable(phase);
+  }
 }
 
 /** Answers the phase a publication closes into, keeping the booking and the terminal state. */
 export function endFlush(phase: RuntimePhase): RuntimePhase {
-  if (phase.kind === "disposed" || phase.kind === "disposing") return phase;
-  return phase.drain === "booked" ? IDLE_BOOKED : IDLE_UNBOOKED;
+  switch (phase.kind) {
+    case "idle":
+    case "flushing":
+      return PHASES.idle[phase.drain];
+    case "disposing":
+    case "disposed":
+      return phase;
+    default:
+      return unreachable(phase);
+  }
 }
 
 /**
@@ -170,20 +239,37 @@ export function endFlush(phase: RuntimePhase): RuntimePhase {
  * that had to ask and then act could act differently.
  */
 export function bookingDrain(phase: RuntimePhase): RuntimePhase | undefined {
-  // A runtime being retired has no follow-up to run either, and for the same reason a retired one
-  // has none: the teardown below it is what that drain would publish over. Issue #408.
-  if (phase.kind === "disposed" || phase.kind === "disposing") return undefined;
-  if (phase.drain === "booked") return undefined;
-  return phase.kind === "flushing" ? FLUSHING_BOOKED : IDLE_BOOKED;
+  switch (phase.kind) {
+    // A phase already carrying a booking has nothing to book, which is the coalescing
+    // `scheduler-reentrancy` measures: a second job for one drain.
+    case "idle":
+    case "flushing":
+      return phase.drain === "booked" ? undefined : PHASES[phase.kind].booked;
+    // A runtime being retired has no follow-up to run either, and for the same reason a retired one
+    // has none: the teardown below it is what that drain would publish over. Issue #408.
+    case "disposing":
+    case "disposed":
+      return undefined;
+    default:
+      return unreachable(phase);
+  }
 }
 
 /** Releases a booking, keeping the phase it was carried by. Total, and terminal-safe. */
 export function unbookDrain(phase: RuntimePhase): RuntimePhase {
-  if (phase.kind === "disposed") return phase;
-  // Lowered in place rather than resolved to a live phase, because a runtime that is retiring stays
-  // retiring: this is the transition `dispose` itself runs, and it must not undo the one above it.
-  if (phase.kind === "disposing") return DISPOSING_UNBOOKED;
-  return phase.kind === "flushing" ? FLUSHING_UNBOOKED : IDLE_UNBOOKED;
+  switch (phase.kind) {
+    // Lowered in place rather than resolved to a live phase, because a runtime that is retiring
+    // stays retiring: this is the transition `dispose` itself runs, and it must not undo the one
+    // above it. Three kinds carry a booking, so three kinds release one the same way.
+    case "idle":
+    case "flushing":
+    case "disposing":
+      return PHASES[phase.kind].unbooked;
+    case "disposed":
+      return phase;
+    default:
+      return unreachable(phase);
+  }
 }
 
 interface ColdShape {
@@ -238,9 +324,15 @@ export function memoHit(
   graph: GraphIR,
   membersRevision: number,
 ): PublisherSnapshot | undefined {
-  if (memo.kind === "cold") return undefined;
-  if (memo.graph !== graph || memo.membersRevision !== membersRevision) return undefined;
-  return memo.snapshot;
+  switch (memo.kind) {
+    case "cold":
+      return undefined;
+    case "warm":
+      if (memo.graph !== graph || memo.membersRevision !== membersRevision) return undefined;
+      return memo.snapshot;
+    default:
+      return unreachable(memo);
+  }
 }
 
 declare const PENDING_BRAND: unique symbol;
@@ -334,7 +426,14 @@ export function deferring(
  * subscriber, so a frame is work by itself and the drain replays it. See ADR-080 and ADR-088.
  */
 export function isPending(pending: PendingPublication): boolean {
-  return pending.kind === "deferred";
+  switch (pending.kind) {
+    case "nothing":
+      return false;
+    case "deferred":
+      return true;
+    default:
+      return unreachable(pending);
+  }
 }
 
 /**
@@ -345,12 +444,26 @@ export function isPending(pending: PendingPublication): boolean {
  * mutate, which a `ReadonlySet` type alone never promised at runtime.
  */
 export function deferredSeeds(pending: PendingPublication): readonly string[] {
-  return pending.kind === "deferred" ? [...pending.seeds] : [];
+  switch (pending.kind) {
+    case "nothing":
+      return [];
+    case "deferred":
+      return [...pending.seeds];
+    default:
+      return unreachable(pending);
+  }
 }
 
 /** The frame a deferral is carrying, or `undefined` for a deferral that named none and for none. */
 export function deferredTick(pending: PendingPublication): number | undefined {
-  return pending.kind === "deferred" ? pending.tick : undefined;
+  switch (pending.kind) {
+    case "nothing":
+      return undefined;
+    case "deferred":
+      return pending.tick;
+    default:
+      return unreachable(pending);
+  }
 }
 
 /**

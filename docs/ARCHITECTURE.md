@@ -234,7 +234,7 @@ Never exported: `GraphRuntime`, `ProjectRuntime`, `GraphBinding`, `GraphPublishe
 
 ## 14. Deliberately excluded
 
-These are not omissions. They are decisions, and reintroducing any of them requires an entry in [DECISIONS.md](./DECISIONS.md).
+These are not omissions. They are decisions, and reintroducing any of them requires a new numbered `ADR-*.md` record in this directory.
 
 - Legacy observation facades and Track observation aliases.
 - Observation ownership modes, resolvers, adapter aliases, and parity modes.

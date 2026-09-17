@@ -301,7 +301,7 @@ export function solveChain(
   // of its arity and would move every existing solver's published keys, which `FB-9` pins as
   // unchanged. Roughly four percent of ordinary reachable rigs do not reach tolerance before the
   // cap, so a per-tick report would be noise on rigs nobody would call broken. `FB-13` pins the
-  // shape and `docs/DECISIONS.md` records the decision under ADR-051.
+  // shape and `docs/ADR-051-derived-solver-membership.md` records the decision.
   return solveFabrik(root, fabrikMembers(members, goals), flip).rotations;
 }
 
