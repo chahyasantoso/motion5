@@ -1,0 +1,122 @@
+be 'ProjectRuntime is disposed.' // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3611524Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3612090Z Expected: ^[[32m"^[[7mProjectRuntime is dispos^[[27med^[[7m.^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3613138Z Received: ^[[31m"^[[7mrunSettleSteps is not defin^[[27med"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3613619Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3614739Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/live-value-updates.test.ts:^[[2m730:39^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3616141Z     ^[[90m728|^[[39m     const thrown = thrownBy(() => rig.runtime.track(ARM).setKeyframe("…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3616979Z     ^[[90m729|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3617838Z     ^[[90m730|^[[39m     expect((thrown as Error).message).toBe("ProjectRuntime is disposed…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3618860Z     ^[[90m   |^[[39m                                       ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3619875Z     ^[[90m731|^[[39m     // `commit` before `release` is the claim. Today the release sits …
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3621057Z     ^[[90m732|^[[39m     // commit, so the Track is committed to a composition that has alr…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3621872Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3622315Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3622677Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3625338Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/motion-consistency.test.ts^[[2m > ^[[22mEngine motion edits preserve accepted state and entity lifetimes^[[2m > ^[[22mcompletes both cleanup layers, activates eager input and disables failed old generations
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3628255Z ^[[31m^[[1mAssertionError^[[22m: expected ReferenceError: runSettleSteps is not def… to be an instance of AggregateError^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3630030Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/motion-consistency.test.ts:^[[2m149:21^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3631677Z     ^[[90m147|^[[39m     ^[[35mconst^[[39m motion ^[[33m=^[[39m test^[[33m.^[[39mhandle^[[33m.^[[39m^[[34mmotion^[[39m(^[[32m"hero"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3633125Z     ^[[90m148|^[[39m     const failure = caught(() => motion.setTrigger({ type: "time", dur…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3634887Z     ^[[90m149|^[[39m     ^[[34mexpect^[[39m(failure)^[[33m.^[[39m^[[34mtoBeInstanceOf^[[39m(^[[33mAggregateError^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3636059Z     ^[[90m   |^[[39m                     ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3637111Z     ^[[90m150|^[[39m     expect((failure as AggregateError).errors).toEqual([subscriptionFa…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3638863Z     ^[[90m151|^[[39m     ^[[34mexpect^[[39m(motion^[[33m.^[[39mdefinition^[[33m.^[[39mtrigger^[[33m.^[[39mtype)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m"time"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3640091Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3640535Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3640900Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3643209Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/motion-consistency.test.ts^[[2m > ^[[22mEngine motion edits preserve accepted state and entity lifetimes^[[2m > ^[[22mretains an accepted stagger and attempts publication when re-seeding throws
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3646599Z ^[[31m^[[1mAssertionError^[[22m: expected ReferenceError: runSettleSteps is not def… to be Error: Host re-seed failed. // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3647616Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3647863Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3648322Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3648560Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3648781Z ^[[32m- Error {^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3649419Z ^[[32m-   "message": "Host re-seed failed.",^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3650079Z ^[[31m+ ReferenceError {^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3650844Z ^[[31m+   "message": "runSettleSteps is not defined",^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3651486Z ^[[2m  }^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3651684Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3652540Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/motion-consistency.test.ts:^[[2m222:50^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3653485Z     ^[[90m220|^[[39m     }^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3655264Z     ^[[90m221|^[[39m     ^[[35mconst^[[39m publication ^[[33m=^[[39m vi^[[33m.^[[39m^[[34mspyOn^[[39m(test^[[33m.^[[39mruntime^[[33m.^[[39mgraph^[[33m,^[[39m ^[[32m"flush"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3657790Z     ^[[90m222|^[[39m     ^[[34mexpect^[[39m(^[[34mcaught^[[39m(() ^[[33m=>^[[39m motion^[[33m.^[[39m^[[34msetStagger^[[39m(^[[34m250^[[39m)))^[[33m.^[[39m^[[34mtoBe^[[39m(failure)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3659290Z     ^[[90m   |^[[39m                                                  ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3660436Z     ^[[90m223|^[[39m     ^[[34mexpect^[[39m(seen)^[[33m.^[[39m^[[34mtoEqual^[[39m([^[[34m250^[[39m])^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3662066Z     ^[[90m224|^[[39m     ^[[34mexpect^[[39m(motion^[[33m.^[[39mdefinition^[[33m.^[[39mstagger)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m250^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3662952Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3663399Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3663795Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3666343Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/motion-consistency.test.ts^[[2m > ^[[22mEngine motion edits preserve accepted state and entity lifetimes^[[2m > ^[[22mdefers disposal through failed stagger completion and preserves ordered failures
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3668802Z ^[[31m^[[1mAssertionError^[[22m: expected "vi.fn()" to be called 1 times, but got 0 times^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3670308Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/motion-consistency.test.ts:^[[2m252:35^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3672235Z     ^[[90m250|^[[39m     ^[[35mconst^[[39m publication ^[[33m=^[[39m vi^[[33m.^[[39m^[[34mspyOn^[[39m(test^[[33m.^[[39mruntime^[[33m.^[[39mgraph^[[33m,^[[39m ^[[32m"flush"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3674556Z     ^[[90m251|^[[39m     ^[[35mconst^[[39m result ^[[33m=^[[39m ^[[34mcaught^[[39m(() ^[[33m=>^[[39m motion^[[33m.^[[39m^[[34msetStagger^[[39m(^[[34m250^[[39m))^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3676443Z     ^[[90m252|^[[39m     ^[[34mexpect^[[39m(disposeDuringProgress)^[[33m.^[[39m^[[34mtoHaveBeenCalledTimes^[[39m(^[[34m1^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3677700Z     ^[[90m   |^[[39m                                   ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3678945Z     ^[[90m253|^[[39m     ^[[34mexpect^[[39m(result)^[[33m.^[[39m^[[34mtoBeInstanceOf^[[39m(^[[33mAggregateError^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3680873Z     ^[[90m254|^[[39m     ^[[34mexpect^[[39m((result ^[[35mas^[[39m ^[[33mAggregateError^[[39m)^[[33m.^[[39merrors[^[[34m0^[[39m])^[[33m.^[[39m^[[34mtoBe^[[39m(failure)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3681862Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3682290Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3682674Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3685155Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/motion-consistency.test.ts^[[2m > ^[[22mEngine motion edits preserve accepted state and entity lifetimes^[[2m > ^[[22madopts before a trigger finalizer disposes and releases the replacement once
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3688541Z ^[[31m^[[1mAssertionError^[[22m: expected [Function] to throw error including 'ProjectRuntime is disposed.' but got 'runSettleSteps is not defined'^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3689612Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3690191Z Expected: ^[[32m"^[[7mProjectRuntime is dispos^[[27med^[[7m.^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3691185Z Received: ^[[31m"^[[7mrunSettleSteps is not defin^[[27med"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3691665Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3692512Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/motion-consistency.test.ts:^[[2m271:71^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3693774Z     ^[[90m269|^[[39m       test^[[33m.^[[39mhandle^[[33m.^[[39m^[[34mdispose^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3694851Z     ^[[90m270|^[[39m     }^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3695778Z     ^[[90m271|^[[39m     expect(() => motion.setTrigger({ type: "time", duration: 1000 })).…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3696902Z     ^[[90m   |^[[39m                                                                       ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3697912Z     ^[[90m272|^[[39m       ^[[32m"ProjectRuntime is disposed."^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3698667Z     ^[[90m273|^[[39m     )^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3698976Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3699389Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3699757Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3702098Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/motion-consistency.test.ts^[[2m > ^[[22mEngine motion edits preserve accepted state and entity lifetimes^[[2m > ^[[22mretains an installed trigger when cleanup throws Error: Old driver cleanup failed.
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3705572Z ^[[31m^[[1mAssertionError^[[22m: expected ReferenceError: runSettleSteps is not def… to be Error: Old driver cleanup failed. // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3706614Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3706853Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3707297Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3707528Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3707734Z ^[[32m- Error {^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3708375Z ^[[32m-   "message": "Old driver cleanup failed.",^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3709059Z ^[[31m+ ReferenceError {^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3709846Z ^[[31m+   "message": "runSettleSteps is not defined",^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3710457Z ^[[2m  }^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3710665Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3711524Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/motion-consistency.test.ts:^[[2m288:81^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3713169Z     ^[[90m286|^[[39m       ^[[35mconst^[[39m motion ^[[33m=^[[39m test^[[33m.^[[39mhandle^[[33m.^[[39m^[[34mmotion^[[39m(^[[32m"hero"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3714969Z     ^[[90m287|^[[39m       test^[[33m.^[[39mhandle^[[33m.^[[39m^[[34mmount^[[39m(^[[32m"hero/arm"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3716271Z     ^[[90m288|^[[39m       expect(caught(() => motion.setTrigger({ type: "time", duration: …
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3717476Z     ^[[90m   |^[[39m                                                                                 ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3718656Z     ^[[90m289|^[[39m       expect(motion.definition.trigger).toEqual({ type: "time", durati…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3719915Z     ^[[90m290|^[[39m       expect(() => test.handle.signal("hero", { type: "manual", progre…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3720512Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3720938Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3721340Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3722616Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/motion-consistency.test.ts^[[2m > ^[[22mEngine motion edits preserve accepted state and entity lifetimes^[[2m > ^[[22mretains an installed trigger when cleanup throws undefined
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3724472Z ^[[31m^[[1mAssertionError^[[22m: expected ReferenceError: runSettleSteps is not def… to be undefined // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3725030Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3725211Z ^[[32m- Expected:^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3725451Z undefined
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3725572Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3725705Z ^[[31m+ Received:^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3725940Z ReferenceError {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3726223Z   "message": "runSettleSteps is not defined",
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3726734Z }
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3726834Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3727306Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/motion-consistency.test.ts:^[[2m288:81^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3728204Z     ^[[90m286|^[[39m       ^[[35mconst^[[39m motion ^[[33m=^[[39m test^[[33m.^[[39mhandle^[[33m.^[[39m^[[34mmotion^[[39m(^[[32m"hero"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3729037Z     ^[[90m287|^[[39m       test^[[33m.^[[39mhandle^[[33m.^[[39m^[[34mmount^[[39m(^[[32m"hero/arm"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3729736Z     ^[[90m288|^[[39m       expect(caught(() => motion.setTrigger({ type: "time", duration: …
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3730370Z     ^[[90m   |^[[39m                                                                                 ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3730990Z     ^[[90m289|^[[39m       expect(motion.definition.trigger).toEqual({ type: "time", durati…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3731633Z     ^[[90m290|^[[39m       expect(() => test.handle.signal("hero", { type: "manual", progre…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3731953Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3732188Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3732389Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3733640Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/motion-consistency.test.ts^[[2m > ^[[22mEngine motion edits preserve accepted state and entity lifetimes^[[2m > ^[[22mpublishes changed and cleared stagger only after definition adoption without graph work
+quality (node 24)	Run npm test -- --reporter=default --reporter=.

@@ -1,0 +1,118 @@
+lity (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3450929Z ^[[31m+ ReferenceError {^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3451691Z ^[[31m+   "message": "runSettleSteps is not defined",^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3452310Z ^[[2m  }^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3452508Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3453326Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/live-value-updates.test.ts:^[[2m274:65^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3455481Z     ^[[90m272|^[[39m     ^[[35mconst^[[39m publication ^[[33m=^[[39m vi^[[33m.^[[39m^[[34mspyOn^[[39m(^[[34mruntimeOf^[[39m(handle)^[[33m.^[[39mgraph^[[33m,^[[39m ^[[32m"flush"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3457141Z     ^[[90m273|^[[39m     const replaceGraph = vi.spyOn(runtimeOf(handle).graph, "replaceGra…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3457846Z     ^[[90m274|^[[39m     expect(thrownBy(() => arm.setValues({ rotation: FASTER }))).toBe(f…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3458453Z     ^[[90m   |^[[39m                                                                 ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3459044Z     ^[[90m275|^[[39m     // Engine installs at stage time and marks settled before kill. Ro…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3459690Z     ^[[90m276|^[[39m     // so asserting the old definition would certify a retained/compil…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3460172Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3460404Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3460615Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3461767Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/live-value-updates.test.ts^[[2m > ^[[22mdirect-write failures respect the actual stage lifecycle^[[2m > ^[[22mLV-20 preserves finalization and publication failures in occurrence order
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3463214Z ^[[31m^[[1mAssertionError^[[22m: expected ReferenceError: runSettleSteps is not def… to be an instance of AggregateError^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3464744Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/live-value-updates.test.ts:^[[2m307:20^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3465743Z     ^[[90m305|^[[39m     })^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3466688Z     ^[[90m306|^[[39m     const thrown = thrownBy(() => handle.track(ARM).setValues({ rotati…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3468095Z     ^[[90m307|^[[39m     ^[[34mexpect^[[39m(thrown)^[[33m.^[[39m^[[34mtoBeInstanceOf^[[39m(^[[33mAggregateError^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3469032Z     ^[[90m   |^[[39m                    ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3469856Z     ^[[90m308|^[[39m     expect((thrown as AggregateError).errors).toEqual([release, publis…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3471352Z     ^[[90m309|^[[39m     ^[[34mexpect^[[39m((thrown ^[[35mas^[[39m ^[[33mAggregateError^[[39m)^[[33m.^[[39merrors[^[[34m0^[[39m])^[[33m.^[[39m^[[34mtoBe^[[39m(release)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3472176Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3472533Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3472851Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3475361Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/live-value-updates.test.ts^[[2m > ^[[22mdirect-write failures respect the actual stage lifecycle^[[2m > ^[[22mreads fallible progress before either path acquires a stage
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3477442Z ^[[31m^[[1mReferenceError^[[22m: runSettleSteps is not defined^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3478964Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#completeWrite packages/core/src/runtime/project-runtime.ts:^[[2m886:5^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3480354Z     ^[[90m884|^[[39m     if (staged === undefined && progress === undefined) return this.#p…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3481459Z     ^[[90m885|^[[39m     ^[[35mlet^[[39m batch^[[33m!^[[39m^[[33m:^[[39m ^[[33mPatchBatch^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3482346Z     ^[[90m886|^[[39m     ^[[34mrunSettleSteps^[[39m([
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3482963Z     ^[[90m   |^[[39m     ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3483704Z     ^[[90m887|^[[39m       () ^[[33m=>^[[39m staged^[[33m?.^[[39m^[[34mcommit^[[39m()^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3484759Z     ^[[90m888|^[[39m       () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3486009Z ^[[90m ^[[2m❯^[[22m packages/core/src/runtime/project-runtime.ts:^[[2m875:19^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3487467Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#boundary packages/core/src/runtime/project-runtime.ts:^[[2m802:14^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3489187Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#writeValues packages/core/src/runtime/project-runtime.ts:^[[2m847:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3490861Z ^[[90m ^[[2m❯^[[22m Object.setValues packages/core/src/runtime/project-runtime.ts:^[[2m693:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3492563Z ^[[90m ^[[2m❯^[[22m write packages/core/test/unit/runtime/live-value-updates.test.ts:^[[2m338:78^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3494582Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/runtime/live-value-updates.test.ts:^[[2m345:14^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3495513Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3496022Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3496390Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3498859Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/live-value-updates.test.ts^[[2m > ^[[22mdirect-write failures respect the actual stage lifecycle^[[2m > ^[[22mattempts publication after a failed re-seek without rolling back accepted state
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3501915Z ^[[31m^[[1mAssertionError^[[22m: expected ReferenceError: runSettleSteps is not def… to be Error: seek failed // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3502903Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3503191Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3503933Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3504449Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3504704Z ^[[32m- Error {^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3505287Z ^[[32m-   "message": "seek failed",^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3505893Z ^[[31m+ ReferenceError {^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3506643Z ^[[31m+   "message": "runSettleSteps is not defined",^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3507260Z ^[[2m  }^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3507460Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3508302Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/live-value-updates.test.ts:^[[2m372:55^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3510137Z     ^[[90m370|^[[39m     ^[[35mconst^[[39m publication ^[[33m=^[[39m vi^[[33m.^[[39m^[[34mspyOn^[[39m(runtime^[[33m.^[[39mgraph^[[33m,^[[39m ^[[32m"flush"^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3511815Z     ^[[90m371|^[[39m     ^[[35mconst^[[39m arm ^[[33m=^[[39m runtime^[[33m.^[[39m^[[34mtrack^[[39m(^[[33mARM^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3513545Z     ^[[90m372|^[[39m     ^[[34mexpect^[[39m(^[[34mthrownBy^[[39m(() ^[[33m=>^[[39m arm^[[33m.^[[39m^[[34msetValues^[[39m({ x^[[33m:^[[39m ^[[34m260^[[39m })))^[[33m.^[[39m^[[34mtoBe^[[39m(failure)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3515143Z     ^[[90m   |^[[39m                                                       ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3516191Z     ^[[90m373|^[[39m     ^[[34mexpect^[[39m(commit)^[[33m.^[[39m^[[34mtoHaveBeenCalledTimes^[[39m(^[[34m1^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3517535Z     ^[[90m374|^[[39m     ^[[34mexpect^[[39m(rollback)^[[33m.^[[39mnot^[[33m.^[[39m^[[34mtoHaveBeenCalled^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3518197Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3518601Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3518963Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3520843Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/live-value-updates.test.ts^[[2m > ^[[22mlive values reach the graph without replacing it^[[2m > ^[[22mPK-16 escalates through one stageTrack when the backend declines
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3522740Z ^[[31m^[[1mReferenceError^[[22m: runSettleSteps is not defined^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3524296Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#completeWrite packages/core/src/runtime/project-runtime.ts:^[[2m886:5^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3525672Z     ^[[90m884|^[[39m     if (staged === undefined && progress === undefined) return this.#p…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3526826Z     ^[[90m885|^[[39m     ^[[35mlet^[[39m batch^[[33m!^[[39m^[[33m:^[[39m ^[[33mPatchBatch^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3527698Z     ^[[90m886|^[[39m     ^[[34mrunSettleSteps^[[39m([
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3528306Z     ^[[90m   |^[[39m     ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3529094Z     ^[[90m887|^[[39m       () ^[[33m=>^[[39m staged^[[33m?.^[[39m^[[34mcommit^[[39m()^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3529785Z     ^[[90m888|^[[39m       () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3530844Z ^[[90m ^[[2m❯^[[22m packages/core/src/runtime/project-runtime.ts:^[[2m875:19^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3532111Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#boundary packages/core/src/runtime/project-runtime.ts:^[[2m802:14^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3533556Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#writeValues packages/core/src/runtime/project-runtime.ts:^[[2m847:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3535259Z ^[[90m ^[[2m❯^[[22m Object.setValues packages/core/src/runtime/project-runtime.ts:^[[2m693:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3536585Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/runtime/live-value-updates.test.ts:^[[2m570:9^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3537199Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3537587Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3538005Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3540834Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/live-value-updates.test.ts^[[2m > ^[[22mlive values reach the graph without replacing it^[[2m > ^[[22mPK-19 pins the two mutants no other case can see
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3543750Z ^[[31m^[[1mReferenceError^[[22m: runSettleSteps is not defined^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3546286Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#completeWrite packages/core/src/runtime/project-runtime.ts:^[[2m886:5^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3548369Z     ^[[90m884|^[[39m     if (staged === undefined && progress === undefined) return this.#p…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3550091Z     ^[[90m885|^[[39m     ^[[35mlet^[[39m batch^[[33m!^[[39m^[[33m:^[[39m ^[[33mPatchBatch^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3551734Z     ^[[90m886|^[[39m     ^[[34mrunSettleSteps^[[39m([
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3552650Z     ^[[90m   |^[[39m     ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3553962Z     ^[[90m887|^[[39m       () ^[[33m=>^[[39m staged^[[33m?.^[[39m^[[34mcommit^[[39m()^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3555585Z     ^[[90m888|^[[39m       () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3557303Z ^[[90m ^[[2m❯^[[22m packages/core/src/runtime/project-runtime.ts:^[[2m875:19^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3559710Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#boundary packages/core/src/runtime/project-runtime.ts:^[[2m802:14^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3562386Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#writeValues packages/core/src/runtime/project-runtime.ts:^[[2m847:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3565027Z ^[[90m ^[[2m❯^[[22m Object.setValues packages/core/src/runtime/project-runtime.ts:^[[2m693:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3567116Z ^[[90m ^[[2m❯^[[22m packages/core/test/unit/runtime/live-value-updates.test.ts:^[[2m641:9^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3567957Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3568386Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3568726Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3570664Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/live-value-updates.test.ts^[[2m > ^[[22mlive values reach the graph without replacing it^[[2m > ^[[22mLV-16 finishes the escalation against a live host before the release runs
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3573340Z ^[[31m^[[1mAssertionError^[[22m: expected 'runSettleSteps is not defined' to be 'ProjectRuntime is disposed.' // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3574519Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3575116Z Expected: ^[[32m"^[[7mProjectRuntime is dispos^[[27med^[[7m.^[[27m"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3576134Z Received: ^[[31m"^[[7mrunSettleSteps is not defin^[[27med"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3576601Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3577443Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/live-value-updates.test.ts:^[[2m705:39^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3578775Z     ^[[90m703|^[[39m     const thrown = thrownBy(() => rig.runtime.setValues(ARM, { x: 260 …
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3579590Z     ^[[90m704|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3580591Z     ^[[90m705|^[[39m     expect((thrown as Error).message).toBe("ProjectRuntime is disposed…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3581959Z     ^[[90m   |^[[39m                                       ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3583094Z     ^[[90m706|^[[39m     // The leak, measured as an ordering rather than as a counter. The…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3603123Z     ^[[90m707|^[[39m     // path build, commit and re-seek a staged Track after the seam ha…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3603770Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3605373Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3605784Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3607892Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/live-value-updates.test.ts^[[2m > ^[[22mlive values reach the graph without replacing it^[[2m > ^[[22mLV-17 defers the release past a recompile that built after its seam disposed
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3610579Z ^[[31m^[[1mAssertionError^[[22m: expected 'runSettleSteps is not defined' to 

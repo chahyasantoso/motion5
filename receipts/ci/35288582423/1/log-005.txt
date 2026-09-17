@@ -1,0 +1,128 @@
+[[32m 9^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2333352Z  ^[[32m✓^[[39m packages/core/test/unit/placeholder.test.ts ^[[2m(^[[22m^[[2m2 tests^[[22m^[[2m)^[[22m^[[32m 4^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2385714Z  ^[[32m✓^[[39m packages/core/test/integration/golden-roundtrip.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 19^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2880821Z  ^[[32m✓^[[39m packages/react/test/public-hook.test.ts ^[[2m(^[[22m^[[2m1 test^[[22m^[[2m)^[[22m^[[32m 3^[[2mms^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2960362Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2961309Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Suites 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2961635Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2964755Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/public-port-types.test.ts^[[2m > ^[[22mpublic port type surface (issue #158)
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2970536Z ^[[31m^[[1mAssertionError^[[22m: expected 'packages/core/src/runtime/project-run…' to be '' // Object.is equality^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2971160Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2971462Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2971960Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2972118Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2973622Z ##[error]^[[31m+ packages/core/src/runtime/project-runtime.ts(629,5): error TS2304: Cannot find name 'runSettleSteps'.^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2975959Z ##[error]^[[31m+ packages/core/src/runtime/project-runtime.ts(886,5): error TS2304: Cannot find name 'runSettleSteps'.^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2976947Z ^[[31m+^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2977070Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.2977546Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/public-port-types.test.ts:^[[2m109:28^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3005228Z     ^[[90m107|^[[39m       ^[[32m"packages/core/src/index.ts"^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3005961Z     ^[[90m108|^[[39m     ])^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3007097Z     ^[[90m109|^[[39m     ^[[34mexpect^[[39m(emitted^[[33m.^[[39moutput)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m""^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3007939Z     ^[[90m   |^[[39m                            ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3008653Z     ^[[90m110|^[[39m     ^[[34mexpect^[[39m(emitted^[[33m.^[[39mcode)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3009780Z     ^[[90m111|^[[39m   }^[[33m,^[[39m ^[[34m180_000^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3010203Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3010608Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3010898Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3010904Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3011229Z ^[[31m⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 38 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3011499Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3012812Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/solver-member-cache.test.ts^[[2m > ^[[22ma solver member is read from the compiled map rather than from a captured Track^[[2m > ^[[22mRA-14 reads the recompiled Track when a declining backend escalated a live write
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3014297Z ^[[31m^[[1mReferenceError^[[22m: runSettleSteps is not defined^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3015158Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#completeWrite packages/core/src/runtime/project-runtime.ts:^[[2m886:5^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3129649Z     ^[[90m884|^[[39m     if (staged === undefined && progress === undefined) return this.#p…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3131455Z     ^[[90m885|^[[39m     ^[[35mlet^[[39m batch^[[33m!^[[39m^[[33m:^[[39m ^[[33mPatchBatch^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3133107Z     ^[[90m886|^[[39m     ^[[34mrunSettleSteps^[[39m([
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3146172Z     ^[[90m   |^[[39m     ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3147456Z     ^[[90m887|^[[39m       () ^[[33m=>^[[39m staged^[[33m?.^[[39m^[[34mcommit^[[39m()^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3148671Z     ^[[90m888|^[[39m       () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3150167Z ^[[90m ^[[2m❯^[[22m packages/core/src/runtime/project-runtime.ts:^[[2m875:19^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3152083Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#boundary packages/core/src/runtime/project-runtime.ts:^[[2m802:14^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3154432Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#writeValues packages/core/src/runtime/project-runtime.ts:^[[2m847:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3156726Z ^[[90m ^[[2m❯^[[22m Object.overrideValues packages/core/src/runtime/project-runtime.ts:^[[2m691:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3159594Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/solver-member-cache.test.ts:^[[2m146:25^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3160265Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3160689Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3161056Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3163378Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/integration/solver-member-cache.test.ts^[[2m > ^[[22ma solver member is read from the compiled map rather than from a captured Track^[[2m > ^[[22mRA-17 escalates a live write on an ordinary node, which never needed this fix
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3165957Z ^[[31m^[[1mReferenceError^[[22m: runSettleSteps is not defined^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3169954Z ^[[36m ^[[2m❯^[[22m ProjectRuntime.#completeWrite packages/core/src/runtime/project-runtime.ts:^[[2m886:5^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3170850Z     ^[[90m884|^[[39m     if (staged === undefined && progress === undefined) return this.#p…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3171948Z     ^[[90m885|^[[39m     ^[[35mlet^[[39m batch^[[33m!^[[39m^[[33m:^[[39m ^[[33mPatchBatch^[[39m^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3173010Z     ^[[90m886|^[[39m     ^[[34mrunSettleSteps^[[39m([
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3173727Z     ^[[90m   |^[[39m     ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3174898Z     ^[[90m887|^[[39m       () ^[[33m=>^[[39m staged^[[33m?.^[[39m^[[34mcommit^[[39m()^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3175827Z     ^[[90m888|^[[39m       () ^[[33m=>^[[39m {
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3176946Z ^[[90m ^[[2m❯^[[22m packages/core/src/runtime/project-runtime.ts:^[[2m875:19^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3178934Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#boundary packages/core/src/runtime/project-runtime.ts:^[[2m802:14^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3180830Z ^[[90m ^[[2m❯^[[22m ProjectRuntime.#writeValues packages/core/src/runtime/project-runtime.ts:^[[2m847:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3182643Z ^[[90m ^[[2m❯^[[22m Object.overrideValues packages/core/src/runtime/project-runtime.ts:^[[2m691:17^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3186290Z ^[[90m ^[[2m❯^[[22m packages/core/test/integration/solver-member-cache.test.ts:^[[2m200:23^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3187054Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3187566Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3187961Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3190012Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/public-declaration-surface.test.ts^[[2m > ^[[22mpublic declaration surface (P1-9)^[[2m > ^[[22mscans the emitted entry declaration closure, not just source strings
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3194014Z ^[[31m^[[1mError^[[22m: Command failed: npx tsc --declaration --emitDeclarationOnly --target ES2023 --module ESNext --moduleResolution Bundler --strict --skipLibCheck --outDir /home/runner/work/motion5/motion5/.tmp-public-dts-E4W3oL packages/core/src/index.ts
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3196413Z ^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3197047Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/39]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3197431Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3198688Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/runtime/commit-plan.test.ts^[[2m > ^[[22mcommit plan^[[2m > ^[[22mchecks brands and exhaustiveness
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3200698Z ^[[31m^[[1mAssertionError^[[22m: expected 'import type { MotionDefinition, Track…' to contain 'case"create-motion"'^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3201863Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3202123Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3202571Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3202811Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3203107Z ^[[32m- case"create-motion"^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3204343Z ^[[31m+ import type { MotionDefinition, TrackDefinition } from "../contract/v5";^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3206980Z ^[[31m+ import { unreachable } from "../domain/exhaustive";^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3208049Z ^[[31m+ import { buildOwed, type ValueState } from "./value-state";^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3209088Z ^[[31m+ declare const EB: unique symbol, SB: unique symbol;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3209904Z ^[[31m+ type B = { readonly [EB]: true };^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3210608Z ^[[31m+ type C = { readonly [SB]: true };^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3211652Z ^[[31m+ type E<K extends string, V = {}> = { readonly kind: K } & V & B;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3212778Z ^[[31m+ type S<K extends string, V = {}> = { readonly kind: K } & V & C;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3213604Z ^[[31m+ export type Effect =^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3215202Z ^[[31m+   | E<"create-motion", { definition: MotionDefinition }>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3215814Z ^[[31m+   | E<"destroy-motion", { motionId: string }>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3216766Z ^[[31m+   | E<"compile-track", { nodeId: string; track: TrackDefinition }>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3218069Z ^[[31m+   | E<"dispose-track", { nodeId: string }>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3219088Z ^[[31m+   | E<"stage-track", { nodeId: string; track: TrackDefinition }>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3220026Z ^[[31m+   | E<"rollback-stage", { nodeId: string }>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3220623Z ^[[31m+   | E<^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3221188Z ^[[31m+       "retarget-motion-track",^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3222359Z ^[[31m+       { motionId: string; nodeId: string; duration?: number; previousDuration?: number }^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3223222Z ^[[31m+     >;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3223740Z ^[[31m+ export type Settlement =^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3224720Z ^[[31m+   | S<"commit-staged", { nodeId: string }>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3225542Z ^[[31m+   | S<"dispose-track", { nodeId: string }>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3226296Z ^[[31m+   | S<"evict-node", { nodeId: string }>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3227041Z ^[[31m+   | S<"mount-node", { nodeId: string }>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3228149Z ^[[31m+   | S<"add-motion-track", { motionId: string; nodeId: string; duration?: number }>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3229415Z ^[[31m+   | S<"remove-motion-track", { motionId: string; nodeId: string }>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3230386Z ^[[31m+   | S<"destroy-motion", { motionId: string }>^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3231230Z ^[[31m+   | S<"publish", { seeds: readonly string[] }>;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3231957Z ^[[31m+ export type CommitDocument = {^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3232621Z ^[[31m+   readonly tracks: ReadonlyMap<^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3233204Z ^[[31m+     string,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3234627Z ^[[31m+     { readonly track: TrackDefinition; readonly motionId?: string; readonly valueState: ValueState }^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3235617Z ^[[31m+   >;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3236631Z ^[[31m+   readonly motions: ReadonlyMap<string, { readonly definition: MotionDefinition }>;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3237483Z ^[[31m+ };^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3237997Z ^[[31m+ export type CommitPlan = {^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3238714Z ^[[31m+   readonly effects: readonly Effect[];^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3239311Z ^[[31m+   readonly settle: readonly Settlement[];^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3239758Z ^[[31m+   readonly touched: readonly string[];^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3240080Z ^[[31m+ };^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3240324Z ^[[31m+ type O = {^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3240702Z ^[[31m+   readonly needsBuild: ReadonlySet<string>;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3241254Z ^[[31m+   readonly readers: ReadonlyMap<string, readonly string[]>;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3241651Z ^[[31m+ };^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3242061Z ^[[31m+ const e = (x: object) => Object.freeze(x) as Effect;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3242804Z ^[[31m+ const s = (x: object) => Object.freeze(x) as Settlement;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3243504Z ^[[31m+ export function planCommit(b: CommitDocument, a: CommitDocument, o: O): CommitPlan {^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3244578Z ^[[31m+   const effects: Effect[] = [],^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3245326Z ^[[31m+     settle: Settlement[] = [],^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3245758Z ^[[31m+     touched: string[] = [];^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-17T23:52:05.3246179Z ^[[31m+   for (const [id, x] of a.motions)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	
