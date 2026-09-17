@@ -40,17 +40,31 @@ import {
 import { sameCompiledTrackInput } from "../domain/authoring/recompile";
 import { observationEdgeKey } from "../graph/ir";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
+import { describeError, propertyEntry, reservedGoalSlot, unboundGroup } from "./schema-refusals";
 import {
-  commitInFlight,
-  describeError,
-  immediateInTransaction,
-  nestedTransaction,
-  propertyEntry,
-  reservedGoalSlot,
-  unboundGroup,
-  valueBatchImmediate,
-  valueBatchStructural,
-} from "./schema-refusals";
+  COMMIT,
+  OPEN_RECIPE,
+  READ,
+  admitOrRefuse,
+  batchClosing,
+  batchOpening,
+  closing,
+  entering,
+  idle,
+  immediateVerb,
+  isRetiring,
+  leaving,
+  opening,
+  retired,
+  retiring,
+  seeding,
+  seedsIn,
+  stagedIn,
+  teardownOwed,
+  valueVerb,
+  type ProjectPhase,
+  type VerbClass,
+} from "./project-phase";
 import { collect, report, rejectAfterRollback, runRollbackSteps, runSettleSteps } from "./rollback";
 import { refuse } from "./refusal";
 import {
@@ -219,8 +233,7 @@ export class ProjectRuntime {
   #motions = new Map<string, MotionEntry>();
   #nextToken = 1;
 
-  #open: OpenTransaction | undefined;
-  #valueSeeds: string[] | undefined;
+  #phase: ProjectPhase<OpenTransaction> = idle();
   readonly #diagnostics: Diagnostics;
   readonly #setProgress: (nodeId: string, progress: number) => void;
   readonly #writeValuesHook: LiveValueWriter;
@@ -241,9 +254,6 @@ export class ProjectRuntime {
   readonly #createMotion: ((definition: MotionDefinition) => void) | undefined;
   readonly #destroyMotion: ((motionId: string) => void) | undefined;
   readonly #disposeComposition: () => void;
-  #disposed = false;
-  #inFlight = 0;
-  #pendingTeardown = false;
   constructor(project: ProjectDefinition, options: ProjectRuntimeOptions) {
     this.#project = project;
     for (const motion of project.motions) {
@@ -307,29 +317,28 @@ export class ProjectRuntime {
   }
 
   #readTracks(): ReadonlyMap<string, TrackEntry> {
-    return this.#open?.tracks ?? this.#tracks;
+    return stagedIn(this.#phase)?.tracks ?? this.#tracks;
   }
 
   #readMotions(): ReadonlyMap<string, MotionEntry> {
-    return this.#open?.motions ?? this.#motions;
+    return stagedIn(this.#phase)?.motions ?? this.#motions;
   }
 
   #stageTracks(): Map<string, TrackEntry> {
-    const open = this.#open;
+    const open = stagedIn(this.#phase);
     if (open === undefined) return new Map(this.#tracks);
     if (open.tracks === this.#tracks) open.tracks = new Map(this.#tracks);
     return open.tracks;
   }
 
   #stageMotions(): Map<string, MotionEntry> {
-    const open = this.#open;
+    const open = stagedIn(this.#phase);
     if (open === undefined) return new Map(this.#motions);
     if (open.motions === this.#motions) open.motions = new Map(this.#motions);
     return open.motions;
   }
   mount(nodeId: string, instance: object = {}): object {
-    this.#assertLive();
-    this.#refuseReentrant("mount");
+    this.#admit(immediateVerb("mount", "asserted"));
     return this.#mountNode(nodeId, instance);
   }
 
@@ -340,8 +349,7 @@ export class ProjectRuntime {
     return instance;
   }
   unmount(nodeId: string): void {
-    this.#assertLive();
-    this.#refuseReentrant("unmount");
+    this.#admit(immediateVerb("unmount", "asserted"));
     if (!this.#instances.has(nodeId)) return;
     this.#instances.delete(nodeId);
     this.#graph.detach(nodeId);
@@ -359,17 +367,16 @@ export class ProjectRuntime {
    * `RA-110` and ADR-064's amendment of 2026-09-04.
    */
   edit<T>(recipe: (transaction: SchemaTransaction) => T): T {
-    this.#assertLive();
-    if (this.#open !== undefined) nestedTransaction();
+    this.#admit(OPEN_RECIPE);
     const open: OpenTransaction = { tracks: this.#tracks, motions: this.#motions };
-    this.#open = open;
+    this.#phase = opening(this.#phase, open);
     let answer: T;
     try {
       answer = recipe(this.#transaction());
     } finally {
-      this.#open = undefined;
+      this.#phase = closing(this.#phase);
     }
-    if (this.#disposed) return answer;
+    if (isRetiring(this.#phase)) return answer;
     if (open.tracks !== this.#tracks || open.motions !== this.#motions)
       this.#commit({ tracks: open.tracks, motions: open.motions });
     return answer;
@@ -417,8 +424,7 @@ export class ProjectRuntime {
    * keeps its own refusal for an unknown motion id. See ADR-064's amendment.
    */
   signal(motionId: string, signal: TriggerSignal): void {
-    this.#assertLive();
-    this.#refuseReentrant("signal");
+    this.#admit(immediateVerb("signal", "asserted"));
     this.#signalMotion?.(motionId, signal);
   }
   /**
@@ -426,13 +432,13 @@ export class ProjectRuntime {
    * for the reason `#entryOf` is separate from `#entryIfLive`: this one refuses and that one answers.
    */
   motion(motionId: string): MotionHandle {
-    this.#assertLive();
+    this.#admit(READ);
     const entry = this.#readMotions().get(motionId);
     if (!entry) refuse({ kind: "unknown-motion", motionId });
     return this.#motionHandle(motionId, entry.token);
   }
   tryMotion(motionId: string): MotionHandle | undefined {
-    this.#assertLive();
+    this.#admit(READ);
     const entry = this.#readMotions().get(motionId);
     return entry === undefined ? undefined : this.#motionHandle(motionId, entry.token);
   }
@@ -440,12 +446,12 @@ export class ProjectRuntime {
     return this.#addTrack(track, options);
   }
   track(nodeId: string): TrackHandle {
-    this.#assertLive();
+    this.#admit(READ);
     const entry = this.#entryOf(nodeId);
     return this.#handle(nodeId, entry.token);
   }
   tryTrack(nodeId: string): TrackHandle | undefined {
-    this.#assertLive();
+    this.#admit(READ);
     const entry = this.#readTracks().get(nodeId);
     return entry === undefined ? undefined : this.#handle(nodeId, entry.token);
   }
@@ -458,7 +464,7 @@ export class ProjectRuntime {
    * `#readersOf`, which owns the question. See ADR-050 and ADR-051.
    */
   dependantsOf(nodeId: string): readonly string[] {
-    this.#assertLive();
+    this.#admit(READ);
     return this.#readersOf(nodeId);
   }
 
@@ -481,7 +487,7 @@ export class ProjectRuntime {
    * second spelling of one read would be two owners for it. See ADR-064 and issue #362.
    */
   motionIds(): readonly string[] {
-    this.#assertLive();
+    this.#admit(READ);
     return Object.freeze([...this.#readMotions().keys()]);
   }
   /**
@@ -489,7 +495,7 @@ export class ProjectRuntime {
    * `MotionHandle.trackIds` already reads, so the two cannot disagree about committed order.
    */
   freeTrackIds(): readonly string[] {
-    this.#assertLive();
+    this.#admit(READ);
     return Object.freeze(this.#ownedBy(this.#readTracks(), undefined).map(([node]) => node));
   }
   /**
@@ -497,7 +503,7 @@ export class ProjectRuntime {
    * own settlement are what move it.
    */
   mountedNodeIds(): readonly string[] {
-    this.#assertLive();
+    this.#admit(READ);
     return Object.freeze([...this.#instances.keys()]);
   }
   #addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle {
@@ -544,7 +550,7 @@ export class ProjectRuntime {
     id: string,
     token: number,
   ): Resolved<E> {
-    if (this.#disposed) return stale();
+    if (isRetiring(this.#phase)) return stale();
     return resolveToken(entries, id, token);
   }
 
@@ -604,18 +610,12 @@ export class ProjectRuntime {
     this.#commit({ motions });
   }
 
-  #refuseImmediateReentrant(verb: string): void {
-    if (this.#open !== undefined) immediateInTransaction(verb);
-    if (this.#inFlight > 0) commitInFlight();
-  }
-
-  #refuseReentrant(verb: string): void {
-    this.#refuseImmediateReentrant(verb);
-    if (this.#valueSeeds !== undefined) valueBatchImmediate(verb);
+  #admit(verb: VerbClass): "allow" | "join" {
+    return admitOrRefuse(this.#phase, verb);
   }
 
   #setTrigger(id: string, token: number, trigger: MotionDefinition["trigger"]): void {
-    this.#refuseReentrant("setTrigger");
+    this.#admit(immediateVerb("setTrigger", "resolved"));
     this.#boundary(() => {
       const entry = this.#writableMotion(id, token);
       const motionId = entry.definition.id;
@@ -634,7 +634,7 @@ export class ProjectRuntime {
   }
 
   #setStagger(id: string, token: number, stagger: number | undefined): void {
-    this.#refuseReentrant("setStagger");
+    this.#admit(immediateVerb("setStagger", "resolved"));
     this.#boundary(() => {
       const entry = this.#writableMotion(id, token);
       const motionId = entry.definition.id;
@@ -767,19 +767,17 @@ export class ProjectRuntime {
   }
 
   #commit(plan: SchemaPlan): void {
-    if (this.#open !== undefined) return;
-    if (this.#inFlight > 0) commitInFlight();
-    if (this.#valueSeeds !== undefined) valueBatchStructural();
+    if (this.#admit(COMMIT) === "join") return;
     this.#apply(plan);
   }
 
   #boundary<T>(body: () => T): T {
-    this.#inFlight++;
+    this.#phase = entering(this.#phase);
     try {
       return body();
     } finally {
-      this.#inFlight--;
-      if (this.#inFlight === 0 && this.#pendingTeardown) this.#teardown();
+      this.#phase = leaving(this.#phase);
+      if (teardownOwed(this.#phase)) this.#teardown(true);
     }
   }
 
@@ -810,7 +808,7 @@ export class ProjectRuntime {
   }
 
   #flush(touched: readonly string[]): void {
-    if (this.#disposed) return;
+    if (isRetiring(this.#phase)) return;
     this.#publishSeeds(touched);
   }
 
@@ -919,7 +917,7 @@ export class ProjectRuntime {
     values: AuthoredValues,
     rebase: boolean,
   ) {
-    this.#refuseImmediateReentrant(rebase ? "setValues" : "overrideValues");
+    this.#admit(valueVerb(rebase ? "setValues" : "overrideValues", "resolved"));
     return this.#boundary(() => {
       const entry = resolveEntry();
       const { statics, animated } = splitAuthoredValues(values);
@@ -984,10 +982,10 @@ export class ProjectRuntime {
   }
 
   #publishValue(nodeId: string): PatchBatch {
-    const open = this.#valueSeeds;
-    if (open === undefined) return this.#invalidateOne(nodeId);
+    const seeded = seeding(this.#phase, nodeId);
+    if (seeded === undefined) return this.#invalidateOne(nodeId);
     this.#assertLive();
-    open.push(nodeId);
+    this.#phase = seeded;
     return deferredValueBatch(this.#graph.sequence, [nodeId]);
   }
 
@@ -1029,7 +1027,7 @@ export class ProjectRuntime {
     key: string,
     value: AuthoredProperty,
   ) {
-    this.#refuseImmediateReentrant("setKeyframe");
+    this.#admit(valueVerb("setKeyframe", "resolved"));
     const entry = this.#writableEntry(nodeId, token);
     const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
     if (Object.hasOwn(readPluginValues(bound.group), key))
@@ -1038,7 +1036,7 @@ export class ProjectRuntime {
     return this.#recompileKeyframes(nodeId, entry, edited, "setKeyframe");
   }
   #removeKeyframe(nodeId: string, token: number, plugin: string, key: string) {
-    this.#refuseImmediateReentrant("removeKeyframe");
+    this.#admit(valueVerb("removeKeyframe", "resolved"));
     const entry = this.#writableEntry(nodeId, token);
     const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
     const edited = removeAuthoredKeyframe(keyframes, bound, key);
@@ -1170,8 +1168,7 @@ export class ProjectRuntime {
     };
   }
   seek(nodeId: string, progress: number) {
-    this.#assertLive();
-    this.#refuseImmediateReentrant("seek");
+    this.#admit(valueVerb("seek", "asserted"));
     this.#setProgress(nodeId, progress);
     return this.#publishValue(nodeId);
   }
@@ -1214,14 +1211,14 @@ export class ProjectRuntime {
    * keeps the value tier's one failure contract. See ADR-078, ADR-064 and issue #288.
    */
   values(recipe: (transaction: ValueTransaction) => void): PatchBatch {
-    this.#assertLive();
-    this.#refuseReentrant("values");
-    const seeds: string[] = [];
-    this.#valueSeeds = seeds;
+    this.#admit(immediateVerb("values", "asserted"));
+    this.#phase = batchOpening(this.#phase);
+    let seeds: readonly string[] = [];
     try {
       recipe(this.#valueTransaction());
     } finally {
-      this.#valueSeeds = undefined;
+      seeds = seedsIn(this.#phase) ?? seeds;
+      this.#phase = batchClosing(this.#phase);
     }
     this.#assertLive();
     return this.#boundary(() => this.#publishSeeds(seeds));
@@ -1249,8 +1246,7 @@ export class ProjectRuntime {
    * carries the sequence the graph is already on. See ADR-080 and issue #371.
    */
   invalidate(nodeIds: readonly string[]) {
-    this.#assertLive();
-    this.#refuseReentrant("invalidate");
+    this.#admit(immediateVerb("invalidate", "asserted"));
     return this.#publishSeeds(nodeIds);
   }
   /**
@@ -1262,26 +1258,19 @@ export class ProjectRuntime {
    * records diagnostics without replacing the outcome of the operation it follows.
    */
   dispose(): void {
-    if (this.#disposed) return;
-    this.#disposed = true;
-    if (this.#inFlight > 0) {
-      this.#pendingTeardown = true;
-      return;
-    }
-    this.#teardown();
+    if (isRetiring(this.#phase)) return;
+    this.#phase = retiring(this.#phase);
+    if (teardownOwed(this.#phase)) this.#teardown(false);
   }
 
-  #teardown(): void {
-    const deferred = this.#pendingTeardown;
-    this.#pendingTeardown = false;
+  #teardown(deferred: boolean): void {
+    this.#phase = retired();
     const failures = collect([
       ...[...this.#instances.keys()].map((nodeId) => () => this.#graph.detach(nodeId)),
       () => {
         this.#instances.clear();
         this.#tracks.clear();
         this.#motions.clear();
-        this.#open = undefined;
-        this.#valueSeeds = undefined;
       },
       () => this.#graph.dispose(),
       () => this.#disposeComposition(),
@@ -1316,6 +1305,6 @@ export class ProjectRuntime {
     if (!deferred) report(failures, "Project release failed.");
   }
   #assertLive(): void {
-    if (this.#disposed) refuse({ kind: "disposed" });
+    if (isRetiring(this.#phase)) refuse({ kind: "disposed" });
   }
 }
