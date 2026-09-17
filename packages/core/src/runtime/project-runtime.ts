@@ -56,7 +56,9 @@ import {
   type ProjectPhase,
   type VerbClass,
 } from "./project-phase";
-import { collect, report, rejectAfterRollback, runRollbackSteps, runSettleSteps } from "./rollback";
+import { collect, report } from "./rollback";
+import { planCommit } from "./commit-plan";
+import { runPlan } from "./run-plan";
 import { refuse } from "./refusal";
 import {
   expectLive,
@@ -68,7 +70,7 @@ import {
   type Resolved,
 } from "./results";
 import { deferredValueBatch, emptyValueBatch } from "./value-batch";
-import { AUTHORED, buildOwed, isOverlaid, liveWritten, type ValueState } from "./value-state";
+import { AUTHORED, isOverlaid, liveWritten, type ValueState } from "./value-state";
 import { applyEdit, boundGroup, type AuthoringEdit } from "./authoring-edit";
 import {
   NO_OVERLAY,
@@ -108,22 +110,6 @@ type MotionEntry = {
 export interface StagedTrack {
   commit(): void;
   rollback(): void;
-}
-
-interface SchemaEffect {
-  readonly apply: () => void;
-  readonly revert?: () => void;
-}
-
-interface SchemaPlan {
-  readonly tracks?: Map<string, TrackEntry>;
-  readonly motions?: Map<string, MotionEntry>;
-}
-
-interface SchemaCommit {
-  readonly effects: readonly SchemaEffect[];
-  readonly settle: readonly (() => void)[];
-  readonly touched: readonly string[];
 }
 
 interface OpenTransaction {
@@ -754,9 +740,60 @@ export class ProjectRuntime {
     this.#commit({ tracks });
   }
 
-  #commit(plan: SchemaPlan): void {
+  #commit(plan: {
+    readonly tracks?: Map<string, TrackEntry>;
+    readonly motions?: Map<string, MotionEntry>;
+  }): void {
     if (this.#admit(COMMIT) === "join") return;
-    this.#apply(plan);
+    const tracks = plan.tracks ?? this.#tracks,
+      motions = plan.motions ?? this.#motions;
+    this.#boundary(() => {
+      this.#assertSameLifetimes(this.#motions, motions);
+      this.#assertSameLifetimes(this.#tracks, tracks);
+      const readers = new Map<string, readonly string[]>(),
+        needsBuild = new Set<string>();
+      for (const id of this.#tracks.keys())
+        if (!tracks.has(id)) readers.set(id, this.#readersOf(id));
+      for (const [id, entry] of tracks) {
+        const old = this.#tracks.get(id);
+        if (
+          old !== undefined &&
+          old.track !== entry.track &&
+          this.#needsTimelineBuild(id, old.track, entry.track)
+        )
+          needsBuild.add(id);
+      }
+      const commit = planCommit(
+        { tracks: this.#tracks, motions: this.#motions },
+        { tracks, motions },
+        { needsBuild, readers },
+      );
+      this.#assertLive();
+      runPlan(commit, {
+        createMotion: (x) => this.#createMotion?.(x),
+        destroyMotion: (id) => this.#destroyMotion?.(id),
+        compileTrack: (x, id) => this.#compileTrack?.(x, id),
+        stageTrack: (x, id) => this.#stageTrack?.(x, id),
+        replaceMotionTrack: (m, id, d) => this.#replaceMotionTrack?.(m, id, d),
+        commitStaged: (x) => x?.commit(),
+        rollbackStaged: (x) => x?.rollback(),
+        disposeTrack: (id) => this.#disposeTrack?.(id),
+        evictNode: (id) => {
+          this.#instances.delete(id);
+          this.#graph.evictNode(id);
+        },
+        mountNode: (id) => this.#mountNode(id),
+        addMotionTrack: (m, id, d) => this.#addMotionTrack?.(m, id, d),
+        removeMotionTrack: (m, id) => this.#removeMotionTrack?.(m, id),
+        assertLive: () => this.#assertLive(),
+        accept: () => this.#graph.replaceGraph(this.#snapshot(tracks, motions)),
+        adopt: () => {
+          this.#tracks = tracks;
+          this.#motions = motions;
+        },
+        publish: (ids) => this.#flush(ids),
+      });
+    });
   }
 
   #boundary<T>(body: () => T): T {
@@ -767,32 +804,6 @@ export class ProjectRuntime {
       this.#phase = leaving(this.#phase);
       if (teardownOwed(this.#phase)) this.#teardown(true);
     }
-  }
-
-  #apply(plan: SchemaPlan): void {
-    const tracks = plan.tracks ?? this.#tracks;
-    const motions = plan.motions ?? this.#motions;
-    this.#boundary(() => {
-      const commit = this.#derive(tracks, motions);
-      this.#assertLive();
-      const applied: SchemaEffect[] = [];
-      try {
-        for (const effect of commit.effects) {
-          effect.apply();
-          applied.push(effect);
-          this.#assertLive();
-        }
-        this.#graph.replaceGraph(this.#snapshot(tracks, motions));
-      } catch (error) {
-        const steps: (() => void)[] = [];
-        for (const effect of applied) {
-          if (effect.revert !== undefined) steps.push(effect.revert);
-        }
-        rejectAfterRollback(error, () => runRollbackSteps(steps));
-      }
-      this.#adoptMaps(tracks, motions);
-      runSettleSteps([...commit.settle, () => this.#flush(commit.touched)]);
-    });
   }
 
   #flush(touched: readonly string[]): void {
@@ -824,79 +835,6 @@ export class ProjectRuntime {
             "Use an in-place edit or commit removal before recreation.",
         );
     }
-  }
-
-  #derive(
-    tracks: ReadonlyMap<string, TrackEntry>,
-    motions: ReadonlyMap<string, MotionEntry>,
-  ): SchemaCommit {
-    this.#assertSameLifetimes(this.#motions, motions);
-    this.#assertSameLifetimes(this.#tracks, tracks);
-    const effects: SchemaEffect[] = [];
-    const settle: (() => void)[] = [];
-    const touched: string[] = [];
-    for (const [motionId, entry] of motions) {
-      if (this.#motions.has(motionId)) continue;
-      const definition = entry.definition;
-      effects.push({
-        apply: () => this.#createMotion?.(definition),
-        revert: () => this.#destroyMotion?.(motionId),
-      });
-    }
-    for (const [nodeId, entry] of this.#tracks) {
-      if (tracks.has(nodeId)) continue;
-      const motionId = entry.motionId;
-      settle.push(() => {
-        this.#instances.delete(nodeId);
-        this.#graph.evictNode(nodeId);
-      });
-      settle.push(() => this.#disposeTrack?.(nodeId));
-      if (motionId !== undefined) settle.push(() => this.#removeMotionTrack?.(motionId, nodeId));
-      touched.push(...this.#readersOf(nodeId));
-    }
-    for (const motionId of this.#motions.keys())
-      if (!motions.has(motionId)) settle.push(() => this.#destroyMotion?.(motionId));
-    for (const [nodeId, entry] of tracks) {
-      const retained = this.#tracks.get(nodeId);
-      const motionId = entry.motionId;
-      if (retained === undefined) {
-        const added = entry.track;
-        effects.push({
-          apply: () => this.#compileTrack?.(added, nodeId),
-          revert: () => this.#disposeTrack?.(nodeId),
-        });
-        if (motionId !== undefined)
-          settle.push(() => this.#addMotionTrack?.(motionId, nodeId, added.duration));
-        settle.push(() => this.#mountNode(nodeId));
-        touched.push(nodeId);
-        continue;
-      }
-      if (retained.track === entry.track) continue;
-      const previous = retained.track;
-      const next = entry.track;
-      let staged: StagedTrack | undefined;
-      const needsBuild = this.#needsTimelineBuild(nodeId, previous, next);
-      if (needsBuild || buildOwed(retained.valueState))
-        effects.push({
-          apply: () => {
-            staged = this.#stageTrack?.(next, nodeId);
-          },
-          revert: () => staged?.rollback(),
-        });
-      if (motionId !== undefined)
-        effects.push({
-          apply: () => this.#replaceMotionTrack?.(motionId, nodeId, next.duration),
-          revert: () => this.#replaceMotionTrack?.(motionId, nodeId, previous.duration),
-        });
-      settle.push(() => staged?.commit());
-      touched.push(nodeId);
-    }
-    return { effects, settle, touched };
-  }
-
-  #adoptMaps(tracks: Map<string, TrackEntry>, motions: Map<string, MotionEntry>): void {
-    this.#tracks = tracks;
-    this.#motions = motions;
   }
 
   #writeValues(

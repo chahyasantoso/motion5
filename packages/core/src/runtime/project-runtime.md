@@ -10,20 +10,6 @@ The retained track, optional motion owner, lifetime token, and the state of its 
 
 A retained definition and a lifetime token, allocated by the same counter as tracks. Definition.tracks is not authoritative after runtime additions: #ownedBy projects current children for handles and destruction checks. A new token under the same id is a new entity, not a replacement of the same one. See ADR-056, ADR-061 and issue #342.
 
-## SchemaEffect
-
-A side effect required before the candidate graph can be accepted. Its optional revert is recorded only after apply returns successfully. A throwing supplier owns cleanup for any work performed before its return. Reverts run in apply order, so a displaced compiled Track is restored before Motion resolves it. A removal has no pre-acceptance effect. Teardown cannot release composition while these inverses remain owed. See ADR-031, ADR-035, ADR-045 and ADR-067.
-
-## SchemaPlan
-
-Only the candidate track/motion maps, with an untouched half omitted. Entry points build maps, never hook lists. The same pair constructs the graph snapshot and becomes the retained pair, preventing divergence. Untouched entries retain identity for incremental caches. Only #stageTracks and #stageMotions produce writable maps; adoption is a pointer move, not a per-entry copy. See ADR-058 and ADR-064.
-
-## SchemaCommit
-
-The derived effects, post-acceptance settlement steps, and publication seeds. Effects have inverses; settlement does not. Settlement failure cannot justify rollback of an accepted graph or compiled resource. All independent settlement steps and then publication are attempted, with one report. A lone thrown value retains identity, including undefined and host aggregates; multiple failures retain occurrence order without flattening. Granularity is deliberate: grouping several fallible releases in one callback would let the first skip the rest. See ADR-071.
-
-Seeds name changed nodes and the readers of removed nodes. The publisher walks dependants, so replacements need only their own node. Motion-only changes derive no graph node. An empty seed list causes no invalidate at all, because even an empty batch costs publication machinery and advances sequence. See ADR-051 and ADR-064.
-
 ## OpenTransaction
 
 The pending pair while one recipe executes, carried by the phase's editing variants rather than by a field beside them. Both halves start by identity as the retained pair and are copied on their first staged write, after the entry point's last refusal. There is no operation log or dirty flag. A recipe that throws adopts nothing, and handles it created become stale. Reads within it see the pending pair. See ADR-064.
@@ -166,7 +152,7 @@ Validates the complete replacement and requires the same qualified id. Preserves
 
 ## #commit
 
-The only path by which structural work either waits in a recipe or applies, and the one member the phase can answer join. An open recipe has already written its pending pair, so a join returns without effects. Otherwise an in-flight boundary refuses before #apply. A recipe started by a hook can stage normally but is refused when it attempts to commit; this keeps one owner for structural reentrancy. An open value batch refuses after that, as value-batch-structural, at this one member rather than at the six verbs that reach it: the two tiers do not nest in either direction, because a commit derives effects, replaces the graph and adopts a pair while a batch holds a seed list and nothing else. Placing the new condition after the in-flight one leaves every answer that existed before unchanged and adds only the case where a structural verb is reached from the recipe body itself. See ADR-078.
+The only path by which structural work either waits in a recipe or applies, and the one member the phase can answer join. An open recipe has already written its pending pair, so a join returns without effects. Otherwise an in-flight boundary refuses before planCommit and runPlan. A recipe started by a hook can stage normally but is refused when it attempts to commit; this keeps one owner for structural reentrancy. An open value batch refuses after that, as value-batch-structural, at this one member rather than at the six verbs that reach it: the two tiers do not nest in either direction, because a commit derives effects, replaces the graph and adopts a pair while a batch holds a seed list and nothing else. Placing the new condition after the in-flight one leaves every answer that existed before unchanged and adds only the case where a structural verb is reached from the recipe body itself. See ADR-078.
 
 Do not merge reentrant operations into #open. The owning commit keeps its pair in a local, has already derived/applied work against it, and cannot honor the meaning of an open recipe. Reentry could overwrite accepted definitions or leave compiled/mounted resources with no retained owner. Both effect and settlement phases refuse; a second phase flag would make the contract hook-dependent. Teardown drainage does not belong here because the early return would skip it for recipes. See ADR-064, ADR-067 and ADR-068.
 
@@ -175,14 +161,6 @@ Do not merge reentrant operations into #open. The owning commit keeps its pair i
 One owner of entering the phase one commit deeper, leaving it in finally, and draining the release the moment teardownOwed answers true. Wraps the whole structural application and every immediate write that must survive injected code. It does not turn direct writes into graph commits. Resource release is delayed until no inverse or completion still needs the composition. Deferred teardown diagnostics cannot replace the outcome being unwound. See ADR-067 and ADR-069.
 
 Sharing this depth intentionally makes a structural write from a direct-write hook reentrant too: otherwise the direct writer could overwrite that structural change with its previously resolved entry. Immediate mutation/publication paths read the same depth through #refuseReentrant. See ADR-068 through ADR-070.
-
-## #apply
-
-Resolve omitted map halves to the retained maps, enter the boundary, derive effects, assert liveness, apply effects, replace the graph, adopt the pair, settle, and publish. The boundary starts before derivation because resolution is injected code. Disposal during derivation refuses before any effect. Each successful effect is recorded before liveness is rechecked, so disposal after an effect enters ordinary rollback against still-live resources.
-
-On pre-acceptance failure, run only recorded inverses in apply order and report through rejectAfterRollback. Once replaceGraph succeeds, adoption and accepted completion have no inverse. Settlement attempts every independent step and finally #flush inside the same collector, not a throwing finally that could erase an earlier failure. Hooks can dispose during settlement; later steps still run against the deferred live graph, while publication skips the now-dead project. Guarantee attempts, not recovery inside an arbitrary failing host. See RA-114, ADR-031, ADR-035, ADR-045, ADR-067 and ADR-071.
-
-edit rechecks disposal after its recipe, and all other entry paths establish liveness before reaching this member. #commit is its sole caller. The boundary owns the final drain; this method does not duplicate it. See ADR-064 and ADR-069.
 
 ## #flush
 
@@ -205,18 +183,6 @@ Every caller keeps its own preconditions and its own failure contract, which is 
 One generic preflight for both maps. An id present in retained and candidate maps must carry the same token. A different token denotes recreation, which is refused as schema-transaction-recreated before any resolver, effect or graph work. Refusal preserves old handles, drivers, compiled tracks, residency and subscriptions; candidate handles become stale. Previously absent entries added and removed in one recipe are absent from both pairs and remain effect-free. Same-token replacement and separately committed remove/add remain supported. Issue #342.
 
 Full reversible motion recreation would require staged ownership and defined track residency/order semantics. Rejecting the unsupported composite operation is safer than treating it as a no-op, destroying resources before acceptance, or inventing an incomplete rollback.
-
-## #derive
-
-Both lifetime preflights run before injected code. Then derive final-pair effects, not an accumulated operation log. New motions are built before track compilation so a recipe can add both. Removed tracks settle native residency deletion/graph eviction, compiled disposal, then Motion deregistration as independently collected steps. Removed motions settle after their children. New tracks compile before graph acceptance, then register and mount after it. Replacements stage compilation when required, republish the Motion track before graph acceptance, and finalize staged resources afterwards. A new node publishes, and one whose sources have not published yet lands on blocked with a pending diagnostic; addObserve and removeObserve route through the replacement path, which makes them publish too. See RA-9.
-
-Reverts run in apply order: restore the compiled map before restoring Motion metadata, because Motion resolves compiled Tracks by id. A stage is finalized after adoption even when old resource cleanup throws. A skipped compilation leaves no stage to finalize. Candidate validation remains unconditional; retained live writes additionally force a build. Add-then-edit collapses to one final add, while add-then-remove of a new entity schedules no hooks. See ADR-031, ADR-045, ADR-062, ADR-064 and ADR-066.
-
-Removal seeds readers from the old graph, including solver dependants, not merely explicit edge readers. Eviction failure cannot skip compiled disposal, nor can a disposal failure skip deregistration or later motion destruction. The derivation owns callback granularity; the shared collector owns completion. See ADR-051 and ADR-071.
-
-## #adoptMaps
-
-Adopts the accepted maps by pointer. No per-entry rewrite, merge or second snapshot derivation. Immediate edits are refused throughout the boundary, so no live-write overlay or authored update can race this assignment. Merging would falsely associate an old value state with a newly compiled definition. A pre-acceptance disposal refusal never reaches adoption. See ADR-064, ADR-067 and ADR-070.
 
 ## #writeValues
 
