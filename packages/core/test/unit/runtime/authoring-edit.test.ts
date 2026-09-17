@@ -165,7 +165,8 @@ describe("every authored edit is one value applied by one total switch", () => {
       source: HAND,
       memberKey: "left",
     });
-    expect(applyEdit(bound, { kind: "unbind-goal", plugin: "fk", memberId: "left" })).not.toBe(
+    const goalTarget: EditTarget = { ...TARGET, track: bound };
+    expect(applyEdit(goalTarget, { kind: "unbind-goal", plugin: "fk", memberId: "left" })).not.toBe(
       bound,
     );
 
