@@ -61,6 +61,13 @@ import {
  * calls unrepresentable. The two cases added for that read the assignment instead, and they are red
  * before the unions are branded for the honest reason that the assignment they forbid compiles.
  * See ADR-084.
+ *
+ * Issue #437 then asked the read side of the same question, and what this file owes it is the
+ * transition table below rather than a new claim. Minting keeps an illegal combination unwritable;
+ * nothing keeps an unhandled one from being read, because every reader is an early-return chain
+ * whose last arm is a ternary, so `idle` and `warm` are what a variant nobody named resolves to. The
+ * table is green before and after that refactor by construction: it states what the machine already
+ * answers, so making each read exhaustive has something to be equivalent to.
  */
 
 const project: ProjectDefinition = {
@@ -109,6 +116,62 @@ function reachableFrom(...seeds: readonly RuntimePhase[]): readonly RuntimePhase
   }
   return [...found];
 }
+
+type TransitionName = "beginFlush" | "endFlush" | "unbookDrain" | "retiring" | "bookingDrain";
+
+/** Every transition under the name the table states it by, so a row names what it applied. */
+const NAMED_TRANSITIONS: Readonly<
+  Record<TransitionName, (phase: RuntimePhase) => RuntimePhase | undefined>
+> = { beginFlush, endFlush, unbookDrain, retiring, bookingDrain };
+
+/**
+ * The whole transition table, stated rather than derived, one row per transition and phase.
+ *
+ * `reachableFrom` above proves the machine is closed, and that is the weaker of the two claims: a
+ * transition answering the wrong live phase keeps the reachable set at seven and stays green. Issue
+ * #437 is why the stronger one is worth writing down. Every reader in the module is an early-return
+ * chain ending in `phase.kind === "flushing" ? FLUSHING_X : IDLE_X`, so `idle` is what a phase
+ * nobody named resolves to, and adding `disposing` in #408 needed one guard hand-patched at five
+ * sites with no gate naming any of them. This table is what an exhaustive read has to keep
+ * answering, and it is green on both sides of that refactor on purpose.
+ */
+const TRANSITION_TABLE: readonly (readonly [TransitionName, string, string])[] = [
+  ["beginFlush", "idle/unbooked", "flushing/unbooked"],
+  ["beginFlush", "idle/booked", "flushing/booked"],
+  ["beginFlush", "flushing/unbooked", "flushing/unbooked"],
+  ["beginFlush", "flushing/booked", "flushing/booked"],
+  ["beginFlush", "disposing/unbooked", "disposing/unbooked"],
+  ["beginFlush", "disposing/booked", "disposing/booked"],
+  ["beginFlush", "disposed", "disposed"],
+  ["endFlush", "idle/unbooked", "idle/unbooked"],
+  ["endFlush", "idle/booked", "idle/booked"],
+  ["endFlush", "flushing/unbooked", "idle/unbooked"],
+  ["endFlush", "flushing/booked", "idle/booked"],
+  ["endFlush", "disposing/unbooked", "disposing/unbooked"],
+  ["endFlush", "disposing/booked", "disposing/booked"],
+  ["endFlush", "disposed", "disposed"],
+  ["unbookDrain", "idle/unbooked", "idle/unbooked"],
+  ["unbookDrain", "idle/booked", "idle/unbooked"],
+  ["unbookDrain", "flushing/unbooked", "flushing/unbooked"],
+  ["unbookDrain", "flushing/booked", "flushing/unbooked"],
+  ["unbookDrain", "disposing/unbooked", "disposing/unbooked"],
+  ["unbookDrain", "disposing/booked", "disposing/unbooked"],
+  ["unbookDrain", "disposed", "disposed"],
+  ["retiring", "idle/unbooked", "disposing/unbooked"],
+  ["retiring", "idle/booked", "disposing/booked"],
+  ["retiring", "flushing/unbooked", "disposing/unbooked"],
+  ["retiring", "flushing/booked", "disposing/booked"],
+  ["retiring", "disposing/unbooked", "disposing/unbooked"],
+  ["retiring", "disposing/booked", "disposing/booked"],
+  ["retiring", "disposed", "disposed"],
+  ["bookingDrain", "idle/unbooked", "idle/booked"],
+  ["bookingDrain", "idle/booked", "undefined"],
+  ["bookingDrain", "flushing/unbooked", "flushing/booked"],
+  ["bookingDrain", "flushing/booked", "undefined"],
+  ["bookingDrain", "disposing/unbooked", "undefined"],
+  ["bookingDrain", "disposing/booked", "undefined"],
+  ["bookingDrain", "disposed", "undefined"],
+];
 
 describe("the runtime lifecycle is one value rather than three booleans", () => {
   it("reaches the seven phases that mean something, and no combination that means nothing", () => {
@@ -232,6 +295,24 @@ describe("the runtime lifecycle is one value rather than three booleans", () => 
     };
     expect(typeof assignDisposedCarryingABooking).toBe("function");
     expect(typeof assignLivePhaseWithoutItsBooking).toBe("function");
+  });
+
+  it("answers one interned phase for every transition applied to every phase it can hold", () => {
+    const phases = new Map(reachableFrom(IDLE, DISPOSED).map((phase) => [label(phase), phase]));
+    expect(phases.size).toBe(7);
+
+    const answered = TRANSITION_TABLE.map(([name, from]) => {
+      const phase = phases.get(from);
+      if (phase === undefined) throw new Error(`no phase is labelled ${from}`);
+      const next = NAMED_TRANSITIONS[name](phase);
+      // Identity rather than shape: every answer is one of the six interned live values or the one
+      // terminal value, so a transition that allocated an equal object fails here rather than
+      // passing a deep compare.
+      if (next !== undefined) expect(phases.get(label(next))).toBe(next);
+      return [name, from, next === undefined ? "undefined" : label(next)] as const;
+    });
+
+    expect(answered).toEqual(TRANSITION_TABLE);
   });
 });
 
