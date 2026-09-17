@@ -24,7 +24,7 @@ Consumers want `../guide/README.md` instead. Nothing here is written for someone
 
 ## What deliberately stayed live
 
-The product and technical contracts (`PRD.md`, `TRD.md`, `ARCHITECTURE.md`, `AUTHORED-SCHEMA.md`, `MIGRATION-V4-TO-V5.md`), every decision record (`DECISIONS.md` and the numbered `ADR-*.md` files), the master `IMPLEMENTATION-PLAN.md` and the current `PHASE5-DETAILED-PLAN.md`, the process documents (`PR-WORKFLOW.md`, `CI-WORKFLOW.md`, `FORMATTING.md`, `TESTING-STRATEGY.md`), `BENCH-PHASE5.md` because Phase 5 is current, the guide, and the status file.
+The product and technical contracts (`PRD.md`, `TRD.md`, `ARCHITECTURE.md`, `AUTHORED-SCHEMA.md`, `MIGRATION-V4-TO-V5.md`), every decision record (the numbered `ADR-*.md` files, which ADR-093 made the only shape), the master `IMPLEMENTATION-PLAN.md` and the current `PHASE5-DETAILED-PLAN.md`, the process documents (`PR-WORKFLOW.md`, `CI-WORKFLOW.md`, `FORMATTING.md`, `TESTING-STRATEGY.md`), `BENCH-PHASE5.md` because Phase 5 is current, the guide, and the status file.
 
 `acceptance-map.json` also stays where it is. `scripts/acceptance-scan.mjs` resolves `docs/acceptance-map.json` by path, so moving it breaks the acceptance gate.
 

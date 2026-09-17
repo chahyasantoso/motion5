@@ -70,7 +70,7 @@ The two paths are deliberately not one. `IK-1` and `IK-3` pin exact rotations an
 
 Tolerance and the iteration cap are module constants (`FABRIK_TOLERANCE`, `FABRIK_MAX_ITERATIONS`, `FABRIK_ARC_BISECTIONS`), exported so a test imports the tolerance rather than typing one beside every assertion. They are not authored values, because an interpolatable tolerance would make the operation count a function of the timeline and a determinism case could not be written at all: one rig at two progresses would take two different numbers of steps toward two different residuals.
 
-Convergence metadata is not published. The reasoning is recorded under ADR-051 in [DECISIONS.md](./DECISIONS.md) and is unchanged here.
+Convergence metadata is not published. The reasoning is recorded in [ADR-051](./ADR-051-derived-solver-membership.md) and is unchanged here.
 
 ## Load-time diagnostics this record introduces
 

@@ -2,7 +2,7 @@
 
 **Status:** Normative. This document says what the system must do to be correct. It does not say when the work happens; sequencing lives in [IMPLEMENTATION-PLAN.md](./IMPLEMENTATION-PLAN.md), and what actually exists today lives in [SESSION-STATUS.md](./SESSION-STATUS.md).
 **Authored contract:** schema v5.
-**Relationship to other documents:** [PRD.md](./PRD.md) states the product intent and functional requirements. [ARCHITECTURE.md](./ARCHITECTURE.md) states ownership and invariants. This document turns both into testable technical requirements. [DECISIONS.md](./DECISIONS.md) records why alternatives were rejected.
+**Relationship to other documents:** [PRD.md](./PRD.md) states the product intent and functional requirements. [ARCHITECTURE.md](./ARCHITECTURE.md) states ownership and invariants. This document turns both into testable technical requirements. The numbered `ADR-*.md` records in this directory record why alternatives were rejected, and [the documentation map](./README.md#decisions) states how they are named.
 
 ## 1. Purpose, scope, and audience
 

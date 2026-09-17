@@ -27,7 +27,9 @@ Two documents hold what a status file is not allowed to accumulate:
 
 ## Decisions
 
-[DECISIONS.md](./DECISIONS.md) holds ADR-001 through ADR-027 inline. From ADR-028 onward each record is its own `ADR-NNN-*.md` file in this directory, and a number names exactly one record.
+Every record is its own `ADR-nnn-title.md` file in this directory, and a number names exactly one file. There is no index, because the filename carries the title and the directory listing is therefore the index. `DECISIONS.md` held ADR-001 through ADR-027 inline until [issue #439](https://github.com/chahyasantoso/motion5/issues/439) extracted them, and it is deleted. See [ADR-093](./ADR-093-a-decision-record-is-one-file.md).
+
+Before introducing a flag, alias, facade, second owner, compatibility path, new public export, authored identity form, diagnostics channel, or interpolation engine, search these records. If the proposal conflicts with an accepted one, either reject it or add a superseding record in the same pull request. Never leave two active records that say opposite things.
 
 ## Delivery and evidence
 
@@ -47,7 +49,7 @@ motion5 is a clean-room successor to [motionpath](https://github.com/chahyasanto
 
 ## How the documents fit together
 
-PRD says why and what. TRD says what "correct" means, in testable terms. ARCHITECTURE says who owns what. IMPLEMENTATION-PLAN says in what order, and names the evidence for each slice. SESSION-STATUS says what is actually true today, and only today. GUARDRAILS says what not to get wrong again. LIVE-EDIT-COST says what the shipped runtime charges for an edit. DECISIONS and the numbered ADRs say what not to re-litigate. The guide says how to use the result.
+PRD says why and what. TRD says what "correct" means, in testable terms. ARCHITECTURE says who owns what. IMPLEMENTATION-PLAN says in what order, and names the evidence for each slice. SESSION-STATUS says what is actually true today, and only today. GUARDRAILS says what not to get wrong again. LIVE-EDIT-COST says what the shipped runtime charges for an edit. The numbered ADRs say what not to re-litigate. The guide says how to use the result.
 
 ## Locked scope decisions
 

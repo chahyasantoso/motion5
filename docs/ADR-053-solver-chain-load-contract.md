@@ -66,7 +66,7 @@ Both rules exist because two readers of one question had already drifted, so eac
 2. **The narrow scope leaves one gap, and it is named rather than discovered.** `fk` composes its pivot from the flattened value namespace, so an `x` authored under a group that did not bind `solver` still reaches it and is still unaccounted for by the solve. Accepted for consistency with `ik-solved-rotation-dead`, which `RS-9` pins at the same scope for the same reason, and closing it needs the wide read alternative 6 rejects. Under ADR-054 the gap is still open and no longer costs anything: the offset simply is not one the solve knows about, on a member whose rotation that other plugin owns.
 3. **`PIVOT_KEYS` puts two of `fk`'s key names in the graph layer,** beside the `rotation` that was already there. This layer holds no plugin registry by design, so a kinematic key it reads is a literal or nothing. ADR-054 deletes `PIVOT_KEYS` with the rule, so only `rotation` remains.
 4. **Two rules for two adjacent absences.** `ik-solver-no-goal` and `ik-leaf-without-goal` both say a chain has nothing to reach for, and which one an author meets depends on whether they used the dict. One rule covering both would have to report a leaf for a solver that named no leaves.
-5. **No mode is added, so [DECISIONS.md](./DECISIONS.md) gains no record.** Dispatch is exactly what ADR-051's clarification says it is, neither solve gained a branch, and no published value moves. This record is the whole of the change's architecture.
+5. **No mode is added, so no new numbered record is owed.** Dispatch is exactly what ADR-051's clarification says it is, neither solve gained a branch, and no published value moves. This record is the whole of the change's architecture.
 
 ## Evidence
 

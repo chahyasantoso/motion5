@@ -20,7 +20,7 @@ On a disposed project `live` is `false` and never throws, but `remove()` reports
 
 `StaleTrackHandleError` and `TrackHandle` are declared in `contract/track-handle.ts` rather than beside the runtime that owns the policy, and that is a gate rather than a preference. `public-declaration-surface` refuses any `runtime/` or `graph/` module reachable from the package entry's declaration closure, and a caller cannot `instanceof` an error it cannot name, so a public error type cannot live under `runtime/`. The dependency arrow is the one every layer already uses.
 
-**Supersedes in part.** [ADR-026](./DECISIONS.md) said `remove` and `replace` are idempotent for stale handles. That is withdrawn. Its token and its ABA guarantee are unchanged; the idempotence is replaced by the refusal plus `live`.
+**Supersedes in part.** [ADR-026](./ADR-026-track-mutation-capability-handles.md) said `remove` and `replace` are idempotent for stale handles. That is withdrawn. Its token and its ABA guarantee are unchanged; the idempotence is replaced by the refusal plus `live`.
 
 **Evidence.** Cases `SH-1` through `SH-7`. Red run [33249505343](https://github.com/chahyasantoso/motion5/actions/runs/33249505343), archived at `logs/33249505343/` on `ci-logs`: `typecheck` and `format:check` both passed first, then `npm test` reported `6 failed | 734 passed`, one failed file out of 155, with integration, boundaries, build, end-to-end and performance all green. `SH-6` passed as a guard by design.
 
