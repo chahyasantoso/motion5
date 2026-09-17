@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "expected_head": "77e987220d581a040a8c34b63f6c71c42776bc38",
+  "expected_blobs": {
+    "packages/core/test/unit/runtime/authoring-edit.test.ts": "8e575c68caabee464a4839dc6e259789c5e8e5ce"
+  },
+  "message": "test(runtime): hand the goal revert an edit target rather than a definition",
+  "edits": [
+    {
+      "path": "packages/core/test/unit/runtime/authoring-edit.test.ts",
+      "find": "    expect(applyEdit(bound, { kind: \"unbind-goal\", plugin: \"fk\", memberId: \"left\" })).not.toBe(\n      bound,\n    );",
+      "replace": "    const goalTarget: EditTarget = { ...TARGET, track: bound };\n    expect(applyEdit(goalTarget, { kind: \"unbind-goal\", plugin: \"fk\", memberId: \"left\" })).not.toBe(\n      bound,\n    );"
+    }
+  ]
+}
