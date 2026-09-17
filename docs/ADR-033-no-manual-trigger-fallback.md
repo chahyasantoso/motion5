@@ -37,7 +37,7 @@ Loop semantics stay undesigned. `repeat`, `yoyo`, ping-pong, and any looping beh
 
 ADR-028 and ADR-030 are neither superseded nor edited. ADR-028 rejects an invalid definition, ADR-030 rejects an unresolvable scroll source, and ADR-032 rejects an unbuildable one before anything is committed. This record removes the last path by which a rejected concept could have been silently accepted instead.
 
-ADR-021 separated composite `signal()` from leaf `seek()`. This record states the consequence for a driver-backed Motion: `seek` writes node progress directly and the next driver emission overwrites it. That is legitimate scrubbing, not the hole locked decision 4 closes, and gating it behind `acceptsExternalSignal` would need a new decision. ADR-021 carries the clarification in `docs/DECISIONS.md`.
+ADR-021 separated composite `signal()` from leaf `seek()`. This record states the consequence for a driver-backed Motion: `seek` writes node progress directly and the next driver emission overwrites it. That is legitimate scrubbing, not the hole locked decision 4 closes, and gating it behind `acceptsExternalSignal` would need a new decision. [ADR-021](./ADR-021-composite-signal-and-leaf-seek.md) carries the clarification.
 
 ADR-031 is preserved. No compiled `Track` is captured anywhere, `packages/core/src/domain/motion.ts` is untouched, and the `C-3` source guard stays green without being edited. The trigger suites drop their last `as never` track doubles in favor of `createFakeTrackRegistry`, which is a test-infrastructure change and not a behavior opt-in.
 

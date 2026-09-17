@@ -13,7 +13,7 @@ Name the test that fails without this change.
 
 - Owner that gained or lost a responsibility:
 - [ ] No responsibility now has two owners.
-- [ ] No new flag, mode, alias, or facade. If there is one, `docs/DECISIONS.md` is updated in this pull request.
+- [ ] No new flag, mode, alias, or facade. If there is one, a numbered `docs/ADR-*.md` record is added or superseded in this pull request.
 
 ## Deletions
 

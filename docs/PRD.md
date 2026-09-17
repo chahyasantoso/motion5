@@ -131,7 +131,7 @@ v1 is releasable only when schema v5 loading, migration, graph transactions, inl
 
 ## 10. Resolved product decisions
 
-These were open questions. They are now settled, and reversing one requires a superseding record in [DECISIONS.md](./DECISIONS.md) plus matching PRD, TRD, and plan updates in the same pull request.
+These were open questions. They are now settled, and reversing one requires a superseding numbered record in this directory, named the way [the documentation map](./README.md#decisions) states, plus matching PRD, TRD, and plan updates in the same pull request.
 
 - **Qualified ids stay internal.** No schema v6 is planned to make runtime-qualified ids authorable. Authored identity remains local, and normalization owns canonical identity. See ADR-014.
 - **GSAP remains the interpolator.** The first and only v1 interpolator is GSAP behind the port. A built-in sampler is out of scope. See ADR-015.
