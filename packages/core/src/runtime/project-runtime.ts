@@ -11,15 +11,14 @@ import type {
 } from "../contract/v5";
 import { readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
-import { StaleMotionHandleError, type MotionHandle } from "../contract/motion-handle";
+import type { MotionHandle } from "../contract/motion-handle";
 import type { SchemaTransaction } from "../contract/schema-transaction";
 import type { ValueTransaction } from "../contract/value-transaction";
-import {
-  StaleTrackHandleError,
-  type AuthoredValues,
-  type LiveValues,
-  type RequireView,
-  type TrackHandle,
+import type {
+  AuthoredValues,
+  LiveValues,
+  RequireView,
+  TrackHandle,
 } from "../contract/track-handle";
 import { validateMotionTrigger, validateTrackDefinition } from "../contract/validate-v5";
 import type { Clock, ClockTick } from "../ports/clock";
@@ -43,7 +42,6 @@ import { observationEdgeKey } from "../graph/ir";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
 import {
   commitInFlight,
-  describeDiagnostics,
   describeError,
   immediateInTransaction,
   nestedTransaction,
@@ -54,6 +52,16 @@ import {
   valueBatchStructural,
 } from "./schema-refusals";
 import { collect, report, rejectAfterRollback, runRollbackSteps, runSettleSteps } from "./rollback";
+import { refuse } from "./refusal";
+import {
+  expectLive,
+  expectValid,
+  isLive,
+  resolveToken,
+  stale,
+  validated,
+  type Resolved,
+} from "./results";
 import { deferredValueBatch, emptyValueBatch } from "./value-batch";
 import {
   EMPTY_KEYFRAMES,
@@ -386,7 +394,7 @@ export class ProjectRuntime {
       `addMotion(${definition.id}).trigger`,
     );
     if (triggerDiagnostics.some(({ severity }) => severity === "error"))
-      throw new TypeError(describeDiagnostics(triggerDiagnostics));
+      refuse({ kind: "invalid-definition", diagnostics: triggerDiagnostics });
     if (definition.tracks.length > 0)
       throw new TypeError(`Runtime Motion "${definition.id}" must start with empty tracks.`);
     if (this.#readMotions().has(definition.id))
@@ -399,7 +407,7 @@ export class ProjectRuntime {
   }
   destroyMotion(motionId: string): void {
     this.#assertLive();
-    if (!this.#readMotions().has(motionId)) throw new TypeError(`Unknown motion "${motionId}".`);
+    if (!this.#readMotions().has(motionId)) refuse({ kind: "unknown-motion", motionId });
     this.#removeMotion(motionId);
   }
   /**
@@ -420,7 +428,7 @@ export class ProjectRuntime {
   motion(motionId: string): MotionHandle {
     this.#assertLive();
     const entry = this.#readMotions().get(motionId);
-    if (!entry) throw new TypeError(`Unknown motion "${motionId}".`);
+    if (!entry) refuse({ kind: "unknown-motion", motionId });
     return this.#motionHandle(motionId, entry.token);
   }
   tryMotion(motionId: string): MotionHandle | undefined {
@@ -496,16 +504,15 @@ export class ProjectRuntime {
     this.#assertLive();
     const motionId = options?.motionId;
     if (motionId !== undefined && !this.#readMotions().has(motionId))
-      throw new TypeError(`Unknown motion "${motionId}".`);
+      refuse({ kind: "unknown-motion", motionId });
     const id =
       motionId !== undefined
         ? qualifyMotionTrack(motionId, track.id).value
         : qualifyFreeTrack(track.id).value;
     if (this.#readTracks().has(id)) throw new TypeError(`Track "${id}" already exists.`);
-    const validation = validateTrackDefinition(track, `addTrack(${track.id})`);
-    if (!validation.valid || !validation.value)
-      throw new TypeError(describeDiagnostics(validation.diagnostics));
-    const accepted = validation.value;
+    const accepted = expectValid(
+      validated(validateTrackDefinition(track, `addTrack(${track.id})`)),
+    );
     const token = this.#nextToken++;
     const tracks = this.#stageTracks();
     tracks.set(id, {
@@ -528,7 +535,7 @@ export class ProjectRuntime {
 
   #entryOf(nodeId: string): TrackEntry {
     const entry = this.#readTracks().get(nodeId);
-    if (!entry) throw new TypeError(`Unknown graph node "${nodeId}".`);
+    if (!entry) refuse({ kind: "unknown-node", nodeId });
     return entry;
   }
 
@@ -536,28 +543,23 @@ export class ProjectRuntime {
     entries: ReadonlyMap<string, E>,
     id: string,
     token: number,
-  ): E | undefined {
-    if (this.#disposed) return undefined;
-    const entry = entries.get(id);
-    return entry !== undefined && entry.token === token ? entry : undefined;
+  ): Resolved<E> {
+    if (this.#disposed) return stale();
+    return resolveToken(entries, id, token);
   }
 
-  #entryIfLive(id: string, token: number): TrackEntry | undefined {
+  #entryIfLive(id: string, token: number): Resolved<TrackEntry> {
     return this.#liveOf(this.#readTracks(), id, token);
   }
 
   #liveEntry(id: string, token: number): TrackEntry {
-    const entry = this.#entryIfLive(id, token);
-    if (entry === undefined) throw new StaleTrackHandleError(id);
-    return entry;
+    return expectLive(this.#entryIfLive(id, token), { kind: "track", id });
   }
-  #motionIfLive(id: string, token: number): MotionEntry | undefined {
+  #motionIfLive(id: string, token: number): Resolved<MotionEntry> {
     return this.#liveOf(this.#readMotions(), id, token);
   }
   #liveMotion(id: string, token: number): MotionEntry {
-    const entry = this.#motionIfLive(id, token);
-    if (entry === undefined) throw new StaleMotionHandleError(id);
-    return entry;
+    return expectLive(this.#motionIfLive(id, token), { kind: "motion", id });
   }
 
   #liveId(motionId: string, token: number): string {
@@ -619,7 +621,7 @@ export class ProjectRuntime {
       const motionId = entry.definition.id;
       const diagnostics = validateMotionTrigger(trigger, `setTrigger(${motionId}).trigger`);
       if (diagnostics.some(({ severity }) => severity === "error"))
-        throw new TypeError(describeDiagnostics(diagnostics));
+        refuse({ kind: "invalid-definition", diagnostics });
       if (sameTrigger(entry.definition.trigger, trigger)) return;
       const definition = Object.freeze({ ...entry.definition, trigger });
       const complete = this.#replaceMotionTrigger?.(
@@ -658,7 +660,7 @@ export class ProjectRuntime {
     return Object.freeze({
       id,
       get live(): boolean {
-        return runtime.#motionIfLive(id, token) !== undefined;
+        return isLive(runtime.#motionIfLive(id, token));
       },
       get definition(): MotionDefinition {
         return runtime.#motionDefinition(runtime.#liveMotion(id, token));
@@ -681,7 +683,7 @@ export class ProjectRuntime {
     return Object.freeze({
       id,
       get live(): boolean {
-        return runtime.#entryIfLive(id, token) !== undefined;
+        return isLive(runtime.#entryIfLive(id, token));
       },
       get definition(): TrackDefinition {
         return runtime.#liveEntry(id, token).track;
@@ -739,7 +741,7 @@ export class ProjectRuntime {
     const resolved = this.#resolve(nodeId, candidate);
     if (resolved === undefined) return true;
     if (resolved.diagnostics.some(({ severity }) => severity === "error"))
-      throw new TypeError(describeDiagnostics(resolved.diagnostics));
+      refuse({ kind: "invalid-definition", diagnostics: resolved.diagnostics });
     return !sameCompiledTrackInput(
       { definition: current, resolved: this.#resolve(nodeId, current) },
       { definition: candidate, resolved },
@@ -753,13 +755,11 @@ export class ProjectRuntime {
         ? qualifyMotionTrack(entry.motionId, next.id).value
         : qualifyFreeTrack(next.id).value;
     if (expected !== id) throw new TypeError(`Replacement must preserve node id "${id}".`);
-    const validation = validateTrackDefinition(next, `replaceTrack(${id})`);
-    if (!validation.valid || !validation.value)
-      throw new TypeError(describeDiagnostics(validation.diagnostics));
+    const accepted = expectValid(validated(validateTrackDefinition(next, `replaceTrack(${id})`)));
     const tracks = this.#stageTracks();
     tracks.set(id, {
       ...entry,
-      track: validation.value,
+      track: accepted,
       overlay: NO_OVERLAY,
       liveWrite: false,
     });
@@ -925,10 +925,10 @@ export class ProjectRuntime {
       const { statics, animated } = splitAuthoredValues(values);
       const involved = Object.keys(animated).length > 0 || Object.keys(entry.overlay).length > 0;
       const rewritten = rebase || involved ? withAuthoredValues(entry.track, values) : entry.track;
-      if (involved) {
-        const validation = validateTrackDefinition(rewritten, `writeValues(${nodeId})`);
-        if (!validation.valid) throw new TypeError(describeDiagnostics(validation.diagnostics));
-      }
+      // Validated and then discarded: this write stages no definition, so the refusal is the
+      // whole of what validating the candidate is for here.
+      if (involved)
+        expectValid(validated(validateTrackDefinition(rewritten, `writeValues(${nodeId})`)));
       const mask = { ...authoredValues(entry.track), ...statics };
       const written = this.#writeValuesHook(nodeId, mask, involved ? animated : undefined, rebase);
       let staged: StagedTrack | undefined;
@@ -999,13 +999,10 @@ export class ProjectRuntime {
   ) {
     return this.#boundary(() => {
       const next = withKeyframes(entry.track, keyframes);
-      const validation = validateTrackDefinition(next, `${verb}(${nodeId})`);
-      if (!validation.valid || !validation.value)
-        throw new TypeError(describeDiagnostics(validation.diagnostics));
-      const accepted = validation.value;
+      const accepted = expectValid(validated(validateTrackDefinition(next, `${verb}(${nodeId})`)));
       const resolved = this.#resolve(nodeId, accepted);
       if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
-        throw new TypeError(describeDiagnostics(resolved.diagnostics));
+        refuse({ kind: "invalid-definition", diagnostics: resolved.diagnostics });
       const written = this.#writeValuesHook(
         nodeId,
         authoredValues(entry.track),
@@ -1319,6 +1316,6 @@ export class ProjectRuntime {
     if (!deferred) report(failures, "Project release failed.");
   }
   #assertLive(): void {
-    if (this.#disposed) throw new Error("ProjectRuntime is disposed.");
+    if (this.#disposed) refuse({ kind: "disposed" });
   }
 }

@@ -88,19 +88,19 @@ Filters the explicitly supplied track map for one owner's children in committed 
 
 ## #entryOf
 
-Resolves an id this project must have, or reports an unknown graph node. Unlike #liveEntry it does not answer whether a previously issued handle still names the same lifetime.
+Resolves an id this project must have, or refuses it as the unknown-node of `refusal.ts`, so the one sentence a missing id renders has one owner. Unlike #liveEntry it does not answer whether a previously issued handle still names the same lifetime.
 
 ## #liveOf
 
-The generic comparison of a handle's captured token against the readable entry. A disposed runtime answers absent immediately, even while deferred teardown has not cleared maps. This is a nonthrowing probe so live getters remain safe. Reads and writes apply their different failure precedence above this layer. See ADR-056, ADR-061 and ADR-067.
+Runtime liveness and nothing else. A disposed runtime answers a stale resolution immediately, even while deferred teardown has not cleared maps, and the token comparison itself belongs to `resolveToken` in `results.ts`, which is why this member answers one `Resolved<E>` rather than an entry or its absence: a reader states which of the two it wants instead of restating the comparison. It still throws nothing, so live getters remain safe. Reads and writes apply their different failure precedence above this layer. See ADR-056, ADR-061 and ADR-067.
 
 ## #entryIfLive
 
-The track probe through #liveOf. A pending handle is live during its recipe and stale after abort because its token was never adopted. A motion has the analogous probe. See ADR-056 and ADR-064.
+The track resolution through #liveOf, read as a discriminant by `isLive` and as an entry by `expectLive`. A pending handle is live during its recipe and stale after abort because its token was never adopted. A motion has the analogous probe. See ADR-056 and ADR-064.
 
 ## #liveEntry
 
-The throwing track-read resolver. Absence or a changed token produces StaleTrackHandleError, including on a disposed runtime. Writes use #writableEntry to ask runtime liveness first; adding that check here would change the read/probe contract. See ADR-056.
+The throwing track-read resolver, which is `expectLive` over that resolution rather than a second comparison of its own. Absence or a changed token still produces StaleTrackHandleError, including on a disposed runtime, because the refusal names the target and the contract layer keeps the sentence. Writes use #writableEntry to ask runtime liveness first; adding that check here would change the read/probe contract. See ADR-056.
 
 ## #liveId
 
