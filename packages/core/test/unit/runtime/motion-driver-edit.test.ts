@@ -301,7 +301,7 @@ describe("a Motion's driver is editable in place, and that edit reaches no graph
     const handle = declaring(project);
     const replaceGraph = vi.spyOn(project.graph, "replaceGraph");
 
-    // Idempotent in the `#replaceWithObservation` sense the plan asks of every primitive: a
+    // Idempotent in the `applyEdit` observation sense the plan asks of every primitive: a
     // redundant set and an absent clear are both no-ops on a live handle. This one is load-bearing
     // rather than tidy, because installing a trigger the Motion already has means disposing a live
     // driver and resubscribing a host source, which a caller cannot see and did not ask for.

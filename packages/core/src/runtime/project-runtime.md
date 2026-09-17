@@ -230,10 +230,6 @@ The whole operation is inside #boundary, including injected calls and publicatio
 
 After adoption, attempt staged finalization, optional re-seek to captured progress, and #publishValue through runSettleSteps. A static/no-escalation path reaches #publishValue directly. Both endings therefore route through the one member that decides whether a value publication happens now or joins an open batch, so neither of them owns that condition. Success returns the actual batch; failure preserves ordered thrown values and does not invent rollback. Engine stages by installing a replacement and marks its stage settled before disposing the old Track, so a throwing commit may already be irreversible. Guarantee attempts and publish actual progress if a host re-seek fails, never an invented old value. See issue #313, LV-19 through LV-21, and PK-20 through PK-22.
 
-## #boundGroup
-
-The shared precondition for editing a property or binding inside an authored plugin group. Reads through readBoundGroup and refuses keyframe-group-unbound when absent; it does not duplicate group/property shape logic. Returns the keyframes record and bound group together. Originating a group belongs to structural setKeyframeGroup. See ADR-062, ADR-063 and ADR-065.
-
 ## #invalidateOne
 
 The value tier's single-node flush and disposal report. Assert runtime liveness before invalidating; a disposed project must not publish, advance sequence or drain pending seeds, and an empty batch would falsely claim publication. Records returned diagnostics and returns the actual batch. Both value-write paths reach this owner rather than inline copies or public invalidate.
@@ -254,25 +250,9 @@ For authored leaves that cannot be expressed as a live mask: edit the pure recor
 
 An existing property uses the live-write path; a new property uses the authored editor and recompilation path. The group must already exist. Determine existence through readPluginValues, not a private copy of group layout. Reentrancy is checked before resolving the entry. removeKeyframe uses the same ordering; its no-op retains the established direct-flush behavior. See RA-106, ADR-065, ADR-070 and issue #255.
 
-## #replaceWithObservation
+## #authorEdit
 
-Idempotent observation semantics rather than a stale guard, which the writable resolver already answered. Adding an observation the node already carries and removing one it does not are both no-ops that commit nothing, so neither flushes and neither stages inside a recipe, which is what lets a recipe of nothing but no-ops end without a candidate build. Edge identity comes from observationEdgeKey against the entry's own motion owner rather than from object identity. See RA-66 and ADR-064.
-
-## #editRequire
-
-Shared ordering for requirement/goal binding edits: writable entry, bound group, pure edit and primitive-specific reservation, redundant-edit identity check, then one structural replacement. The registry validates the whole candidate at derivation; the primitive does not authorize its own binding. Inside recipes these operations stage rather than publish. See ADR-045, ADR-062, ADR-063 and ADR-064.
-
-## #setGoal
-
-The requirement editor with the reserved goals slot fixed and a member key supplied. No second dict editor. Whether the member belongs to the solver chain is validated against the candidate graph by resolveSolvers, not by the primitive. The ordinary setRequire spelling of the reserved slot remains refused. See ADR-057 and ADR-063.
-
-## #editGroup
-
-Shared whole-group editor: writable entry, refuse a name currently authored as an ordinary property, pure edit, identity no-op check, structural replacement. Missing keyframes read as one frozen empty record. Originating and replacing a group are the same whole-group operation because the group carries no separate id, token or mount. Registry ownership is still checked during derivation. See ADR-062 and ADR-063.
-
-## #writeKeyframes
-
-Writes the authored record through withKeyframes, then delegates replacement. Empty containers are removed at their owning level: empty slot, section, group and final keyframes record leave no meaningless shell behind. Six structural authoring verbs share this retained-record write rather than restating it. See ADR-063.
+The one ordering every authored edit follows: writable entry, then the candidate authoring-edit.ts answers, then one structural replacement, and nothing at all when that candidate is the retained definition by identity. It replaces ten members: two shared orderings that each took a closure, six wrappers whose whole body was naming one pure primitive inside one of those closures, the retained-record write both orderings ended at, and a ninth ordering whose add boolean decided which of two opposite observation edits it was performing. Which edit was asked is now a value rather than a member name and a flag, so the eight verbs a handle projects reach one member and the switch answering them is total. Nothing about who judges what moved: the registry and the candidate graph still judge the whole candidate at derivation, and no primitive authorizes its own binding. Inside a recipe these stage rather than publish, and a no-op stages nothing, which is what lets a recipe of nothing but no-ops end without a candidate build. Edge identity is still observationEdgeKey against the entry's own motion owner rather than object identity. See RA-66, ADR-045, ADR-057, ADR-062, ADR-063, ADR-064 and ADR-065.
 
 ## #snapshot
 

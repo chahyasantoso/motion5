@@ -10,7 +10,6 @@ import type {
   TriggerSignal,
 } from "../contract/v5";
 import { readPluginValues } from "../contract/keyframe-shape";
-import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import type { MotionHandle } from "../contract/motion-handle";
 import type { SchemaTransaction } from "../contract/schema-transaction";
 import type { ValueTransaction } from "../contract/value-transaction";
@@ -26,21 +25,13 @@ import type { Scheduler } from "../ports/scheduler";
 import type { LiveWriteResult } from "../domain/track";
 import type { ResolvedPlugins, TrackConfigView } from "../domain/plugins";
 import {
-  readBoundGroup,
-  readsAsProperty,
-  removeGroup,
   removeKeyframe as removeAuthoredKeyframe,
-  removeRequire,
-  setGroup,
   setKeyframe as setAuthoredKeyframe,
-  setRequire,
   type AuthoredKeyframes,
-  type BoundGroup,
 } from "../domain/authoring/keyframes";
 import { sameCompiledTrackInput } from "../domain/authoring/recompile";
-import { observationEdgeKey } from "../graph/ir";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
-import { describeError, propertyEntry, reservedGoalSlot, unboundGroup } from "./schema-refusals";
+import { describeError } from "./schema-refusals";
 import {
   COMMIT,
   OPEN_RECIPE,
@@ -78,8 +69,8 @@ import {
 } from "./results";
 import { deferredValueBatch, emptyValueBatch } from "./value-batch";
 import { AUTHORED, buildOwed, isOverlaid, liveWritten, type ValueState } from "./value-state";
+import { applyEdit, boundGroup, type AuthoringEdit } from "./authoring-edit";
 import {
-  EMPTY_KEYFRAMES,
   NO_OVERLAY,
   authoredValues,
   requireViews,
@@ -691,20 +682,21 @@ export class ProjectRuntime {
       remove: () => runtime.#removeTrack(id, token),
       replace: (next: TrackDefinition) => runtime.#replaceTrack(id, token, next),
       addObserve: (observation: ObservationDefinition) =>
-        runtime.#replaceWithObservation(id, token, observation, true),
+        runtime.#authorEdit(id, token, { kind: "add-observe", observation }),
       removeObserve: (observation: ObservationDefinition) =>
-        runtime.#replaceWithObservation(id, token, observation, false),
+        runtime.#authorEdit(id, token, { kind: "remove-observe", observation }),
       setRequire: (plugin: string, slot: string, source: string, memberKey?: string) =>
-        runtime.#setRequire(id, token, plugin, slot, source, memberKey),
+        runtime.#authorEdit(id, token, { kind: "bind-slot", plugin, slot, source, memberKey }),
       removeRequire: (plugin: string, slot: string, memberKey?: string) =>
-        runtime.#removeRequire(id, token, plugin, slot, memberKey),
+        runtime.#authorEdit(id, token, { kind: "unbind-slot", plugin, slot, memberKey }),
       setKeyframeGroup: (plugin: string, group: AuthoredPluginGroup) =>
-        runtime.#setKeyframeGroup(id, token, plugin, group),
-      removeKeyframeGroup: (plugin: string) => runtime.#removeKeyframeGroup(id, token, plugin),
+        runtime.#authorEdit(id, token, { kind: "set-group", plugin, group }),
+      removeKeyframeGroup: (plugin: string) =>
+        runtime.#authorEdit(id, token, { kind: "remove-group", plugin }),
       setGoal: (plugin: string, memberId: string, source: string) =>
-        runtime.#setGoal(id, token, plugin, memberId, source),
+        runtime.#authorEdit(id, token, { kind: "bind-goal", plugin, memberId, source }),
       removeGoal: (plugin: string, memberId: string) =>
-        runtime.#removeGoal(id, token, plugin, memberId),
+        runtime.#authorEdit(id, token, { kind: "unbind-goal", plugin, memberId }),
       setKeyframe: (plugin: string, key: string, value: AuthoredProperty) =>
         runtime.#setKeyframe(id, token, plugin, key, value),
       removeKeyframe: (plugin: string, key: string) =>
@@ -965,17 +957,6 @@ export class ProjectRuntime {
     return batch;
   }
 
-  #boundGroup(
-    nodeId: string,
-    entry: TrackEntry,
-    plugin: string,
-  ): { keyframes: AuthoredKeyframes; bound: BoundGroup } {
-    const keyframes = entry.track.keyframes;
-    const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);
-    if (keyframes === undefined || bound === undefined) unboundGroup(nodeId, plugin);
-    return { keyframes, bound };
-  }
-
   #invalidateOne(nodeId: string) {
     this.#assertLive();
     return this.#invalidateSeeds([nodeId]);
@@ -1029,7 +1010,7 @@ export class ProjectRuntime {
   ) {
     this.#admit(valueVerb("setKeyframe", "resolved"));
     const entry = this.#writableEntry(nodeId, token);
-    const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
+    const { keyframes, bound } = boundGroup(nodeId, entry.track, plugin);
     if (Object.hasOwn(readPluginValues(bound.group), key))
       return this.#writeValues(nodeId, () => entry, { [key]: value }, true);
     const edited = setAuthoredKeyframe(keyframes, bound, key, value);
@@ -1038,109 +1019,16 @@ export class ProjectRuntime {
   #removeKeyframe(nodeId: string, token: number, plugin: string, key: string) {
     this.#admit(valueVerb("removeKeyframe", "resolved"));
     const entry = this.#writableEntry(nodeId, token);
-    const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
+    const { keyframes, bound } = boundGroup(nodeId, entry.track, plugin);
     const edited = removeAuthoredKeyframe(keyframes, bound, key);
     if (edited === keyframes) return this.#publishValue(nodeId);
     return this.#recompileKeyframes(nodeId, entry, edited, "removeKeyframe");
   }
-  #replaceWithObservation(
-    id: string,
-    token: number,
-    observation: ObservationDefinition,
-    add: boolean,
-  ): void {
+  #authorEdit(id: string, token: number, edit: AuthoringEdit): void {
     const entry = this.#writableEntry(id, token);
-    const observations = [...(entry.track.observes ?? [])];
-    const key = observationEdgeKey(observation, id, entry.motionId ?? "~");
-    const index = observations.findIndex(
-      (candidate) => observationEdgeKey(candidate, id, entry.motionId ?? "~") === key,
-    );
-    if (add) {
-      if (index >= 0) return;
-      observations.push(observation);
-    } else {
-      if (index < 0) return;
-      observations.splice(index, 1);
-    }
-    this.#replaceTrack(id, token, { ...entry.track, observes: observations });
-  }
-
-  #editRequire(
-    id: string,
-    token: number,
-    plugin: string,
-    edit: (keyframes: AuthoredKeyframes, bound: BoundGroup) => AuthoredKeyframes,
-  ): void {
-    const entry = this.#writableEntry(id, token);
-    const { keyframes, bound } = this.#boundGroup(id, entry, plugin);
-    const next = edit(keyframes, bound);
-    if (next === keyframes) return;
-    this.#writeKeyframes(id, token, entry.track, next);
-  }
-  #setRequire(
-    id: string,
-    token: number,
-    plugin: string,
-    slot: string,
-    source: string,
-    memberKey?: string,
-  ): void {
-    this.#editRequire(id, token, plugin, (keyframes, bound) => {
-      if (slot === PLUGIN_GOALS_SLOT) reservedGoalSlot(bound.plugin, slot);
-      return setRequire(keyframes, bound, slot, source, memberKey);
-    });
-  }
-  #removeRequire(
-    id: string,
-    token: number,
-    plugin: string,
-    slot: string,
-    memberKey?: string,
-  ): void {
-    this.#editRequire(id, token, plugin, (keyframes, bound) => {
-      if (slot === PLUGIN_GOALS_SLOT) reservedGoalSlot(bound.plugin, slot);
-      return removeRequire(keyframes, bound, slot, memberKey);
-    });
-  }
-
-  #setGoal(id: string, token: number, plugin: string, memberId: string, source: string): void {
-    this.#editRequire(id, token, plugin, (keyframes, bound) =>
-      setRequire(keyframes, bound, PLUGIN_GOALS_SLOT, source, memberId),
-    );
-  }
-  #removeGoal(id: string, token: number, plugin: string, memberId: string): void {
-    this.#editRequire(id, token, plugin, (keyframes, bound) =>
-      removeRequire(keyframes, bound, PLUGIN_GOALS_SLOT, memberId),
-    );
-  }
-
-  #editGroup(
-    id: string,
-    token: number,
-    plugin: string,
-    edit: (keyframes: AuthoredKeyframes) => AuthoredKeyframes,
-  ): void {
-    const entry = this.#writableEntry(id, token);
-    const keyframes = entry.track.keyframes ?? EMPTY_KEYFRAMES;
-    if (readsAsProperty(keyframes, plugin)) propertyEntry(id, plugin);
-    const next = edit(keyframes);
-    if (next === keyframes) return;
-    this.#writeKeyframes(id, token, entry.track, next);
-  }
-  #setKeyframeGroup(id: string, token: number, plugin: string, group: AuthoredPluginGroup): void {
-    this.#editGroup(id, token, plugin, (keyframes) => setGroup(keyframes, plugin, group));
-  }
-  #removeKeyframeGroup(id: string, token: number, plugin: string): void {
-    this.#editGroup(id, token, plugin, (keyframes) => removeGroup(keyframes, plugin));
-  }
-
-  #writeKeyframes(
-    id: string,
-    token: number,
-    track: TrackDefinition,
-    keyframes: AuthoredKeyframes,
-  ): void {
-    this.#replaceTrack(id, token, withKeyframes(track, keyframes));
+    const next = applyEdit({ nodeId: id, motionId: entry.motionId, track: entry.track }, edit);
+    if (next === entry.track) return;
+    this.#replaceTrack(id, token, next);
   }
 
   #snapshot(

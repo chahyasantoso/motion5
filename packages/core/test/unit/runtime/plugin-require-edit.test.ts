@@ -287,7 +287,7 @@ describe("one edge on an already-bound plugin, at the price the structural tier 
     const retained = handle.definition;
     const replaceGraph = vi.spyOn(project.graph, "replaceGraph");
 
-    // Idempotent in the `#replaceWithObservation` sense the plan asks of every primitive: binding a
+    // Idempotent in the `applyEdit` observation sense the plan asks of every primitive: binding a
     // slot to the source it already reads and removing one that is not bound are both no-ops on a
     // live handle. Load-bearing rather than tidy, because either one otherwise costs a full graph
     // rebuild and a recompiled Track for nothing the caller asked to change.

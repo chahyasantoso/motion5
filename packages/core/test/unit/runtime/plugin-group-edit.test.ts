@@ -277,7 +277,7 @@ describe("a whole plugin group and one solver goal, at the price the structural 
     const retained = handle.definition;
     const replaceGraph = vi.spyOn(project.graph, "replaceGraph");
 
-    // Idempotent in the `#replaceWithObservation` sense every primitive in this tier follows.
+    // Idempotent in the `applyEdit` observation sense every primitive in this tier follows.
     // Load-bearing rather than tidy: either of these otherwise costs a full graph rebuild and a
     // recompiled Track for nothing the caller asked to change.
     handle.setKeyframeGroup("fk", FK_GROUP);

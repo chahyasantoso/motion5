@@ -40,7 +40,7 @@ import type {
  * Idempotence is stated once, here, rather than once per primitive: an edit that changes nothing
  * returns the record it was given, by identity. The caller's no-op check is therefore a `===` and
  * cannot drift from what the editor actually did, which is the same relationship
- * `#replaceWithObservation` has to `observationEdgeKey`.
+ * `applyEdit`'s observation arms have to `observationEdgeKey`.
  *
  * So is emptiness. A dict that loses its last entry loses its slot, a section that loses its last
  * member is removed rather than left empty, and a group that ends up naming no section at all loses
