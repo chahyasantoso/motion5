@@ -28,6 +28,8 @@ const OTHER_ID = "hero/leg";
 const RUNTIME_SOURCE = fileURLToPath(
   new URL("../../../src/runtime/project-runtime.ts", import.meta.url),
 );
+const RESULTS_SOURCE = fileURLToPath(new URL("../../../src/runtime/results.ts", import.meta.url));
+const REFUSAL_SOURCE = fileURLToPath(new URL("../../../src/runtime/refusal.ts", import.meta.url));
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }, { id: "leg" }] }],
@@ -265,15 +267,20 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
 
   it("SH-7 keeps one token comparison and no branch inside the handle factory", () => {
     const source = code(RUNTIME_SOURCE);
+    const results = code(RESULTS_SOURCE);
 
-    // The DRY claim, as a number. Three private mutators and the `definition` getter each carried a
-    // copy of this comparison; a reintroduced silent return needs one of its own. It survives the
-    // motion handle arriving because both retained kinds carry a token and `#liveOf` is generic over
-    // the entry, so a second handle family cost a second probe name and no second comparison.
-    const comparisons = [...source.matchAll(/\btoken\b\s*(?:===|!==)\s*\btoken\b/g)];
-    expect(comparisons.map((match) => match[0])).toHaveLength(1);
+    // The DRY claim, as a number, asked at the owner it moved to. Three private mutators and the
+    // `definition` getter each carried a copy of this comparison; a reintroduced silent return needs
+    // one of its own. It survived the motion handle arriving because both retained kinds carry a
+    // token and `#liveOf` is generic over the entry, and it survives the resolution becoming a value
+    // the same way: `resolveToken` is that one comparison, the runtime keeps none of its own, and
+    // the class a stale handle throws is named where the refusal is minted. One is still the number.
+    const comparison = /\btoken\b\s*(?:===|!==)\s*\btoken\b/g;
+    expect([...results.matchAll(comparison)].map((match) => match[0])).toHaveLength(1);
+    expect([...source.matchAll(comparison)]).toEqual([]);
     expect(source).toContain("#liveEntry(");
-    expect(source).toContain("StaleTrackHandleError");
+    expect(source).toContain("expectLive(");
+    expect(code(REFUSAL_SOURCE)).toContain("StaleTrackHandleError");
 
     // The factory decides nothing. Every member delegates, so there is no place left for a guard
     // to grow back into.

@@ -410,7 +410,7 @@ describe("one handle base, one definition spelling, and one stale error family",
     // direction the span form left implied is asserted here too, in the same rig.
     const CHILD = "#liveChildNode(motionId: string, token: number, trackId: string): string {";
     const rungs = [
-      "#motionIfLive(id: string, token: number): MotionEntry | undefined {",
+      "#motionIfLive(id: string, token: number): Resolved<MotionEntry> {",
       "#liveMotion(id: string, token: number): MotionEntry {",
       "#liveId(motionId: string, token: number): string {",
       CHILD,
