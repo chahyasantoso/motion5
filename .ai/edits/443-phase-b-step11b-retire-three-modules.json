@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "operation": "apply",
+  "expected_head": "c7dc08da9ce6a711e76b1a4fe01e0bffffb49d60",
+  "expected_blobs": {
+    "packages/core/src/runtime/run-plan.ts": "f499364f56862e6316a062805829325489842b8b",
+    "packages/core/src/runtime/project-runtime.ts": "2e803a066bde812e6e32b1da6e80864ca2ad9212",
+    "packages/core/src/runtime/project-runtime.md": "bc59beb75c52bb4e1eb67905a3ae9118bcd32b8f",
+    "packages/core/src/runtime/rollback.ts": "02f56493fcaf754d0a937dff7bdf4825399bc840",
+    "packages/core/src/runtime/diagnostic-report.ts": "3f5f985bb4bee87f615a3187d19a6749b10ffd24",
+    "packages/core/src/runtime/value-batch.ts": "121e9d34ccb99ee6c24ecf4d05654b64f66709de",
+    "stryker.config.json": "e74b702920d43260a9203ab975fd0de30acbe27d",
+    "packages/core/test/unit/scripts/mutation-config.test.ts": "9cab8283614662b3338c81cd2e930fa8ab6949df"
+  },
+  "message": "refactor(runtime): retire the three modules report.ts replaces",
+  "edits": [
+    {
+      "path": "packages/core/src/runtime/run-plan.ts",
+      "find": "import { rejectAfterRollback, runRollbackSteps, runSettleSteps } from \"./rollback\";",
+      "replace": "import { rejectAfterRollback, runSteps } from \"./report\";"
+    },
+    {
+      "path": "packages/core/src/runtime/run-plan.ts",
+      "find": "    rejectAfterRollback(rejection, () => runRollbackSteps(inversesOf(applied, ports, staged)));",
+      "replace": "    rejectAfterRollback(rejection, () =>\n      runSteps(\"rollback\", inversesOf(applied, ports, staged)),\n    );"
+    },
+    {
+      "path": "packages/core/src/runtime/run-plan.ts",
+      "find": "  runSettleSteps(plan.settle.map((settlement) => () => settleOne(settlement, ports, staged)));",
+      "replace": "  runSteps(\n    \"settle\",\n    plan.settle.map((settlement) => () => settleOne(settlement, ports, staged)),\n  );"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "import { collect, report, runSettleSteps } from \"./rollback\";",
+      "replace": "import { collect, report } from \"../domain/completion\";\nimport { batchFor, runSteps } from \"./report\";"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "import { deferredValueBatch, emptyValueBatch } from \"./value-batch\";\n",
+      "replace": ""
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "    runSettleSteps([() => complete?.(), () => this.#assertLive(), () => this.#flush(touched)]);",
+      "replace": "    runSteps(\"settle\", [\n      () => complete?.(),\n      () => this.#assertLive(),\n      () => this.#flush(touched),\n    ]);"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "    let batch!: PatchBatch;\n    runSettleSteps([",
+      "replace": "    let batch!: PatchBatch;\n    runSteps(\"settle\", ["
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "    if (seeds.length === 0) return emptyValueBatch(this.#graph.sequence);",
+      "replace": "    if (seeds.length === 0) return batchFor(this.#graph.sequence, { kind: \"empty\" });"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "    return deferredValueBatch(this.#graph.sequence, [nodeId]);",
+      "replace": "    return batchFor(this.#graph.sequence, { kind: \"deferred-in-batch\", seeds: [nodeId] });"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.md",
+      "find": "and #publishValue through runSettleSteps.",
+      "replace": "and #publishValue through runSteps at its settle phase."
+    },
+    {
+      "path": "packages/core/src/runtime/rollback.ts",
+      "delete": true
+    },
+    {
+      "path": "packages/core/src/runtime/diagnostic-report.ts",
+      "delete": true
+    },
+    {
+      "path": "packages/core/src/runtime/value-batch.ts",
+      "delete": true
+    },
+    {
+      "path": "stryker.config.json",
+      "find": "  \"mutate\": [\n    \"packages/core/src/runtime/diagnostic-report.ts\",\n    \"packages/core/src/runtime/graph-publisher.ts\",\n    \"packages/core/src/runtime/graph-runtime-state.ts\",\n    \"packages/core/src/runtime/graph-runtime.ts\",\n    \"packages/core/src/runtime/patch-registry.ts\",\n    \"packages/core/src/runtime/project-runtime.ts\",",
+      "replace": "  \"mutate\": [\n    \"packages/core/src/runtime/graph-publisher.ts\",\n    \"packages/core/src/runtime/graph-runtime-state.ts\",\n    \"packages/core/src/runtime/graph-runtime.ts\",\n    \"packages/core/src/runtime/patch-registry.ts\",\n    \"packages/core/src/runtime/project-runtime.ts\",\n    \"packages/core/src/runtime/publish-request.ts\",\n    \"packages/core/src/runtime/registry-phase.ts\",\n    \"packages/core/src/runtime/report.ts\","
+    },
+    {
+      "path": "packages/core/test/unit/scripts/mutation-config.test.ts",
+      "find": "    // The three modules the second quality pass moved the interesting logic into are named here\n    // explicitly rather than by a glob, because the list is explicit on purpose and a glob would\n    // quietly adopt every future module too. A score that did not move because an owner is absent\n    // from this list reads exactly like a score that did not move because nothing regressed, which\n    // is why the omission was worth a gate rather than a note. Issue #419, and\n    // docs/TESTING-STRATEGY.md owns the baseline this widening owes.\n    expect(config.mutate).toEqual([\n      \"packages/core/src/runtime/diagnostic-report.ts\",\n      \"packages/core/src/runtime/graph-publisher.ts\",\n      \"packages/core/src/runtime/graph-runtime-state.ts\",\n      \"packages/core/src/runtime/graph-runtime.ts\",\n      \"packages/core/src/runtime/patch-registry.ts\",\n      \"packages/core/src/runtime/project-runtime.ts\",",
+      "replace": "    // The modules the quality passes moved the interesting logic into are named here explicitly\n    // rather than by a glob, because the list is explicit on purpose and a glob would quietly adopt\n    // every future module too. A score that did not move because an owner is absent from this list\n    // reads exactly like a score that did not move because nothing regressed, which is why the\n    // omission was worth a gate rather than a note. Issue #419, and docs/TESTING-STRATEGY.md owns\n    // the baseline this widening owes.\n    //\n    // Phase B of issue #443 is what moved three of the entries below: `diagnostic-report.ts` was\n    // merged into `report.ts`, and the registry's lifecycle and the publication request left\n    // `patch-registry.ts` and `graph-runtime.ts` for modules of their own. A path naming a file the\n    // tree no longer has generates no mutants and reports nothing about it, which is the same\n    // silence this gate exists to refuse.\n    expect(config.mutate).toEqual([\n      \"packages/core/src/runtime/graph-publisher.ts\",\n      \"packages/core/src/runtime/graph-runtime-state.ts\",\n      \"packages/core/src/runtime/graph-runtime.ts\",\n      \"packages/core/src/runtime/patch-registry.ts\",\n      \"packages/core/src/runtime/project-runtime.ts\",\n      \"packages/core/src/runtime/publish-request.ts\",\n      \"packages/core/src/runtime/registry-phase.ts\",\n      \"packages/core/src/runtime/report.ts\","
+    }
+  ]
+}
