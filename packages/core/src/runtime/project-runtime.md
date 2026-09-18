@@ -212,7 +212,7 @@ The whole operation is inside #boundary, including injected calls and publicatio
 
 ## #completeWrite
 
-After adoption, attempt staged finalization, optional re-seek to captured progress, and #publishValue through runSettleSteps. A static/no-escalation path reaches #publishValue directly. Both endings therefore route through the one member that decides whether a value publication happens now or joins an open batch, so neither of them owns that condition. Success returns the actual batch; failure preserves ordered thrown values and does not invent rollback. Engine stages by installing a replacement and marks its stage settled before disposing the old Track, so a throwing commit may already be irreversible. Guarantee attempts and publish actual progress if a host re-seek fails, never an invented old value. See issue #313, LV-19 through LV-21, and PK-20 through PK-22.
+After adoption, attempt staged finalization, optional re-seek to captured progress, and #publishValue through runSteps at its settle phase. A static/no-escalation path reaches #publishValue directly. Both endings therefore route through the one member that decides whether a value publication happens now or joins an open batch, so neither of them owns that condition. Success returns the actual batch; failure preserves ordered thrown values and does not invent rollback. Engine stages by installing a replacement and marks its stage settled before disposing the old Track, so a throwing commit may already be irreversible. Guarantee attempts and publish actual progress if a host re-seek fails, never an invented old value. See issue #313, LV-19 through LV-21, and PK-20 through PK-22.
 
 ## #invalidateOne
 

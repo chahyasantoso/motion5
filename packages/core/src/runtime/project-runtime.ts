@@ -64,7 +64,8 @@ import {
   type MotionHost,
   type TrackHost,
 } from "./project-handles";
-import { collect, report, runSettleSteps } from "./rollback";
+import { collect, report } from "../domain/completion";
+import { batchFor, runSteps } from "./report";
 import { planCommit } from "./commit-plan";
 import { runPlan } from "./run-plan";
 import { refuse } from "./refusal";
@@ -80,7 +81,6 @@ import {
   writtenProgress,
   type Resolved,
 } from "./results";
-import { deferredValueBatch, emptyValueBatch } from "./value-batch";
 import { AUTHORED, isOverlaid, liveWritten, type ValueState } from "./value-state";
 import { applyEdit, boundGroup, type AuthoringEdit } from "./authoring-edit";
 import {
@@ -637,7 +637,7 @@ export class ProjectRuntime {
   }
 
   #completeMotionEdit(complete: (() => void) | undefined, touched: readonly string[] = []): void {
-    runSettleSteps([() => complete?.(), () => this.#assertLive(), () => this.#flush(touched)]);
+    runSteps("settle", [() => complete?.(), () => this.#assertLive(), () => this.#flush(touched)]);
   }
 
   #motionHandle(id: string, token: number): MotionHandle {
@@ -765,7 +765,7 @@ export class ProjectRuntime {
 
   #publishSeeds(seeds: readonly string[]): PatchBatch {
     this.#assertLive();
-    if (seeds.length === 0) return emptyValueBatch(this.#graph.sequence);
+    if (seeds.length === 0) return batchFor(this.#graph.sequence, { kind: "empty" });
     return this.#invalidateSeeds(seeds);
   }
 
@@ -838,7 +838,7 @@ export class ProjectRuntime {
   ): PatchBatch {
     if (staged === undefined && progress === undefined) return this.#publishValue(nodeId);
     let batch!: PatchBatch;
-    runSettleSteps([
+    runSteps("settle", [
       () => staged?.commit(),
       () => {
         if (progress !== undefined) this.#ports.value.seek(nodeId, progress);
@@ -860,7 +860,7 @@ export class ProjectRuntime {
     if (seeded === undefined) return this.#invalidateOne(nodeId);
     this.#assertLive();
     this.#phase = seeded;
-    return deferredValueBatch(this.#graph.sequence, [nodeId]);
+    return batchFor(this.#graph.sequence, { kind: "deferred-in-batch", seeds: [nodeId] });
   }
 
   #recompileKeyframes(

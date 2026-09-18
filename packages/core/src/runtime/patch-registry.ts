@@ -1,5 +1,21 @@
 import type { Diagnostic, Patch, PatchBatch, PatchListener, PatchStatus } from "../contract/v5";
 import { equalValues } from "../domain/values";
+import { collect, report } from "../domain/completion";
+import { unreachable } from "../domain/exhaustive";
+import {
+  REGISTRY_IDLE,
+  closed,
+  isDisposed,
+  isNotifying,
+  notificationOf,
+  openBatch,
+  opening,
+  retain,
+  retired,
+  withNotification,
+  type BatchRefusal,
+  type RegistryPhase,
+} from "./registry-phase";
 
 export type { Patch, PatchBatch, PatchListener, PatchStatus } from "../contract/v5";
 export type BatchListener = (batch: PatchBatch) => void;
@@ -16,6 +32,24 @@ export interface PublishInput {
 export const REENTRANT_BATCH_MESSAGE =
   "Cannot open a patch batch while subscribers are being notified. " +
   "Queue one follow-up invalidation instead of recursing.";
+
+/**
+ * The error one refused opening throws, and the one place these two messages are spelled.
+ *
+ * Which of them a phase earns is `opening`'s decision, in `registry-phase.ts`, because it is a
+ * question about the phase. What the refusal reads like is this class's, because these are its
+ * messages and callers anchor on them.
+ */
+function batchRefusal(reason: BatchRefusal): Error {
+  switch (reason) {
+    case "notifying":
+      return new Error(REENTRANT_BATCH_MESSAGE);
+    case "open":
+      return new Error("A patch batch is already open.");
+    default:
+      return unreachable(reason);
+  }
+}
 
 function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
   if (value === null || typeof value !== "object") return value;
@@ -60,22 +94,16 @@ export class PatchRegistry {
   readonly #patches = new Map<string, Patch>();
   readonly #nodeListeners = new Map<string, Set<PatchListener>>();
   readonly #batchListeners = new Set<BatchListener>();
-  #batch: Patch[] = [];
-  #batchDiagnostics: Diagnostic[] = [];
-  #batchTick = 0;
-  #batchSeeds: string[] = [];
-  #batchOpen = false;
-  #notifying = false;
-  #disposed = false;
+  #phase: RegistryPhase = REGISTRY_IDLE;
 
   get(nodeId: string): Patch | undefined {
     return this.#patches.get(nodeId);
   }
   get notifying(): boolean {
-    return this.#notifying;
+    return isNotifying(this.#phase);
   }
   get disposed(): boolean {
-    return this.#disposed;
+    return isDisposed(this.#phase);
   }
   /**
    * Remove the retained patch for a detached node without touching subscriber identity
@@ -103,7 +131,7 @@ export class PatchRegistry {
    * be permanently undeliverable to anyone who subscribed before the eviction.
    */
   evict(nodeId: string): void {
-    if (this.#disposed) return;
+    if (isDisposed(this.#phase)) return;
     const previous = this.#patches.get(nodeId);
     this.#patches.delete(nodeId);
     const listeners = this.#nodeListeners.get(nodeId);
@@ -132,8 +160,11 @@ export class PatchRegistry {
       status: "destroyed",
       diagnostics: [],
     } satisfies Patch);
-    const wasNotifying = this.#notifying;
-    this.#notifying = true;
+    // The notification this delivery interrupted is restored rather than assumed to have been none,
+    // which is why every phase carries one: an eviction reached from inside a notification leaves
+    // that notification running, and one reached while a batch is open leaves the batch open.
+    const interrupted = notificationOf(this.#phase);
+    this.#phase = withNotification(this.#phase, "notifying");
     try {
       for (const listener of [...listeners])
         try {
@@ -142,32 +173,37 @@ export class PatchRegistry {
           /* destruction completes regardless of subscriber failures */
         }
     } finally {
-      this.#notifying = wasNotifying;
+      this.#phase = withNotification(this.#phase, interrupted);
     }
   }
   dispose(): void {
-    if (this.#disposed) return;
-    this.#disposed = true;
+    if (isDisposed(this.#phase)) return;
+    // One assignment, because the batch a retired registry may not answer left with the variant that
+    // owned it. Four fields were emptied here by hand and a fifth was the flag saying they had been.
+    this.#phase = retired(this.#phase);
     this.#patches.clear();
     this.#nodeListeners.clear();
     this.#batchListeners.clear();
-    this.#batch = [];
-    this.#batchDiagnostics = [];
-    this.#batchSeeds = [];
-    this.#batchOpen = false;
   }
   beginBatch(tick: number, seeds: readonly string[]): void {
-    if (this.#disposed) return;
-    if (this.#notifying) throw new Error(REENTRANT_BATCH_MESSAGE);
-    if (this.#batchOpen) throw new Error("A patch batch is already open.");
-    this.#batchOpen = true;
-    this.#batchTick = tick;
-    this.#batchSeeds = [...seeds];
-    this.#batch = [];
-    this.#batchDiagnostics = [];
+    const opened = opening(this.#phase, tick, seeds);
+    switch (opened.kind) {
+      case "ignore":
+        return;
+      case "refuse":
+        throw batchRefusal(opened.reason);
+      // One assignment opens the batch, because the tick, the seeds and both buffers arrive with the
+      // variant that owns them rather than as four fields beside a flag.
+      case "collect":
+        this.#phase = opened.phase;
+        return;
+      default:
+        return unreachable(opened);
+    }
   }
   publish(input: PublishInput): Patch | undefined {
-    if (this.#disposed) return undefined;
+    const phase = this.#phase;
+    if (isDisposed(phase)) return undefined;
     const previous = this.#patches.get(input.nodeId);
     const readyValues = input.values ?? previous?.values ?? {};
     const readyProgress =
@@ -190,8 +226,7 @@ export class PatchRegistry {
     if (samePatch(previous, candidate)) return undefined;
     const patch = deepFreeze(candidate);
     this.#patches.set(input.nodeId, patch);
-    this.#batch.push(patch);
-    this.#batchDiagnostics.push(...patch.diagnostics);
+    retain(phase, patch);
     return patch;
   }
   subscribeNode(nodeId: string, listener: PatchListener): () => void {
@@ -212,13 +247,24 @@ export class PatchRegistry {
     this.#batchListeners.add(listener);
     return () => this.#batchListeners.delete(listener);
   }
+  /**
+   * Publishes one batch to every subscriber, then answers it.
+   *
+   * Delivery is the ordered-steps mechanism `domain/completion` owns rather than a fourth hand-rolled
+   * copy of it, and that changes the two-failure case and only that case. One subscriber failure is
+   * still rethrown by identity; two are now one `AggregateError` carrying both in the order they
+   * happened rather than the first with the second discarded. ADR-071 states that rule for every phase
+   * that has no inverse, and a notification is one: nothing here can be retried, and a failure no
+   * caller ever sees is a failure nobody fixes. Issue #443, phase B step 10.
+   */
   closeBatch(): PatchBatch {
-    if (!this.#batchOpen) throw new Error("No patch batch is open.");
+    const open = openBatch(this.#phase);
+    if (open === undefined) throw new Error("No patch batch is open.");
     const batch = deepFreeze({
-      tick: this.#batchTick,
-      seeds: [...this.#batchSeeds],
-      patches: [...this.#batch],
-      diagnostics: [...this.#batchDiagnostics],
+      tick: open.tick,
+      seeds: [...open.seeds],
+      patches: [...open.patches],
+      diagnostics: [...open.diagnostics],
     }) as PatchBatch;
     const nodeListeners = new Map<string, readonly PatchListener[]>(
       [...this.#nodeListeners].map(([nodeId, listeners]): [string, readonly PatchListener[]] => [
@@ -227,37 +273,23 @@ export class PatchRegistry {
       ]),
     );
     const batchListeners: readonly BatchListener[] = [...this.#batchListeners];
-    this.#batchOpen = false;
-    this.#batch = [];
-    this.#batchDiagnostics = [];
-    this.#batchSeeds = [];
-    let firstError: unknown;
-    let hasError = false;
-    this.#notifying = true;
+    // Node subscribers in patch order, then batch subscribers, which is the order this member has
+    // always delivered in and the order the collector preserves.
+    const steps: (() => void)[] = [];
+    for (const patch of batch.patches)
+      for (const listener of nodeListeners.get(patch.nodeId) ?? [])
+        steps.push(() => listener(patch));
+    for (const listener of batchListeners) steps.push(() => listener(batch));
+    // One assignment closes the batch and raises the notification, because the tick, the seeds and
+    // both buffers left with the variant that owned them.
+    this.#phase = withNotification(closed(this.#phase), "notifying");
+    let failures: readonly unknown[] = [];
     try {
-      for (const patch of batch.patches)
-        for (const listener of nodeListeners.get(patch.nodeId) ?? [])
-          try {
-            listener(patch);
-          } catch (error) {
-            if (!hasError) {
-              hasError = true;
-              firstError = error;
-            }
-          }
-      for (const listener of batchListeners)
-        try {
-          listener(batch);
-        } catch (error) {
-          if (!hasError) {
-            hasError = true;
-            firstError = error;
-          }
-        }
+      failures = collect(steps);
     } finally {
-      this.#notifying = false;
+      this.#phase = withNotification(this.#phase, "quiet");
     }
-    if (hasError) throw firstError;
+    report(failures, "Patch batch notification failed.");
     return batch;
   }
 }
