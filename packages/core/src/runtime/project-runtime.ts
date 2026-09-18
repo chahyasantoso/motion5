@@ -13,17 +13,11 @@ import { readPluginValues } from "../contract/keyframe-shape";
 import type { MotionHandle } from "../contract/motion-handle";
 import type { SchemaTransaction } from "../contract/schema-transaction";
 import type { ValueTransaction } from "../contract/value-transaction";
-import type {
-  AuthoredValues,
-  LiveValues,
-  RequireView,
-  TrackHandle,
-} from "../contract/track-handle";
+import type { AuthoredValues, RequireView, TrackHandle } from "../contract/track-handle";
 import { validateMotionTrigger, validateTrackDefinition } from "../contract/validate-v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
-import type { LiveWriteResult } from "../domain/track";
-import type { ResolvedPlugins, TrackConfigView } from "../domain/plugins";
+import type { ResolvedPlugins } from "../domain/plugins";
 import {
   removeKeyframe as removeAuthoredKeyframe,
   setKeyframe as setAuthoredKeyframe,
@@ -56,6 +50,7 @@ import {
   type ProjectPhase,
   type VerbClass,
 } from "./project-phase";
+import { NO_PORTS, completing, type ProjectPorts, type StagedTrack } from "./project-ports";
 import { collect, report, runSettleSteps } from "./rollback";
 import { planCommit } from "./commit-plan";
 import { runPlan } from "./run-plan";
@@ -99,19 +94,6 @@ type MotionEntry = {
   definition: MotionDefinition;
   token: number;
 };
-/**
- * A replacement already installed by the staging seam, with its displaced Track held for rollback.
- *
- * Before commit starts, rollback restores the displaced Track and releases the replacement.
- * Commit finalizes adoption and releases the displaced Track; that release can throw after the
- * replacement became irreversible. A throwing commit is not a promise that rollback can restore
- * a usable old Track. The staging seam owns cleanup if it throws before returning this handle.
- */
-export interface StagedTrack {
-  commit(): void;
-  rollback(): void;
-}
-
 interface OpenTransaction {
   tracks: Map<string, TrackEntry>;
   motions: Map<string, MotionEntry>;
@@ -121,32 +103,7 @@ interface StagedPair {
   readonly tracks?: Map<string, TrackEntry>;
   readonly motions?: Map<string, MotionEntry>;
 }
-/**
- * The one seam by which a live value reaches the compiled Track this runtime does not own.
- *
- * One hook, because there is one mechanism, and what separates `setValues` from `overrideValues` is
- * the retained definition, which is ADR-060's. `undefined` for the overlay is a write no animated key
- * is involved in, which keeps a static-only write on the path it was already on. See ADR-059,
- * ADR-060.
- */
-export type LiveValueWriter = (
-  nodeId: string,
-  values: LiveValues,
-  overlay: Readonly<Record<string, unknown>> | undefined,
-  rebase: boolean,
-) => LiveWriteResult | undefined;
-/**
- * How this layer asks what an authored record resolves to.
- *
- * One hook, one implementation: `PluginRegistry.resolveForKeyframes` stays the only owner of key
- * ownership, slot declaration and the plugin chain, and this runtime depends on a function rather
- * than on a registry it has no other reason to hold. See ADR-062.
- */
-export type KeyframeResolver = (
-  keyframes: Readonly<Record<string, unknown>>,
-  path: string,
-  track: TrackConfigView,
-) => ResolvedPlugins;
+export type { KeyframeResolver, LiveValueWriter, StagedTrack } from "./project-ports";
 export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly scheduler?: Scheduler;
@@ -217,25 +174,7 @@ export class ProjectRuntime {
 
   #phase: ProjectPhase<OpenTransaction> = idle();
   readonly #diagnostics: Diagnostics;
-  readonly #setProgress: (nodeId: string, progress: number) => void;
-  readonly #writeValuesHook: LiveValueWriter;
-  readonly #compileTrack: ((track: TrackDefinition, nodeId?: string) => void) | undefined;
-  readonly #disposeTrack: ((nodeId: string) => void) | undefined;
-  readonly #stageTrack: ((track: TrackDefinition, nodeId: string) => StagedTrack) | undefined;
-  readonly #resolveKeyframes: KeyframeResolver | undefined;
-  readonly #addMotionTrack:
-    | ((motionId: string, trackId: string, duration?: number) => void)
-    | undefined;
-  readonly #replaceMotionTrack:
-    | ((motionId: string, trackId: string, duration?: number) => void)
-    | undefined;
-  readonly #removeMotionTrack: ((motionId: string, trackId: string) => void) | undefined;
-  readonly #replaceMotionTrigger: ProjectRuntimeOptions["replaceMotionTrigger"];
-  readonly #setMotionStagger: ProjectRuntimeOptions["setMotionStagger"];
-  readonly #signalMotion: ((motionId: string, signal: TriggerSignal) => void) | undefined;
-  readonly #createMotion: ((definition: MotionDefinition) => void) | undefined;
-  readonly #destroyMotion: ((motionId: string) => void) | undefined;
-  readonly #disposeComposition: () => void;
+  readonly #ports: ProjectPorts;
   constructor(project: ProjectDefinition, options: ProjectRuntimeOptions) {
     this.#project = project;
     for (const motion of project.motions) {
@@ -254,21 +193,33 @@ export class ProjectRuntime {
         token: this.#nextToken++,
         valueState: AUTHORED,
       });
-    this.#setProgress = options.setProgress ?? (() => undefined);
-    this.#writeValuesHook = options.writeValues ?? (() => undefined);
-    this.#compileTrack = options.compileTrack;
-    this.#disposeTrack = options.disposeTrack;
-    this.#stageTrack = options.stageTrack;
-    this.#resolveKeyframes = options.resolveKeyframes;
-    this.#addMotionTrack = options.addMotionTrack;
-    this.#replaceMotionTrack = options.replaceMotionTrack;
-    this.#removeMotionTrack = options.removeMotionTrack;
-    this.#replaceMotionTrigger = options.replaceMotionTrigger;
-    this.#setMotionStagger = options.setMotionStagger;
-    this.#signalMotion = options.signalMotion;
-    this.#createMotion = options.createMotion;
-    this.#destroyMotion = options.destroyMotion;
-    this.#disposeComposition = options.disposeComposition ?? (() => undefined);
+    // The one place optionality is answered. Every seam a host did not install reads its own
+    // no-op out of NO_PORTS, so no member below is optional and no reader after this line asks.
+    this.#ports = Object.freeze({
+      track: Object.freeze({
+        compile: options.compileTrack ?? NO_PORTS.track.compile,
+        dispose: options.disposeTrack ?? NO_PORTS.track.dispose,
+        stage: options.stageTrack ?? NO_PORTS.track.stage,
+      }),
+      motion: Object.freeze({
+        create: options.createMotion ?? NO_PORTS.motion.create,
+        destroy: options.destroyMotion ?? NO_PORTS.motion.destroy,
+        addTrack: options.addMotionTrack ?? NO_PORTS.motion.addTrack,
+        replaceTrack: options.replaceMotionTrack ?? NO_PORTS.motion.replaceTrack,
+        removeTrack: options.removeMotionTrack ?? NO_PORTS.motion.removeTrack,
+        replaceTrigger: completing(options.replaceMotionTrigger),
+        setStagger: completing(options.setMotionStagger),
+        signal: options.signalMotion ?? NO_PORTS.motion.signal,
+      }),
+      value: Object.freeze({
+        write: options.writeValues ?? NO_PORTS.value.write,
+        seek: options.setProgress ?? NO_PORTS.value.seek,
+      }),
+      host: Object.freeze({
+        resolveKeyframes: options.resolveKeyframes ?? NO_PORTS.host.resolveKeyframes,
+        disposeComposition: options.disposeComposition ?? NO_PORTS.host.disposeComposition,
+      }),
+    });
     this.#diagnostics = new Diagnostics(options.diagnosticsCapacity);
     try {
       this.#graph = new GraphRuntime(project, options.clock, options.compose, {
@@ -279,7 +230,7 @@ export class ProjectRuntime {
         onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
       });
     } catch (error) {
-      this.#disposeComposition();
+      this.#ports.host.disposeComposition();
       throw error;
     }
   }
@@ -405,7 +356,7 @@ export class ProjectRuntime {
    */
   signal(motionId: string, signal: TriggerSignal): void {
     this.#admit(immediateVerb("signal", "asserted"));
-    this.#signalMotion?.(motionId, signal);
+    this.#ports.motion.signal(motionId, signal);
   }
   /**
    * The resolver for one Motion, refusing an id this project never had. Separate from `tryMotion`
@@ -603,7 +554,7 @@ export class ProjectRuntime {
         refuse({ kind: "invalid-definition", diagnostics });
       if (sameTrigger(entry.definition.trigger, trigger)) return;
       const definition = Object.freeze({ ...entry.definition, trigger });
-      const complete = this.#replaceMotionTrigger?.(
+      const complete = this.#ports.motion.replaceTrigger(
         motionId,
         this.#motionDefinition({ ...entry, definition }),
       );
@@ -618,7 +569,7 @@ export class ProjectRuntime {
       const entry = this.#writableMotion(id, token);
       const motionId = entry.definition.id;
       if (entry.definition.stagger === stagger) return;
-      const complete = this.#setMotionStagger?.(motionId, stagger);
+      const complete = this.#ports.motion.setStagger(motionId, stagger);
       this.#motions.set(motionId, {
         ...entry,
         definition: withStagger(entry.definition, stagger),
@@ -707,7 +658,7 @@ export class ProjectRuntime {
   }
 
   #resolve(nodeId: string, track: TrackDefinition): ResolvedPlugins | undefined {
-    return this.#resolveKeyframes?.(track.keyframes ?? {}, `${nodeId}.keyframes`, {
+    return this.#ports.host.resolveKeyframes(track.keyframes ?? {}, `${nodeId}.keyframes`, {
       id: nodeId,
       duration: track.duration,
     });
@@ -772,21 +723,23 @@ export class ProjectRuntime {
       );
       this.#assertLive();
       runPlan(commit, {
-        createMotion: (x) => this.#createMotion?.(x),
-        destroyMotion: (id) => this.#destroyMotion?.(id),
-        compileTrack: (x, id) => this.#compileTrack?.(x, id),
-        stageTrack: (x, id) => this.#stageTrack?.(x, id),
-        replaceMotionTrack: (m, id, d) => this.#replaceMotionTrack?.(m, id, d),
-        commitStaged: (x) => x?.commit(),
-        rollbackStaged: (x) => x?.rollback(),
-        disposeTrack: (id) => this.#disposeTrack?.(id),
-        evictNode: (id) => {
-          this.#instances.delete(id);
-          this.#graph.evictNode(id);
+        createMotion: (definition) => this.#ports.motion.create(definition),
+        destroyMotion: (motionId) => this.#ports.motion.destroy(motionId),
+        compileTrack: (track, nodeId) => this.#ports.track.compile(track, nodeId),
+        stageTrack: (track, nodeId) => this.#ports.track.stage(track, nodeId),
+        replaceMotionTrack: (motionId, nodeId, duration) =>
+          this.#ports.motion.replaceTrack(motionId, nodeId, duration),
+        commitStaged: (staged) => staged?.commit(),
+        rollbackStaged: (staged) => staged?.rollback(),
+        disposeTrack: (nodeId) => this.#ports.track.dispose(nodeId),
+        evictNode: (nodeId) => {
+          this.#instances.delete(nodeId);
+          this.#graph.evictNode(nodeId);
         },
-        mountNode: (id) => this.#mountNode(id),
-        addMotionTrack: (m, id, d) => this.#addMotionTrack?.(m, id, d),
-        removeMotionTrack: (m, id) => this.#removeMotionTrack?.(m, id),
+        mountNode: (nodeId) => this.#mountNode(nodeId),
+        addMotionTrack: (motionId, nodeId, duration) =>
+          this.#ports.motion.addTrack(motionId, nodeId, duration),
+        removeMotionTrack: (motionId, nodeId) => this.#ports.motion.removeTrack(motionId, nodeId),
         assertLive: () => this.#assertLive(),
         accept: () => this.#graph.replaceGraph(this.#snapshot(tracks, motions)),
         adopt: () => {
@@ -857,7 +810,12 @@ export class ProjectRuntime {
       if (involved)
         expectValid(validated(validateTrackDefinition(rewritten, `writeValues(${nodeId})`)));
       const mask = { ...authoredValues(entry.track), ...statics };
-      const written = this.#writeValuesHook(nodeId, mask, involved ? animated : undefined, rebase);
+      const written = this.#ports.value.write(
+        nodeId,
+        mask,
+        involved ? animated : undefined,
+        rebase,
+      );
       // The seam has taken the write and carries no inverse, so the state it left is recorded on
       // the way out, whichever of the two fallible reads below is the last one reached. The
       // definition is adopted inside the try, because a replacement that never staged is one this
@@ -868,7 +826,7 @@ export class ProjectRuntime {
       try {
         if (written !== undefined && !written.patched) {
           progress = written.progress;
-          staged = this.#stageTrack?.(rewritten, nodeId);
+          staged = this.#ports.track.stage(rewritten, nodeId);
         }
         if (rebase) adopted = { ...adopted, track: rewritten };
       } finally {
@@ -888,7 +846,7 @@ export class ProjectRuntime {
     runSettleSteps([
       () => staged?.commit(),
       () => {
-        if (progress !== undefined) this.#setProgress(nodeId, progress);
+        if (progress !== undefined) this.#ports.value.seek(nodeId, progress);
       },
       () => {
         batch = this.#publishValue(nodeId);
@@ -923,7 +881,7 @@ export class ProjectRuntime {
       if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
         refuse({ kind: "invalid-definition", diagnostics: resolved.diagnostics });
       const clear = isOverlaid(entry.valueState) ? NO_OVERLAY : undefined;
-      const written = this.#writeValuesHook(nodeId, authoredValues(entry.track), clear, true);
+      const written = this.#ports.value.write(nodeId, authoredValues(entry.track), clear, true);
       // The recording the mask path makes, for the same reason and on the same way out. A stage
       // that survives is what earns the accepted definition and the state saying the build removed
       // every live write standing on this node.
@@ -932,7 +890,7 @@ export class ProjectRuntime {
       let progress: number | undefined;
       try {
         progress = written?.progress;
-        staged = this.#stageTrack?.(accepted, nodeId);
+        staged = this.#ports.track.stage(accepted, nodeId);
         adopted = { ...entry, track: accepted, valueState: AUTHORED };
       } finally {
         this.#tracks.set(nodeId, adopted);
@@ -997,7 +955,7 @@ export class ProjectRuntime {
   }
   seek(nodeId: string, progress: number) {
     this.#admit(valueVerb("seek", "asserted"));
-    this.#setProgress(nodeId, progress);
+    this.#ports.value.seek(nodeId, progress);
     return this.#publishValue(nodeId);
   }
   /**
@@ -1101,7 +1059,7 @@ export class ProjectRuntime {
         this.#motions.clear();
       },
       () => this.#graph.dispose(),
-      () => this.#disposeComposition(),
+      () => this.#ports.host.disposeComposition(),
     ]);
     const describe = (failure: unknown, seen = new Set<unknown>()): string => {
       try {
