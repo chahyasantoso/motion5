@@ -38,7 +38,7 @@ A new variant becomes a compile-error checklist instead of a hunt. This is the w
 
 The permissive default is gone. There is no `else` left to be wrong, in either union.
 
-Five copies of one rule become zero: `isRetiring` is what the switch arms say, in the module that exports it. Five `drain` ternaries become five table lookups.
+Five copies of one rule become zero: `isRetiring` is what the switch arms say, in the module that exports it. Five ternaries become five table lookups: three on `drain`, in `retiring`, `beginFlush` and `endFlush`, and two on `kind`, in `bookingDrain` and `unbookDrain`. The ternary that survives in `bookingDrain` is the coalescing guard, promoted from an `if`, rather than a sixth this table failed to remove. **Corrected 2026-09-18 for [#441](https://github.com/chahyasantoso/motion5/issues/441).** This paragraph said five `drain` ternaries, which attributed all five to one of the two axes this record's own argument calls independent; the count of five was and is right, and the `PHASES` docblock in the source repeated the same mischaracterisation and is corrected with it.
 
 The arms are the state table, so this file needs less prose to say what it does rather than more. That is the readability claim, and it is the reason the trade is worth roughly thirty to forty added lines.
 

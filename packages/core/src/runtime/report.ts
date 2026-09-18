@@ -1,12 +1,11 @@
 import type { Diagnostic, PatchBatch } from "../contract/v5";
 import { collect, report } from "../domain/completion";
 import { unreachable } from "../domain/exhaustive";
-// Two describers exist in this folder and this is the only file that reads both, which is how the
-// duplication became visible rather than something this slice fixes: the one imported here renders a
-// thrown value as its own message, and the one declared below flattens an `AggregateError` into its
-// causes. Every message in this module is byte-identical to the message it replaces, so which
-// describer each of them reads is preserved rather than harmonised.
-import { describeError as describeThrownValue } from "./schema-refusals";
+// Two questions about a thrown value, and each name states which one it answers. `describeError`
+// renders one value as its own message and is this folder's owner of that; `describeWithCauses` below
+// adds the causes an `AggregateError` collected and delegates its leaf case here, so one expression
+// renders a message and no message moves. Issue #446, and see ADR-096.
+import { describeError } from "./schema-refusals";
 
 /**
  * What a caller is told when a step fails, and what a caller is answered when a publication was asked
@@ -82,11 +81,8 @@ export function rejectAfterRollback(rejection: unknown, rollback: () => void): n
     // they happened, and the rejection itself is not mutated: it is thrown from the graph layer,
     // which does not own this failure and should not look like it does.
     const errors = [rejection, rollbackFailure];
-    const detail = describeThrownValue(rollbackFailure);
-    throw new AggregateError(
-      errors,
-      `${describeThrownValue(rejection)} Rollback failed: ${detail}`,
-    );
+    const detail = describeError(rollbackFailure);
+    throw new AggregateError(errors, `${describeError(rejection)} Rollback failed: ${detail}`);
   }
   throw rejection;
 }
@@ -99,13 +95,21 @@ export function rejectAfterRollback(rejection: unknown, rollback: () => void): n
  * so printing that alone would name the boundary and drop every cause it collected, which is the same
  * attribution loss this module exists to prevent one level up. Recursive, so a nested aggregate
  * flattens too. Issue #154.
+ *
+ * Named for the question it answers, which is issue #446: this and `describeError` were two functions
+ * of one name sitting one import apart, and nothing said which caller wanted which. The leaf case
+ * delegates, so this folder has one renderer of a thrown value's own message and every rendered
+ * string is the string it was. Two decisions the rename made explicit rather than moved: the
+ * boundary's own context stays in the output, dropped only when it is empty, because it names which
+ * boundary collected the causes; and `error.cause` is deliberately not rendered, because that would
+ * move every message whose error carries one. See ADR-096.
  */
-export function describeError(error: unknown): string {
+export function describeWithCauses(error: unknown): string {
   if (error instanceof AggregateError) {
-    const causes = error.errors.map((cause: unknown) => describeError(cause)).join("; ");
+    const causes = error.errors.map((cause: unknown) => describeWithCauses(cause)).join("; ");
     return [error.message, causes].filter((part) => part.length > 0).join(" ");
   }
-  return error instanceof Error ? error.message : String(error);
+  return describeError(error);
 }
 
 /** The rule id a diagnostic carries when the host's own diagnostic sink threw. Issue #410. */
@@ -242,6 +246,14 @@ export function reporting(trace: ReportTrace, diagnostic: Diagnostic): ReportTra
  * The newest is what a reentrant sink leaves behind: it reported again from inside the delivery that
  * is now failing, and issue #415 is that the older of the two used to win. Retention precedes the
  * handover, so the trace already names a report by the time this is asked.
+ *
+ * And the failure it keeps is the newest one too, which is issue #436. This overwrote the slot, so a
+ * sink that re-entered, caused a nested report whose own handover failed, and then threw itself
+ * retained the nested failure first and the outer one second: `lastSinkError` then named an older
+ * report's handover while `lastFlushError` named the newer report, and one pair described two
+ * reports. The retained report is the ordering token rather than a counter beside it, because a
+ * handover failure whose report is no longer the newest is older news about an older report. See
+ * ADR-096.
  */
 export function undeliverable(
   trace: ReportTrace,
@@ -257,9 +269,18 @@ export function undeliverable(
         diagnostic: reported,
         sinkFailure: failure,
       });
+    // No failure is retained yet, so this handover is the newest thing known about the host.
     case "reported":
+      return mint<UndeliveredShape>({
+        kind: "undelivered",
+        diagnostic: trace.diagnostic,
+        sinkFailure: failure,
+      });
+    // One is, so whose report it belongs to decides. A failure retained under a newer report stays,
+    // and the trace is answered unchanged rather than half-rewritten.
     case "undelivered":
     case "recovered":
+      if (trace.diagnostic !== reported) return trace;
       return mint<UndeliveredShape>({
         kind: "undelivered",
         diagnostic: trace.diagnostic,
@@ -321,7 +342,7 @@ export function reportDiagnostic(
   } catch (error) {
     const failure = frozenDiagnostic(
       DIAGNOSTIC_SINK_FAILURE_RULE,
-      `Diagnostic delivery for ${ruleId} failed: ${describeError(error)}`,
+      `Diagnostic delivery for ${ruleId} failed: ${describeWithCauses(error)}`,
       tick,
       ids,
     );

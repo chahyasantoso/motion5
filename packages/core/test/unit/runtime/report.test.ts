@@ -6,7 +6,7 @@ import {
   DEFERRED_VALUE_BATCH_RULE,
   DIAGNOSTIC_SINK_FAILURE_RULE,
   batchFor,
-  describeError,
+  describeWithCauses,
   rejectAfterRollback,
   reportDiagnostic,
   reporting,
@@ -22,6 +22,7 @@ import {
   requestTick,
   seedRequest,
 } from "../../../src/runtime/publish-request";
+import { describeError } from "../../../src/runtime/schema-refusals";
 
 /**
  * Issue #443, phase B steps 11 and 12: one owner for what a caller is told.
@@ -282,12 +283,100 @@ describe("one owner reports what a step failed at and what a deferral answers", 
     expect(Object.isFrozen(accepted)).toBe(true);
   });
 
+  it("keeps the nested handover failure rather than the outer one unwinding behind it", () => {
+    const held = slot();
+    let entered = false;
+    reportDiagnostic(
+      () => {
+        if (!entered) {
+          entered = true;
+          // A nested report whose own handover also fails, so a sink failure is retained before the
+          // outer one is. Both are real, and the trace holds one.
+          reportDiagnostic(
+            () => {
+              throw new Error("nested sink refused");
+            },
+            held.retain,
+            "clock-consumer-failure",
+            "consumer failed",
+            1,
+            [ARM],
+          );
+        }
+        throw new Error("outer sink refused");
+      },
+      held.retain,
+      "flush-failure",
+      "flushing failed",
+      0,
+      [ARM],
+    );
+
+    // Red before this change: the outer handover overwrote the slot, so the trace named the nested
+    // report and the outer report's handover failure, and one pair described two reports. Issue
+    // #436, and see ADR-096.
+    expect(retainedDiagnostic(held.read())?.ruleId).toBe("clock-consumer-failure");
+    expect(sinkFailure(held.read())?.message).toBe(
+      "Diagnostic delivery for clock-consumer-failure failed: nested sink refused",
+    );
+
+    // The control beside it, unchanged: one report, one failed handover, and the failure is the one
+    // that just happened.
+    const alone = slot();
+    reportDiagnostic(
+      () => {
+        throw new Error("sink refused");
+      },
+      alone.retain,
+      "flush-failure",
+      "flushing failed",
+      0,
+      [ARM],
+    );
+    expect(sinkFailure(alone.read())?.message).toBe(
+      "Diagnostic delivery for flush-failure failed: sink refused",
+    );
+
+    // Read directly, the rule is one comparison: a handover failure is retained unless the trace
+    // already carries one belonging to a newer report, and then the trace is answered unchanged.
+    const older = diagnostic("flush-failure");
+    const newer = diagnostic("clock-consumer-failure");
+    const nested = diagnostic("nested-sink-failure");
+    const outer = diagnostic("outer-sink-failure");
+    const trace = undeliverable(reporting(reporting(CLEAN_TRACE, older), newer), newer, nested);
+    expect(sinkFailure(trace)).toBe(nested);
+    expect(undeliverable(trace, older, outer)).toBe(trace);
+  });
+
   it("flattens an aggregate into its causes rather than printing the boundary alone", () => {
     const inner = new AggregateError([new Error("a"), new Error("b")], "inner failed");
-    expect(describeError(new AggregateError([inner], "outer failed"))).toBe(
+    expect(describeWithCauses(new AggregateError([inner], "outer failed"))).toBe(
       "outer failed inner failed a; b",
     );
-    expect(describeError("plain")).toBe("plain");
+    expect(describeWithCauses("plain")).toBe("plain");
+    // The boundary's own context stays in the string, which is the half of issue #446 that is a
+    // decision rather than a rename: it names which boundary collected the causes, and it is dropped
+    // only when it is empty.
+    expect(describeWithCauses(new AggregateError([new Error("a")], "boundary"))).toBe("boundary a");
+    expect(describeWithCauses(new AggregateError([], "boundary"))).toBe("boundary");
+  });
+
+  it("renders a leaf through the one owner of a thrown value's own message", () => {
+    // Two functions named `describeError` sat one import apart and neither name said which question
+    // it answered. The leaf case delegates now, so one expression renders a message and no rendered
+    // string moves. Issue #446, and see ADR-096.
+    const error = new TypeError("bad");
+    expect(describeWithCauses(error)).toBe(describeError(error));
+    expect(describeWithCauses(undefined)).toBe(describeError(undefined));
+    expect(describeWithCauses("plain")).toBe(describeError("plain"));
+    // And the two answer differently for exactly one subject, which is why there are two names.
+    const aggregate = new AggregateError([new Error("a")], "boundary");
+    expect(describeError(aggregate)).toBe("boundary");
+    expect(describeWithCauses(aggregate)).toBe("boundary a");
+    // Neither renders `cause`, which is the decision that keeps every existing message where it was.
+    expect(describeWithCauses(new TypeError("outer", { cause: new Error("hidden") }))).toBe(
+      "outer",
+    );
   });
 
   it("states a publication request as a variant rather than as an optional frame", () => {

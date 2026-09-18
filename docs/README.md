@@ -29,6 +29,8 @@ Two documents hold what a status file is not allowed to accumulate:
 
 Every record is its own `ADR-nnn-title.md` file in this directory, and a number names exactly one file. There is no index, because the filename carries the title and the directory listing is therefore the index. `DECISIONS.md` held ADR-001 through ADR-027 inline until [issue #439](https://github.com/chahyasantoso/motion5/issues/439) extracted them, and it is deleted. See [ADR-093](./ADR-093-a-decision-record-is-one-file.md).
 
+These records capture decisions whose accidental reversal would recreate the predecessor's problems. They are not implementation instructions pasted into every file. A record contains context, the decision, alternatives considered, consequences, and evidence or follow-up where useful.
+
 Before introducing a flag, alias, facade, second owner, compatibility path, new public export, authored identity form, diagnostics channel, or interpolation engine, search these records. If the proposal conflicts with an accepted one, either reject it or add a superseding record in the same pull request. Never leave two active records that say opposite things.
 
 ## Delivery and evidence

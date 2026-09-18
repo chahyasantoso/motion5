@@ -10,7 +10,7 @@ import { unreachable } from "../domain/exhaustive";
 import {
   CLEAN_TRACE,
   batchFor,
-  describeError,
+  describeWithCauses,
   reportDiagnostic,
   retainedDiagnostic,
   sinkFailure,
@@ -351,7 +351,7 @@ export class GraphRuntime {
       this.#releaseBooking();
       this.#report(
         SCHEDULER_FAILURE_RULE,
-        `Deferred flush scheduling failed: ${describeError(error)}`,
+        `Deferred flush scheduling failed: ${describeWithCauses(error)}`,
       );
     }
     return this.#drainHandle !== undefined;
@@ -367,7 +367,7 @@ export class GraphRuntime {
     } catch (error) {
       this.#report(
         SCHEDULER_FAILURE_RULE,
-        `Deferred flush cancellation failed: ${describeError(error)}`,
+        `Deferred flush cancellation failed: ${describeWithCauses(error)}`,
       );
     }
   }
@@ -380,7 +380,7 @@ export class GraphRuntime {
       if (tick === undefined) this.flush([]);
       else this.flushAtTick([], tick);
     } catch (error) {
-      this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describeError(error)}`);
+      this.#report(FLUSH_FAILURE_RULE, `Scheduled flush failed: ${describeWithCauses(error)}`);
     }
   }
   #onTick(event: ClockTick): void {
@@ -401,7 +401,7 @@ export class GraphRuntime {
     } catch (error) {
       this.#report(
         CLOCK_CONSUMER_FAILURE_RULE,
-        `Clock consumers at tick ${event.tick} failed: ${describeError(error)}`,
+        `Clock consumers at tick ${event.tick} failed: ${describeWithCauses(error)}`,
         event.tick,
       );
     }
@@ -413,7 +413,7 @@ export class GraphRuntime {
     } catch (error) {
       this.#report(
         FLUSH_FAILURE_RULE,
-        `Flush at tick ${event.tick} failed: ${describeError(error)}`,
+        `Flush at tick ${event.tick} failed: ${describeWithCauses(error)}`,
         event.tick,
       );
     }
