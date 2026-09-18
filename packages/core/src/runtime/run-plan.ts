@@ -1,6 +1,6 @@
 import type { MotionDefinition, TrackDefinition } from "../contract/v5";
 import { unreachable } from "../domain/exhaustive";
-import { rejectAfterRollback, runRollbackSteps, runSettleSteps } from "./rollback";
+import { rejectAfterRollback, runSteps } from "./report";
 import { invert, type CommitPlan, type Effect, type Settlement } from "./commit-plan";
 import type { StagedTrack } from "./project-ports";
 /**
@@ -171,8 +171,11 @@ export function runPlan(plan: CommitPlan, ports: PlanPorts): void {
     }
     ports.accept();
   } catch (rejection) {
-    rejectAfterRollback(rejection, () => runRollbackSteps(inversesOf(applied, ports, staged)));
+    rejectAfterRollback(rejection, () => runSteps("rollback", inversesOf(applied, ports, staged)));
   }
   ports.adopt();
-  runSettleSteps(plan.settle.map((settlement) => () => settleOne(settlement, ports, staged)));
+  runSteps(
+    "settle",
+    plan.settle.map((settlement) => () => settleOne(settlement, ports, staged)),
+  );
 }
