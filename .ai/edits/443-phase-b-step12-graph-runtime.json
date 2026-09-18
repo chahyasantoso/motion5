@@ -1,7 +1,7 @@
 {
   "version": 1,
   "operation": "apply",
-  "expected_head": "24b09e6039c2104fdcbcdec4531a62572bd51562",
+  "expected_head": "eb4da5d4eaac4a07c49742a343fbba4d51f77336",
   "expected_blobs": {
     "packages/core/src/runtime/graph-runtime.ts": "b23c65122dd831c347763bf311e86bc02b3d164f",
     "packages/core/src/runtime/graph-runtime.md": "f5e881b81d4f4a0d83996e42f71491080c10cf55"
@@ -37,11 +37,6 @@
       "path": "packages/core/src/runtime/graph-runtime.ts",
       "find": "  get lastFlushError(): Diagnostic | undefined {\n    return this.#lastFlushError;\n  }",
       "replace": "  get lastFlushError(): Diagnostic | undefined {\n    return retainedDiagnostic(this.#trace);\n  }"
-    },
-    {
-      "path": "packages/core/src/runtime/graph-runtime.ts",
-      "find": "   * get lastSinkError",
-      "replace": "   * get lastSinkError"
     },
     {
       "path": "packages/core/src/runtime/graph-runtime.ts",
@@ -81,7 +76,7 @@
     {
       "path": "packages/core/src/runtime/graph-runtime.md",
       "find": "It asks `isDisposed` rather than `isRetiring` for that selection, which is the distinction issue #408 turns on: a runtime discovering that its port refuses to cancel is still the object that knows that, so only a runtime that has finished retiring withholds. See ADR-090.",
-      "replace": "The selection itself is `reportSink`'s, in graph-runtime-state.ts, because it is a read of that union and the module that owns a union owns the switch over it. It answers on finished retirement rather than on retirement having begun, which is the distinction issue #408 turns on: a runtime discovering that its port refuses to cancel is still the object that knows that, so only a runtime that has finished retiring withholds. A ternary here read the same discriminant from outside every switch that names the others, so a phase added later inherited delivery from whichever side of it that phase fell on. See ADR-090 and ADR-092."
+      "replace": "The selection itself is `reportSink`'s, in graph-runtime-state.ts, because it is a read of that union and the module that owns a union owns the switch over it. It answers on finished retirement rather than on retirement having begun, which is the distinction issue #408 turns on: a runtime discovering that its port refuses to cancel is still the object that knows that, so only a runtime that has finished retiring withholds. A ternary here read that discriminant from outside every switch that names the others, so a phase added later inherited delivery from whichever side of it that phase fell on. See ADR-090 and ADR-092."
     }
   ]
 }
