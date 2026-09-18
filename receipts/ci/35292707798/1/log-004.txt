@@ -1,0 +1,71 @@
+fault --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2415313Z ^[[32m- Expected^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2415817Z ^[[31m+ Received^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2416052Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2416251Z ^[[32m- []^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2416647Z ^[[31m+ [^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2417167Z ^[[31m+   "this.#stageTrack",^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2417705Z ^[[31m+ ]^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2417917Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2418704Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/project-ports.test.ts:^[[2m87:61^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2443464Z     ^[[90m 85|^[[39m     ^[[35mconst^[[39m source ^[[33m=^[[39m ^[[34mcode^[[39m(^[[33mRUNTIME_SOURCE^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2444456Z     ^[[90m 86|^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2445086Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2446194Z ^[[2m Test Files ^[[22m ^[[1m^[[31m3 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m226 passed^[[39m^[[22m^[[90m (229)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2449637Z ^[[2m      Tests ^[[22m ^[[1m^[[31m2 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1367 passed^[[39m^[[22m^[[2m | ^[[22m^[[33m2 skipped^[[39m^[[90m (1371)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2450558Z ^[[2m   Start at ^[[22m 00:49:31
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2454315Z     ^[[90m 87|^[[39m     expect(RETIRED.filter((name) => source.includes(name))).toEqual([]…
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2455425Z     ^[[90m   |^[[39m                                                             ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2456184Z     ^[[90m 88|^[[39m     ^[[90m// One resolution, at construction, and nowhere else.^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2457082Z     ^[[90m 89|^[[39m     ^[[34mexpect^[[39m(source^[[33m.^[[39m^[[34msplit^[[39m(^[[32m"NO_PORTS"^[[39m))^[[33m.^[[39m^[[34mtoHaveLength^[[39m(^[[34m16^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2457572Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2457852Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2458071Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2459109Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/public-declaration-surface.test.ts^[[2m > ^[[22mpublic declaration surface (P1-9)^[[2m > ^[[22mscans the emitted entry declaration closure, not just source strings
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2461340Z ^[[31m^[[1mError^[[22m: Command failed: npx tsc --declaration --emitDeclarationOnly --target ES2023 --module ESNext --moduleResolution Bundler --strict --skipLibCheck --outDir /home/runner/work/motion5/motion5/.tmp-public-dts-1qSnGc packages/core/src/index.ts
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2463338Z ^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2463767Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2463988Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2464526Z ^[[2m   Duration ^[[22m 34.73s^[[2m (transform 3.22s, setup 1.45s, import 21.38s, tests 41.75s, environment 35ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.2464934Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-18T00:50:06.3159706Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-18T00:50:06.3198390Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-18T00:50:06.3198858Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-18T00:50:06.3235094Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-18T00:50:06.3235380Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-18T00:50:06.3235571Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-18T00:50:06.3235852Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-18T00:50:06.3236170Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-18T00:50:06.3737940Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-18T00:50:06.3738306Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-18T00:50:06.3738447Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-18T00:50:06.3738612Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-18T00:50:06.3784950Z ##[error]Process completed with exit code 1.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-09-18T00:48:49.8897347Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T00:48:49.8897726Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T00:48:49.8931422Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T00:48:49.8931645Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T00:48:49.8931820Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T00:48:49.8931998Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T00:48:51.7967845Z ##[error]packages/core/src/engine.ts(422,23): error TS7006: Parameter 'nodeId' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T00:48:51.7973996Z ##[error]packages/core/src/engine.ts(422,31): error TS7006: Parameter 'values' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T00:48:51.7975290Z ##[error]packages/core/src/engine.ts(422,39): error TS7006: Parameter 'overlay' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T00:48:51.7976488Z ##[error]packages/core/src/engine.ts(422,48): error TS7006: Parameter 'rebase' implicitly has an 'any' type.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T00:48:51.7977732Z ##[error]packages/core/src/runtime/project-runtime.ts(119,26): error TS2304: Cannot find name 'LiveValueWriter'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T00:48:51.7978972Z ##[error]packages/core/src/runtime/project-runtime.ts(131,31): error TS2304: Cannot find name 'KeyframeResolver'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T00:48:51.8267250Z ##[error]Process completed with exit code 2.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-18T00:50:12.4644577Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:50:12.4645503Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:50:12.4685474Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:50:12.4686310Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:50:12.4686756Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:50:12.4687224Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:50:12.4687699Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:50:12.4825022Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-18T00:50:13.3056402Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:50:13.3056868Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:50:13.3087802Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:50:13.3088209Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:50:13.3088454Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:50:13.3088708Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:50:13.3088970Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:50:13.3176302Z ##[error]Process completed with exit code 1.
