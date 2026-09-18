@@ -1,8 +1,6 @@
 // Docs: ./project-runtime.md
 import type {
-  AuthoredPluginGroup,
   AuthoredProperty,
-  ObservationDefinition,
   PatchBatch,
   ProjectDefinition,
   TrackDefinition,
@@ -10,56 +8,84 @@ import type {
   TriggerSignal,
 } from "../contract/v5";
 import { readPluginValues } from "../contract/keyframe-shape";
-import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
-import { StaleMotionHandleError, type MotionHandle } from "../contract/motion-handle";
+import type { MotionHandle } from "../contract/motion-handle";
 import type { SchemaTransaction } from "../contract/schema-transaction";
 import type { ValueTransaction } from "../contract/value-transaction";
-import {
-  StaleTrackHandleError,
-  type AuthoredValues,
-  type LiveValues,
-  type RequireView,
-  type TrackHandle,
-} from "../contract/track-handle";
+import type { AuthoredValues, TrackHandle } from "../contract/track-handle";
 import { validateMotionTrigger, validateTrackDefinition } from "../contract/validate-v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
-import type { LiveWriteResult } from "../domain/track";
-import type { ResolvedPlugins, TrackConfigView } from "../domain/plugins";
+import type { ResolvedPlugins } from "../domain/plugins";
 import {
-  readBoundGroup,
-  readsAsProperty,
-  removeGroup,
   removeKeyframe as removeAuthoredKeyframe,
-  removeRequire,
-  setGroup,
   setKeyframe as setAuthoredKeyframe,
-  setRequire,
   type AuthoredKeyframes,
-  type BoundGroup,
 } from "../domain/authoring/keyframes";
 import { sameCompiledTrackInput } from "../domain/authoring/recompile";
-import { observationEdgeKey } from "../graph/ir";
 import { qualifyFreeTrack, qualifyMotionTrack } from "../graph/ids";
+import { describeError } from "./schema-refusals";
 import {
-  commitInFlight,
-  describeDiagnostics,
-  describeError,
-  immediateInTransaction,
-  nestedTransaction,
-  propertyEntry,
-  reservedGoalSlot,
-  unboundGroup,
-  valueBatchImmediate,
-  valueBatchStructural,
-} from "./schema-refusals";
-import { collect, report, rejectAfterRollback, runRollbackSteps, runSettleSteps } from "./rollback";
+  COMMIT,
+  OPEN_RECIPE,
+  READ,
+  admitOrRefuse,
+  batchClosing,
+  batchOpening,
+  closing,
+  entering,
+  idle,
+  immediateVerb,
+  isRetiring,
+  leaving,
+  opening,
+  retired,
+  retiring,
+  seeding,
+  seedsIn,
+  stagedIn,
+  teardownOwed,
+  valueVerb,
+  type ProjectPhase,
+  type VerbClass,
+} from "./project-phase";
+import {
+  NO_PORTS,
+  completing,
+  installed,
+  type KeyframeResolver,
+  type LiveValueWriter,
+  type ProjectPorts,
+  type StagedTrack,
+} from "./project-ports";
+import {
+  RuntimeMotionHandle,
+  RuntimeTrackHandle,
+  type HandleHost,
+  type MotionHost,
+  type TrackHost,
+} from "./project-handles";
+import { collect, report, runSettleSteps } from "./rollback";
+import { planCommit } from "./commit-plan";
+import { runPlan } from "./run-plan";
+import { refuse } from "./refusal";
+import {
+  expectLive,
+  expectValid,
+  isLive,
+  liveWrite,
+  resolveToken,
+  stageOwed,
+  stale,
+  validated,
+  writtenProgress,
+  type Resolved,
+} from "./results";
 import { deferredValueBatch, emptyValueBatch } from "./value-batch";
+import { AUTHORED, isOverlaid, liveWritten, type ValueState } from "./value-state";
+import { applyEdit, boundGroup, type AuthoringEdit } from "./authoring-edit";
 import {
-  EMPTY_KEYFRAMES,
   NO_OVERLAY,
   authoredValues,
-  requireViews,
   sameTrigger,
   splitAuthoredValues,
   withAuthoredValues,
@@ -76,73 +102,23 @@ type TrackEntry = {
   track: TrackDefinition;
   motionId?: string;
   token: number;
-  overlay: Readonly<Record<string, unknown>>;
-  liveWrite: boolean;
+  valueState: ValueState;
 };
 
 type MotionEntry = {
   definition: MotionDefinition;
   token: number;
 };
-/**
- * A replacement already installed by the staging seam, with its displaced Track held for rollback.
- *
- * Before commit starts, rollback restores the displaced Track and releases the replacement.
- * Commit finalizes adoption and releases the displaced Track; that release can throw after the
- * replacement became irreversible. A throwing commit is not a promise that rollback can restore
- * a usable old Track. The staging seam owns cleanup if it throws before returning this handle.
- */
-export interface StagedTrack {
-  commit(): void;
-  rollback(): void;
-}
-
-interface SchemaEffect {
-  readonly apply: () => void;
-  readonly revert?: () => void;
-}
-
-interface SchemaPlan {
-  readonly tracks?: Map<string, TrackEntry>;
-  readonly motions?: Map<string, MotionEntry>;
-}
-
-interface SchemaCommit {
-  readonly effects: readonly SchemaEffect[];
-  readonly settle: readonly (() => void)[];
-  readonly touched: readonly string[];
-}
-
 interface OpenTransaction {
   tracks: Map<string, TrackEntry>;
   motions: Map<string, MotionEntry>;
 }
-/**
- * The one seam by which a live value reaches the compiled Track this runtime does not own.
- *
- * One hook, because there is one mechanism, and what separates `setValues` from `overrideValues` is
- * the retained definition, which is ADR-060's. `undefined` for the overlay is a write no animated key
- * is involved in, which keeps a static-only write on the path it was already on. See ADR-059,
- * ADR-060.
- */
-export type LiveValueWriter = (
-  nodeId: string,
-  values: LiveValues,
-  overlay: Readonly<Record<string, unknown>> | undefined,
-  rebase: boolean,
-) => LiveWriteResult | undefined;
-/**
- * How this layer asks what an authored record resolves to.
- *
- * One hook, one implementation: `PluginRegistry.resolveForKeyframes` stays the only owner of key
- * ownership, slot declaration and the plugin chain, and this runtime depends on a function rather
- * than on a registry it has no other reason to hold. See ADR-062.
- */
-export type KeyframeResolver = (
-  keyframes: Readonly<Record<string, unknown>>,
-  path: string,
-  track: TrackConfigView,
-) => ResolvedPlugins;
+
+interface StagedPair {
+  readonly tracks?: Map<string, TrackEntry>;
+  readonly motions?: Map<string, MotionEntry>;
+}
+export type { KeyframeResolver, LiveValueWriter, StagedTrack };
 export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly scheduler?: Scheduler;
@@ -211,31 +187,10 @@ export class ProjectRuntime {
   #motions = new Map<string, MotionEntry>();
   #nextToken = 1;
 
-  #open: OpenTransaction | undefined;
-  #valueSeeds: string[] | undefined;
+  #phase: ProjectPhase<OpenTransaction> = idle();
   readonly #diagnostics: Diagnostics;
-  readonly #setProgress: (nodeId: string, progress: number) => void;
-  readonly #writeValuesHook: LiveValueWriter;
-  readonly #compileTrack: ((track: TrackDefinition, nodeId?: string) => void) | undefined;
-  readonly #disposeTrack: ((nodeId: string) => void) | undefined;
-  readonly #stageTrack: ((track: TrackDefinition, nodeId: string) => StagedTrack) | undefined;
-  readonly #resolveKeyframes: KeyframeResolver | undefined;
-  readonly #addMotionTrack:
-    | ((motionId: string, trackId: string, duration?: number) => void)
-    | undefined;
-  readonly #replaceMotionTrack:
-    | ((motionId: string, trackId: string, duration?: number) => void)
-    | undefined;
-  readonly #removeMotionTrack: ((motionId: string, trackId: string) => void) | undefined;
-  readonly #replaceMotionTrigger: ProjectRuntimeOptions["replaceMotionTrigger"];
-  readonly #setMotionStagger: ProjectRuntimeOptions["setMotionStagger"];
-  readonly #signalMotion: ((motionId: string, signal: TriggerSignal) => void) | undefined;
-  readonly #createMotion: ((definition: MotionDefinition) => void) | undefined;
-  readonly #destroyMotion: ((motionId: string) => void) | undefined;
-  readonly #disposeComposition: () => void;
-  #disposed = false;
-  #inFlight = 0;
-  #pendingTeardown = false;
+  readonly #ports: ProjectPorts;
+  readonly #handleHost: HandleHost;
   constructor(project: ProjectDefinition, options: ProjectRuntimeOptions) {
     this.#project = project;
     for (const motion of project.motions) {
@@ -245,32 +200,81 @@ export class ProjectRuntime {
           track,
           motionId: motion.id,
           token: this.#nextToken++,
-          overlay: NO_OVERLAY,
-          liveWrite: false,
+          valueState: AUTHORED,
         });
     }
     for (const track of project.freeTracks ?? [])
       this.#tracks.set(qualifyFreeTrack(track.id).value, {
         track,
         token: this.#nextToken++,
-        overlay: NO_OVERLAY,
-        liveWrite: false,
+        valueState: AUTHORED,
       });
-    this.#setProgress = options.setProgress ?? (() => undefined);
-    this.#writeValuesHook = options.writeValues ?? (() => undefined);
-    this.#compileTrack = options.compileTrack;
-    this.#disposeTrack = options.disposeTrack;
-    this.#stageTrack = options.stageTrack;
-    this.#resolveKeyframes = options.resolveKeyframes;
-    this.#addMotionTrack = options.addMotionTrack;
-    this.#replaceMotionTrack = options.replaceMotionTrack;
-    this.#removeMotionTrack = options.removeMotionTrack;
-    this.#replaceMotionTrigger = options.replaceMotionTrigger;
-    this.#setMotionStagger = options.setMotionStagger;
-    this.#signalMotion = options.signalMotion;
-    this.#createMotion = options.createMotion;
-    this.#destroyMotion = options.destroyMotion;
-    this.#disposeComposition = options.disposeComposition ?? (() => undefined);
+    // The one place optionality is answered, and the one place an installed seam's receiver is.
+    // Every seam a host did not install reads its own no-op out of NO_PORTS, and every seam a host
+    // did install is applied to this runtime, which is the receiver it saw while each of these was
+    // a field. No member below is optional and no reader after this line asks either question.
+    this.#ports = Object.freeze({
+      track: Object.freeze({
+        compile: installed(this, options.compileTrack, NO_PORTS.track.compile),
+        dispose: installed(this, options.disposeTrack, NO_PORTS.track.dispose),
+        stage: installed(this, options.stageTrack, NO_PORTS.track.stage),
+      }),
+      motion: Object.freeze({
+        create: installed(this, options.createMotion, NO_PORTS.motion.create),
+        destroy: installed(this, options.destroyMotion, NO_PORTS.motion.destroy),
+        addTrack: installed(this, options.addMotionTrack, NO_PORTS.motion.addTrack),
+        replaceTrack: installed(this, options.replaceMotionTrack, NO_PORTS.motion.replaceTrack),
+        removeTrack: installed(this, options.removeMotionTrack, NO_PORTS.motion.removeTrack),
+        replaceTrigger: completing(this, options.replaceMotionTrigger),
+        setStagger: completing(this, options.setMotionStagger),
+        signal: installed(this, options.signalMotion, NO_PORTS.motion.signal),
+      }),
+      value: Object.freeze({
+        write: installed(this, options.writeValues, NO_PORTS.value.write),
+        seek: installed(this, options.setProgress, NO_PORTS.value.seek),
+      }),
+      host: Object.freeze({
+        resolveKeyframes: installed(this, options.resolveKeyframes, NO_PORTS.host.resolveKeyframes),
+        disposeComposition: installed(
+          this,
+          options.disposeComposition,
+          NO_PORTS.host.disposeComposition,
+        ),
+      }),
+    });
+    // What a handle this runtime issues may ask back of it, resolved once for the reason the ports
+    // above are: a handle is a class now, so it cannot reach a private member, and what one may ask
+    // is the same for every handle and every call that mints one. Each member below is one rung this
+    // class already owned, so which liveness order a verb gets is still decided here.
+    this.#handleHost = Object.freeze<HandleHost>({
+      track: Object.freeze<TrackHost>({
+        live: (id, token) => isLive(this.#entryIfLive(id, token)),
+        definition: (id, token) => this.#liveEntry(id, token).track,
+        remove: (id, token) => this.#removeTrack(id, token),
+        replace: (id, token, next) => this.#replaceTrack(id, token, next),
+        author: (id, token, edit) => this.#authorEdit(id, token, edit),
+        setKeyframe: (id, token, plugin, key, value) =>
+          this.#setKeyframe(id, token, plugin, key, value),
+        removeKeyframe: (id, token, plugin, key) => this.#removeKeyframe(id, token, plugin, key),
+        write: (id, token, values, rebase) =>
+          this.#writeValues(id, () => this.#writableEntry(id, token), values, rebase),
+      }),
+      motion: Object.freeze<MotionHost>({
+        live: (id, token) => isLive(this.#motionIfLive(id, token)),
+        definition: (id, token) => this.#motionDefinition(this.#liveMotion(id, token)),
+        trackIds: (id, token) => {
+          const owner = this.#liveId(id, token);
+          return Object.freeze(this.#ownedBy(this.#readTracks(), owner).map(([node]) => node));
+        },
+        addTrack: (id, token, track) =>
+          this.#addTrack(track, { motionId: this.#writableId(id, token) }),
+        track: (id, token, trackId) => this.track(this.#liveChildNode(id, token, trackId)),
+        tryTrack: (id, token, trackId) => this.tryTrack(this.#liveChildNode(id, token, trackId)),
+        setTrigger: (id, token, trigger) => this.#setTrigger(id, token, trigger),
+        setStagger: (id, token, stagger) => this.#setStagger(id, token, stagger),
+        destroy: (id, token) => this.#removeMotion(this.#writableId(id, token)),
+      }),
+    });
     this.#diagnostics = new Diagnostics(options.diagnosticsCapacity);
     try {
       this.#graph = new GraphRuntime(project, options.clock, options.compose, {
@@ -281,7 +285,7 @@ export class ProjectRuntime {
         onFlushError: (diagnostic) => this.#diagnostics.record(diagnostic),
       });
     } catch (error) {
-      this.#disposeComposition();
+      this.#ports.host.disposeComposition();
       throw error;
     }
   }
@@ -299,29 +303,28 @@ export class ProjectRuntime {
   }
 
   #readTracks(): ReadonlyMap<string, TrackEntry> {
-    return this.#open?.tracks ?? this.#tracks;
+    return stagedIn(this.#phase)?.tracks ?? this.#tracks;
   }
 
   #readMotions(): ReadonlyMap<string, MotionEntry> {
-    return this.#open?.motions ?? this.#motions;
+    return stagedIn(this.#phase)?.motions ?? this.#motions;
   }
 
   #stageTracks(): Map<string, TrackEntry> {
-    const open = this.#open;
+    const open = stagedIn(this.#phase);
     if (open === undefined) return new Map(this.#tracks);
     if (open.tracks === this.#tracks) open.tracks = new Map(this.#tracks);
     return open.tracks;
   }
 
   #stageMotions(): Map<string, MotionEntry> {
-    const open = this.#open;
+    const open = stagedIn(this.#phase);
     if (open === undefined) return new Map(this.#motions);
     if (open.motions === this.#motions) open.motions = new Map(this.#motions);
     return open.motions;
   }
   mount(nodeId: string, instance: object = {}): object {
-    this.#assertLive();
-    this.#refuseReentrant("mount");
+    this.#admit(immediateVerb("mount", "asserted"));
     return this.#mountNode(nodeId, instance);
   }
 
@@ -332,8 +335,7 @@ export class ProjectRuntime {
     return instance;
   }
   unmount(nodeId: string): void {
-    this.#assertLive();
-    this.#refuseReentrant("unmount");
+    this.#admit(immediateVerb("unmount", "asserted"));
     if (!this.#instances.has(nodeId)) return;
     this.#instances.delete(nodeId);
     this.#graph.detach(nodeId);
@@ -351,17 +353,16 @@ export class ProjectRuntime {
    * `RA-110` and ADR-064's amendment of 2026-09-04.
    */
   edit<T>(recipe: (transaction: SchemaTransaction) => T): T {
-    this.#assertLive();
-    if (this.#open !== undefined) nestedTransaction();
+    this.#admit(OPEN_RECIPE);
     const open: OpenTransaction = { tracks: this.#tracks, motions: this.#motions };
-    this.#open = open;
+    this.#phase = opening(this.#phase, open);
     let answer: T;
     try {
       answer = recipe(this.#transaction());
     } finally {
-      this.#open = undefined;
+      this.#phase = closing(this.#phase);
     }
-    if (this.#disposed) return answer;
+    if (isRetiring(this.#phase)) return answer;
     if (open.tracks !== this.#tracks || open.motions !== this.#motions)
       this.#commit({ tracks: open.tracks, motions: open.motions });
     return answer;
@@ -386,7 +387,7 @@ export class ProjectRuntime {
       `addMotion(${definition.id}).trigger`,
     );
     if (triggerDiagnostics.some(({ severity }) => severity === "error"))
-      throw new TypeError(describeDiagnostics(triggerDiagnostics));
+      refuse({ kind: "invalid-definition", diagnostics: triggerDiagnostics });
     if (definition.tracks.length > 0)
       throw new TypeError(`Runtime Motion "${definition.id}" must start with empty tracks.`);
     if (this.#readMotions().has(definition.id))
@@ -399,7 +400,7 @@ export class ProjectRuntime {
   }
   destroyMotion(motionId: string): void {
     this.#assertLive();
-    if (!this.#readMotions().has(motionId)) throw new TypeError(`Unknown motion "${motionId}".`);
+    if (!this.#readMotions().has(motionId)) refuse({ kind: "unknown-motion", motionId });
     this.#removeMotion(motionId);
   }
   /**
@@ -409,22 +410,21 @@ export class ProjectRuntime {
    * keeps its own refusal for an unknown motion id. See ADR-064's amendment.
    */
   signal(motionId: string, signal: TriggerSignal): void {
-    this.#assertLive();
-    this.#refuseReentrant("signal");
-    this.#signalMotion?.(motionId, signal);
+    this.#admit(immediateVerb("signal", "asserted"));
+    this.#ports.motion.signal(motionId, signal);
   }
   /**
    * The resolver for one Motion, refusing an id this project never had. Separate from `tryMotion`
    * for the reason `#entryOf` is separate from `#entryIfLive`: this one refuses and that one answers.
    */
   motion(motionId: string): MotionHandle {
-    this.#assertLive();
+    this.#admit(READ);
     const entry = this.#readMotions().get(motionId);
-    if (!entry) throw new TypeError(`Unknown motion "${motionId}".`);
+    if (!entry) refuse({ kind: "unknown-motion", motionId });
     return this.#motionHandle(motionId, entry.token);
   }
   tryMotion(motionId: string): MotionHandle | undefined {
-    this.#assertLive();
+    this.#admit(READ);
     const entry = this.#readMotions().get(motionId);
     return entry === undefined ? undefined : this.#motionHandle(motionId, entry.token);
   }
@@ -432,12 +432,12 @@ export class ProjectRuntime {
     return this.#addTrack(track, options);
   }
   track(nodeId: string): TrackHandle {
-    this.#assertLive();
+    this.#admit(READ);
     const entry = this.#entryOf(nodeId);
     return this.#handle(nodeId, entry.token);
   }
   tryTrack(nodeId: string): TrackHandle | undefined {
-    this.#assertLive();
+    this.#admit(READ);
     const entry = this.#readTracks().get(nodeId);
     return entry === undefined ? undefined : this.#handle(nodeId, entry.token);
   }
@@ -450,7 +450,7 @@ export class ProjectRuntime {
    * `#readersOf`, which owns the question. See ADR-050 and ADR-051.
    */
   dependantsOf(nodeId: string): readonly string[] {
-    this.#assertLive();
+    this.#admit(READ);
     return this.#readersOf(nodeId);
   }
 
@@ -473,7 +473,7 @@ export class ProjectRuntime {
    * second spelling of one read would be two owners for it. See ADR-064 and issue #362.
    */
   motionIds(): readonly string[] {
-    this.#assertLive();
+    this.#admit(READ);
     return Object.freeze([...this.#readMotions().keys()]);
   }
   /**
@@ -481,7 +481,7 @@ export class ProjectRuntime {
    * `MotionHandle.trackIds` already reads, so the two cannot disagree about committed order.
    */
   freeTrackIds(): readonly string[] {
-    this.#assertLive();
+    this.#admit(READ);
     return Object.freeze(this.#ownedBy(this.#readTracks(), undefined).map(([node]) => node));
   }
   /**
@@ -489,31 +489,29 @@ export class ProjectRuntime {
    * own settlement are what move it.
    */
   mountedNodeIds(): readonly string[] {
-    this.#assertLive();
+    this.#admit(READ);
     return Object.freeze([...this.#instances.keys()]);
   }
   #addTrack(track: TrackDefinition, options?: { motionId?: string }): TrackHandle {
     this.#assertLive();
     const motionId = options?.motionId;
     if (motionId !== undefined && !this.#readMotions().has(motionId))
-      throw new TypeError(`Unknown motion "${motionId}".`);
+      refuse({ kind: "unknown-motion", motionId });
     const id =
       motionId !== undefined
         ? qualifyMotionTrack(motionId, track.id).value
         : qualifyFreeTrack(track.id).value;
     if (this.#readTracks().has(id)) throw new TypeError(`Track "${id}" already exists.`);
-    const validation = validateTrackDefinition(track, `addTrack(${track.id})`);
-    if (!validation.valid || !validation.value)
-      throw new TypeError(describeDiagnostics(validation.diagnostics));
-    const accepted = validation.value;
+    const accepted = expectValid(
+      validated(validateTrackDefinition(track, `addTrack(${track.id})`)),
+    );
     const token = this.#nextToken++;
     const tracks = this.#stageTracks();
     tracks.set(id, {
       track: accepted,
       motionId,
       token,
-      overlay: NO_OVERLAY,
-      liveWrite: false,
+      valueState: AUTHORED,
     });
     this.#commit({ tracks });
     return this.#handle(id, token);
@@ -528,7 +526,7 @@ export class ProjectRuntime {
 
   #entryOf(nodeId: string): TrackEntry {
     const entry = this.#readTracks().get(nodeId);
-    if (!entry) throw new TypeError(`Unknown graph node "${nodeId}".`);
+    if (!entry) refuse({ kind: "unknown-node", nodeId });
     return entry;
   }
 
@@ -536,28 +534,23 @@ export class ProjectRuntime {
     entries: ReadonlyMap<string, E>,
     id: string,
     token: number,
-  ): E | undefined {
-    if (this.#disposed) return undefined;
-    const entry = entries.get(id);
-    return entry !== undefined && entry.token === token ? entry : undefined;
+  ): Resolved<E> {
+    if (isRetiring(this.#phase)) return stale();
+    return resolveToken(entries, id, token);
   }
 
-  #entryIfLive(id: string, token: number): TrackEntry | undefined {
+  #entryIfLive(id: string, token: number): Resolved<TrackEntry> {
     return this.#liveOf(this.#readTracks(), id, token);
   }
 
   #liveEntry(id: string, token: number): TrackEntry {
-    const entry = this.#entryIfLive(id, token);
-    if (entry === undefined) throw new StaleTrackHandleError(id);
-    return entry;
+    return expectLive(this.#entryIfLive(id, token), { kind: "track", id });
   }
-  #motionIfLive(id: string, token: number): MotionEntry | undefined {
+  #motionIfLive(id: string, token: number): Resolved<MotionEntry> {
     return this.#liveOf(this.#readMotions(), id, token);
   }
   #liveMotion(id: string, token: number): MotionEntry {
-    const entry = this.#motionIfLive(id, token);
-    if (entry === undefined) throw new StaleMotionHandleError(id);
-    return entry;
+    return expectLive(this.#motionIfLive(id, token), { kind: "motion", id });
   }
 
   #liveId(motionId: string, token: number): string {
@@ -602,27 +595,21 @@ export class ProjectRuntime {
     this.#commit({ motions });
   }
 
-  #refuseImmediateReentrant(verb: string): void {
-    if (this.#open !== undefined) immediateInTransaction(verb);
-    if (this.#inFlight > 0) commitInFlight();
-  }
-
-  #refuseReentrant(verb: string): void {
-    this.#refuseImmediateReentrant(verb);
-    if (this.#valueSeeds !== undefined) valueBatchImmediate(verb);
+  #admit(verb: VerbClass): "allow" | "join" {
+    return admitOrRefuse(this.#phase, verb);
   }
 
   #setTrigger(id: string, token: number, trigger: MotionDefinition["trigger"]): void {
-    this.#refuseReentrant("setTrigger");
+    this.#admit(immediateVerb("setTrigger", "resolved"));
     this.#boundary(() => {
       const entry = this.#writableMotion(id, token);
       const motionId = entry.definition.id;
       const diagnostics = validateMotionTrigger(trigger, `setTrigger(${motionId}).trigger`);
       if (diagnostics.some(({ severity }) => severity === "error"))
-        throw new TypeError(describeDiagnostics(diagnostics));
+        refuse({ kind: "invalid-definition", diagnostics });
       if (sameTrigger(entry.definition.trigger, trigger)) return;
       const definition = Object.freeze({ ...entry.definition, trigger });
-      const complete = this.#replaceMotionTrigger?.(
+      const complete = this.#ports.motion.replaceTrigger(
         motionId,
         this.#motionDefinition({ ...entry, definition }),
       );
@@ -632,12 +619,12 @@ export class ProjectRuntime {
   }
 
   #setStagger(id: string, token: number, stagger: number | undefined): void {
-    this.#refuseReentrant("setStagger");
+    this.#admit(immediateVerb("setStagger", "resolved"));
     this.#boundary(() => {
       const entry = this.#writableMotion(id, token);
       const motionId = entry.definition.id;
       if (entry.definition.stagger === stagger) return;
-      const complete = this.#setMotionStagger?.(motionId, stagger);
+      const complete = this.#ports.motion.setStagger(motionId, stagger);
       this.#motions.set(motionId, {
         ...entry,
         definition: withStagger(entry.definition, stagger),
@@ -649,72 +636,15 @@ export class ProjectRuntime {
     });
   }
 
-  #completeMotionEdit(complete: void | (() => void), touched: readonly string[] = []): void {
+  #completeMotionEdit(complete: (() => void) | undefined, touched: readonly string[] = []): void {
     runSettleSteps([() => complete?.(), () => this.#assertLive(), () => this.#flush(touched)]);
   }
 
   #motionHandle(id: string, token: number): MotionHandle {
-    const runtime = this;
-    return Object.freeze({
-      id,
-      get live(): boolean {
-        return runtime.#motionIfLive(id, token) !== undefined;
-      },
-      get definition(): MotionDefinition {
-        return runtime.#motionDefinition(runtime.#liveMotion(id, token));
-      },
-      get trackIds(): readonly string[] {
-        const owner = runtime.#liveId(id, token);
-        return Object.freeze(runtime.#ownedBy(runtime.#readTracks(), owner).map(([node]) => node));
-      },
-      addTrack: (track: TrackDefinition) =>
-        runtime.#addTrack(track, { motionId: runtime.#writableId(id, token) }),
-      track: (trackId: string) => runtime.track(runtime.#liveChildNode(id, token, trackId)),
-      tryTrack: (trackId: string) => runtime.tryTrack(runtime.#liveChildNode(id, token, trackId)),
-      setTrigger: (next: MotionDefinition["trigger"]) => runtime.#setTrigger(id, token, next),
-      setStagger: (stagger?: number) => runtime.#setStagger(id, token, stagger),
-      destroy: () => runtime.#removeMotion(runtime.#writableId(id, token)),
-    });
+    return new RuntimeMotionHandle(this.#handleHost.motion, id, token);
   }
   #handle(id: string, token: number): TrackHandle {
-    const runtime = this;
-    return Object.freeze({
-      id,
-      get live(): boolean {
-        return runtime.#entryIfLive(id, token) !== undefined;
-      },
-      get definition(): TrackDefinition {
-        return runtime.#liveEntry(id, token).track;
-      },
-      get requires(): readonly RequireView[] {
-        return requireViews(runtime.#liveEntry(id, token).track);
-      },
-      remove: () => runtime.#removeTrack(id, token),
-      replace: (next: TrackDefinition) => runtime.#replaceTrack(id, token, next),
-      addObserve: (observation: ObservationDefinition) =>
-        runtime.#replaceWithObservation(id, token, observation, true),
-      removeObserve: (observation: ObservationDefinition) =>
-        runtime.#replaceWithObservation(id, token, observation, false),
-      setRequire: (plugin: string, slot: string, source: string, memberKey?: string) =>
-        runtime.#setRequire(id, token, plugin, slot, source, memberKey),
-      removeRequire: (plugin: string, slot: string, memberKey?: string) =>
-        runtime.#removeRequire(id, token, plugin, slot, memberKey),
-      setKeyframeGroup: (plugin: string, group: AuthoredPluginGroup) =>
-        runtime.#setKeyframeGroup(id, token, plugin, group),
-      removeKeyframeGroup: (plugin: string) => runtime.#removeKeyframeGroup(id, token, plugin),
-      setGoal: (plugin: string, memberId: string, source: string) =>
-        runtime.#setGoal(id, token, plugin, memberId, source),
-      removeGoal: (plugin: string, memberId: string) =>
-        runtime.#removeGoal(id, token, plugin, memberId),
-      setKeyframe: (plugin: string, key: string, value: AuthoredProperty) =>
-        runtime.#setKeyframe(id, token, plugin, key, value),
-      removeKeyframe: (plugin: string, key: string) =>
-        runtime.#removeKeyframe(id, token, plugin, key),
-      overrideValues: (next: AuthoredValues) =>
-        runtime.#writeValues(id, () => runtime.#writableEntry(id, token), next, false),
-      setValues: (next: AuthoredValues) =>
-        runtime.#writeValues(id, () => runtime.#writableEntry(id, token), next, true),
-    });
+    return new RuntimeTrackHandle(this.#handleHost.track, id, token);
   }
 
   #removeTrack(id: string, token: number): void {
@@ -725,7 +655,7 @@ export class ProjectRuntime {
   }
 
   #resolve(nodeId: string, track: TrackDefinition): ResolvedPlugins | undefined {
-    return this.#resolveKeyframes?.(track.keyframes ?? {}, `${nodeId}.keyframes`, {
+    return this.#ports.host.resolveKeyframes(track.keyframes ?? {}, `${nodeId}.keyframes`, {
       id: nodeId,
       duration: track.duration,
     });
@@ -739,7 +669,7 @@ export class ProjectRuntime {
     const resolved = this.#resolve(nodeId, candidate);
     if (resolved === undefined) return true;
     if (resolved.diagnostics.some(({ severity }) => severity === "error"))
-      throw new TypeError(describeDiagnostics(resolved.diagnostics));
+      refuse({ kind: "invalid-definition", diagnostics: resolved.diagnostics });
     return !sameCompiledTrackInput(
       { definition: current, resolved: this.#resolve(nodeId, current) },
       { definition: candidate, resolved },
@@ -753,64 +683,83 @@ export class ProjectRuntime {
         ? qualifyMotionTrack(entry.motionId, next.id).value
         : qualifyFreeTrack(next.id).value;
     if (expected !== id) throw new TypeError(`Replacement must preserve node id "${id}".`);
-    const validation = validateTrackDefinition(next, `replaceTrack(${id})`);
-    if (!validation.valid || !validation.value)
-      throw new TypeError(describeDiagnostics(validation.diagnostics));
+    const accepted = expectValid(validated(validateTrackDefinition(next, `replaceTrack(${id})`)));
     const tracks = this.#stageTracks();
     tracks.set(id, {
       ...entry,
-      track: validation.value,
-      overlay: NO_OVERLAY,
-      liveWrite: false,
+      track: accepted,
+      valueState: AUTHORED,
     });
     this.#commit({ tracks });
   }
 
-  #commit(plan: SchemaPlan): void {
-    if (this.#open !== undefined) return;
-    if (this.#inFlight > 0) commitInFlight();
-    if (this.#valueSeeds !== undefined) valueBatchStructural();
-    this.#apply(plan);
-  }
-
-  #boundary<T>(body: () => T): T {
-    this.#inFlight++;
-    try {
-      return body();
-    } finally {
-      this.#inFlight--;
-      if (this.#inFlight === 0 && this.#pendingTeardown) this.#teardown();
-    }
-  }
-
-  #apply(plan: SchemaPlan): void {
-    const tracks = plan.tracks ?? this.#tracks;
-    const motions = plan.motions ?? this.#motions;
+  #commit(plan: StagedPair): void {
+    if (this.#admit(COMMIT) === "join") return;
+    const tracks = plan.tracks ?? this.#tracks,
+      motions = plan.motions ?? this.#motions;
     this.#boundary(() => {
-      const commit = this.#derive(tracks, motions);
-      this.#assertLive();
-      const applied: SchemaEffect[] = [];
-      try {
-        for (const effect of commit.effects) {
-          effect.apply();
-          applied.push(effect);
-          this.#assertLive();
-        }
-        this.#graph.replaceGraph(this.#snapshot(tracks, motions));
-      } catch (error) {
-        const steps: (() => void)[] = [];
-        for (const effect of applied) {
-          if (effect.revert !== undefined) steps.push(effect.revert);
-        }
-        rejectAfterRollback(error, () => runRollbackSteps(steps));
+      this.#assertSameLifetimes(this.#motions, motions);
+      this.#assertSameLifetimes(this.#tracks, tracks);
+      const readers = new Map<string, readonly string[]>(),
+        needsBuild = new Set<string>();
+      for (const id of this.#tracks.keys())
+        if (!tracks.has(id)) readers.set(id, this.#readersOf(id));
+      for (const [id, entry] of tracks) {
+        const old = this.#tracks.get(id);
+        if (
+          old !== undefined &&
+          old.track !== entry.track &&
+          this.#needsTimelineBuild(id, old.track, entry.track)
+        )
+          needsBuild.add(id);
       }
-      this.#adoptMaps(tracks, motions);
-      runSettleSteps([...commit.settle, () => this.#flush(commit.touched)]);
+      const commit = planCommit(
+        { tracks: this.#tracks, motions: this.#motions },
+        { tracks, motions },
+        { needsBuild, readers },
+      );
+      this.#assertLive();
+      runPlan(commit, {
+        createMotion: (definition) => this.#ports.motion.create(definition),
+        destroyMotion: (motionId) => this.#ports.motion.destroy(motionId),
+        compileTrack: (track, nodeId) => this.#ports.track.compile(track, nodeId),
+        stageTrack: (track, nodeId) => this.#ports.track.stage(track, nodeId),
+        replaceMotionTrack: (motionId, nodeId, duration) =>
+          this.#ports.motion.replaceTrack(motionId, nodeId, duration),
+        commitStaged: (staged) => staged?.commit(),
+        rollbackStaged: (staged) => staged?.rollback(),
+        disposeTrack: (nodeId) => this.#ports.track.dispose(nodeId),
+        evictNode: (nodeId) => {
+          this.#instances.delete(nodeId);
+          this.#graph.evictNode(nodeId);
+        },
+        mountNode: (nodeId) => this.#mountNode(nodeId),
+        addMotionTrack: (motionId, nodeId, duration) =>
+          this.#ports.motion.addTrack(motionId, nodeId, duration),
+        removeMotionTrack: (motionId, nodeId) => this.#ports.motion.removeTrack(motionId, nodeId),
+        assertLive: () => this.#assertLive(),
+        accept: () => this.#graph.replaceGraph(this.#snapshot(tracks, motions)),
+        adopt: () => {
+          this.#tracks = tracks;
+          this.#motions = motions;
+        },
+        publish: (ids) => this.#flush(ids),
+      });
     });
   }
 
+  #boundary<T>(body: () => T): T {
+    this.#phase = entering(this.#phase);
+    try {
+      return body();
+    } finally {
+      this.#phase = leaving(this.#phase);
+      if (teardownOwed(this.#phase)) this.#teardown(true);
+    }
+  }
+
   #flush(touched: readonly string[]): void {
-    if (this.#disposed) return;
+    if (isRetiring(this.#phase)) return;
     this.#publishSeeds(touched);
   }
 
@@ -840,110 +789,44 @@ export class ProjectRuntime {
     }
   }
 
-  #derive(
-    tracks: ReadonlyMap<string, TrackEntry>,
-    motions: ReadonlyMap<string, MotionEntry>,
-  ): SchemaCommit {
-    this.#assertSameLifetimes(this.#motions, motions);
-    this.#assertSameLifetimes(this.#tracks, tracks);
-    const effects: SchemaEffect[] = [];
-    const settle: (() => void)[] = [];
-    const touched: string[] = [];
-    for (const [motionId, entry] of motions) {
-      if (this.#motions.has(motionId)) continue;
-      const definition = entry.definition;
-      effects.push({
-        apply: () => this.#createMotion?.(definition),
-        revert: () => this.#destroyMotion?.(motionId),
-      });
-    }
-    for (const [nodeId, entry] of this.#tracks) {
-      if (tracks.has(nodeId)) continue;
-      const motionId = entry.motionId;
-      settle.push(() => {
-        this.#instances.delete(nodeId);
-        this.#graph.evictNode(nodeId);
-      });
-      settle.push(() => this.#disposeTrack?.(nodeId));
-      if (motionId !== undefined) settle.push(() => this.#removeMotionTrack?.(motionId, nodeId));
-      touched.push(...this.#readersOf(nodeId));
-    }
-    for (const motionId of this.#motions.keys())
-      if (!motions.has(motionId)) settle.push(() => this.#destroyMotion?.(motionId));
-    for (const [nodeId, entry] of tracks) {
-      const retained = this.#tracks.get(nodeId);
-      const motionId = entry.motionId;
-      if (retained === undefined) {
-        const added = entry.track;
-        effects.push({
-          apply: () => this.#compileTrack?.(added, nodeId),
-          revert: () => this.#disposeTrack?.(nodeId),
-        });
-        if (motionId !== undefined)
-          settle.push(() => this.#addMotionTrack?.(motionId, nodeId, added.duration));
-        settle.push(() => this.#mountNode(nodeId));
-        touched.push(nodeId);
-        continue;
-      }
-      if (retained.track === entry.track) continue;
-      const previous = retained.track;
-      const next = entry.track;
-      let staged: StagedTrack | undefined;
-      const needsBuild = this.#needsTimelineBuild(nodeId, previous, next);
-      if (needsBuild || retained.liveWrite)
-        effects.push({
-          apply: () => {
-            staged = this.#stageTrack?.(next, nodeId);
-          },
-          revert: () => staged?.rollback(),
-        });
-      if (motionId !== undefined)
-        effects.push({
-          apply: () => this.#replaceMotionTrack?.(motionId, nodeId, next.duration),
-          revert: () => this.#replaceMotionTrack?.(motionId, nodeId, previous.duration),
-        });
-      settle.push(() => staged?.commit());
-      touched.push(nodeId);
-    }
-    return { effects, settle, touched };
-  }
-
-  #adoptMaps(tracks: Map<string, TrackEntry>, motions: Map<string, MotionEntry>): void {
-    this.#tracks = tracks;
-    this.#motions = motions;
-  }
-
   #writeValues(
     nodeId: string,
     resolveEntry: () => TrackEntry,
     values: AuthoredValues,
     rebase: boolean,
   ) {
-    this.#refuseImmediateReentrant(rebase ? "setValues" : "overrideValues");
+    this.#admit(valueVerb(rebase ? "setValues" : "overrideValues", "resolved"));
     return this.#boundary(() => {
       const entry = resolveEntry();
       const { statics, animated } = splitAuthoredValues(values);
-      const involved = Object.keys(animated).length > 0 || Object.keys(entry.overlay).length > 0;
+      const writing = liveWritten(animated);
+      const involved = isOverlaid(writing) || isOverlaid(entry.valueState);
       const rewritten = rebase || involved ? withAuthoredValues(entry.track, values) : entry.track;
-      if (involved) {
-        const validation = validateTrackDefinition(rewritten, `writeValues(${nodeId})`);
-        if (!validation.valid) throw new TypeError(describeDiagnostics(validation.diagnostics));
-      }
+      // Validated and then discarded: this write stages no definition, so the refusal is the
+      // whole of what validating the candidate is for here.
+      if (involved)
+        expectValid(validated(validateTrackDefinition(rewritten, `writeValues(${nodeId})`)));
       const mask = { ...authoredValues(entry.track), ...statics };
-      const written = this.#writeValuesHook(nodeId, mask, involved ? animated : undefined, rebase);
+      const answer = this.#ports.value.write(nodeId, mask, involved ? animated : undefined, rebase);
+      // The seam has taken the write and carries no inverse, so the state it left is recorded on
+      // the way out, whichever of the fallible reads below is the last one reached. Decoding the
+      // answer is one of them, and it is inside the try for exactly that reason: the write has
+      // already landed by the time the record describing it can refuse to be read. The definition
+      // is adopted inside the try too, because a replacement that never staged is one this entry
+      // may not claim.
+      let adopted: TrackEntry = { ...entry, valueState: writing };
       let staged: StagedTrack | undefined;
       let progress: number | undefined;
-      if (written !== undefined && !written.patched) {
-        this.#tracks.set(nodeId, { ...entry, liveWrite: true });
-        progress = written.progress;
-        staged = this.#stageTrack?.(rewritten, nodeId);
+      try {
+        const written = liveWrite(answer);
+        if (stageOwed(written)) {
+          progress = writtenProgress(written);
+          staged = this.#ports.track.stage(rewritten, nodeId);
+        }
+        if (rebase) adopted = { ...adopted, track: rewritten };
+      } finally {
+        this.#tracks.set(nodeId, adopted);
       }
-      this.#tracks.set(nodeId, {
-        ...entry,
-        track: rebase ? rewritten : entry.track,
-        overlay: animated,
-        liveWrite: true,
-      });
       return this.#completeWrite(nodeId, staged, progress);
     });
   }
@@ -958,7 +841,7 @@ export class ProjectRuntime {
     runSettleSteps([
       () => staged?.commit(),
       () => {
-        if (progress !== undefined) this.#setProgress(nodeId, progress);
+        if (progress !== undefined) this.#ports.value.seek(nodeId, progress);
       },
       () => {
         batch = this.#publishValue(nodeId);
@@ -967,27 +850,16 @@ export class ProjectRuntime {
     return batch;
   }
 
-  #boundGroup(
-    nodeId: string,
-    entry: TrackEntry,
-    plugin: string,
-  ): { keyframes: AuthoredKeyframes; bound: BoundGroup } {
-    const keyframes = entry.track.keyframes;
-    const bound = keyframes === undefined ? undefined : readBoundGroup(keyframes, plugin);
-    if (keyframes === undefined || bound === undefined) unboundGroup(nodeId, plugin);
-    return { keyframes, bound };
-  }
-
   #invalidateOne(nodeId: string) {
     this.#assertLive();
     return this.#invalidateSeeds([nodeId]);
   }
 
   #publishValue(nodeId: string): PatchBatch {
-    const open = this.#valueSeeds;
-    if (open === undefined) return this.#invalidateOne(nodeId);
+    const seeded = seeding(this.#phase, nodeId);
+    if (seeded === undefined) return this.#invalidateOne(nodeId);
     this.#assertLive();
-    open.push(nodeId);
+    this.#phase = seeded;
     return deferredValueBatch(this.#graph.sequence, [nodeId]);
   }
 
@@ -999,28 +871,27 @@ export class ProjectRuntime {
   ) {
     return this.#boundary(() => {
       const next = withKeyframes(entry.track, keyframes);
-      const validation = validateTrackDefinition(next, `${verb}(${nodeId})`);
-      if (!validation.valid || !validation.value)
-        throw new TypeError(describeDiagnostics(validation.diagnostics));
-      const accepted = validation.value;
+      const accepted = expectValid(validated(validateTrackDefinition(next, `${verb}(${nodeId})`)));
       const resolved = this.#resolve(nodeId, accepted);
       if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
-        throw new TypeError(describeDiagnostics(resolved.diagnostics));
-      const written = this.#writeValuesHook(
-        nodeId,
-        authoredValues(entry.track),
-        Object.keys(entry.overlay).length === 0 ? undefined : NO_OVERLAY,
-        true,
-      );
-      this.#tracks.set(nodeId, { ...entry, liveWrite: true });
-      const progress = written?.progress;
-      const staged = this.#stageTrack?.(accepted, nodeId);
-      this.#tracks.set(nodeId, {
-        ...entry,
-        track: accepted,
-        overlay: NO_OVERLAY,
-        liveWrite: false,
-      });
+        refuse({ kind: "invalid-definition", diagnostics: resolved.diagnostics });
+      const clear = isOverlaid(entry.valueState) ? NO_OVERLAY : undefined;
+      const answer = this.#ports.value.write(nodeId, authoredValues(entry.track), clear, true);
+      // The recording the mask path makes, for the same reason and on the same way out. A stage
+      // that survives is what earns the accepted definition and the state saying the build removed
+      // every live write standing on this node. This path asks the decoded answer for the playhead
+      // alone: it rebuilds either way, so whether the seam patched what was already compiled
+      // decides nothing here.
+      let adopted: TrackEntry = { ...entry, valueState: liveWritten(clear) };
+      let staged: StagedTrack | undefined;
+      let progress: number | undefined;
+      try {
+        progress = writtenProgress(liveWrite(answer));
+        staged = this.#ports.track.stage(accepted, nodeId);
+        adopted = { ...entry, track: accepted, valueState: AUTHORED };
+      } finally {
+        this.#tracks.set(nodeId, adopted);
+      }
       return this.#completeWrite(nodeId, staged, progress);
     });
   }
@@ -1032,120 +903,27 @@ export class ProjectRuntime {
     key: string,
     value: AuthoredProperty,
   ) {
-    this.#refuseImmediateReentrant("setKeyframe");
+    this.#admit(valueVerb("setKeyframe", "resolved"));
     const entry = this.#writableEntry(nodeId, token);
-    const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
+    const { keyframes, bound } = boundGroup(nodeId, entry.track, plugin);
     if (Object.hasOwn(readPluginValues(bound.group), key))
       return this.#writeValues(nodeId, () => entry, { [key]: value }, true);
     const edited = setAuthoredKeyframe(keyframes, bound, key, value);
     return this.#recompileKeyframes(nodeId, entry, edited, "setKeyframe");
   }
   #removeKeyframe(nodeId: string, token: number, plugin: string, key: string) {
-    this.#refuseImmediateReentrant("removeKeyframe");
+    this.#admit(valueVerb("removeKeyframe", "resolved"));
     const entry = this.#writableEntry(nodeId, token);
-    const { keyframes, bound } = this.#boundGroup(nodeId, entry, plugin);
+    const { keyframes, bound } = boundGroup(nodeId, entry.track, plugin);
     const edited = removeAuthoredKeyframe(keyframes, bound, key);
     if (edited === keyframes) return this.#publishValue(nodeId);
     return this.#recompileKeyframes(nodeId, entry, edited, "removeKeyframe");
   }
-  #replaceWithObservation(
-    id: string,
-    token: number,
-    observation: ObservationDefinition,
-    add: boolean,
-  ): void {
+  #authorEdit(id: string, token: number, edit: AuthoringEdit): void {
     const entry = this.#writableEntry(id, token);
-    const observations = [...(entry.track.observes ?? [])];
-    const key = observationEdgeKey(observation, id, entry.motionId ?? "~");
-    const index = observations.findIndex(
-      (candidate) => observationEdgeKey(candidate, id, entry.motionId ?? "~") === key,
-    );
-    if (add) {
-      if (index >= 0) return;
-      observations.push(observation);
-    } else {
-      if (index < 0) return;
-      observations.splice(index, 1);
-    }
-    this.#replaceTrack(id, token, { ...entry.track, observes: observations });
-  }
-
-  #editRequire(
-    id: string,
-    token: number,
-    plugin: string,
-    edit: (keyframes: AuthoredKeyframes, bound: BoundGroup) => AuthoredKeyframes,
-  ): void {
-    const entry = this.#writableEntry(id, token);
-    const { keyframes, bound } = this.#boundGroup(id, entry, plugin);
-    const next = edit(keyframes, bound);
-    if (next === keyframes) return;
-    this.#writeKeyframes(id, token, entry.track, next);
-  }
-  #setRequire(
-    id: string,
-    token: number,
-    plugin: string,
-    slot: string,
-    source: string,
-    memberKey?: string,
-  ): void {
-    this.#editRequire(id, token, plugin, (keyframes, bound) => {
-      if (slot === PLUGIN_GOALS_SLOT) reservedGoalSlot(bound.plugin, slot);
-      return setRequire(keyframes, bound, slot, source, memberKey);
-    });
-  }
-  #removeRequire(
-    id: string,
-    token: number,
-    plugin: string,
-    slot: string,
-    memberKey?: string,
-  ): void {
-    this.#editRequire(id, token, plugin, (keyframes, bound) => {
-      if (slot === PLUGIN_GOALS_SLOT) reservedGoalSlot(bound.plugin, slot);
-      return removeRequire(keyframes, bound, slot, memberKey);
-    });
-  }
-
-  #setGoal(id: string, token: number, plugin: string, memberId: string, source: string): void {
-    this.#editRequire(id, token, plugin, (keyframes, bound) =>
-      setRequire(keyframes, bound, PLUGIN_GOALS_SLOT, source, memberId),
-    );
-  }
-  #removeGoal(id: string, token: number, plugin: string, memberId: string): void {
-    this.#editRequire(id, token, plugin, (keyframes, bound) =>
-      removeRequire(keyframes, bound, PLUGIN_GOALS_SLOT, memberId),
-    );
-  }
-
-  #editGroup(
-    id: string,
-    token: number,
-    plugin: string,
-    edit: (keyframes: AuthoredKeyframes) => AuthoredKeyframes,
-  ): void {
-    const entry = this.#writableEntry(id, token);
-    const keyframes = entry.track.keyframes ?? EMPTY_KEYFRAMES;
-    if (readsAsProperty(keyframes, plugin)) propertyEntry(id, plugin);
-    const next = edit(keyframes);
-    if (next === keyframes) return;
-    this.#writeKeyframes(id, token, entry.track, next);
-  }
-  #setKeyframeGroup(id: string, token: number, plugin: string, group: AuthoredPluginGroup): void {
-    this.#editGroup(id, token, plugin, (keyframes) => setGroup(keyframes, plugin, group));
-  }
-  #removeKeyframeGroup(id: string, token: number, plugin: string): void {
-    this.#editGroup(id, token, plugin, (keyframes) => removeGroup(keyframes, plugin));
-  }
-
-  #writeKeyframes(
-    id: string,
-    token: number,
-    track: TrackDefinition,
-    keyframes: AuthoredKeyframes,
-  ): void {
-    this.#replaceTrack(id, token, withKeyframes(track, keyframes));
+    const next = applyEdit({ nodeId: id, motionId: entry.motionId, track: entry.track }, edit);
+    if (next === entry.track) return;
+    this.#replaceTrack(id, token, next);
   }
 
   #snapshot(
@@ -1173,9 +951,8 @@ export class ProjectRuntime {
     };
   }
   seek(nodeId: string, progress: number) {
-    this.#assertLive();
-    this.#refuseImmediateReentrant("seek");
-    this.#setProgress(nodeId, progress);
+    this.#admit(valueVerb("seek", "asserted"));
+    this.#ports.value.seek(nodeId, progress);
     return this.#publishValue(nodeId);
   }
   /**
@@ -1217,14 +994,14 @@ export class ProjectRuntime {
    * keeps the value tier's one failure contract. See ADR-078, ADR-064 and issue #288.
    */
   values(recipe: (transaction: ValueTransaction) => void): PatchBatch {
-    this.#assertLive();
-    this.#refuseReentrant("values");
-    const seeds: string[] = [];
-    this.#valueSeeds = seeds;
+    this.#admit(immediateVerb("values", "asserted"));
+    this.#phase = batchOpening(this.#phase);
+    let seeds: readonly string[] = [];
     try {
       recipe(this.#valueTransaction());
     } finally {
-      this.#valueSeeds = undefined;
+      seeds = seedsIn(this.#phase) ?? seeds;
+      this.#phase = batchClosing(this.#phase);
     }
     this.#assertLive();
     return this.#boundary(() => this.#publishSeeds(seeds));
@@ -1252,8 +1029,7 @@ export class ProjectRuntime {
    * carries the sequence the graph is already on. See ADR-080 and issue #371.
    */
   invalidate(nodeIds: readonly string[]) {
-    this.#assertLive();
-    this.#refuseReentrant("invalidate");
+    this.#admit(immediateVerb("invalidate", "asserted"));
     return this.#publishSeeds(nodeIds);
   }
   /**
@@ -1265,29 +1041,22 @@ export class ProjectRuntime {
    * records diagnostics without replacing the outcome of the operation it follows.
    */
   dispose(): void {
-    if (this.#disposed) return;
-    this.#disposed = true;
-    if (this.#inFlight > 0) {
-      this.#pendingTeardown = true;
-      return;
-    }
-    this.#teardown();
+    if (isRetiring(this.#phase)) return;
+    this.#phase = retiring(this.#phase);
+    if (teardownOwed(this.#phase)) this.#teardown(false);
   }
 
-  #teardown(): void {
-    const deferred = this.#pendingTeardown;
-    this.#pendingTeardown = false;
+  #teardown(deferred: boolean): void {
+    this.#phase = retired();
     const failures = collect([
       ...[...this.#instances.keys()].map((nodeId) => () => this.#graph.detach(nodeId)),
       () => {
         this.#instances.clear();
         this.#tracks.clear();
         this.#motions.clear();
-        this.#open = undefined;
-        this.#valueSeeds = undefined;
       },
       () => this.#graph.dispose(),
-      () => this.#disposeComposition(),
+      () => this.#ports.host.disposeComposition(),
     ]);
     const describe = (failure: unknown, seen = new Set<unknown>()): string => {
       try {
@@ -1319,6 +1088,6 @@ export class ProjectRuntime {
     if (!deferred) report(failures, "Project release failed.");
   }
   #assertLive(): void {
-    if (this.#disposed) throw new Error("ProjectRuntime is disposed.");
+    if (isRetiring(this.#phase)) refuse({ kind: "disposed" });
   }
 }

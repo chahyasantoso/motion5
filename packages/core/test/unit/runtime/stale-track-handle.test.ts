@@ -9,6 +9,7 @@ import type {
 import { StaleTrackHandleError, type TrackHandle } from "../../../src/contract/track-handle";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { handleMembers, touchMember } from "../../helpers/handle-surface";
 import { code, member } from "../../helpers/source-region";
 
 /**
@@ -27,6 +28,11 @@ const NODE_ID = "hero/arm";
 const OTHER_ID = "hero/leg";
 const RUNTIME_SOURCE = fileURLToPath(
   new URL("../../../src/runtime/project-runtime.ts", import.meta.url),
+);
+const RESULTS_SOURCE = fileURLToPath(new URL("../../../src/runtime/results.ts", import.meta.url));
+const REFUSAL_SOURCE = fileURLToPath(new URL("../../../src/runtime/refusal.ts", import.meta.url));
+const HANDLES_SOURCE = fileURLToPath(
+  new URL("../../../src/runtime/project-handles.ts", import.meta.url),
 );
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
@@ -132,18 +138,16 @@ function thrownBy(operation: () => unknown): unknown {
   throw new Error("Expected the operation to throw.");
 }
 /**
- * Reads a member through its own property descriptor, so a getter is touched as a read and a
- * method as a call. `typeof handle.definition` cannot be asked here: on a stale handle that read is
- * itself the refusal being measured.
+ * One member of this handle, read through the one owner of how a member is reached.
+ *
+ * The twin of `handle-base.test.ts`'s copy, which was byte-identical to this one but for the handle
+ * type and the argument record it closed over, so what they shared was the question rather than the
+ * list. `test/helpers/handle-surface.ts` owns the question and walks the prototype chain as well as
+ * the instance, which is what makes the same reader correct once both factories are classes. The
+ * record stays here, because it is half of `SH-1`'s coverage check.
  */
 function touch(handle: TrackHandle, member: string): () => unknown {
-  const descriptor = Object.getOwnPropertyDescriptor(handle, member);
-  if (descriptor === undefined) throw new Error(`No handle member named "${member}".`);
-  const read = descriptor.get;
-  if (read !== undefined) return () => read.call(handle);
-  const call = descriptor.value as (...rest: unknown[]) => unknown;
-  const args = [...(MEMBER_ARGUMENTS[member] ?? [])];
-  return () => call.apply(handle, args);
+  return touchMember(handle, member, MEMBER_ARGUMENTS[member] ?? []);
 }
 
 describe("a stale TrackHandle refuses uniformly, and `live` asks without throwing", () => {
@@ -153,7 +157,7 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
 
     // Derived from the handle's own keys, never from the assertions below. A sixth member added to
     // `#handle` lands here first, which is the whole point of the case.
-    const surface = Object.keys(handle).sort();
+    const surface = [...handleMembers(handle)].sort();
     const declared = [...NON_REFUSING, ...Object.keys(MEMBER_ARGUMENTS)].sort();
     expect(surface).toEqual(declared);
 
@@ -263,17 +267,22 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
     project.dispose();
   });
 
-  it("SH-7 keeps one token comparison and no branch inside the handle factory", () => {
+  it("SH-7 keeps one token comparison and no branch inside the handle it mints", () => {
     const source = code(RUNTIME_SOURCE);
+    const results = code(RESULTS_SOURCE);
 
-    // The DRY claim, as a number. Three private mutators and the `definition` getter each carried a
-    // copy of this comparison; a reintroduced silent return needs one of its own. It survives the
-    // motion handle arriving because both retained kinds carry a token and `#liveOf` is generic over
-    // the entry, so a second handle family cost a second probe name and no second comparison.
-    const comparisons = [...source.matchAll(/\btoken\b\s*(?:===|!==)\s*\btoken\b/g)];
-    expect(comparisons.map((match) => match[0])).toHaveLength(1);
+    // The DRY claim, as a number, asked at the owner it moved to. Three private mutators and the
+    // `definition` getter each carried a copy of this comparison; a reintroduced silent return needs
+    // one of its own. It survived the motion handle arriving because both retained kinds carry a
+    // token and `#liveOf` is generic over the entry, and it survives the resolution becoming a value
+    // the same way: `resolveToken` is that one comparison, the runtime keeps none of its own, and
+    // the class a stale handle throws is named where the refusal is minted. One is still the number.
+    const comparison = /\btoken\b\s*(?:===|!==)\s*\btoken\b/g;
+    expect([...results.matchAll(comparison)].map((match) => match[0])).toHaveLength(1);
+    expect([...source.matchAll(comparison)]).toEqual([]);
     expect(source).toContain("#liveEntry(");
-    expect(source).toContain("StaleTrackHandleError");
+    expect(source).toContain("expectLive(");
+    expect(code(REFUSAL_SOURCE)).toContain("StaleTrackHandleError");
 
     // The factory decides nothing. Every member delegates, so there is no place left for a guard
     // to grow back into.
@@ -283,6 +292,36 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
     const factory = member(source, "#handle(id: string, token: number): TrackHandle {");
     expect(factory.match(/\bif\s*\(/g) ?? []).toEqual([]);
     expect(factory).not.toMatch(/\breturn;/);
+    expect(factory).toContain("new RuntimeTrackHandle(");
+
+    // Re-addressed at the class those members moved to, on the rule this phase already followed for
+    // `RA-113` and for `SH-7` itself: a claim keeps its subject rather than its coordinates. The
+    // factory is one statement now, so asking only it would leave the eighteen delegations this case
+    // has always been about unmeasured, and a guard growing back would grow in the class instead.
+    const handle = member(
+      code(HANDLES_SOURCE),
+      "export class RuntimeTrackHandle implements TrackHandle {",
+      "",
+    );
+    expect(handle.match(/\bif\s*\(/g) ?? []).toEqual([]);
+    expect(handle).not.toMatch(/\breturn;/);
+
+    // Wider than `if` at the class, because `if` is not the only way to write a decision and the
+    // class is where one would now grow. Text rather than syntax, and that is the stated limit: what
+    // it refuses is every branching form this project's style reaches for, so a guard arriving as a
+    // ternary or a short-circuit is red here rather than green on a spelling nobody asked about.
+    const branching = [
+      "switch (",
+      " ? ",
+      " && ",
+      " || ",
+      " ?? ",
+      "for (",
+      "while (",
+      "throw ",
+      "catch ",
+    ];
+    expect(branching.filter((form) => handle.includes(form))).toEqual([]);
   });
 
   it("SH-8 reports the disposal rather than the staleness on every writing member", () => {

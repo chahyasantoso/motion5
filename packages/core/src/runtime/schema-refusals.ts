@@ -1,6 +1,8 @@
-import type { Diagnostic } from "../contract/v5";
+import { refuse } from "./refusal";
+
+export { describeDiagnostics } from "./refusal";
 /**
- * The named refusals a schema edit throws, and the two describers every message here is built with.
+ * The named refusals a schema edit throws, each one a spelling of the data `refusal.ts` owns.
  *
  * Moved out of `project-runtime.ts` whole by slice 2 of issue #267, with each docblock travelling
  * with the function it constrains. Not a new decision about any of them: none of these reads `this`,
@@ -8,14 +10,13 @@ import type { Diagnostic } from "../contract/v5";
  * caller is told rather than about how a commit is ordered. They are also the least-edited region of
  * that file, so their comment bulk was sitting inside its hot edit target for no reason at all.
  *
- * Exported from this module and from nothing else. No export of `packages/core` moves, and every
- * refusal is still reached through the verb that owns it.
+ * Every refusal below is now one call to `refuse`, which owns the payload, the message and the
+ * error class each of them throws, so the kind of a refusal is a value a caller can branch on rather
+ * than a prefix inside prose it has to parse. These functions keep their names and their signatures,
+ * so no call site and no test moves, and `describeDiagnostics` is re-exported from here for the same
+ * reason. No export of `packages/core` moves, and every refusal is still reached through the verb
+ * that owns it. Issue #443, phase A step 1.
  */
-export function describeDiagnostics(diagnostics: readonly Diagnostic[]): string {
-  return diagnostics
-    .map(({ ruleId, path, message }) => `${ruleId} at ${path}: ${message}`)
-    .join(" ");
-}
 export function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -28,8 +29,7 @@ export function describeError(error: unknown): string {
  * kept `setKeyframe` separate from `setKeyframeGroup`. See ADR-064.
  */
 export function nestedTransaction(): never {
-  const use = "Finish it before opening another.";
-  throw new TypeError(`schema-transaction-nested: A recipe is already open. ${use}`);
+  return refuse({ kind: "nested-recipe" });
 }
 /**
  * Refuses an edit that applies immediately from inside a recipe.
@@ -43,8 +43,7 @@ export function nestedTransaction(): never {
  * rather than given a second, weaker one outside it. See ADR-064.
  */
 export function immediateInTransaction(verb: string): never {
-  const detail = `"${verb}" applies immediately and cannot travel with a recipe.`;
-  throw new TypeError(`schema-transaction-immediate: ${detail} Call it outside edit().`);
+  return refuse({ kind: "immediate-in-recipe", verb });
 }
 /**
  * Refuses a structural commit asked for while one is already in flight.
@@ -61,8 +60,7 @@ export function immediateInTransaction(verb: string): never {
  * ADR-068.
  */
 export function commitInFlight(): never {
-  const use = "Ask for it once this one has returned.";
-  throw new TypeError(`schema-commit-reentrant: A structural commit is already in flight. ${use}`);
+  return refuse({ kind: "commit-in-flight" });
 }
 /**
  * Refuses an immediate verb asked for while a value batch is open.
@@ -81,8 +79,7 @@ export function commitInFlight(): never {
  * second spelling. See ADR-078.
  */
 export function valueBatchImmediate(verb: string): never {
-  const detail = `"${verb}" publishes or mounts and cannot travel with a value batch.`;
-  throw new TypeError(`value-batch-immediate: ${detail} Call it outside values().`);
+  return refuse({ kind: "immediate-in-batch", verb });
 }
 /**
  * Refuses a structural commit asked for while a value batch is open.
@@ -97,8 +94,7 @@ export function valueBatchImmediate(verb: string): never {
  * for a settle step to run. See ADR-078.
  */
 export function valueBatchStructural(): never {
-  const use = "Ask for it once values() has returned.";
-  throw new TypeError(`value-batch-structural: A value batch is open. ${use}`);
+  return refuse({ kind: "structural-in-batch" });
 }
 /**
  * Refuses a binding edit addressed at a plugin this node authors no group for.
@@ -113,8 +109,7 @@ export function valueBatchStructural(): never {
  * declares the slot, belong to the registry and arrive from it at the recompile. See ADR-062.
  */
 export function unboundGroup(nodeId: string, plugin: string): never {
-  const use = "Use setKeyframeGroup to originate one.";
-  throw new TypeError(`keyframe-group-unbound: "${nodeId}" authors no "${plugin}" group. ${use}`);
+  return refuse({ kind: "unbound-group", nodeId, plugin });
 }
 /**
  * Refuses a binding edit addressed at a solver's goals slot by name.
@@ -131,10 +126,7 @@ export function unboundGroup(nodeId: string, plugin: string): never {
  * `setRequire`. See ADR-057 and ADR-063.
  */
 export function reservedGoalSlot(plugin: string, slot: string): never {
-  const use = "Use setGoal to bind one entry of it, or removeGoal to drop one.";
-  throw new TypeError(
-    `keyframe-goal-slot-reserved: Slot "${slot}" of "${plugin}" holds a solver's goals. ${use}`,
-  );
+  return refuse({ kind: "reserved-goal-slot", plugin, slot });
 }
 /**
  * Refuses a group edit addressed at a name this node authors as an ordinary property.
@@ -146,8 +138,5 @@ export function reservedGoalSlot(plugin: string, slot: string): never {
  * a `replace()`, where a whole definition is validated. See ADR-063.
  */
 export function propertyEntry(nodeId: string, plugin: string): never {
-  const use = "Use replace() to change an entry's shape.";
-  throw new TypeError(
-    `keyframe-entry-shape: "${nodeId}" authors "${plugin}" as a property, not a group. ${use}`,
-  );
+  return refuse({ kind: "property-entry", nodeId, plugin });
 }

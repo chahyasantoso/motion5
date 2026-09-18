@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { declaresMembers } from "../../helpers/handle-surface";
 import { publicationsFor, statedPublications } from "../../helpers/publication-spy";
 import type { AuthoredStop, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import type { TrackHandle } from "../../../src/contract/track-handle";
@@ -152,18 +153,17 @@ function thrownBy(operation: () => unknown): unknown {
 /**
  * Both verbs, asked for by name before any case calls one.
  *
- * `Object.keys` rather than a type, for the reason C2's `declaring` gives: the question is whether
- * the handle declares the member at all, and asking it as an assertion is what keeps a red run
- * reporting an absent verb rather than a `TypeError` from calling `undefined`. It stays after the
- * source lands, because the frozen handle is built by hand and a member deleted from it would
- * otherwise fail every case at once with no name attached.
+ * The surface rather than a type, for the reason C2's `declaring` gives: the question is whether the
+ * handle declares the member at all, and asking it as an assertion is what keeps a red run reporting
+ * an absent verb rather than a `TypeError` from calling `undefined`. It stays after the source lands,
+ * because a member deleted from the handle would otherwise fail every case at once with no name
+ * attached.
+ *
+ * Asked through `declaresMembers`, so this copy and the three beside it read one owner that walks the
+ * prototype chain as well as the instance. See `test/helpers/handle-surface.ts`.
  */
 function declaring(handle: ProjectHandle, nodeId: string): TrackHandle {
-  const track = handle.track(nodeId);
-  const keys = Object.keys(track);
-  expect(keys).toContain("setKeyframe");
-  expect(keys).toContain("removeKeyframe");
-  return track;
+  return declaresMembers(handle.track(nodeId), "setKeyframe", "removeKeyframe");
 }
 function values(handle: ProjectHandle, id: string): Readonly<Record<string, unknown>> {
   const patch = handle.get(id);
