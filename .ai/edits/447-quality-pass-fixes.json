@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "operation": "apply",
+  "expected_head": "0ee35e0ea7a27062b80303bfb92cacb8c88d211b",
+  "message": "fix(scripts): read the raw HTML a Markdown reader cannot see, and say what the rename's cases witness",
+  "expected_blobs": {
+    "packages/core/test/unit/scripts/session-status-shape.test.ts": "3ed395541522c87d3261c1d6c3768e2b335a4711",
+    "docs/ADR-095-a-gate-reads-the-text-a-reader-sees.md": "766a64323588cfbb03e961aa1fab8308e32c0661",
+    "docs/ADR-096-a-failure-is-named-for-the-question-it-answers.md": "ff34cc47fb25e4a950aa9712b751beeb1cc54340"
+  },
+  "edits": [
+    {
+      "path": "packages/core/test/unit/scripts/session-status-shape.test.ts",
+      "find": "const NUMERIC_REFERENCE = /&#(\\d+|[xX][0-9a-fA-F]+);/g;",
+      "replace": "const HTML_TAG = /<\\/?[a-zA-Z][^>]*>/g;\nconst NUMERIC_REFERENCE = /&#(\\d+|[xX][0-9a-fA-F]+);/g;"
+    },
+    {
+      "path": "packages/core/test/unit/scripts/session-status-shape.test.ts",
+      "find": "  return bullet\n    .slice(BULLET.length)\n    .replace(COMMENTS, \"\")\n    .replace(NUMERIC_REFERENCE, decodeReference)\n    .replace(NAMED_REFERENCE, \" \");",
+      "replace": "  return bullet\n    .slice(BULLET.length)\n    .replace(COMMENTS, \"\")\n    .replace(HTML_TAG, \"\")\n    .replace(NUMERIC_REFERENCE, decodeReference)\n    .replace(NAMED_REFERENCE, \" \");"
+    },
+    {
+      "path": "packages/core/test/unit/scripts/session-status-shape.test.ts",
+      "find": " * A numeric character reference is decoded and a named one becomes a space, which is asymmetric on\n * purpose. `&#80;hase:` spells the label, so neutralising it would move the bypass one spelling\n * along; no named reference produces an ASCII word character, so a named one cannot spell the label,\n * and a table of them would be the list #422 already refused to start maintaining. A malformed or\n * out-of-range reference becomes a space rather than a guess.\n */",
+      "replace": " * A numeric character reference is decoded and a named one becomes a space, which is asymmetric on\n * purpose. `&#80;hase:` spells the label, so neutralising it would move the bypass one spelling\n * along; no named reference produces an ASCII word character, so a named one cannot spell the label,\n * and a table of them would be the list #422 already refused to start maintaining. A malformed or\n * out-of-range reference becomes a space rather than a guess.\n *\n * A raw HTML element goes the way the comment goes, and for the same reason: Markdown passes inline\n * HTML through, so `<span>Phase:</span>` renders as the label with the markup invisible, and a tag\n * whose own name is a word is exactly what the leading strip stops at. Found by the quality pass over\n * this change rather than by the issue, and it is the reported defect one spelling out. Only the tags\n * are removed and never the text between them, so an entry that legitimately emphasises a word keeps\n * what it says.\n *\n * A reference missing its closing semicolon is deliberately not decoded. Markdown renders `&#80hase`\n * and `&nbsp Phase:` literally, ampersand and all, so a reader never sees a label there and decoding\n * one here would refuse prose instead of a bypass.\n */"
+    },
+    {
+      "path": "packages/core/test/unit/scripts/session-status-shape.test.ts",
+      "find": "      \"- &#x50;hase 6: live editing\",\n      \"- Ph<!-- split -->ase: live editing\",\n    ];",
+      "replace": "      \"- &#x50;hase 6: live editing\",\n      \"- Ph<!-- split -->ase: live editing\",\n      // Inline HTML renders as the label too, and the tag name is the word the leading strip stopped\n      // at, so these are the reported defect one spelling out. Found by the pass over this change.\n      \"- <span>Phase:</span> live editing\",\n      \"- <b>Phase:</b> live editing\",\n      \"- <span class='x'>Phase 6:</span> live editing\",\n    ];"
+    },
+    {
+      "path": "packages/core/test/unit/scripts/session-status-shape.test.ts",
+      "find": "    const nested = \"## Now\\n- one\\n  - <!-- x -->Phase: live editing\\n\";\n    expect(entriesUnder(nested, \"## Now\")).toEqual([\"- one\"]);\n    expect(allBullets(statusLines(nested)).filter(statesPhase)).toEqual([\n      \"- <!-- x -->Phase: live editing\",\n    ]);",
+      "replace": "    const nested =\n      \"## Now\\n- one\\n  - <!-- x -->Phase: live editing\\n  - <span>Phase:</span> live editing\\n\";\n    expect(entriesUnder(nested, \"## Now\")).toEqual([\"- one\"]);\n    expect(allBullets(statusLines(nested)).filter(statesPhase)).toEqual([\n      \"- <!-- x -->Phase: live editing\",\n      \"- <span>Phase:</span> live editing\",\n    ]);"
+    },
+    {
+      "path": "packages/core/test/unit/scripts/session-status-shape.test.ts",
+      "find": "      \"- A slice that names a phase&nbsp;6 target is not labelling one.\",\n    ];",
+      "replace": "      \"- A slice that names a phase&nbsp;6 target is not labelling one.\",\n      \"- An entry that <b>emphasises</b> a phase noun mid-sentence is not labelling one.\",\n      \"- A reference with no semicolon reads as &nbsp Phase, which no reader sees as a label.\",\n    ];"
+    },
+    {
+      "path": "docs/ADR-095-a-gate-reads-the-text-a-reader-sees.md",
+      "find": "A malformed or out-of-range numeric reference becomes a space rather than a guess.",
+      "replace": "A malformed or out-of-range numeric reference becomes a space rather than a guess.\n\n**A raw HTML element is removed with the comment, and a reference without its semicolon is not decoded.** Both halves were found by the quality pass over this change rather than by the issue, and the first is the reported defect one spelling out: Markdown passes inline HTML through, so `<span>Phase:</span>` renders as the label with the markup invisible and a tag whose name is a word is what the leading strip stops at. Only the tag is removed and never the text between the tags, so an entry that legitimately emphasises a word keeps what it says. The second is the boundary of the first: Markdown renders `&#80hase` and `&nbsp Phase:` literally, ampersand and all, so a reader never sees a label there, and decoding a semicolonless reference would refuse prose rather than a bypass. That the issue reported one spelling of a rule with two is the argument for the owner existing at all rather than for a third patch at the same place."
+    },
+    {
+      "path": "docs/ADR-095-a-gate-reads-the-text-a-reader-sees.md",
+      "find": "**Registering the record gate in `docs/acceptance-map.json`.** Refused: that map names tests which prove acceptance items, and this is a directory invariant with a record behind it.",
+      "replace": "**Registering the record gate in `docs/acceptance-map.json`.** Refused: that map names tests which prove acceptance items, and this is a directory invariant with a record behind it.\n\n**Asserting the highest ADR number the gate expects.** Refused, and raised by the quality pass over this change. A gate that names ninety-six is a file every new record has to edit, which is the failure ADR-093 deleted an index to end, and it would go red on the slice that adds ADR-097 rather than on a defect. The invariant is uniqueness plus contiguity from one: a number cannot be answered by two files and cannot be skipped. How far the sequence runs is not a claim anybody needs a mechanism for, and `/^ADR-(\\d{3})-[a-z0-9-]+\\.md$/` already refuses the `ADR-96` spelling that would have made a gap look like a number."
+    },
+    {
+      "path": "docs/ADR-096-a-failure-is-named-for-the-question-it-answers.md",
+      "find": "Beside them the equivalence cases for the rename, including one aggregate rendered by both owners so the two questions are visibly different, the empty-aggregate case pinning the boundary context alone, and a cause that neither renders.",
+      "replace": "Beside them the equivalence cases for the rename, including one aggregate rendered by both owners so the two questions are visibly different, the empty-aggregate case pinning the boundary context alone, and a cause that neither renders. Those cases are neither red nor green before this change, and saying so is more honest than calling them an equivalence witness on both sides: they name `describeWithCauses`, so against the old tree they do not compile at all. What carries the no-message-moves claim is that the leaf branch is the old body reached by delegation; what the cases do is pin that claim on this tree by comparing the two owners answer for answer. A case cannot witness a rename from the side of the tree where the name does not exist. Raised by the quality pass over this change."
+    },
+    {
+      "path": "docs/ADR-096-a-failure-is-named-for-the-question-it-answers.md",
+      "find": "**One owner with both behaviours.** Refused for the reason ADR-094 gave, which still holds: `project-runtime.ts` wants the leaf and reads an aggregate itself, so a single flattening owner would move a message it renders.",
+      "replace": "**One owner with both behaviours.** Refused for the reason ADR-094 gave, which still holds: `project-runtime.ts` wants the leaf and reads an aggregate itself, so a single flattening owner would move a message it renders.\n\n**Folding `engine.ts`'s local leaf renderer into this owner.** Out of scope, and named here rather than left for a third pass to find. `packages/core/src/engine.ts` declares a third copy of the same two-line body, and `engine.md` records it as deliberately local so that a shared formatter is not promoted into the contract module for two call sites. That reason is about the declaration surface rather than about the question, so it survives this decision without being strengthened by it: the rule taken here is one owner per question inside the folder that asks it, and `Engine` asking the same question one layer out is a duplication with a recorded reason rather than an unowned one. If it is reopened, the honest move is to import this folder's renderer, not to widen the package entry, and `engine.md`'s sentence is what would then stop being true. Raised by the quality pass over this change."
+    }
+  ]
+}
