@@ -195,6 +195,31 @@ export function isFlushing(phase: RuntimePhase): boolean {
 }
 
 /**
+ * Answers the sink a phase may hand a diagnostic to, which is none once retirement has finished.
+ *
+ * A member of this module rather than a ternary at the boundary, and it was the last read of this union
+ * standing outside a switch: `isDisposed(phase) ? undefined : sink` sat beside `#report`'s delegation,
+ * so a phase added later inherited delivery from whichever side of that ternary it fell on instead of
+ * owing a decision here. Retention is a different question and stays one: recording what happened is
+ * observation, so a retired runtime still answers whoever asks and hands a host nothing.
+ *
+ * Generic in the sink, because which type a host's callback has is not this module's business, and it
+ * keeps the phase the only thing being read. Issue #443, phase B step 12, and see ADR-090 and ADR-091.
+ */
+export function reportSink<Sink>(phase: RuntimePhase, sink: Sink | undefined): Sink | undefined {
+  switch (phase.kind) {
+    case "idle":
+    case "flushing":
+    case "disposing":
+      return sink;
+    case "disposed":
+      return undefined;
+    default:
+      return unreachable(phase);
+  }
+}
+
+/**
  * Answers the phase a publication opens, carrying whatever booking the caller already had.
  *
  * Total, and disposal is terminal: a subscriber that disposed the runtime mid-flush leaves it
