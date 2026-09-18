@@ -128,6 +128,94 @@ describe("a Scheduler defers, and the port is what says so", () => {
     expect(ran).toBe(0);
   });
 
+  it("answers the refusal, not the port's own later failure, once the job ran inline", () => {
+    let ran = 0;
+    let retained: (() => void) | undefined;
+    const guarded = deferredScheduler({
+      schedule(job: () => void): Cancel {
+        retained = job;
+        try {
+          job();
+        } catch {
+          // Out of contract twice: it ran the job inline and then hid the refusal.
+        }
+        // And then a third time, with a failure of its own that has nothing to do with the refusal
+        // it swallowed. Nothing said which of the two `schedule` owed its caller. Issue #436.
+        throw new Error("port refused after running the job");
+      },
+    });
+
+    let thrown: unknown;
+    try {
+      guarded.schedule(() => (ran += 1));
+    } catch (error) {
+      thrown = error;
+    }
+
+    // The refusal is what leaves, because it is the fact that outlives this call: the latch refuses
+    // every later `schedule` on it. See ADR-096.
+    expect(thrown).toBeInstanceOf(TypeError);
+    expect((thrown as TypeError).message).toBe(INLINE_JOB_MESSAGE);
+    // And the port's own failure is carried rather than discarded, which is what separates this from
+    // replacing every inner scheduler error with the refusal.
+    expect((thrown as TypeError).cause).toBeInstanceOf(Error);
+    expect(((thrown as TypeError).cause as Error).message).toBe(
+      "port refused after running the job",
+    );
+
+    // The callback stays inert either way, which is the part that was already pinned.
+    expect(retained).toBeDefined();
+    expect(() => retained?.()).not.toThrow();
+    expect(ran).toBe(0);
+    expect(() => guarded.schedule(() => undefined)).toThrow(INLINE_JOB_MESSAGE);
+  });
+
+  it("reports the refusal and keeps the work when a port swallows it and then throws", () => {
+    const clock = createManualClock();
+    let attempts = 0;
+    const runtime = new GraphRuntime(project, clock, compose, {
+      scheduler: {
+        schedule(job: () => void): Cancel {
+          attempts += 1;
+          try {
+            job();
+          } catch {
+            // Swallowed, and then replaced with a failure of the port's own.
+          }
+          throw new Error("port refused after running the job");
+        },
+      },
+    });
+    runtime.attach("hero/arm");
+
+    let deferred: PatchBatch | undefined;
+    let acted = false;
+    runtime.registry.subscribeNode("hero/arm", () => {
+      if (acted) return;
+      acted = true;
+      deferred = runtime.flush(["caption/label"]);
+    });
+
+    expect(() => clock.tick()).not.toThrow();
+    expect(attempts).toBe(1);
+
+    // What `scheduler-failure` reports on this path, which nothing said before: the refusal, not the
+    // port's unrelated message, so this interleaving reads like the swallow that returns a handle.
+    expect(runtime.lastFlushError?.ruleId).toBe("scheduler-failure");
+    expect(runtime.lastFlushError?.message).toMatch(/before schedule\(\) returns/);
+    expect(runtime.lastFlushError?.message).not.toMatch(/after running the job/);
+
+    // The booking is released, so no scheduled drain is claimed, and the work stays pending for the
+    // next publication, which is what a runtime given no scheduler at all already does.
+    expect(deferred?.diagnostics[0]?.ruleId).toBe("reentrant-flush-deferred");
+    expect(deferred?.diagnostics[0]?.message).toMatch(/carried by the next flush/);
+    expect(runtime.pendingSeeds).toEqual(["caption/label"]);
+    runtime.flush([]);
+    expect(runtime.pendingSeeds).toEqual([]);
+    expect(runtime.registry.get("caption/label")?.values.node).toBe("caption/label");
+    runtime.dispose();
+  });
+
   it("refuses a callback whose own call has not returned, after a nested schedule completed", () => {
     let ran = 0;
     let calls = 0;

@@ -16,7 +16,7 @@ Two premises from [issue #439](https://github.com/chahyasantoso/motion5/issues/4
 
 ## Decision
 
-A decision record is one file, named `docs/ADR-nnn-title.md`, and a number names exactly one file. `docs/DECISIONS.md` is deleted.
+A decision record is one file, named `docs/ADR-nnn-title.md`, and a number names exactly one file. `docs/DECISIONS.md` is deleted. **Refined by [ADR-095](./ADR-095-a-gate-reads-the-text-a-reader-sees.md), 2026-09-18.** This invariant was enforced by nothing when it was written, which is how the duplicate ADR-051 survived three weeks and is [#441](https://github.com/chahyasantoso/motion5/issues/441)'s recommendation; `packages/core/test/unit/scripts/adr-integrity.test.ts` now enforces one file per number, no gap, and every relative record link in this directory resolving. The decision is unchanged, and the Evidence section's claim that none was available holds for the extraction it describes.
 
 There is no replacement index, and that is the decision rather than an omission. An index of ninety-three records is a second place every new record has to be written down, it is the kind of file that goes stale without any gate being able to see it, and this one demonstrated the failure by holding a record of its own. A search across `docs/ADR-*.md` answers what an index would have, and the filename carries the title, so the directory listing is the index.
 

@@ -17,6 +17,16 @@ export { describeDiagnostics } from "./refusal";
  * reason. No export of `packages/core` moves, and every refusal is still reached through the verb
  * that owns it. Issue #443, phase A step 1.
  */
+/**
+ * Renders one thrown value as its own message, and answers nothing about a cause it collected.
+ *
+ * This folder's owner of that question, and saying so is issue #446: `report.ts` declared a second
+ * `describeError` that flattens an `AggregateError` into its causes, so two functions of one name
+ * answered two questions one import apart and nothing said which caller wanted which. The other one
+ * is `describeWithCauses`, it delegates its leaf case here, and a caller that wants an aggregate's
+ * causes reaches it by name. `project-runtime.ts` wants this one and reads an aggregate itself. See
+ * ADR-096.
+ */
 export function describeError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }

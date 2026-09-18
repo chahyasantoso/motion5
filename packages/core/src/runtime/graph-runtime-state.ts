@@ -101,10 +101,13 @@ const DISPOSING_BOOKED = mintPhase<DisposingShape>({ kind: "disposing", drain: "
  * The two axes of a live phase as the table they always were, so a transition is a lookup.
  *
  * `kind` and `drain` are independent, and every transition below moves one while carrying the other,
- * which is why each of them used to end in `phase.drain === "booked" ? X_BOOKED : X_UNBOOKED`. Read
- * that way the table was six constants and five ternaries the reader reassembled, and the answer for
- * `idle` was whatever the last arm fell through to. Stated once here, indexed by the axis being
- * carried, it is the thing the switches below select a row of. Issue #437, and see ADR-092.
+ * which is why each of them used to end in a ternary on the axis it was carrying: `retiring`,
+ * `beginFlush` and `endFlush` read `phase.drain === "booked" ? X_BOOKED : X_UNBOOKED`, and
+ * `bookingDrain` and `unbookDrain` read `phase.kind === "flushing" ? FLUSHING_X : IDLE_X`. Read that
+ * way the table was six constants and five ternaries the reader reassembled, three on one axis and
+ * two on the other, and the answer for `idle` was whatever the last arm fell through to. Stated once
+ * here, indexed by the axis being carried, it is the thing the switches below select a row of. Issue
+ * #437, its follow-up #441, and see ADR-092.
  */
 const PHASES = {
   idle: { unbooked: IDLE_UNBOOKED, booked: IDLE_BOOKED },
@@ -266,7 +269,9 @@ export function endFlush(phase: RuntimePhase): RuntimePhase {
 export function bookingDrain(phase: RuntimePhase): RuntimePhase | undefined {
   switch (phase.kind) {
     // A phase already carrying a booking has nothing to book, which is the coalescing
-    // `scheduler-reentrancy` measures: a second job for one drain.
+    // `scheduler-reentrancy` measures: a second job for one drain. The ternary that asks it is that
+    // guard, promoted from an `if` when this table landed, rather than a drain ternary the table
+    // failed to remove. Issue #441.
     case "idle":
     case "flushing":
       return phase.drain === "booked" ? undefined : PHASES[phase.kind].booked;

@@ -56,12 +56,20 @@ import { describe, expect, it } from "vitest";
  * nested exemption across to the label rule, which had never argued for one. And the label was
  * terminated by a list of four characters with no room for the number a writer puts after the word.
  * See ADR-085.
+ *
+ * Issue #436 is the last of that family and the first that was a live bypass rather than a latent
+ * one. Two helpers disagreed about what a comment is, so a bullet that renders as a phase label was
+ * counted as a real entry and refused by nothing, and the bypass cost one HTML comment and no
+ * argument. The subject both of them read has one owner now. See ADR-095.
  */
 
 const DOCS = fileURLToPath(new URL("../../../../../docs/", import.meta.url));
 const STATUS = join(DOCS, "SESSION-STATUS.md");
 const LINK = /\]\((\.\/[^)]+\.md)\)/g;
 const COMMENTS = /<!--[\s\S]*?-->/g;
+const NUMERIC_REFERENCE = /&#(\d+|[xX][0-9a-fA-F]+);/g;
+const NAMED_REFERENCE = /&[a-zA-Z][a-zA-Z0-9]*;/g;
+const MAX_CODE_POINT = 0x10ffff;
 const EMPHASIS = /[*_]/g;
 const LINE_END = /\s+$/;
 const LABEL_LEAD = /^\W+/;
@@ -185,14 +193,48 @@ function allBullets(lines: readonly string[]): readonly string[] {
 }
 
 /**
+ * The text a reader sees in `bullet`, and the one owner of what that text is.
+ *
+ * Both readings of a bullet are about this string, and issue #436 is that they disagreed about it.
+ * `isEntry` stripped HTML comments before asking whether a bullet states something and the label rule
+ * never did, so `- <!-- x -->Phase: live editing` was counted as a real entry, rendered as a phase
+ * label, and refused by nothing: stripping leading non-word characters reaches decoration made of
+ * them and stops at the first word character, which `x` is. One question with two answers, and the
+ * cheaper of the two is the one a writer reaches. See ADR-095.
+ *
+ * A numeric character reference is decoded and a named one becomes a space, which is asymmetric on
+ * purpose. `&#80;hase:` spells the label, so neutralising it would move the bypass one spelling
+ * along; no named reference produces an ASCII word character, so a named one cannot spell the label,
+ * and a table of them would be the list #422 already refused to start maintaining. A malformed or
+ * out-of-range reference becomes a space rather than a guess.
+ */
+function bulletSubject(bullet: string): string {
+  return bullet
+    .slice(BULLET.length)
+    .replace(COMMENTS, "")
+    .replace(NUMERIC_REFERENCE, decodeReference)
+    .replace(NAMED_REFERENCE, " ");
+}
+
+/** The character a numeric reference names, or a space when it names none. */
+function decodeReference(_reference: string, digits: string): string {
+  const hex = digits.startsWith("x") || digits.startsWith("X");
+  const code = Number.parseInt(hex ? digits.slice(1) : digits, hex ? 16 : 10);
+  if (!Number.isInteger(code) || code < 0 || code > MAX_CODE_POINT) return " ";
+  return String.fromCodePoint(code);
+}
+
+/**
  * Whether `bullet` states something, which is what makes it an entry rather than a line.
  *
  * `- ` alone and `- <!-- placeholder -->` are both bullets and neither is an entry: the rule ADR-085
  * wrote down is one entry, and a marker with nothing after it satisfies a counter while stating
- * nothing a reader can check or a later slice can replace. Issue #403.
+ * nothing a reader can check or a later slice can replace. Issue #403. A bullet that renders as
+ * nothing but a character reference states nothing either, which follows from reading the subject
+ * rather than the line. See ADR-095.
  */
 function isEntry(bullet: string): boolean {
-  return bullet.slice(BULLET.length).replace(COMMENTS, "").trim() !== "";
+  return bulletSubject(bullet).trim() !== "";
 }
 
 /**
@@ -220,11 +262,16 @@ function entriesUnder(text: string, heading: string): readonly string[] {
  * the word and a bare `[Phase](./IMPLEMENTATION-PLAN.md):` are both refused. A link inside a
  * sentence is not a label and stays allowed, because stripping only what leads the bullet cannot
  * reach it. See ADR-085.
+ *
+ * The subject it reads is `bulletSubject`, shared with the entry count, which is issue #436: leading
+ * non-word characters stop being stripped at the first word character, so markup whose own text is a
+ * word survived that strip and `<!-- x -->Phase:` and `&nbsp;Phase:` both rendered as labels while
+ * passing the gate. Decoration is removed before the grammar runs, and the grammar is unchanged. See
+ * ADR-095.
  */
 function statesPhase(bullet: string): boolean {
-  return PHASE_LABEL.test(
-    bullet.slice(BULLET.length).replace(EMPHASIS, "").trim().replace(LABEL_LEAD, ""),
-  );
+  const subject = bulletSubject(bullet).replace(EMPHASIS, "").trim().replace(LABEL_LEAD, "");
+  return PHASE_LABEL.test(subject);
 }
 
 async function status(): Promise<string> {
@@ -396,5 +443,43 @@ describe("the shape gate refuses the phase label rather than one spelling of it"
       "- Phase\u00a0: live editing",
     ];
     for (const bullet of separated) expect(statesPhase(bullet), bullet).toBe(true);
+  });
+
+  it("refuses a label whose decoration is markup that renders as nothing", () => {
+    // Red before this change, and the live bypass of issue #436: every one of these renders as a
+    // phase label, and the leading strip stopped at the first word character inside the markup.
+    const hidden = [
+      "- <!-- x -->Phase: live editing",
+      "- &nbsp;Phase: live editing",
+      "- &#80;hase: live editing",
+      "- &#x50;hase 6: live editing",
+      "- Ph<!-- split -->ase: live editing",
+    ];
+    for (const bullet of hidden) expect(statesPhase(bullet), bullet).toBe(true);
+  });
+
+  it("refuses a hidden label nested under a real entry, and still counts the entry once", () => {
+    // The two readings share a subject and keep disagreeing about nesting, which is the split issue
+    // #420 made and this change does not undo.
+    const nested = "## Now\n- one\n  - <!-- x -->Phase: live editing\n";
+    expect(entriesUnder(nested, "## Now")).toEqual(["- one"]);
+    expect(allBullets(statusLines(nested)).filter(statesPhase)).toEqual([
+      "- <!-- x -->Phase: live editing",
+    ]);
+  });
+
+  it("keeps an entry that merely contains a comment or a character reference", () => {
+    const allowed = [
+      "- An entry with a <!-- note --> comment, about the phase it is not labelling.",
+      "- The gate reads AT&amp;T and every other reference as ordinary prose.",
+      "- A slice that names a phase&nbsp;6 target is not labelling one.",
+    ];
+    for (const bullet of allowed) expect(statesPhase(bullet), bullet).toBe(false);
+    expect(entriesUnder("## Now\n- one <!-- note -->\n", "## Now")).toEqual([
+      "- one <!-- note -->",
+    ]);
+    // And a bullet that renders as nothing but a reference states nothing, which is the entry count
+    // reading the subject rather than the line.
+    expect(entriesUnder("## Now\n- &nbsp;\n", "## Now")).toEqual([]);
   });
 });
