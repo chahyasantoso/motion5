@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "expected_head": "d137402d28831a3f528f9bd55b91d21b49c46bd5",
+  "expected_blobs": {
+    "packages/core/src/runtime/project-handles.ts": "558a1cb2fd0119aa04d5d6b3b01910e96d1311ea",
+    "packages/core/test/unit/runtime/handle-base.test.ts": "90ad80943aab4b34ac713b6fe6295079cc22c741",
+    "packages/core/test/unit/runtime/stale-track-handle.test.ts": "25d50bf5b3841da41a8c571e3d11fdad6e50e968",
+    "packages/core/test/unit/runtime/project-ports.test.ts": "1511bdcd8c2718da64077efcc13b857dbc6f00b1",
+    "docs/SESSION-STATUS.md": "59bd625146a02921613ff1cf8800ab746a9ed078"
+  },
+  "message": "fix(runtime): freeze both handle prototypes, declare the receiver a detached member loses, and count the closures honestly",
+  "edits": [
+    {
+      "path": "packages/core/src/runtime/project-handles.ts",
+      "find": " * So what those literals bought was a per-call allocation of twenty-eight closures to express\n * twenty-eight statements that never differ between calls. A class states them once, on one\n * prototype, and a handle becomes one instance over one host and the pair it captured.",
+      "replace": " * So what those literals bought was a per-call allocation of twenty-six closures, plus the two\n * captured ids that were the only members of either literal not to be one, to express twenty-eight\n * members that never differ between calls. A class states them once, on one prototype, and a handle\n * becomes one instance over one host and the pair it captured. What is given back is seventeen\n * forwarding closures in the host below, allocated once per runtime rather than once per handle."
+    },
+    {
+      "path": "packages/core/src/runtime/project-handles.ts",
+      "find": " * nothing for a member the handle plainly has. Six test files read a handle exactly that way, so the\n * reader they share landed first, green over the literals, and this conversion is measured against it\n * rather than against a list rewritten beside it. No member, no signature, no refusal and no ordering\n * moves here.",
+      "replace": " * nothing for a member the handle plainly has. Six test files read a handle exactly that way, so the\n * reader they share landed first, green over the literals, and this conversion is measured against it\n * rather than against a list rewritten beside it. No member, no signature, no refusal and no ordering\n * moves here.\n *\n * One thing besides that surface moves, and it is declared rather than discovered later: a member\n * reached off a prototype reads its host from the receiver, so a member detached from its handle no\n * longer carries one and throws where the literal's own arrow still worked. Nothing in this\n * repository detaches one, and binding each member per instance would restore exactly the per-call\n * allocation this step exists to delete, so the requirement is stated and pinned instead of paid for.\n * Both prototypes are frozen at the end of this module for the same reason the instances are: every\n * member of a literal lived on the object, so freezing it froze them, and a shared prototype left\n * mutable would let one assignment rewrite a member of every handle a process issues."
+    },
+    {
+      "path": "packages/core/src/runtime/project-handles.ts",
+      "find": "  destroy(): void {\n    this.#host.destroy(this.#id, this.#token);\n  }\n}",
+      "replace": "  destroy(): void {\n    this.#host.destroy(this.#id, this.#token);\n  }\n}\n\n// The capability half of what freezing a literal used to cover. An instance freeze stops a caller\n// hanging state on one handle; these stop one assignment rewriting a member of all of them.\nObject.freeze(RuntimeTrackHandle.prototype);\nObject.freeze(RuntimeMotionHandle.prototype);"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/handle-base.test.ts",
+      "find": "    const keys = handleMembers(handle);\n    expect(keys).toContain(\"definition\");\n    expect(keys).not.toContain(\"track\");\n    expect(handle.definition).toBe(LEG_TRACK);\n    expect(handle.id).toBe(LEG);\n    expect(handle.live).toBe(true);\n\n    project.dispose();\n  });",
+      "replace": "    const keys = handleMembers(handle);\n    expect(keys).toContain(\"definition\");\n    expect(keys).not.toContain(\"track\");\n    expect(handle.definition).toBe(LEG_TRACK);\n    expect(handle.id).toBe(LEG);\n    expect(handle.live).toBe(true);\n\n    project.dispose();\n  });\n\n  it(\"holds every member on one frozen prototype, and reads its host off the receiver\", () => {\n    const project = runtime();\n    const handle = project.motion(MOTION);\n\n    // The half of step 8 that is not the enumerable surface, declared here rather than found by a\n    // caller later. Every member of the retired literals was an own arrow closing over the runtime,\n    // so a detached one still worked; a prototype method reads its host off the receiver, so a\n    // detached one has none. Nothing in this repository detaches a handle member, and binding each\n    // one per instance would restore the per-call allocation the classes exist to delete.\n    const detached = handle.setStagger;\n    expect(() => detached(0.25)).toThrow(TypeError);\n\n    // The ordinary call is unmoved, in the same rig, so this case is about the receiver rather than\n    // about the member.\n    handle.setStagger(0.25);\n    expect(handle.definition.stagger).toBe(0.25);\n\n    // Frozen at the instance and at the prototype, because the instance alone is weaker than what a\n    // frozen literal gave: its members lived on the object, so freezing it froze them, while a shared\n    // prototype left mutable would let one assignment rewrite a member of every handle issued.\n    expect(Object.isFrozen(handle)).toBe(true);\n    expect(Object.isFrozen(Object.getPrototypeOf(handle))).toBe(true);\n    expect(Object.isFrozen(Object.getPrototypeOf(project.track(LEG)))).toBe(true);\n\n    project.dispose();\n  });"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/stale-track-handle.test.ts",
+      "find": "    expect(handle.match(/\\bif\\s*\\(/g) ?? []).toEqual([]);\n    expect(handle).not.toMatch(/\\breturn;/);\n  });",
+      "replace": "    expect(handle.match(/\\bif\\s*\\(/g) ?? []).toEqual([]);\n    expect(handle).not.toMatch(/\\breturn;/);\n\n    // Wider than `if` at the class, because `if` is not the only way to write a decision and the\n    // class is where one would now grow. Text rather than syntax, and that is the stated limit: what\n    // it refuses is every branching form this project's style reaches for, so a guard arriving as a\n    // ternary or a short-circuit is red here rather than green on a spelling nobody asked about.\n    const branching = [\n      \"switch (\",\n      \" ? \",\n      \" && \",\n      \" || \",\n      \" ?? \",\n      \"for (\",\n      \"while (\",\n      \"throw \",\n      \"catch \",\n    ];\n    expect(branching.filter((form) => handle.includes(form))).toEqual([]);\n  });"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/project-ports.test.ts",
+      "find": " * three parts are then read as text, because their order on that line is the whole claim.\n */\nfunction resolvedSeam(source: string, at: number): string {\n  const opening = source.lastIndexOf(\"\\n\", at) + 1;",
+      "replace": " * three parts are then read as text, bounded by the punctuation that opens the member rather than by\n * its line, because the order of the three is the claim and which line they sit on is not. A member\n * a formatter wrapped away from its own call would have turned a correct wiring red.\n */\nfunction resolvedSeam(source: string, at: number): string {\n  const opening = Math.max(source.lastIndexOf(\"{\", at), source.lastIndexOf(\",\", at)) + 1;"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "every optional hook invocation in the runtime body and twenty-eight per-call handle closures, and no export of `packages/core` moves.",
+      "replace": "every optional hook invocation in the runtime body and the twenty-eight handle members two factories allocated per call, twenty-six of them closures, and no export of `packages/core` moves."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "What a handle exposes as own enumerable properties is the one thing step 8 moved, deliberately:",
+      "replace": "What a handle exposes as own enumerable properties, and what a member detached from one reads as its receiver, are the two things step 8 moved, deliberately:"
+    }
+  ]
+}
