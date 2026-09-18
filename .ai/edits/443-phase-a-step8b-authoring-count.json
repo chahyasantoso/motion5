@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "expected_head": "6b67f16acb8ee4d0e228b36d0efa0afb7e2ceb6b",
+  "expected_blobs": {
+    "packages/core/test/unit/runtime/authoring-edit.test.ts": "bda3e2aa48eb6665fc0853596ea53cddc48f7679"
+  },
+  "message": "test(runtime): re-address the authoring call count at the class those eight verbs moved to",
+  "edits": [
+    {
+      "path": "packages/core/test/unit/runtime/authoring-edit.test.ts",
+      "find": "const EDIT_SOURCE = fileURLToPath(\n  new URL(\"../../../src/runtime/authoring-edit.ts\", import.meta.url),\n);",
+      "replace": "const EDIT_SOURCE = fileURLToPath(\n  new URL(\"../../../src/runtime/authoring-edit.ts\", import.meta.url),\n);\nconst HANDLES_SOURCE = fileURLToPath(\n  new URL(\"../../../src/runtime/project-handles.ts\", import.meta.url),\n);"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/authoring-edit.test.ts",
+      "find": "    // The scan found what it is scanning: one declaration and the eight verbs the handle projects.\n    expect(runtime.split(\"#authorEdit(\")).toHaveLength(10);",
+      "replace": "    // The scan found what it is scanning, and what it scans moved. The eight verbs a handle projects\n    // are declared in `project-handles.ts` since step 8, so this count follows them rather than\n    // staying green over a spelling it no longer measures: one declaration and the one host member\n    // that reaches it here, and the eight mints and their single delegate there. Eight call sites\n    // fewer in the runtime is the deletion that slice made, not a weakening of this claim.\n    expect(runtime.split(\"#authorEdit(\")).toHaveLength(3);\n    const handles = code(HANDLES_SOURCE);\n    expect(handles.split(\"this.#author(\")).toHaveLength(9);\n    expect(handles.split(\"#author(edit: AuthoringEdit)\")).toHaveLength(2);"
+    }
+  ]
+}
