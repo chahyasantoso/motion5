@@ -1,0 +1,25 @@
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-09-18T01:44:09.6369047Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T01:44:09.6369529Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T01:44:09.6390530Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T01:44:09.6390936Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T01:44:09.6391195Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T01:44:09.6391503Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T01:44:11.6694195Z ##[error]packages/core/src/runtime/project-ports.ts(179,46): error TS2345: Argument of type 'Args' is not assignable to parameter of type 'any[]'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T01:44:11.6700581Z   The type 'readonly unknown[]' is 'readonly' and cannot be assigned to the mutable type 'any[]'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-18T01:44:11.6874579Z ##[error]Process completed with exit code 2.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-18T01:44:52.1808271Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:44:52.1809294Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:44:52.1852349Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:44:52.1853260Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:44:52.1853752Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:44:52.1854275Z   SUITE_RESULT: cancelled
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:44:52.1854820Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:44:52.2004787Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-18T01:44:52.7905869Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:44:52.7906727Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:44:52.7932528Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:44:52.7933449Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:44:52.7933950Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:44:52.7934475Z   SUITE_RESULT: cancelled
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:44:52.7935030Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:44:52.8057757Z ##[error]Process completed with exit code 1.
