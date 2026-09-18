@@ -19,10 +19,19 @@ const DEFAULT_CAPACITY = 500;
  * a bounded, read-only inspection snapshot. Patches and batches remain the one live delivery
  * path; this is retained history only, and every entry is the exact same `Diagnostic` shape
  * used everywhere else, never a parallel shape.
+ *
+ * Retention is a ring rather than a queue. `record` evicted with `Array.prototype.shift()`, which
+ * reindexes every entry still retained, so the cheapest surface in this folder cost O(n) per
+ * diagnostic on the 500-entry buffer a busy project keeps full. Entries are written in place now and
+ * `#oldest` names where the retained window starts, so recording is one assignment and one wrap
+ * however full the buffer is, and eviction is what that assignment already did rather than a second
+ * step. Nothing a caller can observe moves: `snapshot` answers oldest first and `droppedCount` counts
+ * what the buffer let go. Issue #443, phase B step 13.
  */
 export class Diagnostics {
   readonly #capacity: number;
-  #entries: Diagnostic[] = [];
+  readonly #entries: Diagnostic[] = [];
+  #oldest = 0;
   #droppedCount = 0;
 
   constructor(capacity: number = DEFAULT_CAPACITY) {
@@ -38,13 +47,17 @@ export class Diagnostics {
     return this.#droppedCount;
   }
 
-  /** Record one diagnostic, evicting the oldest retained entry once at capacity. */
+  /** Record one diagnostic in constant time, overwriting the oldest retained entry at capacity. */
   record(diagnostic: Diagnostic): void {
-    if (this.#entries.length >= this.#capacity) {
-      this.#entries.shift();
-      this.#droppedCount += 1;
+    if (this.#entries.length < this.#capacity) {
+      this.#entries.push(diagnostic);
+      return;
     }
-    this.#entries.push(diagnostic);
+    // The slot the oldest entry sits in is the slot the newest one takes, so eviction is what this
+    // assignment already did rather than a step that moves everything behind it.
+    this.#entries[this.#oldest] = diagnostic;
+    this.#oldest = (this.#oldest + 1) % this.#capacity;
+    this.#droppedCount += 1;
   }
 
   /** Record every diagnostic in order, e.g. everything carried by one patch batch. */
@@ -52,10 +65,17 @@ export class Diagnostics {
     for (const diagnostic of diagnostics) this.record(diagnostic);
   }
 
-  /** A frozen, read-only view of retained diagnostics and the running drop count. */
+  /** A frozen, read-only view of retained diagnostics, oldest first, and the running drop count. */
   snapshot(): DiagnosticsSnapshot {
+    // Two slices rather than a walk over indices, because the retained window is contiguous on both
+    // sides of the wrap and neither part can hold a hole: this array is never sparse and never longer
+    // than the capacity.
+    const entries =
+      this.#oldest === 0
+        ? [...this.#entries]
+        : [...this.#entries.slice(this.#oldest), ...this.#entries.slice(0, this.#oldest)];
     return Object.freeze({
-      entries: Object.freeze([...this.#entries]),
+      entries: Object.freeze(entries),
       droppedCount: this.#droppedCount,
     });
   }
