@@ -165,6 +165,12 @@ export const NO_PORTS: ProjectPorts = Object.freeze({
  * bound, but it is public callback behaviour and this slice moves nothing observable, so the receiver
  * is applied where the seam is resolved rather than left to whichever object the call is written on.
  *
+ * `bind` rather than a wrapper that forwards, and the second reason is the one that decided it. The
+ * receiver is fixed once, where the seam is resolved, instead of at each of the calls that follow. And
+ * `Function.prototype.apply` takes a mutable tuple, so a forwarding wrapper cannot hand it an `Args`
+ * constrained to `readonly unknown[]`; widening the constraint to reach it would let a caller past a
+ * seam signature this module is the whole owner of. Binding needs neither.
+ *
  * `absent` is the seam's own entry in `NO_PORTS` at each of the thirteen sites that resolves an
  * option directly, so a member wired to the wrong default is a mismatched pair on one line rather
  * than a silent agreement between two, and the evidence for it can be a set rather than a count. The
@@ -175,8 +181,7 @@ export function installed<Args extends readonly unknown[], R>(
   hook: ((...args: Args) => R) | undefined,
   absent: (...args: Args) => R,
 ): (...args: Args) => R {
-  if (hook === undefined) return absent;
-  return (...args: Args) => hook.apply(host, args);
+  return hook === undefined ? absent : hook.bind(host);
 }
 
 /**
