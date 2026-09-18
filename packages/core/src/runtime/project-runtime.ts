@@ -116,6 +116,11 @@ interface OpenTransaction {
   tracks: Map<string, TrackEntry>;
   motions: Map<string, MotionEntry>;
 }
+
+interface StagedPair {
+  readonly tracks?: Map<string, TrackEntry>;
+  readonly motions?: Map<string, MotionEntry>;
+}
 /**
  * The one seam by which a live value reaches the compiled Track this runtime does not own.
  *
@@ -740,10 +745,7 @@ export class ProjectRuntime {
     this.#commit({ tracks });
   }
 
-  #commit(plan: {
-    readonly tracks?: Map<string, TrackEntry>;
-    readonly motions?: Map<string, MotionEntry>;
-  }): void {
+  #commit(plan: StagedPair): void {
     if (this.#admit(COMMIT) === "join") return;
     const tracks = plan.tracks ?? this.#tracks,
       motions = plan.motions ?? this.#motions;

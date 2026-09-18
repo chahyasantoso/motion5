@@ -14,6 +14,10 @@ A retained definition and a lifetime token, allocated by the same counter as tra
 
 The pending pair while one recipe executes, carried by the phase's editing variants rather than by a field beside them. Both halves start by identity as the retained pair and are copied on their first staged write, after the entry point's last refusal. There is no operation log or dirty flag. A recipe that throws adopts nothing, and handles it created become stale. Reads within it see the pending pair. See ADR-064.
 
+## StagedPair
+
+What one structural verb hands #commit: the half it staged, or both halves when a recipe staged both. An omitted half means untouched rather than empty, and #commit resolves it to the retained map, which is why this is two optional maps rather than a pair. Named rather than spelled inline at the one member that takes it, because a type written at its only call site is a type no sister document can describe and no gate can address, and because CommitPlan in commit-plan.ts is the derived effects and settlements: a second declaration called a plan would be two owners for one word. Step 6 retired the old SchemaPlan spelling along with the effect and settlement records it sat beside, and inlining the shape was the accident in that deletion rather than its point. See ADR-058 and ADR-064.
+
 ## #tracks
 
 The retained pair; #motions follows the same rule. Maps are mutable fields because an accepted transaction replaces each map object. Structural reads use #readTracks/#readMotions; immediate edits write retained entries only outside an open recipe and inside their own boundary. A builder must not keep a map after handing it over. See ADR-064 and ADR-069.

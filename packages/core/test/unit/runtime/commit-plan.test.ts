@@ -86,7 +86,7 @@ describe("commit plan", () => {
       "rollback-stage",
       "retarget-motion-track",
     ])
-      expect(p).toContain(`case"${k}"`);
+      expect(p).toContain(`case "${k}"`);
     for (const k of [
       "commit-staged",
       "dispose-track",
@@ -97,7 +97,7 @@ describe("commit plan", () => {
       "destroy-motion",
       "publish",
     ])
-      expect(r).toContain(`case"${k}"`);
+      expect(r).toContain(`case "${k}"`);
     expect(p.match(/unreachable\(/g)).toHaveLength(1);
     expect(r.match(/unreachable\(/g)).toHaveLength(2);
   });
