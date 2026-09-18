@@ -72,9 +72,12 @@ import {
   expectLive,
   expectValid,
   isLive,
+  liveWrite,
   resolveToken,
+  stageOwed,
   stale,
   validated,
+  writtenProgress,
   type Resolved,
 } from "./results";
 import { deferredValueBatch, emptyValueBatch } from "./value-batch";
@@ -804,22 +807,20 @@ export class ProjectRuntime {
       if (involved)
         expectValid(validated(validateTrackDefinition(rewritten, `writeValues(${nodeId})`)));
       const mask = { ...authoredValues(entry.track), ...statics };
-      const written = this.#ports.value.write(
-        nodeId,
-        mask,
-        involved ? animated : undefined,
-        rebase,
-      );
+      const answer = this.#ports.value.write(nodeId, mask, involved ? animated : undefined, rebase);
       // The seam has taken the write and carries no inverse, so the state it left is recorded on
-      // the way out, whichever of the two fallible reads below is the last one reached. The
-      // definition is adopted inside the try, because a replacement that never staged is one this
-      // entry may not claim.
+      // the way out, whichever of the fallible reads below is the last one reached. Decoding the
+      // answer is one of them, and it is inside the try for exactly that reason: the write has
+      // already landed by the time the record describing it can refuse to be read. The definition
+      // is adopted inside the try too, because a replacement that never staged is one this entry
+      // may not claim.
       let adopted: TrackEntry = { ...entry, valueState: writing };
       let staged: StagedTrack | undefined;
       let progress: number | undefined;
       try {
-        if (written !== undefined && !written.patched) {
-          progress = written.progress;
+        const written = liveWrite(answer);
+        if (stageOwed(written)) {
+          progress = writtenProgress(written);
           staged = this.#ports.track.stage(rewritten, nodeId);
         }
         if (rebase) adopted = { ...adopted, track: rewritten };
@@ -875,15 +876,17 @@ export class ProjectRuntime {
       if (resolved?.diagnostics.some(({ severity }) => severity === "error"))
         refuse({ kind: "invalid-definition", diagnostics: resolved.diagnostics });
       const clear = isOverlaid(entry.valueState) ? NO_OVERLAY : undefined;
-      const written = this.#ports.value.write(nodeId, authoredValues(entry.track), clear, true);
+      const answer = this.#ports.value.write(nodeId, authoredValues(entry.track), clear, true);
       // The recording the mask path makes, for the same reason and on the same way out. A stage
       // that survives is what earns the accepted definition and the state saying the build removed
-      // every live write standing on this node.
+      // every live write standing on this node. This path asks the decoded answer for the playhead
+      // alone: it rebuilds either way, so whether the seam patched what was already compiled
+      // decides nothing here.
       let adopted: TrackEntry = { ...entry, valueState: liveWritten(clear) };
       let staged: StagedTrack | undefined;
       let progress: number | undefined;
       try {
-        progress = written?.progress;
+        progress = writtenProgress(liveWrite(answer));
         staged = this.#ports.track.stage(accepted, nodeId);
         adopted = { ...entry, track: accepted, valueState: AUTHORED };
       } finally {

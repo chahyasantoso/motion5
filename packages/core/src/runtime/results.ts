@@ -108,6 +108,49 @@ export function liveWrite(result: LiveWriteResult | undefined): LiveWrite {
   return mint<NeedsRebuildShape>({ kind: "needs-rebuild", progress: result.progress });
 }
 
+/**
+ * Whether the seam declined to patch, so this write owes a staged replacement.
+ *
+ * A reader rather than a discriminant comparison spelled at the call site, on the precedent
+ * `value-state.ts` set: the module that owns a union owns the switch over it, so a variant added
+ * later breaks here instead of falling into whichever arm happened to be written last. Named for
+ * what the caller owes rather than for the variant, because `buildOwed` in `value-state.ts` answers
+ * a different question about a different union, and two names one letter apart would be a second
+ * owner of neither.
+ */
+export function stageOwed(write: LiveWrite): boolean {
+  switch (write.kind) {
+    case "no-hook":
+    case "patched":
+      return false;
+    case "needs-rebuild":
+      return true;
+    default:
+      return unreachable(write);
+  }
+}
+
+/**
+ * The playhead the seam reported, or nothing when no seam answered at all.
+ *
+ * The second reader, and the reason there are two of them rather than one flag: no hook and a
+ * patched timeline are the same answer to whether a stage is owed, and different answers to this.
+ * It is also why `patched` carries a progress the shape issue #443 sketches gave it none of. The
+ * recompilation path rebuilds whatever the seam did, so the only thing it asks of the answer is
+ * where the playhead was.
+ */
+export function writtenProgress(write: LiveWrite): number | undefined {
+  switch (write.kind) {
+    case "no-hook":
+      return undefined;
+    case "patched":
+    case "needs-rebuild":
+      return write.progress;
+    default:
+      return unreachable(write);
+  }
+}
+
 interface LiveEntryShape<E> {
   readonly kind: "live";
   readonly entry: E;
