@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "expected_head": "e0c0eb7223623077f055564e7052d522ad73cace",
+  "expected_blobs": {
+    "packages/core/src/runtime/project-runtime.ts": "5b975006a2ae222c8ec11f49d158bc5a0c96394b",
+    "packages/core/test/unit/runtime/project-ports.test.ts": "8b8c4958e8b57f3648e8ef51718ca72c78e11abd"
+  },
+  "message": "fix(runtime): bind the two seam types the option surface still names locally",
+  "edits": [
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "import { NO_PORTS, completing, type ProjectPorts, type StagedTrack } from \"./project-ports\";",
+      "replace": "import {\n  NO_PORTS,\n  completing,\n  type KeyframeResolver,\n  type LiveValueWriter,\n  type ProjectPorts,\n  type StagedTrack,\n} from \"./project-ports\";"
+    },
+    {
+      "path": "packages/core/src/runtime/project-runtime.ts",
+      "find": "export type { KeyframeResolver, LiveValueWriter, StagedTrack } from \"./project-ports\";",
+      "replace": "export type { KeyframeResolver, LiveValueWriter, StagedTrack };"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/project-ports.test.ts",
+      "find": "    expect(source.split(\"NO_PORTS\")).toHaveLength(16);",
+      "replace": "    expect(source.split(\"NO_PORTS\")).toHaveLength(15);"
+    }
+  ]
+}
