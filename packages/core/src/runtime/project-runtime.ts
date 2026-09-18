@@ -50,7 +50,14 @@ import {
   type ProjectPhase,
   type VerbClass,
 } from "./project-phase";
-import { NO_PORTS, completing, type ProjectPorts, type StagedTrack } from "./project-ports";
+import {
+  NO_PORTS,
+  completing,
+  type KeyframeResolver,
+  type LiveValueWriter,
+  type ProjectPorts,
+  type StagedTrack,
+} from "./project-ports";
 import { collect, report, runSettleSteps } from "./rollback";
 import { planCommit } from "./commit-plan";
 import { runPlan } from "./run-plan";
@@ -103,7 +110,7 @@ interface StagedPair {
   readonly tracks?: Map<string, TrackEntry>;
   readonly motions?: Map<string, MotionEntry>;
 }
-export type { KeyframeResolver, LiveValueWriter, StagedTrack } from "./project-ports";
+export type { KeyframeResolver, LiveValueWriter, StagedTrack };
 export interface ProjectRuntimeOptions {
   readonly clock: Clock;
   readonly scheduler?: Scheduler;

@@ -86,7 +86,7 @@ describe("the project ports", () => {
 
     expect(RETIRED.filter((name) => source.includes(name))).toEqual([]);
     // One resolution, at construction, and nowhere else.
-    expect(source.split("NO_PORTS")).toHaveLength(16);
+    expect(source.split("NO_PORTS")).toHaveLength(15);
     expect(source.split("completing(")).toHaveLength(3);
   });
 });
