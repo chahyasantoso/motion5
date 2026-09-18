@@ -1,0 +1,87 @@
+{
+  "version": 1,
+  "operation": "apply",
+  "expected_head": "24b09e6039c2104fdcbcdec4531a62572bd51562",
+  "expected_blobs": {
+    "packages/core/src/runtime/graph-runtime.ts": "b23c65122dd831c347763bf311e86bc02b3d164f",
+    "packages/core/src/runtime/graph-runtime.md": "f5e881b81d4f4a0d83996e42f71491080c10cf55"
+  },
+  "message": "refactor(runtime): read one publication request and one report trace",
+  "edits": [
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "import { describeError, reportDiagnostic, type DiagnosticRetention } from \"./diagnostic-report\";",
+      "replace": "import { unreachable } from \"../domain/exhaustive\";\nimport {\n  CLEAN_TRACE,\n  batchFor,\n  describeError,\n  reportDiagnostic,\n  retainedDiagnostic,\n  sinkFailure,\n  type ReportTrace,\n  type RetainTrace,\n} from \"./report\";\nimport {\n  frameRequest,\n  requestSeeds,\n  requestTick,\n  seedRequest,\n  type PublishRequest,\n} from \"./publish-request\";"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "  isDisposed,\n  isFlushing,\n  isPending,\n  isRetiring,\n  memoHit,\n  requeuing,\n  retaining,\n  retiring,\n  unbookDrain,\n  warmMemo,",
+      "replace": "  isFlushing,\n  isPending,\n  isRetiring,\n  memoHit,\n  reportSink,\n  requeuing,\n  retaining,\n  retiring,\n  unbookDrain,\n  warmMemo,"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "export const DEFERRED_FLUSH_RULE = \"reentrant-flush-deferred\";\nexport const CLOCK_REGRESSION_RULE = \"clock-tick-regression\";",
+      "replace": "export const CLOCK_REGRESSION_RULE = \"clock-tick-regression\";"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "function deferredBatch(sequence: number, seeds: readonly string[], scheduled: boolean): PatchBatch {\n  const ids = Object.freeze([...seeds]);\n  const diagnostic: Diagnostic = Object.freeze({\n    ruleId: DEFERRED_FLUSH_RULE,\n    path: \"deferred-flush\",\n    message: scheduled\n      ? \"A flush requested while subscribers were being notified was queued as one follow-up publication for a scheduled drain.\"\n      : \"A flush requested while subscribers were being notified was queued as one follow-up publication carried by the next flush.\",\n    severity: \"warning\",\n    ids,\n  });\n  return Object.freeze({\n    tick: sequence,\n    seeds: ids,\n    patches: Object.freeze([]),\n    diagnostics: Object.freeze([diagnostic]),\n  }) as PatchBatch;\n}\n\n",
+      "replace": ""
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "  #lastFlushError: Diagnostic | undefined;\n  #lastSinkError: Diagnostic | undefined;\n  readonly #retention: DiagnosticRetention = {\n    retain: (diagnostic: Diagnostic) => {\n      this.#lastFlushError = diagnostic;\n    },\n    retainSinkFailure: (diagnostic: Diagnostic) => {\n      this.#lastSinkError = diagnostic;\n    },\n  };",
+      "replace": "  #trace: ReportTrace = CLEAN_TRACE;\n  readonly #retain: RetainTrace = (advance) => {\n    this.#trace = advance(this.#trace);\n  };"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "  get lastFlushError(): Diagnostic | undefined {\n    return this.#lastFlushError;\n  }",
+      "replace": "  get lastFlushError(): Diagnostic | undefined {\n    return retainedDiagnostic(this.#trace);\n  }"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "   * get lastSinkError",
+      "replace": "   * get lastSinkError"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "  get lastSinkError(): Diagnostic | undefined {\n    return this.#lastSinkError;\n  }",
+      "replace": "  get lastSinkError(): Diagnostic | undefined {\n    return sinkFailure(this.#trace);\n  }"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "  flush(seeds: readonly string[]): PatchBatch {\n    this.#assertLive();\n    return this.#deferIfFlushing(seeds) ?? this.#flushSeeds(seeds);\n  }",
+      "replace": "  flush(seeds: readonly string[]): PatchBatch {\n    this.#assertLive();\n    return this.#publish(seedRequest(seeds));\n  }"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "    this.#assertTick(tick);\n    const deferred = this.#deferIfFlushing(seeds, tick);\n    if (deferred !== undefined) return deferred;\n    this.#advanceTick(tick);\n    return this.#flushSeeds(seeds);\n  }\n  #deferIfFlushing(seeds: readonly string[], tick?: number): PatchBatch | undefined {\n    if (!isFlushing(this.#phase)) return undefined;\n    this.#pending = deferring(this.#pending, seeds, tick);\n    // The batch says which future the work has, and the member that books is the one that knows.\n    const scheduled = this.#scheduleDrain();\n    return deferredBatch(this.#sequence, seeds, scheduled);\n  }",
+      "replace": "    this.#assertTick(tick);\n    return this.#publish(frameRequest(seeds, tick));\n  }\n  #publish(request: PublishRequest): PatchBatch {\n    const deferred = this.#deferIfFlushing(request);\n    if (deferred !== undefined) return deferred;\n    this.#advanceFrame(request);\n    return this.#flushSeeds(requestSeeds(request));\n  }\n  #advanceFrame(request: PublishRequest): void {\n    switch (request.kind) {\n      case \"seeds\":\n        return;\n      case \"frame\":\n        return this.#advanceTick(request.tick);\n      default:\n        return unreachable(request);\n    }\n  }\n  #deferIfFlushing(request: PublishRequest): PatchBatch | undefined {\n    if (!isFlushing(this.#phase)) return undefined;\n    const seeds = requestSeeds(request);\n    this.#pending = deferring(this.#pending, seeds, requestTick(request));\n    // The batch says which future the work has, and the member that books is the one that knows.\n    const scheduled = this.#scheduleDrain();\n    return batchFor(this.#sequence, { kind: \"deferred-in-flush\", seeds, scheduled });\n  }"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "    const sink = isDisposed(this.#phase) ? undefined : this.#onFlushError;\n    reportDiagnostic(sink, this.#retention, ruleId, message, tick, [...this.#members]);",
+      "replace": "    const sink = reportSink(this.#phase, this.#onFlushError);\n    reportDiagnostic(sink, this.#retain, ruleId, message, tick, [...this.#members]);"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.md",
+      "find": "## deferredBatch\n\nAnswers the batch a deferred publication hands back, and which of two futures the work has.\n\n`scheduled` is a question only `#scheduleDrain` can answer, and issue #383 is that the message answered it wrongly in both halves: it named an `invalidate` ADR-082 retired from this tier, and it named a scheduler a runtime built without one does not have. The rule id does not move.\n\n## #scheduler",
+      "replace": "## #scheduler"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.md",
+      "find": "## #retention\n\nThe two slots this runtime keeps diagnostics in, handed to the boundary that owns the order they are filled in.\n\nRetention used to be an assignment from `reportDiagnostic`'s return value, which put it after the handover, and issue #415 is what that cost: a sink that re-enters and causes a second report files the newer diagnostic from the nested call, and then the outer assignment overwrites it with the older one, so `lastFlushError` stopped naming the latest failure and lost precisely the newer one. The boundary retains before it hands over now, and this object is what it retains into. The ordering is not stated here because it is not this module's to state: `diagnostic-report.ts` owns the handover, so it owns the rule, and only the storage is here. See ADR-091.\n\nThe second slot answers `lastSinkError`, and it exists because containing a throwing sink is not the same as erasing it. Issue #410. It is never delivered: the only sink available is the one that has just thrown, so a report about it would be a loop rather than a report, and a distinct hook was refused for the same reason, since a hook is a second sink and therefore a second thing that can throw.\n\n## #deferIfFlushing\n\nAnswers the deferred batch for a flush requested inside one, or `undefined` when none is open.\n\nThe one owner of the reentrancy answer, for both public verbs. Queueing the seeds and scheduling the drain is the answer rather than a step before it, which is why this hands back the batch and not a boolean: two callers that had to ask and then act could act differently.\n\n`tick` is optional because one of the two verbs has no frame to hand over, not because a caller may choose: `flush` cannot name one, `flushAtTick` states its own. That keeps the deferred payload one owner rather than a seed set here and a frame number beside it. Issue #380.",
+      "replace": "## #trace\n\nWhat this runtime knows about its own reporting, as one value, read by the boundary that owns the order its parts are filled in.\n\nTwo independent nullables held it, `#lastFlushError` and `#lastSinkError`, so reported and delivered, reported and refused, and never reported at all were facts a reader reconstructed by comparing two fields, and a delivery failure with no report behind it was writable. Retention was also an assignment from `reportDiagnostic`'s return value once, which put it after the handover, and issue #415 is what that cost: a sink that re-enters and causes a second report files the newer diagnostic from the nested call, and then the outer assignment overwrites it with the older one, so `lastFlushError` stopped naming the latest failure and lost precisely the newer one. The boundary retains before it hands over, and this is what it retains into. The ordering is not stated here because it is not this module's to state: report.ts owns the handover, so it owns the rule, and only the storage is here. See ADR-091.\n\nThe trace carries a handover failure across the next report a host accepts, which is why it has a fourth variant rather than the three issue #443 sketched. That answer exists because containing a throwing sink is not the same as erasing it, issue #410, and a trace naming the last report alone would erase it one report later. It is never delivered: the only sink available is the one that has just thrown, so a report about it would be a loop rather than a report, and a distinct hook was refused for the same reason, since a hook is a second sink and therefore a second thing that can throw.\n\n## #retain\n\nHow the one trace slot is advanced, which is the whole of what the reporting boundary asks of this runtime.\n\nA function rather than the two-slot record it replaces, and an updater rather than a setter, so the read, the decision and the write happen inside the boundary that owns their order. A sink reporting again from inside a delivery is what makes that difference observable, and it is the finding issue #415 is about.\n\n## #publish\n\nThe mechanics both public verbs share: answer a reentrant call, record the frame the request carries if it carries one, publish its seeds.\n\n`flush` and `flushAtTick` duplicated this around one difference. Splitting them was right and stays split, because a frame is consumed by one of the two only and issue #374 is what one verb with an optional frame cost. What a request retires is the duplication rather than the split: a frame is still impossible to select by omission, since it is a variant of the request rather than a missing argument. See ADR-082.\n\nLiveness is not asked here and neither is tick validity. Each public verb asserts liveness on entry, and the verb that has a frame validates it before this is reached, so a frame this runtime could never reach is refused rather than queued.\n\n## #advanceFrame\n\nRecords the frame a request carries, and records nothing for the request that carries none.\n\nThe one place the two requests are told apart, and it ends at a `never` sink, so a third kind of publication would owe a decision here instead of silently reaching the frame-free arm. `#advanceTick` remains the one write to `#lastTick`.\n\n## #deferIfFlushing\n\nAnswers the deferred batch for a flush requested inside one, or `undefined` when none is open.\n\nThe one owner of the reentrancy answer, for both public verbs. Queueing the seeds and scheduling the drain is the answer rather than a step before it, which is why this hands back the batch and not a boolean: two callers that had to ask and then act could act differently.\n\nThe request carries whatever frame there is to carry, so the optional `tick` parameter is gone. Optional meant that one of two callers has no frame rather than that a caller may leave it out, which is a distinction a parameter cannot state and a variant can. The deferred payload still has one owner rather than a seed set here and a frame number beside it. Issue #380, and see ADR-088.\n\nThe batch itself is `batchFor`'s, in report.ts, which is now the one builder of the four-field shape three modules used to build. Which of two futures the work has is still a question only `#scheduleDrain` can answer, so it is still asked here rather than there. Issue #383."
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.md",
+      "find": "Building a diagnostic, retaining it and handing it to the host belong to `diagnostic-report.ts`, which owns that boundary for all five callers. ADR-088 owns the handover: issues #400 and #393.",
+      "replace": "Building a diagnostic, retaining it and handing it to the host belong to report.ts, which owns that boundary for all five callers. ADR-088 owns the handover: issues #400 and #393."
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.md",
+      "find": "It asks `isDisposed` rather than `isRetiring` for that selection, which is the distinction issue #408 turns on: a runtime discovering that its port refuses to cancel is still the object that knows that, so only a runtime that has finished retiring withholds. See ADR-090.",
+      "replace": "The selection itself is `reportSink`'s, in graph-runtime-state.ts, because it is a read of that union and the module that owns a union owns the switch over it. It answers on finished retirement rather than on retirement having begun, which is the distinction issue #408 turns on: a runtime discovering that its port refuses to cancel is still the object that knows that, so only a runtime that has finished retiring withholds. A ternary here read the same discriminant from outside every switch that names the others, so a phase added later inherited delivery from whichever side of it that phase fell on. See ADR-090 and ADR-092."
+    }
+  ]
+}
