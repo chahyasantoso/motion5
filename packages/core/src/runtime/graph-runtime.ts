@@ -6,7 +6,24 @@ import type { GraphNode, GraphIR } from "../graph/ir";
 import { GraphPublisher, type PublisherNode, type PublisherSnapshot } from "./graph-publisher";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
 import { deferredScheduler, type Cancel, type Scheduler } from "../ports/scheduler";
-import { describeError, reportDiagnostic, type DiagnosticRetention } from "./diagnostic-report";
+import { unreachable } from "../domain/exhaustive";
+import {
+  CLEAN_TRACE,
+  batchFor,
+  describeError,
+  reportDiagnostic,
+  retainedDiagnostic,
+  sinkFailure,
+  type ReportTrace,
+  type RetainTrace,
+} from "./report";
+import {
+  frameRequest,
+  requestSeeds,
+  requestTick,
+  seedRequest,
+  type PublishRequest,
+} from "./publish-request";
 import {
   COLD_MEMO,
   DISPOSED,
@@ -18,11 +35,11 @@ import {
   deferredTick,
   deferring,
   endFlush,
-  isDisposed,
   isFlushing,
   isPending,
   isRetiring,
   memoHit,
+  reportSink,
   requeuing,
   retaining,
   retiring,
@@ -34,7 +51,6 @@ import {
 } from "./graph-runtime-state";
 export type ComposeNode = PublisherNode["compose"];
 export type ComposeResolver = (node: GraphNode) => ComposeNode;
-export const DEFERRED_FLUSH_RULE = "reentrant-flush-deferred";
 export const CLOCK_REGRESSION_RULE = "clock-tick-regression";
 export const CLOCK_CONSUMER_FAILURE_RULE = "clock-consumer-failure";
 export const FLUSH_FAILURE_RULE = "flush-failure";
@@ -57,25 +73,6 @@ export interface GraphRuntimeOptions {
    */
   readonly interpolated?: (node: GraphNode) => () => MemberState;
 }
-function deferredBatch(sequence: number, seeds: readonly string[], scheduled: boolean): PatchBatch {
-  const ids = Object.freeze([...seeds]);
-  const diagnostic: Diagnostic = Object.freeze({
-    ruleId: DEFERRED_FLUSH_RULE,
-    path: "deferred-flush",
-    message: scheduled
-      ? "A flush requested while subscribers were being notified was queued as one follow-up publication for a scheduled drain."
-      : "A flush requested while subscribers were being notified was queued as one follow-up publication carried by the next flush.",
-    severity: "warning",
-    ids,
-  });
-  return Object.freeze({
-    tick: sequence,
-    seeds: ids,
-    patches: Object.freeze([]),
-    diagnostics: Object.freeze([diagnostic]),
-  }) as PatchBatch;
-}
-
 export class GraphRuntime {
   readonly #binding: GraphBinding;
   readonly #registry: PatchRegistry;
@@ -96,15 +93,9 @@ export class GraphRuntime {
   #membersRevision = 0;
   #lastTick = 0;
   #sequence = 0;
-  #lastFlushError: Diagnostic | undefined;
-  #lastSinkError: Diagnostic | undefined;
-  readonly #retention: DiagnosticRetention = {
-    retain: (diagnostic: Diagnostic) => {
-      this.#lastFlushError = diagnostic;
-    },
-    retainSinkFailure: (diagnostic: Diagnostic) => {
-      this.#lastSinkError = diagnostic;
-    },
+  #trace: ReportTrace = CLEAN_TRACE;
+  readonly #retain: RetainTrace = (advance) => {
+    this.#trace = advance(this.#trace);
   };
   constructor(
     project: ProjectDefinition,
@@ -140,7 +131,7 @@ export class GraphRuntime {
     return this.#sequence;
   }
   get lastFlushError(): Diagnostic | undefined {
-    return this.#lastFlushError;
+    return retainedDiagnostic(this.#trace);
   }
   /**
    * The diagnostic describing a failed handover, or `undefined` until a handover has failed.
@@ -152,7 +143,7 @@ export class GraphRuntime {
    * therefore a second thing that can throw. Issue #410, and see ADR-091.
    */
   get lastSinkError(): Diagnostic | undefined {
-    return this.#lastSinkError;
+    return sinkFailure(this.#trace);
   }
   get memberCount(): number {
     return this.#members.size;
@@ -209,7 +200,7 @@ export class GraphRuntime {
    */
   flush(seeds: readonly string[]): PatchBatch {
     this.#assertLive();
-    return this.#deferIfFlushing(seeds) ?? this.#flushSeeds(seeds);
+    return this.#publish(seedRequest(seeds));
   }
   /**
    * Publishes for `seeds` at `tick`, advancing the clock's frame number, and answers that batch.
@@ -233,17 +224,31 @@ export class GraphRuntime {
     // Validity before the reentrancy question, so a frame this runtime could never reach is refused
     // rather than queued. Recording it stays the separate act it was.
     this.#assertTick(tick);
-    const deferred = this.#deferIfFlushing(seeds, tick);
-    if (deferred !== undefined) return deferred;
-    this.#advanceTick(tick);
-    return this.#flushSeeds(seeds);
+    return this.#publish(frameRequest(seeds, tick));
   }
-  #deferIfFlushing(seeds: readonly string[], tick?: number): PatchBatch | undefined {
+  #publish(request: PublishRequest): PatchBatch {
+    const deferred = this.#deferIfFlushing(request);
+    if (deferred !== undefined) return deferred;
+    this.#advanceFrame(request);
+    return this.#flushSeeds(requestSeeds(request));
+  }
+  #advanceFrame(request: PublishRequest): void {
+    switch (request.kind) {
+      case "seeds":
+        return;
+      case "frame":
+        return this.#advanceTick(request.tick);
+      default:
+        return unreachable(request);
+    }
+  }
+  #deferIfFlushing(request: PublishRequest): PatchBatch | undefined {
     if (!isFlushing(this.#phase)) return undefined;
-    this.#pending = deferring(this.#pending, seeds, tick);
+    const seeds = requestSeeds(request);
+    this.#pending = deferring(this.#pending, seeds, requestTick(request));
     // The batch says which future the work has, and the member that books is the one that knows.
     const scheduled = this.#scheduleDrain();
-    return deferredBatch(this.#sequence, seeds, scheduled);
+    return batchFor(this.#sequence, { kind: "deferred-in-flush", seeds, scheduled });
   }
   #advanceTick(tick: number): void {
     this.#assertTick(tick);
@@ -416,8 +421,8 @@ export class GraphRuntime {
   #report(ruleId: string, message: string, tick: number = this.#lastTick): void {
     // The phase selects the sink and nothing else: retention below is total, so a retired runtime
     // withholds rather than discards.
-    const sink = isDisposed(this.#phase) ? undefined : this.#onFlushError;
-    reportDiagnostic(sink, this.#retention, ruleId, message, tick, [...this.#members]);
+    const sink = reportSink(this.#phase, this.#onFlushError);
+    reportDiagnostic(sink, this.#retain, ruleId, message, tick, [...this.#members]);
   }
   #assertLive(): void {
     if (isRetiring(this.#phase)) throw new Error("GraphRuntime is disposed.");

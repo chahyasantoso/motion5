@@ -4,12 +4,6 @@ The private reasoning of `GraphRuntime`, one level-two heading per declaration t
 
 What stays in the source is the surface a consumer reads and the sentence a statement needs. `GraphRuntimeOptions.interpolated` and the public verbs `flush`, `flushAtTick` and `dispose` keep their docblocks, because TypeScript carries them into the declaration file and into editor hover, so moving one would delete an API doc rather than relocate it. A comment explaining the next statement stays too, and a comment trailing a statement on the same line keeps its exemption. Provenance does not stay: a citation is member-level rationale, so every `ADR-nnn`, evidence case id, issue and pull request number this module reasons from is here rather than in a comment. docs/AI-EDIT-WORKFLOW.md owns that partition and scripts/read-budget-scan.mjs enforces it.
 
-## deferredBatch
-
-Answers the batch a deferred publication hands back, and which of two futures the work has.
-
-`scheduled` is a question only `#scheduleDrain` can answer, and issue #383 is that the message answered it wrongly in both halves: it named an `invalidate` ADR-082 retired from this tier, and it named a scheduler a runtime built without one does not have. The rule id does not move.
-
 ## #scheduler
 
 Wrapped once in the constructor rather than guarded at every call site that reaches it. Issue #377, and see ADR-086.
@@ -46,13 +40,33 @@ The memoised publisher snapshot and the whole of the key it is answered by, as o
 
 `replaceGraph` clears it with `#publisherNodes`, and for the same reason rather than for correctness: it is keyed on the graph identity, so an entry from the replaced graph could never be read, but holding one would retain every node that clear exists to release. One assignment, and the key leaves with the value it belongs to: this used to clear two of the memo's three fields and leave the membership revision behind, which stayed harmless only because warmth also needed the value. See ADR-083.
 
-## #retention
+## #trace
 
-The two slots this runtime keeps diagnostics in, handed to the boundary that owns the order they are filled in.
+What this runtime knows about its own reporting, as one value, read by the boundary that owns the order its parts are filled in.
 
-Retention used to be an assignment from `reportDiagnostic`'s return value, which put it after the handover, and issue #415 is what that cost: a sink that re-enters and causes a second report files the newer diagnostic from the nested call, and then the outer assignment overwrites it with the older one, so `lastFlushError` stopped naming the latest failure and lost precisely the newer one. The boundary retains before it hands over now, and this object is what it retains into. The ordering is not stated here because it is not this module's to state: `diagnostic-report.ts` owns the handover, so it owns the rule, and only the storage is here. See ADR-091.
+Two independent nullables held it, `#lastFlushError` and `#lastSinkError`, so reported and delivered, reported and refused, and never reported at all were facts a reader reconstructed by comparing two fields, and a delivery failure with no report behind it was writable. Retention was also an assignment from `reportDiagnostic`'s return value once, which put it after the handover, and issue #415 is what that cost: a sink that re-enters and causes a second report files the newer diagnostic from the nested call, and then the outer assignment overwrites it with the older one, so `lastFlushError` stopped naming the latest failure and lost precisely the newer one. The boundary retains before it hands over, and this is what it retains into. The ordering is not stated here because it is not this module's to state: report.ts owns the handover, so it owns the rule, and only the storage is here. See ADR-091.
 
-The second slot answers `lastSinkError`, and it exists because containing a throwing sink is not the same as erasing it. Issue #410. It is never delivered: the only sink available is the one that has just thrown, so a report about it would be a loop rather than a report, and a distinct hook was refused for the same reason, since a hook is a second sink and therefore a second thing that can throw.
+The trace carries a handover failure across the next report a host accepts, which is why it has a fourth variant rather than the three issue #443 sketched. That answer exists because containing a throwing sink is not the same as erasing it, issue #410, and a trace naming the last report alone would erase it one report later. It is never delivered: the only sink available is the one that has just thrown, so a report about it would be a loop rather than a report, and a distinct hook was refused for the same reason, since a hook is a second sink and therefore a second thing that can throw.
+
+## #retain
+
+How the one trace slot is advanced, which is the whole of what the reporting boundary asks of this runtime.
+
+A function rather than the two-slot record it replaces, and an updater rather than a setter, so the read, the decision and the write happen inside the boundary that owns their order. A sink reporting again from inside a delivery is what makes that difference observable, and it is the finding issue #415 is about.
+
+## #publish
+
+The mechanics both public verbs share: answer a reentrant call, record the frame the request carries if it carries one, publish its seeds.
+
+`flush` and `flushAtTick` duplicated this around one difference. Splitting them was right and stays split, because a frame is consumed by one of the two only and issue #374 is what one verb with an optional frame cost. What a request retires is the duplication rather than the split: a frame is still impossible to select by omission, since it is a variant of the request rather than a missing argument. See ADR-082.
+
+Liveness is not asked here and neither is tick validity. Each public verb asserts liveness on entry, and the verb that has a frame validates it before this is reached, so a frame this runtime could never reach is refused rather than queued.
+
+## #advanceFrame
+
+Records the frame a request carries, and records nothing for the request that carries none.
+
+The one place the two requests are told apart, and it ends at a `never` sink, so a third kind of publication would owe a decision here instead of silently reaching the frame-free arm. `#advanceTick` remains the one write to `#lastTick`.
 
 ## #deferIfFlushing
 
@@ -60,7 +74,9 @@ Answers the deferred batch for a flush requested inside one, or `undefined` when
 
 The one owner of the reentrancy answer, for both public verbs. Queueing the seeds and scheduling the drain is the answer rather than a step before it, which is why this hands back the batch and not a boolean: two callers that had to ask and then act could act differently.
 
-`tick` is optional because one of the two verbs has no frame to hand over, not because a caller may choose: `flush` cannot name one, `flushAtTick` states its own. That keeps the deferred payload one owner rather than a seed set here and a frame number beside it. Issue #380.
+The request carries whatever frame there is to carry, so the optional `tick` parameter is gone. Optional meant that one of two callers has no frame rather than that a caller may leave it out, which is a distinction a parameter cannot state and a variant can. The deferred payload still has one owner rather than a seed set here and a frame number beside it. Issue #380, and see ADR-088.
+
+The batch itself is `batchFor`'s, in report.ts, which is now the one builder of the four-field shape three modules used to build. Which of two futures the work has is still a question only `#scheduleDrain` can answer, so it is still asked here rather than there. Issue #383.
 
 ## #advanceTick
 
@@ -164,8 +180,8 @@ Records one diagnostic whatever the phase, and hands it to the host only while t
 
 `tick` defaults to the last flushed tick, which is what a scheduled drain or a rejected clock regression is about. The two tick boundaries pass the tick they are handling instead: a consumer failure happens before `flush` advances `#lastTick`, so the default would file it under the previous frame and undo the attribution this exists for.
 
-Building a diagnostic, retaining it and handing it to the host belong to `diagnostic-report.ts`, which owns that boundary for all five callers. ADR-088 owns the handover: issues #400 and #393.
+Building a diagnostic, retaining it and handing it to the host belong to report.ts, which owns that boundary for all five callers. ADR-088 owns the handover: issues #400 and #393.
 
 Retention and delivery are two questions and the phase answers only the second, which is issue #409. One guard used to answer both by returning early, so a flush failure a scheduled drain discovered after caller code retired the runtime was not withheld from the host, it was discarded: `#lastFlushError` was never written either, so the evidence that the work failed was gone rather than unpublished. Recording what happened is observation rather than action, and a runtime that can no longer publish can still hold the reason it stopped. So the phase selects the sink, and a terminal runtime hands a host nothing while still answering whoever asks. Whether delivery after disposal is wanted is a separate question, and it is left undecided here rather than inherited from a guard that was answering something else. See ADR-091.
 
-It asks `isDisposed` rather than `isRetiring` for that selection, which is the distinction issue #408 turns on: a runtime discovering that its port refuses to cancel is still the object that knows that, so only a runtime that has finished retiring withholds. See ADR-090.
+The selection itself is `reportSink`'s, in graph-runtime-state.ts, because it is a read of that union and the module that owns a union owns the switch over it. It answers on finished retirement rather than on retirement having begun, which is the distinction issue #408 turns on: a runtime discovering that its port refuses to cancel is still the object that knows that, so only a runtime that has finished retiring withholds. A ternary here read that discriminant from outside every switch that names the others, so a phase added later inherited delivery from whichever side of it that phase fell on. See ADR-090 and ADR-092.
