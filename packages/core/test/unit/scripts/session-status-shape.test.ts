@@ -67,6 +67,7 @@ const DOCS = fileURLToPath(new URL("../../../../../docs/", import.meta.url));
 const STATUS = join(DOCS, "SESSION-STATUS.md");
 const LINK = /\]\((\.\/[^)]+\.md)\)/g;
 const COMMENTS = /<!--[\s\S]*?-->/g;
+const HTML_TAG = /<\/?[a-zA-Z][^>]*>/g;
 const NUMERIC_REFERENCE = /&#(\d+|[xX][0-9a-fA-F]+);/g;
 const NAMED_REFERENCE = /&[a-zA-Z][a-zA-Z0-9]*;/g;
 const MAX_CODE_POINT = 0x10ffff;
@@ -207,11 +208,23 @@ function allBullets(lines: readonly string[]): readonly string[] {
  * along; no named reference produces an ASCII word character, so a named one cannot spell the label,
  * and a table of them would be the list #422 already refused to start maintaining. A malformed or
  * out-of-range reference becomes a space rather than a guess.
+ *
+ * A raw HTML element goes the way the comment goes, and for the same reason: Markdown passes inline
+ * HTML through, so `<span>Phase:</span>` renders as the label with the markup invisible, and a tag
+ * whose own name is a word is exactly what the leading strip stops at. Found by the quality pass over
+ * this change rather than by the issue, and it is the reported defect one spelling out. Only the tags
+ * are removed and never the text between them, so an entry that legitimately emphasises a word keeps
+ * what it says.
+ *
+ * A reference missing its closing semicolon is deliberately not decoded. Markdown renders `&#80hase`
+ * and `&nbsp Phase:` literally, ampersand and all, so a reader never sees a label there and decoding
+ * one here would refuse prose instead of a bypass.
  */
 function bulletSubject(bullet: string): string {
   return bullet
     .slice(BULLET.length)
     .replace(COMMENTS, "")
+    .replace(HTML_TAG, "")
     .replace(NUMERIC_REFERENCE, decodeReference)
     .replace(NAMED_REFERENCE, " ");
 }
@@ -454,6 +467,11 @@ describe("the shape gate refuses the phase label rather than one spelling of it"
       "- &#80;hase: live editing",
       "- &#x50;hase 6: live editing",
       "- Ph<!-- split -->ase: live editing",
+      // Inline HTML renders as the label too, and the tag name is the word the leading strip stopped
+      // at, so these are the reported defect one spelling out. Found by the pass over this change.
+      "- <span>Phase:</span> live editing",
+      "- <b>Phase:</b> live editing",
+      "- <span class='x'>Phase 6:</span> live editing",
     ];
     for (const bullet of hidden) expect(statesPhase(bullet), bullet).toBe(true);
   });
@@ -461,10 +479,12 @@ describe("the shape gate refuses the phase label rather than one spelling of it"
   it("refuses a hidden label nested under a real entry, and still counts the entry once", () => {
     // The two readings share a subject and keep disagreeing about nesting, which is the split issue
     // #420 made and this change does not undo.
-    const nested = "## Now\n- one\n  - <!-- x -->Phase: live editing\n";
+    const nested =
+      "## Now\n- one\n  - <!-- x -->Phase: live editing\n  - <span>Phase:</span> live editing\n";
     expect(entriesUnder(nested, "## Now")).toEqual(["- one"]);
     expect(allBullets(statusLines(nested)).filter(statesPhase)).toEqual([
       "- <!-- x -->Phase: live editing",
+      "- <span>Phase:</span> live editing",
     ]);
   });
 
@@ -473,6 +493,8 @@ describe("the shape gate refuses the phase label rather than one spelling of it"
       "- An entry with a <!-- note --> comment, about the phase it is not labelling.",
       "- The gate reads AT&amp;T and every other reference as ordinary prose.",
       "- A slice that names a phase&nbsp;6 target is not labelling one.",
+      "- An entry that <b>emphasises</b> a phase noun mid-sentence is not labelling one.",
+      "- A reference with no semicolon reads as &nbsp Phase, which no reader sees as a label.",
     ];
     for (const bullet of allowed) expect(statesPhase(bullet), bullet).toBe(false);
     expect(entriesUnder("## Now\n- one <!-- note -->\n", "## Now")).toEqual([
