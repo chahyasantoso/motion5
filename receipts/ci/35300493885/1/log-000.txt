@@ -1,0 +1,16 @@
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-18T02:44:44.2784766Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T02:44:44.2785531Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T02:44:44.2825663Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T02:44:44.2826479Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T02:44:44.2826921Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T02:44:44.2827394Z   SUITE_RESULT: cancelled
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T02:44:44.2827883Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T02:44:44.2965724Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-18T02:44:45.6318102Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T02:44:45.6318908Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T02:44:45.6360250Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T02:44:45.6361176Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T02:44:45.6361646Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T02:44:45.6362158Z   SUITE_RESULT: cancelled
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T02:44:45.6362681Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T02:44:45.6497493Z ##[error]Process completed with exit code 1.
