@@ -17,23 +17,30 @@ const RUNTIME_SOURCE = fileURLToPath(
   new URL("../../../src/runtime/project-runtime.ts", import.meta.url),
 );
 
-/** The fifteen fields the four ports replace, spelled as the class read them. */
+/**
+ * The fifteen fields the four ports replace, spelled as the class actually read them.
+ *
+ * Every entry is a read rather than a bare name, and that is not decoration. `#stageTrack` is a
+ * prefix of `#stageTracks`, which survives and always did: it copies the retained track map on a
+ * recipe's first staged write and has nothing to do with the staging seam. A name that prefixes a
+ * live member is not evidence that a retired one is still read, so the check asks for the read.
+ */
 const RETIRED = [
-  "this.#setProgress",
-  "this.#writeValuesHook",
-  "this.#compileTrack",
-  "this.#disposeTrack",
-  "this.#stageTrack",
-  "this.#resolveKeyframes",
-  "this.#addMotionTrack",
-  "this.#replaceMotionTrack",
-  "this.#removeMotionTrack",
-  "this.#replaceMotionTrigger",
-  "this.#setMotionStagger",
-  "this.#signalMotion",
-  "this.#createMotion",
-  "this.#destroyMotion",
-  "this.#disposeComposition",
+  "this.#setProgress(",
+  "this.#writeValuesHook(",
+  "this.#compileTrack?.",
+  "this.#disposeTrack?.",
+  "this.#stageTrack?.",
+  "this.#resolveKeyframes?.",
+  "this.#addMotionTrack?.",
+  "this.#replaceMotionTrack?.",
+  "this.#removeMotionTrack?.",
+  "this.#replaceMotionTrigger?.",
+  "this.#setMotionStagger?.",
+  "this.#signalMotion?.",
+  "this.#createMotion?.",
+  "this.#destroyMotion?.",
+  "this.#disposeComposition(",
 ];
 
 const leaves = (): readonly unknown[] => [
@@ -85,6 +92,8 @@ describe("the project ports", () => {
     const source = code(RUNTIME_SOURCE);
 
     expect(RETIRED.filter((name) => source.includes(name))).toEqual([]);
+    // And holds the one field that replaced all fifteen, so none of them merely moved.
+    expect(source).toContain("readonly #ports: ProjectPorts;");
     // One resolution, at construction, and nowhere else.
     expect(source.split("NO_PORTS")).toHaveLength(15);
     expect(source.split("completing(")).toHaveLength(3);
