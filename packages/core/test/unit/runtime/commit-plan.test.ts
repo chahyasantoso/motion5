@@ -14,7 +14,7 @@ const ent = (track: TrackDefinition, motionId?: string) => ({
 });
 const doc = (
   tracks: readonly [string, ReturnType<typeof ent>][],
-  motions: readonly [string, { definition: MotionDefinition; token: number }][] = [],
+  motions: readonly [string, { definition: MotionDefinition }][] = [],
 ): CommitDocument => ({ tracks: new Map(tracks), motions: new Map(motions) });
 const P = fileURLToPath(new URL("../../../src/runtime/commit-plan.ts", import.meta.url)),
   R = fileURLToPath(new URL("../../../src/runtime/run-plan.ts", import.meta.url));

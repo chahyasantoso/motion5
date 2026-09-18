@@ -56,7 +56,7 @@ import {
   type ProjectPhase,
   type VerbClass,
 } from "./project-phase";
-import { collect, report } from "./rollback";
+import { collect, report, runSettleSteps } from "./rollback";
 import { planCommit } from "./commit-plan";
 import { runPlan } from "./run-plan";
 import { refuse } from "./refusal";
