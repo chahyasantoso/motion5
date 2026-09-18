@@ -41,6 +41,9 @@ const RUNTIME_SOURCE = fileURLToPath(
 const EDIT_SOURCE = fileURLToPath(
   new URL("../../../src/runtime/authoring-edit.ts", import.meta.url),
 );
+const HANDLES_SOURCE = fileURLToPath(
+  new URL("../../../src/runtime/project-handles.ts", import.meta.url),
+);
 const OBSERVATION: ObservationDefinition = { source: ARM };
 /** One group authoring a leaf and one ordinary binding, so every binding arm has a target. */
 const FK_GROUP: AuthoredPluginGroup = { values: { length: 10 }, requires: { base: ARM } };
@@ -237,8 +240,15 @@ describe("every authored edit is one value applied by one total switch", () => {
     ];
     for (const spelling of retired) expect(runtime.split(spelling), spelling).toHaveLength(1);
 
-    // The scan found what it is scanning: one declaration and the eight verbs the handle projects.
-    expect(runtime.split("#authorEdit(")).toHaveLength(10);
+    // The scan found what it is scanning, and what it scans moved. The eight verbs a handle projects
+    // are declared in `project-handles.ts` since step 8, so this count follows them rather than
+    // staying green over a spelling it no longer measures: one declaration and the one host member
+    // that reaches it here, and the eight mints and their single delegate there. Eight call sites
+    // fewer in the runtime is the deletion that slice made, not a weakening of this claim.
+    expect(runtime.split("#authorEdit(")).toHaveLength(3);
+    const handles = code(HANDLES_SOURCE);
+    expect(handles.split("this.#author(")).toHaveLength(9);
+    expect(handles.split("#author(edit: AuthoringEdit)")).toHaveLength(2);
     // One owner for the reserved slot, and it is not this file any more.
     expect(runtime.split("reservedGoalSlot(")).toHaveLength(1);
     expect(code(EDIT_SOURCE).split("reservedGoalSlot(")).toHaveLength(2);
