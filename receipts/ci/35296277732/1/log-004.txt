@@ -1,0 +1,6 @@
+shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:42:24.6929089Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:42:24.6929618Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:42:24.6930112Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:42:24.6930607Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T01:42:24.7031962Z ##[error]Process completed with exit code 1.
