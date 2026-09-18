@@ -11,6 +11,7 @@ import { StaleMotionHandleError, type MotionHandle } from "../../../src/contract
 import { StaleTrackHandleError } from "../../../src/contract/track-handle";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { declaresMembers, handleMembers, touchMember } from "../../helpers/handle-surface";
 import { code, member } from "../../helpers/source-region";
 
 /**
@@ -139,18 +140,17 @@ function thrownBy(operation: () => unknown): unknown {
   throw new Error("Expected the operation to throw.");
 }
 /**
- * Reads a member through its own property descriptor, so a getter is touched as a read and a method
- * as a call. `typeof handle.definition` cannot be asked here: on a stale handle that read is itself
- * the refusal being measured.
+ * One member of this handle, read through the one owner of how a member is reached.
+ *
+ * The mechanism moved and the list did not, which is the split step 8a is for. How a member is
+ * touched is one question, and `test/helpers/handle-surface.ts` answers it over the whole prototype
+ * chain rather than over own properties, so it is the same answer before and after both factories
+ * become classes; this file's copy was byte-identical to `stale-track-handle.test.ts`'s but for the
+ * handle type and the record it closed over. Which arguments each member needs stays here, because
+ * that record is half of `RA-32`'s coverage check.
  */
 function touch(handle: MotionHandle, member: string): () => unknown {
-  const descriptor = Object.getOwnPropertyDescriptor(handle, member);
-  if (descriptor === undefined) throw new Error(`No handle member named "${member}".`);
-  const read = descriptor.get;
-  if (read !== undefined) return () => read.call(handle);
-  const call = descriptor.value as (...rest: unknown[]) => unknown;
-  const args = [...(MOTION_MEMBER_ARGUMENTS[member] ?? [])];
-  return () => call.apply(handle, args);
+  return touchMember(handle, member, MOTION_MEMBER_ARGUMENTS[member] ?? []);
 }
 
 describe("one handle base, one definition spelling, and one stale error family", () => {
@@ -158,7 +158,7 @@ describe("one handle base, one definition spelling, and one stale error family",
     const project = runtime();
     const handle = project.track(LEG);
 
-    const keys = Object.keys(handle);
+    const keys = handleMembers(handle);
     expect(keys).toContain("definition");
     expect(keys).not.toContain("track");
     expect(handle.definition).toBe(LEG_TRACK);
@@ -240,7 +240,7 @@ describe("one handle base, one definition spelling, and one stale error family",
   it("RA-31 reports the bindings the one reader of the group shape derives, dict entries and all", () => {
     const project = runtime();
     const handle = project.track(LEG);
-    expect(Object.keys(handle)).toContain("requires");
+    declaresMembers(handle, "requires");
 
     expect(handle.requires).toEqual([
       { plugin: "fk", slot: "base", source: ARM },
@@ -276,7 +276,7 @@ describe("one handle base, one definition spelling, and one stale error family",
 
     // Derived from the handle's own keys, never from the assertions below, so a member added later
     // with no entry in the argument record lands here first.
-    const surface = Object.keys(handle).sort();
+    const surface = [...handleMembers(handle)].sort();
     const declared = [...NON_REFUSING, ...Object.keys(MOTION_MEMBER_ARGUMENTS)].sort();
     expect(surface).toEqual(declared);
 

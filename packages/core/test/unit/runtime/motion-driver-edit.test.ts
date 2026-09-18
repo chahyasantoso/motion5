@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { declaresMembers } from "../../helpers/handle-surface";
 import type { MotionDefinition, ProjectDefinition } from "../../../src/contract/v5";
 import type { MotionHandle } from "../../../src/contract/motion-handle";
 import { createManualClock } from "../../../src/ports/clock";
@@ -115,16 +116,15 @@ function thrownBy(operation: () => unknown): unknown {
 /**
  * Both verbs, asked for by name before any case calls one.
  *
- * `Object.keys` rather than a type, for the reason `RA-27` reads a spelling that way: the question
- * is whether the handle declares the member at all, and asking it as an assertion is what keeps a
- * red run reporting an absent verb rather than a `TypeError` from calling `undefined`.
+ * The surface rather than a type, for the reason `RA-27` reads a spelling that way: the question is
+ * whether the handle declares the member at all, and asking it as an assertion is what keeps a red
+ * run reporting an absent verb rather than a `TypeError` from calling `undefined`.
+ *
+ * Asked through `declaresMembers`, the one owner all four copies of this question read now, and the
+ * only one of them that asks it of a motion handle. See `test/helpers/handle-surface.ts`.
  */
 function declaring(project: ProjectRuntime): MotionHandle {
-  const handle = project.motion(MOTION);
-  const keys = Object.keys(handle);
-  expect(keys).toContain("setTrigger");
-  expect(keys).toContain("setStagger");
-  return handle;
+  return declaresMembers(project.motion(MOTION), "setTrigger", "setStagger");
 }
 
 /**

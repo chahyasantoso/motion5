@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { declaresMembers } from "../../helpers/handle-surface";
 import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
 import type { TrackHandle } from "../../../src/contract/track-handle";
 import { PluginRegistry, type PluginDefinition } from "../../../src/domain/plugins";
@@ -145,18 +146,19 @@ function thrownBy(operation: () => unknown): unknown {
 /**
  * Both verbs, asked for by name before any case calls one.
  *
- * `Object.keys` rather than a type, for the reason `RA-27` reads a spelling that way and `RA-33`
- * asked for tier 0's: the question is whether the handle declares the member at all, and asking it as
- * an assertion is what keeps a red run reporting an absent verb rather than a `TypeError` from
- * calling `undefined`. It stays after the source lands, because the frozen handle is built by hand
- * and a member deleted from it would otherwise fail every case at once with no name attached.
+ * The surface rather than a type, for the reason `RA-27` reads a spelling that way and `RA-33` asked
+ * for tier 0's: the question is whether the handle declares the member at all, and asking it as an
+ * assertion is what keeps a red run reporting an absent verb rather than a `TypeError` from calling
+ * `undefined`. It stays after the source lands, because a member deleted from the handle would
+ * otherwise fail every case at once with no name attached.
+ *
+ * Asked through `declaresMembers` rather than through `Object.keys`, which is not a rewording. Four
+ * files hold this question and every one of them read own enumerable keys, so all four would have
+ * gone red on the day the factories became classes without one member, one signature or one refusal
+ * moving. See `test/helpers/handle-surface.ts`.
  */
 function declaring(project: ProjectRuntime, nodeId: string = LEG): TrackHandle {
-  const handle = project.track(nodeId);
-  const keys = Object.keys(handle);
-  expect(keys).toContain("setRequire");
-  expect(keys).toContain("removeRequire");
-  return handle;
+  return declaresMembers(project.track(nodeId), "setRequire", "removeRequire");
 }
 /** The authored bindings section of the one group `LEG_TRACK` writes. */
 function authoredRequires(handle: TrackHandle): unknown {

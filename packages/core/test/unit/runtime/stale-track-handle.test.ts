@@ -9,6 +9,7 @@ import type {
 import { StaleTrackHandleError, type TrackHandle } from "../../../src/contract/track-handle";
 import { createManualClock } from "../../../src/ports/clock";
 import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+import { handleMembers, touchMember } from "../../helpers/handle-surface";
 import { code, member } from "../../helpers/source-region";
 
 /**
@@ -134,18 +135,16 @@ function thrownBy(operation: () => unknown): unknown {
   throw new Error("Expected the operation to throw.");
 }
 /**
- * Reads a member through its own property descriptor, so a getter is touched as a read and a
- * method as a call. `typeof handle.definition` cannot be asked here: on a stale handle that read is
- * itself the refusal being measured.
+ * One member of this handle, read through the one owner of how a member is reached.
+ *
+ * The twin of `handle-base.test.ts`'s copy, which was byte-identical to this one but for the handle
+ * type and the argument record it closed over, so what they shared was the question rather than the
+ * list. `test/helpers/handle-surface.ts` owns the question and walks the prototype chain as well as
+ * the instance, which is what makes the same reader correct once both factories are classes. The
+ * record stays here, because it is half of `SH-1`'s coverage check.
  */
 function touch(handle: TrackHandle, member: string): () => unknown {
-  const descriptor = Object.getOwnPropertyDescriptor(handle, member);
-  if (descriptor === undefined) throw new Error(`No handle member named "${member}".`);
-  const read = descriptor.get;
-  if (read !== undefined) return () => read.call(handle);
-  const call = descriptor.value as (...rest: unknown[]) => unknown;
-  const args = [...(MEMBER_ARGUMENTS[member] ?? [])];
-  return () => call.apply(handle, args);
+  return touchMember(handle, member, MEMBER_ARGUMENTS[member] ?? []);
 }
 
 describe("a stale TrackHandle refuses uniformly, and `live` asks without throwing", () => {
@@ -155,7 +154,7 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
 
     // Derived from the handle's own keys, never from the assertions below. A sixth member added to
     // `#handle` lands here first, which is the whole point of the case.
-    const surface = Object.keys(handle).sort();
+    const surface = [...handleMembers(handle)].sort();
     const declared = [...NON_REFUSING, ...Object.keys(MEMBER_ARGUMENTS)].sort();
     expect(surface).toEqual(declared);
 
