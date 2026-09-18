@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { MotionDefinition, TrackDefinition } from "../../../src/contract/v5";
 import { AUTHORED } from "../../../src/runtime/value-state";
 import { planCommit, type CommitDocument, type CommitPlan } from "../../../src/runtime/commit-plan";
-import { runPlan, type PlanPorts, type PlanStaged } from "../../../src/runtime/run-plan";
+import type { StagedTrack } from "../../../src/runtime/project-ports";
+import { runPlan, type PlanPorts } from "../../../src/runtime/run-plan";
 
 /**
  * Issue #443, phase A step 6: what the one impure walk does when a step refuses.
@@ -56,7 +57,7 @@ function rig(failing: readonly string[] = []): Rig {
     journal.push(line);
     if (failing.includes(line)) throw new Error(`refused ${line}`);
   };
-  const handleFor = (nodeId: string): PlanStaged => ({
+  const handleFor = (nodeId: string): StagedTrack => ({
     commit: () => record(`stage-commit ${nodeId}`),
     rollback: () => record(`stage-rollback ${nodeId}`),
   });
@@ -206,11 +207,16 @@ describe("the commit walk", () => {
     const thrown = thrownBy(() => runPlan(replacingPlan(), test.ports));
 
     // Suppress and attach, never suppress and drop: a host whose teardown throws cannot replace the
-    // diagnosis with its own unrelated failure.
+    // diagnosis with its own unrelated failure. Read at both positions rather than as two substrings
+    // of one message, because a message carrying both carries them in either order.
     expect(thrown).toBeInstanceOf(AggregateError);
-    expect((thrown as AggregateError).errors).toHaveLength(2);
-    expect((thrown as Error).message).toContain("refused accept");
-    expect((thrown as Error).message).toContain("Rollback failed");
+    const errors = (thrown as AggregateError).errors as readonly Error[];
+    expect(errors).toHaveLength(2);
+    expect(errors[0]?.message).toBe("refused accept");
+    expect(errors[1]?.message).toBe(`refused retarget hero ${ARM_NODE} undefined`);
+    expect((thrown as Error).message).toBe(
+      `refused accept Rollback failed: refused retarget hero ${ARM_NODE} undefined`,
+    );
     expect(test.journal).not.toContain("adopt");
   });
 

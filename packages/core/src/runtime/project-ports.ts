@@ -154,20 +154,64 @@ export const NO_PORTS: ProjectPorts = Object.freeze({
 });
 
 /**
- * One seam that may answer a completion, normalized so a host that answers nothing answers nothing.
+ * One seam a host installed, applied to the host that was handed the option, or the absent answer.
+ *
+ * Two questions with one owner, because every one of the fifteen seams asks them together: whether
+ * an option was installed at all, and what an installed one is called on. The first is why this
+ * module exists. The second is what a port record would otherwise have changed by existing. A hook
+ * used to be held as a field and reached as `this.#hook?.(...)`, so an ordinary method-style host
+ * function read the runtime as its receiver; reached off a frozen port record it would read that
+ * record instead. Nothing relies on it, every hook in this repository being an arrow or already
+ * bound, but it is public callback behaviour and this slice moves nothing observable, so the receiver
+ * is applied where the seam is resolved rather than left to whichever object the call is written on.
+ *
+ * `absent` is the seam's own entry in `NO_PORTS` at each of the thirteen sites that resolves an
+ * option directly, so a member wired to the wrong default is a mismatched pair on one line rather
+ * than a silent agreement between two, and the evidence for it can be a set rather than a count. The
+ * two normalized completions reach the same no-op one indirection out, through `completing`.
+ */
+export function installed<Args extends readonly unknown[], R>(
+  host: object,
+  hook: ((...args: Args) => R) | undefined,
+  absent: (...args: Args) => R,
+): (...args: Args) => R {
+  if (hook === undefined) return absent;
+  return (...args: Args) => hook.apply(host, args);
+}
+
+/**
+ * What a tier 0 hook actually answered, read as the completion step it earns rather than as a value.
  *
  * `void | (() => void)` is what the two tier 0 options declare, and `void` is not a value a reader
  * may branch on, so a reader that wrote `complete?.()` was relying on a type it had been handed
- * loosely. The port answers a function or `undefined`, and this is the one place that decides which,
- * by asking what was actually returned rather than by trusting the declaration. An absent hook and a
- * hook that returned nothing are the same answer, which is why both arrive here. See ADR-061.
+ * loosely. Three answers are reachable. A host that answered nothing, by either spelling, answered
+ * no step. A host that answered a function answered that function.
+ *
+ * A host that answered a defined non-function answered neither, and discarding it is not the
+ * conservative reading it looks like. `complete?.()` reached that value and threw a `TypeError` at
+ * the settlement step that ran it, after the definition had already been adopted, so discarding it
+ * lets an operation succeed where it used to fail and drops that failure out of the settlement's
+ * error sequence with it. So the step is answered and the step is that same call: the throw stays
+ * where it was thrown, and every reader still branches on a step or nothing rather than on a `void`.
+ */
+function completionStep(complete: unknown): (() => void) | undefined {
+  if (complete === undefined || complete === null) return undefined;
+  if (typeof complete === "function") return complete as () => void;
+  const uncallable = complete as () => void;
+  return () => uncallable();
+}
+
+/**
+ * One seam that may answer a completion, on the host that was handed it, normalized to a step.
+ *
+ * `installed` owns the receiver and the absence, `completionStep` owns what came back, so neither
+ * question is answered twice and an absent hook reaches the same reader a hook returning nothing
+ * does. See ADR-061.
  */
 export function completing<Args extends readonly unknown[]>(
+  host: object,
   hook: ((...args: Args) => void | (() => void)) | undefined,
 ): (...args: Args) => (() => void) | undefined {
-  if (hook === undefined) return NOTHING;
-  return (...args: Args) => {
-    const complete = hook(...args);
-    return typeof complete === "function" ? complete : undefined;
-  };
+  const call = installed<Args, unknown>(host, hook, NOTHING);
+  return (...args: Args) => completionStep(call(...args));
 }

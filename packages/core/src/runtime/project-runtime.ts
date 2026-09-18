@@ -53,6 +53,7 @@ import {
 import {
   NO_PORTS,
   completing,
+  installed,
   type KeyframeResolver,
   type LiveValueWriter,
   type ProjectPorts,
@@ -200,31 +201,37 @@ export class ProjectRuntime {
         token: this.#nextToken++,
         valueState: AUTHORED,
       });
-    // The one place optionality is answered. Every seam a host did not install reads its own
-    // no-op out of NO_PORTS, so no member below is optional and no reader after this line asks.
+    // The one place optionality is answered, and the one place an installed seam's receiver is.
+    // Every seam a host did not install reads its own no-op out of NO_PORTS, and every seam a host
+    // did install is applied to this runtime, which is the receiver it saw while each of these was
+    // a field. No member below is optional and no reader after this line asks either question.
     this.#ports = Object.freeze({
       track: Object.freeze({
-        compile: options.compileTrack ?? NO_PORTS.track.compile,
-        dispose: options.disposeTrack ?? NO_PORTS.track.dispose,
-        stage: options.stageTrack ?? NO_PORTS.track.stage,
+        compile: installed(this, options.compileTrack, NO_PORTS.track.compile),
+        dispose: installed(this, options.disposeTrack, NO_PORTS.track.dispose),
+        stage: installed(this, options.stageTrack, NO_PORTS.track.stage),
       }),
       motion: Object.freeze({
-        create: options.createMotion ?? NO_PORTS.motion.create,
-        destroy: options.destroyMotion ?? NO_PORTS.motion.destroy,
-        addTrack: options.addMotionTrack ?? NO_PORTS.motion.addTrack,
-        replaceTrack: options.replaceMotionTrack ?? NO_PORTS.motion.replaceTrack,
-        removeTrack: options.removeMotionTrack ?? NO_PORTS.motion.removeTrack,
-        replaceTrigger: completing(options.replaceMotionTrigger),
-        setStagger: completing(options.setMotionStagger),
-        signal: options.signalMotion ?? NO_PORTS.motion.signal,
+        create: installed(this, options.createMotion, NO_PORTS.motion.create),
+        destroy: installed(this, options.destroyMotion, NO_PORTS.motion.destroy),
+        addTrack: installed(this, options.addMotionTrack, NO_PORTS.motion.addTrack),
+        replaceTrack: installed(this, options.replaceMotionTrack, NO_PORTS.motion.replaceTrack),
+        removeTrack: installed(this, options.removeMotionTrack, NO_PORTS.motion.removeTrack),
+        replaceTrigger: completing(this, options.replaceMotionTrigger),
+        setStagger: completing(this, options.setMotionStagger),
+        signal: installed(this, options.signalMotion, NO_PORTS.motion.signal),
       }),
       value: Object.freeze({
-        write: options.writeValues ?? NO_PORTS.value.write,
-        seek: options.setProgress ?? NO_PORTS.value.seek,
+        write: installed(this, options.writeValues, NO_PORTS.value.write),
+        seek: installed(this, options.setProgress, NO_PORTS.value.seek),
       }),
       host: Object.freeze({
-        resolveKeyframes: options.resolveKeyframes ?? NO_PORTS.host.resolveKeyframes,
-        disposeComposition: options.disposeComposition ?? NO_PORTS.host.disposeComposition,
+        resolveKeyframes: installed(this, options.resolveKeyframes, NO_PORTS.host.resolveKeyframes),
+        disposeComposition: installed(
+          this,
+          options.disposeComposition,
+          NO_PORTS.host.disposeComposition,
+        ),
       }),
     });
     this.#diagnostics = new Diagnostics(options.diagnosticsCapacity);
@@ -588,7 +595,7 @@ export class ProjectRuntime {
     });
   }
 
-  #completeMotionEdit(complete: void | (() => void), touched: readonly string[] = []): void {
+  #completeMotionEdit(complete: (() => void) | undefined, touched: readonly string[] = []): void {
     runSettleSteps([() => complete?.(), () => this.#assertLive(), () => this.#flush(touched)]);
   }
 

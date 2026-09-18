@@ -2,6 +2,7 @@ import type { MotionDefinition, TrackDefinition } from "../contract/v5";
 import { unreachable } from "../domain/exhaustive";
 import { rejectAfterRollback, runRollbackSteps, runSettleSteps } from "./rollback";
 import { invert, type CommitPlan, type Effect, type Settlement } from "./commit-plan";
+import type { StagedTrack } from "./project-ports";
 /**
  * The one impure walk over a derived commit, and the only module in this folder that performs one.
  *
@@ -21,18 +22,6 @@ import { invert, type CommitPlan, type Effect, type Settlement } from "./commit-
  */
 
 /**
- * A replacement the staging seam has already installed, with its displaced Track held for rollback.
- *
- * The runtime's `StagedTrack` as this layer needs it, declared separately because this module may
- * not depend on the runtime that calls it. `undefined` wherever a handle is expected is a stage that
- * was never taken, which is the ordinary answer when no staging seam is installed at all.
- */
-export interface PlanStaged {
-  commit(): void;
-  rollback(): void;
-}
-
-/**
  * Every seam one plan can reach, as one total record.
  *
  * Total rather than optional, and that is the point of the type: the runtime holds its hooks as
@@ -43,15 +32,24 @@ export interface PlanStaged {
  *
  * `assertLive`, `accept` and `adopt` are ports for the same reason the other thirteen are. This
  * module owns when each happens and owns nothing whatever about what any of them means.
+ *
+ * A stage handle is `project-ports.ts`'s `StagedTrack` rather than a second declaration of the same
+ * two methods. This module carried its own copy, on the reason that it may not depend on the runtime
+ * that calls it, and that reason expired when the seam types left the runtime: `project-ports.ts`
+ * holds port types and domain imports and nothing else, so importing the shape is what depending on
+ * the contract rather than on the caller now looks like. Two declarations of one shape is the defect
+ * the port slice exists to remove, so it is not one this module may keep. `undefined` wherever a
+ * handle is expected is a stage that was never taken, which is the ordinary answer when no staging
+ * seam is installed at all.
  */
 export interface PlanPorts {
   readonly createMotion: (definition: MotionDefinition) => void;
   readonly destroyMotion: (motionId: string) => void;
   readonly compileTrack: (track: TrackDefinition, nodeId: string) => void;
   readonly disposeTrack: (nodeId: string) => void;
-  readonly stageTrack: (track: TrackDefinition, nodeId: string) => PlanStaged | undefined;
-  readonly commitStaged: (staged: PlanStaged | undefined, nodeId: string) => void;
-  readonly rollbackStaged: (staged: PlanStaged | undefined, nodeId: string) => void;
+  readonly stageTrack: (track: TrackDefinition, nodeId: string) => StagedTrack | undefined;
+  readonly commitStaged: (staged: StagedTrack | undefined, nodeId: string) => void;
+  readonly rollbackStaged: (staged: StagedTrack | undefined, nodeId: string) => void;
   readonly replaceMotionTrack: (motionId: string, nodeId: string, duration?: number) => void;
   readonly evictNode: (nodeId: string) => void;
   readonly mountNode: (nodeId: string) => void;
@@ -71,7 +69,7 @@ export interface PlanPorts {
  * node here rather than carried on the settlement, because the settlement was planned before the
  * stage existed.
  */
-type StagedByNode = Map<string, PlanStaged | undefined>;
+type StagedByNode = Map<string, StagedTrack | undefined>;
 
 /**
  * Performs one effect, and is the one place an effect kind becomes a call.
@@ -105,7 +103,7 @@ function perform(effect: Effect, ports: PlanPorts, staged: StagedByNode): void {
 function settleOne(
   settlement: Settlement,
   ports: PlanPorts,
-  staged: ReadonlyMap<string, PlanStaged | undefined>,
+  staged: ReadonlyMap<string, StagedTrack | undefined>,
 ): void {
   switch (settlement.kind) {
     case "commit-staged":
