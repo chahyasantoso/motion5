@@ -1,0 +1,25 @@
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-09-17T23:59:42.1039961Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-17T23:59:42.1040688Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-17T23:59:42.1064121Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-17T23:59:42.1064434Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-17T23:59:42.1064643Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-17T23:59:42.1064860Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-17T23:59:44.3944128Z ##[error]packages/core/src/runtime/project-runtime.ts(629,5): error TS2304: Cannot find name 'runSettleSteps'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-17T23:59:44.3951646Z ##[error]packages/core/src/runtime/project-runtime.ts(886,5): error TS2304: Cannot find name 'runSettleSteps'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-17T23:59:44.4166757Z ##[error]Process completed with exit code 2.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-18T00:00:46.9727509Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:00:46.9728246Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:00:46.9767825Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:00:46.9768644Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:00:46.9769086Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:00:46.9769571Z   SUITE_RESULT: cancelled
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:00:46.9770063Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:00:46.9901421Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-18T00:00:46.0692260Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:00:46.0692999Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:00:46.0733182Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:00:46.0734003Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:00:46.0734440Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:00:46.0735126Z   SUITE_RESULT: cancelled
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:00:46.0735617Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-18T00:00:46.0870683Z ##[error]Process completed with exit code 1.
