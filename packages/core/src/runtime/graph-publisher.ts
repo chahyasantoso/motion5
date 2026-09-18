@@ -317,99 +317,97 @@ export class GraphPublisher {
     readonly inputs: RequirementInputs;
     readonly sourceRevisions: Record<string, number>;
   } {
-    {
-      const collected: Record<string, Record<string, unknown>> = {};
-      // One accumulator per dict-valued slot, kept beside `collected` until the input loop is
-      // done. Assembled separately rather than merged in place so the slot's own record is
-      // frozen once, at a point where it is known to be complete.
-      const memberSlots = new Map<string, Map<string, Record<string, unknown>>>();
-      const sourceRevisions: Record<string, number> = {};
-      if (node.solves && node.solves.length > 0) {
-        const solvingPlugin = solvingPluginOf(node);
-        // Unreachable through `resolveSolvers`, which derives `solves` only for a node holding
-        // a `root` edge. Failed rather than defaulted to a plugin name, because a publisher
-        // that guesses one is the thing this lookup exists to delete.
-        if (solvingPlugin === undefined) failPublication({ kind: "solver-scope", nodeId: node.id });
-        const membersList: SolverMember[] = [];
-        for (const memberRef of node.solves) {
-          const memberNode = byId[memberRef.id];
-          if (typeof memberNode?.interpolated !== "function")
-            failPublication({ kind: "member-interpolation", memberId: memberRef.id });
-          // `base` comes off `solves`, where `resolveSolvers` already derived it, rather than
-          // from a second walk over the member's edges by whoever supplies `interpolated`.
-          const state = memberNode.interpolated();
-          // And so does `goal`, for the same reason: a goal is one authored dict entry that
-          // `readPluginBindings` expanded into its own binding, so the node it names is an
-          // ordinary input edge of this solver and is already resolved by the pending check
-          // above. The slot delivers that same value under the author's own key through the
-          // loop below; this join is what carries the qualified member id, which is the one
-          // thing a plugin holding no graph cannot recover. The guard is the same defensive
-          // invariant the input loop carries.
-          let goal: Readonly<Record<string, unknown>> | undefined;
-          if (memberRef.goal !== undefined) {
-            goal = expectRecord(valuesFor(memberRef.goal), {
-              kind: "goal-shape",
-              nodeId: node.id,
-              memberId: memberRef.id,
-              goalId: memberRef.goal,
-            });
-          }
-          membersList.push(
-            Object.freeze(
-              goal === undefined
-                ? { ...state, base: memberRef.base }
-                : { ...state, base: memberRef.base, goal },
-            ),
-          );
+    const collected: Record<string, Record<string, unknown>> = {};
+    // One accumulator per dict-valued slot, kept beside `collected` until the input loop is
+    // done. Assembled separately rather than merged in place so the slot's own record is
+    // frozen once, at a point where it is known to be complete.
+    const memberSlots = new Map<string, Map<string, Record<string, unknown>>>();
+    const sourceRevisions: Record<string, number> = {};
+    if (node.solves && node.solves.length > 0) {
+      const solvingPlugin = solvingPluginOf(node);
+      // Unreachable through `resolveSolvers`, which derives `solves` only for a node holding
+      // a `root` edge. Failed rather than defaulted to a plugin name, because a publisher
+      // that guesses one is the thing this lookup exists to delete.
+      if (solvingPlugin === undefined) failPublication({ kind: "solver-scope", nodeId: node.id });
+      const membersList: SolverMember[] = [];
+      for (const memberRef of node.solves) {
+        const memberNode = byId[memberRef.id];
+        if (typeof memberNode?.interpolated !== "function")
+          failPublication({ kind: "member-interpolation", memberId: memberRef.id });
+        // `base` comes off `solves`, where `resolveSolvers` already derived it, rather than
+        // from a second walk over the member's edges by whoever supplies `interpolated`.
+        const state = memberNode.interpolated();
+        // And so does `goal`, for the same reason: a goal is one authored dict entry that
+        // `readPluginBindings` expanded into its own binding, so the node it names is an
+        // ordinary input edge of this solver and is already resolved by the pending check
+        // above. The slot delivers that same value under the author's own key through the
+        // loop below; this join is what carries the qualified member id, which is the one
+        // thing a plugin holding no graph cannot recover. The guard is the same defensive
+        // invariant the input loop carries.
+        let goal: Readonly<Record<string, unknown>> | undefined;
+        if (memberRef.goal !== undefined) {
+          goal = expectRecord(valuesFor(memberRef.goal), {
+            kind: "goal-shape",
+            nodeId: node.id,
+            memberId: memberRef.id,
+            goalId: memberRef.goal,
+          });
         }
-        (collected[solvingPlugin] ??= {}).members = Object.freeze(membersList);
+        membersList.push(
+          Object.freeze(
+            goal === undefined
+              ? { ...state, base: memberRef.base }
+              : { ...state, base: memberRef.base, goal },
+          ),
+        );
       }
-      for (const edge of edgesByRole(node, "input")) {
-        const sourcePatch = this.#registry.get(edge.sourceId);
-        // Unreachable in normal flow: the pending pre-check above already classified every
-        // edge as resolved before this loop runs. Kept as a defensive invariant guard only,
-        // and both of its failures are named by the reader that raises them.
-        const sourceRecord = expectInputRecord(valuesFor(edge.sourceId), edge.sourceId);
-        if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
-        const requirement = edge.requirement;
-        // Unreachable by construction now that `observes` is output-only: every input edge is
-        // derived from a binding and carries its scope. Thrown rather than skipped, because an
-        // edge in the input phase with nothing to scope it has no destination at all, and a
-        // silent skip would drop a dependency graph construction accepted. Same shape as the
-        // two guards above. See ADR-047.
-        if (requirement === undefined) failPublication({ kind: "input-requirement", edge });
-        // A dict entry is delivered under its authored key inside the slot rather than at the
-        // slot itself. Assigning at the slot gave N entries one destination, so the last edge
-        // in canonical order was the only one that arrived and the rest were dropped with no
-        // diagnostic: survivable only while nothing read the channel, which is exactly how the
-        // next consumer of it inherits a last-write-wins bug. See ADR-057.
-        if (requirement.memberKey !== undefined) {
-          const slots = memberSlots.get(requirement.plugin) ?? new Map();
-          memberSlots.set(requirement.plugin, slots);
-          const members = slots.get(requirement.slot) ?? {};
-          slots.set(requirement.slot, members);
-          members[requirement.memberKey] = sourceRecord;
-          continue;
-        }
-        // The slot is the scope, so the source's values arrive whole and under their own names.
-        // Nothing is projected and nothing is flat-merged, so there is no key left to collide
-        // with and no collision guard left to reach. See ADR-044.
-        (collected[requirement.plugin] ??= {})[requirement.slot] = sourceRecord;
-      }
-      // Frozen at assembly, in canonical key order: the entries were collected over
-      // `edgesByRole`, which sorts by `compareEdges`, and the member key is its last tiebreak.
-      for (const [plugin, slots] of memberSlots)
-        for (const [slot, members] of slots)
-          (collected[plugin] ??= {})[slot] = Object.freeze(members);
-      // One memo, and it is `Track`'s. Its key is the seed as well as the requirement inputs,
-      // and the members travel inside those inputs, so member lengths are covered by the same
-      // comparison that covers the root and the target, together with the solver's own
-      // interpolated state and progress. A second cache keyed on inputs and members alone
-      // looked like an optimisation and was strictly weaker: an animated value on a solver
-      // track changed nothing in that key, so the solver held still after tick one with no
-      // error and no diagnostic. See ADR-051.
-      return { inputs: freezeRequirementInputs(collected), sourceRevisions };
+      (collected[solvingPlugin] ??= {}).members = Object.freeze(membersList);
     }
+    for (const edge of edgesByRole(node, "input")) {
+      const sourcePatch = this.#registry.get(edge.sourceId);
+      // Unreachable in normal flow: the pending pre-check above already classified every
+      // edge as resolved before this loop runs. Kept as a defensive invariant guard only,
+      // and both of its failures are named by the reader that raises them.
+      const sourceRecord = expectInputRecord(valuesFor(edge.sourceId), edge.sourceId);
+      if (sourcePatch) sourceRevisions[edge.sourceId] = sourcePatch.revision;
+      const requirement = edge.requirement;
+      // Unreachable by construction now that `observes` is output-only: every input edge is
+      // derived from a binding and carries its scope. Thrown rather than skipped, because an
+      // edge in the input phase with nothing to scope it has no destination at all, and a
+      // silent skip would drop a dependency graph construction accepted. Same shape as the
+      // two guards above. See ADR-047.
+      if (requirement === undefined) failPublication({ kind: "input-requirement", edge });
+      // A dict entry is delivered under its authored key inside the slot rather than at the
+      // slot itself. Assigning at the slot gave N entries one destination, so the last edge
+      // in canonical order was the only one that arrived and the rest were dropped with no
+      // diagnostic: survivable only while nothing read the channel, which is exactly how the
+      // next consumer of it inherits a last-write-wins bug. See ADR-057.
+      if (requirement.memberKey !== undefined) {
+        const slots = memberSlots.get(requirement.plugin) ?? new Map();
+        memberSlots.set(requirement.plugin, slots);
+        const members = slots.get(requirement.slot) ?? {};
+        slots.set(requirement.slot, members);
+        members[requirement.memberKey] = sourceRecord;
+        continue;
+      }
+      // The slot is the scope, so the source's values arrive whole and under their own names.
+      // Nothing is projected and nothing is flat-merged, so there is no key left to collide
+      // with and no collision guard left to reach. See ADR-044.
+      (collected[requirement.plugin] ??= {})[requirement.slot] = sourceRecord;
+    }
+    // Frozen at assembly, in canonical key order: the entries were collected over
+    // `edgesByRole`, which sorts by `compareEdges`, and the member key is its last tiebreak.
+    for (const [plugin, slots] of memberSlots)
+      for (const [slot, members] of slots)
+        (collected[plugin] ??= {})[slot] = Object.freeze(members);
+    // One memo, and it is `Track`'s. Its key is the seed as well as the requirement inputs,
+    // and the members travel inside those inputs, so member lengths are covered by the same
+    // comparison that covers the root and the target, together with the solver's own
+    // interpolated state and progress. A second cache keyed on inputs and members alone
+    // looked like an optimisation and was strictly weaker: an animated value on a solver
+    // track changed nothing in that key, so the solver held still after tick one with no
+    // error and no diagnostic. See ADR-051.
+    return { inputs: freezeRequirementInputs(collected), sourceRevisions };
   }
 
   /**

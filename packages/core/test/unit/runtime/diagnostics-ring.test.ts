@@ -65,15 +65,21 @@ describe("the diagnostics buffer retains in a ring", () => {
   it("reindexes nothing it retains", () => {
     const buffer = new Diagnostics(4);
     const shift = vi.spyOn(Array.prototype, "shift");
+    let evictions = -1;
     try {
       for (let index = 1; index <= 40; index += 1) buffer.record(entry(index));
+      // Read inside the guarded region and asserted outside it. `mockRestore` resets the spy's
+      // own call record as well as the prototype, so an assertion placed after it reads zero calls
+      // whatever the source did, which is the green case that is evidence of nothing
+      // `docs/GUARDRAILS.md` refuses, in the one case whose whole claim is that a step is gone.
+      // A number rather than the spy carries the reading out, so no assertion and no failure
+      // formatting runs while `Array.prototype` is still patched.
+      evictions = shift.mock.calls.length;
     } finally {
-      // Restored before the assertion, so a failure cannot leave the rest of the suite running
-      // against a patched prototype.
       shift.mockRestore();
     }
 
-    expect(shift).not.toHaveBeenCalled();
+    expect(evictions).toBe(0);
     // Asserted in the same case, so a buffer that stopped evicting at all cannot pass it.
     expect(retainedPaths(buffer)).toEqual(["37", "38", "39", "40"]);
   });
