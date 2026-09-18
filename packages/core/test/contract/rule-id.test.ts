@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { readFileSync, readdirSync } from "node:fs";
+import { readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+
+import { code } from "../helpers/source-region";
 
 import {
   BASE_RULE_IDS,
@@ -30,6 +32,10 @@ const SOURCE_FILE = /\.tsx?$/;
 const VALIDATOR = "contract/validate-v5.ts";
 const PATH_FIRST_CONSTRUCTOR = "contract/migrate-v4-to-v5.ts";
 const TRIGGER_ADAPTER = "adapters/trigger-factory/default.ts";
+// The prefix is applied by the contribution adapter in the plugin layer rather than by the
+// validator that reports the names. The inventory placed it in `validate-v5.ts`; the scan found it
+// here, which is the second thing this gate corrected about its own subject.
+const PREFIX_SITE_FILE = "domain/plugins.ts";
 
 const CONSTRUCTED = /\b(?:issue|diag|diagnostic|frozenDiagnostic)\(\s*"([a-z][a-z0-9-]*)"/g;
 const ASSIGNED = /\bruleId:\s*"([a-z][a-z0-9-]*)"/g;
@@ -56,8 +62,11 @@ function sourceFiles(): readonly string[] {
   return [...sourceFilesUnder("")].sort();
 }
 
+// Reading goes through `helpers/source-region`, which is the one owner of source text in this
+// suite and erases comments while keeping literal tokens. That is exactly the projection a scan
+// for constructed ids wants: a docblock naming a rule cannot register as a construction site.
 function sourceOf(relativePath: string): string {
-  return readFileSync(`${SOURCE_ROOT}${relativePath}`, "utf8");
+  return code(`${SOURCE_ROOT}${relativePath}`);
 }
 
 function matches(source: string, pattern: RegExp): readonly string[] {
@@ -89,7 +98,7 @@ describe("rule id enumeration", () => {
 
   it("finds the contribution prefix site, so a passing scan is never an empty one", () => {
     const withPrefixSite = sourceFiles().filter((file) => PREFIX_SITE.test(sourceOf(file)));
-    expect(withPrefixSite).toEqual([VALIDATOR]);
+    expect(withPrefixSite).toEqual([PREFIX_SITE_FILE]);
   });
 
   it("reaches the construction modules, including the adapter the first inventory missed", () => {

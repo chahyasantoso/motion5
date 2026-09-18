@@ -45,6 +45,8 @@ export const KEYFRAME_RULE_IDS = [
   "keyframes-values-shape",
   "keyframes-values-empty",
   "keyframes-unknown-section",
+  "keyframes-reserved-section",
+  "keyframes-missing-values-section",
 ] as const;
 
 /**
@@ -70,11 +72,18 @@ export const CONTRIBUTION_RULE_ID_ALIASES = {
 } as const;
 
 /**
- * Every other rule id, sorted, from all fifteen construction modules.
+ * Every other rule id, sorted, from all seventeen construction modules.
  *
  * The `plugin-contribution-` members here are their own literals in `domain/plugins.ts`,
  * `domain/keyframe-compiler.ts` and `contract/validate-v5.ts`. They are not outputs of the prefix
  * site and share only a spelling with the family derived below.
+ *
+ * Four members are minted on a thrown error class rather than at a diagnostic construction site.
+ * `composition-output-shape`, `live-value-key`, `stale-motion-handle` and `stale-track-handle` are
+ * each declared as a `ruleId` field on an error, and `graph-publisher.ts` already forwards one of
+ * them into a diagnostic. A field spelled `ruleId` names a rule wherever it sits, so these are
+ * members rather than a second population, which is what the message prefixes in
+ * `runtime/refusal.ts` genuinely are. The coverage gate found three of the four; neither audit did.
  */
 export const BASE_RULE_IDS = [
   "blocked-upstream",
@@ -102,6 +111,7 @@ export const BASE_RULE_IDS = [
   "ik-solver-unreachable-root",
   "ik-target-not-single-leaf",
   "ik-weight-without-solver",
+  "live-value-key",
   "motion-duplicate",
   "motion-duplicate-id",
   "motion-id",
@@ -150,6 +160,8 @@ export const BASE_RULE_IDS = [
   "scheduler-failure",
   "schema-v4-migration",
   "schema-version",
+  "stale-motion-handle",
+  "stale-track-handle",
   "track-duplicate-id",
   "track-id",
   "track-shape",
