@@ -1,8 +1,6 @@
 // Docs: ./project-runtime.md
 import type {
-  AuthoredPluginGroup,
   AuthoredProperty,
-  ObservationDefinition,
   PatchBatch,
   ProjectDefinition,
   TrackDefinition,
@@ -13,7 +11,7 @@ import { readPluginValues } from "../contract/keyframe-shape";
 import type { MotionHandle } from "../contract/motion-handle";
 import type { SchemaTransaction } from "../contract/schema-transaction";
 import type { ValueTransaction } from "../contract/value-transaction";
-import type { AuthoredValues, RequireView, TrackHandle } from "../contract/track-handle";
+import type { AuthoredValues, TrackHandle } from "../contract/track-handle";
 import { validateMotionTrigger, validateTrackDefinition } from "../contract/validate-v5";
 import type { Clock, ClockTick } from "../ports/clock";
 import type { Scheduler } from "../ports/scheduler";
@@ -59,6 +57,13 @@ import {
   type ProjectPorts,
   type StagedTrack,
 } from "./project-ports";
+import {
+  RuntimeMotionHandle,
+  RuntimeTrackHandle,
+  type HandleHost,
+  type MotionHost,
+  type TrackHost,
+} from "./project-handles";
 import { collect, report, runSettleSteps } from "./rollback";
 import { planCommit } from "./commit-plan";
 import { runPlan } from "./run-plan";
@@ -78,7 +83,6 @@ import { applyEdit, boundGroup, type AuthoringEdit } from "./authoring-edit";
 import {
   NO_OVERLAY,
   authoredValues,
-  requireViews,
   sameTrigger,
   splitAuthoredValues,
   withAuthoredValues,
@@ -183,6 +187,7 @@ export class ProjectRuntime {
   #phase: ProjectPhase<OpenTransaction> = idle();
   readonly #diagnostics: Diagnostics;
   readonly #ports: ProjectPorts;
+  readonly #handleHost: HandleHost;
   constructor(project: ProjectDefinition, options: ProjectRuntimeOptions) {
     this.#project = project;
     for (const motion of project.motions) {
@@ -232,6 +237,39 @@ export class ProjectRuntime {
           options.disposeComposition,
           NO_PORTS.host.disposeComposition,
         ),
+      }),
+    });
+    // What a handle this runtime issues may ask back of it, resolved once for the reason the ports
+    // above are: a handle is a class now, so it cannot reach a private member, and what one may ask
+    // is the same for every handle and every call that mints one. Each member below is one rung this
+    // class already owned, so which liveness order a verb gets is still decided here.
+    this.#handleHost = Object.freeze<HandleHost>({
+      track: Object.freeze<TrackHost>({
+        live: (id, token) => isLive(this.#entryIfLive(id, token)),
+        definition: (id, token) => this.#liveEntry(id, token).track,
+        remove: (id, token) => this.#removeTrack(id, token),
+        replace: (id, token, next) => this.#replaceTrack(id, token, next),
+        author: (id, token, edit) => this.#authorEdit(id, token, edit),
+        setKeyframe: (id, token, plugin, key, value) =>
+          this.#setKeyframe(id, token, plugin, key, value),
+        removeKeyframe: (id, token, plugin, key) => this.#removeKeyframe(id, token, plugin, key),
+        write: (id, token, values, rebase) =>
+          this.#writeValues(id, () => this.#writableEntry(id, token), values, rebase),
+      }),
+      motion: Object.freeze<MotionHost>({
+        live: (id, token) => isLive(this.#motionIfLive(id, token)),
+        definition: (id, token) => this.#motionDefinition(this.#liveMotion(id, token)),
+        trackIds: (id, token) => {
+          const owner = this.#liveId(id, token);
+          return Object.freeze(this.#ownedBy(this.#readTracks(), owner).map(([node]) => node));
+        },
+        addTrack: (id, token, track) =>
+          this.#addTrack(track, { motionId: this.#writableId(id, token) }),
+        track: (id, token, trackId) => this.track(this.#liveChildNode(id, token, trackId)),
+        tryTrack: (id, token, trackId) => this.tryTrack(this.#liveChildNode(id, token, trackId)),
+        setTrigger: (id, token, trigger) => this.#setTrigger(id, token, trigger),
+        setStagger: (id, token, stagger) => this.#setStagger(id, token, stagger),
+        destroy: (id, token) => this.#removeMotion(this.#writableId(id, token)),
       }),
     });
     this.#diagnostics = new Diagnostics(options.diagnosticsCapacity);
@@ -600,68 +638,10 @@ export class ProjectRuntime {
   }
 
   #motionHandle(id: string, token: number): MotionHandle {
-    const runtime = this;
-    return Object.freeze({
-      id,
-      get live(): boolean {
-        return isLive(runtime.#motionIfLive(id, token));
-      },
-      get definition(): MotionDefinition {
-        return runtime.#motionDefinition(runtime.#liveMotion(id, token));
-      },
-      get trackIds(): readonly string[] {
-        const owner = runtime.#liveId(id, token);
-        return Object.freeze(runtime.#ownedBy(runtime.#readTracks(), owner).map(([node]) => node));
-      },
-      addTrack: (track: TrackDefinition) =>
-        runtime.#addTrack(track, { motionId: runtime.#writableId(id, token) }),
-      track: (trackId: string) => runtime.track(runtime.#liveChildNode(id, token, trackId)),
-      tryTrack: (trackId: string) => runtime.tryTrack(runtime.#liveChildNode(id, token, trackId)),
-      setTrigger: (next: MotionDefinition["trigger"]) => runtime.#setTrigger(id, token, next),
-      setStagger: (stagger?: number) => runtime.#setStagger(id, token, stagger),
-      destroy: () => runtime.#removeMotion(runtime.#writableId(id, token)),
-    });
+    return new RuntimeMotionHandle(this.#handleHost.motion, id, token);
   }
   #handle(id: string, token: number): TrackHandle {
-    const runtime = this;
-    return Object.freeze({
-      id,
-      get live(): boolean {
-        return isLive(runtime.#entryIfLive(id, token));
-      },
-      get definition(): TrackDefinition {
-        return runtime.#liveEntry(id, token).track;
-      },
-      get requires(): readonly RequireView[] {
-        return requireViews(runtime.#liveEntry(id, token).track);
-      },
-      remove: () => runtime.#removeTrack(id, token),
-      replace: (next: TrackDefinition) => runtime.#replaceTrack(id, token, next),
-      addObserve: (observation: ObservationDefinition) =>
-        runtime.#authorEdit(id, token, { kind: "add-observe", observation }),
-      removeObserve: (observation: ObservationDefinition) =>
-        runtime.#authorEdit(id, token, { kind: "remove-observe", observation }),
-      setRequire: (plugin: string, slot: string, source: string, memberKey?: string) =>
-        runtime.#authorEdit(id, token, { kind: "bind-slot", plugin, slot, source, memberKey }),
-      removeRequire: (plugin: string, slot: string, memberKey?: string) =>
-        runtime.#authorEdit(id, token, { kind: "unbind-slot", plugin, slot, memberKey }),
-      setKeyframeGroup: (plugin: string, group: AuthoredPluginGroup) =>
-        runtime.#authorEdit(id, token, { kind: "set-group", plugin, group }),
-      removeKeyframeGroup: (plugin: string) =>
-        runtime.#authorEdit(id, token, { kind: "remove-group", plugin }),
-      setGoal: (plugin: string, memberId: string, source: string) =>
-        runtime.#authorEdit(id, token, { kind: "bind-goal", plugin, memberId, source }),
-      removeGoal: (plugin: string, memberId: string) =>
-        runtime.#authorEdit(id, token, { kind: "unbind-goal", plugin, memberId }),
-      setKeyframe: (plugin: string, key: string, value: AuthoredProperty) =>
-        runtime.#setKeyframe(id, token, plugin, key, value),
-      removeKeyframe: (plugin: string, key: string) =>
-        runtime.#removeKeyframe(id, token, plugin, key),
-      overrideValues: (next: AuthoredValues) =>
-        runtime.#writeValues(id, () => runtime.#writableEntry(id, token), next, false),
-      setValues: (next: AuthoredValues) =>
-        runtime.#writeValues(id, () => runtime.#writableEntry(id, token), next, true),
-    });
+    return new RuntimeTrackHandle(this.#handleHost.track, id, token);
   }
 
   #removeTrack(id: string, token: number): void {

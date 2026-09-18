@@ -36,6 +36,12 @@ Every seam this project reaches, as four total records, and the one field that r
 
 Two things a port record would otherwise have changed by existing are answered at the resolution rather than left to it, because both are public callback behaviour and this slice moves nothing observable. A hook was a field reached as this.#hook?.(...), so an ordinary method-style host function read this runtime as its receiver, and one reached off a frozen port record would read that record instead; installed() applies each option to this runtime, so the receiver is what it was. And a host that answered a defined non-function answered no completion this layer may discard: complete?.() reached that value and threw a TypeError at the settlement step that ran it, after adoption, so completing() answers the step that call always was and the throw stays where it was thrown. Nothing in this repository relies on either, every hook being an arrow or already bound and every completion a function or nothing, which is exactly why both are stated here rather than discovered from a caller later. See ADR-061 and ADR-071.
 
+## #handleHost
+
+What a handle this runtime issued may ask back of it, resolved once in the constructor exactly as #ports is, and the field that lets both handles be classes rather than object literals. project-handles.ts owns what a handle is and states every member of both on one prototype; this field is the only thing either class holds besides the id and the token it captured. A class cannot reach a #private member, so the seam is not a concession to testing: it is what the language requires the moment a handle stops being a literal built inside this class body. The direction is the opposite of #ports's, which is why it is a second field rather than a fifth group in the first: a port is what this runtime reaches outward for, and a host is what something it issued reaches back for.
+
+Nothing about who decides what moves. Every member is one call on a rung this class already owned, so the reading ladder, the writable resolvers, the child qualification and the commit are unmoved, and which of the two liveness orders a member gets is still stated here per member rather than inferred by the handle. What the conversion does move is what a handle exposes as own enumerable properties, and that is deliberate rather than incidental: six test files read a handle that way, so the reader they share landed first and is green over the literals as well as over the classes. See ADR-026, ADR-056 and ADR-061.
+
 ## #readTracks
 
 Answers the transaction's pending tracks when a recipe is open, otherwise the retained tracks, as a read-only map. Every structural reader uses this accessor. Immediate edits refuse inside recipes and deliberately operate on retained entries. See ADR-064.
@@ -142,7 +148,7 @@ Accepted tier 0 completion through the shared settlement collector: finalization
 
 ## #motionHandle
 
-A frozen capability factory that owns no sequencing or validation. Reads use the live-motion ladder; child resolution uses #liveChildNode; writes use writable resolvers and their existing operations. Every getter resolves current readable state rather than capturing a definition. See ADR-056 and ADR-061.
+One statement: mint a RuntimeMotionHandle over the motion half of #handleHost and the pair this call captured. It owns no sequencing and no validation, and it no longer owns the member list either, because project-handles.ts states every member of both handles and #handle is the same statement for a track. Nothing else moved: reads still use the live-motion ladder, child resolution still uses #liveChildNode, writes still use the writable resolvers, and every getter still resolves current readable state rather than capturing a definition. What a caller holds is now one instance over three fields instead of a ten-member frozen literal allocated per call. See ADR-056 and ADR-061.
 
 ## #removeTrack
 

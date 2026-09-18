@@ -31,6 +31,9 @@ const RUNTIME_SOURCE = fileURLToPath(
 );
 const RESULTS_SOURCE = fileURLToPath(new URL("../../../src/runtime/results.ts", import.meta.url));
 const REFUSAL_SOURCE = fileURLToPath(new URL("../../../src/runtime/refusal.ts", import.meta.url));
+const HANDLES_SOURCE = fileURLToPath(
+  new URL("../../../src/runtime/project-handles.ts", import.meta.url),
+);
 const PROJECT: ProjectDefinition = {
   schemaVersion: 5,
   motions: [{ id: "hero", trigger: { type: "manual" }, tracks: [{ id: "arm" }, { id: "leg" }] }],
@@ -264,7 +267,7 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
     project.dispose();
   });
 
-  it("SH-7 keeps one token comparison and no branch inside the handle factory", () => {
+  it("SH-7 keeps one token comparison and no branch inside the handle it mints", () => {
     const source = code(RUNTIME_SOURCE);
     const results = code(RESULTS_SOURCE);
 
@@ -289,6 +292,19 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
     const factory = member(source, "#handle(id: string, token: number): TrackHandle {");
     expect(factory.match(/\bif\s*\(/g) ?? []).toEqual([]);
     expect(factory).not.toMatch(/\breturn;/);
+    expect(factory).toContain("new RuntimeTrackHandle(");
+
+    // Re-addressed at the class those members moved to, on the rule this phase already followed for
+    // `RA-113` and for `SH-7` itself: a claim keeps its subject rather than its coordinates. The
+    // factory is one statement now, so asking only it would leave the eighteen delegations this case
+    // has always been about unmeasured, and a guard growing back would grow in the class instead.
+    const handle = member(
+      code(HANDLES_SOURCE),
+      "export class RuntimeTrackHandle implements TrackHandle {",
+      "",
+    );
+    expect(handle.match(/\bif\s*\(/g) ?? []).toEqual([]);
+    expect(handle).not.toMatch(/\breturn;/);
   });
 
   it("SH-8 reports the disposal rather than the staleness on every writing member", () => {
