@@ -168,6 +168,33 @@ describe("one handle base, one definition spelling, and one stale error family",
     project.dispose();
   });
 
+  it("holds every member on one frozen prototype, and reads its host off the receiver", () => {
+    const project = runtime();
+    const handle = project.motion(MOTION);
+
+    // The half of step 8 that is not the enumerable surface, declared here rather than found by a
+    // caller later. Every member of the retired literals was an own arrow closing over the runtime,
+    // so a detached one still worked; a prototype method reads its host off the receiver, so a
+    // detached one has none. Nothing in this repository detaches a handle member, and binding each
+    // one per instance would restore the per-call allocation the classes exist to delete.
+    const detached = handle.setStagger;
+    expect(() => detached(0.25)).toThrow(TypeError);
+
+    // The ordinary call is unmoved, in the same rig, so this case is about the receiver rather than
+    // about the member.
+    handle.setStagger(0.25);
+    expect(handle.definition.stagger).toBe(0.25);
+
+    // Frozen at the instance and at the prototype, because the instance alone is weaker than what a
+    // frozen literal gave: its members lived on the object, so freezing it froze them, while a shared
+    // prototype left mutable would let one assignment rewrite a member of every handle issued.
+    expect(Object.isFrozen(handle)).toBe(true);
+    expect(Object.isFrozen(Object.getPrototypeOf(handle))).toBe(true);
+    expect(Object.isFrozen(Object.getPrototypeOf(project.track(LEG)))).toBe(true);
+
+    project.dispose();
+  });
+
   it("RA-28 puts both refusals under one abstract base and moves neither message", () => {
     const base = Object.getPrototypeOf(StaleTrackHandleError) as { readonly name: string };
     expect(base.name).toBe("StaleHandleError");

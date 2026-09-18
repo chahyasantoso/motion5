@@ -114,10 +114,12 @@ function portMember(absent: string): string {
  * Addressed through `callSites` rather than by a regex, on the rule `source-region.ts` already
  * holds: the pinned parser owns what a call is, so a comment naming `installed` is not counted as
  * one and a call Prettier wrapped across four lines is not missed by a line-oriented reader. The
- * three parts are then read as text, because their order on that line is the whole claim.
+ * three parts are then read as text, bounded by the punctuation that opens the member rather than by
+ * its line, because the order of the three is the claim and which line they sit on is not. A member
+ * a formatter wrapped away from its own call would have turned a correct wiring red.
  */
 function resolvedSeam(source: string, at: number): string {
-  const opening = source.lastIndexOf("\n", at) + 1;
+  const opening = Math.max(source.lastIndexOf("{", at), source.lastIndexOf(",", at)) + 1;
   const member = source.slice(opening, at).trim();
   const [, option = "", absent = ""] = source
     .slice(source.indexOf("(", at) + 1, source.indexOf(")", at))

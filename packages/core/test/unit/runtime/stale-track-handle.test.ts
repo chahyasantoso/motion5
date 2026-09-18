@@ -305,6 +305,23 @@ describe("a stale TrackHandle refuses uniformly, and `live` asks without throwin
     );
     expect(handle.match(/\bif\s*\(/g) ?? []).toEqual([]);
     expect(handle).not.toMatch(/\breturn;/);
+
+    // Wider than `if` at the class, because `if` is not the only way to write a decision and the
+    // class is where one would now grow. Text rather than syntax, and that is the stated limit: what
+    // it refuses is every branching form this project's style reaches for, so a guard arriving as a
+    // ternary or a short-circuit is red here rather than green on a spelling nobody asked about.
+    const branching = [
+      "switch (",
+      " ? ",
+      " && ",
+      " || ",
+      " ?? ",
+      "for (",
+      "while (",
+      "throw ",
+      "catch ",
+    ];
+    expect(branching.filter((form) => handle.includes(form))).toEqual([]);
   });
 
   it("SH-8 reports the disposal rather than the staleness on every writing member", () => {

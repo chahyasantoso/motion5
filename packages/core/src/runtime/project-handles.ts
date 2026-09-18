@@ -16,9 +16,11 @@ import type { AuthoringEdit } from "./authoring-edit";
  *
  * `track()` allocated an eighteen-member frozen object literal per call and `motion()` a ten-member
  * one, each closing over the runtime, an id and a token, and every member of both was a delegation.
- * So what those literals bought was a per-call allocation of twenty-eight closures to express
- * twenty-eight statements that never differ between calls. A class states them once, on one
- * prototype, and a handle becomes one instance over one host and the pair it captured.
+ * So what those literals bought was a per-call allocation of twenty-six closures, plus the two
+ * captured ids that were the only members of either literal not to be one, to express twenty-eight
+ * members that never differ between calls. A class states them once, on one prototype, and a handle
+ * becomes one instance over one host and the pair it captured. What is given back is seventeen
+ * forwarding closures in the host below, allocated once per runtime rather than once per handle.
  *
  * That moves what a handle exposes, which is why step 8 is two slices rather than one. A literal's
  * members are own enumerable properties; a class's are inherited and non-enumerable, so
@@ -27,6 +29,15 @@ import type { AuthoringEdit } from "./authoring-edit";
  * reader they share landed first, green over the literals, and this conversion is measured against it
  * rather than against a list rewritten beside it. No member, no signature, no refusal and no ordering
  * moves here.
+ *
+ * One thing besides that surface moves, and it is declared rather than discovered later: a member
+ * reached off a prototype reads its host from the receiver, so a member detached from its handle no
+ * longer carries one and throws where the literal's own arrow still worked. Nothing in this
+ * repository detaches one, and binding each member per instance would restore exactly the per-call
+ * allocation this step exists to delete, so the requirement is stated and pinned instead of paid for.
+ * Both prototypes are frozen at the end of this module for the same reason the instances are: every
+ * member of a literal lived on the object, so freezing it froze them, and a shared prototype left
+ * mutable would let one assignment rewrite a member of every handle a process issues.
  *
  * A class cannot reach `ProjectRuntime`'s private members, so what a handle may ask is a port rather
  * than a runtime: the host below is resolved once in that constructor, exactly as `ProjectPorts` is.
@@ -254,3 +265,8 @@ export class RuntimeMotionHandle implements MotionHandle {
     this.#host.destroy(this.#id, this.#token);
   }
 }
+
+// The capability half of what freezing a literal used to cover. An instance freeze stops a caller
+// hanging state on one handle; these stop one assignment rewriting a member of all of them.
+Object.freeze(RuntimeTrackHandle.prototype);
+Object.freeze(RuntimeMotionHandle.prototype);
