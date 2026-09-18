@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { code } from "../../helpers/source-region";
+import { callSites, code } from "../../helpers/source-region";
 import type { ProjectDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
 import { NO_PORTS, completing, installed } from "../../../src/runtime/project-ports";
@@ -74,29 +74,57 @@ const RETIRED_DECLARATIONS = [
 ];
 
 /**
- * The thirteen seams whose absence is its own default rather than a normalized completion.
+ * The thirteen seams that resolve an option directly, each as the pair one line has to spell.
  *
- * Named rather than counted, which is the correction. A count of `NO_PORTS` reads passes for two
- * members sharing one default and one member reading none, so it kept exactly the mis-wiring it was
- * there to refuse. The set cannot.
+ * A set of default reads was the first correction, and it is not the whole one. It refuses a
+ * missing, duplicated or extra default, which is the defect a count could not see, and it still
+ * passes for two seams whose halves are swapped: `compile` resolved against `NO_PORTS.track.dispose`
+ * beside `dispose` resolved against `NO_PORTS.track.compile` keeps both the set and the uniqueness.
+ * No set over one half can measure a pairing, so the subject here is the whole line: the port member
+ * the seam is stored under, the option it reads, and the default it falls back to.
+ *
+ * The member is read off the default rather than declared beside it, because every member of
+ * `NO_PORTS` is named exactly as the port member that holds it, and spelling that twice here would
+ * make this record a second owner of a naming rule `project-ports.ts` already states once.
  */
-const DEFAULTED = [
-  "NO_PORTS.track.compile",
-  "NO_PORTS.track.dispose",
-  "NO_PORTS.track.stage",
-  "NO_PORTS.motion.create",
-  "NO_PORTS.motion.destroy",
-  "NO_PORTS.motion.addTrack",
-  "NO_PORTS.motion.replaceTrack",
-  "NO_PORTS.motion.removeTrack",
-  "NO_PORTS.motion.signal",
-  "NO_PORTS.value.write",
-  "NO_PORTS.value.seek",
-  "NO_PORTS.host.resolveKeyframes",
-  "NO_PORTS.host.disposeComposition",
+const SEAMS: readonly (readonly [option: string, absent: string])[] = [
+  ["compileTrack", "NO_PORTS.track.compile"],
+  ["disposeTrack", "NO_PORTS.track.dispose"],
+  ["stageTrack", "NO_PORTS.track.stage"],
+  ["createMotion", "NO_PORTS.motion.create"],
+  ["destroyMotion", "NO_PORTS.motion.destroy"],
+  ["addMotionTrack", "NO_PORTS.motion.addTrack"],
+  ["replaceMotionTrack", "NO_PORTS.motion.replaceTrack"],
+  ["removeMotionTrack", "NO_PORTS.motion.removeTrack"],
+  ["signalMotion", "NO_PORTS.motion.signal"],
+  ["writeValues", "NO_PORTS.value.write"],
+  ["setProgress", "NO_PORTS.value.seek"],
+  ["resolveKeyframes", "NO_PORTS.host.resolveKeyframes"],
+  ["disposeComposition", "NO_PORTS.host.disposeComposition"],
 ];
 
-const DEFAULT_READ = /NO_PORTS\.[a-z]+\.[A-Za-z]+/g;
+/** The port member a default belongs to, which is the member its own seam has to be stored under. */
+function portMember(absent: string): string {
+  return absent.slice(absent.lastIndexOf(".") + 1);
+}
+
+/**
+ * One resolved seam as the constructor writes it: the port member, its option, and its default.
+ *
+ * Addressed through `callSites` rather than by a regex, on the rule `source-region.ts` already
+ * holds: the pinned parser owns what a call is, so a comment naming `installed` is not counted as
+ * one and a call Prettier wrapped across four lines is not missed by a line-oriented reader. The
+ * three parts are then read as text, because their order on that line is the whole claim.
+ */
+function resolvedSeam(source: string, at: number): string {
+  const opening = source.lastIndexOf("\n", at) + 1;
+  const member = source.slice(opening, at).trim();
+  const [, option = "", absent = ""] = source
+    .slice(source.indexOf("(", at) + 1, source.indexOf(")", at))
+    .split(",")
+    .map((argument) => argument.trim());
+  return `${member} ${option} ${absent}`;
+}
 
 /** The stand-in host, for the cases that read a receiver without needing a whole project. */
 const HOST: object = Object.freeze({ host: "the object these seams were installed on" });
@@ -212,15 +240,19 @@ describe("the project ports", () => {
     expect(source).toContain("readonly #ports: ProjectPorts;");
   });
 
-  it("resolves every seam once at construction, each against its own default", () => {
+  it("resolves every seam once at construction, from its own option to its own default", () => {
     const source = code(RUNTIME_SOURCE);
-    const defaults = [...source.matchAll(DEFAULT_READ)].map((match) => match[0]);
+    const wired = callSites(source, "installed").map((at) => resolvedSeam(source, at));
+    const declared = SEAMS.map(
+      ([option, absent]) => `${portMember(absent)}: options.${option} ${absent}`,
+    );
 
-    expect([...defaults].sort()).toEqual([...DEFAULTED].sort());
-    expect(new Set(defaults).size).toBe(defaults.length);
+    // The whole line rather than one half of it, so a crossed pair is a mismatch here rather than a
+    // set that still holds. Sorted, because the order the constructor resolves them in is its own.
+    expect([...wired].sort()).toEqual([...declared].sort());
+    expect(new Set(wired).size).toBe(wired.length);
     // Thirteen resolved defaults and two normalized completions are the fifteen seams, once each.
-    expect(source.split("installed(")).toHaveLength(14);
-    expect(source.split("completing(")).toHaveLength(3);
+    expect(callSites(source, "completing")).toHaveLength(2);
   });
 
   it("calls a host's own seam on the runtime, through a real project", () => {
@@ -236,6 +268,41 @@ describe("the project ports", () => {
     // The load-bearing half of the receiver claim: what a host sees is the runtime, not the port
     // record its call is written on, and this slice declared nothing observable as moving.
     expect(receivers[0]).toBe(project);
+  });
+
+  it("calls a seam from every other port group on the runtime as well", () => {
+    const seams = {
+      compileTrack: [] as unknown[],
+      setProgress: [] as unknown[],
+      setMotionStagger: [] as unknown[],
+    };
+    const project = new ProjectRuntime(PROJECT, {
+      clock: createManualClock(),
+      compose,
+      compileTrack: recordingReceiver(seams.compileTrack),
+      setProgress: recordingReceiver(seams.setProgress),
+      setMotionStagger: recordingReceiver(seams.setMotionStagger),
+    });
+
+    // One seam per owner, each driven through the verb that reaches it: a commit compiles a new
+    // Track, a value verb seeks, and a tier 0 edit reaches its seam through `completing` rather than
+    // `installed`, so the normalized half is measured through a project too. The host's own group is
+    // the case above. Coverage one seam wide was the finding: a constructor edit that bypassed
+    // `installed` for a different seam left every receiver case green, and the pairing above cannot
+    // see a receiver at all, so the two halves are asked of four owners rather than of one.
+    project.addTrack({ id: "tail" }, { motionId: "hero" });
+    project.seek("hero/arm", 0.5);
+    project.motion("hero").setStagger(40);
+
+    for (const [option, receivers] of Object.entries(seams)) {
+      expect(receivers.length, option).toBeGreaterThan(0);
+      expect(
+        receivers.every((receiver) => receiver === project),
+        option,
+      ).toBe(true);
+    }
+
+    project.dispose();
   });
 
   it("still fails a stagger edit whose host answered a completion it cannot call", () => {
