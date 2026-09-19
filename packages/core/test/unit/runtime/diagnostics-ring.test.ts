@@ -25,7 +25,7 @@ const DIAGNOSTICS_SOURCE = fileURLToPath(
 /** One diagnostic per index, so a retained window reads as a list of paths. */
 function entry(index: number): Diagnostic {
   const diagnostic: Diagnostic = Object.freeze({
-    ruleId: "diagnostics-ring",
+    ruleId: "flush-failure",
     path: String(index),
     message: `entry ${String(index)}`,
     severity: "error",

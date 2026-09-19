@@ -1,3 +1,5 @@
+import type { RuleId } from "./rule-id";
+
 export const AUTHORED_SCHEMA_VERSION = 5 as const;
 export const SUPPORTED_TRIGGER_TYPES = ["scroll", "time", "manual"] as const;
 export const DIAGNOSTIC_SEVERITIES = ["error", "warning"] as const;
@@ -39,8 +41,19 @@ export interface TriggerSignal {
   readonly progress?: number;
 }
 
+/**
+ * One refusal, named by the rule it refuses under.
+ *
+ * `ruleId` is `RuleId` and not `string`, so this set is closed on both sides: nothing can mint a
+ * rule the enumeration does not carry, and a reader can switch on one. Adding a rule breaks the
+ * build in `contract/rule-id.ts`, at the one place the rule is named, rather than being inherited
+ * silently by every consumer that pattern-matches a string. That is the acceptance criterion issue
+ * #449 asks for, and it is a public surface change: `Diagnostic` is exported from the package
+ * entry, so a consumer constructing one with a rule id of its own invention stops compiling.
+ * See ADR-097.
+ */
 export interface Diagnostic {
-  readonly ruleId: string;
+  readonly ruleId: RuleId;
   readonly path: string;
   readonly message: string;
   readonly severity: DiagnosticSeverity;
@@ -255,6 +268,13 @@ export interface ProjectDefinition {
   readonly motions: readonly MotionDefinition[];
   readonly freeTracks?: readonly TrackDefinition[];
 }
+/**
+ * A migration diagnostic, pinned to the one rule the v4 reader refuses under.
+ *
+ * The literal narrows `Diagnostic.ruleId` rather than sitting beside it, so `schema-v4-migration`
+ * is provably a member of `RuleId`: were the enumeration to stop carrying it, this declaration is
+ * the build failure rather than a string nobody checks. See ADR-097.
+ */
 export interface MigrationDiagnostic extends Diagnostic {
   readonly ruleId: "schema-v4-migration";
 }

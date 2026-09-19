@@ -54,7 +54,15 @@ describe("P2 runtime smell hardening", () => {
       nodeId: "source",
       sourceProgress: 0,
       status: "error",
-      diagnostics: [{ ruleId: "test", path: "source", message: "boom", severity: "error" }],
+      diagnostics: [
+        {
+          ruleId: "composition-failure",
+          path: "source",
+          message: "boom",
+          severity: "error",
+          ids: ["source"],
+        },
+      ],
     });
     registry.closeBatch();
     expect(registry.get("source")?.values).toEqual({ x: 1 });

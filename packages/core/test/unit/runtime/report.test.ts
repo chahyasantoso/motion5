@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { RuleId } from "../../../src/contract/rule-id";
 import type { Diagnostic } from "../../../src/contract/v5";
 import {
   CLEAN_TRACE,
@@ -40,7 +41,7 @@ import { describeError } from "../../../src/runtime/schema-refusals";
 const ARM = "hero/arm";
 const HAND = "hero/hand";
 
-function diagnostic(ruleId: string): Diagnostic {
+function diagnostic(ruleId: RuleId): Diagnostic {
   const entry: Diagnostic = Object.freeze({
     ruleId,
     path: "1",
@@ -271,7 +272,7 @@ describe("one owner reports what a step failed at and what a deferral answers", 
     expect(sinkFailure(accepted)).toBe(failure);
 
     // And the newest failure wins where two of them happen, which is what overwriting a slot did.
-    const second = diagnostic("diagnostic-sink-failure-2");
+    const second = diagnostic("clock-tick-regression");
     const again = undeliverable(accepted, newer, second);
     expect(sinkFailure(again)).toBe(second);
     expect(retainedDiagnostic(again)).toBe(newer);
@@ -341,8 +342,8 @@ describe("one owner reports what a step failed at and what a deferral answers", 
     // already carries one belonging to a newer report, and then the trace is answered unchanged.
     const older = diagnostic("flush-failure");
     const newer = diagnostic("clock-consumer-failure");
-    const nested = diagnostic("nested-sink-failure");
-    const outer = diagnostic("outer-sink-failure");
+    const nested = diagnostic("scheduler-failure");
+    const outer = diagnostic("clock-tick-regression");
     const trace = undeliverable(reporting(reporting(CLEAN_TRACE, older), newer), newer, nested);
     expect(sinkFailure(trace)).toBe(nested);
     expect(undeliverable(trace, older, outer)).toBe(trace);

@@ -1,5 +1,3 @@
-import type { Diagnostic } from "./v5";
-
 /**
  * Every rule id `Diagnostic.ruleId` can carry, as one closed union.
  *
@@ -10,9 +8,11 @@ import type { Diagnostic } from "./v5";
  * See ADR-097 and issue #449.
  *
  * This module is not re-exported from the package entry, so it adds no entry to the export map or
- * to the boundary allow-list. `Diagnostic.ruleId` still declares `string` at this slice: the
- * enumeration is proved complete by `packages/core/test/contract/rule-id.test.ts` before anything
- * depends on it.
+ * to the boundary allow-list. `Diagnostic.ruleId` declares `RuleId`, so the compiler answers for
+ * every id named at a construction site, and this module owns no import from `./v5`: a narrowed
+ * alias of a type that already carries the narrowing was the one thing it held, and it is gone.
+ * The coverage case in `packages/core/test/contract/rule-id.test.ts` answers for the shape a type
+ * cannot see, which is an id assembled at run time, and it asserts coverage rather than a count.
  */
 
 /**
@@ -72,7 +72,10 @@ export const CONTRIBUTION_RULE_ID_ALIASES = {
 } as const;
 
 /**
- * Every other rule id, sorted, from all seventeen construction modules.
+ * Every other rule id, sorted.
+ *
+ * No module count is stated. Three inventories of this union disagreed about that number, in both
+ * directions, and a figure in a comment is a claim no gate reads: the coverage case owns it.
  *
  * The `plugin-contribution-` members here are their own literals in `domain/plugins.ts`,
  * `domain/keyframe-compiler.ts` and `contract/validate-v5.ts`. They are not outputs of the prefix
@@ -275,6 +278,3 @@ const RULE_ID_SET: ReadonlySet<string> = new Set<string>(RULE_IDS);
 export function isRuleId(value: string): value is RuleId {
   return RULE_ID_SET.has(value);
 }
-
-/** `Diagnostic` with its rule id narrowed, for a reader that has already proved the id. */
-export type IdentifiedDiagnostic = Diagnostic & { readonly ruleId: RuleId };
