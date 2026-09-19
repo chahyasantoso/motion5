@@ -1,3 +1,4 @@
+import type { OwnedIds } from "./diagnostic-ids";
 import type { Diagnostic } from "./v5";
 import type { RuleId } from "./rule-id";
 
@@ -26,6 +27,13 @@ export interface DiagnosticFields {
  * otherwise carry an assertion of its own, which is five owners for one fact; they call this
  * instead. It asserts and copies nothing, so a frozen object stays the object its caller froze.
  *
+ * What reaches it is checked, which is the half that used to be missing. Each of the five takes its
+ * `ids` as `OwnedIds` of the rule id it was handed, so a caller naming a rule by a literal cannot
+ * pass a payload the rule does not own nor omit one it always names. What is left for this assertion
+ * is the case it was written for and nothing wider: a producer forwarding a rule id it knows only as
+ * `RuleId`, which `contract/validate-v5.ts` does through `scopedRuleId` and `runtime/report.ts` does
+ * through its private `frozenDiagnostic`.
+ *
  * The assertion is safe by measurement rather than by construction, and `contract/diagnostic-ids.ts`
  * holds the measurement: every producer's call sites were read before the groups were written, and
  * the partition case in `rule-id.test.ts` refuses a rule the groups do not cover. A producer whose
@@ -48,14 +56,24 @@ export function asDiagnostic(fields: DiagnosticFields): Diagnostic {
  * `ruleId` is `RuleId` rather than `string`, so the one constructor of a diagnostic cannot mint a
  * rule nothing enumerates, and an injected adapter reaching this with a rule of its own invention
  * fails `typecheck` at its own call site. `contract/rule-id.ts` owns the enumeration. See ADR-097.
+ *
+ * `ids` is the argument list the rule owns rather than an ordinary parameter, so the two fields the
+ * union correlates are correlated at the call site too. An adapter naming `trigger-driver-unavailable`
+ * cannot omit its payload and one naming `id-shape` cannot invent one. `contract/diagnostic-ids.ts`
+ * owns the derivation.
  */
-export function diagnostic(
-  ruleId: RuleId,
+export function diagnostic<Rule extends RuleId>(
+  ruleId: Rule,
   path: string,
   message: string,
   severity: Diagnostic["severity"] = "error",
-  ids: readonly string[] = [],
+  ...carried: OwnedIds<Rule>
 ): Diagnostic {
+  // Widened before it is read, for the reason `baseRulesOwning` in `./diagnostic-ids` widens its own
+  // filter: the list is still a parameter here, so no element of it is indexable until `Rule` is
+  // instantiated. The default keeps every existing call byte-identical, including the ones that pass
+  // nothing at all.
+  const [ids = []] = carried as unknown as readonly [(readonly string[])?];
   return asDiagnostic(
     Object.freeze({
       ruleId,

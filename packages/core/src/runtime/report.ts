@@ -1,4 +1,5 @@
 import { asDiagnostic } from "../contract/diagnostics";
+import type { OwnedIds } from "../contract/diagnostic-ids";
 import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic, PatchBatch } from "../contract/v5";
 import { collect, report } from "../domain/completion";
@@ -339,14 +340,20 @@ function frozenDiagnostic(
  * diagnostic is handed to nothing, because the only sink available is the one that has just thrown.
  * Issue #410. ADR-039's clock boundaries are the precedent. See ADR-091.
  */
-export function reportDiagnostic(
+export function reportDiagnostic<Rule extends RuleId>(
   sink: ((diagnostic: Diagnostic) => void) | undefined,
   retain: RetainTrace,
-  ruleId: RuleId,
+  ruleId: Rule,
   message: string,
   tick: number,
-  ids: readonly string[],
+  ...carried: OwnedIds<Rule>
 ): void {
+  // The derived list goes on the exported member a caller names, and `frozenDiagnostic` stays open
+  // and stays private. It is reached only from here and from the catch below, so deriving the list
+  // twice would put one fact in two signatures for no second caller. Every caller of this names its
+  // rule as a literal or as a `satisfies RuleId` constant; the one that forwards an open `RuleId` is
+  // `graph-runtime.ts` `#report`, which supplies the ids itself.
+  const [ids = []] = carried as unknown as readonly [(readonly string[])?];
   const diagnostic = frozenDiagnostic(ruleId, message, tick, ids);
   retain((trace) => reporting(trace, diagnostic));
   try {

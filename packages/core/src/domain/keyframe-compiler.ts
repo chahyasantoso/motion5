@@ -1,5 +1,6 @@
 import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
 import { asDiagnostic } from "../contract/diagnostics";
+import type { OwnedIds } from "../contract/diagnostic-ids";
 import type { RuleId } from "../contract/rule-id";
 import type { AuthoredStop, Diagnostic } from "../contract/v5";
 
@@ -14,12 +15,13 @@ export interface CompiledKeyframes {
   readonly diagnostics: readonly Diagnostic[];
 }
 
-function diagnostic(
-  ruleId: RuleId,
+function diagnostic<Rule extends RuleId>(
+  ruleId: Rule,
   path: string,
   message: string,
-  ids: readonly string[],
+  ...carried: OwnedIds<Rule>
 ): Diagnostic {
+  const [ids = []] = carried as unknown as readonly [(readonly string[])?];
   return asDiagnostic(
     Object.freeze({ ruleId, path, message, severity: "error", ids: Object.freeze([...ids]) }),
   );
