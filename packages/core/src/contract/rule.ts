@@ -230,8 +230,10 @@ export const RULES: Readonly<Record<RuleId, RuleFacts>> = Object.freeze({
  * aspirational. Nineteen sites named one and are converted in the same request that deleted the
  * parameter; each named the severity its rule already fixes, so no diagnostic moved. That number is
  * what was converted rather than a total, and `typecheck` on the published commit is what closes the
- * difference. What still spells a severity of its own is the four raw object literals in `graph/` and
- * `runtime/graph-publisher.ts`, which reach no constructor and are the last of the second ownership.
+ * difference. Nothing else spells a severity of its own any more: the four raw object literals in
+ * `graph/order.ts`, `graph/references.ts` and `runtime/graph-publisher.ts` were the last of the
+ * second ownership, and all four forward through the constructor now. So this is not merely the only
+ * expression that answers the question, it is the only one that can.
  * See ADR-097 and issue #449.
  */
 export function ruleSeverity(ruleId: RuleId): RuleSeverity {

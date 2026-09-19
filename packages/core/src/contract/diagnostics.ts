@@ -44,10 +44,14 @@ import type { RuleId } from "./rule-id";
  * a session published exactly that confusion. Both take the same arguments in the same order now, so
  * the mistake has no position left to happen in.
  *
- * Four raw object literals in `graph/` and `runtime/graph-publisher.ts` still spell a severity of
- * their own, because they reach no constructor at all. They are the last of the second ownership,
- * they carry their payloads already, and collapsing them is cleanup rather than a blocker.
- * See ADR-097.
+ * Zero raw object literals remain. The last four were `cycleDiagnostic` in `graph/order.ts`,
+ * `pendingReferenceDiagnostic` in `graph/references.ts`, and the node-failure and `blocked-upstream`
+ * literals in `runtime/graph-publisher.ts`; each reached no constructor and each spelled a severity
+ * of its own, and all four forward here now. So the paragraph above is true rather than four
+ * literals short, which is what it was when it was written: no module hand-builds a frozen
+ * diagnostic, no expression casts one, and no expression outside `contract/rule.ts` names a severity
+ * at all. Every one of the four named the severity its own rule already fixes, so no diagnostic
+ * moved. See ADR-097.
  */
 export function diagnostic<Rule extends RuleId>(
   ruleId: Rule,
