@@ -1,0 +1,15 @@
+:46.8825369Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:15:46.8866114Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:15:46.8866984Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:15:46.8867464Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:15:46.8867952Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:15:46.8868446Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:15:46.9016969Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-19T07:15:45.1992475Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:15:45.1993296Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:15:45.2033406Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:15:45.2034643Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:15:45.2035162Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:15:45.2035673Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:15:45.2036177Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:15:45.2173130Z ##[error]Process completed with exit code 1.
