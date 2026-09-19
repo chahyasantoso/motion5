@@ -1,0 +1,52 @@
+e.mjs	2026-09-19T11:38:27.1055589Z ^[[31m+     "message": "Deferred flush scheduling failed: scheduler refused",^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1056300Z ^[[31m+     "path": "1",^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1056896Z ^[[31m+     "ruleId": "scheduler-failure",^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1057534Z ^[[31m+     "severity": "error",^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1058000Z ^[[31m+   },^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1058360Z ^[[31m+ ]^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1058611Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1059277Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/runtime/deferred-payload.test.ts:^[[2m242:22^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1060355Z     ^[[90m240|^[[39m     // `scheduler-failure` describing work that did not exist. A port …
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1061644Z     ^[[90m241|^[[39m     ^[[90m// there is one to run.^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1062464Z     ^[[90m242|^[[39m     ^[[34mexpect^[[39m(received)^[[33m.^[[39m^[[34mtoEqual^[[39m([])^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1063162Z     ^[[90m   |^[[39m                      ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1064168Z     ^[[90m243|^[[39m     ^[[34mexpect^[[39m(runtime^[[33m.^[[39mlastFlushError)^[[33m.^[[39m^[[34mtoBeUndefined^[[39m()^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1065492Z     ^[[90m244|^[[39m     ^[[34mexpect^[[39m(runtime^[[33m.^[[39mtick)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m1^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1066052Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1066399Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1066751Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1066790Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1067437Z ^[[2m Test Files ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m238 passed^[[39m^[[22m^[[90m (239)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1069422Z ^[[2m      Tests ^[[22m ^[[1m^[[31m3 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1451 passed^[[39m^[[22m^[[90m (1454)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1070412Z ^[[2m   Start at ^[[22m 11:37:57
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1071836Z ^[[2m   Duration ^[[22m 30.01s^[[2m (transform 3.09s, setup 1.14s, import 20.13s, tests 36.64s, environment 23ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1072607Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T11:38:27.1622311Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-19T11:38:27.1670412Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T11:38:27.1671146Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T11:38:27.1691742Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T11:38:27.1692055Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T11:38:27.1692360Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T11:38:27.1692677Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T11:38:27.1693034Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T11:38:27.2086400Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T11:38:27.2086696Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T11:38:27.2086828Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T11:38:27.2086999Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T11:38:27.2116489Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-19T11:38:35.2017619Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T11:38:35.2018500Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T11:38:35.2042806Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T11:38:35.2043610Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T11:38:35.2044074Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T11:38:35.2044589Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T11:38:35.2045076Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T11:38:35.2149676Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-19T11:38:35.4627432Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T11:38:35.4628108Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T11:38:35.4651197Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T11:38:35.4651861Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T11:38:35.4652373Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T11:38:35.4652795Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T11:38:35.4653232Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T11:38:35.4749294Z ##[error]Process completed with exit code 1.
