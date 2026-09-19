@@ -237,6 +237,7 @@ describe("rule id ids ownership", () => {
       "observation-pending-reference",
       "perspective-usage",
       "reentrant-flush-deferred",
+      "reentrant-flush-deferred-frame",
       "value-batch-deferred",
       ...keyframeWarnings,
       ...keyframeWarnings.map((name) => scopedRuleId("contribution", name)),

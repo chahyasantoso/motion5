@@ -129,6 +129,7 @@ const BASE_RULES = {
   "project-shape": ERROR_NO_IDS,
   "project-templates-unsupported": ERROR_NO_IDS,
   "reentrant-flush-deferred": WARNING_WITH_IDS,
+  "reentrant-flush-deferred-frame": WARNING_NO_IDS,
   "requirement-source": ERROR_WITH_IDS,
   "scheduler-failure": ERROR_WITH_IDS,
   "schema-v4-migration": ERROR_NO_IDS,

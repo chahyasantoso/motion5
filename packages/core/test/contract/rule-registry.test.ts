@@ -163,6 +163,20 @@ describe("every rule reaches a diagnostic whose payload is present and frozen", 
     expect(flushed.diagnostics[0]?.ids).toEqual(["arm"]);
     expect(flushed.diagnostics[0]?.severity).toBe("warning");
   });
+
+  it("names the frame when that is all a deferral has to name, under a rule owning no ids", () => {
+    const frame = batchFor(9, { kind: "deferred-frame-in-flush", tick: 3, scheduled: false });
+
+    // The other two deferred reasons carry a payload because their rule always names one. This rule
+    // names none, so an empty payload is the rule's own answer rather than an always-naming rule
+    // being handed nothing, which is the hole `DeferredSeeds` closed at the type and the second rule
+    // id closes at the rule.
+    expect(frame.diagnostics[0]?.ruleId).toBe("reentrant-flush-deferred-frame");
+    expect(frame.diagnostics[0]?.ids).toEqual([]);
+    expect(frame.diagnostics[0]?.severity).toBe("warning");
+    expect(frame.diagnostics[0]?.message).toContain("frame 3");
+    expect(frame.seeds).toEqual([]);
+  });
 });
 
 /**

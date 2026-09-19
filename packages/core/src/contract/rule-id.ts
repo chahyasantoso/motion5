@@ -164,6 +164,7 @@ export const BASE_RULE_IDS = [
   "project-shape",
   "project-templates-unsupported",
   "reentrant-flush-deferred",
+  "reentrant-flush-deferred-frame",
   "requirement-source",
   "scheduler-failure",
   "schema-v4-migration",

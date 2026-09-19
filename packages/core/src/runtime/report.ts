@@ -132,6 +132,20 @@ export const DEFERRED_VALUE_BATCH_RULE = "value-batch-deferred" satisfies RuleId
 /** The rule id a flush asked for while subscribers are being notified answers under. */
 export const DEFERRED_FLUSH_RULE = "reentrant-flush-deferred" satisfies RuleId;
 
+/**
+ * The rule id that same deferral answers under when it named no seed and carried only a frame.
+ *
+ * A second id rather than an empty payload under the one above, and it is the `observation-source`
+ * split a second time for the same cause: one id was carrying two refusals, one of which has
+ * nothing to name. `reentrant-flush-deferred` owns its ids always, so a deferral stating no seed
+ * cannot report under it without handing an always-naming rule an empty list, which is the hole
+ * `DeferredSeeds` closed at the type and this closes at the rule. The frame is the fact that
+ * deferral has, so the message names it and the payload is empty because a frame is not a node.
+ * Prefix-preserving on purpose, so a reader or a gate matching the deferral's spelling finds both.
+ * See ADR-088, ADR-097 and issue #449.
+ */
+export const DEFERRED_FLUSH_FRAME_RULE = "reentrant-flush-deferred-frame" satisfies RuleId;
+
 declare const REPORT_BRAND: unique symbol;
 
 /**
@@ -416,6 +430,11 @@ export type BatchReason =
       readonly kind: "deferred-in-flush";
       readonly seeds: DeferredSeeds;
       readonly scheduled: boolean;
+    }
+  | {
+      readonly kind: "deferred-frame-in-flush";
+      readonly tick: number;
+      readonly scheduled: boolean;
     };
 
 function frozenBatch(
@@ -443,13 +462,19 @@ function frozenBatch(
  * deliberate commit.
  *
  * An empty recipe carries no diagnostic at all: nothing was queued and nothing was skipped, so there
- * is nothing to report. That is also what a deferral of no seeds earns, and its caller decides it
- * rather than this switch: both deferred variants take a `DeferredSeeds`, so a batch reporting a
- * deferral that names nothing is unrepresentable rather than merely unreached. A staged value write
- * carries its own seed, because the seed is the one thing a caller can still act on. A deferred flush carries the seeds it deferred and says which of two
- * futures the work has. `tick` is the sequence the graph is still on in all three, so a consumer
- * comparing it against the batch a later publication answers can see that nothing published in
- * between. See ADR-078, ADR-080 and ADR-084.
+ * is nothing to report. That is what a reentrant call earns when its deferral left nothing pending,
+ * and its caller decides it rather than this switch, by reading what the deferral owes rather than
+ * what the request stated. Both seed-carrying variants take a `DeferredSeeds`, so a batch that
+ * claims a payload and names nothing stays unrepresentable rather than merely
+ * unreached. A staged value write
+ * carries its own seed, because the seed is the one thing a caller can still act on. A deferred
+ * flush carries the seeds it deferred and says which of two futures the work has. A deferral that
+ * named no seed and carried only a frame is the fourth answer rather than the first: a publication
+ * is genuinely owed, so an empty batch would tell its caller that nothing was queued, and it
+ * reports under `reentrant-flush-deferred-frame` because the rule it would otherwise use always
+ * names ids and a frame is not a node to name. `tick` is the sequence the graph is still on in all
+ * four, so a consumer comparing it against the batch a later publication answers can see that
+ * nothing published in between. See ADR-078, ADR-080, ADR-084 and ADR-097.
  */
 export function batchFor(sequence: number, reason: BatchReason): PatchBatch {
   switch (reason.kind) {
@@ -475,6 +500,20 @@ export function batchFor(sequence: number, reason: BatchReason): PatchBatch {
           reason.seeds,
         ),
       ]);
+    case "deferred-frame-in-flush":
+      return frozenBatch(
+        sequence,
+        [],
+        [
+          buildDiagnostic(
+            DEFERRED_FLUSH_FRAME_RULE,
+            "deferred-flush",
+            reason.scheduled
+              ? `A flush requested while subscribers were being notified named no seed, so frame ${reason.tick} was queued as one follow-up publication for a scheduled drain.`
+              : `A flush requested while subscribers were being notified named no seed, so frame ${reason.tick} was queued as one follow-up publication carried by the next flush.`,
+          ),
+        ],
+      );
     default:
       return unreachable(reason);
   }
