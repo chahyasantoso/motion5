@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "expected_head": "e8de578447c0d0e5ad01103a106fe1b787a33b05",
+  "expected_blobs": {
+    "packages/core/test/unit/runtime/refusal-data.test.ts": "8808e8d6417fbab4df19830cece0da5a11e69942"
+  },
+  "message": "Give the refusal fixture the ids member Diagnostic now requires, empty because keyframes-shape owns no payload",
+  "edits": [
+    {
+      "path": "packages/core/test/unit/runtime/refusal-data.test.ts",
+      "find": "const diagnostic: Diagnostic = {\n  ruleId: \"keyframes-shape\",\n  path: \"addTrack(a).keyframes\",\n  message: \"Not a record.\",\n  severity: \"error\",\n};",
+      "replace": "// Hand-built on purpose: this suite pins what a refusal renders, so it must not\n// borrow the constructor whose output it would otherwise be echoing. The payload\n// is empty because keyframes-shape is a rule that owns no ids.\nconst diagnostic: Diagnostic = {\n  ruleId: \"keyframes-shape\",\n  path: \"addTrack(a).keyframes\",\n  message: \"Not a record.\",\n  severity: \"error\",\n  ids: [],\n};"
+    }
+  ]
+}
