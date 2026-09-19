@@ -26,13 +26,20 @@ import {
 // Extraction is anchored to constructor positions rather than to every kebab-shaped string,
 // because this tree names rule ids in prose constantly and a docblock citing one is not a
 // construction site. `contract/migrate-v4-to-v5.ts` is excluded from the first-argument form on
-// purpose: its private `diagnostic(path, message, ids)` puts the path first, and its one id is
-// caught by the assigned form instead.
+// purpose: its private `diagnostic(path, message)` puts the path first, and its one id is caught
+// by the held form instead, which is why that module holds its rule in a constant.
+//
+// `buildDiagnostic` is a constructor position too. It is not a second constructor: it is what a
+// module that already binds `diagnostic` to a producer of its own calls the one in
+// `contract/diagnostics.ts`, because an import cannot shadow a local declaration. A scan that
+// knew only the exported spelling went blind the moment a raw literal was routed through the
+// alias, and went blind silently for every id but the one asserted below by name.
 //
 // A rule id held in a module constant is read too, and that form is why: `graph/order.ts`,
 // `graph/references.ts`, `runtime/report.ts` and `runtime/graph-runtime.ts` each name a rule in a
 // constant and assign the constant, so nine ids reached `Diagnostic.ruleId` without ever appearing
-// as a literal argument. Those declarations now also state `satisfies RuleId`, so the compiler
+// as a literal argument, and `contract/migrate-v4-to-v5.ts` now joins them for a reason of its
+// own, stated above. Those declarations all state `satisfies RuleId`, so the compiler
 // refuses an unenumerated one where the rule is named; this scan is the measurement beside that
 // proof, and it exists because a scan blind to a whole construction shape reports coverage it never
 // tested.
@@ -47,7 +54,8 @@ const TRIGGER_ADAPTER = "adapters/trigger-factory/default.ts";
 // here, which is the second thing this gate corrected about its own subject.
 const CONTRIBUTION_SCOPE_FILE = "domain/plugins.ts";
 
-const CONSTRUCTED = /\b(?:issue|diag|diagnostic|frozenDiagnostic)\(\s*"([a-z][a-z0-9-]*)"/g;
+const CONSTRUCTED =
+  /\b(?:issue|diag|diagnostic|buildDiagnostic|frozenDiagnostic)\(\s*"([a-z][a-z0-9-]*)"/g;
 const ASSIGNED = /\bruleId:\s*"([a-z][a-z0-9-]*)"/g;
 const DECLARED = /\bruleId\s*=\s*"([a-z][a-z0-9-]*)"/g;
 const REPORTED = /\badd\(\s*"([a-z][a-z0-9-]*)"/g;
@@ -141,6 +149,7 @@ describe("rule id enumeration", () => {
       "observation-pending-reference",
       "clock-tick-regression",
       "diagnostic-sink-failure",
+      "schema-v4-migration",
     ])
       expect(held).toContain(id);
   });

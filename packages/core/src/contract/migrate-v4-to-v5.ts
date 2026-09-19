@@ -1,10 +1,22 @@
 import { diagnostic as buildDiagnostic } from "./diagnostics";
+import type { RuleId } from "./rule-id";
 import type { MigrationDiagnostic } from "./v5";
 
 export interface MigrationResult<T = Record<string, unknown>> {
   readonly migrated: T | null;
   readonly diagnostics: readonly MigrationDiagnostic[];
 }
+
+// Held rather than spelled at the call, the shape `graph/order.ts`, `graph/references.ts`
+// and `runtime/report.ts` already use. `satisfies` is why: it refuses an unenumerated id
+// where the rule is named, which is a compile-time proof beside the coverage scan in
+// `test/contract/rule-id.test.ts` rather than a replacement for it. That scan cannot read
+// a first argument in this file, because the wrapper below is path-first and shares the
+// constructor's name, so holding the id is what keeps this module's one rule inside the
+// measurement. Routing the wrapper through the constructor deleted the `ruleId:` property
+// the scan used to read here, and the gate caught it rather than reporting coverage it had
+// stopped testing.
+const MIGRATION_RULE = "schema-v4-migration" satisfies RuleId;
 
 // The rule id, held once, and nothing else. This built a frozen object of its own and spelled its own
 // severity, which made a file whose only real fact is which rule the v4 reader refuses under a second
@@ -14,7 +26,7 @@ export interface MigrationResult<T = Record<string, unknown>> {
 // refusal this reader reports names one: the parameter that used to accept them was passed by none of
 // the four call sites below, so it described a payload this rule never carried.
 function diagnostic(path: string, message: string): MigrationDiagnostic {
-  return buildDiagnostic("schema-v4-migration", path, message);
+  return buildDiagnostic(MIGRATION_RULE, path, message);
 }
 
 function clone<T>(value: T): T {
