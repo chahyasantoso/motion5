@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "operation": "apply",
+  "expected_head": "1c8a37d8098450da5fed02517a36aa017d58ab6f",
+  "expected_blobs": {
+    "docs/ARCHITECTURE.md": "0366f58aaf8be2543eb40ce5bd82d88881796715",
+    "docs/AUTHORED-SCHEMA.md": "16173fad565565d3b8f609cf5a28cda7f02ce906",
+    "docs/guide/errors-and-diagnostics.md": "1f81b0c14f5a8b2aeb67e8500a66e5e77bebc4d2",
+    "docs/ADR-097-a-rule-id-is-a-closed-union.md": "a3b8cffd215eadff8eafcfece26a2d91f44e38ea",
+    "packages/core/src/contract/rule-id.ts": "7dc53dc4140e601d5b31e663a55fad30615dbfe4",
+    "packages/core/src/contract/diagnostic-ids.ts": "29df065de8f5f433db2318a6cba363e39d93b221",
+    "packages/core/src/contract/v5.ts": "8dc8b494c117cfbfb4dc48e695f0b096a3b8d911",
+    "packages/core/src/contract/migrate-v4-to-v5.ts": "580fa70c5fb67ec3463f39276aad5b234e63a9c9"
+  },
+  "message": "fix(contract): correct the migration rule group and the stale diagnostic documents",
+  "edits": [
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "find": "One diagnostic shape everywhere:\n\n```ts\ninterface Diagnostic {\n  ruleId: string;\n  path: string;\n  message: string;\n  severity: \"error\" | \"warning\";\n  ids?: string[];\n}\n```",
+      "replace": "One diagnostic shape everywhere, discriminated by which rules own an `ids` payload:\n\n```ts\ntype Diagnostic = IdlessDiagnostic | IdentifiedDiagnostic | OptionalIdsDiagnostic;\ninterface DiagnosticShape {\n  path: string;\n  message: string;\n  severity: \"error\" | \"warning\";\n}\ninterface IdlessDiagnostic extends DiagnosticShape {\n  ruleId: IdlessRuleId;\n  ids?: undefined;\n}\ninterface IdentifiedDiagnostic extends DiagnosticShape {\n  ruleId: IdentifiedRuleId;\n  ids: readonly string[];\n}\ninterface OptionalIdsDiagnostic extends DiagnosticShape {\n  ruleId: OptionalIdsRuleId;\n  ids: readonly string[] | undefined;\n}\n```\n\n`ruleId` is a closed union and not a `string`: `contract/rule-id.ts` enumerates every rule this project refuses by name, so adding one breaks the build where it is named. `contract/diagnostic-ids.ts` owns which of those rules name ids, and the three groups are derived from that one record, so a diagnostic carrying ids its rule does not own fails `typecheck`, and so does one omitting ids its rule always names. See ADR-097."
+    },
+    {
+      "path": "docs/AUTHORED-SCHEMA.md",
+      "find": "## Diagnostics\n\n```ts\ninterface Diagnostic {\n  ruleId: string;\n  path: string;\n  message: string;\n  severity: \"error\" | \"warning\";\n  ids?: string[];\n}\n```",
+      "replace": "## Diagnostics\n\n```ts\ntype Diagnostic = IdlessDiagnostic | IdentifiedDiagnostic | OptionalIdsDiagnostic;\ninterface DiagnosticShape {\n  path: string;\n  message: string;\n  severity: \"error\" | \"warning\";\n}\ninterface IdlessDiagnostic extends DiagnosticShape {\n  ruleId: IdlessRuleId;\n  ids?: undefined;\n}\ninterface IdentifiedDiagnostic extends DiagnosticShape {\n  ruleId: IdentifiedRuleId;\n  ids: readonly string[];\n}\ninterface OptionalIdsDiagnostic extends DiagnosticShape {\n  ruleId: OptionalIdsRuleId;\n  ids: readonly string[] | undefined;\n}\n```\n\n`ruleId` is the closed union `contract/rule-id.ts` enumerates, not a `string`, so the set of rules this contract refuses by name is readable in one place and a new rule breaks the build where it is named. Whether a rule names ids is a fact about that rule rather than about the diagnostic: `contract/diagnostic-ids.ts` owns it, and the three groups above are derived from that one record. See ADR-097."
+    },
+    {
+      "path": "docs/guide/errors-and-diagnostics.md",
+      "find": "A diagnostic is structured, and the shape is stable:\n\n```ts\ninterface Diagnostic {\n  readonly ruleId: string;\n  readonly path: string;\n  readonly message: string;\n  readonly severity: \"error\" | \"warning\";\n  readonly ids?: readonly string[];\n}\n```",
+      "replace": "A diagnostic is structured, and the shape is stable. It is a union of three variants, and which one you have is decided by the rule:\n\n```ts\ntype Diagnostic = IdlessDiagnostic | IdentifiedDiagnostic | OptionalIdsDiagnostic;\ninterface DiagnosticShape {\n  readonly path: string;\n  readonly message: string;\n  readonly severity: \"error\" | \"warning\";\n}\ninterface IdlessDiagnostic extends DiagnosticShape {\n  readonly ruleId: IdlessRuleId;\n  readonly ids?: undefined;\n}\ninterface IdentifiedDiagnostic extends DiagnosticShape {\n  readonly ruleId: IdentifiedRuleId;\n  readonly ids: readonly string[];\n}\ninterface OptionalIdsDiagnostic extends DiagnosticShape {\n  readonly ruleId: OptionalIdsRuleId;\n  readonly ids: readonly string[] | undefined;\n}\n```\n\nReading one is unchanged: `path`, `message` and `severity` are on every variant, and `ids` is readable on all three. Two things changed for a caller who writes one down. `ruleId` is a closed union rather than a `string`, so comparing it against a rule this project does not have stops compiling instead of quietly never matching, and constructing a `Diagnostic` of your own with a rule id you invented is refused. And `ids` is only present on the rules that name ids, so a rule that names none cannot carry one. See ADR-097."
+    },
+    {
+      "path": "packages/core/src/contract/rule-id.ts",
+      "find": " * The prefix `validateContributionProperty` passes as `ruleIdPrefix`.\n *\n * One owner for the string, because it is both a run-time value and half of a type below.",
+      "replace": " * The prefix a keyframe rule reports under when the contribution adapter is the reporter.\n *\n * One owner for the string, because it is both a run-time value and half of a type below.\n * `validateContributionProperty` used to hand it over as a `ruleIdPrefix` option. It states a scope\n * now, and this module derives the prefix from that.",
+      "comment": "stale option name in a live docblock"
+    },
+    {
+      "path": "packages/core/src/contract/rule-id.ts",
+      "find": " * The substitution `validateContributionProperty` passes as `ruleIdAliases`.",
+      "replace": " * The substitution the contribution scope applies, handed over as a `ruleIdAliases` option before\n * this module owned it."
+    },
+    {
+      "path": "packages/core/src/contract/rule-id.ts",
+      "find": " * This over-approximates on purpose. Which keyframe rules the adapter can actually reach depends\n * on run-time reachability through `allowGroups: false` and a single computed key, and that set\n * was measured wrong twice before this landed: `plugin-contribution-keyframes-reserved-separator`",
+      "replace": " * This over-approximates on purpose. Which keyframe rules the adapter can actually reach depends\n * on run-time reachability through the group refusal the contribution scope answers and a single\n * computed key, and that set was measured wrong twice before this landed:\n * `plugin-contribution-keyframes-reserved-separator`"
+    },
+    {
+      "path": "packages/core/src/contract/rule-id.ts",
+      "find": " * `runtime/refusal.ts` genuinely are. The coverage gate found three of the four; neither audit did.",
+      "replace": " * `runtime/refusal.ts` genuinely are. All four are found by the scan's declaration form rather than\n * by its argument form, which is the reason that form exists; neither audit named them."
+    },
+    {
+      "path": "packages/core/src/contract/diagnostic-ids.ts",
+      "find": "  \"schema-v4-migration\": \"sometimes\",",
+      "replace": "  \"schema-v4-migration\": \"none\","
+    },
+    {
+      "path": "packages/core/src/contract/diagnostic-ids.ts",
+      "find": " * `Diagnostic.ruleId`, so no construction site exists whose payload could be read. Absence of a\n * measurement cannot justify requiring a payload, and it cannot justify refusing one either.\n */",
+      "replace": " * `Diagnostic.ruleId`, so no construction site exists whose payload could be read. Absence of a\n * measurement cannot justify requiring a payload, and it cannot justify refusing one either.\n *\n * `schema-v4-migration` answers `\"none\"` and not `\"sometimes\"`, and it is the one entry an\n * independent re-measurement corrected. Its private constructor in `contract/migrate-v4-to-v5.ts`\n * took an optional `ids` and spread it conditionally, so the rule read as though it might carry one,\n * and no call site ever passed it. The parameter is gone and the group states what the four\n * construction sites do, which is the difference between measuring the code and reading a signature.\n */"
+    },
+    {
+      "path": "packages/core/src/contract/v5.ts",
+      "find": " * It extends the optional-ids variant because that is the group its rule is in. The v4 reader names\n * the ids it migrated when it has any and names none otherwise, which is measured rather than\n * chosen: one shape for both would have refused one of its two construction paths. See ADR-097.\n */\nexport interface MigrationDiagnostic extends OptionalIdsDiagnostic {",
+      "replace": " * It extends the idless variant because that is the group its rule is in. Each of the four refusals\n * the v4 reader can report names a path and a message and no ids, which is measured rather than\n * chosen: its constructor used to accept an `ids` that nothing passed, and the group states what the\n * construction sites do rather than what a signature allowed. See ADR-097.\n */\nexport interface MigrationDiagnostic extends IdlessDiagnostic {"
+    },
+    {
+      "path": "packages/core/src/contract/migrate-v4-to-v5.ts",
+      "find": "function diagnostic(\n  path: string,\n  message: string,\n  ids: readonly string[] = [],\n): MigrationDiagnostic {\n  return Object.freeze({\n    ruleId: \"schema-v4-migration\",\n    path,\n    message,\n    severity: \"error\",\n    ...(ids.length > 0 ? { ids: Object.freeze([...ids]) } : {}),\n  });\n}",
+      "replace": "// No ids, because no refusal this reader reports names one. The parameter that used to accept them\n// was passed by none of the four call sites below, so it described a payload this rule never\n// carried; `schema-v4-migration` answers the idless group in `contract/diagnostic-ids.ts` and this\n// shape is what that group allows.\nfunction diagnostic(path: string, message: string): MigrationDiagnostic {\n  return Object.freeze({\n    ruleId: \"schema-v4-migration\",\n    path,\n    message,\n    severity: \"error\",\n  });\n}"
+    },
+    {
+      "path": "docs/ADR-097-a-rule-id-is-a-closed-union.md",
+      "find": "The alias map in `validate-v5.ts` stops being free data and becomes a typed mapping. That is the cost of the prefix being in the type, and it is the only place it is paid.",
+      "replace": "The alias map in `validate-v5.ts` stops being free data and becomes a typed mapping. That is the cost of the prefix being in the type, and it is the only place it is paid.\n\nOwnership of `ids` is enforced where the rule id is known and asserted where it is not, and that boundary is worth stating rather than implying. A diagnostic built from a literal rule id, or from one already narrowed to a group as `publishFailureRule` narrows its answer, is checked against its variant by the compiler. The five producers that accept an open `RuleId` cannot be: TypeScript does not narrow a union by a discriminant it knows only the type of, so each passes through one assertion in `contract/diagnostics.ts`, backed by the measurement in `contract/diagnostic-ids.ts` rather than by a proof. Closing that needs those producers to take their `ids` as a rest tuple derived from the rule id they were handed, so a call naming a rule that owns no ids cannot pass one and a call naming a rule that always names ids cannot omit them. That is a slice of its own, because it rewrites every call site of five constructors, and the scope of this record is the union and the discrimination."
+    }
+  ]
+}
