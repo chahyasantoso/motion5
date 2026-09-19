@@ -73,11 +73,18 @@ describe("a producer takes the ids its rule owns", () => {
     expect(Object.isFrozen(built.ids)).toBe(true);
   });
 
-  it("still carries no payload for a rule that owns none", () => {
+  it("carries a frozen empty payload for a rule that owns none", () => {
     const built = diagnostic("id-shape", "$.motions[0].id", "bad id");
 
     expect(built.ruleId).toBe("id-shape");
-    expect("ids" in built).toBe(false);
+    // The claim moved with the shape rather than being dropped. It used to be the absence of the
+    // member, which a flat `Diagnostic` retires: `ids` is always present, so a reader spelling `ids`
+    // and a reader spelling `ids ?? []` are one reader rather than two. What this rule still cannot
+    // do is carry a payload, and the `@ts-expect-error` probe below is what asks the compiler for
+    // that, which is where the refusal always lived. Frozen, because an empty payload no caller can
+    // mutate is the same promise as a populated one.
+    expect(built.ids).toEqual([]);
+    expect(Object.isFrozen(built.ids)).toBe(true);
   });
 });
 

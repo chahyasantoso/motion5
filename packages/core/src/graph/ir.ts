@@ -1,5 +1,5 @@
 // Docs: ./ir.md
-import type { OwnedIds } from "../contract/diagnostic-ids";
+import type { OwnedIds } from "../contract/rule";
 import type {
   Diagnostic,
   ObservationDefinition,
@@ -7,7 +7,7 @@ import type {
   ProjectDefinition,
   TrackDefinition,
 } from "../contract/v5";
-import { asDiagnostic } from "../contract/diagnostics";
+import { diagnostic } from "../contract/diagnostics";
 import type { RuleId } from "../contract/rule-id";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
@@ -158,14 +158,29 @@ function freeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
+/**
+ * The graph layer's spelling of the one constructor, and no longer a second owner of the shape.
+ *
+ * It kept a body of its own for as long as `Diagnostic` was a union: the object it returned named a
+ * severity for itself and chose between a payload and no member at all through a conditional spread,
+ * which made this file the second place both answers lived. `contract/rule.ts` owns them now, so the
+ * body is a forward and the only thing this declaration still owns is its name. Twenty seven call
+ * sites read `diag`, and renaming them would be churn with no invariant behind it.
+ *
+ * The severity argument is declined rather than named. The parameter survives on the constructor for
+ * the raw object literals that still bypass it, and passing nothing through it is what makes
+ * `ruleSeverity` answer, so no expression in this file names a severity after this. The ids list is
+ * forwarded rather than widened for the same reason: `OwnedIds` is the constructor's own argument
+ * list, so the correlation this file used to re-state is the one its call sites are already checked
+ * against. See ADR-097.
+ */
 export function diag<Rule extends RuleId>(
   ruleId: Rule,
   path: string,
   message: string,
   ...carried: OwnedIds<Rule>
 ): Diagnostic {
-  const [ids] = carried as unknown as readonly [(readonly string[])?];
-  return asDiagnostic({ ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) });
+  return diagnostic(ruleId, path, message, undefined, ...carried);
 }
 
 export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
