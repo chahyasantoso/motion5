@@ -1,0 +1,7 @@
+st "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T09:29:26.5546627Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T09:29:26.5547464Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T09:29:26.5548123Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T09:29:26.5548595Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T09:29:26.5549061Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T09:29:26.5684288Z ##[error]Process completed with exit code 1.
