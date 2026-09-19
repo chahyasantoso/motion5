@@ -21,9 +21,18 @@ function diagnostic<Rule extends RuleId>(
   message: string,
   ...carried: OwnedIds<Rule>
 ): Diagnostic {
-  const [ids = []] = carried as unknown as readonly [(readonly string[])?];
+  // Written only when a payload arrived. This wrote `ids` unconditionally, so an idless rule reaching
+  // it would have minted a diagnostic carrying an empty payload its own variant declares it may not
+  // have. Its one caller names an always-naming rule, so nothing observable moves.
+  const [carriedIds] = carried as unknown as readonly [(readonly string[])?];
   return asDiagnostic(
-    Object.freeze({ ruleId, path, message, severity: "error", ids: Object.freeze([...ids]) }),
+    Object.freeze({
+      ruleId,
+      path,
+      message,
+      severity: "error",
+      ...(carriedIds ? { ids: Object.freeze([...carriedIds]) } : {}),
+    }),
   );
 }
 function isRecord(value: unknown): value is Record<string, unknown> {

@@ -1,6 +1,9 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { diagnostic } from "../../src/contract/diagnostics";
+import { diag } from "../../src/graph/ir";
+import { reportDiagnostic } from "../../src/runtime/report";
+import type { RetainTrace } from "../../src/runtime/report";
 import { code } from "../helpers/source-region";
 
 /**
@@ -77,3 +80,47 @@ describe("a producer takes the ids its rule owns", () => {
     expect("ids" in built).toBe(false);
   });
 });
+
+/**
+ * The compile-time half, and the compiler is the assertion rather than a case.
+ *
+ * The cases above read the declarations as text, which proves the spelling and proves nothing about
+ * what TypeScript does with it. An edit that kept both searched substrings while widening `OwnedIds`
+ * back to an optional list for every rule would leave every one of them green, and because every call
+ * site in the tree passes an array, `typecheck` would not notice either: a green case is evidence only
+ * of what it would fail without, and those cases would not fail without the refusal. So the refusal is
+ * asked of the compiler directly. Each `@ts-expect-error` fails `typecheck` when the line below it
+ * stops being an error, which turns that mutant into a build failure instead of a green suite.
+ *
+ * Neither function is called. They are exported so that neither is an unused local, and their whole
+ * content is the two directions this change is about. Both are stated, because a producer that refused
+ * every payload would satisfy the refusing half on its own. Only the three exported producers are
+ * reachable from a test; the two private ones in `domain/` carry the same declaration and are covered
+ * by the text cases above.
+ */
+export function refusedByTheCompiler(retain: RetainTrace): void {
+  // @ts-expect-error `id-shape` owns no ids, so a payload is unrepresentable.
+  diagnostic("id-shape", "$", "x", "error", ["unexpected"]);
+  // @ts-expect-error `track-duplicate-id` always names ids, so omitting them is unrepresentable.
+  diagnostic("track-duplicate-id", "$", "x", "error");
+  // @ts-expect-error `track-id` owns no ids, so a payload is unrepresentable.
+  diag("track-id", "$", "x", ["unexpected"]);
+  // @ts-expect-error `motion-duplicate` always names ids, so omitting them is unrepresentable.
+  diag("motion-duplicate", "$", "x");
+  // @ts-expect-error `id-shape` owns no ids, so a payload is unrepresentable.
+  reportDiagnostic(undefined, retain, "id-shape", "x", 0, ["unexpected"]);
+  // @ts-expect-error `flush-failure` always names ids, so omitting them is unrepresentable.
+  reportDiagnostic(undefined, retain, "flush-failure", "x", 0);
+}
+
+/**
+ * The accepting direction, in the same file, so the refusals above cannot be green against a
+ * producer that refuses everything.
+ */
+export function acceptedByTheCompiler(retain: RetainTrace): void {
+  diagnostic("id-shape", "$", "x", "error");
+  diagnostic("track-duplicate-id", "$", "x", "error", ["hero"]);
+  diag("track-id", "$", "x");
+  diag("motion-duplicate", "$", "x", ["hero"]);
+  reportDiagnostic(undefined, retain, "flush-failure", "x", 0, ["hero"]);
+}

@@ -194,6 +194,14 @@ export type EveryRuleIdIsGrouped<Ungrouped extends never = UngroupedRuleId> = Un
  * rather than one boundary left open. Guarded, the open case answers once and answers optional,
  * which is what a producer forwarding a `RuleId` needs.
  *
+ * The same guard is why a union spanning two groups answers optional rather than refusing. Neither
+ * test succeeds for `"id-shape" | "track-duplicate-id"`, so the pair falls through to the optional
+ * list and neither half of it is enforced. That is a limit worth stating rather than a bug to hide:
+ * this correlates one rule id and not a set of them, and a caller holding two rules from two groups
+ * is holding a value the discrimination cannot answer for. No call site in this tree holds one. What
+ * the producers do about it is omit the field when no payload arrived, so such a call cannot at least
+ * mint a variant carrying ids its rule may not name.
+ *
  * `EveryRuleIdIsGrouped` is read rather than trusted, and that read is the half it was missing. A
  * rule in no group would otherwise reach the optional list by failing both tests, which is the one
  * wrong answer this type can give and the one a reader would never suspect. Reading the partition

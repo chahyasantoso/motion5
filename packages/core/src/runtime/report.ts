@@ -306,7 +306,7 @@ function frozenDiagnostic(
   ruleId: RuleId,
   message: string,
   tick: number,
-  ids: readonly string[],
+  ids: readonly string[] | undefined,
 ): Diagnostic {
   const diagnostic: Diagnostic = asDiagnostic(
     Object.freeze({
@@ -314,7 +314,7 @@ function frozenDiagnostic(
       path: String(tick),
       message,
       severity: "error",
-      ids: Object.freeze([...ids]),
+      ...(ids ? { ids: Object.freeze([...ids]) } : {}),
     }),
   );
   return diagnostic;
@@ -353,7 +353,7 @@ export function reportDiagnostic<Rule extends RuleId>(
   // twice would put one fact in two signatures for no second caller. Every caller of this names its
   // rule as a literal or as a `satisfies RuleId` constant; the one that forwards an open `RuleId` is
   // `graph-runtime.ts` `#report`, which supplies the ids itself.
-  const [ids = []] = carried as unknown as readonly [(readonly string[])?];
+  const [ids] = carried as unknown as readonly [(readonly string[])?];
   const diagnostic = frozenDiagnostic(ruleId, message, tick, ids);
   retain((trace) => reporting(trace, diagnostic));
   try {
@@ -363,7 +363,11 @@ export function reportDiagnostic<Rule extends RuleId>(
       DIAGNOSTIC_SINK_FAILURE_RULE,
       `Diagnostic delivery for ${ruleId} failed: ${describeWithCauses(error)}`,
       tick,
-      ids,
+      // `diagnostic-sink-failure` always names ids, so a failed handover carries the report's payload
+      // or an empty one rather than inheriting its absence. An idless report is the only way this is
+      // reached with nothing, and a failure omitting the field would be the variant violation one
+      // layer down from the one it is describing.
+      ids ?? [],
     );
     retain((trace) => undeliverable(trace, diagnostic, failure));
   }

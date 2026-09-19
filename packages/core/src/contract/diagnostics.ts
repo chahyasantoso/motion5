@@ -30,9 +30,17 @@ export interface DiagnosticFields {
  * What reaches it is checked, which is the half that used to be missing. Each of the five takes its
  * `ids` as `OwnedIds` of the rule id it was handed, so a caller naming a rule by a literal cannot
  * pass a payload the rule does not own nor omit one it always names. What is left for this assertion
- * is the case it was written for and nothing wider: a producer forwarding a rule id it knows only as
- * `RuleId`, which `contract/validate-v5.ts` does through `scopedRuleId` and `runtime/report.ts` does
- * through its private `frozenDiagnostic`.
+ * is a producer forwarding a rule id it knows only as `RuleId`, which `contract/validate-v5.ts` does
+ * through `scopedRuleId` and `runtime/report.ts` does through its private `frozenDiagnostic`.
+ *
+ * This stays an assertion boundary rather than an invariant over every construction, and saying
+ * otherwise would be the overclaim this file exists to keep out of the tree. `DiagnosticFields` keeps
+ * its two fields independent, so a module calling this directly can still name a rule by a literal
+ * and hand over a payload it does not own. What bounds that is a measurement and not the type: three
+ * modules call it, all three are producers that derive their own list now, and a fourth caller is the
+ * thing to refuse. Correlating the fields here instead would need a conditional the compiler cannot
+ * resolve while `Rule` is still a parameter at the one place all three reach it, which is the same
+ * reason this function exists at all.
  *
  * The assertion is safe by measurement rather than by construction, and `contract/diagnostic-ids.ts`
  * holds the measurement: every producer's call sites were read before the groups were written, and
@@ -73,14 +81,18 @@ export function diagnostic<Rule extends RuleId>(
   // filter: the list is still a parameter here, so no element of it is indexable until `Rule` is
   // instantiated. The default keeps every existing call byte-identical, including the ones that pass
   // nothing at all.
-  const [ids = []] = carried as unknown as readonly [(readonly string[])?];
+  // Presence rather than length. Ownership requires an array and not a non-empty one, so a call
+  // naming an always-naming rule and handing over an empty payload used to return an object with no
+  // `ids` member at all, which is the one variant that rule may not be. The rest argument arriving is
+  // what the type checked, so it is what decides the field.
+  const [carriedIds] = carried as unknown as readonly [(readonly string[])?];
   return asDiagnostic(
     Object.freeze({
       ruleId,
       path,
       message,
       severity,
-      ...(ids.length ? { ids: Object.freeze([...ids]) } : {}),
+      ...(carriedIds ? { ids: Object.freeze([...carriedIds]) } : {}),
     }),
   );
 }
