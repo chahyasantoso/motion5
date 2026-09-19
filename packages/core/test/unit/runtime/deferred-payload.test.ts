@@ -245,6 +245,43 @@ describe("an empty deferred publication is still a publication", () => {
     expect(runtime.sequence).toBe(1);
     runtime.dispose();
   });
+
+  it("names the seeds and keeps the frame when one reentrant call defers both", () => {
+    const clock = createManualClock();
+    const scheduler = createFakeScheduler();
+    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    runtime.attach("hero/arm");
+
+    const answered: PatchBatch[] = [];
+    let acted = false;
+    runtime.registry.subscribeNode("hero/arm", () => {
+      if (acted) return;
+      acted = true;
+      answered.push(runtime.flushAtTick(["caption/label"], 2));
+    });
+
+    clock.tick();
+
+    // The third of the three answers, pinned at this tier rather than only in the state module: a
+    // deferral carrying both reports under the seed-carrying rule, because the seeds are what a
+    // caller can act on, and that choice drops nothing. The payload still holds frame 2, so the
+    // drain replays it through the verb that owns clock transitions.
+    const reported = answered[0]?.diagnostics.map(({ ruleId }) => ruleId);
+    expect(reported).toEqual(["reentrant-flush-deferred"]);
+    expect(answered[0]?.diagnostics[0]?.ids).toEqual(["caption/label"]);
+    expect(answered[0]?.seeds).toEqual(["caption/label"]);
+    expect(runtime.pendingSeeds).toEqual(["caption/label"]);
+    expect(runtime.tick).toBe(1);
+    expect(scheduler.pending).toHaveLength(1);
+
+    scheduler.flush();
+
+    expect(runtime.tick).toBe(2);
+    expect(runtime.sequence).toBe(2);
+    expect(runtime.pendingSeeds).toEqual([]);
+    expect(runtime.lastFlushError).toBeUndefined();
+    runtime.dispose();
+  });
 });
 
 describe("a host that cannot receive a diagnostic cannot reroute the runtime", () => {
