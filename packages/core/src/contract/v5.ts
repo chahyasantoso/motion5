@@ -1,4 +1,4 @@
-import type { IdentifiedRuleId, IdlessRuleId, OptionalIdsRuleId } from "./diagnostic-ids";
+import type { RuleId } from "./rule-id";
 
 export const AUTHORED_SCHEMA_VERSION = 5 as const;
 export const SUPPORTED_TRIGGER_TYPES = ["scroll", "time", "manual"] as const;
@@ -51,49 +51,54 @@ export interface TriggerSignal {
  * #449 asks for, and it is a public surface change: `Diagnostic` is exported from the package
  * entry, so a consumer constructing one with a rule id of its own invention stops compiling.
  *
- * It is a union rather than one interface because `ids` is not a field every rule owns. The three
- * variants are keyed by ownership of that payload, derived in `contract/diagnostic-ids.ts` from one
- * record, so a diagnostic carrying ids its rule never names fails `typecheck`, and so does one
- * omitting ids its rule always names. Reading is unaffected: all three declare `path`, `message`
- * and `severity`, and `ids` is readable on every one of them. See ADR-097.
- */
-export type Diagnostic = IdlessDiagnostic | IdentifiedDiagnostic | OptionalIdsDiagnostic;
-
-/** What every diagnostic carries, whichever group its rule is in. */
-interface DiagnosticShape {
-  readonly path: string;
-  readonly message: string;
-  readonly severity: DiagnosticSeverity;
-}
-
-/**
- * A diagnostic whose rule names no ids, so it may not carry any.
+ * It is one interface rather than a union. The three variants were paid for with a public surface
+ * and bought nothing on the read side: `runtime/patch-registry.ts` compares rule ids for identity and
+ * `runtime/refusal.ts` renders them generically, so no production reader pattern-matches one.
+ * Enforcement was never on the read side either; it is at the call site, as the argument list the
+ * rule owns, which `contract/rule.ts` now derives from one record. With no union left to narrow there
+ * is nothing for an assertion to narrow into. See ADR-097.
  *
- * `ids?: undefined` rather than an omitted member: omitting it would let this variant accept an
- * `ids` through a wider type, and the whole of the group is that a payload the rule does not own
- * cannot be written down.
+ * `ids` is required, always present, always frozen, and empty for a rule that names none. It was
+ * optional while three raw producers omitted the member, and those three are converted in the same
+ * slice that requires it: `runtime/project-runtime.ts`'s `#teardown`, the private path-first producer
+ * in `contract/migrate-v4-to-v5.ts`, and `runtime/report.ts`'s `frozenDiagnostic` all forward to the
+ * one constructor now rather than hand-building an object that chooses between a payload and no
+ * member at all. So a reader spelling `ids` and a reader spelling `ids ?? []` are one reader rather
+ * than two, and `runtime/patch-registry.ts` comparing two payloads no longer has an absent member and
+ * an empty one to tell apart for the same rule.
+ *
+ * Whether a rule may name ids is still not this field's claim, and requiring the member does not make
+ * it one. `ids: []` is what a rule that owns none carries; what refuses a payload a rule does not own
+ * is `OwnedIds` at the call site, derived from the one record in `contract/rule.ts`. This closes the
+ * shape, and the ownership stays enforced one layer up, where the rule is named. See ADR-097.
  */
-export interface IdlessDiagnostic extends DiagnosticShape {
-  readonly ruleId: IdlessRuleId;
-  readonly ids?: undefined;
-}
-
-/** A diagnostic whose rule always names ids, so omitting them fails `typecheck`. */
-export interface IdentifiedDiagnostic extends DiagnosticShape {
-  readonly ruleId: IdentifiedRuleId;
+export interface Diagnostic extends DiagnosticShape {
+  readonly ruleId: RuleId;
   readonly ids: readonly string[];
 }
 
 /**
- * A diagnostic whose rule may name ids.
+ * One diagnostic pinned to one rule.
  *
- * The group for a rule whose construction sites disagree about whether they carry a payload, and
- * for a rule with no construction site to measure. `contract/diagnostic-ids.ts` owns which rules
- * those are and why neither answer is stronger.
+ * Naming a rule at a declaration, rather than discriminating one at a read. It was the one thing the
+ * three variants were still read for, and it now replaces all three: they are deleted, and
+ * `MigrationDiagnostic` below is one derived alias in place of what used to be a variant plus a
+ * narrowing interface.
+ *
+ * It is also what the one constructor in `./diagnostics` returns, which is what retired the widening
+ * that used to sit beside it. A producer handed a literal rule id is answered with a diagnostic
+ * pinned to that rule, so the v4 reader derives `MigrationDiagnostic` from the call rather than
+ * asserting it afterwards, and no expression in this tree casts an object into this shape any more.
  */
-export interface OptionalIdsDiagnostic extends DiagnosticShape {
-  readonly ruleId: OptionalIdsRuleId;
-  readonly ids?: readonly string[];
+export interface DiagnosticOf<Rule extends RuleId> extends Diagnostic {
+  readonly ruleId: Rule;
+}
+
+/** What every diagnostic carries, whichever rule it names. */
+interface DiagnosticShape {
+  readonly path: string;
+  readonly message: string;
+  readonly severity: DiagnosticSeverity;
 }
 
 /**
@@ -311,11 +316,9 @@ export interface ProjectDefinition {
  * is provably a member of `RuleId`: were the enumeration to stop carrying it, this declaration is
  * the build failure rather than a string nobody checks.
  *
- * It extends the idless variant because that is the group its rule is in. Each of the four refusals
- * the v4 reader can report names a path and a message and no ids, which is measured rather than
- * chosen: its constructor used to accept an `ids` that nothing passed, and the group states what the
- * construction sites do rather than what a signature allowed. See ADR-097.
+ * Each of the four refusals the v4 reader can report names a path and a message and no ids, which is
+ * measured rather than chosen: its constructor used to accept an `ids` that nothing passed. That fact
+ * is stated once now, where the rule is defined, as `schema-v4-migration`'s own entry in
+ * `contract/rule.ts`, rather than by extending a variant named after a group. See ADR-097.
  */
-export interface MigrationDiagnostic extends IdlessDiagnostic {
-  readonly ruleId: "schema-v4-migration";
-}
+export type MigrationDiagnostic = DiagnosticOf<"schema-v4-migration">;

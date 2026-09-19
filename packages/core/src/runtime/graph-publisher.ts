@@ -1,3 +1,4 @@
+import { diagnostic } from "../contract/diagnostics";
 import type { Diagnostic } from "../contract/v5";
 import { compareEdges, type GraphEdge, type GraphIR, type GraphNode } from "../graph/ir";
 import { firstPendingEdge } from "../graph/references";
@@ -96,21 +97,23 @@ export interface PublisherFailure {
  * the domain's, thrown by `validateComposition` here and reachable from inside `node.compose`, so its
  * class is the only thing that identifies it and `domain/track.ts` owns it. Anything else a composer
  * throws is a composition failure with no name of its own, which is what it was. Issue #443.
+ *
+ * Named `nodeFailure` rather than `diagnostic`, because it classifies a thrown value and holds no
+ * shape of its own. The frozen object, the frozen payload and the severity all come from the one
+ * constructor now. The old name said constructor while the body was a classifier, and the body was
+ * one of the four raw literals that spelled `severity: "error"` for itself; the rename and the
+ * collapse are the same correction rather than two. See ADR-097 and issue #449.
  */
-function diagnostic(nodeId: string, error: unknown): Diagnostic {
+function nodeFailure(nodeId: string, error: unknown): Diagnostic {
   const ruleId =
     error instanceof PublishFailureError
       ? publishFailureRule(error.failure)
       : error instanceof CompositionOutputError
         ? error.ruleId
         : "composition-failure";
-  return Object.freeze({
-    ruleId,
-    path: nodeId,
-    message: error instanceof Error ? error.message : String(error),
-    severity: "error",
-    ids: Object.freeze([nodeId]),
-  });
+  return diagnostic(ruleId, nodeId, error instanceof Error ? error.message : String(error), [
+    nodeId,
+  ]);
 }
 /**
  * A node's edges of one role in canonical order. `compareEdges` in `graph/ir.ts` is the only
@@ -249,13 +252,10 @@ export class GraphPublisher {
         sourceProgress: 0,
         status: "blocked",
         diagnostics: [
-          Object.freeze({
-            ruleId: "blocked-upstream",
-            path: id,
-            message: `Blocked by upstream state at ${blocking}.`,
-            severity: "error",
-            ids: Object.freeze([blocking, id]),
-          }),
+          diagnostic("blocked-upstream", id, `Blocked by upstream state at ${blocking}.`, [
+            blocking,
+            id,
+          ]),
         ],
       });
       return blockedOutcome(blocking);
@@ -291,7 +291,7 @@ export class GraphPublisher {
       });
       return composedOutcome(merged);
     } catch (error) {
-      const failure = diagnostic(id, error);
+      const failure = nodeFailure(id, error);
       this.#registry.publish({
         nodeId: id,
         sourceProgress: 0,

@@ -4,11 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { code } from "../helpers/source-region";
 
-import {
-  IDENTIFIED_RULE_IDS,
-  IDLESS_RULE_IDS,
-  OPTIONAL_IDS_RULE_IDS,
-} from "../../src/contract/diagnostic-ids";
+import { RULES, ruleSeverity } from "../../src/contract/rule";
 import {
   BASE_RULE_IDS,
   CONTRIBUTION_RULE_IDS,
@@ -30,13 +26,20 @@ import {
 // Extraction is anchored to constructor positions rather than to every kebab-shaped string,
 // because this tree names rule ids in prose constantly and a docblock citing one is not a
 // construction site. `contract/migrate-v4-to-v5.ts` is excluded from the first-argument form on
-// purpose: its private `diagnostic(path, message, ids)` puts the path first, and its one id is
-// caught by the assigned form instead.
+// purpose: its private `diagnostic(path, message)` puts the path first, and its one id is caught
+// by the held form instead, which is why that module holds its rule in a constant.
+//
+// `buildDiagnostic` is a constructor position too. It is not a second constructor: it is what a
+// module that already binds `diagnostic` to a producer of its own calls the one in
+// `contract/diagnostics.ts`, because an import cannot shadow a local declaration. A scan that
+// knew only the exported spelling went blind the moment a raw literal was routed through the
+// alias, and went blind silently for every id but the one asserted below by name.
 //
 // A rule id held in a module constant is read too, and that form is why: `graph/order.ts`,
 // `graph/references.ts`, `runtime/report.ts` and `runtime/graph-runtime.ts` each name a rule in a
 // constant and assign the constant, so nine ids reached `Diagnostic.ruleId` without ever appearing
-// as a literal argument. Those declarations now also state `satisfies RuleId`, so the compiler
+// as a literal argument, and `contract/migrate-v4-to-v5.ts` now joins them for a reason of its
+// own, stated above. Those declarations all state `satisfies RuleId`, so the compiler
 // refuses an unenumerated one where the rule is named; this scan is the measurement beside that
 // proof, and it exists because a scan blind to a whole construction shape reports coverage it never
 // tested.
@@ -51,7 +54,8 @@ const TRIGGER_ADAPTER = "adapters/trigger-factory/default.ts";
 // here, which is the second thing this gate corrected about its own subject.
 const CONTRIBUTION_SCOPE_FILE = "domain/plugins.ts";
 
-const CONSTRUCTED = /\b(?:issue|diag|diagnostic|frozenDiagnostic)\(\s*"([a-z][a-z0-9-]*)"/g;
+const CONSTRUCTED =
+  /\b(?:issue|diag|diagnostic|buildDiagnostic|frozenDiagnostic)\(\s*"([a-z][a-z0-9-]*)"/g;
 const ASSIGNED = /\bruleId:\s*"([a-z][a-z0-9-]*)"/g;
 const DECLARED = /\bruleId\s*=\s*"([a-z][a-z0-9-]*)"/g;
 const REPORTED = /\badd\(\s*"([a-z][a-z0-9-]*)"/g;
@@ -145,6 +149,7 @@ describe("rule id enumeration", () => {
       "observation-pending-reference",
       "clock-tick-regression",
       "diagnostic-sink-failure",
+      "schema-v4-migration",
     ])
       expect(held).toContain(id);
   });
@@ -190,31 +195,53 @@ describe("rule id enumeration", () => {
   });
 });
 
-// `ids` is discriminated by whether a rule owns one, and `contract/diagnostic-ids.ts` is the one
-// owner of which rules do. The record there is keyed by `BaseRuleId`, so a rule added to the
-// enumeration fails `typecheck` at the answer rather than inheriting whichever group was written
-// first, and `EveryRuleIdIsGrouped` refuses a rule the three groups do not partition. Both of those
-// are compile-time, and neither is observable from a run. These cases read the arrays the same
-// record derives, which is the half a type cannot see. See ADR-097.
+// `ids` ownership and severity are both fixed where the rule is defined, and `contract/rule.ts` is
+// the one owner of both. There is no partition of three groups left to read: the second answer in
+// `contract/diagnostic-ids.ts` disagreed about four rules and that file is deleted. The record that
+// replaced it is keyed by `RuleId`, so a rule answers exactly once and answering twice is
+// unrepresentable rather than merely unmeasured. Its `satisfies` refuses a rule with no answer and
+// the annotation on `RULES` refuses one the record never reaches; both are compile-time and neither
+// is observable from a run. These cases read the record itself, which is the half a type cannot
+// see. See ADR-097 and issue #449.
 describe("rule id ids ownership", () => {
-  it("partitions every rule id into exactly one group", () => {
-    const grouped = [...IDLESS_RULE_IDS, ...IDENTIFIED_RULE_IDS, ...OPTIONAL_IDS_RULE_IDS];
-    expect([...grouped].sort()).toEqual([...RULE_IDS].sort());
-    expect(grouped.length).toBe(new Set(grouped).size);
+  it("answers every rule id exactly once, and answers nothing else", () => {
+    expect(Object.keys(RULES).sort()).toEqual([...RULE_IDS].sort());
+    expect(RULE_IDS.filter((id) => RULES[id].ids !== "none" && RULES[id].ids !== "always")).toEqual(
+      [],
+    );
   });
 
   it("owns no ids for any keyframe rule, authored or contributed", () => {
-    const idless = new Set<string>(IDLESS_RULE_IDS);
-    expect(KEYFRAME_RULE_IDS.filter((id) => !idless.has(id))).toEqual([]);
-    expect(CONTRIBUTION_RULE_IDS.filter((id) => !idless.has(id))).toEqual([]);
+    expect(KEYFRAME_RULE_IDS.filter((id) => RULES[id].ids !== "none")).toEqual([]);
+    expect(CONTRIBUTION_RULE_IDS.filter((id) => RULES[id].ids !== "none")).toEqual([]);
   });
 
   // A rule minted only on an error class has no diagnostic naming it, so nothing measures the ids it
-  // would carry. Absence of a measurement cannot justify requiring one, so those rules answer the
-  // optional group rather than the required one, and this pins the direction of that inequality.
-  it("keeps a rule with no construction site out of the group that requires ids", () => {
-    const required = new Set<string>(IDENTIFIED_RULE_IDS);
-    for (const id of ["live-value-key", "stale-motion-handle", "stale-track-handle"])
-      expect(required.has(id)).toBe(false);
+  // would carry. The old answer was the optional group, on the argument that absence of a measurement
+  // cannot justify requiring a payload. It cannot justify permitting one either, and these three have
+  // no construction site at all, so they own none: the first site that forwards one into a diagnostic
+  // with a payload fails at the point the decision is owed rather than compiling and carrying it.
+  it("owns no ids for a rule with no construction site", () => {
+    for (const id of ["live-value-key", "stale-motion-handle", "stale-track-handle"] as const)
+      expect(RULES[id].ids).toBe("none");
+  });
+
+  // The warning population is the whole of what deriving severity changed, so it is pinned by
+  // enumeration rather than by a count: a rule quietly becoming a warning, or a warning quietly
+  // becoming an error, fails here rather than in whichever consumer notices first. The two contributed
+  // spellings are derived through `scopedRuleId` rather than written out, because the alias map owns
+  // how a keyframe rule is respelled and a literal here could be wrong about it silently.
+  it("names exactly the rules that refuse as warnings", () => {
+    const keyframeWarnings = ["stop-missing-start", "stop-missing-end"] as const;
+    const expected = [
+      "observation-pending-reference",
+      "perspective-usage",
+      "reentrant-flush-deferred",
+      "reentrant-flush-deferred-frame",
+      "value-batch-deferred",
+      ...keyframeWarnings,
+      ...keyframeWarnings.map((name) => scopedRuleId("contribution", name)),
+    ];
+    expect(RULE_IDS.filter((id) => ruleSeverity(id) === "warning").sort()).toEqual(expected.sort());
   });
 });

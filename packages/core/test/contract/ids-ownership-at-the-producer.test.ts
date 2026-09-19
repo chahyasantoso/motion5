@@ -1,6 +1,7 @@
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { diagnostic } from "../../src/contract/diagnostics";
+import { scopedRuleId } from "../../src/contract/rule-id";
 import { diag } from "../../src/graph/ir";
 import { reportDiagnostic } from "../../src/runtime/report";
 import type { RetainTrace } from "../../src/runtime/report";
@@ -9,12 +10,12 @@ import { code } from "../helpers/source-region";
 /**
  * Issue #449: ownership of `ids` is enforced at the producer rather than asserted past it.
  *
- * `asDiagnostic` takes a `RuleId` and an `ids` that are independent of each other, so a call naming a
- * rule that owns no ids and passing a payload compiled, and produced a diagnostic the union calls
- * unrepresentable. The assertion itself cannot be removed, because TypeScript does not narrow a union
- * by a discriminant it knows only the type of. What can be removed is every call site reaching it
- * while naming its rule by a literal, and the five producers do that by taking their ids as the
- * argument list `contract/diagnostic-ids.ts` derives from the rule they were handed.
+ * `asDiagnostic` took a `RuleId` and an `ids` that were independent of each other, so a call naming a
+ * rule that owns no ids and passing a payload compiled, and produced a diagnostic the union called
+ * unrepresentable. Both that union and that assertion are deleted rather than reasoned about. The call
+ * sites were always the half that mattered, and the five producers below take their ids as the
+ * argument list `contract/rule.ts` derives from the rule they were handed. None of them names a
+ * severity either, because the one constructor has no parameter for one.
  *
  * No type can observe itself and this suite cannot run `tsc`, so the claim is read off the
  * declarations as text. That is the shape `RA-78` established for a subject with no run-time form: a
@@ -54,30 +55,40 @@ describe("a producer takes the ids its rule owns", () => {
     });
   }
 
-  it("reads the partition proof rather than trusting it", () => {
-    const text = source("contract/diagnostic-ids.ts");
+  it("reads the totality proof rather than trusting it", () => {
+    const text = source("contract/rule.ts");
 
     expect(text.split("export type OwnedIds<Rule extends RuleId>")).toHaveLength(2);
-    // `EveryRuleIdIsGrouped` failed the build only at its own declaration, so it was deletable with
-    // nothing going red. Reading it here is what makes the type's half of the partition proof
-    // load-bearing, and a rule reaching no group now fails at every producer instead of silently
-    // taking the optional list.
-    expect(text.split("[EveryRuleIdIsGrouped] extends [never]")).toHaveLength(2);
+    // The proof moved with its owner rather than being dropped. `EveryRuleIdIsGrouped` refused a rule
+    // that reached none of three groups; with two answers held in one total record there is no group
+    // left to miss, so what is read here instead is that totality. A rule with no answer fails at the
+    // `satisfies`, and a rule the record never reaches fails at the annotation on `RULES`. Both fail
+    // the build only at their own declaration, which is exactly what made the old proof deletable
+    // with nothing going red, so both are read rather than trusted.
+    expect(text.split("as const satisfies Record<BaseRuleId, RuleFacts>")).toHaveLength(2);
+    expect(text.split("Readonly<Record<RuleId, RuleFacts>>")).toHaveLength(2);
   });
 
   it("still carries the payload of a rule that owns one", () => {
-    const built = diagnostic("track-duplicate-id", "$.motions[0]", "duplicate", "error", ["hero"]);
+    const built = diagnostic("track-duplicate-id", "$.motions[0]", "duplicate", ["hero"]);
 
     expect(built.ruleId).toBe("track-duplicate-id");
     expect(built.ids).toEqual(["hero"]);
     expect(Object.isFrozen(built.ids)).toBe(true);
   });
 
-  it("still carries no payload for a rule that owns none", () => {
+  it("carries a frozen empty payload for a rule that owns none", () => {
     const built = diagnostic("id-shape", "$.motions[0].id", "bad id");
 
     expect(built.ruleId).toBe("id-shape");
-    expect("ids" in built).toBe(false);
+    // The claim moved with the shape rather than being dropped. It used to be the absence of the
+    // member, which a flat `Diagnostic` retires: `ids` is always present, so a reader spelling `ids`
+    // and a reader spelling `ids ?? []` are one reader rather than two. What this rule still cannot
+    // do is carry a payload, and the `@ts-expect-error` probe below is what asks the compiler for
+    // that, which is where the refusal always lived. Frozen, because an empty payload no caller can
+    // mutate is the same promise as a populated one.
+    expect(built.ids).toEqual([]);
+    expect(Object.isFrozen(built.ids)).toBe(true);
   });
 });
 
@@ -100,9 +111,9 @@ describe("a producer takes the ids its rule owns", () => {
  */
 export function refusedByTheCompiler(retain: RetainTrace): void {
   // @ts-expect-error `id-shape` owns no ids, so a payload is unrepresentable.
-  diagnostic("id-shape", "$", "x", "error", ["unexpected"]);
+  diagnostic("id-shape", "$", "x", ["unexpected"]);
   // @ts-expect-error `track-duplicate-id` always names ids, so omitting them is unrepresentable.
-  diagnostic("track-duplicate-id", "$", "x", "error");
+  diagnostic("track-duplicate-id", "$", "x");
   // @ts-expect-error `track-id` owns no ids, so a payload is unrepresentable.
   diag("track-id", "$", "x", ["unexpected"]);
   // @ts-expect-error `motion-duplicate` always names ids, so omitting them is unrepresentable.
@@ -111,6 +122,13 @@ export function refusedByTheCompiler(retain: RetainTrace): void {
   reportDiagnostic(undefined, retain, "id-shape", "x", 0, ["unexpected"]);
   // @ts-expect-error `flush-failure` always names ids, so omitting them is unrepresentable.
   reportDiagnostic(undefined, retain, "flush-failure", "x", 0);
+  // Every rule the scoped validator path can report owns no ids, authored or contributed, so a
+  // payload is unrepresentable through it. `scopedRuleId` answered `RuleId` until this case existed,
+  // which fell through to the open branch of `OwnedIds`, and the line below compiled. Nothing was
+  // red for it, because that branch makes no claim: the refusal is asked of the compiler here
+  // rather than recorded as landed in a comment. See issue #449.
+  // @ts-expect-error the scoped path owns no ids, so a payload is unrepresentable.
+  diagnostic(scopedRuleId("contribution", "stop-position"), "$", "x", ["unexpected"]);
 }
 
 /**
@@ -118,9 +136,11 @@ export function refusedByTheCompiler(retain: RetainTrace): void {
  * producer that refuses everything.
  */
 export function acceptedByTheCompiler(retain: RetainTrace): void {
-  diagnostic("id-shape", "$", "x", "error");
-  diagnostic("track-duplicate-id", "$", "x", "error", ["hero"]);
+  diagnostic("id-shape", "$", "x");
+  diagnostic("track-duplicate-id", "$", "x", ["hero"]);
   diag("track-id", "$", "x");
   diag("motion-duplicate", "$", "x", ["hero"]);
   reportDiagnostic(undefined, retain, "flush-failure", "x", 0, ["hero"]);
+  diagnostic(scopedRuleId("contribution", "stop-position"), "$", "x");
+  diagnostic(scopedRuleId("authored", "stop-missing-start"), "$", "x");
 }

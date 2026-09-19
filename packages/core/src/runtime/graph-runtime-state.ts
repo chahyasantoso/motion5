@@ -1,6 +1,7 @@
 import type { GraphIR } from "../graph/ir";
 import type { PublisherSnapshot } from "./graph-publisher";
 import { unreachable } from "../domain/exhaustive";
+import { namedSeeds, type DeferredSeeds } from "./report";
 
 /**
  * Whether a follow-up drain is booked with the scheduler.
@@ -491,6 +492,53 @@ export function deferredTick(pending: PendingPublication): number | undefined {
       return undefined;
     case "deferred":
       return pending.tick;
+    default:
+      return unreachable(pending);
+  }
+}
+
+/**
+ * What a deferral owes: nothing at all, the seeds it named, or the frame it carried and no seeds.
+ *
+ * The question the reentrancy answer in `graph-runtime.ts` has to ask, and it is asked of the
+ * payload the deferral left rather than of the request that made it. Those are different questions,
+ * and answering the second in place of the first was two defects at once. A request naming neither
+ * a seed nor a frame adds nothing to an empty payload, so nothing is owed, yet a drain was booked
+ * for it whose only act is to release its own booking. And a request naming no seed but carrying a
+ * frame leaves a real publication owed, yet it was answered the empty batch, which tells its caller
+ * that nothing was queued. Both are reads of this value, so both are answered here once. Issues
+ * #392 and #449, and see ADR-088 and ADR-097.
+ *
+ * `seeds` is the non-empty list `report.ts` owns, so the variant saying a deferral names seeds is
+ * the one carrying them, and a batch claiming a payload it cannot fill is unrepresentable. The
+ * frame variant carries its frame for the same reason: it is the whole of what that deferral has to
+ * say, and the diagnostic it earns names the frame rather than a node.
+ */
+export type DeferredWork =
+  | { readonly kind: "nothing" }
+  | { readonly kind: "seeds"; readonly seeds: DeferredSeeds }
+  | { readonly kind: "frame"; readonly tick: number };
+
+/**
+ * Answers what `pending` owes, total over both variants of it.
+ *
+ * Unbranded, on the precedent `BatchReason` sets in `report.ts`: the closed value is the payload
+ * this is derived from, and this is an answer a caller switches over once and stores nowhere. It
+ * agrees with `isPending` on every payload `deferring` can answer, because that transition returns
+ * the empty variant exactly when neither a seed nor a frame survived the merge; the frameless,
+ * seedless deferral this reads as owing nothing is the one it cannot mint, and it is answered
+ * rather than asserted about.
+ */
+export function deferredWork(pending: PendingPublication): DeferredWork {
+  switch (pending.kind) {
+    case "nothing":
+      return { kind: "nothing" };
+    case "deferred": {
+      const seeds = namedSeeds(deferredSeeds(pending));
+      if (seeds !== undefined) return { kind: "seeds", seeds };
+      const tick = pending.tick;
+      return tick === undefined ? { kind: "nothing" } : { kind: "frame", tick };
+    }
     default:
       return unreachable(pending);
   }

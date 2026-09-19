@@ -1,3 +1,4 @@
+import { diagnostic } from "../contract/diagnostics";
 import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic } from "../contract/v5";
 import type { GraphEdge } from "./ir";
@@ -15,15 +16,23 @@ export interface ReferenceResolution {
   readonly diagnostic?: Diagnostic;
 }
 
-/** The deterministic diagnostic for a pending observation edge. */
+/**
+ * The deterministic diagnostic for a pending observation edge.
+ *
+ * `observation-pending-reference` is one of the six warning rules, and this was one of the four raw
+ * literals that spelled a severity for itself. It reaches the one constructor now, so the
+ * `"warning"` it used to hand-write is read from `contract/rule.ts` instead. This producer is the
+ * reason that mattered most: a raw literal naming a warning rule is the one shape where a later
+ * edit could have silently disagreed with the registry in the quieter direction and published an
+ * error where the rule asks for a warning. See ADR-097 and issue #449.
+ */
 export function pendingReferenceDiagnostic(edge: GraphEdge): Diagnostic {
-  return Object.freeze({
-    ruleId: PENDING_REFERENCE_RULE_ID,
-    path: edge.observerId,
-    message: `Observation source "${edge.sourceId}" is a known node with no published value yet.`,
-    severity: "warning",
-    ids: Object.freeze([edge.sourceId, edge.observerId]),
-  });
+  return diagnostic(
+    PENDING_REFERENCE_RULE_ID,
+    edge.observerId,
+    `Observation source "${edge.sourceId}" is a known node with no published value yet.`,
+    [edge.sourceId, edge.observerId],
+  );
 }
 
 /**

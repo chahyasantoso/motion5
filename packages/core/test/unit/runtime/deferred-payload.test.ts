@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Diagnostic, ProjectDefinition } from "../../../src/contract/v5";
+import type { Diagnostic, PatchBatch, ProjectDefinition } from "../../../src/contract/v5";
 import { createManualClock } from "../../../src/ports/clock";
 import type { Cancel } from "../../../src/ports/scheduler";
 import { createFakeScheduler } from "../../../src/testing/fakes";
@@ -31,6 +31,15 @@ import { GraphRuntime } from "../../../src/runtime/graph-runtime";
  * host nothing, which is what an empty `received` reads; it does not also forget. Retention is
  * total across phases and delivery stays guarded, so the drain case below reads an empty sink
  * beside a retained `flush-failure` where it used to read both as absent. See ADR-091.
+ *
+ * Issue #449's quality pass adds the two cases at the end of the first block and the batch
+ * assertions in its first case, and all three are red before the change they are evidence for. The
+ * answer a reentrant call is handed was chosen from the request's own seed list rather than from
+ * the payload the deferral left behind, so a `flushAtTick([], tick)` that queued a real publication
+ * was answered as an empty batch, and a `flush([])` that deferred nothing at all still booked a
+ * drain whose only act is to release its own booking. Both are read from one place now, which is
+ * what is pending after the deferral rather than what the request itself stated. See ADR-088 and
+ * ADR-097.
  */
 
 const project: ProjectDefinition = {
@@ -54,14 +63,26 @@ describe("an empty deferred publication is still a publication", () => {
     const runtime = new GraphRuntime(project, clock, compose, { scheduler });
     runtime.attach("hero/arm");
 
+    const answered: PatchBatch[] = [];
     let acted = false;
     runtime.registry.subscribeNode("hero/arm", () => {
       if (acted) return;
       acted = true;
-      runtime.flushAtTick([], 2);
+      answered.push(runtime.flushAtTick([], 2));
     });
 
     clock.tick();
+
+    // The batch the caller was answered with says a publication is owed, and the frame is the whole
+    // of what it can name: a deferral stating no seed has no payload to give a rule that always
+    // names ids, so it answers under a rule of its own rather than under an empty batch that claims
+    // nothing was queued.
+    const reported = answered[0]?.diagnostics.map(({ ruleId }) => ruleId);
+    expect(reported).toEqual(["reentrant-flush-deferred-frame"]);
+    expect(answered[0]?.diagnostics[0]?.severity).toBe("warning");
+    expect(answered[0]?.diagnostics[0]?.ids).toEqual([]);
+    expect(answered[0]?.diagnostics[0]?.message).toMatch(/frame 2/);
+    expect(answered[0]?.seeds).toEqual([]);
 
     // The reentrant call published nothing now and must not record a frame that did not run, which
     // is the half ADR-082 already owned. The payload it left states no seeds, so this getter cannot
@@ -157,6 +178,107 @@ describe("an empty deferred publication is still a publication", () => {
     expect(runtime.tick).toBe(2);
     expect(runtime.sequence).toBe(3);
     expect(received).toEqual([]);
+    expect(runtime.lastFlushError).toBeUndefined();
+    runtime.dispose();
+  });
+
+  it("books nothing for a reentrant flush that defers no seed and carries no frame", () => {
+    const clock = createManualClock();
+    const scheduler = createFakeScheduler();
+    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    runtime.attach("hero/arm");
+
+    const answered: PatchBatch[] = [];
+    let acted = false;
+    runtime.registry.subscribeNode("hero/arm", () => {
+      if (acted) return;
+      acted = true;
+      answered.push(runtime.flush([]));
+    });
+
+    clock.tick();
+
+    // Nothing was deferred, so nothing is owed, and a booking is a claim that something is. Red in
+    // the last assertion before this change: the drain was booked before the answer was chosen and
+    // booked whether or not the deferral created any work, so the scheduler was left holding a job
+    // whose only act is to release its own booking.
+    expect(answered[0]?.diagnostics).toEqual([]);
+    expect(answered[0]?.seeds).toEqual([]);
+    expect(runtime.pendingSeeds).toEqual([]);
+    expect(runtime.tick).toBe(1);
+    expect(runtime.sequence).toBe(1);
+    expect(runtime.lastFlushError).toBeUndefined();
+    expect(scheduler.pending).toHaveLength(0);
+    runtime.dispose();
+  });
+
+  it("asks no scheduler for a drain a reentrant flush left nothing to run", () => {
+    const clock = createManualClock();
+    const received: Diagnostic[] = [];
+    const scheduler = {
+      schedule(): Cancel {
+        throw new Error("scheduler refused");
+      },
+    };
+    const runtime = new GraphRuntime(project, clock, compose, {
+      scheduler,
+      onFlushError: (diagnostic) => received.push(diagnostic),
+    });
+    runtime.attach("hero/arm");
+
+    let acted = false;
+    runtime.registry.subscribeNode("hero/arm", () => {
+      if (acted) return;
+      acted = true;
+      runtime.flush([]);
+    });
+
+    clock.tick();
+
+    // Red before this change in both of the first two assertions: the unconditional booking reached
+    // a port that refuses every job, so a reentrant call with nothing to drain minted a
+    // `scheduler-failure` describing work that did not exist. A port is asked for a drain only when
+    // there is one to run.
+    expect(received).toEqual([]);
+    expect(runtime.lastFlushError).toBeUndefined();
+    expect(runtime.tick).toBe(1);
+    expect(runtime.sequence).toBe(1);
+    runtime.dispose();
+  });
+
+  it("names the seeds and keeps the frame when one reentrant call defers both", () => {
+    const clock = createManualClock();
+    const scheduler = createFakeScheduler();
+    const runtime = new GraphRuntime(project, clock, compose, { scheduler });
+    runtime.attach("hero/arm");
+
+    const answered: PatchBatch[] = [];
+    let acted = false;
+    runtime.registry.subscribeNode("hero/arm", () => {
+      if (acted) return;
+      acted = true;
+      answered.push(runtime.flushAtTick(["caption/label"], 2));
+    });
+
+    clock.tick();
+
+    // The third of the three answers, pinned at this tier rather than only in the state module: a
+    // deferral carrying both reports under the seed-carrying rule, because the seeds are what a
+    // caller can act on, and that choice drops nothing. The payload still holds frame 2, so the
+    // drain replays it through the verb that owns clock transitions.
+    const reported = answered[0]?.diagnostics.map(({ ruleId }) => ruleId);
+    expect(reported).toEqual(["reentrant-flush-deferred"]);
+    expect(answered[0]?.diagnostics[0]?.ids).toEqual(["caption/label"]);
+    expect(answered[0]?.seeds).toEqual(["caption/label"]);
+    expect(runtime.pendingSeeds).toEqual(["caption/label"]);
+    expect(runtime.tick).toBe(1);
+    expect(scheduler.pending).toHaveLength(1);
+
+    scheduler.flush();
+
+    expect(runtime.tick).toBe(2);
+    expect(runtime.sequence).toBe(2);
+    expect(runtime.pendingSeeds).toEqual([]);
     expect(runtime.lastFlushError).toBeUndefined();
     runtime.dispose();
   });

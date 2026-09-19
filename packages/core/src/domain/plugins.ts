@@ -1,7 +1,7 @@
 // Docs: ./plugins.md
-import type { OwnedIds } from "../contract/diagnostic-ids";
+import type { OwnedIds } from "../contract/rule";
 import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
-import { asDiagnostic } from "../contract/diagnostics";
+import { diagnostic as buildDiagnostic } from "../contract/diagnostics";
 import type { RuleId } from "../contract/rule-id";
 import { validateKeyframes } from "../contract/validate-v5";
 import type {
@@ -164,8 +164,7 @@ function diagnostic<Rule extends RuleId>(
   message: string,
   ...carried: OwnedIds<Rule>
 ): Diagnostic {
-  const [ids] = carried as unknown as readonly [(readonly string[])?];
-  return asDiagnostic({ ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) });
+  return buildDiagnostic(ruleId, path, message, ...carried);
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);

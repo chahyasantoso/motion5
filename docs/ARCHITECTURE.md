@@ -130,7 +130,7 @@ One tick produces one batch.
 9. Retry metadata is retained only for nodes whose publication failed.
 10. The batch closes and subscribers are notified, node subscribers first, then batch subscribers.
 
-Reentrancy is refused, not queued: a flush triggered during a flush returns immediately. A subscriber that mutates the graph schedules work for the next tick.
+Reentrancy publishes nothing now, and it is queued rather than dropped: a flush requested during a flush returns immediately with a batch stating what was deferred, and the seeds plus any frame it carried travel to the publication that does run, which is a scheduled drain or the next flush. A reentrant call that deferred neither a seed nor a frame owes nothing, so it is answered an empty batch and no drain is booked for it. See ADR-084 and ADR-088.
 
 ## 8. Ports
 
@@ -178,30 +178,21 @@ A free track authored in `freeTracks` is owned by the project and released with 
 
 ## 11. Diagnostics
 
-One diagnostic shape everywhere, discriminated by which rules own an `ids` payload:
+One diagnostic shape everywhere, and one record owning what each rule fixes about itself:
 
 ```ts
-type Diagnostic = IdlessDiagnostic | IdentifiedDiagnostic | OptionalIdsDiagnostic;
-interface DiagnosticShape {
+interface Diagnostic {
+  ruleId: RuleId;
   path: string;
   message: string;
   severity: "error" | "warning";
-}
-interface IdlessDiagnostic extends DiagnosticShape {
-  ruleId: IdlessRuleId;
-  ids?: undefined;
-}
-interface IdentifiedDiagnostic extends DiagnosticShape {
-  ruleId: IdentifiedRuleId;
   ids: readonly string[];
-}
-interface OptionalIdsDiagnostic extends DiagnosticShape {
-  ruleId: OptionalIdsRuleId;
-  ids: readonly string[] | undefined;
 }
 ```
 
-`ruleId` is a closed union and not a `string`: `contract/rule-id.ts` enumerates every rule this project refuses by name, so adding one breaks the build where it is named. `contract/diagnostic-ids.ts` owns which of those rules name ids, and the three groups are derived from that one record, so a diagnostic carrying ids its rule does not own fails `typecheck`, and so does one omitting ids its rule always names. See ADR-097.
+`ruleId` is a closed union and not a `string`: `contract/rule-id.ts` enumerates every rule this project refuses by name, so adding one breaks the build where it is named. `contract/rule.ts` owns what each of those rules is, as one record keyed by that enumeration: the severity it refuses at, and whether it names an `ids` payload. Both are fixed where the rule is defined rather than restated by whoever reports it, and both are enforced. `severity` is **derived** through `ruleSeverity` and through nothing else: the constructor has no `severity` parameter, so there is no argument position in which a call site could name one. Nineteen sites named one before it was deleted and each named the severity its rule already fixes, so no diagnostic moved when it went. Ownership of `ids` is enforced at the producer as the argument list `OwnedIds` derives from the rule it was handed, so a diagnostic carrying ids its rule does not own fails `typecheck`, and so does one omitting ids its rule always names.
+
+It was three variants discriminated by that ownership, and it is one interface because the union was paid for on the public surface and bought nothing on the read side: no production reader pattern-matches a variant, `runtime/patch-registry.ts` compares rule ids for identity and `runtime/refusal.ts` renders them generically. `ids` is required and always present, frozen, and empty for a rule that names none. The three raw producers that used to omit the member forward to the one constructor in `contract/diagnostics.ts` like everything else, so a reader spelling `ids` and a reader spelling `ids ?? []` are one reader rather than two. Requiring the member is not the ownership claim, which stays one layer up where the rule is named: `ids: []` is what a rule owning none carries, and two rules may name one event and differ on exactly that. `reentrant-flush-deferred` and `reentrant-flush-deferred-frame` are that pair, a deferral naming the seeds it queued and one naming only the frame it carried. See ADR-097.
 
 At load, any `error` rejects the project and no `warning` does. Warnings are collected on the project and readable after load. They are never thrown and never promoted by a flag. See invariant I-15 and ADR-010.
 
