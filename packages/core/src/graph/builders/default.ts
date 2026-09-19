@@ -1,4 +1,4 @@
-import { buildGraphIR } from "../../graph/ir";
+import { buildGraphIR } from "../ir";
 import type { GraphBuilder } from "../../ports/graph-builder";
 
 export const defaultGraphBuilder: GraphBuilder = {

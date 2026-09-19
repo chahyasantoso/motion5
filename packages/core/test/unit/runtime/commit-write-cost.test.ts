@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
+import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import type { MotionDefinition, ProjectDefinition } from "../../../src/contract/v5";
 import type { GraphBuildResult } from "../../../src/graph/ir";
 import { createManualClock } from "../../../src/ports/clock";

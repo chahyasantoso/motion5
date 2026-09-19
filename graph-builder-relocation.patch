@@ -1,0 +1,727 @@
+diff --git a/packages/core/src/adapters/index.ts b/packages/core/src/adapters/index.ts
+index 0d38828..3ef6647 100644
+--- a/packages/core/src/adapters/index.ts
++++ b/packages/core/src/adapters/index.ts
+@@ -31,5 +31,4 @@ export type {
+ } from "./trigger-factory/default";
+ 
+ export { createGsapInterpolator, createGsapOneTweenInterpolator } from "./interpolator/gsap";
+-export * from "./graph-builder/default";
+ export type { GsapLike, GsapTimelineLike, GsapTweenLike } from "./interpolator/gsap";
+diff --git a/packages/core/src/engine.ts b/packages/core/src/engine.ts
+index d72e8a4..737f658 100644
+--- a/packages/core/src/engine.ts
++++ b/packages/core/src/engine.ts
+@@ -14,7 +14,7 @@ import type { ValueTransaction } from "./contract/value-transaction";
+ import type { TrackHandle } from "./contract/track-handle";
+ import { describeDiagnostics } from "./contract/diagnostics";
+ import { resolveTriggerDefinition, validateV5 } from "./contract/validate-v5";
+-import { IncrementalGraphBuilder } from "./adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "./graph/builders/incremental";
+ import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
+ import { compilePercentKeyframes } from "./domain/keyframe-compiler";
+ import { flattenAuthoredKeyframes } from "./domain/keyframe-groups";
+diff --git a/packages/core/src/graph/binding.ts b/packages/core/src/graph/binding.ts
+index 9cd0087..84fbb16 100644
+--- a/packages/core/src/graph/binding.ts
++++ b/packages/core/src/graph/binding.ts
+@@ -2,7 +2,6 @@ import type { ProjectDefinition } from "../contract/v5";
+ import { edgeKey, type GraphBuildResult, type GraphIR } from "./ir";
+ import { ObservationState } from "./observation-state";
+ import type { GraphBuilder } from "../ports/graph-builder";
+-import { defaultGraphBuilder } from "../adapters/graph-builder/default";
+ 
+ export interface GraphBindingHooks {
+   /** Failure injection for the transaction stages, used by the rollback harness. */
+@@ -13,7 +12,7 @@ export interface GraphBindingHooks {
+ export interface GraphBindingOptions {
+   readonly state?: ObservationState;
+   readonly hooks?: GraphBindingHooks;
+-  readonly builder?: GraphBuilder;
++  readonly builder: GraphBuilder;
+ }
+ 
+ function validateGraphResult(result: GraphBuildResult): GraphIR {
+@@ -49,10 +48,10 @@ export class GraphBinding {
+   readonly #builder: GraphBuilder;
+   #graph: GraphIR;
+ 
+-  constructor(project: ProjectDefinition, options: GraphBindingOptions = {}) {
++  constructor(project: ProjectDefinition, options: GraphBindingOptions) {
+     this.#state = options.state ?? new ObservationState();
+     this.#hooks = options.hooks ?? {};
+-    this.#builder = options.builder ?? defaultGraphBuilder;
++    this.#builder = options.builder;
+     this.#graph = validateGraphResult(this.#builder.build(project));
+     this.#populate(this.#graph);
+     this.#state.commit();
+diff --git a/packages/core/src/adapters/graph-builder/default.ts b/packages/core/src/graph/builders/default.ts
+similarity index 75%
+rename from packages/core/src/adapters/graph-builder/default.ts
+rename to packages/core/src/graph/builders/default.ts
+index a2e28ee..c63ecf4 100644
+--- a/packages/core/src/adapters/graph-builder/default.ts
++++ b/packages/core/src/graph/builders/default.ts
+@@ -1,4 +1,4 @@
+-import { buildGraphIR } from "../../graph/ir";
++import { buildGraphIR } from "../ir";
+ import type { GraphBuilder } from "../../ports/graph-builder";
+ 
+ export const defaultGraphBuilder: GraphBuilder = {
+diff --git a/packages/core/src/adapters/graph-builder/incremental.ts b/packages/core/src/graph/builders/incremental.ts
+similarity index 96%
+rename from packages/core/src/adapters/graph-builder/incremental.ts
+rename to packages/core/src/graph/builders/incremental.ts
+index 18b3f41..7c197dc 100644
+--- a/packages/core/src/adapters/graph-builder/incremental.ts
++++ b/packages/core/src/graph/builders/incremental.ts
+@@ -1,12 +1,7 @@
+ import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../contract/v5";
+-import {
+-  collectTrack,
+-  diag,
+-  finalizeGraph,
+-  type GraphBuildResult,
+-  type GraphNode,
+-} from "../../graph/ir";
+-import { assertAuthoredMotionId } from "../../graph/ids";
++import { collectTrack, finalizeGraph, type GraphBuildResult, type GraphNode } from "../ir";
++import { diagnostic } from "../../contract/diagnostics";
++import { assertAuthoredMotionId } from "../ids";
+ 
+ /**
+  * The caching graph builder the runtime binds, and the owner of its own cache residency rule.
+@@ -123,7 +118,7 @@ export class IncrementalGraphBuilder {
+         assertAuthoredMotionId(motion.id);
+       } catch (error) {
+         diagnostics.push(
+-          diag(
++          diagnostic(
+             "motion-id",
+             `motions[${motionIndex}].id`,
+             String(error instanceof Error ? error.message : error),
+@@ -133,7 +128,7 @@ export class IncrementalGraphBuilder {
+       }
+       if (motionIds.has(motion.id)) {
+         diagnostics.push(
+-          diag(
++          diagnostic(
+             "motion-duplicate",
+             `motions[${motionIndex}].id`,
+             `Duplicate motion id "${motion.id}".`,
+@@ -149,7 +144,7 @@ export class IncrementalGraphBuilder {
+         if (node) {
+           if (seen.has(node.id))
+             diagnostics.push(
+-              diag(
++              diagnostic(
+                 "node-duplicate",
+                 `motions[${motionIndex}].tracks[${trackIndex}].id`,
+                 `Duplicate node id "${node.id}".`,
+@@ -170,7 +165,7 @@ export class IncrementalGraphBuilder {
+       if (node) {
+         if (seen.has(node.id))
+           diagnostics.push(
+-            diag(
++            diagnostic(
+               "node-duplicate",
+               `freeTracks[${trackIndex}].id`,
+               `Duplicate node id "${node.id}".`,
+diff --git a/packages/core/src/graph/ir.ts b/packages/core/src/graph/ir.ts
+index b6add3e..341dca4 100644
+--- a/packages/core/src/graph/ir.ts
++++ b/packages/core/src/graph/ir.ts
+@@ -6,7 +6,7 @@ import type {
+   ProjectDefinition,
+   TrackDefinition,
+ } from "../contract/v5";
+-import { diagnostic as diag } from "../contract/diagnostics";
++import { diagnostic } from "../contract/diagnostics";
+ import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
+ import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
+ import { compareCodeUnits } from "./compare";
+@@ -156,14 +156,6 @@ function freeze<T>(value: T): T {
+   return Object.freeze(value);
+ }
+ 
+-// The graph layer's spelling of the one constructor, and now the alias it always was. Twenty seven
+-// call sites here and four in the incremental builder read `diag`, so the name is kept and the
+-// declaration is not: a forwarding body restated the constructor's whole signature to change nothing
+-// about it, because severity was already the rule's own answer and `OwnedIds` was already the
+-// constructor's own argument list referenced rather than redefined. `contract/validate-v5.ts` binds
+-// the same constructor as `issue` exactly this way.
+-export { diag };
+-
+ export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
+   return compareCodeUnits(a.ruleId, b.ruleId) || compareCodeUnits(a.path, b.path);
+ }
+@@ -205,7 +197,7 @@ export function resolveObservationEdge(
+   const diagnostics: Diagnostic[] = [];
+   if (typeof observation.source !== "string" || observation.source.length === 0) {
+     diagnostics.push(
+-      diag("observation-source-shape", path, "Observation source must be non-empty."),
++      diagnostic("observation-source-shape", path, "Observation source must be non-empty."),
+     );
+     return { diagnostics: Object.freeze(diagnostics) };
+   }
+@@ -213,15 +205,17 @@ export function resolveObservationEdge(
+   // actually wrote rather than the removal they share. The target guard stays first, so ADR-046's
+   // `V-2` through `V-4` still report a target for a fixture that also carries a role.
+   if (readRemoved(observation, "target") !== undefined) {
+-    diagnostics.push(diag("observation-target-unsupported", path, TARGET_UNSUPPORTED));
++    diagnostics.push(diagnostic("observation-target-unsupported", path, TARGET_UNSUPPORTED));
+     return { diagnostics: Object.freeze(diagnostics) };
+   }
+   if (readRemoved(observation, "role") !== undefined) {
+-    diagnostics.push(diag("observation-role-unsupported", path, ROLE_UNSUPPORTED));
++    diagnostics.push(diagnostic("observation-role-unsupported", path, ROLE_UNSUPPORTED));
+     return { diagnostics: Object.freeze(diagnostics) };
+   }
+   if (readRemoved(observation, "projection") !== undefined) {
+-    diagnostics.push(diag("observation-projection-unsupported", path, PROJECTION_UNSUPPORTED));
++    diagnostics.push(
++      diagnostic("observation-projection-unsupported", path, PROJECTION_UNSUPPORTED),
++    );
+     return { diagnostics: Object.freeze(diagnostics) };
+   }
+   let sourceId: string;
+@@ -229,9 +223,12 @@ export function resolveObservationEdge(
+     sourceId = qualifySource(observation.source, ownerId);
+   } catch (error) {
+     diagnostics.push(
+-      diag("observation-source", path, String(error instanceof Error ? error.message : error), [
+-        observation.source,
+-      ]),
++      diagnostic(
++        "observation-source",
++        path,
++        String(error instanceof Error ? error.message : error),
++        [observation.source],
++      ),
+     );
+     return { diagnostics: Object.freeze(diagnostics) };
+   }
+@@ -257,7 +254,9 @@ export function resolveRequirementEdge(
+   } catch (error) {
+     const message = String(error instanceof Error ? error.message : error);
+     return {
+-      diagnostics: Object.freeze([diag("requirement-source", path, message, [binding.source])]),
++      diagnostics: Object.freeze([
++        diagnostic("requirement-source", path, message, [binding.source]),
++      ]),
+     };
+   }
+   // The member key is copied when the binding carries one and omitted when it does not, rather than
+@@ -303,7 +302,7 @@ export function collectTrack(
+     assertAuthoredTrackId(track.id);
+   } catch (error) {
+     diagnostics.push(
+-      diag(
++      diagnostic(
+         "track-id",
+         `${owner === "free" ? "freeTracks" : `motions[${authoredIndex}]`}.id`,
+         String(error instanceof Error ? error.message : error),
+@@ -345,7 +344,7 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
+       assertAuthoredMotionId(motion.id);
+     } catch (error) {
+       diagnostics.push(
+-        diag(
++        diagnostic(
+           "motion-id",
+           `motions[${motionIndex}].id`,
+           String(error instanceof Error ? error.message : error),
+@@ -355,7 +354,7 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
+     }
+     if (motionIds.has(motion.id)) {
+       diagnostics.push(
+-        diag(
++        diagnostic(
+           "motion-duplicate",
+           `motions[${motionIndex}].id`,
+           `Duplicate motion id "${motion.id}".`,
+@@ -370,7 +369,7 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
+       if (node) {
+         if (seen.has(node.id))
+           diagnostics.push(
+-            diag(
++            diagnostic(
+               "node-duplicate",
+               `motions[${motionIndex}].tracks[${trackIndex}].id`,
+               `Duplicate node id "${node.id}".`,
+@@ -389,7 +388,7 @@ export function buildGraphIR(project: ProjectDefinition): GraphBuildResult {
+     if (node) {
+       if (seen.has(node.id))
+         diagnostics.push(
+-          diag(
++          diagnostic(
+             "node-duplicate",
+             `freeTracks[${trackIndex}].id`,
+             `Duplicate node id "${node.id}".`,
+@@ -487,7 +486,7 @@ export function resolveSolvers(
+     const hasGoal = authoredGoals.bare || authoredGoals.dict.length > 0;
+     if ((hasSolver && (rootCount > 0 || hasGoal)) || rootCount > 1) {
+       diagnostics.push(
+-        diag(
++        diagnostic(
+           "ik-mode-ambiguous",
+           node.id,
+           `Node "${node.id}" has ambiguous IK mode configuration.`,
+@@ -500,7 +499,7 @@ export function resolveSolvers(
+     // merging would make which goal a leaf reaches for a property of the reader.
+     if (authoredGoals.bare && authoredGoals.dict.length > 0) {
+       diagnostics.push(
+-        diag(
++        diagnostic(
+           "ik-goal-conflict",
+           node.id,
+           `Solver "${node.id}" binds both "target" and the goals dict; goals are addressed one way or the other.`,
+@@ -522,7 +521,7 @@ export function resolveSolvers(
+     );
+     if (rotationIsDead) {
+       diagnostics.push(
+-        diag(
++        diagnostic(
+           "ik-solved-rotation-dead",
+           node.id,
+           `Member "${node.id}" bound to solver cannot author rotation with no weight to blend it by.`,
+@@ -549,7 +548,7 @@ export function resolveSolvers(
+     const inertWeight = weightGroups.filter((group) => !solverBinders.includes(group));
+     if (hasSolver && inertWeight.length > 0) {
+       diagnostics.push(
+-        diag(
++        diagnostic(
+           "ik-weight-without-solver",
+           node.id,
+           `Node "${node.id}" authors weight under ${inertWeight.join(", ")} without binding a solver there; there is no solved rotation to blend.`,
+@@ -596,7 +595,7 @@ export function resolveSolvers(
+     if (!rootEdge) {
+       if (boundSolverIds.has(solver.id)) {
+         diagnostics.push(
+-          diag(
++          diagnostic(
+             "ik-solver-no-root",
+             solver.id,
+             `Solver "${solver.id}" has no bound root requirement.`,
+@@ -617,7 +616,7 @@ export function resolveSolvers(
+     // Diagnostic 2: ik-solver-no-members
+     if (members.length === 0) {
+       diagnostics.push(
+-        diag(
++        diagnostic(
+           "ik-solver-no-members",
+           solver.id,
+           `Solver "${solver.id}" has no member nodes bound to it.`,
+@@ -642,7 +641,7 @@ export function resolveSolvers(
+     const authoredGoals = goalBindingsOf(solver);
+     if (!authoredGoals.bare && authoredGoals.dict.length === 0) {
+       diagnostics.push(
+-        diag(
++        diagnostic(
+           "ik-solver-no-goal",
+           solver.id,
+           `Solver "${solver.id}" has no goal; bind "target", or address a goal per chain leaf under "targets".`,
+@@ -684,7 +683,7 @@ export function resolveSolvers(
+         if (next === undefined || (next !== rootId && !memberById.has(next))) {
+           unreachable.set(
+             cursor.id,
+-            diag(
++            diagnostic(
+               "ik-solver-unreachable-root",
+               cursor.id,
+               `Member "${cursor.id}" cannot reach solver root "${rootId}".`,
+@@ -749,7 +748,7 @@ export function resolveSolvers(
+       // a branching chain addresses its goals by member id.
+       if (authoredGoals.bare && leaves.length > 1) {
+         diagnostics.push(
+-          diag(
++          diagnostic(
+             "ik-target-not-single-leaf",
+             solver.id,
+             `Solver "${solver.id}" binds "target" over a chain with ${leaves.length} leaves; address goals by member id instead.`,
+@@ -771,7 +770,7 @@ export function resolveSolvers(
+         }
+         if (memberId === undefined || !memberById.has(memberId)) {
+           diagnostics.push(
+-            diag(
++            diagnostic(
+               "ik-goal-unknown-member",
+               solver.id,
+               `Goal "${goal.authored}" of solver "${solver.id}" names no member of its chain.`,
+@@ -789,7 +788,7 @@ export function resolveSolvers(
+         const spellings = authoredFor.get(memberId) ?? [];
+         if (spellings.length > 1) {
+           diagnostics.push(
+-            diag(
++            diagnostic(
+               "ik-goal-duplicate",
+               solver.id,
+               `Member "${memberId}" of solver "${solver.id}" is named by more than one goal: ${spellings.join(", ")}.`,
+@@ -800,7 +799,7 @@ export function resolveSolvers(
+         }
+         if (!leafIds.has(memberId)) {
+           diagnostics.push(
+-            diag(
++            diagnostic(
+               "ik-goal-not-leaf",
+               solver.id,
+               `Member "${memberId}" of solver "${solver.id}" carries a goal but is not a chain leaf.`,
+@@ -821,7 +820,7 @@ export function resolveSolvers(
+         for (const leaf of leaves) {
+           if (authoredFor.has(leaf)) continue;
+           diagnostics.push(
+-            diag(
++            diagnostic(
+               "ik-leaf-without-goal",
+               solver.id,
+               `Chain leaf "${leaf}" of solver "${solver.id}" has no goal.`,
+@@ -904,7 +903,7 @@ export function finalizeGraph(
+       const key = edgeKey(edge);
+       if (edgeKeys.has(key))
+         diagnostics.push(
+-          diag(
++          diagnostic(
+             "observation-duplicate",
+             edge.observerId,
+             `Duplicate observation edge ${describeEdge(edge)}.`,
+@@ -914,7 +913,7 @@ export function finalizeGraph(
+       edgeKeys.add(key);
+       if (!known.has(edge.sourceId))
+         diagnostics.push(
+-          diag(
++          diagnostic(
+             "observation-unknown-source",
+             edge.observerId,
+             `Unknown observation source "${edge.sourceId}".`,
+@@ -923,7 +922,7 @@ export function finalizeGraph(
+         );
+       if (edge.sourceId === edge.observerId)
+         diagnostics.push(
+-          diag(
++          diagnostic(
+             "observation-self-reference",
+             edge.observerId,
+             "Observation cannot reference itself.",
+diff --git a/packages/core/src/runtime/graph-runtime.ts b/packages/core/src/runtime/graph-runtime.ts
+index d641d0b..5d6d6be 100644
+--- a/packages/core/src/runtime/graph-runtime.ts
++++ b/packages/core/src/runtime/graph-runtime.ts
+@@ -2,6 +2,7 @@
+ import type { Diagnostic, ProjectDefinition } from "../contract/v5";
+ import type { Clock, ClockTick } from "../ports/clock";
+ import { GraphBinding } from "../graph/binding";
++import { defaultGraphBuilder } from "../graph/builders/default";
+ import type { GraphNode, GraphIR } from "../graph/ir";
+ import { GraphPublisher, type PublisherNode, type PublisherSnapshot } from "./graph-publisher";
+ import { PatchRegistry, type PatchBatch } from "./patch-registry";
+@@ -105,7 +106,9 @@ export class GraphRuntime {
+     compose: ComposeResolver,
+     options: GraphRuntimeOptions = {},
+   ) {
+-    this.#binding = new GraphBinding(project, { builder: options.graphBuilder });
++    this.#binding = new GraphBinding(project, {
++      builder: options.graphBuilder ?? defaultGraphBuilder,
++    });
+     this.#registry = new PatchRegistry();
+     this.#publisher = new GraphPublisher(this.#registry);
+     this.#clock = clock;
+diff --git a/packages/core/test/contract/graph-builder-incremental.test.ts b/packages/core/test/contract/graph-builder-incremental.test.ts
+index e3f91e6..7784d09 100644
+--- a/packages/core/test/contract/graph-builder-incremental.test.ts
++++ b/packages/core/test/contract/graph-builder-incremental.test.ts
+@@ -1,6 +1,6 @@
+ import { describe, expect, test } from "vitest";
+ import type { ProjectDefinition, TrackDefinition } from "../../src/contract/v5";
+-import { IncrementalGraphBuilder } from "../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../src/graph/builders/incremental";
+ import { buildGraphIR } from "../../src/graph/ir";
+ 
+ describe("IncrementalGraphBuilder Equivalence", () => {
+diff --git a/packages/core/test/contract/ids-ownership-at-the-producer.test.ts b/packages/core/test/contract/ids-ownership-at-the-producer.test.ts
+index aef02f8..67f65cf 100644
+--- a/packages/core/test/contract/ids-ownership-at-the-producer.test.ts
++++ b/packages/core/test/contract/ids-ownership-at-the-producer.test.ts
+@@ -2,7 +2,6 @@ import { fileURLToPath } from "node:url";
+ import { describe, expect, it } from "vitest";
+ import { diagnostic } from "../../src/contract/diagnostics";
+ import { scopedRuleId } from "../../src/contract/rule-id";
+-import { diag } from "../../src/graph/ir";
+ import { reportDiagnostic } from "../../src/runtime/report";
+ import type { RetainTrace } from "../../src/runtime/report";
+ import { code } from "../helpers/source-region";
+@@ -113,20 +112,17 @@ describe("a producer takes the ids its rule owns", () => {
+  *
+  * Neither function is called. They are exported so that neither is an unused local, and their whole
+  * content is the two directions this change is about. Both are stated, because a producer that refused
+- * every payload would satisfy the refusing half on its own. All three spellings reached below are
+- * exported, and `diag` is an alias of the constructor rather than a declaration of its own, so a
+- * probe through it asks the compiler about the same signature the other two do rather than about a
+- * second one that happens to agree with it.
++ * every payload would satisfy the refusing half on its own. `graph/ir.ts`'s `diag` was an alias of
++ * this same constructor and carried no signature of its own, so a probe through it asked the compiler
++ * about the identical thing a probe through `diagnostic` already does; `diag` is gone from `graph/ir.ts`
++ * entirely now (callers there and in the relocated `graph/builders/incremental.ts` call `diagnostic`
++ * directly), so what remains below probes the two spellings that are not aliases of one another.
+  */
+ export function refusedByTheCompiler(retain: RetainTrace): void {
+   // @ts-expect-error `id-shape` owns no ids, so a payload is unrepresentable.
+   diagnostic("id-shape", "$", "x", ["unexpected"]);
+   // @ts-expect-error `track-duplicate-id` always names ids, so omitting them is unrepresentable.
+   diagnostic("track-duplicate-id", "$", "x");
+-  // @ts-expect-error `track-id` owns no ids, so a payload is unrepresentable.
+-  diag("track-id", "$", "x", ["unexpected"]);
+-  // @ts-expect-error `motion-duplicate` always names ids, so omitting them is unrepresentable.
+-  diag("motion-duplicate", "$", "x");
+   // @ts-expect-error `id-shape` owns no ids, so a payload is unrepresentable.
+   reportDiagnostic(undefined, retain, "id-shape", "x", 0, ["unexpected"]);
+   // @ts-expect-error `flush-failure` always names ids, so omitting them is unrepresentable.
+@@ -147,8 +143,6 @@ export function refusedByTheCompiler(retain: RetainTrace): void {
+ export function acceptedByTheCompiler(retain: RetainTrace): void {
+   diagnostic("id-shape", "$", "x");
+   diagnostic("track-duplicate-id", "$", "x", ["hero"]);
+-  diag("track-id", "$", "x");
+-  diag("motion-duplicate", "$", "x", ["hero"]);
+   reportDiagnostic(undefined, retain, "flush-failure", "x", 0, ["hero"]);
+   diagnostic(scopedRuleId("contribution", "stop-position"), "$", "x");
+   diagnostic(scopedRuleId("authored", "stop-missing-start"), "$", "x");
+diff --git a/packages/core/test/contract/rule-registry.test.ts b/packages/core/test/contract/rule-registry.test.ts
+index f1385a5..5719b7f 100644
+--- a/packages/core/test/contract/rule-registry.test.ts
++++ b/packages/core/test/contract/rule-registry.test.ts
+@@ -3,7 +3,7 @@ import { diagnostic } from "../../src/contract/diagnostics";
+ import { RULES, type OwnedIds } from "../../src/contract/rule";
+ import type { RuleId } from "../../src/contract/rule-id";
+ import type { ProjectDefinition } from "../../src/contract/v5";
+-import { buildGraphIR, diag } from "../../src/graph/ir";
++import { buildGraphIR } from "../../src/graph/ir";
+ import { batchFor } from "../../src/runtime/report";
+ 
+ /**
+@@ -126,8 +126,8 @@ describe("every rule reaches a diagnostic whose payload is present and frozen",
+     const staged = batchFor(1, { kind: "deferred-in-batch", seeds: ["arm"] });
+     const flushed = batchFor(2, { kind: "deferred-in-flush", seeds: ["arm"], scheduled: true });
+     const built = [
+-      diag("id-shape", "$", "no ids"),
+-      diag("observation-source", "$", "named", ["arm"]),
++      diagnostic("id-shape", "$", "no ids"),
++      diagnostic("observation-source", "$", "named", ["arm"]),
+       ...staged.diagnostics,
+       ...flushed.diagnostics,
+       ...buildGraphIR(observing("")).diagnostics,
+@@ -143,7 +143,7 @@ describe("every rule reaches a diagnostic whose payload is present and frozen",
+   });
+ 
+   it("agrees with the one constructor about which argument is which", () => {
+-    const built = diag("observation-source", "$.motions[0].tracks[0]", "named", ["arm"]);
++    const built = diagnostic("observation-source", "$.motions[0].tracks[0]", "named", ["arm"]);
+ 
+     expect(built).toMatchObject({
+       ruleId: "observation-source",
+diff --git a/packages/core/test/integration/graph-rollback.test.ts b/packages/core/test/integration/graph-rollback.test.ts
+index d3bafd2..21dad7a 100644
+--- a/packages/core/test/integration/graph-rollback.test.ts
++++ b/packages/core/test/integration/graph-rollback.test.ts
+@@ -1,6 +1,7 @@
+ import { describe, expect, it } from "vitest";
+ import type { ProjectDefinition } from "../../src/contract/v5";
+ import { GraphBinding, type GraphBindingHooks } from "../../src/graph/binding";
++import { defaultGraphBuilder } from "../../src/graph/builders/default";
+ 
+ const project = (tracks: ProjectDefinition["motions"][number]["tracks"]): ProjectDefinition => ({
+   schemaVersion: 5,
+@@ -20,7 +21,7 @@ const changed = project([
+ 
+ describe("GraphBinding transactions", () => {
+   it("I-2 applies a valid candidate and preserves one live state identity", () => {
+-    const binding = new GraphBinding(base);
++    const binding = new GraphBinding(base, { builder: defaultGraphBuilder });
+     const held = binding.state;
+ 
+     binding.replace(changed);
+@@ -35,7 +36,7 @@ describe("GraphBinding transactions", () => {
+   });
+ 
+   it("I-2 rejects an invalid candidate before touching the active graph", () => {
+-    const binding = new GraphBinding(base);
++    const binding = new GraphBinding(base, { builder: defaultGraphBuilder });
+     const beforeGraph = binding.graph;
+     const beforeState = binding.state.snapshot();
+     const invalid = project([{ id: "arm", observes: [{ source: "missing" }] }]);
+@@ -64,7 +65,7 @@ describe("GraphBinding transactions", () => {
+       },
+     ],
+   ])("I-2 restores every observable state after %s fails", (_stage, hooks) => {
+-    const binding = new GraphBinding(base, { hooks });
++    const binding = new GraphBinding(base, { hooks, builder: defaultGraphBuilder });
+     const beforeGraph = binding.graph;
+     const beforeState = binding.state.snapshot();
+     const held = binding.state;
+diff --git a/packages/core/test/unit/adapters/incremental-graph-builder-eviction.test.ts b/packages/core/test/unit/adapters/incremental-graph-builder-eviction.test.ts
+index caa177e..17d8463 100644
+--- a/packages/core/test/unit/adapters/incremental-graph-builder-eviction.test.ts
++++ b/packages/core/test/unit/adapters/incremental-graph-builder-eviction.test.ts
+@@ -1,5 +1,5 @@
+ import { describe, expect, it } from "vitest";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import { createManualClock } from "../../../src/ports/clock";
+ import { ProjectRuntime } from "../../../src/runtime/project-runtime";
+ import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+diff --git a/packages/core/test/unit/graph/arity-lift.test.ts b/packages/core/test/unit/graph/arity-lift.test.ts
+index c8e69e5..bb1657f 100644
+--- a/packages/core/test/unit/graph/arity-lift.test.ts
++++ b/packages/core/test/unit/graph/arity-lift.test.ts
+@@ -1,5 +1,5 @@
+ import { describe, expect, it } from "vitest";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+ import { buildGraphIR, type GraphBuildResult, type SolveMember } from "../../../src/graph/ir";
+ 
+diff --git a/packages/core/test/unit/graph/finalize-graph.test.ts b/packages/core/test/unit/graph/finalize-graph.test.ts
+index aff627b..9396752 100644
+--- a/packages/core/test/unit/graph/finalize-graph.test.ts
++++ b/packages/core/test/unit/graph/finalize-graph.test.ts
+@@ -1,5 +1,5 @@
+ import { describe, expect, it } from "vitest";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import { buildGraphIR, type GraphBuildResult } from "../../../src/graph/ir";
+ import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+ 
+diff --git a/packages/core/test/unit/graph/graph-dependants.test.ts b/packages/core/test/unit/graph/graph-dependants.test.ts
+index 5b6d4c9..8a48c22 100644
+--- a/packages/core/test/unit/graph/graph-dependants.test.ts
++++ b/packages/core/test/unit/graph/graph-dependants.test.ts
+@@ -1,5 +1,5 @@
+ import { describe, expect, it } from "vitest";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import type { ProjectDefinition } from "../../../src/contract/v5";
+ import { buildGraphIR, type GraphEdge, type GraphIR } from "../../../src/graph/ir";
+ import {
+diff --git a/packages/core/test/unit/graph/incremental-cache.test.ts b/packages/core/test/unit/graph/incremental-cache.test.ts
+index b872396..2bec7bd 100644
+--- a/packages/core/test/unit/graph/incremental-cache.test.ts
++++ b/packages/core/test/unit/graph/incremental-cache.test.ts
+@@ -1,5 +1,5 @@
+ import { describe, expect, it } from "vitest";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import { buildGraphIR } from "../../../src/graph/ir";
+ import { validateV5 } from "../../../src/contract/validate-v5";
+ import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+diff --git a/packages/core/test/unit/graph/resolve-solvers.test.ts b/packages/core/test/unit/graph/resolve-solvers.test.ts
+index 9fe928f..5bee671 100644
+--- a/packages/core/test/unit/graph/resolve-solvers.test.ts
++++ b/packages/core/test/unit/graph/resolve-solvers.test.ts
+@@ -1,5 +1,5 @@
+ import { describe, expect, it } from "vitest";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import type { Diagnostic, ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+ import {
+   buildGraphIR,
+diff --git a/packages/core/test/unit/graph/solved-pivot-offset.test.ts b/packages/core/test/unit/graph/solved-pivot-offset.test.ts
+index 592f2a1..faaa313 100644
+--- a/packages/core/test/unit/graph/solved-pivot-offset.test.ts
++++ b/packages/core/test/unit/graph/solved-pivot-offset.test.ts
+@@ -1,5 +1,5 @@
+ import { describe, expect, it } from "vitest";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import type {
+   AuthoredProperty,
+   AuthoredStop,
+diff --git a/packages/core/test/unit/graph/solved-rotation-weight.test.ts b/packages/core/test/unit/graph/solved-rotation-weight.test.ts
+index 140a9fc..069f97d 100644
+--- a/packages/core/test/unit/graph/solved-rotation-weight.test.ts
++++ b/packages/core/test/unit/graph/solved-rotation-weight.test.ts
+@@ -1,5 +1,5 @@
+ import { describe, expect, it } from "vitest";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import type { ProjectDefinition, TrackDefinition } from "../../../src/contract/v5";
+ import { buildGraphIR, type GraphBuildResult } from "../../../src/graph/ir";
+ 
+diff --git a/packages/core/test/unit/graph/solver-goal-required.test.ts b/packages/core/test/unit/graph/solver-goal-required.test.ts
+index 66ffc36..4efb504 100644
+--- a/packages/core/test/unit/graph/solver-goal-required.test.ts
++++ b/packages/core/test/unit/graph/solver-goal-required.test.ts
+@@ -1,5 +1,5 @@
+ import { describe, expect, it } from "vitest";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import type {
+   AuthoredPluginRequires,
+   ProjectDefinition,
+diff --git a/packages/core/test/unit/graph/solver-goals.test.ts b/packages/core/test/unit/graph/solver-goals.test.ts
+index 2ac0bed..c7ec9e6 100644
+--- a/packages/core/test/unit/graph/solver-goals.test.ts
++++ b/packages/core/test/unit/graph/solver-goals.test.ts
+@@ -1,5 +1,5 @@
+ import { describe, expect, it } from "vitest";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import type {
+   AuthoredPluginRequires,
+   Diagnostic,
+diff --git a/packages/core/test/unit/runtime/commit-write-cost.test.ts b/packages/core/test/unit/runtime/commit-write-cost.test.ts
+index 3d16da4..1891a4a 100644
+--- a/packages/core/test/unit/runtime/commit-write-cost.test.ts
++++ b/packages/core/test/unit/runtime/commit-write-cost.test.ts
+@@ -1,5 +1,5 @@
+ import { describe, expect, it } from "vitest";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import type { MotionDefinition, ProjectDefinition } from "../../../src/contract/v5";
+ import type { GraphBuildResult } from "../../../src/graph/ir";
+ import { createManualClock } from "../../../src/ports/clock";
+diff --git a/packages/core/test/unit/runtime/immediate-verb-refusal.test.ts b/packages/core/test/unit/runtime/immediate-verb-refusal.test.ts
+index 44aec72..528977e 100644
+--- a/packages/core/test/unit/runtime/immediate-verb-refusal.test.ts
++++ b/packages/core/test/unit/runtime/immediate-verb-refusal.test.ts
+@@ -1,6 +1,6 @@
+ import { describe, expect, it } from "vitest";
+ import type { MotionDefinition, ProjectDefinition, TriggerSignal } from "../../../src/contract/v5";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import { createManualClock } from "../../../src/ports/clock";
+ import {
+   ProjectRuntime,
+diff --git a/packages/core/test/unit/runtime/lifecycle-phase-wiring.test.ts b/packages/core/test/unit/runtime/lifecycle-phase-wiring.test.ts
+index 697f9b8..639b687 100644
+--- a/packages/core/test/unit/runtime/lifecycle-phase-wiring.test.ts
++++ b/packages/core/test/unit/runtime/lifecycle-phase-wiring.test.ts
+@@ -1,7 +1,7 @@
+ import { fileURLToPath } from "node:url";
+ import { describe, expect, it } from "vitest";
+ import type { ProjectDefinition } from "../../../src/contract/v5";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import { createManualClock } from "../../../src/ports/clock";
+ import { code, member } from "../../helpers/source-region";
+ import {
+diff --git a/packages/core/test/unit/runtime/schema-transaction.test.ts b/packages/core/test/unit/runtime/schema-transaction.test.ts
+index 14daf9a..5f53cf0 100644
+--- a/packages/core/test/unit/runtime/schema-transaction.test.ts
++++ b/packages/core/test/unit/runtime/schema-transaction.test.ts
+@@ -1,7 +1,7 @@
+ import { describe, expect, it } from "vitest";
+ import type { MotionDefinition, ProjectDefinition } from "../../../src/contract/v5";
+ import type { TrackHandle } from "../../../src/contract/track-handle";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import { createManualClock } from "../../../src/ports/clock";
+ import {
+   ProjectRuntime,
+diff --git a/packages/core/test/unit/runtime/snapshot-one-walk.test.ts b/packages/core/test/unit/runtime/snapshot-one-walk.test.ts
+index 7abddde..3e4c0d2 100644
+--- a/packages/core/test/unit/runtime/snapshot-one-walk.test.ts
++++ b/packages/core/test/unit/runtime/snapshot-one-walk.test.ts
+@@ -1,5 +1,5 @@
+ import { describe, expect, it } from "vitest";
+-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
++import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
+ import type {
+   MotionDefinition,
+   ProjectDefinition,

@@ -14,7 +14,7 @@ import type { ValueTransaction } from "./contract/value-transaction";
 import type { TrackHandle } from "./contract/track-handle";
 import { describeDiagnostics } from "./contract/diagnostics";
 import { resolveTriggerDefinition, validateV5 } from "./contract/validate-v5";
-import { IncrementalGraphBuilder } from "./adapters/graph-builder/incremental";
+import { IncrementalGraphBuilder } from "./graph/builders/incremental";
 import { createDefaultTriggerFactory } from "./adapters/trigger-factory/default";
 import { compilePercentKeyframes } from "./domain/keyframe-compiler";
 import { flattenAuthoredKeyframes } from "./domain/keyframe-groups";

@@ -3,7 +3,7 @@ import { diagnostic } from "../../src/contract/diagnostics";
 import { RULES, type OwnedIds } from "../../src/contract/rule";
 import type { RuleId } from "../../src/contract/rule-id";
 import type { ProjectDefinition } from "../../src/contract/v5";
-import { buildGraphIR, diag } from "../../src/graph/ir";
+import { buildGraphIR } from "../../src/graph/ir";
 import { batchFor } from "../../src/runtime/report";
 
 /**
@@ -126,8 +126,8 @@ describe("every rule reaches a diagnostic whose payload is present and frozen", 
     const staged = batchFor(1, { kind: "deferred-in-batch", seeds: ["arm"] });
     const flushed = batchFor(2, { kind: "deferred-in-flush", seeds: ["arm"], scheduled: true });
     const built = [
-      diag("id-shape", "$", "no ids"),
-      diag("observation-source", "$", "named", ["arm"]),
+      diagnostic("id-shape", "$", "no ids"),
+      diagnostic("observation-source", "$", "named", ["arm"]),
       ...staged.diagnostics,
       ...flushed.diagnostics,
       ...buildGraphIR(observing("")).diagnostics,
@@ -143,7 +143,7 @@ describe("every rule reaches a diagnostic whose payload is present and frozen", 
   });
 
   it("agrees with the one constructor about which argument is which", () => {
-    const built = diag("observation-source", "$.motions[0].tracks[0]", "named", ["arm"]);
+    const built = diagnostic("observation-source", "$.motions[0].tracks[0]", "named", ["arm"]);
 
     expect(built).toMatchObject({
       ruleId: "observation-source",

@@ -2,7 +2,6 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { diagnostic } from "../../src/contract/diagnostics";
 import { scopedRuleId } from "../../src/contract/rule-id";
-import { diag } from "../../src/graph/ir";
 import { reportDiagnostic } from "../../src/runtime/report";
 import type { RetainTrace } from "../../src/runtime/report";
 import { code } from "../helpers/source-region";
@@ -113,20 +112,17 @@ describe("a producer takes the ids its rule owns", () => {
  *
  * Neither function is called. They are exported so that neither is an unused local, and their whole
  * content is the two directions this change is about. Both are stated, because a producer that refused
- * every payload would satisfy the refusing half on its own. All three spellings reached below are
- * exported, and `diag` is an alias of the constructor rather than a declaration of its own, so a
- * probe through it asks the compiler about the same signature the other two do rather than about a
- * second one that happens to agree with it.
+ * every payload would satisfy the refusing half on its own. `graph/ir.ts`'s `diag` was an alias of
+ * this same constructor and carried no signature of its own, so a probe through it asked the compiler
+ * about the identical thing a probe through `diagnostic` already does; `diag` is gone from `graph/ir.ts`
+ * entirely now (callers there and in the relocated `graph/builders/incremental.ts` call `diagnostic`
+ * directly), so what remains below probes the two spellings that are not aliases of one another.
  */
 export function refusedByTheCompiler(retain: RetainTrace): void {
   // @ts-expect-error `id-shape` owns no ids, so a payload is unrepresentable.
   diagnostic("id-shape", "$", "x", ["unexpected"]);
   // @ts-expect-error `track-duplicate-id` always names ids, so omitting them is unrepresentable.
   diagnostic("track-duplicate-id", "$", "x");
-  // @ts-expect-error `track-id` owns no ids, so a payload is unrepresentable.
-  diag("track-id", "$", "x", ["unexpected"]);
-  // @ts-expect-error `motion-duplicate` always names ids, so omitting them is unrepresentable.
-  diag("motion-duplicate", "$", "x");
   // @ts-expect-error `id-shape` owns no ids, so a payload is unrepresentable.
   reportDiagnostic(undefined, retain, "id-shape", "x", 0, ["unexpected"]);
   // @ts-expect-error `flush-failure` always names ids, so omitting them is unrepresentable.
@@ -147,8 +143,6 @@ export function refusedByTheCompiler(retain: RetainTrace): void {
 export function acceptedByTheCompiler(retain: RetainTrace): void {
   diagnostic("id-shape", "$", "x");
   diagnostic("track-duplicate-id", "$", "x", ["hero"]);
-  diag("track-id", "$", "x");
-  diag("motion-duplicate", "$", "x", ["hero"]);
   reportDiagnostic(undefined, retain, "flush-failure", "x", 0, ["hero"]);
   diagnostic(scopedRuleId("contribution", "stop-position"), "$", "x");
   diagnostic(scopedRuleId("authored", "stop-missing-start"), "$", "x");

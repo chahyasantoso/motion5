@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
+import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import type {
   AuthoredPluginRequires,
   Diagnostic,

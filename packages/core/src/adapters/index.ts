@@ -31,5 +31,4 @@ export type {
 } from "./trigger-factory/default";
 
 export { createGsapInterpolator, createGsapOneTweenInterpolator } from "./interpolator/gsap";
-export * from "./graph-builder/default";
 export type { GsapLike, GsapTimelineLike, GsapTweenLike } from "./interpolator/gsap";

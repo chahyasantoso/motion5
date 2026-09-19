@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { MotionDefinition, ProjectDefinition, TriggerSignal } from "../../../src/contract/v5";
-import { IncrementalGraphBuilder } from "../../../src/adapters/graph-builder/incremental";
+import { IncrementalGraphBuilder } from "../../../src/graph/builders/incremental";
 import { createManualClock } from "../../../src/ports/clock";
 import {
   ProjectRuntime,
