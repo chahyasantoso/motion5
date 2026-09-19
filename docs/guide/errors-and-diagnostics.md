@@ -23,7 +23,7 @@ interface Diagnostic {
   readonly path: string;
   readonly message: string;
   readonly severity: "error" | "warning";
-  readonly ids?: readonly string[];
+  readonly ids: readonly string[];
 }
 ```
 
@@ -31,9 +31,9 @@ Reading one is simpler than it was: `path`, `message`, `severity` and `ids` are 
 
 `ruleId` is a closed union rather than a `string`, so comparing it against a rule this project does not have stops compiling instead of quietly never matching, and constructing a `Diagnostic` of your own with a rule id you invented is refused.
 
-`severity` comes from the rule by default rather than from a fixed `"error"`. It used to default to `"error"` at the constructor, so a warning rule reported by a caller that passed nothing became an error diagnostic and nothing noticed; the rule answers instead. The constructor still takes a `severity` argument, so a caller that names one explicitly still overrides the rule, and a handful inside this project do. Read `severity` off the diagnostic and do not pass one.
+`severity` comes from the rule and from nothing else. It used to default to `"error"` at the constructor, so a warning rule reported by a caller that passed nothing became an error diagnostic and nothing noticed; the rule answers now, and the parameter is deleted, so there is no argument position in which any caller can name one. Read `severity` off the diagnostic.
 
-Whether a rule names `ids` is fixed by the rule too, but it is enforced where a diagnostic is built rather than by the field. A producer takes the payload its rule owns as its argument list, so a rule that names none cannot be handed one and a rule that always names them cannot omit them. The field itself stays optional. Every diagnostic built through the project's one constructor carries it, frozen and empty for a rule that names none, so for those `ids` and `ids ?? []` read the same thing. Three producers inside the project still hand-build their object and omit the member, so keep spelling `ids ?? []` until the field is required.
+Whether a rule names `ids` is fixed by the rule too, but it is enforced where a diagnostic is built rather than by the field. A producer takes the payload its rule owns as its argument list, so a rule that names none cannot be handed one and a rule that always names them cannot omit them. The field itself is required. Every diagnostic is built through the project's one constructor and carries it, frozen and empty for a rule that names none, so `ids` and `ids ?? []` read the same thing and the fallback can go. Two rules may name one event and differ on nothing but this: a reentrant flush that deferred seeds reports `reentrant-flush-deferred` and names them, and one that deferred only the frame it carried reports `reentrant-flush-deferred-frame` and names nothing, because a frame is not a node.
 
 The three variants that used to express that ownership, `IdlessDiagnostic`, `IdentifiedDiagnostic` and `OptionalIdsDiagnostic`, are removed. A consumer that extended one extends `Diagnostic`. See ADR-097.
 
