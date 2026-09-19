@@ -12,7 +12,13 @@ describe("S4 single authored-stop validator", () => {
     ]);
   });
 
-  it("uses the same validation rules for contributed properties with a namespaced prefix", () => {
+  // The reporter, named. This case used to pass `ruleIdPrefix` on its own and then expect
+  // `plugin-contribution-stop-position-order`, which the run time never emits and `RuleId` does not
+  // carry: the one production caller always passed the four entry alias map alongside the prefix, so
+  // a case setting one option without the other described a reporter that did not exist. The scope
+  // makes that combination unrepresentable, so the expectation below is the aliased id the
+  // contribution reporter actually reports.
+  it("reports the contribution scope's own aliased ids for a contributed property", () => {
     const diagnostics: Diagnostic[] = [];
     validateKeyframes(
       {
@@ -23,10 +29,10 @@ describe("S4 single authored-stop validator", () => {
       },
       "track.keyframes",
       diagnostics,
-      { ruleIdPrefix: "plugin-contribution-" },
+      { scope: "contribution" },
     );
     expect(diagnostics.map(({ ruleId, severity }) => ({ ruleId, severity }))).toEqual([
-      { ruleId: "plugin-contribution-stop-position-order", severity: "error" },
+      { ruleId: "plugin-contribution-stop-order", severity: "error" },
       { ruleId: "plugin-contribution-stop-missing-start", severity: "warning" },
       { ruleId: "plugin-contribution-stop-missing-end", severity: "warning" },
     ]);
