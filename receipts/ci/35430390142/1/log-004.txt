@@ -1,0 +1,15 @@
+e verification	2026-09-19T07:51:49.9119060Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:51:49.9158961Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:51:49.9159776Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:51:49.9160211Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:51:49.9160674Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:51:49.9161142Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:51:49.9286814Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-19T07:51:49.9406837Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:51:49.9407790Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:51:49.9448292Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:51:49.9449196Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:51:49.9449640Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:51:49.9450091Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:51:49.9450550Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:51:49.9578206Z ##[error]Process completed with exit code 1.
