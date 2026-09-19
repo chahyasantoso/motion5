@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "expected_head": "00ed117a95265ce6196db03d6df9cf4b5c715092",
+  "expected_blobs": {
+    "packages/core/src/graph/ir.ts": "4748a972f4857041000d92a68689b61801466119",
+    "packages/core/test/contract/ids-ownership-at-the-producer.test.ts": "388b4983b0cdb3daed040bde6ef8e93d9154fd77"
+  },
+  "message": "fix(graph): route ir.ts diagnostics through the one constructor so the rule owns both answers",
+  "edits": [
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "import type { OwnedIds } from \"../contract/diagnostic-ids\";",
+      "replace": "import type { OwnedIds } from \"../contract/rule\";"
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "import { asDiagnostic } from \"../contract/diagnostics\";",
+      "replace": "import { diagnostic } from \"../contract/diagnostics\";"
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "export function diag<Rule extends RuleId>(",
+      "replace": "/**\n * The graph layer's spelling of the one constructor, and no longer a second owner of the shape.\n *\n * It kept a body of its own for as long as `Diagnostic` was a union: the object it returned named a\n * severity for itself and chose between a payload and no member at all through a conditional spread,\n * which made this file the second place both answers lived. `contract/rule.ts` owns them now, so the\n * body is a forward and the only thing this declaration still owns is its name. Twenty seven call\n * sites read `diag`, and renaming them would be churn with no invariant behind it.\n *\n * The severity argument is declined rather than named. The parameter survives on the constructor for\n * the raw object literals that still bypass it, and passing nothing through it is what makes\n * `ruleSeverity` answer, so no expression in this file names a severity after this. The ids list is\n * forwarded rather than widened for the same reason: `OwnedIds` is the constructor's own argument\n * list, so the correlation this file used to re-state is the one its call sites are already checked\n * against. See ADR-097.\n */\nexport function diag<Rule extends RuleId>("
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "  const [ids] = carried as unknown as readonly [(readonly string[])?];\n  return asDiagnostic({ ruleId, path, message, severity: \"error\", ...(ids ? { ids } : {}) });",
+      "replace": "  return diagnostic(ruleId, path, message, undefined, ...carried);"
+    },
+    {
+      "path": "packages/core/test/contract/ids-ownership-at-the-producer.test.ts",
+      "find": "  it(\"still carries no payload for a rule that owns none\", () => {\n    const built = diagnostic(\"id-shape\", \"$.motions[0].id\", \"bad id\");\n\n    expect(built.ruleId).toBe(\"id-shape\");\n    expect(\"ids\" in built).toBe(false);\n  });",
+      "replace": "  it(\"carries a frozen empty payload for a rule that owns none\", () => {\n    const built = diagnostic(\"id-shape\", \"$.motions[0].id\", \"bad id\");\n\n    expect(built.ruleId).toBe(\"id-shape\");\n    // The claim moved with the shape rather than being dropped. It used to be the absence of the\n    // member, which a flat `Diagnostic` retires: `ids` is always present, so a reader spelling `ids`\n    // and a reader spelling `ids ?? []` are one reader rather than two. What this rule still cannot\n    // do is carry a payload, and the `@ts-expect-error` probe below is what asks the compiler for\n    // that, which is where the refusal always lived. Frozen, because an empty payload no caller can\n    // mutate is the same promise as a populated one.\n    expect(built.ids).toEqual([]);\n    expect(Object.isFrozen(built.ids)).toBe(true);\n  });"
+    }
+  ]
+}
