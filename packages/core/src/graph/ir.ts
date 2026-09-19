@@ -6,6 +6,7 @@ import type {
   ProjectDefinition,
   TrackDefinition,
 } from "../contract/v5";
+import type { RuleId } from "../contract/rule-id";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { compareCodeUnits } from "./compare";
@@ -156,7 +157,7 @@ function freeze<T>(value: T): T {
 }
 
 export function diag(
-  ruleId: string,
+  ruleId: RuleId,
   path: string,
   message: string,
   ids?: readonly string[],

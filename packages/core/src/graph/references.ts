@@ -1,3 +1,4 @@
+import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic } from "../contract/v5";
 import type { GraphEdge } from "./ir";
 
@@ -5,7 +6,7 @@ import type { GraphEdge } from "./ir";
  * Rule id for a diagnostic reported when an observation edge's source is a known graph node
  * whose value is not currently available for publication.
  */
-export const PENDING_REFERENCE_RULE_ID = "observation-pending-reference";
+export const PENDING_REFERENCE_RULE_ID = "observation-pending-reference" satisfies RuleId;
 
 export type ReferenceStatus = "resolved" | "pending";
 

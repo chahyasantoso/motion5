@@ -1,3 +1,4 @@
+import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic, PatchBatch } from "../contract/v5";
 import { collect, report } from "../domain/completion";
 import { unreachable } from "../domain/exhaustive";
@@ -112,14 +113,22 @@ export function describeWithCauses(error: unknown): string {
   return describeError(error);
 }
 
-/** The rule id a diagnostic carries when the host's own diagnostic sink threw. Issue #410. */
-export const DIAGNOSTIC_SINK_FAILURE_RULE = "diagnostic-sink-failure";
+/**
+ * The rule id a diagnostic carries when the host's own diagnostic sink threw. Issue #410.
+ *
+ * `satisfies` rather than an annotation, here and at the two below: the constant keeps its literal
+ * type, which is what lets a reader compare it against one spelling, and membership of the closed
+ * union is proved where the rule is named rather than at whichever call site happens to pass it. A
+ * rule id held in a constant is the one shape a scan of construction arguments cannot see, so the
+ * compiler answers for it instead. See ADR-097.
+ */
+export const DIAGNOSTIC_SINK_FAILURE_RULE = "diagnostic-sink-failure" satisfies RuleId;
 
 /** The rule id a value write staged inside an open batch answers under. See ADR-078. */
-export const DEFERRED_VALUE_BATCH_RULE = "value-batch-deferred";
+export const DEFERRED_VALUE_BATCH_RULE = "value-batch-deferred" satisfies RuleId;
 
 /** The rule id a flush asked for while subscribers are being notified answers under. */
-export const DEFERRED_FLUSH_RULE = "reentrant-flush-deferred";
+export const DEFERRED_FLUSH_RULE = "reentrant-flush-deferred" satisfies RuleId;
 
 declare const REPORT_BRAND: unique symbol;
 
@@ -292,7 +301,7 @@ export function undeliverable(
 }
 
 function frozenDiagnostic(
-  ruleId: string,
+  ruleId: RuleId,
   message: string,
   tick: number,
   ids: readonly string[],
@@ -330,7 +339,7 @@ function frozenDiagnostic(
 export function reportDiagnostic(
   sink: ((diagnostic: Diagnostic) => void) | undefined,
   retain: RetainTrace,
-  ruleId: string,
+  ruleId: RuleId,
   message: string,
   tick: number,
   ids: readonly string[],

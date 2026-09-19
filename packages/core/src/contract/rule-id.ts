@@ -211,14 +211,56 @@ export type RuleId = BaseRuleId | KeyframeRuleId | ContributionRuleId;
 const ALIAS_LOOKUP: Readonly<Record<string, string>> = CONTRIBUTION_RULE_ID_ALIASES;
 
 /**
- * The prefixed family at run time, derived from the same two constants the type derives from, so
- * the enumeration and the type cannot disagree.
+ * The id one keyframe rule reports under when the contribution adapter is the reporter, and the one
+ * expression that applies the prefix.
+ *
+ * `validateKeyframes` took the prefix and the substitution as open `string` options, so this union
+ * was closed everywhere except at the site minting a fifth of it, and two modules held one
+ * namespace. The cast is confined here for the reason `mint` in `runtime/report.ts` confines its
+ * own: a derived family needs exactly one expression that mints a member. `ContributionRuleId`
+ * states the same substitution in the type, so a spelling this can produce that the type cannot is
+ * unrepresentable rather than merely unlikely. See ADR-097 and issue #449.
+ */
+export function contributionRuleId(name: KeyframeRuleId): ContributionRuleId {
+  return `${CONTRIBUTION_RULE_ID_PREFIX}${ALIAS_LOOKUP[name] ?? name}` as ContributionRuleId;
+}
+
+/**
+ * The prefixed family at run time, derived through the one substitution the type derives through, so
+ * the enumeration, the type and the reporter cannot disagree.
  */
 export const CONTRIBUTION_RULE_IDS: readonly ContributionRuleId[] = Object.freeze(
-  KEYFRAME_RULE_IDS.map(
-    (name) => `${CONTRIBUTION_RULE_ID_PREFIX}${ALIAS_LOOKUP[name] ?? name}` as ContributionRuleId,
-  ),
+  KEYFRAME_RULE_IDS.map((name) => contributionRuleId(name)),
 );
+
+/**
+ * Which reporter is reading a keyframe rule, which is the whole of what decides the id it reports
+ * under.
+ *
+ * Three correlated options said this before: a `ruleIdPrefix`, a `ruleIdAliases` map and an
+ * `allowGroups` flag, all three set together by the single caller that set any of them, and two of
+ * them open `string` data. Options with one legal spelling per caller are one value, so the scope
+ * names who is reading and the prefix, the substitution and group permission are derived from it.
+ */
+export type KeyframeRuleScope = "authored" | "contribution";
+
+/**
+ * Every scope's answer, as a total map rather than a branch.
+ *
+ * A record keyed by the union is as closed as a `switch` ending at `unreachable`: a third scope fails
+ * `typecheck` here, at the one place a scope is answered, rather than inheriting whichever branch was
+ * written first. `domain/exhaustive` is deliberately not imported, because the contract layer does
+ * not read the domain layer for a totality it can state in the type. See ADR-092.
+ */
+const SCOPED_RULE_ID: Readonly<Record<KeyframeRuleScope, (name: KeyframeRuleId) => RuleId>> = {
+  authored: (name) => name,
+  contribution: (name) => contributionRuleId(name),
+};
+
+/** The id one keyframe rule reports under for one scope. */
+export function scopedRuleId(scope: KeyframeRuleScope, name: KeyframeRuleId): RuleId {
+  return SCOPED_RULE_ID[scope](name);
+}
 
 /** Every member of `RuleId`, for a gate or a reader that needs the set rather than the type. */
 export const RULE_IDS: readonly RuleId[] = Object.freeze([

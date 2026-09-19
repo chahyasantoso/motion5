@@ -1,4 +1,5 @@
 import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
+import type { RuleId } from "../contract/rule-id";
 import type { AuthoredStop, Diagnostic } from "../contract/v5";
 
 export interface CompiledProperty {
@@ -13,7 +14,7 @@ export interface CompiledKeyframes {
 }
 
 function diagnostic(
-  ruleId: string,
+  ruleId: RuleId,
   path: string,
   message: string,
   ids: readonly string[],
