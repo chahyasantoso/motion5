@@ -178,30 +178,21 @@ A free track authored in `freeTracks` is owned by the project and released with 
 
 ## 11. Diagnostics
 
-One diagnostic shape everywhere, discriminated by which rules own an `ids` payload:
+One diagnostic shape everywhere, and one record owning what each rule fixes about itself:
 
 ```ts
-type Diagnostic = IdlessDiagnostic | IdentifiedDiagnostic | OptionalIdsDiagnostic;
-interface DiagnosticShape {
+interface Diagnostic {
+  ruleId: RuleId;
   path: string;
   message: string;
   severity: "error" | "warning";
-}
-interface IdlessDiagnostic extends DiagnosticShape {
-  ruleId: IdlessRuleId;
-  ids?: undefined;
-}
-interface IdentifiedDiagnostic extends DiagnosticShape {
-  ruleId: IdentifiedRuleId;
-  ids: readonly string[];
-}
-interface OptionalIdsDiagnostic extends DiagnosticShape {
-  ruleId: OptionalIdsRuleId;
-  ids: readonly string[] | undefined;
+  ids?: readonly string[];
 }
 ```
 
-`ruleId` is a closed union and not a `string`: `contract/rule-id.ts` enumerates every rule this project refuses by name, so adding one breaks the build where it is named. `contract/diagnostic-ids.ts` owns which of those rules name ids, and the three groups are derived from that one record, so a diagnostic carrying ids its rule does not own fails `typecheck`, and so does one omitting ids its rule always names. See ADR-097.
+`ruleId` is a closed union and not a `string`: `contract/rule-id.ts` enumerates every rule this project refuses by name, so adding one breaks the build where it is named. `contract/rule.ts` owns what each of those rules is, as one record keyed by that enumeration: the severity it refuses at, and whether it names an `ids` payload. Both are fixed where the rule is defined rather than restated by whoever reports it. `severity` is derived through `ruleSeverity` rather than arriving as a caller-supplied default, and ownership of `ids` is enforced at the producer as the argument list `OwnedIds` derives from the rule it was handed, so a diagnostic carrying ids its rule does not own fails `typecheck`, and so does one omitting ids its rule always names.
+
+It was three variants discriminated by that ownership, and it is one interface because the union was paid for on the public surface and bought nothing on the read side: no production reader pattern-matches a variant, `runtime/patch-registry.ts` compares rule ids for identity and `runtime/refusal.ts` renders them generically. `ids` is optional in the type rather than always present, and that is a measured intermediate state rather than the destination: three raw producers still omit the member, and it becomes required in the slice that converts them. Every diagnostic built through the one constructor in `contract/diagnostics.ts` already carries it, frozen and empty for a rule that names none. See ADR-097.
 
 At load, any `error` rejects the project and no `warning` does. Warnings are collected on the project and readable after load. They are never thrown and never promoted by a flag. See invariant I-15 and ADR-010.
 

@@ -15,30 +15,27 @@ try {
 }
 ```
 
-A diagnostic is structured, and the shape is stable. It is a union of three variants, and which one you have is decided by the rule:
+A diagnostic is structured, and the shape is stable. It is one interface, and what each rule fixes about itself lives in one record rather than in the shape:
 
 ```ts
-type Diagnostic = IdlessDiagnostic | IdentifiedDiagnostic | OptionalIdsDiagnostic;
-interface DiagnosticShape {
+interface Diagnostic {
+  readonly ruleId: RuleId;
   readonly path: string;
   readonly message: string;
   readonly severity: "error" | "warning";
-}
-interface IdlessDiagnostic extends DiagnosticShape {
-  readonly ruleId: IdlessRuleId;
-  readonly ids?: undefined;
-}
-interface IdentifiedDiagnostic extends DiagnosticShape {
-  readonly ruleId: IdentifiedRuleId;
-  readonly ids: readonly string[];
-}
-interface OptionalIdsDiagnostic extends DiagnosticShape {
-  readonly ruleId: OptionalIdsRuleId;
-  readonly ids: readonly string[] | undefined;
+  readonly ids?: readonly string[];
 }
 ```
 
-Reading one is unchanged: `path`, `message` and `severity` are on every variant, and `ids` is readable on all three. Two things changed for a caller who writes one down. `ruleId` is a closed union rather than a `string`, so comparing it against a rule this project does not have stops compiling instead of quietly never matching, and constructing a `Diagnostic` of your own with a rule id you invented is refused. And `ids` is present only on the rules that name ids, so a rule that names none cannot carry one. See ADR-097.
+Reading one is simpler than it was: `path`, `message`, `severity` and `ids` are all on it, with no variant to narrow first. Three things are worth knowing if you write one down.
+
+`ruleId` is a closed union rather than a `string`, so comparing it against a rule this project does not have stops compiling instead of quietly never matching, and constructing a `Diagnostic` of your own with a rule id you invented is refused.
+
+`severity` is fixed by the rule rather than by whoever reports it, so a warning rule cannot be reported as an error. It used to default to `"error"` at the constructor, which meant a warning rule reported by a caller that passed nothing became an error diagnostic; the rule answers now.
+
+Whether a rule names `ids` is fixed by the rule too, but it is enforced where a diagnostic is built rather than by the field. A producer takes the payload its rule owns as its argument list, so a rule that names none cannot be handed one and a rule that always names them cannot omit them. The field itself stays optional, and every diagnostic this project builds carries it, frozen and empty for a rule that names none, so `ids` and `ids ?? []` read the same thing.
+
+The three variants that used to express that ownership, `IdlessDiagnostic`, `IdentifiedDiagnostic` and `OptionalIdsDiagnostic`, are removed. A consumer that extended one extends `Diagnostic`. See ADR-097.
 
 Call `validateV5(project)` yourself if you want the diagnostics without the throw. It returns `{ valid, value, diagnostics }`, and it is the same validator the engine uses, so there is no second opinion to keep in sync.
 
