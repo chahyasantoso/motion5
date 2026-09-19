@@ -1,3 +1,5 @@
+import type { RuleId } from "./rule-id";
+
 /**
  * What every capability handle in this package carries, and how all of them fail.
  *
@@ -43,13 +45,15 @@ export interface Handle<T> {
  * would be one normalization with two owners, and the noun is the only part that differs, so it is
  * the only part a subclass passes. `TrackHandle`'s message is byte-identical to what it was.
  *
- * `ruleId` is what a caller branches on, in the kebab shape every diagnostic rule id in this project
- * uses. It is abstract here and carried on the instance as well as the constructor by each subclass,
- * so a caught value answers without the class being in scope. Matching a message string is the thing
- * this family exists to make unnecessary. See ADR-056.
+ * `ruleId` is what a caller branches on, and it is `RuleId` rather than a kebab-shaped `string`: a
+ * field spelled `ruleId` names a rule wherever it sits, so this one is held to the closed set
+ * `contract/rule-id.ts` owns, exactly as `Diagnostic.ruleId` is. It is abstract here and carried on
+ * the instance as well as the constructor by each subclass, so a caught value answers without the
+ * class being in scope. Matching a message string is the thing this family exists to make
+ * unnecessary. See ADR-056 and ADR-097.
  */
 export abstract class StaleHandleError extends TypeError {
-  abstract readonly ruleId: string;
+  abstract readonly ruleId: RuleId;
   constructor(noun: string, id: string) {
     super(`${noun} "${id}" is no longer live.`);
   }

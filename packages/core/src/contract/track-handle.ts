@@ -22,7 +22,7 @@ import type {
 export class StaleTrackHandleError extends StaleHandleError {
   /** Stable identity, in the kebab shape every diagnostic rule id in this project uses. */
   static readonly ruleId = "stale-track-handle";
-  readonly ruleId: string = StaleTrackHandleError.ruleId;
+  readonly ruleId = StaleTrackHandleError.ruleId;
   /** The qualified node id the refused handle was captured against. */
   readonly nodeId: string;
   constructor(nodeId: string) {

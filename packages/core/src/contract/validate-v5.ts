@@ -9,6 +9,7 @@ import {
 import { SUPPORTED_TRIGGER_TYPES } from "./v5";
 import { readAuthoredLeaf } from "./authored-leaf";
 import { describeDiagnostics, diagnostic as issue } from "./diagnostics";
+import { scopedRuleId, type KeyframeRuleId, type KeyframeRuleScope } from "./rule-id";
 import {
   isKeyframeGroup,
   looksLikeLegacyGroup,
@@ -26,15 +27,22 @@ export interface ValidationResult {
   readonly value: ProjectDefinition | null;
 }
 export interface KeyframeValidationOptions {
-  readonly ruleIdPrefix?: string;
-  readonly ruleIdAliases?: Readonly<Record<string, string>>;
   /**
+   * Who is reading these keyframes, which is the whole of what the three options this replaced ever
+   * said together.
+   *
+   * `ruleIdPrefix`, `ruleIdAliases` and `allowGroups` were three fields the one caller that set any
+   * of them set all of them, and two of the three were open `string` data, so the rule id union was
+   * closed everywhere except at the site that mints the whole prefixed family. Which id a rule
+   * reports under is derived from this scope by `contract/rule-id`, and group permission is answered
+   * from the same scope by `GROUPS_ALLOWED` below.
+   *
    * Plugin-named groups are an authoring form. A contributed property is a single flat output, so
-   * the contribution path passes `false` and keeps the pre-group strictness: an object of objects
-   * contributed as a property stays a `stops-shape` error instead of being read as a group. Both
-   * section reservations are scoped to the same flag, because a contributed key is not authored.
+   * the contribution scope keeps the pre-group strictness: an object of objects contributed as a
+   * property stays a `stops-shape` error instead of being read as a group. Both section reservations
+   * are scoped to the same answer, because a contributed key is not authored. See ADR-097.
    */
-  readonly allowGroups?: boolean;
+  readonly scope?: KeyframeRuleScope;
 }
 const STOPS_REQUIRED =
   "An authored property must be an array of stops or a static number, string, or boolean.";
@@ -44,6 +52,12 @@ const TEMPLATES_UNSUPPORTED =
   "Project templates are not supported; author keyframes on the tracks that use them.";
 const SECTION_NAMES = PLUGIN_GROUP_SECTIONS.map((name) => `'${name}'`).join(" or ");
 const THREE_D_KEYS = ["z", "rotationX", "rotationY"];
+// Whether a scope authors groups, keyed by the scope union so a third scope has to answer here
+// rather than inheriting the answer written first. The reasoning is in validate-v5.md.
+const GROUPS_ALLOWED: Readonly<Record<KeyframeRuleScope, boolean>> = {
+  authored: true,
+  contribution: false,
+};
 type RawObject = Record<string, unknown>;
 function isObject(value: unknown): value is RawObject {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -54,16 +68,14 @@ export function validateKeyframes(
   diagnostics: Diagnostic[],
   options: KeyframeValidationOptions = {},
 ): void {
-  const prefix = options.ruleIdPrefix ?? "";
-  const aliases = options.ruleIdAliases ?? {};
-  const allowGroups = options.allowGroups ?? true;
+  const scope = options.scope ?? "authored";
+  const allowGroups = GROUPS_ALLOWED[scope];
   const add = (
-    ruleId: string,
+    ruleId: KeyframeRuleId,
     rulePath: string,
     message: string,
     severity: Diagnostic["severity"] = "error",
-  ) =>
-    diagnostics.push(issue(`${prefix}${aliases[ruleId] ?? ruleId}`, rulePath, message, severity));
+  ) => diagnostics.push(issue(scopedRuleId(scope, ruleId), rulePath, message, severity));
   if (keyframes === undefined) return;
   if (!isObject(keyframes)) {
     add("keyframes-shape", path, "Track keyframes must be an object.");

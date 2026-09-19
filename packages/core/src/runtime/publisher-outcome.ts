@@ -1,3 +1,4 @@
+import type { IdentifiedRuleId } from "../contract/diagnostic-ids";
 import type { Diagnostic, Patch } from "../contract/v5";
 import { describeEdge, type GraphEdge } from "../graph/ir";
 import { unreachable } from "../domain/exhaustive";
@@ -330,8 +331,20 @@ export function describePublishFailure(failure: PublishFailure): string {
  * three is a change to published diagnostics and owes its own commit. What this buys today is that the
  * three are named in the type, so the commit that gives them ids has one place to edit and a compiler
  * that will not let it forget one. See ADR-016.
+ *
+ * The return type is `IdentifiedRuleId` rather than `string`, which is the other half of that. This
+ * function is a producer of rule ids, so it is held to the closed set like every other producer, and
+ * the three arms answering `composition-failure` are provably members rather than strings that
+ * happen to match one. It was the last producer left open, and the publisher forwarding its answer
+ * into a `Diagnostic` is where the build said so: a union closed at the field and open at the
+ * function that computes the field is closed nowhere.
+ *
+ * It says more than `RuleId` would, and the extra is true of all seven: every failure a publication
+ * reports names the node it happened at, so every one of these rules always carries ids. That is
+ * what lets `graph-publisher.ts` construct its diagnostic directly rather than asserting the
+ * correlation, because the group the rule id belongs to is already decided here. See ADR-097.
  */
-export function publishFailureRule(failure: PublishFailure): string {
+export function publishFailureRule(failure: PublishFailure): IdentifiedRuleId {
   switch (failure.kind) {
     case "missing-upstream":
       return "observation-missing-upstream";

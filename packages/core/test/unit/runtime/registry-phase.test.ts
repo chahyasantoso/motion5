@@ -41,7 +41,7 @@ const REGISTRY_SOURCE = fileURLToPath(
 
 function diagnostic(nodeId: string): Diagnostic {
   const entry: Diagnostic = Object.freeze({
-    ruleId: "registry-phase",
+    ruleId: "composition-failure",
     path: nodeId,
     message: `about ${nodeId}`,
     severity: "error",

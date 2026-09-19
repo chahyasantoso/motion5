@@ -6,6 +6,7 @@ import type { GraphNode, GraphIR } from "../graph/ir";
 import { GraphPublisher, type PublisherNode, type PublisherSnapshot } from "./graph-publisher";
 import { PatchRegistry, type PatchBatch } from "./patch-registry";
 import { deferredScheduler, type Cancel, type Scheduler } from "../ports/scheduler";
+import type { RuleId } from "../contract/rule-id";
 import { unreachable } from "../domain/exhaustive";
 import {
   CLEAN_TRACE,
@@ -51,10 +52,10 @@ import {
 } from "./graph-runtime-state";
 export type ComposeNode = PublisherNode["compose"];
 export type ComposeResolver = (node: GraphNode) => ComposeNode;
-export const CLOCK_REGRESSION_RULE = "clock-tick-regression";
-export const CLOCK_CONSUMER_FAILURE_RULE = "clock-consumer-failure";
-export const FLUSH_FAILURE_RULE = "flush-failure";
-export const SCHEDULER_FAILURE_RULE = "scheduler-failure";
+export const CLOCK_REGRESSION_RULE = "clock-tick-regression" satisfies RuleId;
+export const CLOCK_CONSUMER_FAILURE_RULE = "clock-consumer-failure" satisfies RuleId;
+export const FLUSH_FAILURE_RULE = "flush-failure" satisfies RuleId;
+export const SCHEDULER_FAILURE_RULE = "scheduler-failure" satisfies RuleId;
 import type { MemberState } from "./graph-publisher";
 import type { GraphBuilder } from "../ports/graph-builder";
 export interface GraphRuntimeOptions {
@@ -418,7 +419,7 @@ export class GraphRuntime {
       );
     }
   }
-  #report(ruleId: string, message: string, tick: number = this.#lastTick): void {
+  #report(ruleId: RuleId, message: string, tick: number = this.#lastTick): void {
     // The phase selects the sink and nothing else: retention below is total, so a retired runtime
     // withholds rather than discards.
     const sink = reportSink(this.#phase, this.#onFlushError);

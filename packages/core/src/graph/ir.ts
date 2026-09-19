@@ -1,4 +1,5 @@
 // Docs: ./ir.md
+import type { OwnedIds } from "../contract/diagnostic-ids";
 import type {
   Diagnostic,
   ObservationDefinition,
@@ -6,6 +7,8 @@ import type {
   ProjectDefinition,
   TrackDefinition,
 } from "../contract/v5";
+import { asDiagnostic } from "../contract/diagnostics";
+import type { RuleId } from "../contract/rule-id";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { compareCodeUnits } from "./compare";
@@ -155,13 +158,14 @@ function freeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
-export function diag(
-  ruleId: string,
+export function diag<Rule extends RuleId>(
+  ruleId: Rule,
   path: string,
   message: string,
-  ids?: readonly string[],
+  ...carried: OwnedIds<Rule>
 ): Diagnostic {
-  return { ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) };
+  const [ids] = carried as unknown as readonly [(readonly string[])?];
+  return asDiagnostic({ ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) });
 }
 
 export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {

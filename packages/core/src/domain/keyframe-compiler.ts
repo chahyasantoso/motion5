@@ -1,4 +1,7 @@
 import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
+import { asDiagnostic } from "../contract/diagnostics";
+import type { OwnedIds } from "../contract/diagnostic-ids";
+import type { RuleId } from "../contract/rule-id";
 import type { AuthoredStop, Diagnostic } from "../contract/v5";
 
 export interface CompiledProperty {
@@ -12,13 +15,25 @@ export interface CompiledKeyframes {
   readonly diagnostics: readonly Diagnostic[];
 }
 
-function diagnostic(
-  ruleId: string,
+function diagnostic<Rule extends RuleId>(
+  ruleId: Rule,
   path: string,
   message: string,
-  ids: readonly string[],
+  ...carried: OwnedIds<Rule>
 ): Diagnostic {
-  return Object.freeze({ ruleId, path, message, severity: "error", ids: Object.freeze([...ids]) });
+  // Written only when a payload arrived. This wrote `ids` unconditionally, so an idless rule reaching
+  // it would have minted a diagnostic carrying an empty payload its own variant declares it may not
+  // have. Its one caller names an always-naming rule, so nothing observable moves.
+  const [carriedIds] = carried as unknown as readonly [(readonly string[])?];
+  return asDiagnostic(
+    Object.freeze({
+      ruleId,
+      path,
+      message,
+      severity: "error",
+      ...(carriedIds ? { ids: Object.freeze([...carriedIds]) } : {}),
+    }),
+  );
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);

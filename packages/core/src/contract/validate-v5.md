@@ -4,7 +4,7 @@
 
 The shape error for a leaf that is neither canonical form.
 
-The rule id stays `stops-shape` through ADR-050. The animated form still _is_ stops, so "this is not a legal authored property" remains exactly what the rule says, and renaming it would churn the `plugin-contribution-stops-shape` alias in `domain/plugins.ts` and every citation of it across the contract suite for no semantic gain. The message and the cited path are corrected instead.
+The rule id stays `stops-shape` through ADR-050. The animated form still _is_ stops, so "this is not a legal authored property" remains exactly what the rule says, and renaming it would churn the derived `plugin-contribution-stops-shape` spelling that `contract/rule-id.ts` now owns and every citation of it across the contract suite for no semantic gain. The message and the cited path are corrected instead.
 
 ## WRAPPER_RETIRED
 
@@ -19,6 +19,14 @@ The removed top-level field, refused by name so the diagnostic names the removal
 ## SECTION_NAMES
 
 `'requires' or 'values'`, so the unknown-section message never hardcodes the legal set twice.
+
+## GROUPS_ALLOWED
+
+Whether a scope authors plugin-named groups, which is the second and last thing a scope decides.
+
+A record keyed by `KeyframeRuleScope` rather than a `scope === "authored"` test, for the reason `SCOPED_RULE_ID` in `contract/rule-id.ts` is one: a third scope then has to answer both questions where they are asked, instead of silently inheriting whichever answer was written first. The two questions stay separate maps because they belong to different owners. Which id a rule reports under is a fact about rule ids, so the id module owns it; whether a group is authorable is a fact about this validator.
+
+A contributed property is one flat output, so the contribution scope answers `false` and keeps the pre-group strictness: an object of objects contributed as a property stays a `stops-shape` error rather than being read as a group, and both section names stay ordinary keys. This replaces the `allowGroups` option, which every caller that set it set together with the prefix and the alias map. See ADR-097.
 
 ## validateProperty
 

@@ -178,17 +178,30 @@ A free track authored in `freeTracks` is owned by the project and released with 
 
 ## 11. Diagnostics
 
-One diagnostic shape everywhere:
+One diagnostic shape everywhere, discriminated by which rules own an `ids` payload:
 
 ```ts
-interface Diagnostic {
-  ruleId: string;
+type Diagnostic = IdlessDiagnostic | IdentifiedDiagnostic | OptionalIdsDiagnostic;
+interface DiagnosticShape {
   path: string;
   message: string;
   severity: "error" | "warning";
-  ids?: string[];
+}
+interface IdlessDiagnostic extends DiagnosticShape {
+  ruleId: IdlessRuleId;
+  ids?: undefined;
+}
+interface IdentifiedDiagnostic extends DiagnosticShape {
+  ruleId: IdentifiedRuleId;
+  ids: readonly string[];
+}
+interface OptionalIdsDiagnostic extends DiagnosticShape {
+  ruleId: OptionalIdsRuleId;
+  ids: readonly string[] | undefined;
 }
 ```
+
+`ruleId` is a closed union and not a `string`: `contract/rule-id.ts` enumerates every rule this project refuses by name, so adding one breaks the build where it is named. `contract/diagnostic-ids.ts` owns which of those rules name ids, and the three groups are derived from that one record, so a diagnostic carrying ids its rule does not own fails `typecheck`, and so does one omitting ids its rule always names. See ADR-097.
 
 At load, any `error` rejects the project and no `warning` does. Warnings are collected on the project and readable after load. They are never thrown and never promoted by a flag. See invariant I-15 and ADR-010.
 

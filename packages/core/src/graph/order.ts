@@ -1,9 +1,10 @@
+import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic } from "../contract/v5";
 import { compareCodeUnits } from "./compare";
 import type { GraphNode } from "./ir";
 
 /** Rule id reported when the observation graph cannot be linearized. */
-export const CYCLE_RULE_ID = "graph-cycle";
+export const CYCLE_RULE_ID = "graph-cycle" satisfies RuleId;
 
 export interface GraphOrderResult {
   /** Canonical topological order. Absent when the graph contains at least one cycle. */
