@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "expected_head": "eb381e1d060d323821e5195772849cf4029335fd",
+  "expected_blobs": {
+    "docs/ARCHITECTURE.md": "d4f10e7e5904a99d517404b2d7627eb922c9581c",
+    "docs/guide/errors-and-diagnostics.md": "35fc18c2b7dcbe7e4e2cb169961d909a66fec36c",
+    "docs/ADR-097-a-rule-id-is-a-closed-union.md": "45ebcfc0c455577a1d7b5d3c25a20e9a585a4f86",
+    "docs/AUTHORED-SCHEMA.md": "9af34850adebc940cfc8442be7c69b78dd20958f"
+  },
+  "message": "docs: scope the severity claim to the default the constructor derives, and state the flat Diagnostic in AUTHORED-SCHEMA",
+  "edits": [
+    {
+      "path": "docs/ARCHITECTURE.md",
+      "find": "Both are fixed where the rule is defined rather than restated by whoever reports it. `severity` is derived through `ruleSeverity` rather than arriving as a caller-supplied default, and ownership of `ids` is enforced at the producer as the argument list `OwnedIds` derives from the rule it was handed,",
+      "replace": "Both are fixed where the rule is defined rather than restated by whoever reports it, and exactly one of the two is fully enforced today. `severity` **defaults** to the rule's own answer through `ruleSeverity`, rather than to the literal `\"error\"` it used to default to; the constructor's `severity` parameter still exists and a call site can still name one, so this is a corrected default rather than an invariant, and deleting the parameter is owed. Ownership of `ids` is enforced at the producer as the argument list `OwnedIds` derives from the rule it was handed,"
+    },
+    {
+      "path": "docs/guide/errors-and-diagnostics.md",
+      "find": "`severity` is fixed by the rule rather than by whoever reports it, so a warning rule cannot be reported as an error. It used to default to `\"error\"` at the constructor, which meant a warning rule reported by a caller that passed nothing became an error diagnostic; the rule answers now.",
+      "replace": "`severity` comes from the rule by default rather than from a fixed `\"error\"`. It used to default to `\"error\"` at the constructor, so a warning rule reported by a caller that passed nothing became an error diagnostic and nothing noticed; the rule answers instead. The constructor still takes a `severity` argument, so a caller that names one explicitly still overrides the rule, and a handful inside this project do. Read `severity` off the diagnostic and do not pass one."
+    },
+    {
+      "path": "docs/guide/errors-and-diagnostics.md",
+      "find": "The field itself stays optional, and every diagnostic this project builds carries it, frozen and empty for a rule that names none, so `ids` and `ids ?? []` read the same thing.",
+      "replace": "The field itself stays optional. Every diagnostic built through the project's one constructor carries it, frozen and empty for a rule that names none, so for those `ids` and `ids ?? []` read the same thing. Three producers inside the project still hand-build their object and omit the member, so keep spelling `ids ?? []` until the field is required."
+    },
+    {
+      "path": "docs/ADR-097-a-rule-id-is-a-closed-union.md",
+      "find": "`severity` is derived from the same record, through `ruleSeverity`, rather than arriving as a constructor parameter with a default. The default was the literal `\"error\"`, so a rule's own answer was a suggestion: a caller could overrule it by passing something else and overrode it silently by passing nothing, which made every warning rule reported by such a caller an error diagnostic that nothing noticed. Passing nothing is what almost every caller does.",
+      "replace": "`severity` is derived from the same record, through `ruleSeverity`, which is now the constructor's default in place of the literal `\"error\"` it used to be. That old default was the whole of the bug: a rule's own answer was a suggestion, a caller could overrule it by passing something else, and a caller overrode it silently by passing nothing, which made every warning rule reported by such a caller an error diagnostic that nothing noticed. Passing nothing is what almost every caller does, so correcting the default is what closed it.\n\nThe parameter itself survives, and saying otherwise is the overclaim this record's own status paragraph exists to catch; it was said here once and is corrected in place rather than beside. A call site can still name a severity: `contract/validate-v5.ts` names one at several sites, `adapters/trigger-factory/default.ts` names one too, and `validate-v5.ts`'s own local helper still carries a `= \"error\"` default of its own one layer above the constructor, which is the same bug one level up and harmless today only because both keyframe warnings pass `\"warning\"` by hand. So this is a corrected default and not yet the invariant a reader might take it for. Deleting the parameter is owed, and what it is owed first is the compiler enumerating its call sites rather than a fourth hand count."
+    },
+    {
+      "path": "docs/ADR-097-a-rule-id-is-a-closed-union.md",
+      "find": "the producers holding a hardcoded `severity: \"error\"` and a conditional `ids` spread were collapsed into the one constructor",
+      "replace": "`graph/ir.ts`'s `diag`, which held a hardcoded `severity: \"error\"` and a conditional `ids` spread, was collapsed into the one constructor, while the equivalent producers in `runtime/report.ts`, `domain/plugins.ts` and `domain/keyframe-compiler.ts` still hold both and are owed the same collapse"
+    },
+    {
+      "path": "docs/ADR-097-a-rule-id-is-a-closed-union.md",
+      "find": "With ownership down to two answers there is no third list to fall through to, so the optional case is reached only by a rule id the compiler knows nothing more specific about.",
+      "replace": "With ownership down to two answers there is no third list to fall through to, so the optional case is reached only where the compiler cannot prove that every member of `Rule` shares one answer: an open `RuleId`, or a union spanning both answers, for which neither guarded `extends` succeeds. That second case is a limit rather than a bug, and it is stated here because the deleted record stated it and a reader would not suspect it: this correlates one rule id and not a set of them. No call site in this tree holds such a union."
+    },
+    {
+      "path": "docs/AUTHORED-SCHEMA.md",
+      "find": "type Diagnostic = IdlessDiagnostic | IdentifiedDiagnostic | OptionalIdsDiagnostic;\ninterface DiagnosticShape {\n  path: string;\n  message: string;\n  severity: \"error\" | \"warning\";\n}\ninterface IdlessDiagnostic extends DiagnosticShape {\n  ruleId: IdlessRuleId;\n  ids?: undefined;\n}\ninterface IdentifiedDiagnostic extends DiagnosticShape {\n  ruleId: IdentifiedRuleId;\n  ids: readonly string[];\n}\ninterface OptionalIdsDiagnostic extends DiagnosticShape {\n  ruleId: OptionalIdsRuleId;\n  ids: readonly string[] | undefined;\n}",
+      "replace": "interface Diagnostic {\n  ruleId: RuleId;\n  path: string;\n  message: string;\n  severity: \"error\" | \"warning\";\n  ids?: readonly string[];\n}"
+    },
+    {
+      "path": "docs/AUTHORED-SCHEMA.md",
+      "find": "Whether a rule names ids is a fact about that rule rather than about the diagnostic: `contract/diagnostic-ids.ts` owns it, and the three groups above are derived from that one record. See ADR-097.",
+      "replace": "Whether a rule names ids is a fact about that rule rather than about the diagnostic, and so is the severity it refuses at: `contract/rule.ts` owns both, as one record keyed by that same enumeration. It was three variant interfaces discriminated by ids ownership, derived from a second record in `contract/diagnostic-ids.ts`; that file is deleted and the variants are gone, so a consumer that extended one extends `Diagnostic`. Ownership is enforced where a diagnostic is built, as the argument list the rule derives, rather than by the shape of the field: `ids` stays optional on the type for now, and every diagnostic built through the one constructor carries it, frozen and empty for a rule that names none. `severity` is derived from the record by default, though the constructor still accepts one, so a rule's answer is the default rather than yet an invariant. See ADR-097."
+    }
+  ]
+}
