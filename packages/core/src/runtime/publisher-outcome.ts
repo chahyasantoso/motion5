@@ -1,4 +1,4 @@
-import type { IdentifiedRuleId } from "../contract/diagnostic-ids";
+import type { IdentifiedRuleId } from "../contract/rule";
 import type { Diagnostic, Patch } from "../contract/v5";
 import { describeEdge, type GraphEdge } from "../graph/ir";
 import { unreachable } from "../domain/exhaustive";

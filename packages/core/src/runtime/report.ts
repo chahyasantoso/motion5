@@ -1,5 +1,5 @@
 import { asDiagnostic } from "../contract/diagnostics";
-import type { OwnedIds } from "../contract/diagnostic-ids";
+import type { OwnedIds } from "../contract/rule";
 import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic, PatchBatch } from "../contract/v5";
 import { collect, report } from "../domain/completion";

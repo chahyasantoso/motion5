@@ -1,4 +1,3 @@
-import type { IdentifiedRuleId, IdlessRuleId, OptionalIdsRuleId } from "./diagnostic-ids";
 import type { RuleId } from "./rule-id";
 
 export const AUTHORED_SCHEMA_VERSION = 5 as const;
@@ -86,36 +85,6 @@ interface DiagnosticShape {
   readonly path: string;
   readonly message: string;
   readonly severity: DiagnosticSeverity;
-}
-
-/**
- * A diagnostic whose rule names no ids, so it may not carry any.
- *
- * `ids?: undefined` rather than an omitted member: omitting it would let this variant accept an
- * `ids` through a wider type, and the whole of the group is that a payload the rule does not own
- * cannot be written down.
- */
-export interface IdlessDiagnostic extends DiagnosticShape {
-  readonly ruleId: IdlessRuleId;
-  readonly ids?: undefined;
-}
-
-/** A diagnostic whose rule always names ids, so omitting them fails `typecheck`. */
-export interface IdentifiedDiagnostic extends DiagnosticShape {
-  readonly ruleId: IdentifiedRuleId;
-  readonly ids: readonly string[];
-}
-
-/**
- * A diagnostic whose rule may name ids.
- *
- * The group for a rule whose construction sites disagree about whether they carry a payload, and
- * for a rule with no construction site to measure. `contract/diagnostic-ids.ts` owns which rules
- * those are and why neither answer is stronger.
- */
-export interface OptionalIdsDiagnostic extends DiagnosticShape {
-  readonly ruleId: OptionalIdsRuleId;
-  readonly ids?: readonly string[];
 }
 
 /**

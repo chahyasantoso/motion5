@@ -1,5 +1,5 @@
 // Docs: ./ir.md
-import type { OwnedIds } from "../contract/diagnostic-ids";
+import type { OwnedIds } from "../contract/rule";
 import type {
   Diagnostic,
   ObservationDefinition,

@@ -1,5 +1,4 @@
-import type { OwnedIds } from "./diagnostic-ids";
-import { ruleSeverity } from "./rule";
+import { ruleSeverity, type OwnedIds } from "./rule";
 import type { Diagnostic } from "./v5";
 import type { RuleId } from "./rule-id";
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { IdentifiedRuleId } from "../../../src/contract/diagnostic-ids";
+import type { IdentifiedRuleId } from "../../../src/contract/rule";
 import type { Diagnostic } from "../../../src/contract/v5";
 import {
   CLEAN_TRACE,

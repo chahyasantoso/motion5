@@ -4,11 +4,7 @@ import { fileURLToPath } from "node:url";
 
 import { code } from "../helpers/source-region";
 
-import {
-  IDENTIFIED_RULE_IDS,
-  IDLESS_RULE_IDS,
-  OPTIONAL_IDS_RULE_IDS,
-} from "../../src/contract/diagnostic-ids";
+import { RULES, ruleSeverity } from "../../src/contract/rule";
 import {
   BASE_RULE_IDS,
   CONTRIBUTION_RULE_IDS,
@@ -190,31 +186,52 @@ describe("rule id enumeration", () => {
   });
 });
 
-// `ids` is discriminated by whether a rule owns one, and `contract/diagnostic-ids.ts` is the one
-// owner of which rules do. The record there is keyed by `BaseRuleId`, so a rule added to the
-// enumeration fails `typecheck` at the answer rather than inheriting whichever group was written
-// first, and `EveryRuleIdIsGrouped` refuses a rule the three groups do not partition. Both of those
-// are compile-time, and neither is observable from a run. These cases read the arrays the same
-// record derives, which is the half a type cannot see. See ADR-097.
+// `ids` ownership and severity are both fixed where the rule is defined, and `contract/rule.ts` is
+// the one owner of both. There is no partition of three groups left to read: the second answer in
+// `contract/diagnostic-ids.ts` disagreed about four rules and that file is deleted. The record that
+// replaced it is keyed by `RuleId`, so a rule answers exactly once and answering twice is
+// unrepresentable rather than merely unmeasured. Its `satisfies` refuses a rule with no answer and
+// the annotation on `RULES` refuses one the record never reaches; both are compile-time and neither
+// is observable from a run. These cases read the record itself, which is the half a type cannot
+// see. See ADR-097 and issue #449.
 describe("rule id ids ownership", () => {
-  it("partitions every rule id into exactly one group", () => {
-    const grouped = [...IDLESS_RULE_IDS, ...IDENTIFIED_RULE_IDS, ...OPTIONAL_IDS_RULE_IDS];
-    expect([...grouped].sort()).toEqual([...RULE_IDS].sort());
-    expect(grouped.length).toBe(new Set(grouped).size);
+  it("answers every rule id exactly once, and answers nothing else", () => {
+    expect(Object.keys(RULES).sort()).toEqual([...RULE_IDS].sort());
+    expect(RULE_IDS.filter((id) => RULES[id].ids !== "none" && RULES[id].ids !== "always")).toEqual(
+      [],
+    );
   });
 
   it("owns no ids for any keyframe rule, authored or contributed", () => {
-    const idless = new Set<string>(IDLESS_RULE_IDS);
-    expect(KEYFRAME_RULE_IDS.filter((id) => !idless.has(id))).toEqual([]);
-    expect(CONTRIBUTION_RULE_IDS.filter((id) => !idless.has(id))).toEqual([]);
+    expect(KEYFRAME_RULE_IDS.filter((id) => RULES[id].ids !== "none")).toEqual([]);
+    expect(CONTRIBUTION_RULE_IDS.filter((id) => RULES[id].ids !== "none")).toEqual([]);
   });
 
   // A rule minted only on an error class has no diagnostic naming it, so nothing measures the ids it
-  // would carry. Absence of a measurement cannot justify requiring one, so those rules answer the
-  // optional group rather than the required one, and this pins the direction of that inequality.
-  it("keeps a rule with no construction site out of the group that requires ids", () => {
-    const required = new Set<string>(IDENTIFIED_RULE_IDS);
-    for (const id of ["live-value-key", "stale-motion-handle", "stale-track-handle"])
-      expect(required.has(id)).toBe(false);
+  // would carry. The old answer was the optional group, on the argument that absence of a measurement
+  // cannot justify requiring a payload. It cannot justify permitting one either, and these three have
+  // no construction site at all, so they own none: the first site that forwards one into a diagnostic
+  // with a payload fails at the point the decision is owed rather than compiling and carrying it.
+  it("owns no ids for a rule with no construction site", () => {
+    for (const id of ["live-value-key", "stale-motion-handle", "stale-track-handle"] as const)
+      expect(RULES[id].ids).toBe("none");
+  });
+
+  // The warning population is the whole of what deriving severity changed, so it is pinned by
+  // enumeration rather than by a count: a rule quietly becoming a warning, or a warning quietly
+  // becoming an error, fails here rather than in whichever consumer notices first. The two contributed
+  // spellings are derived through `scopedRuleId` rather than written out, because the alias map owns
+  // how a keyframe rule is respelled and a literal here could be wrong about it silently.
+  it("names exactly the rules that refuse as warnings", () => {
+    const keyframeWarnings = ["stop-missing-start", "stop-missing-end"] as const;
+    const expected = [
+      "observation-pending-reference",
+      "perspective-usage",
+      "reentrant-flush-deferred",
+      "value-batch-deferred",
+      ...keyframeWarnings,
+      ...keyframeWarnings.map((name) => scopedRuleId("contribution", name)),
+    ];
+    expect(RULE_IDS.filter((id) => ruleSeverity(id) === "warning").sort()).toEqual(expected.sort());
   });
 });

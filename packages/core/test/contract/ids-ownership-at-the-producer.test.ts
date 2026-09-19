@@ -54,15 +54,18 @@ describe("a producer takes the ids its rule owns", () => {
     });
   }
 
-  it("reads the partition proof rather than trusting it", () => {
-    const text = source("contract/diagnostic-ids.ts");
+  it("reads the totality proof rather than trusting it", () => {
+    const text = source("contract/rule.ts");
 
     expect(text.split("export type OwnedIds<Rule extends RuleId>")).toHaveLength(2);
-    // `EveryRuleIdIsGrouped` failed the build only at its own declaration, so it was deletable with
-    // nothing going red. Reading it here is what makes the type's half of the partition proof
-    // load-bearing, and a rule reaching no group now fails at every producer instead of silently
-    // taking the optional list.
-    expect(text.split("[EveryRuleIdIsGrouped] extends [never]")).toHaveLength(2);
+    // The proof moved with its owner rather than being dropped. `EveryRuleIdIsGrouped` refused a rule
+    // that reached none of three groups; with two answers held in one total record there is no group
+    // left to miss, so what is read here instead is that totality. A rule with no answer fails at the
+    // `satisfies`, and a rule the record never reaches fails at the annotation on `RULES`. Both fail
+    // the build only at their own declaration, which is exactly what made the old proof deletable
+    // with nothing going red, so both are read rather than trusted.
+    expect(text.split("as const satisfies Record<BaseRuleId, RuleFacts>")).toHaveLength(2);
+    expect(text.split("Readonly<Record<RuleId, RuleFacts>>")).toHaveLength(2);
   });
 
   it("still carries the payload of a rule that owns one", () => {

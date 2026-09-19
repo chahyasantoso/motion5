@@ -1,5 +1,5 @@
 // Docs: ./plugins.md
-import type { OwnedIds } from "../contract/diagnostic-ids";
+import type { OwnedIds } from "../contract/rule";
 import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
 import { asDiagnostic } from "../contract/diagnostics";
 import type { RuleId } from "../contract/rule-id";
