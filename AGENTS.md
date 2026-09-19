@@ -24,6 +24,18 @@ Prettier is pinned at the version in `package.json`, `printWidth` is 100, quotes
 
 Do not copy anything from the predecessor repository. Recreate the contract from first principles.
 
+## Standing instructions
+
+Standing rather than per-slice, so a request does not have to restate them and a slice that ignored one is incomplete rather than merely different.
+
+Decide, rather than stopping to ask which of two defensible designs to take. Decide for correctness: clean architecture, DRY and SOLID, and a closed union read by an exhaustive check rather than by a predicate chain or a ternary whose else arm nobody wrote down. [docs/GUARDRAILS.md](docs/GUARDRAILS.md) and ADR-092 own what that means here, and its last bullet is the one this restates. Then write the decision down where a reader looks for it, in the pull request body or the record: a question asked instead of a decision leaves nothing behind, and a decision taken and not recorded is the same gap one step later.
+
+Prefer the AI edit workflow to single-file writes. One request batches up to fifty bounded edits into one commit, one formatting pass and one `CI` run, which is also the only way a multi-file slice arrives atomically for an implementor with no local checkout. [docs/AI-EDIT-WORKFLOW.md](docs/AI-EDIT-WORKFLOW.md) owns the protocol.
+
+Be verbose in the record. A pull request body, an ADR and a quality-pass comment are read by someone who was not there and cannot run anything, so state the invariant, the measurement behind it, what was withdrawn and why it was withdrawn rather than implemented, and the evidence with its exact commit and run. Prose that says less than its own diff is a defect the same way a docblock describing a member that no longer exists is.
+
+Hand the finished work to an independent quality pass before calling it done. A separate pass reads the whole change for remaining bugs and issues and reports as a comment on the pull request rather than into the record, and separate is the load-bearing word: a pass told what the previous inventory concluded confirms it instead of measuring it, which is how this project measured one union wrong three times before a pass that had not been told caught it. What it found, what was fixed, and what is deliberately left as a follow-up all belong in that comment.
+
 ## If you have no local checkout
 
 Working through the GitHub API alone, you cannot run `npm`, `prettier`, or the tests, and rewriting a large file through the contents API tends to fail part-way. Use the supported bounded request protocol instead of claiming local checks were run.
