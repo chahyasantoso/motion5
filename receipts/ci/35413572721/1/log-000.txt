@@ -1,0 +1,32 @@
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-09-19T01:44:38.6186668Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:38.6187475Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:38.6237191Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:38.6237471Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:38.6237680Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:38.6237900Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:41.7068883Z ##[error]packages/core/src/contract/diagnostic-ids.ts(184,10): error TS2352: Conversion of type '("blocked-upstream" | "clock-consumer-failure" | "clock-tick-regression" | "composition-failure" | "composition-output-shape" | "diagnostic-sink-failure" | "flush-failure" | ... 80 more ... | "value-batch-deferred")[]' to type 'readonly BaseRuleIdOwning<Ownership>[]' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:41.7083913Z   Type '"blocked-upstream" | "clock-consumer-failure" | "clock-tick-regression" | "composition-failure" | "composition-output-shape" | "diagnostic-sink-failure" | "flush-failure" | ... 80 more ... | "value-batch-deferred"' is not comparable to type 'BaseRuleIdOwning<Ownership>'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:41.7086663Z     Type '"value-batch-deferred"' is not comparable to type 'BaseRuleIdOwning<Ownership>'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:41.7090461Z ##[error]packages/core/src/runtime/graph-publisher.ts(107,3): error TS2322: Type 'Readonly<{ ruleId: RuleId; path: string; message: string; severity: "error"; ids: readonly string[]; }>' is not assignable to type 'Diagnostic'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:41.7093896Z   Type 'Readonly<{ ruleId: RuleId; path: string; message: string; severity: "error"; ids: readonly string[]; }>' is not assignable to type 'IdentifiedDiagnostic | OptionalIdsDiagnostic'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:41.7096087Z     Type 'Readonly<{ ruleId: RuleId; path: string; message: string; severity: "error"; ids: readonly string[]; }>' is not assignable to type 'OptionalIdsDiagnostic'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:41.7097677Z       Types of property 'ruleId' are incompatible.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:41.7098474Z         Type 'RuleId' is not assignable to type 'OptionalIdsRuleId'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:41.7099418Z           Type '"keyframes-shape"' is not assignable to type 'OptionalIdsRuleId'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:44:41.7501585Z ##[error]Process completed with exit code 2.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-19T01:45:18.1359172Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:45:18.1359981Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:45:18.1403082Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:45:18.1403910Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:45:18.1404330Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:45:18.1404780Z   SUITE_RESULT: cancelled
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:45:18.1405257Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:45:18.1556389Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-19T01:45:18.3970966Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:45:18.3971690Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:45:18.4012362Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:45:18.4013183Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:45:18.4013620Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:45:18.4014069Z   SUITE_RESULT: cancelled
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:45:18.4014547Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:45:18.4157638Z ##[error]Process completed with exit code 1.
