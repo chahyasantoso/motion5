@@ -224,8 +224,13 @@ export const RULES: Readonly<Record<RuleId, RuleFacts>> = Object.freeze({
 /**
  * The severity a rule refuses at, and the only expression in the tree that answers the question.
  *
- * A diagnostic's `severity` is derived through this rather than passed in, so no call site can name
- * one, correctly or otherwise. See ADR-097.
+ * A diagnostic's `severity` is derived through this wherever a call site declines to name one, which
+ * is almost everywhere and is the default on the constructor in `contract/diagnostics.ts`. It is not
+ * yet true that no call site can name one: that constructor still takes a `severity` parameter and
+ * thirteen sites still pass it, counted rather than estimated and a floor rather than a total. Saying
+ * otherwise would put the overclaim in the module that owns the invariant. The parameter's deletion is
+ * owed, and what it is owed first is the compiler enumerating its call sites rather than a docblock
+ * claiming to have. See ADR-097 and issue #449.
  */
 export function ruleSeverity(ruleId: RuleId): RuleSeverity {
   return RULES[ruleId].severity;

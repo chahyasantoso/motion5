@@ -10,11 +10,11 @@ import { code } from "../helpers/source-region";
  * Issue #449: ownership of `ids` is enforced at the producer rather than asserted past it.
  *
  * `asDiagnostic` takes a `RuleId` and an `ids` that are independent of each other, so a call naming a
- * rule that owns no ids and passing a payload compiled, and produced a diagnostic the union calls
- * unrepresentable. The assertion itself cannot be removed, because TypeScript does not narrow a union
- * by a discriminant it knows only the type of. What can be removed is every call site reaching it
- * while naming its rule by a literal, and the five producers do that by taking their ids as the
- * argument list `contract/diagnostic-ids.ts` derives from the rule they were handed.
+ * rule that owns no ids and passing a payload compiled, and produced a diagnostic the union called
+ * unrepresentable. That union is gone, so what is left there is a widening rather than a narrowing an
+ * assertion had to reach for. The call sites were always the half that mattered: what can be removed
+ * is every one of them reaching it while naming its rule by a literal, and the five producers do that
+ * by taking their ids as the argument list `contract/rule.ts` derives from the rule they were handed.
  *
  * No type can observe itself and this suite cannot run `tsc`, so the claim is read off the
  * declarations as text. That is the shape `RA-78` established for a subject with no run-time form: a

@@ -7,8 +7,10 @@ export interface MigrationResult<T = Record<string, unknown>> {
 
 // No ids, because no refusal this reader reports names one. The parameter that used to accept them
 // was passed by none of the four call sites below, so it described a payload this rule never
-// carried; `schema-v4-migration` answers the idless group in `contract/diagnostic-ids.ts` and this
-// shape is what that group allows.
+// carried; `schema-v4-migration` answers `ids: "none"` in `contract/rule.ts`, which is the one owner
+// of that answer now that the second one is deleted, and this shape is what it allows. This literal
+// is also one of the three that omit `ids` entirely, so it is converted in the slice that makes the
+// member required.
 function diagnostic(path: string, message: string): MigrationDiagnostic {
   return Object.freeze({
     ruleId: "schema-v4-migration",

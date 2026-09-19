@@ -59,10 +59,14 @@ export interface TriggerSignal {
  * is nothing for an assertion to narrow into. See ADR-097.
  *
  * `ids` is still optional here rather than always present, and that is a measured intermediate state
- * rather than the destination. Eight raw object literals still hand-build a frozen diagnostic without
- * one, so requiring the member would refuse code that compiles today; it is required in the slice
- * that converts those literals to the constructor. Every diagnostic built through `diagnostic` in
- * `./diagnostics` already carries one, empty for a rule that names no ids.
+ * rather than the destination. Three raw producers omit the member: `runtime/project-runtime.ts`'s
+ * `#teardown`, the private path-first producer in `contract/migrate-v4-to-v5.ts`, and
+ * `runtime/report.ts`'s `frozenDiagnostic`, which spreads it conditionally and so omits it whenever
+ * no payload arrived. Requiring the member would refuse those three, so it is required in the slice
+ * that converts them. The count of eight named the raw literals rather than the omissions, and five
+ * of the eight do carry a payload; stating the smaller number is what makes this paragraph an
+ * inventory rather than an estimate. Every diagnostic built through `diagnostic` in `./diagnostics`
+ * already carries one, empty for a rule that names no ids.
  */
 export interface Diagnostic extends DiagnosticShape {
   readonly ruleId: RuleId;
@@ -72,9 +76,10 @@ export interface Diagnostic extends DiagnosticShape {
 /**
  * One diagnostic pinned to one rule.
  *
- * This is the one thing the three variants are still read for: naming a rule at a declaration, rather
- * than discriminating one at a read. `MigrationDiagnostic` below is the only consumer today, and it
- * is one derived alias in place of what used to be a variant plus a narrowing interface.
+ * Naming a rule at a declaration, rather than discriminating one at a read. It was the one thing the
+ * three variants were still read for, and it now replaces all three: they are deleted, and
+ * `MigrationDiagnostic` below is the only consumer, one derived alias in place of what used to be a
+ * variant plus a narrowing interface.
  */
 export interface DiagnosticOf<Rule extends RuleId> extends Diagnostic {
   readonly ruleId: Rule;
@@ -302,9 +307,9 @@ export interface ProjectDefinition {
  * is provably a member of `RuleId`: were the enumeration to stop carrying it, this declaration is
  * the build failure rather than a string nobody checks.
  *
- * It extends the idless variant because that is the group its rule is in. Each of the four refusals
- * the v4 reader can report names a path and a message and no ids, which is measured rather than
- * chosen: its constructor used to accept an `ids` that nothing passed, and the group states what the
- * construction sites do rather than what a signature allowed. See ADR-097.
+ * Each of the four refusals the v4 reader can report names a path and a message and no ids, which is
+ * measured rather than chosen: its constructor used to accept an `ids` that nothing passed. That fact
+ * is stated once now, where the rule is defined, as `schema-v4-migration`'s own entry in
+ * `contract/rule.ts`, rather than by extending a variant named after a group. See ADR-097.
  */
 export type MigrationDiagnostic = DiagnosticOf<"schema-v4-migration">;
