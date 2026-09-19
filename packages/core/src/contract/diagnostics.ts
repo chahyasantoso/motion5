@@ -1,4 +1,5 @@
 import type { OwnedIds } from "./diagnostic-ids";
+import { ruleSeverity } from "./rule";
 import type { Diagnostic } from "./v5";
 import type { RuleId } from "./rule-id";
 
@@ -69,22 +70,32 @@ export function asDiagnostic(fields: DiagnosticFields): Diagnostic {
  * union correlates are correlated at the call site too. An adapter naming `trigger-driver-unavailable`
  * cannot omit its payload and one naming `id-shape` cannot invent one. `contract/diagnostic-ids.ts`
  * owns the derivation.
+ *
+ * `severity` is no longer a value a call site chooses. It defaults to the rule's own answer through
+ * `ruleSeverity`, so a caller that passes nothing gets what `contract/rule.ts` fixed where the rule
+ * is defined. That default is the whole of the bug it replaces: the old one was the literal
+ * `"error"`, so every warning rule reported by a caller that passed nothing produced an error
+ * diagnostic, and nothing noticed because passing nothing is what almost every caller does.
+ *
+ * The parameter itself survives this slice, and only this slice. Fourteen sites still name a severity
+ * and eight of those are raw object literals that bypass this constructor entirely; removing the
+ * parameter before they are converted would refuse code that compiles today. No site names a
+ * severity that disagrees with its rule, which is measured rather than assumed, so the derived
+ * default changes no behaviour at any site that does name one. See ADR-097.
  */
 export function diagnostic<Rule extends RuleId>(
   ruleId: Rule,
   path: string,
   message: string,
-  severity: Diagnostic["severity"] = "error",
+  severity: Diagnostic["severity"] = ruleSeverity(ruleId),
   ...carried: OwnedIds<Rule>
 ): Diagnostic {
   // Widened before it is read, for the reason `baseRulesOwning` in `./diagnostic-ids` widens its own
   // filter: the list is still a parameter here, so no element of it is indexable until `Rule` is
-  // instantiated. The default keeps every existing call byte-identical, including the ones that pass
-  // nothing at all.
-  // Presence rather than length. Ownership requires an array and not a non-empty one, so a call
-  // naming an always-naming rule and handing over an empty payload used to return an object with no
-  // `ids` member at all, which is the one variant that rule may not be. The rest argument arriving is
-  // what the type checked, so it is what decides the field.
+  // instantiated.
+  // Always an array, never an omission. A rule that names no ids carries a frozen empty one, so no
+  // reader has to tell a payload that went missing from a rule that has nothing to name, and the
+  // conditional spread that used to decide between them has nothing left to decide.
   const [carriedIds] = carried as unknown as readonly [(readonly string[])?];
   return asDiagnostic(
     Object.freeze({
@@ -92,7 +103,7 @@ export function diagnostic<Rule extends RuleId>(
       path,
       message,
       severity,
-      ...(carriedIds ? { ids: Object.freeze([...carriedIds]) } : {}),
+      ids: Object.freeze([...(carriedIds ?? [])]),
     }),
   );
 }

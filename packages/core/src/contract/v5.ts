@@ -1,4 +1,5 @@
 import type { IdentifiedRuleId, IdlessRuleId, OptionalIdsRuleId } from "./diagnostic-ids";
+import type { RuleId } from "./rule-id";
 
 export const AUTHORED_SCHEMA_VERSION = 5 as const;
 export const SUPPORTED_TRIGGER_TYPES = ["scroll", "time", "manual"] as const;
@@ -51,13 +52,34 @@ export interface TriggerSignal {
  * #449 asks for, and it is a public surface change: `Diagnostic` is exported from the package
  * entry, so a consumer constructing one with a rule id of its own invention stops compiling.
  *
- * It is a union rather than one interface because `ids` is not a field every rule owns. The three
- * variants are keyed by ownership of that payload, derived in `contract/diagnostic-ids.ts` from one
- * record, so a diagnostic carrying ids its rule never names fails `typecheck`, and so does one
- * omitting ids its rule always names. Reading is unaffected: all three declare `path`, `message`
- * and `severity`, and `ids` is readable on every one of them. See ADR-097.
+ * It is one interface rather than a union. The three variants were paid for with a public surface
+ * and bought nothing on the read side: `runtime/patch-registry.ts` compares rule ids for identity and
+ * `runtime/refusal.ts` renders them generically, so no production reader pattern-matches one.
+ * Enforcement was never on the read side either; it is at the call site, as the argument list the
+ * rule owns, which `contract/rule.ts` now derives from one record. With no union left to narrow there
+ * is nothing for an assertion to narrow into. See ADR-097.
+ *
+ * `ids` is still optional here rather than always present, and that is a measured intermediate state
+ * rather than the destination. Eight raw object literals still hand-build a frozen diagnostic without
+ * one, so requiring the member would refuse code that compiles today; it is required in the slice
+ * that converts those literals to the constructor. Every diagnostic built through `diagnostic` in
+ * `./diagnostics` already carries one, empty for a rule that names no ids.
  */
-export type Diagnostic = IdlessDiagnostic | IdentifiedDiagnostic | OptionalIdsDiagnostic;
+export interface Diagnostic extends DiagnosticShape {
+  readonly ruleId: RuleId;
+  readonly ids?: readonly string[];
+}
+
+/**
+ * One diagnostic pinned to one rule.
+ *
+ * This is the one thing the three variants are still read for: naming a rule at a declaration, rather
+ * than discriminating one at a read. `MigrationDiagnostic` below is the only consumer today, and it
+ * is one derived alias in place of what used to be a variant plus a narrowing interface.
+ */
+export interface DiagnosticOf<Rule extends RuleId> extends Diagnostic {
+  readonly ruleId: Rule;
+}
 
 /** What every diagnostic carries, whichever group its rule is in. */
 interface DiagnosticShape {
@@ -316,6 +338,4 @@ export interface ProjectDefinition {
  * chosen: its constructor used to accept an `ids` that nothing passed, and the group states what the
  * construction sites do rather than what a signature allowed. See ADR-097.
  */
-export interface MigrationDiagnostic extends IdlessDiagnostic {
-  readonly ruleId: "schema-v4-migration";
-}
+export type MigrationDiagnostic = DiagnosticOf<"schema-v4-migration">;

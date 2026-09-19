@@ -208,7 +208,9 @@ export function resolveObservationEdge(
 ): ResolvedEdge {
   const diagnostics: Diagnostic[] = [];
   if (typeof observation.source !== "string" || observation.source.length === 0) {
-    diagnostics.push(diag("observation-source", path, "Observation source must be non-empty."));
+    diagnostics.push(
+      diag("observation-source-shape", path, "Observation source must be non-empty."),
+    );
     return { diagnostics: Object.freeze(diagnostics) };
   }
   // Three removed fields, one rule id each, because a diagnostic has to name what the author
