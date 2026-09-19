@@ -26,28 +26,33 @@ import type { RuleId } from "./rule-id";
  * producer in the tree forwards here now, so no module hand-builds a frozen diagnostic and no
  * expression casts one.
  *
- * `severity` defaults to the rule's own answer through `ruleSeverity`, so a caller that passes
- * nothing gets what `contract/rule.ts` fixed where the rule is defined. That default is the whole of
- * the bug it replaces: the old one was the literal `"error"`, so every warning rule reported by a
- * caller that passed nothing produced an error diagnostic, and nothing noticed because passing
- * nothing is what almost every caller does.
+ * `severity` is not a parameter. It is read from the rule through `ruleSeverity`, so there is no
+ * argument position in which a call site could name one, and no default for a caller to override by
+ * passing nothing. The parameter's default used to be the literal `"error"`, which made a rule's own
+ * answer a suggestion: every warning rule reported by a caller that passed nothing produced an error
+ * diagnostic, and nothing noticed, because passing nothing is what almost every caller does. Deriving
+ * the default fixed the silent half and left the loud half, so the parameter is deleted rather than
+ * documented.
  *
- * The parameter still exists, so a call site can still name a severity. Saying otherwise, as this
- * docblock did, is the overclaim this file exists to keep out of the tree: `contract/validate-v5.ts`
- * names one at several sites and so does `adapters/trigger-factory/default.ts`. Thirteen naming sites
- * are counted rather than estimated, and thirteen is a floor rather than a total, because the sweep
- * behind it did not finish every test file and the adapter site was missed by three hand inventories
- * before it was found. Deleting the parameter is owed, and what it is owed first is the compiler
- * enumerating the sites rather than a comment claiming to have. The eight raw object literals do not
- * block it: they bypass this constructor entirely. No site names a severity that disagrees with its
- * rule, which is measured, so the derived default changes behaviour only where nothing is passed.
+ * Nineteen naming sites are converted with it, and every one of them named the severity its own rule
+ * already fixes, so no diagnostic moves. Nineteen is what was converted rather than a proof that
+ * nothing else named one: `typecheck` on the published commit is what closes that difference, and it
+ * enumerates better than an inventory does.
+ *
+ * Deleting it also retires an argument-order trap. `graph/ir.ts`'s `diag` took its payload fourth
+ * while this took `severity` fourth, so aliasing one to the other handed an array to a severity, and
+ * a session published exactly that confusion. Both take the same arguments in the same order now, so
+ * the mistake has no position left to happen in.
+ *
+ * Four raw object literals in `graph/` and `runtime/graph-publisher.ts` still spell a severity of
+ * their own, because they reach no constructor at all. They are the last of the second ownership,
+ * they carry their payloads already, and collapsing them is cleanup rather than a blocker.
  * See ADR-097.
  */
 export function diagnostic<Rule extends RuleId>(
   ruleId: Rule,
   path: string,
   message: string,
-  severity: Diagnostic["severity"] = ruleSeverity(ruleId),
   ...carried: OwnedIds<Rule>
 ): DiagnosticOf<Rule> {
   // Widened before it is read, for the reason `CONTRIBUTION_RULES` in `./rule` widens its own derived
@@ -61,7 +66,7 @@ export function diagnostic<Rule extends RuleId>(
     ruleId,
     path,
     message,
-    severity,
+    severity: ruleSeverity(ruleId),
     ids: Object.freeze([...(carriedIds ?? [])]),
   });
 }

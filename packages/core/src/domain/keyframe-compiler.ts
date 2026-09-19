@@ -25,9 +25,9 @@ function diagnostic<Rule extends RuleId>(
   // body while `Diagnostic` was a union: the object it returned named a severity for itself and chose
   // between a payload and no member at all through a conditional spread. Both answers belong to the
   // rule now, so the body is a forward and the only thing this declaration still owns is its name.
-  // The severity argument is declined rather than named, which is what makes the rule answer; its one
-  // caller names an error rule that always names ids, so nothing observable moves.
-  return buildDiagnostic(ruleId, path, message, undefined, ...carried);
+  // No severity is named here and none can be: the constructor has no such parameter. Every rule this
+  // file reports is an error rule that always names ids, so nothing observable moves.
+  return buildDiagnostic(ruleId, path, message, ...carried);
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);

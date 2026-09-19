@@ -9,12 +9,12 @@ import { code } from "../helpers/source-region";
 /**
  * Issue #449: ownership of `ids` is enforced at the producer rather than asserted past it.
  *
- * `asDiagnostic` takes a `RuleId` and an `ids` that are independent of each other, so a call naming a
+ * `asDiagnostic` took a `RuleId` and an `ids` that were independent of each other, so a call naming a
  * rule that owns no ids and passing a payload compiled, and produced a diagnostic the union called
- * unrepresentable. That union is gone, so what is left there is a widening rather than a narrowing an
- * assertion had to reach for. The call sites were always the half that mattered: what can be removed
- * is every one of them reaching it while naming its rule by a literal, and the five producers do that
- * by taking their ids as the argument list `contract/rule.ts` derives from the rule they were handed.
+ * unrepresentable. Both that union and that assertion are deleted rather than reasoned about. The call
+ * sites were always the half that mattered, and the five producers below take their ids as the
+ * argument list `contract/rule.ts` derives from the rule they were handed. None of them names a
+ * severity either, because the one constructor has no parameter for one.
  *
  * No type can observe itself and this suite cannot run `tsc`, so the claim is read off the
  * declarations as text. That is the shape `RA-78` established for a subject with no run-time form: a
@@ -69,7 +69,7 @@ describe("a producer takes the ids its rule owns", () => {
   });
 
   it("still carries the payload of a rule that owns one", () => {
-    const built = diagnostic("track-duplicate-id", "$.motions[0]", "duplicate", "error", ["hero"]);
+    const built = diagnostic("track-duplicate-id", "$.motions[0]", "duplicate", ["hero"]);
 
     expect(built.ruleId).toBe("track-duplicate-id");
     expect(built.ids).toEqual(["hero"]);
@@ -110,9 +110,9 @@ describe("a producer takes the ids its rule owns", () => {
  */
 export function refusedByTheCompiler(retain: RetainTrace): void {
   // @ts-expect-error `id-shape` owns no ids, so a payload is unrepresentable.
-  diagnostic("id-shape", "$", "x", "error", ["unexpected"]);
+  diagnostic("id-shape", "$", "x", ["unexpected"]);
   // @ts-expect-error `track-duplicate-id` always names ids, so omitting them is unrepresentable.
-  diagnostic("track-duplicate-id", "$", "x", "error");
+  diagnostic("track-duplicate-id", "$", "x");
   // @ts-expect-error `track-id` owns no ids, so a payload is unrepresentable.
   diag("track-id", "$", "x", ["unexpected"]);
   // @ts-expect-error `motion-duplicate` always names ids, so omitting them is unrepresentable.
@@ -128,8 +128,8 @@ export function refusedByTheCompiler(retain: RetainTrace): void {
  * producer that refuses everything.
  */
 export function acceptedByTheCompiler(retain: RetainTrace): void {
-  diagnostic("id-shape", "$", "x", "error");
-  diagnostic("track-duplicate-id", "$", "x", "error", ["hero"]);
+  diagnostic("id-shape", "$", "x");
+  diagnostic("track-duplicate-id", "$", "x", ["hero"]);
   diag("track-id", "$", "x");
   diag("motion-duplicate", "$", "x", ["hero"]);
   reportDiagnostic(undefined, retain, "flush-failure", "x", 0, ["hero"]);

@@ -224,13 +224,15 @@ export const RULES: Readonly<Record<RuleId, RuleFacts>> = Object.freeze({
 /**
  * The severity a rule refuses at, and the only expression in the tree that answers the question.
  *
- * A diagnostic's `severity` is derived through this wherever a call site declines to name one, which
- * is almost everywhere and is the default on the constructor in `contract/diagnostics.ts`. It is not
- * yet true that no call site can name one: that constructor still takes a `severity` parameter and
- * thirteen sites still pass it, counted rather than estimated and a floor rather than a total. Saying
- * otherwise would put the overclaim in the module that owns the invariant. The parameter's deletion is
- * owed, and what it is owed first is the compiler enumerating its call sites rather than a docblock
- * claiming to have. See ADR-097 and issue #449.
+ * A diagnostic's `severity` is derived through this and through nothing else. The constructor in
+ * `contract/diagnostics.ts` has no `severity` parameter, so there is no argument position in which a
+ * call site could name one, and the claim this docblock used to withhold is true rather than
+ * aspirational. Nineteen sites named one and are converted in the same request that deleted the
+ * parameter; each named the severity its rule already fixes, so no diagnostic moved. That number is
+ * what was converted rather than a total, and `typecheck` on the published commit is what closes the
+ * difference. What still spells a severity of its own is the four raw object literals in `graph/` and
+ * `runtime/graph-publisher.ts`, which reach no constructor and are the last of the second ownership.
+ * See ADR-097 and issue #449.
  */
 export function ruleSeverity(ruleId: RuleId): RuleSeverity {
   return RULES[ruleId].severity;

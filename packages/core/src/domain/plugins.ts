@@ -164,7 +164,7 @@ function diagnostic<Rule extends RuleId>(
   message: string,
   ...carried: OwnedIds<Rule>
 ): Diagnostic {
-  return buildDiagnostic(ruleId, path, message, undefined, ...carried);
+  return buildDiagnostic(ruleId, path, message, ...carried);
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);

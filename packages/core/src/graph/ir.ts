@@ -167,12 +167,17 @@ function freeze<T>(value: T): T {
  * body is a forward and the only thing this declaration still owns is its name. Twenty seven call
  * sites read `diag`, and renaming them would be churn with no invariant behind it.
  *
- * The severity argument is declined rather than named. The parameter survives on the constructor for
- * the raw object literals that still bypass it, and passing nothing through it is what makes
- * `ruleSeverity` answer, so no expression in this file names a severity after this. The ids list is
- * forwarded rather than widened for the same reason: `OwnedIds` is the constructor's own argument
- * list, so the correlation this file used to re-state is the one its call sites are already checked
- * against. See ADR-097.
+ * No severity is declined here, because there is no parameter left to decline: the constructor reads
+ * every rule's answer from `contract/rule.ts`, so no expression in this file names a severity and none
+ * can. The ids list is forwarded rather than widened for the same reason: `OwnedIds` is the
+ * constructor's own argument list, so the correlation this file used to re-state is the one its call
+ * sites are already checked against.
+ *
+ * This declaration and the constructor now take the same arguments in the same order, which retires
+ * the trap that made aliasing one to the other hand an array to a severity. The declaration is kept
+ * rather than collapsed into an alias anyway, because `ids-ownership-at-the-producer.test.ts` reads it
+ * as source text and an alias has neither the declaration nor the derived list it counts. See
+ * ADR-097.
  */
 export function diag<Rule extends RuleId>(
   ruleId: Rule,
@@ -180,7 +185,7 @@ export function diag<Rule extends RuleId>(
   message: string,
   ...carried: OwnedIds<Rule>
 ): Diagnostic {
-  return diagnostic(ruleId, path, message, undefined, ...carried);
+  return diagnostic(ruleId, path, message, ...carried);
 }
 
 export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {

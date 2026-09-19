@@ -309,9 +309,9 @@ export function undeliverable(
  * `severity: "error"` and a conditional `ids` spread that omitted the member whenever no payload
  * arrived, which made this the last producer in the runtime layer to own the shape. Both belong to
  * the rule and to the one constructor now, so what is left is the one fact this function exists for.
- * The severity argument is declined rather than named, which is what makes the rule answer, and `ids`
- * is forwarded as the open optional list `OwnedIds<RuleId>` already is. Every rule reported through
- * here is an error rule, so nothing observable moves. See ADR-097.
+ * No severity is named here and none can be: the constructor has no such parameter. `ids` is
+ * forwarded as the open optional list `OwnedIds<RuleId>` already is. Every rule reported through here
+ * is an error rule, so nothing observable moves. See ADR-097.
  */
 function frozenDiagnostic(
   ruleId: RuleId,
@@ -319,7 +319,7 @@ function frozenDiagnostic(
   tick: number,
   ids: readonly string[] | undefined,
 ): Diagnostic {
-  return buildDiagnostic(ruleId, String(tick), message, undefined, ids);
+  return buildDiagnostic(ruleId, String(tick), message, ids);
 }
 
 /**
@@ -434,7 +434,6 @@ export function batchFor(sequence: number, reason: BatchReason): PatchBatch {
           DEFERRED_VALUE_BATCH_RULE,
           "value-batch",
           "A value write inside an open batch staged its seed; the batch publishes once when the recipe returns.",
-          undefined,
           reason.seeds,
         ),
       ]);
@@ -446,7 +445,6 @@ export function batchFor(sequence: number, reason: BatchReason): PatchBatch {
           reason.scheduled
             ? "A flush requested while subscribers were being notified was queued as one follow-up publication for a scheduled drain."
             : "A flush requested while subscribers were being notified was queued as one follow-up publication carried by the next flush.",
-          undefined,
           reason.seeds,
         ),
       ]);
