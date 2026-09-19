@@ -1,0 +1,197 @@
+{
+  "version": 1,
+  "operation": "apply",
+  "expected_head": "6c99b2034c7a277410e5296f29a25edd12fe7854",
+  "message": "refactor(contract): narrow every diagnostic producer to the closed rule id union",
+  "expected_blobs": {
+    "packages/core/src/contract/rule-id.ts": "0d485cf5fcdd6479ff589e6d49e929f84ca6fb00",
+    "packages/core/src/contract/diagnostics.ts": "f59f01c024bbf7dd368beabb67c70dd721941727",
+    "packages/core/src/contract/validate-v5.ts": "4505b86231c8a79aab1ad9824023f4b0eef85894",
+    "packages/core/src/contract/validate-v5.md": "a63fd3a7e87a443eca712f655ab2a87fd49224ae",
+    "packages/core/src/domain/keyframe-compiler.ts": "e8b037b72ae5d5af89212bc58189511fabe3d0cf",
+    "packages/core/src/domain/plugins.ts": "57817a1eb50d688d2b379dbdb55c68548a40dee5",
+    "packages/core/src/graph/ir.ts": "fd6b6f5fa288b9603973a4ba45f2907d82391871",
+    "packages/core/src/graph/order.ts": "4a10b48da38ec6725f66f5d3243ea0d085285492",
+    "packages/core/src/graph/references.ts": "fc0f49ea155cb23207b652a86563ea74488ecd53",
+    "packages/core/src/runtime/report.ts": "78386f0d57a6dd7b2ebdb63f356ec4107c52ec44",
+    "packages/core/src/runtime/graph-runtime.ts": "c79d0b4507bdc0f4009dd56afa4384039aa519c2",
+    "packages/core/test/contract/rule-id.test.ts": "76bbb2610bcbf8ce5f99334b4bc607221377a593"
+  },
+  "edits": [
+    {
+      "path": "packages/core/src/contract/rule-id.ts",
+      "find": "const ALIAS_LOOKUP: Readonly<Record<string, string>> = CONTRIBUTION_RULE_ID_ALIASES;\n\n/**\n * The prefixed family at run time, derived from the same two constants the type derives from, so\n * the enumeration and the type cannot disagree.\n */\nexport const CONTRIBUTION_RULE_IDS: readonly ContributionRuleId[] = Object.freeze(\n  KEYFRAME_RULE_IDS.map(\n    (name) => `${CONTRIBUTION_RULE_ID_PREFIX}${ALIAS_LOOKUP[name] ?? name}` as ContributionRuleId,\n  ),\n);",
+      "replace": "const ALIAS_LOOKUP: Readonly<Record<string, string>> = CONTRIBUTION_RULE_ID_ALIASES;\n\n/**\n * The id one keyframe rule reports under when the contribution adapter is the reporter, and the one\n * expression that applies the prefix.\n *\n * `validateKeyframes` took the prefix and the substitution as open `string` options, so this union\n * was closed everywhere except at the site minting a fifth of it, and two modules held one\n * namespace. The cast is confined here for the reason `mint` in `runtime/report.ts` confines its\n * own: a derived family needs exactly one expression that mints a member. `ContributionRuleId`\n * states the same substitution in the type, so a spelling this can produce that the type cannot is\n * unrepresentable rather than merely unlikely. See ADR-097 and issue #449.\n */\nexport function contributionRuleId(name: KeyframeRuleId): ContributionRuleId {\n  return `${CONTRIBUTION_RULE_ID_PREFIX}${ALIAS_LOOKUP[name] ?? name}` as ContributionRuleId;\n}\n\n/**\n * The prefixed family at run time, derived through the one substitution the type derives through, so\n * the enumeration, the type and the reporter cannot disagree.\n */\nexport const CONTRIBUTION_RULE_IDS: readonly ContributionRuleId[] = Object.freeze(\n  KEYFRAME_RULE_IDS.map((name) => contributionRuleId(name)),\n);\n\n/**\n * Which reporter is reading a keyframe rule, which is the whole of what decides the id it reports\n * under.\n *\n * Three correlated options said this before: a `ruleIdPrefix`, a `ruleIdAliases` map and an\n * `allowGroups` flag, all three set together by the single caller that set any of them, and two of\n * them open `string` data. Options with one legal spelling per caller are one value, so the scope\n * names who is reading and the prefix, the substitution and group permission are derived from it.\n */\nexport type KeyframeRuleScope = \"authored\" | \"contribution\";\n\n/**\n * Every scope's answer, as a total map rather than a branch.\n *\n * A record keyed by the union is as closed as a `switch` ending at `unreachable`: a third scope fails\n * `typecheck` here, at the one place a scope is answered, rather than inheriting whichever branch was\n * written first. `domain/exhaustive` is deliberately not imported, because the contract layer does\n * not read the domain layer for a totality it can state in the type. See ADR-092.\n */\nconst SCOPED_RULE_ID: Readonly<Record<KeyframeRuleScope, (name: KeyframeRuleId) => RuleId>> = {\n  authored: (name) => name,\n  contribution: (name) => contributionRuleId(name),\n};\n\n/** The id one keyframe rule reports under for one scope. */\nexport function scopedRuleId(scope: KeyframeRuleScope, name: KeyframeRuleId): RuleId {\n  return SCOPED_RULE_ID[scope](name);\n}"
+    },
+    {
+      "path": "packages/core/src/contract/diagnostics.ts",
+      "find": "import type { Diagnostic } from \"./v5\";",
+      "replace": "import type { Diagnostic } from \"./v5\";\nimport type { RuleId } from \"./rule-id\";"
+    },
+    {
+      "path": "packages/core/src/contract/diagnostics.ts",
+      "find": " * here so the frozen shape has exactly one owner.\n */\nexport function diagnostic(\n  ruleId: string,",
+      "replace": " * here so the frozen shape has exactly one owner.\n *\n * `ruleId` is `RuleId` rather than `string`, so the one constructor of a diagnostic cannot mint a\n * rule nothing enumerates, and an injected adapter reaching this with a rule of its own invention\n * fails `typecheck` at its own call site. `contract/rule-id.ts` owns the enumeration. See ADR-097.\n */\nexport function diagnostic(\n  ruleId: RuleId,"
+    },
+    {
+      "path": "packages/core/src/contract/validate-v5.ts",
+      "find": "import { describeDiagnostics, diagnostic as issue } from \"./diagnostics\";",
+      "replace": "import { describeDiagnostics, diagnostic as issue } from \"./diagnostics\";\nimport { scopedRuleId, type KeyframeRuleId, type KeyframeRuleScope } from \"./rule-id\";"
+    },
+    {
+      "path": "packages/core/src/contract/validate-v5.ts",
+      "find": "export interface KeyframeValidationOptions {\n  readonly ruleIdPrefix?: string;\n  readonly ruleIdAliases?: Readonly<Record<string, string>>;\n  /**\n   * Plugin-named groups are an authoring form. A contributed property is a single flat output, so\n   * the contribution path passes `false` and keeps the pre-group strictness: an object of objects\n   * contributed as a property stays a `stops-shape` error instead of being read as a group. Both\n   * section reservations are scoped to the same flag, because a contributed key is not authored.\n   */\n  readonly allowGroups?: boolean;\n}",
+      "replace": "export interface KeyframeValidationOptions {\n  /**\n   * Who is reading these keyframes, which is the whole of what the three options this replaced ever\n   * said together.\n   *\n   * `ruleIdPrefix`, `ruleIdAliases` and `allowGroups` were three fields the one caller that set any\n   * of them set all of them, and two of the three were open `string` data, so the rule id union was\n   * closed everywhere except at the site that mints the whole prefixed family. Which id a rule\n   * reports under is derived from this scope by `contract/rule-id`, and group permission is answered\n   * from the same scope by `GROUPS_ALLOWED` below.\n   *\n   * Plugin-named groups are an authoring form. A contributed property is a single flat output, so\n   * the contribution scope keeps the pre-group strictness: an object of objects contributed as a\n   * property stays a `stops-shape` error instead of being read as a group. Both section reservations\n   * are scoped to the same answer, because a contributed key is not authored. See ADR-097.\n   */\n  readonly scope?: KeyframeRuleScope;\n}"
+    },
+    {
+      "path": "packages/core/src/contract/validate-v5.ts",
+      "find": "const THREE_D_KEYS = [\"z\", \"rotationX\", \"rotationY\"];",
+      "replace": "const THREE_D_KEYS = [\"z\", \"rotationX\", \"rotationY\"];\n// Whether a scope authors groups, keyed by the scope union so a third scope has to answer here\n// rather than inheriting the answer written first. The reasoning is in validate-v5.md.\nconst GROUPS_ALLOWED: Readonly<Record<KeyframeRuleScope, boolean>> = {\n  authored: true,\n  contribution: false,\n};"
+    },
+    {
+      "path": "packages/core/src/contract/validate-v5.ts",
+      "find": "  const prefix = options.ruleIdPrefix ?? \"\";\n  const aliases = options.ruleIdAliases ?? {};\n  const allowGroups = options.allowGroups ?? true;\n  const add = (\n    ruleId: string,\n    rulePath: string,\n    message: string,\n    severity: Diagnostic[\"severity\"] = \"error\",\n  ) =>\n    diagnostics.push(issue(`${prefix}${aliases[ruleId] ?? ruleId}`, rulePath, message, severity));",
+      "replace": "  const scope = options.scope ?? \"authored\";\n  const allowGroups = GROUPS_ALLOWED[scope];\n  const add = (\n    ruleId: KeyframeRuleId,\n    rulePath: string,\n    message: string,\n    severity: Diagnostic[\"severity\"] = \"error\",\n  ) => diagnostics.push(issue(scopedRuleId(scope, ruleId), rulePath, message, severity));"
+    },
+    {
+      "path": "packages/core/src/contract/validate-v5.md",
+      "find": "renaming it would churn the `plugin-contribution-stops-shape` alias in `domain/plugins.ts` and every citation of it across the contract suite for no semantic gain.",
+      "replace": "renaming it would churn the derived `plugin-contribution-stops-shape` spelling that `contract/rule-id.ts` now owns and every citation of it across the contract suite for no semantic gain."
+    },
+    {
+      "path": "packages/core/src/contract/validate-v5.md",
+      "find": "## SECTION_NAMES\n\n`'requires' or 'values'`, so the unknown-section message never hardcodes the legal set twice.",
+      "replace": "## SECTION_NAMES\n\n`'requires' or 'values'`, so the unknown-section message never hardcodes the legal set twice.\n\n## GROUPS_ALLOWED\n\nWhether a scope authors plugin-named groups, which is the second and last thing a scope decides.\n\nA record keyed by `KeyframeRuleScope` rather than a `scope === \"authored\"` test, for the reason `SCOPED_RULE_ID` in `contract/rule-id.ts` is one: a third scope then has to answer both questions where they are asked, instead of silently inheriting whichever answer was written first. The two questions stay separate maps because they belong to different owners. Which id a rule reports under is a fact about rule ids, so the id module owns it; whether a group is authorable is a fact about this validator.\n\nA contributed property is one flat output, so the contribution scope answers `false` and keeps the pre-group strictness: an object of objects contributed as a property stays a `stops-shape` error rather than being read as a group, and both section names stay ordinary keys. This replaces the `allowGroups` option, which every caller that set it set together with the prefix and the alias map. See ADR-097."
+    },
+    {
+      "path": "packages/core/src/domain/keyframe-compiler.ts",
+      "find": "import type { AuthoredStop, Diagnostic } from \"../contract/v5\";",
+      "replace": "import type { RuleId } from \"../contract/rule-id\";\nimport type { AuthoredStop, Diagnostic } from \"../contract/v5\";"
+    },
+    {
+      "path": "packages/core/src/domain/keyframe-compiler.ts",
+      "find": "function diagnostic(\n  ruleId: string,",
+      "replace": "function diagnostic(\n  ruleId: RuleId,"
+    },
+    {
+      "path": "packages/core/src/domain/plugins.ts",
+      "find": "import { validateKeyframes } from \"../contract/validate-v5\";",
+      "replace": "import type { RuleId } from \"../contract/rule-id\";\nimport { validateKeyframes } from \"../contract/validate-v5\";"
+    },
+    {
+      "path": "packages/core/src/domain/plugins.ts",
+      "find": "function diagnostic(\n  ruleId: string,",
+      "replace": "function diagnostic(\n  ruleId: RuleId,"
+    },
+    {
+      "path": "packages/core/src/domain/plugins.ts",
+      "find": "  validateKeyframes({ [output]: property }, path, diagnostics, {\n    ruleIdPrefix: \"plugin-contribution-\",\n    allowGroups: false,\n    ruleIdAliases: {\n      \"stop-position\": \"stop\",\n      \"stop-position-range\": \"stop-range\",\n      \"stop-position-order\": \"stop-order\",\n      \"stop-position-duplicate\": \"stop-duplicate\",\n    },\n  });",
+      "replace": "  // The scope, and nothing else. The prefix and the alias substitution were data this file handed\n  // the validator, so one namespace had two owners and the id a contributed property reports under\n  // was assembled from open strings at run time. The contract layer owns both now, and this states\n  // which reporter is asking.\n  validateKeyframes({ [output]: property }, path, diagnostics, { scope: \"contribution\" });"
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "import { readPluginBindings, readPluginValues } from \"../contract/keyframe-shape\";",
+      "replace": "import type { RuleId } from \"../contract/rule-id\";\nimport { readPluginBindings, readPluginValues } from \"../contract/keyframe-shape\";"
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "export function diag(\n  ruleId: string,",
+      "replace": "export function diag(\n  ruleId: RuleId,"
+    },
+    {
+      "path": "packages/core/src/graph/order.ts",
+      "find": "import type { Diagnostic } from \"../contract/v5\";",
+      "replace": "import type { RuleId } from \"../contract/rule-id\";\nimport type { Diagnostic } from \"../contract/v5\";"
+    },
+    {
+      "path": "packages/core/src/graph/order.ts",
+      "find": "export const CYCLE_RULE_ID = \"graph-cycle\";",
+      "replace": "export const CYCLE_RULE_ID = \"graph-cycle\" satisfies RuleId;"
+    },
+    {
+      "path": "packages/core/src/graph/references.ts",
+      "find": "import type { Diagnostic } from \"../contract/v5\";",
+      "replace": "import type { RuleId } from \"../contract/rule-id\";\nimport type { Diagnostic } from \"../contract/v5\";"
+    },
+    {
+      "path": "packages/core/src/graph/references.ts",
+      "find": "export const PENDING_REFERENCE_RULE_ID = \"observation-pending-reference\";",
+      "replace": "export const PENDING_REFERENCE_RULE_ID = \"observation-pending-reference\" satisfies RuleId;"
+    },
+    {
+      "path": "packages/core/src/runtime/report.ts",
+      "find": "import type { Diagnostic, PatchBatch } from \"../contract/v5\";",
+      "replace": "import type { RuleId } from \"../contract/rule-id\";\nimport type { Diagnostic, PatchBatch } from \"../contract/v5\";"
+    },
+    {
+      "path": "packages/core/src/runtime/report.ts",
+      "find": "/** The rule id a diagnostic carries when the host's own diagnostic sink threw. Issue #410. */\nexport const DIAGNOSTIC_SINK_FAILURE_RULE = \"diagnostic-sink-failure\";",
+      "replace": "/**\n * The rule id a diagnostic carries when the host's own diagnostic sink threw. Issue #410.\n *\n * `satisfies` rather than an annotation, here and at the two below: the constant keeps its literal\n * type, which is what lets a reader compare it against one spelling, and membership of the closed\n * union is proved where the rule is named rather than at whichever call site happens to pass it. A\n * rule id held in a constant is the one shape a scan of construction arguments cannot see, so the\n * compiler answers for it instead. See ADR-097.\n */\nexport const DIAGNOSTIC_SINK_FAILURE_RULE = \"diagnostic-sink-failure\" satisfies RuleId;"
+    },
+    {
+      "path": "packages/core/src/runtime/report.ts",
+      "find": "export const DEFERRED_VALUE_BATCH_RULE = \"value-batch-deferred\";",
+      "replace": "export const DEFERRED_VALUE_BATCH_RULE = \"value-batch-deferred\" satisfies RuleId;"
+    },
+    {
+      "path": "packages/core/src/runtime/report.ts",
+      "find": "export const DEFERRED_FLUSH_RULE = \"reentrant-flush-deferred\";",
+      "replace": "export const DEFERRED_FLUSH_RULE = \"reentrant-flush-deferred\" satisfies RuleId;"
+    },
+    {
+      "path": "packages/core/src/runtime/report.ts",
+      "find": "function frozenDiagnostic(\n  ruleId: string,",
+      "replace": "function frozenDiagnostic(\n  ruleId: RuleId,"
+    },
+    {
+      "path": "packages/core/src/runtime/report.ts",
+      "find": "  retain: RetainTrace,\n  ruleId: string,",
+      "replace": "  retain: RetainTrace,\n  ruleId: RuleId,"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "import { unreachable } from \"../domain/exhaustive\";",
+      "replace": "import type { RuleId } from \"../contract/rule-id\";\nimport { unreachable } from \"../domain/exhaustive\";"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "export const CLOCK_REGRESSION_RULE = \"clock-tick-regression\";\nexport const CLOCK_CONSUMER_FAILURE_RULE = \"clock-consumer-failure\";\nexport const FLUSH_FAILURE_RULE = \"flush-failure\";\nexport const SCHEDULER_FAILURE_RULE = \"scheduler-failure\";",
+      "replace": "export const CLOCK_REGRESSION_RULE = \"clock-tick-regression\" satisfies RuleId;\nexport const CLOCK_CONSUMER_FAILURE_RULE = \"clock-consumer-failure\" satisfies RuleId;\nexport const FLUSH_FAILURE_RULE = \"flush-failure\" satisfies RuleId;\nexport const SCHEDULER_FAILURE_RULE = \"scheduler-failure\" satisfies RuleId;"
+    },
+    {
+      "path": "packages/core/src/runtime/graph-runtime.ts",
+      "find": "  #report(ruleId: string, message: string, tick: number = this.#lastTick): void {",
+      "replace": "  #report(ruleId: RuleId, message: string, tick: number = this.#lastTick): void {"
+    },
+    {
+      "path": "packages/core/test/contract/rule-id.test.ts",
+      "find": "  KEYFRAME_RULE_IDS,\n  RULE_IDS,\n  isRuleId,\n} from \"../../src/contract/rule-id\";",
+      "replace": "  KEYFRAME_RULE_IDS,\n  RULE_IDS,\n  isRuleId,\n  scopedRuleId,\n} from \"../../src/contract/rule-id\";"
+    },
+    {
+      "path": "packages/core/test/contract/rule-id.test.ts",
+      "find": "// purpose: its private `diagnostic(path, message, ids)` puts the path first, and its one id is\n// caught by the assigned form instead.",
+      "replace": "// purpose: its private `diagnostic(path, message, ids)` puts the path first, and its one id is\n// caught by the assigned form instead.\n//\n// A rule id held in a module constant is read too, and that form is why: `graph/order.ts`,\n// `graph/references.ts`, `runtime/report.ts` and `runtime/graph-runtime.ts` each name a rule in a\n// constant and assign the constant, so nine ids reached `Diagnostic.ruleId` without ever appearing\n// as a literal argument. Those declarations now also state `satisfies RuleId`, so the compiler\n// refuses an unenumerated one where the rule is named; this scan is the measurement beside that\n// proof, and it exists because a scan blind to a whole construction shape reports coverage it never\n// tested."
+    },
+    {
+      "path": "packages/core/test/contract/rule-id.test.ts",
+      "find": "// The prefix is applied by the contribution adapter in the plugin layer rather than by the\n// validator that reports the names. The inventory placed it in `validate-v5.ts`; the scan found it\n// here, which is the second thing this gate corrected about its own subject.\nconst PREFIX_SITE_FILE = \"domain/plugins.ts\";",
+      "replace": "// The scope is passed by the contribution adapter in the plugin layer rather than by the validator\n// that reports the names. The inventory placed the prefix in `validate-v5.ts`; the scan found it\n// here, which is the second thing this gate corrected about its own subject.\nconst CONTRIBUTION_SCOPE_FILE = \"domain/plugins.ts\";"
+    },
+    {
+      "path": "packages/core/test/contract/rule-id.test.ts",
+      "find": "const REPORTED = /\\badd\\(\\s*\"([a-z][a-z0-9-]*)\"/g;\nconst PREFIX_SITE = /ruleIdPrefix:\\s*\"plugin-contribution-\"/;",
+      "replace": "const REPORTED = /\\badd\\(\\s*\"([a-z][a-z0-9-]*)\"/g;\nconst HELD = /\\b[A-Z][A-Z0-9_]*_RULE(?:_ID)?\\s*=\\s*\"([a-z][a-z0-9-]*)\"/g;\nconst CONTRIBUTION_SCOPE = /scope:\\s*\"contribution\"/;"
+    },
+    {
+      "path": "packages/core/test/contract/rule-id.test.ts",
+      "find": "  const found = [...matches(source, ASSIGNED), ...matches(source, DECLARED)];",
+      "replace": "  const found = [\n    ...matches(source, ASSIGNED),\n    ...matches(source, DECLARED),\n    ...matches(source, HELD),\n  ];"
+    },
+    {
+      "path": "packages/core/test/contract/rule-id.test.ts",
+      "find": "  it(\"finds the contribution prefix site, so a passing scan is never an empty one\", () => {\n    const withPrefixSite = sourceFiles().filter((file) => PREFIX_SITE.test(sourceOf(file)));\n    expect(withPrefixSite).toEqual([PREFIX_SITE_FILE]);\n  });",
+      "replace": "  it(\"finds the contribution scope site, so a passing scan is never an empty one\", () => {\n    const withScope = sourceFiles().filter((file) => CONTRIBUTION_SCOPE.test(sourceOf(file)));\n    expect(withScope).toEqual([CONTRIBUTION_SCOPE_FILE]);\n  });\n\n  // The presence of the site was all this gate used to assert about the family the prefix mints, so\n  // a changed alias, a new alias or a newly reachable keyframe rule could emit an uncovered id while\n  // the gate stayed green. It asserts the derivation itself now: every id the reporter can produce\n  // for every rule it can report, through the one function the run time actually calls.\n  it(\"covers every id the contribution scope can report, rule by rule\", () => {\n    const reported = KEYFRAME_RULE_IDS.map((name) => scopedRuleId(\"contribution\", name));\n    expect(reported.filter((id) => !isRuleId(id))).toEqual([]);\n    expect([...reported]).toEqual([...CONTRIBUTION_RULE_IDS]);\n  });\n\n  it(\"leaves an authored rule spelled as authored\", () => {\n    const reported = KEYFRAME_RULE_IDS.map((name) => scopedRuleId(\"authored\", name));\n    expect(reported).toEqual([...KEYFRAME_RULE_IDS]);\n  });\n\n  it(\"covers every rule id a module constant holds, which no argument scan can see\", () => {\n    const held = [...new Set(sourceFiles().flatMap((file) => matches(sourceOf(file), HELD)))];\n    expect(held.filter((id) => !isRuleId(id))).toEqual([]);\n    // The scan asserts its own subject was found, for the reason the prefix case does: an empty\n    // match set answers covered for every spelling.\n    for (const id of [\n      \"graph-cycle\",\n      \"observation-pending-reference\",\n      \"clock-tick-regression\",\n      \"diagnostic-sink-failure\",\n    ])\n      expect(held).toContain(id);\n  });"
+    }
+  ]
+}
