@@ -1,0 +1,24 @@
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-09-19T07:55:00.9426454Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T07:55:00.9426990Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T07:55:00.9467267Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T07:55:00.9467575Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T07:55:00.9467824Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T07:55:00.9468081Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T07:55:03.6534114Z ##[error]packages/core/src/graph/ir.ts(183,55): error TS2345: Argument of type '[...OwnedIds<Rule>]' is not assignable to parameter of type '[Rule] extends [IdlessRuleId] ? [] : [Rule] extends [IdentifiedRuleId] ? [ids: readonly string[]] : [ids?: readonly string[] | undefined]'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T07:55:03.6936429Z ##[error]Process completed with exit code 2.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-19T07:55:58.2343703Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:55:58.2344531Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:55:58.2385337Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:55:58.2386230Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:55:58.2386725Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:55:58.2387229Z   SUITE_RESULT: cancelled
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:55:58.2387757Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:55:58.2523119Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-19T07:55:59.0360342Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:55:59.0360864Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:55:59.0385571Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:55:59.0386110Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:55:59.0386450Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:55:59.0386747Z   SUITE_RESULT: cancelled
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:55:59.0387083Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T07:55:59.0484025Z ##[error]Process completed with exit code 1.
