@@ -1,5 +1,4 @@
 // Docs: ./ir.md
-import type { OwnedIds } from "../contract/diagnostic-ids";
 import type {
   Diagnostic,
   ObservationDefinition,
@@ -7,8 +6,7 @@ import type {
   ProjectDefinition,
   TrackDefinition,
 } from "../contract/v5";
-import { asDiagnostic } from "../contract/diagnostics";
-import type { RuleId } from "../contract/rule-id";
+import { diagnostic as diag } from "../contract/diagnostics";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { compareCodeUnits } from "./compare";
@@ -158,15 +156,13 @@ function freeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
-export function diag<Rule extends RuleId>(
-  ruleId: Rule,
-  path: string,
-  message: string,
-  ...carried: OwnedIds<Rule>
-): Diagnostic {
-  const [ids] = carried as unknown as readonly [(readonly string[])?];
-  return asDiagnostic({ ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) });
-}
+// The graph layer's spelling of the one constructor, and now the alias it always was. Twenty seven
+// call sites here and four in the incremental builder read `diag`, so the name is kept and the
+// declaration is not: a forwarding body restated the constructor's whole signature to change nothing
+// about it, because severity was already the rule's own answer and `OwnedIds` was already the
+// constructor's own argument list referenced rather than redefined. `contract/validate-v5.ts` binds
+// the same constructor as `issue` exactly this way.
+export { diag };
 
 export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
   return compareCodeUnits(a.ruleId, b.ruleId) || compareCodeUnits(a.path, b.path);
@@ -208,7 +204,9 @@ export function resolveObservationEdge(
 ): ResolvedEdge {
   const diagnostics: Diagnostic[] = [];
   if (typeof observation.source !== "string" || observation.source.length === 0) {
-    diagnostics.push(diag("observation-source", path, "Observation source must be non-empty."));
+    diagnostics.push(
+      diag("observation-source-shape", path, "Observation source must be non-empty."),
+    );
     return { diagnostics: Object.freeze(diagnostics) };
   }
   // Three removed fields, one rule id each, because a diagnostic has to name what the author

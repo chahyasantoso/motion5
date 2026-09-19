@@ -34,6 +34,7 @@ import {
   bookingDrain,
   deferredSeeds,
   deferredTick,
+  deferredWork,
   deferring,
   endFlush,
   isFlushing,
@@ -192,10 +193,13 @@ export class GraphRuntime {
    * for a full graph recompute, the most expensive answer this class has, selected by saying
    * nothing. Every caller states its list, and the one that wants every member says so.
    *
-   * An empty list is not a cheap flush and is not treated as one. It still derives the snapshot,
-   * moves `#sequence` and notifies every batch subscriber, because `#drainScheduled` replays a
-   * deferral that carried no frame through `flush([])`, precisely so the drain publishes what the
-   * pending payload carried. A deferral that carried a frame replays through `flushAtTick` instead,
+   * An empty list is not a cheap flush and is not treated as one. A call that publishes derives the
+   * snapshot, moves `#sequence` and notifies every batch subscriber for it, because
+   * `#drainScheduled` replays a deferral that carried no frame through `flush([])`, precisely so the
+   * drain publishes what the pending payload carried. A reentrant call is the exception rather than
+   * a qualification of that sentence: it publishes nothing now whatever its seeds, and when it also
+   * defers nothing it is answered the empty batch, which is the one path on which none of the three
+   * happen. A deferral that carried a frame replays through `flushAtTick` instead,
    * so this verb is one of the two branches rather than the whole of the drain. Emptiness is a
    * project-tier question and `ProjectRuntime.#publishSeeds` owns it. See ADR-080 and ADR-088.
    */
@@ -245,11 +249,37 @@ export class GraphRuntime {
   }
   #deferIfFlushing(request: PublishRequest): PatchBatch | undefined {
     if (!isFlushing(this.#phase)) return undefined;
-    const seeds = requestSeeds(request);
-    this.#pending = deferring(this.#pending, seeds, requestTick(request));
-    // The batch says which future the work has, and the member that books is the one that knows.
-    const scheduled = this.#scheduleDrain();
-    return batchFor(this.#sequence, { kind: "deferred-in-flush", seeds, scheduled });
+    this.#pending = deferring(this.#pending, requestSeeds(request), requestTick(request));
+    // Read from what the deferral owes rather than from what the request stated, so one switch
+    // decides both the batch and whether a drain is booked at all. A request that adds nothing to an
+    // empty payload owes nothing, and a booking for it would claim a drain has something to publish
+    // when its only act would be to release it. A request that adds only a frame owes a publication,
+    // so the empty batch would tell its caller that nothing was queued.
+    const owed = deferredWork(this.#pending);
+    switch (owed.kind) {
+      case "nothing":
+        return batchFor(this.#sequence, { kind: "empty" });
+      // The batch says which future the work has, and the member that books is the one that knows,
+      // so the booking is taken inside the answer and travels with it. Still taken whether or not
+      // this request contributed the work, because a drain replaying through here released the
+      // booking it consumed first.
+      case "seeds":
+        return batchFor(this.#sequence, {
+          kind: "deferred-in-flush",
+          seeds: owed.seeds,
+          scheduled: this.#scheduleDrain(),
+        });
+      // The frame is the whole of what this deferral has to say, so it says that instead of naming
+      // a payload it does not have.
+      case "frame":
+        return batchFor(this.#sequence, {
+          kind: "deferred-frame-in-flush",
+          tick: owed.tick,
+          scheduled: this.#scheduleDrain(),
+        });
+      default:
+        return unreachable(owed);
+    }
   }
   #advanceTick(tick: number): void {
     this.#assertTick(tick);

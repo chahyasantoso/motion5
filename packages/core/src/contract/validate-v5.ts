@@ -70,12 +70,13 @@ export function validateKeyframes(
 ): void {
   const scope = options.scope ?? "authored";
   const allowGroups = GROUPS_ALLOWED[scope];
-  const add = (
-    ruleId: KeyframeRuleId,
-    rulePath: string,
-    message: string,
-    severity: Diagnostic["severity"] = "error",
-  ) => diagnostics.push(issue(scopedRuleId(scope, ruleId), rulePath, message, severity));
+  // No `severity` parameter and no default. The default here was the constructor's own bug one layer
+  // above it: a keyframe rule reported through this without an explicit severity became an error
+  // whatever `contract/rule.ts` says, and it was harmless only because both keyframe warnings passed
+  // `"warning"` by hand. A third keyframe warning would have reported as an error with nothing
+  // noticing. Every rule this forwards owns no ids, so the argument list stays empty too.
+  const add = (ruleId: KeyframeRuleId, rulePath: string, message: string) =>
+    diagnostics.push(issue(scopedRuleId(scope, ruleId), rulePath, message));
   if (keyframes === undefined) return;
   if (!isObject(keyframes)) {
     add("keyframes-shape", path, "Track keyframes must be an object.");
@@ -123,9 +124,9 @@ export function validateKeyframes(
       previous = position;
     }
     if (positions.size > 0 && !positions.has(0))
-      add("stop-missing-start", propertyPath, "Stop sequence does not define p=0.", "warning");
+      add("stop-missing-start", propertyPath, "Stop sequence does not define p=0.");
     if (positions.size > 0 && !positions.has(1))
-      add("stop-missing-end", propertyPath, "Stop sequence does not define p=1.", "warning");
+      add("stop-missing-end", propertyPath, "Stop sequence does not define p=1.");
   };
   const validateProperty = (property: unknown, propertyPath: string): void => {
     const leaf = readAuthoredLeaf(property);
@@ -419,7 +420,6 @@ function validateTrackShape(
         "plugin-contribution-unsupported-entry",
         `${path}.use`,
         "Track use is not supported; resolve plugins from authored keyframes.",
-        "error",
         [String(track.use)],
       ),
     );
@@ -427,13 +427,9 @@ function validateTrackShape(
   if (typeof track.id === "string" && track.id.length) {
     if (seenIds.has(track.id))
       diagnostics.push(
-        issue(
-          "track-duplicate-id",
-          `${path}.id`,
-          `Track id '${track.id}' is duplicated.`,
-          "error",
-          [track.id],
-        ),
+        issue("track-duplicate-id", `${path}.id`, `Track id '${track.id}' is duplicated.`, [
+          track.id,
+        ]),
       );
     seenIds.add(track.id);
   }
@@ -529,9 +525,7 @@ export function validateV5(input: unknown): ValidationResult {
     if (id) {
       if (motionIds.has(id))
         diagnostics.push(
-          issue("motion-duplicate-id", `${path}.id`, `Motion id '${id}' is duplicated.`, "error", [
-            id,
-          ]),
+          issue("motion-duplicate-id", `${path}.id`, `Motion id '${id}' is duplicated.`, [id]),
         );
       motionIds.add(id);
     }
@@ -570,13 +564,9 @@ export function validateV5(input: unknown): ValidationResult {
     for (const track of allTracks)
       if (usesThreeD(track))
         diagnostics.push(
-          issue(
-            "perspective-usage",
-            "perspective",
-            "3D keyframes require a project perspective.",
-            "warning",
-            [String(track.id ?? "")],
-          ),
+          issue("perspective-usage", "perspective", "3D keyframes require a project perspective.", [
+            String(track.id ?? ""),
+          ]),
         );
   if (!diagnostics.some(({ severity }) => severity === "error"))
     diagnostics.push(...buildGraphIR(input as unknown as ProjectDefinition).diagnostics);

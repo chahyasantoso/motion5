@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { IdentifiedRuleId } from "../../../src/contract/diagnostic-ids";
+import type { IdentifiedRuleId } from "../../../src/contract/rule";
 import type { Diagnostic } from "../../../src/contract/v5";
 import {
   CLEAN_TRACE,
@@ -151,7 +151,10 @@ describe("one owner reports what a step failed at and what a deferral answers", 
     expect(empty).toEqual({ tick: 4, seeds: [], patches: [], diagnostics: [] });
     expect(Object.isFrozen(empty)).toBe(true);
 
-    const seeds = [ARM];
+    // Annotated rather than inferred, because a deferral now requires a seed list with at least one
+    // member and an inferred `string[]` cannot prove it. The `push` below still compiles, since a
+    // tuple with a rest element accepts one, so this case's claim about copying is unchanged.
+    const seeds: [string, ...string[]] = [ARM];
     const staged = batchFor(7, { kind: "deferred-in-batch", seeds });
     seeds.push(HAND);
     expect(staged.tick).toBe(7);

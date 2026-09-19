@@ -135,6 +135,7 @@ export const BASE_RULE_IDS = [
   "observation-role-unsupported",
   "observation-self-reference",
   "observation-source",
+  "observation-source-shape",
   "observation-target-unsupported",
   "observation-unknown-source",
   "observes-shape",
@@ -163,6 +164,7 @@ export const BASE_RULE_IDS = [
   "project-shape",
   "project-templates-unsupported",
   "reentrant-flush-deferred",
+  "reentrant-flush-deferred-frame",
   "requirement-source",
   "scheduler-failure",
   "schema-v4-migration",
@@ -260,13 +262,33 @@ export type KeyframeRuleScope = "authored" | "contribution";
  * written first. `domain/exhaustive` is deliberately not imported, because the contract layer does
  * not read the domain layer for a totality it can state in the type. See ADR-092.
  */
-const SCOPED_RULE_ID: Readonly<Record<KeyframeRuleScope, (name: KeyframeRuleId) => RuleId>> = {
+const SCOPED_RULE_ID: Readonly<
+  Record<KeyframeRuleScope, (name: KeyframeRuleId) => KeyframeRuleId | ContributionRuleId>
+> = {
   authored: (name) => name,
   contribution: (name) => contributionRuleId(name),
 };
 
-/** The id one keyframe rule reports under for one scope. */
-export function scopedRuleId(scope: KeyframeRuleScope, name: KeyframeRuleId): RuleId {
+/**
+ * The id one keyframe rule reports under for one scope.
+ *
+ * The answer is `KeyframeRuleId | ContributionRuleId` rather than `RuleId`, and the narrowing is
+ * enforcement rather than precision. Every member of both families owns no ids, so `OwnedIds` of
+ * this answer is the empty argument list, and the scoped path through `contract/validate-v5.ts` is
+ * checked against it. Answering `RuleId` fell through to the open branch instead, which enforces
+ * nothing: that caller could have passed a payload for a rule that owns none and compiled. Nothing
+ * was ever red for it, because the branch it landed on is the one with no claim in it.
+ *
+ * The narrowing was designed with the registry, written up in the past tense as though it had
+ * landed, carried through four inventories of what this slice still owed, and submitted only now. A
+ * review found the gap and no gate did, which is the argument for the negative type case in
+ * `test/contract/ids-ownership-at-the-producer.test.ts`: it asks the compiler for the refusal rather
+ * than describing it here. See ADR-097 and issue #449.
+ */
+export function scopedRuleId(
+  scope: KeyframeRuleScope,
+  name: KeyframeRuleId,
+): KeyframeRuleId | ContributionRuleId {
   return SCOPED_RULE_ID[scope](name);
 }
 

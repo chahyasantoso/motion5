@@ -1,8 +1,6 @@
 // Docs: ./plugins.md
-import type { OwnedIds } from "../contract/diagnostic-ids";
 import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
-import { asDiagnostic } from "../contract/diagnostics";
-import type { RuleId } from "../contract/rule-id";
+import { diagnostic } from "../contract/diagnostics";
 import { validateKeyframes } from "../contract/validate-v5";
 import type {
   AuthoredProperty,
@@ -158,15 +156,6 @@ export interface PluginDefinition {
 const VALID_STAGES = new Set(["prepare", "compose"]);
 const RESERVED_TWEEN_VARS = new Set(["keyframes", "duration", "paused", "id", "observes"]);
 const AMBIGUOUS_KEY_HINT = "Author it inside a plugin-named group to name one.";
-function diagnostic<Rule extends RuleId>(
-  ruleId: Rule,
-  path: string,
-  message: string,
-  ...carried: OwnedIds<Rule>
-): Diagnostic {
-  const [ids] = carried as unknown as readonly [(readonly string[])?];
-  return asDiagnostic({ ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) });
-}
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
