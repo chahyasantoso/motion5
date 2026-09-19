@@ -1,7 +1,7 @@
 {
   "version": 1,
   "operation": "apply",
-  "expected_head": "1c8a37d8098450da5fed02517a36aa017d58ab6f",
+  "expected_head": "9cbcef4e6f4d70da9130f370a1f5a64e7474f492",
   "expected_blobs": {
     "docs/ARCHITECTURE.md": "0366f58aaf8be2543eb40ce5bd82d88881796715",
     "docs/AUTHORED-SCHEMA.md": "16173fad565565d3b8f609cf5a28cda7f02ce906",
@@ -27,13 +27,12 @@
     {
       "path": "docs/guide/errors-and-diagnostics.md",
       "find": "A diagnostic is structured, and the shape is stable:\n\n```ts\ninterface Diagnostic {\n  readonly ruleId: string;\n  readonly path: string;\n  readonly message: string;\n  readonly severity: \"error\" | \"warning\";\n  readonly ids?: readonly string[];\n}\n```",
-      "replace": "A diagnostic is structured, and the shape is stable. It is a union of three variants, and which one you have is decided by the rule:\n\n```ts\ntype Diagnostic = IdlessDiagnostic | IdentifiedDiagnostic | OptionalIdsDiagnostic;\ninterface DiagnosticShape {\n  readonly path: string;\n  readonly message: string;\n  readonly severity: \"error\" | \"warning\";\n}\ninterface IdlessDiagnostic extends DiagnosticShape {\n  readonly ruleId: IdlessRuleId;\n  readonly ids?: undefined;\n}\ninterface IdentifiedDiagnostic extends DiagnosticShape {\n  readonly ruleId: IdentifiedRuleId;\n  readonly ids: readonly string[];\n}\ninterface OptionalIdsDiagnostic extends DiagnosticShape {\n  readonly ruleId: OptionalIdsRuleId;\n  readonly ids: readonly string[] | undefined;\n}\n```\n\nReading one is unchanged: `path`, `message` and `severity` are on every variant, and `ids` is readable on all three. Two things changed for a caller who writes one down. `ruleId` is a closed union rather than a `string`, so comparing it against a rule this project does not have stops compiling instead of quietly never matching, and constructing a `Diagnostic` of your own with a rule id you invented is refused. And `ids` is only present on the rules that name ids, so a rule that names none cannot carry one. See ADR-097."
+      "replace": "A diagnostic is structured, and the shape is stable. It is a union of three variants, and which one you have is decided by the rule:\n\n```ts\ntype Diagnostic = IdlessDiagnostic | IdentifiedDiagnostic | OptionalIdsDiagnostic;\ninterface DiagnosticShape {\n  readonly path: string;\n  readonly message: string;\n  readonly severity: \"error\" | \"warning\";\n}\ninterface IdlessDiagnostic extends DiagnosticShape {\n  readonly ruleId: IdlessRuleId;\n  readonly ids?: undefined;\n}\ninterface IdentifiedDiagnostic extends DiagnosticShape {\n  readonly ruleId: IdentifiedRuleId;\n  readonly ids: readonly string[];\n}\ninterface OptionalIdsDiagnostic extends DiagnosticShape {\n  readonly ruleId: OptionalIdsRuleId;\n  readonly ids: readonly string[] | undefined;\n}\n```\n\nReading one is unchanged: `path`, `message` and `severity` are on every variant, and `ids` is readable on all three. Two things changed for a caller who writes one down. `ruleId` is a closed union rather than a `string`, so comparing it against a rule this project does not have stops compiling instead of quietly never matching, and constructing a `Diagnostic` of your own with a rule id you invented is refused. And `ids` is present only on the rules that name ids, so a rule that names none cannot carry one. See ADR-097."
     },
     {
       "path": "packages/core/src/contract/rule-id.ts",
       "find": " * The prefix `validateContributionProperty` passes as `ruleIdPrefix`.\n *\n * One owner for the string, because it is both a run-time value and half of a type below.",
-      "replace": " * The prefix a keyframe rule reports under when the contribution adapter is the reporter.\n *\n * One owner for the string, because it is both a run-time value and half of a type below.\n * `validateContributionProperty` used to hand it over as a `ruleIdPrefix` option. It states a scope\n * now, and this module derives the prefix from that.",
-      "comment": "stale option name in a live docblock"
+      "replace": " * The prefix a keyframe rule reports under when the contribution adapter is the reporter.\n *\n * One owner for the string, because it is both a run-time value and half of a type below.\n * `validateContributionProperty` used to hand it over as a `ruleIdPrefix` option. It states a scope\n * now, and this module derives the prefix from that."
     },
     {
       "path": "packages/core/src/contract/rule-id.ts",
