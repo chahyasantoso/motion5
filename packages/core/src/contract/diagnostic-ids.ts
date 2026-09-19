@@ -99,6 +99,7 @@ const BASE_IDS_OWNERSHIP = {
   "observation-role-unsupported": "none",
   "observation-self-reference": "always",
   "observation-source": "sometimes",
+  "observation-source-shape": "none",
   "observation-target-unsupported": "none",
   "observation-unknown-source": "always",
   "observes-shape": "none",

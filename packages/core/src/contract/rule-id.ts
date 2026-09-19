@@ -135,6 +135,7 @@ export const BASE_RULE_IDS = [
   "observation-role-unsupported",
   "observation-self-reference",
   "observation-source",
+  "observation-source-shape",
   "observation-target-unsupported",
   "observation-unknown-source",
   "observes-shape",
