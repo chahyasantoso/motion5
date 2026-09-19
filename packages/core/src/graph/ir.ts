@@ -6,6 +6,7 @@ import type {
   ProjectDefinition,
   TrackDefinition,
 } from "../contract/v5";
+import { asDiagnostic } from "../contract/diagnostics";
 import type { RuleId } from "../contract/rule-id";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
@@ -162,7 +163,7 @@ export function diag(
   message: string,
   ids?: readonly string[],
 ): Diagnostic {
-  return { ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) };
+  return asDiagnostic({ ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) });
 }
 
 export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {

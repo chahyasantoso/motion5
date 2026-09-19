@@ -1,5 +1,6 @@
 // Docs: ./plugins.md
 import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
+import { asDiagnostic } from "../contract/diagnostics";
 import type { RuleId } from "../contract/rule-id";
 import { validateKeyframes } from "../contract/validate-v5";
 import type {
@@ -162,7 +163,7 @@ function diagnostic(
   message: string,
   ids?: readonly string[],
 ): Diagnostic {
-  return { ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) };
+  return asDiagnostic({ ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) });
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);

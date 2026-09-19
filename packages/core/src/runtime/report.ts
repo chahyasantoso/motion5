@@ -1,3 +1,4 @@
+import { asDiagnostic } from "../contract/diagnostics";
 import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic, PatchBatch } from "../contract/v5";
 import { collect, report } from "../domain/completion";
@@ -306,13 +307,15 @@ function frozenDiagnostic(
   tick: number,
   ids: readonly string[],
 ): Diagnostic {
-  const diagnostic: Diagnostic = Object.freeze({
-    ruleId,
-    path: String(tick),
-    message,
-    severity: "error",
-    ids: Object.freeze([...ids]),
-  });
+  const diagnostic: Diagnostic = asDiagnostic(
+    Object.freeze({
+      ruleId,
+      path: String(tick),
+      message,
+      severity: "error",
+      ids: Object.freeze([...ids]),
+    }),
+  );
   return diagnostic;
 }
 

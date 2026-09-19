@@ -1,4 +1,4 @@
-import type { RuleId } from "./rule-id";
+import type { IdentifiedRuleId, IdlessRuleId, OptionalIdsRuleId } from "./diagnostic-ids";
 
 export const AUTHORED_SCHEMA_VERSION = 5 as const;
 export const SUPPORTED_TRIGGER_TYPES = ["scroll", "time", "manual"] as const;
@@ -50,13 +50,49 @@ export interface TriggerSignal {
  * silently by every consumer that pattern-matches a string. That is the acceptance criterion issue
  * #449 asks for, and it is a public surface change: `Diagnostic` is exported from the package
  * entry, so a consumer constructing one with a rule id of its own invention stops compiling.
- * See ADR-097.
+ *
+ * It is a union rather than one interface because `ids` is not a field every rule owns. The three
+ * variants are keyed by ownership of that payload, derived in `contract/diagnostic-ids.ts` from one
+ * record, so a diagnostic carrying ids its rule never names fails `typecheck`, and so does one
+ * omitting ids its rule always names. Reading is unaffected: all three declare `path`, `message`
+ * and `severity`, and `ids` is readable on every one of them. See ADR-097.
  */
-export interface Diagnostic {
-  readonly ruleId: RuleId;
+export type Diagnostic = IdlessDiagnostic | IdentifiedDiagnostic | OptionalIdsDiagnostic;
+
+/** What every diagnostic carries, whichever group its rule is in. */
+interface DiagnosticShape {
   readonly path: string;
   readonly message: string;
   readonly severity: DiagnosticSeverity;
+}
+
+/**
+ * A diagnostic whose rule names no ids, so it may not carry any.
+ *
+ * `ids?: undefined` rather than an omitted member: omitting it would let this variant accept an
+ * `ids` through a wider type, and the whole of the group is that a payload the rule does not own
+ * cannot be written down.
+ */
+export interface IdlessDiagnostic extends DiagnosticShape {
+  readonly ruleId: IdlessRuleId;
+  readonly ids?: undefined;
+}
+
+/** A diagnostic whose rule always names ids, so omitting them fails `typecheck`. */
+export interface IdentifiedDiagnostic extends DiagnosticShape {
+  readonly ruleId: IdentifiedRuleId;
+  readonly ids: readonly string[];
+}
+
+/**
+ * A diagnostic whose rule may name ids.
+ *
+ * The group for a rule whose construction sites disagree about whether they carry a payload, and
+ * for a rule with no construction site to measure. `contract/diagnostic-ids.ts` owns which rules
+ * those are and why neither answer is stronger.
+ */
+export interface OptionalIdsDiagnostic extends DiagnosticShape {
+  readonly ruleId: OptionalIdsRuleId;
   readonly ids?: readonly string[];
 }
 
@@ -273,8 +309,12 @@ export interface ProjectDefinition {
  *
  * The literal narrows `Diagnostic.ruleId` rather than sitting beside it, so `schema-v4-migration`
  * is provably a member of `RuleId`: were the enumeration to stop carrying it, this declaration is
- * the build failure rather than a string nobody checks. See ADR-097.
+ * the build failure rather than a string nobody checks.
+ *
+ * It extends the optional-ids variant because that is the group its rule is in. The v4 reader names
+ * the ids it migrated when it has any and names none otherwise, which is measured rather than
+ * chosen: one shape for both would have refused one of its two construction paths. See ADR-097.
  */
-export interface MigrationDiagnostic extends Diagnostic {
+export interface MigrationDiagnostic extends OptionalIdsDiagnostic {
   readonly ruleId: "schema-v4-migration";
 }

@@ -5,6 +5,11 @@ import { fileURLToPath } from "node:url";
 import { code } from "../helpers/source-region";
 
 import {
+  IDENTIFIED_RULE_IDS,
+  IDLESS_RULE_IDS,
+  OPTIONAL_IDS_RULE_IDS,
+} from "../../src/contract/diagnostic-ids";
+import {
   BASE_RULE_IDS,
   CONTRIBUTION_RULE_IDS,
   CONTRIBUTION_RULE_ID_ALIASES,
@@ -175,5 +180,41 @@ describe("rule id enumeration", () => {
       id.startsWith(CONTRIBUTION_RULE_ID_PREFIX),
     ).filter((id) => derived.has(id));
     expect(standalone).toEqual([]);
+  });
+
+  // The scan drops any candidate without a hyphen, so the naming rule that filter assumes is stated
+  // here rather than left as an assumption inside the extractor. An id spelled as one word would be
+  // invisible to the scan, which would report coverage it never tested; it fails this case instead.
+  it("names every rule with a hyphen, which is what lets the scan filter on one", () => {
+    expect(RULE_IDS.filter((id) => !id.includes("-"))).toEqual([]);
+  });
+});
+
+// `ids` is discriminated by whether a rule owns one, and `contract/diagnostic-ids.ts` is the one
+// owner of which rules do. The record there is keyed by `BaseRuleId`, so a rule added to the
+// enumeration fails `typecheck` at the answer rather than inheriting whichever group was written
+// first, and `EveryRuleIdIsGrouped` refuses a rule the three groups do not partition. Both of those
+// are compile-time, and neither is observable from a run. These cases read the arrays the same
+// record derives, which is the half a type cannot see. See ADR-097.
+describe("rule id ids ownership", () => {
+  it("partitions every rule id into exactly one group", () => {
+    const grouped = [...IDLESS_RULE_IDS, ...IDENTIFIED_RULE_IDS, ...OPTIONAL_IDS_RULE_IDS];
+    expect([...grouped].sort()).toEqual([...RULE_IDS].sort());
+    expect(grouped.length).toBe(new Set(grouped).size);
+  });
+
+  it("owns no ids for any keyframe rule, authored or contributed", () => {
+    const idless = new Set<string>(IDLESS_RULE_IDS);
+    expect(KEYFRAME_RULE_IDS.filter((id) => !idless.has(id))).toEqual([]);
+    expect(CONTRIBUTION_RULE_IDS.filter((id) => !idless.has(id))).toEqual([]);
+  });
+
+  // A rule minted only on an error class has no diagnostic naming it, so nothing measures the ids it
+  // would carry. Absence of a measurement cannot justify requiring one, so those rules answer the
+  // optional group rather than the required one, and this pins the direction of that inequality.
+  it("keeps a rule with no construction site out of the group that requires ids", () => {
+    const required = new Set<string>(IDENTIFIED_RULE_IDS);
+    for (const id of ["live-value-key", "stale-motion-handle", "stale-track-handle"])
+      expect(required.has(id)).toBe(false);
   });
 });

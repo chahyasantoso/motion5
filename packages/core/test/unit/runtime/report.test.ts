@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { RuleId } from "../../../src/contract/rule-id";
+import type { IdentifiedRuleId } from "../../../src/contract/diagnostic-ids";
 import type { Diagnostic } from "../../../src/contract/v5";
 import {
   CLEAN_TRACE,
@@ -41,7 +41,9 @@ import { describeError } from "../../../src/runtime/schema-refusals";
 const ARM = "hero/arm";
 const HAND = "hero/hand";
 
-function diagnostic(ruleId: RuleId): Diagnostic {
+// Every rule this helper is called with always names ids, and the parameter says so rather than
+// taking any `RuleId` and then carrying an `ids` the rule might not own.
+function diagnostic(ruleId: IdentifiedRuleId): Diagnostic {
   const entry: Diagnostic = Object.freeze({
     ruleId,
     path: "1",
