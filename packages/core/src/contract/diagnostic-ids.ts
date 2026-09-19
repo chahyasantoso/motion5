@@ -49,6 +49,12 @@ export type IdsOwnership = "none" | "always" | "sometimes";
  * nothing measures them: each is minted on an error class and none is ever assigned to a
  * `Diagnostic.ruleId`, so no construction site exists whose payload could be read. Absence of a
  * measurement cannot justify requiring a payload, and it cannot justify refusing one either.
+ *
+ * `schema-v4-migration` answers `"none"` and not `"sometimes"`, and it is the one entry an
+ * independent re-measurement corrected. Its private constructor in `contract/migrate-v4-to-v5.ts`
+ * took an optional `ids` and spread it conditionally, so the rule read as though it might carry one,
+ * and no call site ever passed it. The parameter is gone and the group states what the four
+ * construction sites do, which is the difference between measuring the code and reading a signature.
  */
 const BASE_IDS_OWNERSHIP = {
   "blocked-upstream": "always",
@@ -123,7 +129,7 @@ const BASE_IDS_OWNERSHIP = {
   "reentrant-flush-deferred": "always",
   "requirement-source": "always",
   "scheduler-failure": "always",
-  "schema-v4-migration": "sometimes",
+  "schema-v4-migration": "none",
   "schema-version": "none",
   "stale-motion-handle": "sometimes",
   "stale-track-handle": "sometimes",

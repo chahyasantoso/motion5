@@ -50,14 +50,17 @@ export const KEYFRAME_RULE_IDS = [
 ] as const;
 
 /**
- * The prefix `validateContributionProperty` passes as `ruleIdPrefix`.
+ * The prefix a keyframe rule reports under when the contribution adapter is the reporter.
  *
  * One owner for the string, because it is both a run-time value and half of a type below.
+ * `validateContributionProperty` used to hand it over as a `ruleIdPrefix` option. It states a scope
+ * now, and this module derives the prefix from that.
  */
 export const CONTRIBUTION_RULE_ID_PREFIX = "plugin-contribution-";
 
 /**
- * The substitution `validateContributionProperty` passes as `ruleIdAliases`.
+ * The substitution the contribution scope applies, handed over as a `ruleIdAliases` option before
+ * this module owned it.
  *
  * An alias is a different id rather than a spelling of one: the run time emits
  * `plugin-contribution-stop` and never `plugin-contribution-stop-position`. So the type below
@@ -86,7 +89,8 @@ export const CONTRIBUTION_RULE_ID_ALIASES = {
  * each declared as a `ruleId` field on an error, and `graph-publisher.ts` already forwards one of
  * them into a diagnostic. A field spelled `ruleId` names a rule wherever it sits, so these are
  * members rather than a second population, which is what the message prefixes in
- * `runtime/refusal.ts` genuinely are. The coverage gate found three of the four; neither audit did.
+ * `runtime/refusal.ts` genuinely are. All four are found by the scan's declaration form rather than
+ * by its argument form, which is the reason that form exists; neither audit named them.
  */
 export const BASE_RULE_IDS = [
   "blocked-upstream",
@@ -198,8 +202,9 @@ export type ContributionRuleName<Name extends KeyframeRuleId> =
  * later slice would have to keep in step by hand.
  *
  * This over-approximates on purpose. Which keyframe rules the adapter can actually reach depends
- * on run-time reachability through `allowGroups: false` and a single computed key, and that set
- * was measured wrong twice before this landed: `plugin-contribution-keyframes-reserved-separator`
+ * on run-time reachability through the group refusal the contribution scope answers and a single
+ * computed key, and that set was measured wrong twice before this landed:
+ * `plugin-contribution-keyframes-reserved-separator`
  * is constructed today and was absent from the reachable list both audits produced. A family that
  * covers every name the prefix could be applied to can never fail to type a real diagnostic,
  * whereas a hand-picked reachable subset fails the first time a different rule fires, which is the

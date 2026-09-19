@@ -5,17 +5,16 @@ export interface MigrationResult<T = Record<string, unknown>> {
   readonly diagnostics: readonly MigrationDiagnostic[];
 }
 
-function diagnostic(
-  path: string,
-  message: string,
-  ids: readonly string[] = [],
-): MigrationDiagnostic {
+// No ids, because no refusal this reader reports names one. The parameter that used to accept them
+// was passed by none of the four call sites below, so it described a payload this rule never
+// carried; `schema-v4-migration` answers the idless group in `contract/diagnostic-ids.ts` and this
+// shape is what that group allows.
+function diagnostic(path: string, message: string): MigrationDiagnostic {
   return Object.freeze({
     ruleId: "schema-v4-migration",
     path,
     message,
     severity: "error",
-    ...(ids.length > 0 ? { ids: Object.freeze([...ids]) } : {}),
   });
 }
 

@@ -311,10 +311,11 @@ export interface ProjectDefinition {
  * is provably a member of `RuleId`: were the enumeration to stop carrying it, this declaration is
  * the build failure rather than a string nobody checks.
  *
- * It extends the optional-ids variant because that is the group its rule is in. The v4 reader names
- * the ids it migrated when it has any and names none otherwise, which is measured rather than
- * chosen: one shape for both would have refused one of its two construction paths. See ADR-097.
+ * It extends the idless variant because that is the group its rule is in. Each of the four refusals
+ * the v4 reader can report names a path and a message and no ids, which is measured rather than
+ * chosen: its constructor used to accept an `ids` that nothing passed, and the group states what the
+ * construction sites do rather than what a signature allowed. See ADR-097.
  */
-export interface MigrationDiagnostic extends OptionalIdsDiagnostic {
+export interface MigrationDiagnostic extends IdlessDiagnostic {
   readonly ruleId: "schema-v4-migration";
 }

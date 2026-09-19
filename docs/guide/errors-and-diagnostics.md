@@ -15,17 +15,30 @@ try {
 }
 ```
 
-A diagnostic is structured, and the shape is stable:
+A diagnostic is structured, and the shape is stable. It is a union of three variants, and which one you have is decided by the rule:
 
 ```ts
-interface Diagnostic {
-  readonly ruleId: string;
+type Diagnostic = IdlessDiagnostic | IdentifiedDiagnostic | OptionalIdsDiagnostic;
+interface DiagnosticShape {
   readonly path: string;
   readonly message: string;
   readonly severity: "error" | "warning";
-  readonly ids?: readonly string[];
+}
+interface IdlessDiagnostic extends DiagnosticShape {
+  readonly ruleId: IdlessRuleId;
+  readonly ids?: undefined;
+}
+interface IdentifiedDiagnostic extends DiagnosticShape {
+  readonly ruleId: IdentifiedRuleId;
+  readonly ids: readonly string[];
+}
+interface OptionalIdsDiagnostic extends DiagnosticShape {
+  readonly ruleId: OptionalIdsRuleId;
+  readonly ids: readonly string[] | undefined;
 }
 ```
+
+Reading one is unchanged: `path`, `message` and `severity` are on every variant, and `ids` is readable on all three. Two things changed for a caller who writes one down. `ruleId` is a closed union rather than a `string`, so comparing it against a rule this project does not have stops compiling instead of quietly never matching, and constructing a `Diagnostic` of your own with a rule id you invented is refused. And `ids` is present only on the rules that name ids, so a rule that names none cannot carry one. See ADR-097.
 
 Call `validateV5(project)` yourself if you want the diagnostics without the throw. It returns `{ valid, value, diagnostics }`, and it is the same validator the engine uses, so there is no second opinion to keep in sync.
 
