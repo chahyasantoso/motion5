@@ -1,0 +1,133 @@
+{
+  "version": 1,
+  "expected_head": "353b207bcbbf20ce0300e5627e31ccc50e12f61b",
+  "expected_blobs": {
+    "packages/core/src/contract/diagnostics.ts": "a14d3773b602a019f544bc60079cf92d3ff4270d",
+    "packages/core/src/contract/rule.ts": "fec83ca96be5dedea78480344f0c7d31764f2c45",
+    "packages/core/src/contract/validate-v5.ts": "76c05504881b99cf453bb0651274e5f4f83e0d08",
+    "packages/core/src/adapters/trigger-factory/default.ts": "92817bd46b1f8d1ede595f207fd2fa9ad7b6445f",
+    "packages/core/src/graph/ir.ts": "c5277b8912991f91227d7b71bf21b36eedb052b6",
+    "packages/core/src/domain/plugins.ts": "ab0673a7e923e66e280acea2e81760f69e866f18",
+    "packages/core/src/domain/keyframe-compiler.ts": "583873e04cc0787e325f7d4fd44d79eb890d01c3",
+    "packages/core/src/runtime/report.ts": "e39bca514e395659bdae20f02e54112d26a671cf",
+    "packages/core/test/contract/ids-ownership-at-the-producer.test.ts": "0a65e2026766fb0876180490a41986b7ed28a512"
+  },
+  "message": "refactor(contract): delete the severity parameter so a rule alone answers its severity",
+  "edits": [
+    {
+      "path": "packages/core/src/contract/diagnostics.ts",
+      "find": " * `severity` defaults to the rule's own answer through `ruleSeverity`, so a caller that passes\n * nothing gets what `contract/rule.ts` fixed where the rule is defined. That default is the whole of\n * the bug it replaces: the old one was the literal `\"error\"`, so every warning rule reported by a\n * caller that passed nothing produced an error diagnostic, and nothing noticed because passing\n * nothing is what almost every caller does.\n *\n * The parameter still exists, so a call site can still name a severity. Saying otherwise, as this\n * docblock did, is the overclaim this file exists to keep out of the tree: `contract/validate-v5.ts`\n * names one at several sites and so does `adapters/trigger-factory/default.ts`. Thirteen naming sites\n * are counted rather than estimated, and thirteen is a floor rather than a total, because the sweep\n * behind it did not finish every test file and the adapter site was missed by three hand inventories\n * before it was found. Deleting the parameter is owed, and what it is owed first is the compiler\n * enumerating the sites rather than a comment claiming to have. The eight raw object literals do not\n * block it: they bypass this constructor entirely. No site names a severity that disagrees with its\n * rule, which is measured, so the derived default changes behaviour only where nothing is passed.\n * See ADR-097.\n */\nexport function diagnostic<Rule extends RuleId>(\n  ruleId: Rule,\n  path: string,\n  message: string,\n  severity: Diagnostic[\"severity\"] = ruleSeverity(ruleId),\n  ...carried: OwnedIds<Rule>\n): DiagnosticOf<Rule> {",
+      "replace": " * `severity` is not a parameter. It is read from the rule through `ruleSeverity`, so there is no\n * argument position in which a call site could name one, and no default for a caller to override by\n * passing nothing. The parameter's default used to be the literal `\"error\"`, which made a rule's own\n * answer a suggestion: every warning rule reported by a caller that passed nothing produced an error\n * diagnostic, and nothing noticed, because passing nothing is what almost every caller does. Deriving\n * the default fixed the silent half and left the loud half, so the parameter is deleted rather than\n * documented.\n *\n * Nineteen naming sites are converted with it, and every one of them named the severity its own rule\n * already fixes, so no diagnostic moves. Nineteen is what was converted rather than a proof that\n * nothing else named one: `typecheck` on the published commit is what closes that difference, and it\n * enumerates better than an inventory does.\n *\n * Deleting it also retires an argument-order trap. `graph/ir.ts`'s `diag` took its payload fourth\n * while this took `severity` fourth, so aliasing one to the other handed an array to a severity, and\n * a session published exactly that confusion. Both take the same arguments in the same order now, so\n * the mistake has no position left to happen in.\n *\n * Four raw object literals in `graph/` and `runtime/graph-publisher.ts` still spell a severity of\n * their own, because they reach no constructor at all. They are the last of the second ownership,\n * they carry their payloads already, and collapsing them is cleanup rather than a blocker.\n * See ADR-097.\n */\nexport function diagnostic<Rule extends RuleId>(\n  ruleId: Rule,\n  path: string,\n  message: string,\n  ...carried: OwnedIds<Rule>\n): DiagnosticOf<Rule> {"
+    },
+    {
+      "path": "packages/core/src/contract/diagnostics.ts",
+      "find": "    message,\n    severity,\n    ids: Object.freeze([...(carriedIds ?? [])]),",
+      "replace": "    message,\n    severity: ruleSeverity(ruleId),\n    ids: Object.freeze([...(carriedIds ?? [])]),"
+    },
+    {
+      "path": "packages/core/src/contract/rule.ts",
+      "find": " * A diagnostic's `severity` is derived through this wherever a call site declines to name one, which\n * is almost everywhere and is the default on the constructor in `contract/diagnostics.ts`. It is not\n * yet true that no call site can name one: that constructor still takes a `severity` parameter and\n * thirteen sites still pass it, counted rather than estimated and a floor rather than a total. Saying\n * otherwise would put the overclaim in the module that owns the invariant. The parameter's deletion is\n * owed, and what it is owed first is the compiler enumerating its call sites rather than a docblock\n * claiming to have. See ADR-097 and issue #449.",
+      "replace": " * A diagnostic's `severity` is derived through this and through nothing else. The constructor in\n * `contract/diagnostics.ts` has no `severity` parameter, so there is no argument position in which a\n * call site could name one, and the claim this docblock used to withhold is true rather than\n * aspirational. Nineteen sites named one and are converted in the same request that deleted the\n * parameter; each named the severity its rule already fixes, so no diagnostic moved. That number is\n * what was converted rather than a total, and `typecheck` on the published commit is what closes the\n * difference. What still spells a severity of its own is the four raw object literals in `graph/` and\n * `runtime/graph-publisher.ts`, which reach no constructor and are the last of the second ownership.\n * See ADR-097 and issue #449."
+    },
+    {
+      "path": "packages/core/src/contract/validate-v5.ts",
+      "find": "  const add = (\n    ruleId: KeyframeRuleId,\n    rulePath: string,\n    message: string,\n    severity: Diagnostic[\"severity\"] = \"error\",\n  ) => diagnostics.push(issue(scopedRuleId(scope, ruleId), rulePath, message, severity));",
+      "replace": "  // No `severity` parameter and no default. The default here was the constructor's own bug one layer\n  // above it: a keyframe rule reported through this without an explicit severity became an error\n  // whatever `contract/rule.ts` says, and it was harmless only because both keyframe warnings passed\n  // `\"warning\"` by hand. A third keyframe warning would have reported as an error with nothing\n  // noticing. Every rule this forwards owns no ids, so the argument list stays empty too.\n  const add = (ruleId: KeyframeRuleId, rulePath: string, message: string) =>\n    diagnostics.push(issue(scopedRuleId(scope, ruleId), rulePath, message));"
+    },
+    {
+      "path": "packages/core/src/contract/validate-v5.ts",
+      "find": "      add(\"stop-missing-start\", propertyPath, \"Stop sequence does not define p=0.\", \"warning\");",
+      "replace": "      add(\"stop-missing-start\", propertyPath, \"Stop sequence does not define p=0.\");"
+    },
+    {
+      "path": "packages/core/src/contract/validate-v5.ts",
+      "find": "      add(\"stop-missing-end\", propertyPath, \"Stop sequence does not define p=1.\", \"warning\");",
+      "replace": "      add(\"stop-missing-end\", propertyPath, \"Stop sequence does not define p=1.\");"
+    },
+    {
+      "path": "packages/core/src/contract/validate-v5.ts",
+      "find": "        \"Track use is not supported; resolve plugins from authored keyframes.\",\n        \"error\",\n        [String(track.use)],",
+      "replace": "        \"Track use is not supported; resolve plugins from authored keyframes.\",\n        [String(track.use)],"
+    },
+    {
+      "path": "packages/core/src/contract/validate-v5.ts",
+      "find": "          `Track id '${track.id}' is duplicated.`,\n          \"error\",\n          [track.id],",
+      "replace": "          `Track id '${track.id}' is duplicated.`,\n          [track.id],"
+    },
+    {
+      "path": "packages/core/src/contract/validate-v5.ts",
+      "find": "          issue(\"motion-duplicate-id\", `${path}.id`, `Motion id '${id}' is duplicated.`, \"error\", [\n            id,\n          ]),",
+      "replace": "          issue(\"motion-duplicate-id\", `${path}.id`, `Motion id '${id}' is duplicated.`, [id]),"
+    },
+    {
+      "path": "packages/core/src/contract/validate-v5.ts",
+      "find": "            \"3D keyframes require a project perspective.\",\n            \"warning\",\n            [String(track.id ?? \"\")],",
+      "replace": "            \"3D keyframes require a project perspective.\",\n            [String(track.id ?? \"\")],"
+    },
+    {
+      "path": "packages/core/src/adapters/trigger-factory/default.ts",
+      "find": "                message,\n                \"error\",\n                [context.motionId],",
+      "replace": "                message,\n                [context.motionId],"
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": " * The severity argument is declined rather than named. The parameter survives on the constructor for\n * the raw object literals that still bypass it, and passing nothing through it is what makes\n * `ruleSeverity` answer, so no expression in this file names a severity after this. The ids list is\n * forwarded rather than widened for the same reason: `OwnedIds` is the constructor's own argument\n * list, so the correlation this file used to re-state is the one its call sites are already checked\n * against. See ADR-097.",
+      "replace": " * No severity is declined here, because there is no parameter left to decline: the constructor reads\n * every rule's answer from `contract/rule.ts`, so no expression in this file names a severity and none\n * can. The ids list is forwarded rather than widened for the same reason: `OwnedIds` is the\n * constructor's own argument list, so the correlation this file used to re-state is the one its call\n * sites are already checked against.\n *\n * This declaration and the constructor now take the same arguments in the same order, which retires\n * the trap that made aliasing one to the other hand an array to a severity. The declaration is kept\n * rather than collapsed into an alias anyway, because `ids-ownership-at-the-producer.test.ts` reads it\n * as source text and an alias has neither the declaration nor the derived list it counts. See\n * ADR-097."
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "  return diagnostic(ruleId, path, message, undefined, ...carried);",
+      "replace": "  return diagnostic(ruleId, path, message, ...carried);"
+    },
+    {
+      "path": "packages/core/src/domain/plugins.ts",
+      "find": "  return buildDiagnostic(ruleId, path, message, undefined, ...carried);",
+      "replace": "  return buildDiagnostic(ruleId, path, message, ...carried);"
+    },
+    {
+      "path": "packages/core/src/domain/keyframe-compiler.ts",
+      "find": "  // The severity argument is declined rather than named, which is what makes the rule answer; its one\n  // caller names an error rule that always names ids, so nothing observable moves.\n  return buildDiagnostic(ruleId, path, message, undefined, ...carried);",
+      "replace": "  // No severity is named here and none can be: the constructor has no such parameter. Every rule this\n  // file reports is an error rule that always names ids, so nothing observable moves.\n  return buildDiagnostic(ruleId, path, message, ...carried);"
+    },
+    {
+      "path": "packages/core/src/runtime/report.ts",
+      "find": " * the rule and to the one constructor now, so what is left is the one fact this function exists for.\n * The severity argument is declined rather than named, which is what makes the rule answer, and `ids`\n * is forwarded as the open optional list `OwnedIds<RuleId>` already is. Every rule reported through\n * here is an error rule, so nothing observable moves. See ADR-097.",
+      "replace": " * the rule and to the one constructor now, so what is left is the one fact this function exists for.\n * No severity is named here and none can be: the constructor has no such parameter. `ids` is\n * forwarded as the open optional list `OwnedIds<RuleId>` already is. Every rule reported through here\n * is an error rule, so nothing observable moves. See ADR-097."
+    },
+    {
+      "path": "packages/core/src/runtime/report.ts",
+      "find": "  return buildDiagnostic(ruleId, String(tick), message, undefined, ids);",
+      "replace": "  return buildDiagnostic(ruleId, String(tick), message, ids);"
+    },
+    {
+      "path": "packages/core/src/runtime/report.ts",
+      "find": "          \"A value write inside an open batch staged its seed; the batch publishes once when the recipe returns.\",\n          undefined,\n          reason.seeds,",
+      "replace": "          \"A value write inside an open batch staged its seed; the batch publishes once when the recipe returns.\",\n          reason.seeds,"
+    },
+    {
+      "path": "packages/core/src/runtime/report.ts",
+      "find": "            : \"A flush requested while subscribers were being notified was queued as one follow-up publication carried by the next flush.\",\n          undefined,\n          reason.seeds,",
+      "replace": "            : \"A flush requested while subscribers were being notified was queued as one follow-up publication carried by the next flush.\",\n          reason.seeds,"
+    },
+    {
+      "path": "packages/core/test/contract/ids-ownership-at-the-producer.test.ts",
+      "find": " * `asDiagnostic` takes a `RuleId` and an `ids` that are independent of each other, so a call naming a\n * rule that owns no ids and passing a payload compiled, and produced a diagnostic the union called\n * unrepresentable. That union is gone, so what is left there is a widening rather than a narrowing an\n * assertion had to reach for. The call sites were always the half that mattered: what can be removed\n * is every one of them reaching it while naming its rule by a literal, and the five producers do that\n * by taking their ids as the argument list `contract/rule.ts` derives from the rule they were handed.",
+      "replace": " * `asDiagnostic` took a `RuleId` and an `ids` that were independent of each other, so a call naming a\n * rule that owns no ids and passing a payload compiled, and produced a diagnostic the union called\n * unrepresentable. Both that union and that assertion are deleted rather than reasoned about. The call\n * sites were always the half that mattered, and the five producers below take their ids as the\n * argument list `contract/rule.ts` derives from the rule they were handed. None of them names a\n * severity either, because the one constructor has no parameter for one."
+    },
+    {
+      "path": "packages/core/test/contract/ids-ownership-at-the-producer.test.ts",
+      "find": "    const built = diagnostic(\"track-duplicate-id\", \"$.motions[0]\", \"duplicate\", \"error\", [\"hero\"]);",
+      "replace": "    const built = diagnostic(\"track-duplicate-id\", \"$.motions[0]\", \"duplicate\", [\"hero\"]);"
+    },
+    {
+      "path": "packages/core/test/contract/ids-ownership-at-the-producer.test.ts",
+      "find": "  // @ts-expect-error `id-shape` owns no ids, so a payload is unrepresentable.\n  diagnostic(\"id-shape\", \"$\", \"x\", \"error\", [\"unexpected\"]);\n  // @ts-expect-error `track-duplicate-id` always names ids, so omitting them is unrepresentable.\n  diagnostic(\"track-duplicate-id\", \"$\", \"x\", \"error\");",
+      "replace": "  // @ts-expect-error `id-shape` owns no ids, so a payload is unrepresentable.\n  diagnostic(\"id-shape\", \"$\", \"x\", [\"unexpected\"]);\n  // @ts-expect-error `track-duplicate-id` always names ids, so omitting them is unrepresentable.\n  diagnostic(\"track-duplicate-id\", \"$\", \"x\");"
+    },
+    {
+      "path": "packages/core/test/contract/ids-ownership-at-the-producer.test.ts",
+      "find": "  diagnostic(\"id-shape\", \"$\", \"x\", \"error\");\n  diagnostic(\"track-duplicate-id\", \"$\", \"x\", \"error\", [\"hero\"]);",
+      "replace": "  diagnostic(\"id-shape\", \"$\", \"x\");\n  diagnostic(\"track-duplicate-id\", \"$\", \"x\", [\"hero\"]);"
+    }
+  ]
+}
