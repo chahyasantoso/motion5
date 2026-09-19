@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "expected_head": "0897b796daeae99c56fddf61b1ba59de26963922",
+  "expected_blobs": {
+    "packages/core/test/unit/runtime/graph-runtime-state.test.ts": "2335e305526b8cb8b0ced69fc103a48ee8387c0a",
+    "packages/core/test/unit/runtime/deferred-payload.test.ts": "bfa16ff90141081ce79034cca2c796cf5024e90d",
+    "docs/ADR-088-the-deferred-payload-is-one-closed-value.md": "43d2891a9c09671fc422eff944b6e73f8c1fdc17"
+  },
+  "message": "test(runtime): pin the deferral reader directly, and supersede two stale ADR-088 consequences",
+  "edits": [
+    {
+      "path": "packages/core/test/unit/runtime/graph-runtime-state.test.ts",
+      "find": "  deferredSeeds,\n  deferredTick,\n  deferring,",
+      "replace": "  deferredSeeds,\n  deferredTick,\n  deferredWork,\n  deferring,"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/graph-runtime-state.test.ts",
+      "find": " * the change; two of the cases here are red as well, because a frame with no seeds answered false\n * and `retaining` and `requeuing` did not exist. See ADR-088.\n */",
+      "replace": " * the change; two of the cases here are red as well, because a frame with no seeds answered false\n * and `retaining` and `requeuing` did not exist. See ADR-088.\n *\n * Issue #449 adds the reader beside them and the last two cases below. `deferredWork` is what the\n * reentrancy answer switches over, and the two defects it closes were both a question answered from\n * the request that made a deferral rather than from the payload it left: a request adding nothing to\n * an empty payload booked a drain for work that did not exist, and a request adding only a frame was\n * answered an empty batch while a real publication was queued. The behavioural half is in\n * `deferred-payload.test.ts` and was red before it; these are the state-space half, and they are\n * here because a total reader is worth cases of its own rather than only the runtime paths that\n * happen to reach it. See ADR-097.\n */"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/graph-runtime-state.test.ts",
+      "find": "    expect(typeof assignNothingCarryingAFrame).toBe(\"function\");\n    expect(typeof assignDeferralWithoutItsSeeds).toBe(\"function\");\n  });\n});",
+      "replace": "    expect(typeof assignNothingCarryingAFrame).toBe(\"function\");\n    expect(typeof assignDeferralWithoutItsSeeds).toBe(\"function\");\n  });\n\n  it(\"answers what a deferral owes, which is the read the reentrancy answer switches over\", () => {\n    expect(deferredWork(NOTHING_PENDING)).toEqual({ kind: \"nothing\" });\n    expect(deferredWork(deferring(NOTHING_PENDING, [\"hero/arm\"], undefined))).toEqual({\n      kind: \"seeds\",\n      seeds: [\"hero/arm\"],\n    });\n    expect(deferredWork(deferring(NOTHING_PENDING, [], 2))).toEqual({ kind: \"frame\", tick: 2 });\n\n    // Owing nothing and being pending are the same answer on every payload `deferring` can mint,\n    // which is what lets one read decide the batch and the booking together rather than two reads\n    // that could disagree about whether a drain has anything to run.\n    for (const pending of [\n      NOTHING_PENDING,\n      deferring(NOTHING_PENDING, [\"hero/arm\"], undefined),\n      deferring(NOTHING_PENDING, [], 2),\n      deferring(NOTHING_PENDING, [\"hero/arm\"], 2),\n      retaining(deferring(NOTHING_PENDING, [\"hero/arm\"], 3), 1),\n      requeuing(IDLE, NOTHING_PENDING, [\"hero/arm\"]),\n    ])\n      expect(deferredWork(pending).kind === \"nothing\").toBe(!isPending(pending));\n  });\n\n  it(\"answers the seeds when a deferral carries both, and leaves the frame for the drain\", () => {\n    const both = deferring(NOTHING_PENDING, [\"hero/arm\"], 2);\n\n    // The seed arm wins deliberately, because the seeds are what a caller can act on, and choosing\n    // it drops nothing: the payload still carries the frame, so the publication that states the\n    // seeds leaves it behind through `retaining` and the drain replays it.\n    expect(deferredWork(both)).toEqual({ kind: \"seeds\", seeds: [\"hero/arm\"] });\n    expect(deferredTick(both)).toBe(2);\n    expect(deferredWork(retaining(both, 1))).toEqual({ kind: \"frame\", tick: 2 });\n    expect(deferredWork(retaining(both, 2))).toEqual({ kind: \"nothing\" });\n  });\n});"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/deferred-payload.test.ts",
+      "find": "    // there is one to run.\n    expect(received).toEqual([]);\n    expect(runtime.lastFlushError).toBeUndefined();\n    expect(runtime.tick).toBe(1);\n    expect(runtime.sequence).toBe(1);\n    runtime.dispose();\n  });\n});",
+      "replace": "    // there is one to run.\n    expect(received).toEqual([]);\n    expect(runtime.lastFlushError).toBeUndefined();\n    expect(runtime.tick).toBe(1);\n    expect(runtime.sequence).toBe(1);\n    runtime.dispose();\n  });\n\n  it(\"names the seeds and keeps the frame when one reentrant call defers both\", () => {\n    const clock = createManualClock();\n    const scheduler = createFakeScheduler();\n    const runtime = new GraphRuntime(project, clock, compose, { scheduler });\n    runtime.attach(\"hero/arm\");\n\n    const answered: PatchBatch[] = [];\n    let acted = false;\n    runtime.registry.subscribeNode(\"hero/arm\", () => {\n      if (acted) return;\n      acted = true;\n      answered.push(runtime.flushAtTick([\"caption/label\"], 2));\n    });\n\n    clock.tick();\n\n    // The third of the three answers, pinned at this tier rather than only in the state module: a\n    // deferral carrying both reports under the seed-carrying rule, because the seeds are what a\n    // caller can act on, and that choice drops nothing. The payload still holds frame 2, so the\n    // drain replays it through the verb that owns clock transitions.\n    const reported = answered[0]?.diagnostics.map(({ ruleId }) => ruleId);\n    expect(reported).toEqual([\"reentrant-flush-deferred\"]);\n    expect(answered[0]?.diagnostics[0]?.ids).toEqual([\"caption/label\"]);\n    expect(answered[0]?.seeds).toEqual([\"caption/label\"]);\n    expect(runtime.pendingSeeds).toEqual([\"caption/label\"]);\n    expect(runtime.tick).toBe(1);\n    expect(scheduler.pending).toHaveLength(1);\n\n    scheduler.flush();\n\n    expect(runtime.tick).toBe(2);\n    expect(runtime.sequence).toBe(2);\n    expect(runtime.pendingSeeds).toEqual([]);\n    expect(runtime.lastFlushError).toBeUndefined();\n    runtime.dispose();\n  });\n});"
+    },
+    {
+      "path": "docs/ADR-088-the-deferred-payload-is-one-closed-value.md",
+      "find": "`graph-runtime-state.ts` gains four exported answers and `GraphRuntime` gains no branch of its own for either question.",
+      "replace": "`graph-runtime-state.ts` gains four exported answers and `GraphRuntime` gains no branch of its own for either question. Both halves of that sentence belong to this record's own slice and are superseded by the refinement above: that module gained a fifth answer, `deferredWork`, and `GraphRuntime.#deferIfFlushing` reads it in an exhaustive switch that decides the batch and the booking together. The first sentence of this paragraph is superseded with them, because one rule id does move, `reentrant-flush-deferred-frame`, for the reason the refinement gives."
+    }
+  ]
+}
