@@ -376,6 +376,31 @@ export function reportDiagnostic<Rule extends RuleId>(
 }
 
 /**
+ * The seed list a deferral names, proven non-empty where the deferral is stated.
+ *
+ * `value-batch-deferred` and `reentrant-flush-deferred` both answer `ids: "always"` in
+ * `contract/rule.ts`, and `OwnedIds` proves that an argument was passed and never that it says
+ * anything. With `seeds: readonly string[]` a deferral could therefore publish a warning whose
+ * payload named nothing, for a rule claiming always to name one. A tuple with one required member
+ * moves that from something every caller has to remember into something no caller can spell. See
+ * ADR-097 and issue #449.
+ */
+export type DeferredSeeds = readonly [string, ...string[]];
+
+/**
+ * `seeds` as a list a deferral may name, or `undefined` when there is nothing to name.
+ *
+ * The one narrowing, so emptiness is asked once here rather than remembered at each caller.
+ * Destructured rather than cast: a `length` check tells a reader something and tells the compiler
+ * nothing, and a cast at this boundary would be the assertion this slice spent four commits
+ * deleting.
+ */
+export function namedSeeds(seeds: readonly string[]): DeferredSeeds | undefined {
+  const [first, ...rest] = seeds;
+  return first === undefined ? undefined : [first, ...rest];
+}
+
+/**
  * Why a batch exists rather than a publication.
  *
  * Read at its one call site and stored nowhere, so it is unbranded, on the precedent `RefusalShape`
@@ -386,10 +411,10 @@ export function reportDiagnostic<Rule extends RuleId>(
  */
 export type BatchReason =
   | { readonly kind: "empty" }
-  | { readonly kind: "deferred-in-batch"; readonly seeds: readonly string[] }
+  | { readonly kind: "deferred-in-batch"; readonly seeds: DeferredSeeds }
   | {
       readonly kind: "deferred-in-flush";
-      readonly seeds: readonly string[];
+      readonly seeds: DeferredSeeds;
       readonly scheduled: boolean;
     };
 
@@ -418,8 +443,10 @@ function frozenBatch(
  * deliberate commit.
  *
  * An empty recipe carries no diagnostic at all: nothing was queued and nothing was skipped, so there
- * is nothing to report. A staged value write carries its own seed, because the seed is the one thing a
- * caller can still act on. A deferred flush carries the seeds it deferred and says which of two
+ * is nothing to report. That is also what a deferral of no seeds earns, and its caller decides it
+ * rather than this switch: both deferred variants take a `DeferredSeeds`, so a batch reporting a
+ * deferral that names nothing is unrepresentable rather than merely unreached. A staged value write
+ * carries its own seed, because the seed is the one thing a caller can still act on. A deferred flush carries the seeds it deferred and says which of two
  * futures the work has. `tick` is the sequence the graph is still on in all three, so a consumer
  * comparing it against the batch a later publication answers can see that nothing published in
  * between. See ADR-078, ADR-080 and ADR-084.

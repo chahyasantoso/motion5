@@ -78,6 +78,8 @@ The request carries whatever frame there is to carry, so the optional `tick` par
 
 The batch itself is `batchFor`'s, in report.ts, which is now the one builder of the four-field shape three modules used to build. Which of two futures the work has is still a question only `#scheduleDrain` can answer, so it is still asked here rather than there. Issue #383.
 
+A deferral that names no seed answers the empty batch rather than the deferred one, and the booking is still taken. Both deferred reasons in report.ts require a seed list with at least one member, because `value-batch-deferred` and `reentrant-flush-deferred` both answer `ids: "always"` in contract/rule.ts, and `OwnedIds` proves that an argument was passed and never that it says anything. So a reentrant `flush([])` used to publish a warning whose payload named nothing, for a rule claiming always to name one. `flush([])` is a first-class call rather than a mistake, since `#drainScheduled` replays a frameless deferral through exactly that, so the case was reachable by design rather than by accident. `ProjectRuntime`'s seed publication already answers an empty seed list with the empty batch one tier up, so this is that answer at this tier rather than a new rule of its own. Nothing else moves: the batch carries the same `tick`, no patches and `seeds: []` either way, so the warning that named nothing is the whole of the difference. The booking is taken before the answer is chosen and taken unconditionally, because `#drainScheduled` lowers the booking as its first act and a notification can re-enter this while work is still queued. Issue #449, and see ADR-080, ADR-088 and ADR-097.
+
 ## #advanceTick
 
 Records `tick` as the frame number this runtime has reached, having re-asked that it may.

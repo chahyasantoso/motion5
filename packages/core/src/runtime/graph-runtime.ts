@@ -12,6 +12,7 @@ import {
   CLEAN_TRACE,
   batchFor,
   describeWithCauses,
+  namedSeeds,
   reportDiagnostic,
   retainedDiagnostic,
   sinkFailure,
@@ -248,8 +249,15 @@ export class GraphRuntime {
     const seeds = requestSeeds(request);
     this.#pending = deferring(this.#pending, seeds, requestTick(request));
     // The batch says which future the work has, and the member that books is the one that knows.
+    // Booked before the answer is chosen, and booked whether or not this request defers a seed of
+    // its own, because a drain replaying through here released the booking it consumed first.
     const scheduled = this.#scheduleDrain();
-    return batchFor(this.#sequence, { kind: "deferred-in-flush", seeds, scheduled });
+    // A deferral that names nothing is not a deferral, so the empty batch is what it earns. Both
+    // deferred rules always name ids, and a request carrying no seeds has nothing to give them.
+    // Emptiness is answered the same way one tier up, and nothing else about the batch moves.
+    const named = namedSeeds(seeds);
+    if (named === undefined) return batchFor(this.#sequence, { kind: "empty" });
+    return batchFor(this.#sequence, { kind: "deferred-in-flush", seeds: named, scheduled });
   }
   #advanceTick(tick: number): void {
     this.#assertTick(tick);
