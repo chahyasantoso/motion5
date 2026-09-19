@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "expected_head": "7030f8a0c475a37b520b1820ae9c820e952ee7eb",
+  "expected_blobs": {
+    "packages/core/src/contract/diagnostics.ts": "53c67e992853c77f5d2a12419f2b2db7c1daaf59",
+    "packages/core/src/contract/v5.ts": "a22d338fb67f78f417d706fa4896f5d37f955512",
+    "packages/core/src/contract/diagnostic-ids.ts": "e48ed385bf409a55e8becbd893736d0aabe60d0f",
+    "packages/core/src/graph/ir.ts": "7be6f0e1eef5a8c9d58edffee291ddb60519cedf",
+    "packages/core/src/runtime/report.ts": "6d12024034083cde0fcae4971e96024f6826a063",
+    "packages/core/src/runtime/publisher-outcome.ts": "99731249cd5bb2aca8bf296e50db555584bca3f9",
+    "packages/core/src/domain/plugins.ts": "a04d2c11acdb069d7865492bf47365b5f23b79c8",
+    "packages/core/src/domain/keyframe-compiler.ts": "512d1c44f0bb074702c73eb67a8b12ce5f027906",
+    "packages/core/test/contract/rule-id.test.ts": "8c69f3092d3d6a01d6c8f701c355806c66ffa7a7",
+    "packages/core/test/contract/ids-ownership-at-the-producer.test.ts": "cafefcf1d4ec422323d579f4f94249911a8f4132",
+    "packages/core/test/unit/runtime/report.test.ts": "50b8e164b8d27a0dfd8e9988d0166dfe2e411e25"
+  },
+  "message": "refactor(contract): delete diagnostic-ids and make rule.ts the one owner of ids ownership",
+  "edits": [
+    {
+      "path": "packages/core/src/contract/diagnostics.ts",
+      "find": "import type { OwnedIds } from \"./diagnostic-ids\";\nimport { ruleSeverity } from \"./rule\";\n",
+      "replace": "import { ruleSeverity, type OwnedIds } from \"./rule\";\n"
+    },
+    {
+      "path": "packages/core/src/contract/v5.ts",
+      "find": "import type { IdentifiedRuleId, IdlessRuleId, OptionalIdsRuleId } from \"./diagnostic-ids\";\n",
+      "replace": ""
+    },
+    {
+      "path": "packages/core/src/contract/v5.ts",
+      "find": "/**\n * A diagnostic whose rule names no ids, so it may not carry any.\n *\n * `ids?: undefined` rather than an omitted member: omitting it would let this variant accept an\n * `ids` through a wider type, and the whole of the group is that a payload the rule does not own\n * cannot be written down.\n */\nexport interface IdlessDiagnostic extends DiagnosticShape {\n  readonly ruleId: IdlessRuleId;\n  readonly ids?: undefined;\n}\n\n/** A diagnostic whose rule always names ids, so omitting them fails `typecheck`. */\nexport interface IdentifiedDiagnostic extends DiagnosticShape {\n  readonly ruleId: IdentifiedRuleId;\n  readonly ids: readonly string[];\n}\n\n/**\n * A diagnostic whose rule may name ids.\n *\n * The group for a rule whose construction sites disagree about whether they carry a payload, and\n * for a rule with no construction site to measure. `contract/diagnostic-ids.ts` owns which rules\n * those are and why neither answer is stronger.\n */\nexport interface OptionalIdsDiagnostic extends DiagnosticShape {\n  readonly ruleId: OptionalIdsRuleId;\n  readonly ids?: readonly string[];\n}\n\n",
+      "replace": ""
+    },
+    {
+      "path": "packages/core/src/graph/ir.ts",
+      "find": "import type { OwnedIds } from \"../contract/diagnostic-ids\";",
+      "replace": "import type { OwnedIds } from \"../contract/rule\";"
+    },
+    {
+      "path": "packages/core/src/runtime/report.ts",
+      "find": "import type { OwnedIds } from \"../contract/diagnostic-ids\";",
+      "replace": "import type { OwnedIds } from \"../contract/rule\";"
+    },
+    {
+      "path": "packages/core/src/runtime/publisher-outcome.ts",
+      "find": "import type { IdentifiedRuleId } from \"../contract/diagnostic-ids\";",
+      "replace": "import type { IdentifiedRuleId } from \"../contract/rule\";"
+    },
+    {
+      "path": "packages/core/src/domain/plugins.ts",
+      "find": "import type { OwnedIds } from \"../contract/diagnostic-ids\";",
+      "replace": "import type { OwnedIds } from \"../contract/rule\";"
+    },
+    {
+      "path": "packages/core/src/domain/keyframe-compiler.ts",
+      "find": "import type { OwnedIds } from \"../contract/diagnostic-ids\";",
+      "replace": "import type { OwnedIds } from \"../contract/rule\";"
+    },
+    {
+      "path": "packages/core/test/unit/runtime/report.test.ts",
+      "find": "import type { IdentifiedRuleId } from \"../../../src/contract/diagnostic-ids\";",
+      "replace": "import type { IdentifiedRuleId } from \"../../../src/contract/rule\";"
+    },
+    {
+      "path": "packages/core/src/contract/diagnostic-ids.ts",
+      "delete": true
+    },
+    {
+      "path": "packages/core/test/contract/rule-id.test.ts",
+      "find": "import {\n  IDENTIFIED_RULE_IDS,\n  IDLESS_RULE_IDS,\n  OPTIONAL_IDS_RULE_IDS,\n} from \"../../src/contract/diagnostic-ids\";\n",
+      "replace": "import { RULES, ruleSeverity } from \"../../src/contract/rule\";\n"
+    },
+    {
+      "path": "packages/core/test/contract/rule-id.test.ts",
+      "find": "// `ids` is discriminated by whether a rule owns one, and `contract/diagnostic-ids.ts` is the one\n// owner of which rules do. The record there is keyed by `BaseRuleId`, so a rule added to the\n// enumeration fails `typecheck` at the answer rather than inheriting whichever group was written\n// first, and `EveryRuleIdIsGrouped` refuses a rule the three groups do not partition. Both of those\n// are compile-time, and neither is observable from a run. These cases read the arrays the same\n// record derives, which is the half a type cannot see. See ADR-097.\ndescribe(\"rule id ids ownership\", () => {\n  it(\"partitions every rule id into exactly one group\", () => {\n    const grouped = [...IDLESS_RULE_IDS, ...IDENTIFIED_RULE_IDS, ...OPTIONAL_IDS_RULE_IDS];\n    expect([...grouped].sort()).toEqual([...RULE_IDS].sort());\n    expect(grouped.length).toBe(new Set(grouped).size);\n  });\n\n  it(\"owns no ids for any keyframe rule, authored or contributed\", () => {\n    const idless = new Set<string>(IDLESS_RULE_IDS);\n    expect(KEYFRAME_RULE_IDS.filter((id) => !idless.has(id))).toEqual([]);\n    expect(CONTRIBUTION_RULE_IDS.filter((id) => !idless.has(id))).toEqual([]);\n  });\n\n  // A rule minted only on an error class has no diagnostic naming it, so nothing measures the ids it\n  // would carry. Absence of a measurement cannot justify requiring one, so those rules answer the\n  // optional group rather than the required one, and this pins the direction of that inequality.\n  it(\"keeps a rule with no construction site out of the group that requires ids\", () => {\n    const required = new Set<string>(IDENTIFIED_RULE_IDS);\n    for (const id of [\"live-value-key\", \"stale-motion-handle\", \"stale-track-handle\"])\n      expect(required.has(id)).toBe(false);\n  });\n});\n",
+      "replace": "// `ids` ownership and severity are both fixed where the rule is defined, and `contract/rule.ts` is\n// the one owner of both. There is no partition of three groups left to read: the second answer in\n// `contract/diagnostic-ids.ts` disagreed about four rules and that file is deleted. The record that\n// replaced it is keyed by `RuleId`, so a rule answers exactly once and answering twice is\n// unrepresentable rather than merely unmeasured. Its `satisfies` refuses a rule with no answer and\n// the annotation on `RULES` refuses one the record never reaches; both are compile-time and neither\n// is observable from a run. These cases read the record itself, which is the half a type cannot\n// see. See ADR-097 and issue #449.\ndescribe(\"rule id ids ownership\", () => {\n  it(\"answers every rule id exactly once, and answers nothing else\", () => {\n    expect(Object.keys(RULES).sort()).toEqual([...RULE_IDS].sort());\n    expect(\n      RULE_IDS.filter((id) => RULES[id].ids !== \"none\" && RULES[id].ids !== \"always\"),\n    ).toEqual([]);\n  });\n\n  it(\"owns no ids for any keyframe rule, authored or contributed\", () => {\n    expect(KEYFRAME_RULE_IDS.filter((id) => RULES[id].ids !== \"none\")).toEqual([]);\n    expect(CONTRIBUTION_RULE_IDS.filter((id) => RULES[id].ids !== \"none\")).toEqual([]);\n  });\n\n  // A rule minted only on an error class has no diagnostic naming it, so nothing measures the ids it\n  // would carry. The old answer was the optional group, on the argument that absence of a measurement\n  // cannot justify requiring a payload. It cannot justify permitting one either, and these three have\n  // no construction site at all, so they own none: the first site that forwards one into a diagnostic\n  // with a payload fails at the point the decision is owed rather than compiling and carrying it.\n  it(\"owns no ids for a rule with no construction site\", () => {\n    for (const id of [\"live-value-key\", \"stale-motion-handle\", \"stale-track-handle\"] as const)\n      expect(RULES[id].ids).toBe(\"none\");\n  });\n\n  // The warning population is the whole of what deriving severity changed, so it is pinned by\n  // enumeration rather than by a count: a rule quietly becoming a warning, or a warning quietly\n  // becoming an error, fails here rather than in whichever consumer notices first. The two contributed\n  // spellings are derived through `scopedRuleId` rather than written out, because the alias map owns\n  // how a keyframe rule is respelled and a literal here could be wrong about it silently.\n  it(\"names exactly the rules that refuse as warnings\", () => {\n    const keyframeWarnings = [\"stop-missing-start\", \"stop-missing-end\"] as const;\n    const expected = [\n      \"observation-pending-reference\",\n      \"perspective-usage\",\n      \"reentrant-flush-deferred\",\n      \"value-batch-deferred\",\n      ...keyframeWarnings,\n      ...keyframeWarnings.map((name) => scopedRuleId(\"contribution\", name)),\n    ];\n    expect(RULE_IDS.filter((id) => ruleSeverity(id) === \"warning\").sort()).toEqual(expected.sort());\n  });\n});\n"
+    },
+    {
+      "path": "packages/core/test/contract/ids-ownership-at-the-producer.test.ts",
+      "find": "  it(\"reads the partition proof rather than trusting it\", () => {\n    const text = source(\"contract/diagnostic-ids.ts\");\n\n    expect(text.split(\"export type OwnedIds<Rule extends RuleId>\")).toHaveLength(2);\n    // `EveryRuleIdIsGrouped` failed the build only at its own declaration, so it was deletable with\n    // nothing going red. Reading it here is what makes the type's half of the partition proof\n    // load-bearing, and a rule reaching no group now fails at every producer instead of silently\n    // taking the optional list.\n    expect(text.split(\"[EveryRuleIdIsGrouped] extends [never]\")).toHaveLength(2);\n  });\n",
+      "replace": "  it(\"reads the totality proof rather than trusting it\", () => {\n    const text = source(\"contract/rule.ts\");\n\n    expect(text.split(\"export type OwnedIds<Rule extends RuleId>\")).toHaveLength(2);\n    // The proof moved with its owner rather than being dropped. `EveryRuleIdIsGrouped` refused a rule\n    // that reached none of three groups; with two answers held in one total record there is no group\n    // left to miss, so what is read here instead is that totality. A rule with no answer fails at the\n    // `satisfies`, and a rule the record never reaches fails at the annotation on `RULES`. Both fail\n    // the build only at their own declaration, which is exactly what made the old proof deletable\n    // with nothing going red, so both are read rather than trusted.\n    expect(text.split(\"as const satisfies Record<BaseRuleId, RuleFacts>\")).toHaveLength(2);\n    expect(text.split(\"Readonly<Record<RuleId, RuleFacts>>\")).toHaveLength(2);\n  });\n"
+    }
+  ]
+}
