@@ -476,7 +476,7 @@ describe("live values reach the graph without replacing it", () => {
     // illegal one they were written to catch. A publication carrying a diagnostic is recorded once,
     // through the one channel, which is what the claim always meant.
     const probe: Diagnostic = Object.freeze({
-      ruleId: "value-batch-deferred",
+      ruleId: "composition-failure",
       path: ARM,
       message: "One recording per publication.",
       severity: "warning",
@@ -490,7 +490,7 @@ describe("live values reach the graph without replacing it", () => {
 
     expect(
       runtimeOf(handle).diagnostics.entries.filter(
-        (entry) => entry.ruleId === "value-batch-deferred",
+        (entry) => entry.ruleId === "composition-failure",
       ),
     ).toHaveLength(1);
     expect(runtimeOf(handle).diagnostics.entries).toHaveLength(before + 1);

@@ -177,6 +177,41 @@ export type UngroupedRuleId = Exclude<RuleId, IdlessRuleId | IdentifiedRuleId | 
 export type EveryRuleIdIsGrouped<Ungrouped extends never = UngroupedRuleId> = Ungrouped;
 
 /**
+ * The `ids` argument list a producer takes, derived from the rule id it was handed.
+ *
+ * `asDiagnostic` takes a `RuleId` and an `ids` that are independent of each other, so a call naming
+ * an idless rule and passing a payload compiled and produced a diagnostic `Diagnostic` calls
+ * unrepresentable. That assertion cannot be removed: TypeScript does not narrow a union by a
+ * discriminant it knows only the type of, and a producer holding its rule id as data holds exactly
+ * that. What can be removed is every call site reaching it while naming its rule by a literal, and a
+ * producer spreading this is what removes them. A rule that owns no ids takes no argument, a rule
+ * that always names them requires one, and a rule whose sites disagree, or a rule id known only as
+ * `RuleId`, leaves it optional.
+ *
+ * Each `extends` is guarded by a one-element tuple, and the guard is load-bearing rather than a
+ * spelling. A naked conditional distributes over a union, so `OwnedIds<RuleId>` would answer once
+ * per member and collapse to the union of all three lists, which is every existing caller broken
+ * rather than one boundary left open. Guarded, the open case answers once and answers optional,
+ * which is what a producer forwarding a `RuleId` needs.
+ *
+ * `EveryRuleIdIsGrouped` is read rather than trusted, and that read is the half it was missing. A
+ * rule in no group would otherwise reach the optional list by failing both tests, which is the one
+ * wrong answer this type can give and the one a reader would never suspect. Reading the partition
+ * turns it into a build failure at every producer instead, and it also stops that proof being a gate
+ * a later reader could delete while believing it was dead: it failed the build only at its own
+ * declaration before this, so nothing went red when it was removed. The run-time partition case in
+ * `rule-id.test.ts` is not a second mechanism beside it; that case reads the arrays and this states
+ * the claim about the type. See ADR-097 and issue #449.
+ */
+export type OwnedIds<Rule extends RuleId> = [EveryRuleIdIsGrouped] extends [never]
+  ? [Rule] extends [IdlessRuleId]
+    ? []
+    : [Rule] extends [IdentifiedRuleId]
+      ? [ids: readonly string[]]
+      : [ids?: readonly string[]]
+  : [ungrouped: never];
+
+/**
  * The base rules answering one ownership, as values.
  *
  * The assertion is the type guard a `filter` predicate cannot state: the comparison proves the

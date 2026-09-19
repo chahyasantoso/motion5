@@ -1,4 +1,5 @@
 // Docs: ./ir.md
+import type { OwnedIds } from "../contract/diagnostic-ids";
 import type {
   Diagnostic,
   ObservationDefinition,
@@ -157,12 +158,13 @@ function freeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
-export function diag(
-  ruleId: RuleId,
+export function diag<Rule extends RuleId>(
+  ruleId: Rule,
   path: string,
   message: string,
-  ids?: readonly string[],
+  ...carried: OwnedIds<Rule>
 ): Diagnostic {
+  const [ids] = carried as unknown as readonly [(readonly string[])?];
   return asDiagnostic({ ruleId, path, message, severity: "error", ...(ids ? { ids } : {}) });
 }
 

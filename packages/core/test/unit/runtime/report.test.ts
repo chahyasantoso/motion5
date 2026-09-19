@@ -274,7 +274,10 @@ describe("one owner reports what a step failed at and what a deferral answers", 
     expect(sinkFailure(accepted)).toBe(failure);
 
     // And the newest failure wins where two of them happen, which is what overwriting a slot did.
-    const second = diagnostic("clock-tick-regression");
+    // Named for the handover it models rather than for a clock regression: the production catch
+    // path builds this object under `diagnostic-sink-failure`, and the two failures in this case are
+    // still told apart by identity, which is what the assertions below read.
+    const second = diagnostic(DIAGNOSTIC_SINK_FAILURE_RULE);
     const again = undeliverable(accepted, newer, second);
     expect(sinkFailure(again)).toBe(second);
     expect(retainedDiagnostic(again)).toBe(newer);
@@ -344,8 +347,10 @@ describe("one owner reports what a step failed at and what a deferral answers", 
     // already carries one belonging to a newer report, and then the trace is answered unchanged.
     const older = diagnostic("flush-failure");
     const newer = diagnostic("clock-consumer-failure");
-    const nested = diagnostic("scheduler-failure");
-    const outer = diagnostic("clock-tick-regression");
+    // Both of these are `undeliverable` failure arguments, so both name the handover rule rather
+    // than a scheduler or a clock cause this case never exercises.
+    const nested = diagnostic(DIAGNOSTIC_SINK_FAILURE_RULE);
+    const outer = diagnostic(DIAGNOSTIC_SINK_FAILURE_RULE);
     const trace = undeliverable(reporting(reporting(CLEAN_TRACE, older), newer), newer, nested);
     expect(sinkFailure(trace)).toBe(nested);
     expect(undeliverable(trace, older, outer)).toBe(trace);
