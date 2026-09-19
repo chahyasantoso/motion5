@@ -174,16 +174,18 @@ export type EveryRuleIdIsGrouped<Ungrouped extends never = UngroupedRuleId> = Un
  * The base rules answering one ownership, as values.
  *
  * The assertion is the type guard a `filter` predicate cannot state: the comparison proves the
- * ownership at run time, and the compiler cannot carry that proof into the element type. It is
- * confined here, and the partition case in `rule-id.test.ts` reads the result rather than trusting
- * it.
+ * ownership at run time, and the compiler cannot carry that proof into the element type. It goes
+ * through `unknown` because `Ownership` is still a parameter here, so no member of the element union
+ * is comparable to `BaseRuleIdOwning<Ownership>` until it is instantiated, which is the same reason
+ * `mint` in `runtime/publisher-outcome.ts` widens before it narrows. It is confined to this one
+ * function, and the partition case in `rule-id.test.ts` reads the result rather than trusting it.
  */
 function baseRulesOwning<Ownership extends IdsOwnership>(
   ownership: Ownership,
 ): readonly BaseRuleIdOwning<Ownership>[] {
   return BASE_RULE_IDS.filter(
     (rule) => BASE_IDS_OWNERSHIP[rule] === ownership,
-  ) as readonly BaseRuleIdOwning<Ownership>[];
+  ) as unknown as readonly BaseRuleIdOwning<Ownership>[];
 }
 
 /** Every rule that names no ids: base, authored keyframe and contributed keyframe alike. */

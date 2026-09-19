@@ -28,9 +28,10 @@ export interface DiagnosticFields {
  *
  * The assertion is safe by measurement rather than by construction, and `contract/diagnostic-ids.ts`
  * holds the measurement: every producer's call sites were read before the groups were written, and
- * the partition case in `rule-id.test.ts` refuses a rule the groups do not cover. A diagnostic built
- * from a literal rule id needs none of this and is checked directly against its variant, which is
- * why `graph/order.ts` and `runtime/report.ts` construct theirs without reaching for it.
+ * the partition case in `rule-id.test.ts` refuses a rule the groups do not cover. A producer whose
+ * rule id is already known to belong to one group needs none of this and is checked directly against
+ * that variant, which is why `graph/order.ts` constructs its diagnostic from a literal and
+ * `runtime/graph-publisher.ts` constructs one from an `IdentifiedRuleId` without reaching for this.
  * See ADR-097.
  */
 export function asDiagnostic(fields: DiagnosticFields): Diagnostic {
