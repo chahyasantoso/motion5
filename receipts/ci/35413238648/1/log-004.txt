@@ -1,0 +1,61 @@
+ipts/ci-evidence.mjs	2026-09-19T01:39:40.7722724Z ##[error]^[[31m+ packages/core/src/runtime/graph-publisher.ts(107,3): error TS2322: Type 'Readonly<{ ruleId: RuleId; path: string; message: string; severity: "error"; ids: readonly string[]; }>' is not assignable to type 'Diagnostic'.^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7726858Z ^[[31m+   Type 'Readonly<{ ruleId: RuleId; path: string; message: string; severity: "error"; ids: readonly string[]; }>' is not assignable to type 'IdentifiedDiagnostic | OptionalIdsDiagnostic'.^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7729482Z ^[[31m+     Type 'Readonly<{ ruleId: RuleId; path: string; message: string; severity: "error"; ids: readonly string[]; }>' is not assignable to type 'OptionalIdsDiagnostic'.^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7731126Z ^[[31m+       Types of property 'ruleId' are incompatible.^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7732233Z ^[[31m+         Type 'RuleId' is not assignable to type 'OptionalIdsRuleId'.^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7733395Z ^[[31m+           Type '"keyframes-shape"' is not assignable to type 'OptionalIdsRuleId'.^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7734493Z ^[[31m+^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7734677Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7735411Z ^[[36m ^[[2m❯^[[22m packages/core/test/unit/scripts/public-port-types.test.ts:^[[2m109:28^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7743477Z     ^[[90m107|^[[39m       ^[[32m"packages/core/src/index.ts"^[[39m^[[33m,^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7744368Z     ^[[90m108|^[[39m     ])^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7744968Z     ^[[90m109|^[[39m     ^[[34mexpect^[[39m(emitted^[[33m.^[[39moutput)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[32m""^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7745553Z     ^[[90m   |^[[39m                            ^[[31m^^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7746152Z     ^[[90m110|^[[39m     ^[[34mexpect^[[39m(emitted^[[33m.^[[39mcode)^[[33m.^[[39m^[[34mtoBe^[[39m(^[[34m0^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7746709Z     ^[[90m111|^[[39m   }^[[33m,^[[39m ^[[34m180_000^[[39m)^[[33m;^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7747179Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7747601Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7747836Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7747859Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7748167Z ^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m^[[1m^[[41m Failed Tests 1 ^[[49m^[[22m^[[31m⎯⎯⎯⎯⎯⎯⎯^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7748419Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7749378Z ^[[41m^[[1m FAIL ^[[22m^[[49m packages/core/test/unit/scripts/public-declaration-surface.test.ts^[[2m > ^[[22mpublic declaration surface (P1-9)^[[2m > ^[[22mscans the emitted entry declaration closure, not just source strings
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7751249Z ^[[31m^[[1mError^[[22m: Command failed: npx tsc --declaration --emitDeclarationOnly --target ES2023 --module ESNext --moduleResolution Bundler --strict --skipLibCheck --outDir /home/runner/work/motion5/motion5/.tmp-public-dts-g1W8qq packages/core/src/index.ts
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7753575Z ^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7753944Z ^[[31m^[[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯^[[22m^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7754436Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7754476Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7760036Z ^[[2m Test Files ^[[22m ^[[1m^[[31m2 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m235 passed^[[39m^[[22m^[[90m (237)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7773186Z ^[[2m      Tests ^[[22m ^[[1m^[[31m1 failed^[[39m^[[22m^[[2m | ^[[22m^[[1m^[[32m1430 passed^[[39m^[[22m^[[2m | ^[[22m^[[33m2 skipped^[[39m^[[90m (1433)^[[39m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7774212Z ^[[2m   Start at ^[[22m 01:39:05
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7777896Z ^[[2m   Duration ^[[22m 35.62s^[[2m (transform 3.54s, setup 1.38s, import 23.45s, tests 42.69s, environment 31ms)^[[22m
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.7779827Z 
+quality (node 24)	Run npm test -- --reporter=default --reporter=./scripts/ci-evidence.mjs	2026-09-19T01:39:40.8472790Z ##[error]Process completed with exit code 1.
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	﻿2026-09-19T01:39:40.8504930Z ##[group]Run node scripts/ci-evidence.mjs verify all
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:39:40.8505497Z ^[[36;1mnode scripts/ci-evidence.mjs verify all^[[0m
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:39:40.8527626Z shell: /usr/bin/bash -e {0}
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:39:40.8527917Z env:
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:39:40.8528131Z   NODE_VERSION: 24
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:39:40.8528405Z   CI_EVIDENCE_DIR: /home/runner/work/_temp/ci-evidence
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:39:40.8528713Z ##[endgroup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:39:40.9111813Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:39:40.9112267Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:39:40.9112393Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:39:40.9112551Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:39:40.9151808Z ##[error]Process completed with exit code 1.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-19T01:39:51.3623767Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:39:51.3624683Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:39:51.3665344Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:39:51.3666256Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:39:51.3666955Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:39:51.3667500Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:39:51.3668023Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:39:51.3800035Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-19T01:39:50.4395893Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:39:50.4396590Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:39:50.4420249Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:39:50.4420928Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:39:50.4421437Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:39:50.4421853Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:39:50.4422290Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:39:50.4512113Z ##[error]Process completed with exit code 1.
