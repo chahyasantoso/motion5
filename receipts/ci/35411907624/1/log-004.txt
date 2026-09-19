@@ -1,0 +1,32 @@
+oup]
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:14:12.2089619Z Suite did not complete successfully
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:14:12.2090059Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:14:12.2090260Z 'failed' !== 'passed'
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:14:12.2090456Z 
+quality (node 24)	Run node scripts/ci-evidence.mjs verify all	2026-09-19T01:14:12.2138007Z ##[error]Process completed with exit code 1.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	﻿2026-09-19T01:12:53.1574022Z ##[group]Run npx tsc -p packages/core/tsconfig.build.json
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:12:53.1574500Z ^[[36;1mnpx tsc -p packages/core/tsconfig.build.json^[[0m
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:12:53.1611886Z shell: /usr/bin/bash -e {0}
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:12:53.1612146Z env:
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:12:53.1612342Z   NODE_VERSION: 24
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:12:53.1612558Z ##[endgroup]
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:12:55.8715891Z ##[error]packages/core/src/runtime/graph-publisher.ts(107,3): error TS2322: Type 'Readonly<{ ruleId: string; path: string; message: string; severity: "error"; ids: readonly string[]; }>' is not assignable to type 'Diagnostic'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:12:55.8725160Z   Types of property 'ruleId' are incompatible.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:12:55.8725670Z     Type 'string' is not assignable to type 'RuleId'.
+build (node 24)	Run npx tsc -p packages/core/tsconfig.build.json	2026-09-19T01:12:55.9067257Z ##[error]Process completed with exit code 2.
+end-to-end (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-19T01:14:18.9273174Z ##[group]Run test "$SUITE_RESULT" = success
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:14:18.9273932Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:14:18.9314419Z shell: /usr/bin/bash -e {0}
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:14:18.9315471Z env:
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:14:18.9315925Z   NODE_VERSION: 24
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:14:18.9316395Z   SUITE_RESULT: failure
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:14:18.9316919Z ##[endgroup]
+end-to-end (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:14:18.9447035Z ##[error]Process completed with exit code 1.
+integration (node 24)	Require successful suite owner, including evidence verification	﻿2026-09-19T01:14:20.1263452Z ##[group]Run test "$SUITE_RESULT" = success
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:14:20.1264344Z ^[[36;1mtest "$SUITE_RESULT" = success^[[0m
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:14:20.1305446Z shell: /usr/bin/bash -e {0}
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:14:20.1306370Z env:
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:14:20.1306879Z   NODE_VERSION: 24
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:14:20.1307392Z   SUITE_RESULT: failure
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:14:20.1307914Z ##[endgroup]
+integration (node 24)	Require successful suite owner, including evidence verification	2026-09-19T01:14:20.1454712Z ##[error]Process completed with exit code 1.
