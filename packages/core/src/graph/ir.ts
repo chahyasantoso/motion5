@@ -1,5 +1,4 @@
 // Docs: ./ir.md
-import type { OwnedIds } from "../contract/rule";
 import type {
   Diagnostic,
   ObservationDefinition,
@@ -7,8 +6,7 @@ import type {
   ProjectDefinition,
   TrackDefinition,
 } from "../contract/v5";
-import { diagnostic } from "../contract/diagnostics";
-import type { RuleId } from "../contract/rule-id";
+import { diagnostic as diag } from "../contract/diagnostics";
 import { readPluginBindings, readPluginValues } from "../contract/keyframe-shape";
 import { PLUGIN_GOALS_SLOT } from "../contract/solver-slots";
 import { compareCodeUnits } from "./compare";
@@ -158,35 +156,13 @@ function freeze<T>(value: T): T {
   return Object.freeze(value);
 }
 
-/**
- * The graph layer's spelling of the one constructor, and no longer a second owner of the shape.
- *
- * It kept a body of its own for as long as `Diagnostic` was a union: the object it returned named a
- * severity for itself and chose between a payload and no member at all through a conditional spread,
- * which made this file the second place both answers lived. `contract/rule.ts` owns them now, so the
- * body is a forward and the only thing this declaration still owns is its name. Twenty seven call
- * sites read `diag`, and renaming them would be churn with no invariant behind it.
- *
- * No severity is declined here, because there is no parameter left to decline: the constructor reads
- * every rule's answer from `contract/rule.ts`, so no expression in this file names a severity and none
- * can. The ids list is forwarded rather than widened for the same reason: `OwnedIds` is the
- * constructor's own argument list, so the correlation this file used to re-state is the one its call
- * sites are already checked against.
- *
- * This declaration and the constructor now take the same arguments in the same order, which retires
- * the trap that made aliasing one to the other hand an array to a severity. The declaration is kept
- * rather than collapsed into an alias anyway, because `ids-ownership-at-the-producer.test.ts` reads it
- * as source text and an alias has neither the declaration nor the derived list it counts. See
- * ADR-097.
- */
-export function diag<Rule extends RuleId>(
-  ruleId: Rule,
-  path: string,
-  message: string,
-  ...carried: OwnedIds<Rule>
-): Diagnostic {
-  return diagnostic(ruleId, path, message, ...carried);
-}
+// The graph layer's spelling of the one constructor, and now the alias it always was. Twenty seven
+// call sites here and four in the incremental builder read `diag`, so the name is kept and the
+// declaration is not: a forwarding body restated the constructor's whole signature to change nothing
+// about it, because severity was already the rule's own answer and `OwnedIds` was already the
+// constructor's own argument list referenced rather than redefined. `contract/validate-v5.ts` binds
+// the same constructor as `issue` exactly this way.
+export { diag };
 
 export function compareDiagnostics(a: Diagnostic, b: Diagnostic): number {
   return compareCodeUnits(a.ruleId, b.ruleId) || compareCodeUnits(a.path, b.path);

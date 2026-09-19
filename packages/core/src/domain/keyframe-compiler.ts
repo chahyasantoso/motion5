@@ -1,7 +1,5 @@
 import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
-import { diagnostic as buildDiagnostic } from "../contract/diagnostics";
-import type { OwnedIds } from "../contract/rule";
-import type { RuleId } from "../contract/rule-id";
+import { diagnostic } from "../contract/diagnostics";
 import type { AuthoredStop, Diagnostic } from "../contract/v5";
 
 export interface CompiledProperty {
@@ -15,20 +13,6 @@ export interface CompiledKeyframes {
   readonly diagnostics: readonly Diagnostic[];
 }
 
-function diagnostic<Rule extends RuleId>(
-  ruleId: Rule,
-  path: string,
-  message: string,
-  ...carried: OwnedIds<Rule>
-): Diagnostic {
-  // This layer's spelling of the one constructor, and no longer a second owner of the shape. It kept a
-  // body while `Diagnostic` was a union: the object it returned named a severity for itself and chose
-  // between a payload and no member at all through a conditional spread. Both answers belong to the
-  // rule now, so the body is a forward and the only thing this declaration still owns is its name.
-  // No severity is named here and none can be: the constructor has no such parameter. Every rule this
-  // file reports is an error rule that always names ids, so nothing observable moves.
-  return buildDiagnostic(ruleId, path, message, ...carried);
-}
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }

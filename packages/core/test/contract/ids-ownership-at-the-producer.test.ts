@@ -13,15 +13,26 @@ import { code } from "../helpers/source-region";
  * `asDiagnostic` took a `RuleId` and an `ids` that were independent of each other, so a call naming a
  * rule that owns no ids and passing a payload compiled, and produced a diagnostic the union called
  * unrepresentable. Both that union and that assertion are deleted rather than reasoned about. The call
- * sites were always the half that mattered, and the five producers below take their ids as the
- * argument list `contract/rule.ts` derives from the rule they were handed. None of them names a
- * severity either, because the one constructor has no parameter for one.
+ * sites were always the half that mattered, and the two producers below take their ids as the
+ * argument list `contract/rule.ts` derives from the rule they were handed. Neither names a severity
+ * either, because the one constructor has no parameter for one.
+ *
+ * Two rather than five, and the three that went were not weakened away. `graph/ir.ts`'s `diag` and
+ * the private `diagnostic` in `domain/plugins.ts` and `domain/keyframe-compiler.ts` each declared the
+ * constructor's whole signature and then forwarded to it unchanged, so what this suite read in those
+ * three files was a restatement rather than a second mechanism. `OwnedIds<Rule>` is referenced from
+ * `contract/rule.ts` and never redefined, so an alias of the constructor resolves to the same type
+ * and stops compiling in the same commit the registry's shape moves in: the restatement bought reader
+ * locality and no guarantee, and three duplicate declarations plus three cases is a steep price for
+ * reader locality. All three are import aliases of the one constructor now, which is the form
+ * `contract/validate-v5.ts` already binds it in as `issue`. What is left below is the constructor and
+ * the one producer that is not a forward.
  *
  * No type can observe itself and this suite cannot run `tsc`, so the claim is read off the
  * declarations as text. That is the shape `RA-78` established for a subject with no run-time form: a
  * declaration is code, reading it typechecks on both sides of the change, and the case fails on an
  * assertion rather than on a compile. It is spelled once per declaration rather than once across the
- * five, because a span has no bound that belongs to it and a rename in one file would otherwise be
+ * two, because a span has no bound that belongs to it and a rename in one file would otherwise be
  * reported as a claim about another.
  *
  * The accepting direction is asserted in the same file, because a producer that refused every payload
@@ -36,10 +47,7 @@ const source = (relative: string): string =>
 /** Each producer that reaches the one assertion, and the declaration its derived list sits in. */
 const PRODUCERS: readonly (readonly [path: string, declaration: string])[] = [
   ["contract/diagnostics.ts", "export function diagnostic<Rule extends RuleId>("],
-  ["graph/ir.ts", "export function diag<Rule extends RuleId>("],
   ["runtime/report.ts", "export function reportDiagnostic<Rule extends RuleId>("],
-  ["domain/plugins.ts", "function diagnostic<Rule extends RuleId>("],
-  ["domain/keyframe-compiler.ts", "function diagnostic<Rule extends RuleId>("],
 ];
 
 describe("a producer takes the ids its rule owns", () => {
@@ -105,9 +113,10 @@ describe("a producer takes the ids its rule owns", () => {
  *
  * Neither function is called. They are exported so that neither is an unused local, and their whole
  * content is the two directions this change is about. Both are stated, because a producer that refused
- * every payload would satisfy the refusing half on its own. Only the three exported producers are
- * reachable from a test; the two private ones in `domain/` carry the same declaration and are covered
- * by the text cases above.
+ * every payload would satisfy the refusing half on its own. All three spellings reached below are
+ * exported, and `diag` is an alias of the constructor rather than a declaration of its own, so a
+ * probe through it asks the compiler about the same signature the other two do rather than about a
+ * second one that happens to agree with it.
  */
 export function refusedByTheCompiler(retain: RetainTrace): void {
   // @ts-expect-error `id-shape` owns no ids, so a payload is unrepresentable.
