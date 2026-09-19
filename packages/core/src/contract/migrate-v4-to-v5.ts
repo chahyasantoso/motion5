@@ -1,3 +1,4 @@
+import { diagnostic as buildDiagnostic } from "./diagnostics";
 import type { MigrationDiagnostic } from "./v5";
 
 export interface MigrationResult<T = Record<string, unknown>> {
@@ -5,19 +6,15 @@ export interface MigrationResult<T = Record<string, unknown>> {
   readonly diagnostics: readonly MigrationDiagnostic[];
 }
 
-// No ids, because no refusal this reader reports names one. The parameter that used to accept them
-// was passed by none of the four call sites below, so it described a payload this rule never
-// carried; `schema-v4-migration` answers `ids: "none"` in `contract/rule.ts`, which is the one owner
-// of that answer now that the second one is deleted, and this shape is what it allows. This literal
-// is also one of the three that omit `ids` entirely, so it is converted in the slice that makes the
-// member required.
+// The rule id, held once, and nothing else. This built a frozen object of its own and spelled its own
+// severity, which made a file whose only real fact is which rule the v4 reader refuses under a second
+// owner of the diagnostic shape. It forwards to the one constructor now, so `severity` and an empty
+// `ids` both arrive from `schema-v4-migration`'s own entry in `contract/rule.ts`, and the return type
+// is derived from the rule the call names rather than annotated beside it. Still no ids, because no
+// refusal this reader reports names one: the parameter that used to accept them was passed by none of
+// the four call sites below, so it described a payload this rule never carried.
 function diagnostic(path: string, message: string): MigrationDiagnostic {
-  return Object.freeze({
-    ruleId: "schema-v4-migration",
-    path,
-    message,
-    severity: "error",
-  });
+  return buildDiagnostic("schema-v4-migration", path, message);
 }
 
 function clone<T>(value: T): T {

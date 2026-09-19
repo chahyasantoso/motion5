@@ -65,6 +65,7 @@ import {
   type TrackHost,
 } from "./project-handles";
 import { collect, report } from "../domain/completion";
+import { diagnostic as buildDiagnostic } from "../contract/diagnostics";
 import { batchFor, runSteps } from "./report";
 import { planCommit } from "./commit-plan";
 import { runPlan } from "./run-plan";
@@ -1077,12 +1078,7 @@ export class ProjectRuntime {
     };
     for (const failure of failures) {
       this.#diagnostics.record(
-        Object.freeze({
-          ruleId: "project-release-failed",
-          path: "dispose",
-          message: describe(failure),
-          severity: "error",
-        }),
+        buildDiagnostic("project-release-failed", "dispose", describe(failure)),
       );
     }
     if (!deferred) report(failures, "Project release failed.");

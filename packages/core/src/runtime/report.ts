@@ -1,4 +1,4 @@
-import { asDiagnostic } from "../contract/diagnostics";
+import { diagnostic as buildDiagnostic } from "../contract/diagnostics";
 import type { OwnedIds } from "../contract/rule";
 import type { RuleId } from "../contract/rule-id";
 import type { Diagnostic, PatchBatch } from "../contract/v5";
@@ -302,22 +302,24 @@ export function undeliverable(
   }
 }
 
+/**
+ * One runtime diagnostic, whose `path` is the tick it was reported on.
+ *
+ * It kept a body of its own because it owns that `path`, and it kept everything else with it: its own
+ * `severity: "error"` and a conditional `ids` spread that omitted the member whenever no payload
+ * arrived, which made this the last producer in the runtime layer to own the shape. Both belong to
+ * the rule and to the one constructor now, so what is left is the one fact this function exists for.
+ * The severity argument is declined rather than named, which is what makes the rule answer, and `ids`
+ * is forwarded as the open optional list `OwnedIds<RuleId>` already is. Every rule reported through
+ * here is an error rule, so nothing observable moves. See ADR-097.
+ */
 function frozenDiagnostic(
   ruleId: RuleId,
   message: string,
   tick: number,
   ids: readonly string[] | undefined,
 ): Diagnostic {
-  const diagnostic: Diagnostic = asDiagnostic(
-    Object.freeze({
-      ruleId,
-      path: String(tick),
-      message,
-      severity: "error",
-      ...(ids ? { ids: Object.freeze([...ids]) } : {}),
-    }),
-  );
-  return diagnostic;
+  return buildDiagnostic(ruleId, String(tick), message, undefined, ids);
 }
 
 /**
@@ -428,26 +430,25 @@ export function batchFor(sequence: number, reason: BatchReason): PatchBatch {
       return frozenBatch(sequence, [], []);
     case "deferred-in-batch":
       return frozenBatch(sequence, reason.seeds, [
-        Object.freeze({
-          ruleId: DEFERRED_VALUE_BATCH_RULE,
-          path: "value-batch",
-          message:
-            "A value write inside an open batch staged its seed; the batch publishes once when the recipe returns.",
-          severity: "warning",
-          ids: Object.freeze([...reason.seeds]),
-        }),
+        buildDiagnostic(
+          DEFERRED_VALUE_BATCH_RULE,
+          "value-batch",
+          "A value write inside an open batch staged its seed; the batch publishes once when the recipe returns.",
+          undefined,
+          reason.seeds,
+        ),
       ]);
     case "deferred-in-flush":
       return frozenBatch(sequence, reason.seeds, [
-        Object.freeze({
-          ruleId: DEFERRED_FLUSH_RULE,
-          path: "deferred-flush",
-          message: reason.scheduled
+        buildDiagnostic(
+          DEFERRED_FLUSH_RULE,
+          "deferred-flush",
+          reason.scheduled
             ? "A flush requested while subscribers were being notified was queued as one follow-up publication for a scheduled drain."
             : "A flush requested while subscribers were being notified was queued as one follow-up publication carried by the next flush.",
-          severity: "warning",
-          ids: Object.freeze([...reason.seeds]),
-        }),
+          undefined,
+          reason.seeds,
+        ),
       ]);
     default:
       return unreachable(reason);

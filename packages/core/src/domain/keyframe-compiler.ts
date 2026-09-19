@@ -1,5 +1,5 @@
 import { readAuthoredLeaf, readCompilableStops } from "../contract/authored-leaf";
-import { asDiagnostic } from "../contract/diagnostics";
+import { diagnostic as buildDiagnostic } from "../contract/diagnostics";
 import type { OwnedIds } from "../contract/rule";
 import type { RuleId } from "../contract/rule-id";
 import type { AuthoredStop, Diagnostic } from "../contract/v5";
@@ -21,19 +21,13 @@ function diagnostic<Rule extends RuleId>(
   message: string,
   ...carried: OwnedIds<Rule>
 ): Diagnostic {
-  // Written only when a payload arrived. This wrote `ids` unconditionally, so an idless rule reaching
-  // it would have minted a diagnostic carrying an empty payload its own variant declares it may not
-  // have. Its one caller names an always-naming rule, so nothing observable moves.
-  const [carriedIds] = carried as unknown as readonly [(readonly string[])?];
-  return asDiagnostic(
-    Object.freeze({
-      ruleId,
-      path,
-      message,
-      severity: "error",
-      ...(carriedIds ? { ids: Object.freeze([...carriedIds]) } : {}),
-    }),
-  );
+  // This layer's spelling of the one constructor, and no longer a second owner of the shape. It kept a
+  // body while `Diagnostic` was a union: the object it returned named a severity for itself and chose
+  // between a payload and no member at all through a conditional spread. Both answers belong to the
+  // rule now, so the body is a forward and the only thing this declaration still owns is its name.
+  // The severity argument is declined rather than named, which is what makes the rule answer; its one
+  // caller names an error rule that always names ids, so nothing observable moves.
+  return buildDiagnostic(ruleId, path, message, undefined, ...carried);
 }
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);

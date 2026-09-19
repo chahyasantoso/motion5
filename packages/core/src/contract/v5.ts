@@ -58,19 +58,23 @@ export interface TriggerSignal {
  * rule owns, which `contract/rule.ts` now derives from one record. With no union left to narrow there
  * is nothing for an assertion to narrow into. See ADR-097.
  *
- * `ids` is still optional here rather than always present, and that is a measured intermediate state
- * rather than the destination. Three raw producers omit the member: `runtime/project-runtime.ts`'s
- * `#teardown`, the private path-first producer in `contract/migrate-v4-to-v5.ts`, and
- * `runtime/report.ts`'s `frozenDiagnostic`, which spreads it conditionally and so omits it whenever
- * no payload arrived. Requiring the member would refuse those three, so it is required in the slice
- * that converts them. The count of eight named the raw literals rather than the omissions, and five
- * of the eight do carry a payload; stating the smaller number is what makes this paragraph an
- * inventory rather than an estimate. Every diagnostic built through `diagnostic` in `./diagnostics`
- * already carries one, empty for a rule that names no ids.
+ * `ids` is required, always present, always frozen, and empty for a rule that names none. It was
+ * optional while three raw producers omitted the member, and those three are converted in the same
+ * slice that requires it: `runtime/project-runtime.ts`'s `#teardown`, the private path-first producer
+ * in `contract/migrate-v4-to-v5.ts`, and `runtime/report.ts`'s `frozenDiagnostic` all forward to the
+ * one constructor now rather than hand-building an object that chooses between a payload and no
+ * member at all. So a reader spelling `ids` and a reader spelling `ids ?? []` are one reader rather
+ * than two, and `runtime/patch-registry.ts` comparing two payloads no longer has an absent member and
+ * an empty one to tell apart for the same rule.
+ *
+ * Whether a rule may name ids is still not this field's claim, and requiring the member does not make
+ * it one. `ids: []` is what a rule that owns none carries; what refuses a payload a rule does not own
+ * is `OwnedIds` at the call site, derived from the one record in `contract/rule.ts`. This closes the
+ * shape, and the ownership stays enforced one layer up, where the rule is named. See ADR-097.
  */
 export interface Diagnostic extends DiagnosticShape {
   readonly ruleId: RuleId;
-  readonly ids?: readonly string[];
+  readonly ids: readonly string[];
 }
 
 /**
@@ -78,14 +82,19 @@ export interface Diagnostic extends DiagnosticShape {
  *
  * Naming a rule at a declaration, rather than discriminating one at a read. It was the one thing the
  * three variants were still read for, and it now replaces all three: they are deleted, and
- * `MigrationDiagnostic` below is the only consumer, one derived alias in place of what used to be a
- * variant plus a narrowing interface.
+ * `MigrationDiagnostic` below is one derived alias in place of what used to be a variant plus a
+ * narrowing interface.
+ *
+ * It is also what the one constructor in `./diagnostics` returns, which is what retired the widening
+ * that used to sit beside it. A producer handed a literal rule id is answered with a diagnostic
+ * pinned to that rule, so the v4 reader derives `MigrationDiagnostic` from the call rather than
+ * asserting it afterwards, and no expression in this tree casts an object into this shape any more.
  */
 export interface DiagnosticOf<Rule extends RuleId> extends Diagnostic {
   readonly ruleId: Rule;
 }
 
-/** What every diagnostic carries, whichever group its rule is in. */
+/** What every diagnostic carries, whichever rule it names. */
 interface DiagnosticShape {
   readonly path: string;
   readonly message: string;
