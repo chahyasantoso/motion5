@@ -209,8 +209,11 @@ export class GraphPublisher {
     // order to ask them in was written out by hand at the top of the loop.
     const outcomes = new Map<string, NodeOutcome>();
     const outcomeFor = (nodeId: string) => outcomeOf(outcomes, nodeId);
+    // `lastReady` rather than `get`: a non-ready patch owns no values now, and the pose every
+    // fallback in `sourceValues` has always wanted is the last one a composition produced. See
+    // ADR-098.
     const valuesFor = (sourceId: string) =>
-      sourceValues(outcomeFor(sourceId), this.#registry.get(sourceId));
+      sourceValues(outcomeFor(sourceId), this.#registry.lastReady(sourceId));
     this.#registry.beginBatch(tick, seeds);
     try {
       for (const id of snapshot.order) {
@@ -249,7 +252,6 @@ export class GraphPublisher {
     if (blocking !== undefined) {
       this.#registry.publish({
         nodeId: id,
-        sourceProgress: 0,
         status: "blocked",
         diagnostics: [
           diagnostic("blocked-upstream", id, `Blocked by upstream state at ${blocking}.`, [
@@ -270,7 +272,6 @@ export class GraphPublisher {
     if (pendingMatch !== undefined) {
       this.#registry.publish({
         nodeId: id,
-        sourceProgress: 0,
         status: "blocked",
         diagnostics: [pendingMatch.diagnostic],
       });
@@ -294,7 +295,6 @@ export class GraphPublisher {
       const failure = nodeFailure(id, error);
       this.#registry.publish({
         nodeId: id,
-        sourceProgress: 0,
         status: "error",
         diagnostics: [failure],
       });

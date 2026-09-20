@@ -1,4 +1,14 @@
-import type { Diagnostic, Patch, PatchBatch, PatchListener, PatchStatus } from "../contract/v5";
+import type {
+  BlockedPatch,
+  DestroyedPatch,
+  Diagnostic,
+  ErrorPatch,
+  LivePatch,
+  Patch,
+  PatchBatch,
+  PatchListener,
+  ReadyPatch,
+} from "../contract/v5";
 import { equalValues } from "../domain/values";
 import { collect, report } from "../domain/completion";
 import { unreachable } from "../domain/exhaustive";
@@ -17,17 +27,68 @@ import {
   type RegistryPhase,
 } from "./registry-phase";
 
-export type { Patch, PatchBatch, PatchListener, PatchStatus } from "../contract/v5";
+export type {
+  BlockedPatch,
+  DestroyedPatch,
+  ErrorPatch,
+  LivePatch,
+  Patch,
+  PatchBatch,
+  PatchListener,
+  PatchStatus,
+  ReadyPatch,
+} from "../contract/v5";
 export type BatchListener = (batch: PatchBatch) => void;
 
-export interface PublishInput {
+/**
+ * One publication of a node that composed: the pose, and what it was measured against.
+ *
+ * `values` is required, which is the input half of ADR-098. It was optional, and omitting it asked
+ * the registry to carry the previous patch's values forward at every status, which is the asymmetry
+ * issue #450's acceptance criterion missed. A caller with no values has not composed, so it publishes
+ * a refusal below rather than a ready patch with a member left out.
+ */
+export interface ReadyPublishInput {
   readonly nodeId: string;
-  readonly values?: Readonly<Record<string, unknown>>;
+  readonly status: "ready";
+  readonly values: Readonly<Record<string, unknown>>;
   readonly sourceProgress: number;
   readonly sourceRevisions?: Readonly<Record<string, number>>;
-  readonly status: PatchStatus;
   readonly diagnostics?: readonly Diagnostic[];
 }
+
+/**
+ * One publication of a node that did not compose: which refusal it is, and what it refuses under.
+ *
+ * One input shape for the two statuses, where the read side keeps `BlockedPatch` and `ErrorPatch` as
+ * two variants. That is not an inconsistency. A reader narrows on `status` to decide what it may
+ * read, so each variant has to be nameable; a caller already knows which of the two it is publishing
+ * and the status is the only thing that differs, so mirroring the read side here would be one
+ * declaration per literal and no question answered.
+ *
+ * There is no `sourceProgress`, and its absence is the point: the publisher passed `0` at both
+ * statuses, which is a placeholder rather than a measurement, and the registry then overwrote it with
+ * the previous patch's progress anyway.
+ *
+ * `diagnostics` stays optional rather than becoming required. Requiring a reason on a refusal is a
+ * real refinement and a different one: it is a refusal this slice would be introducing, it owes a
+ * failing case of its own, and it is not what issue #450 asks for. Owed rather than taken in passing.
+ */
+export interface RefusedPublishInput {
+  readonly nodeId: string;
+  readonly status: "blocked" | "error";
+  readonly diagnostics?: readonly Diagnostic[];
+}
+
+/**
+ * What a caller may ask this registry to publish, and the reason `destroyed` is not in it.
+ *
+ * The flat input declared `status: PatchStatus`, so `publish({ status: "destroyed" })` typechecked and
+ * minted a terminal patch from the outside, past `#notifyTerminal`, which is the one owner of
+ * destruction on the wire. Mirroring the read side stopped that being expressible: eviction is the
+ * only producer of a `DestroyedPatch`, and the type says so now rather than a convention.
+ */
+export type PublishInput = ReadyPublishInput | RefusedPublishInput;
 
 export const REENTRANT_BATCH_MESSAGE =
   "Cannot open a patch batch while subscribers are being notified. " +
@@ -79,20 +140,96 @@ function sameDiagnostics(a: readonly Diagnostic[], b: readonly Diagnostic[]): bo
     return other !== undefined && sameDiagnostic(item, other);
   });
 }
-function samePatch(a: Patch | undefined, b: Patch): boolean {
+/** The pose two ready patches carry, and the only payload comparison left in this module. */
+function samePayload(a: ReadyPatch, b: ReadyPatch): boolean {
   return (
-    a !== undefined &&
     equalValues(a.values, b.values) &&
     Object.is(a.sourceProgress, b.sourceProgress) &&
-    equalValues(a.sourceRevisions, b.sourceRevisions) &&
-    a.status === b.status &&
-    sameDiagnostics(a.diagnostics, b.diagnostics)
+    equalValues(a.sourceRevisions, b.sourceRevisions)
   );
+}
+/**
+ * Whether a candidate says anything the retained patch does not, which is what suppresses a
+ * republication.
+ *
+ * Restructured rather than narrowed in place. It compared all five payload members at every status,
+ * which only typechecked while every status declared all five; with the payload on one variant it has
+ * to read the discriminant, and TypeScript will not correlate two independently narrowed operands, so
+ * the ready comparison is reached through one discriminant read and one equality against it rather
+ * than through two narrowings the compiler treats as unrelated.
+ *
+ * Both operands are the live union, because `#patches` never holds a destroyed patch: `evict` deletes
+ * a node's entry before it delivers the terminal one, and nothing else writes that map.
+ *
+ * The switch is exhaustive rather than a chain ending in a ternary, so a fifth live status fails
+ * `typecheck` here instead of being answered by whichever arm happened to be written last. See
+ * ADR-092.
+ */
+function samePatch(a: LivePatch | undefined, b: LivePatch): boolean {
+  if (a === undefined) return false;
+  if (!sameDiagnostics(a.diagnostics, b.diagnostics)) return false;
+  switch (b.status) {
+    case "ready":
+      return a.status === "ready" && samePayload(a, b);
+    case "blocked":
+    case "error":
+      return a.status === b.status;
+    default:
+      return unreachable(b);
+  }
+}
+/**
+ * The patch one publication becomes, and the one place a status decides what it carries.
+ *
+ * Three arms rather than three carry-forward expressions. The deleted ones read `previous?.values`,
+ * `previous?.sourceProgress` and `previous?.sourceRevisions`, and they were asymmetric in a way
+ * nothing stated and nothing tested: `values` carried forward whenever the caller omitted it, at every
+ * status, while the other two carried forward only when values were omitted and the status was not
+ * ready. So a blocked publication republished the last good pose, the last progress and the last
+ * source revisions, and a subscriber reading `values` on a blocked patch was reading a real answer for
+ * as long as the member existed. That pose is `lastReady`'s now.
+ *
+ * Nothing here reads `previous` except the revision, which is identity rather than payload, so a
+ * publication no longer depends on what the last one happened to carry. See ADR-098.
+ */
+function candidateOf(input: PublishInput, revision: number): LivePatch {
+  switch (input.status) {
+    case "ready":
+      return {
+        nodeId: input.nodeId,
+        revision,
+        status: "ready",
+        values: input.values,
+        sourceProgress: input.sourceProgress,
+        sourceRevisions: input.sourceRevisions ?? {},
+        diagnostics: input.diagnostics ?? [],
+      } satisfies ReadyPatch;
+    // Both refusals written rather than one reaching its shape through the other's declaration, which
+    // is the shape slice 1's retention cases already ship.
+    case "blocked":
+      return {
+        nodeId: input.nodeId,
+        revision,
+        status: "blocked",
+        diagnostics: input.diagnostics ?? [],
+      } satisfies BlockedPatch;
+    case "error":
+      return {
+        nodeId: input.nodeId,
+        revision,
+        status: "error",
+        diagnostics: input.diagnostics ?? [],
+      } satisfies ErrorPatch;
+    default:
+      return unreachable(input);
+  }
 }
 
 export class PatchRegistry {
-  readonly #patches = new Map<string, Patch>();
-  readonly #lastReady = new Map<string, Patch>();
+  // Both maps hold the live union rather than `Patch`: `evict` deletes a node's entry before it
+  // delivers the terminal patch, so a destroyed patch is never readable back out of either one.
+  readonly #patches = new Map<string, LivePatch>();
+  readonly #lastReady = new Map<string, ReadyPatch>();
   readonly #nodeListeners = new Map<string, Set<PatchListener>>();
   readonly #batchListeners = new Set<BatchListener>();
   #phase: RegistryPhase = REGISTRY_IDLE;
@@ -107,10 +244,15 @@ export class PatchRegistry {
    * else, and that is the decision slice 1 of #450 owed. A blocked or errored node has no pose of
    * its own; the pose a consumer still wants to render is the last good one, which belongs to an
    * earlier `ready` publication together with the progress and the source revisions measured with
-   * it. Carrying those forward onto a blocked patch, which is what `publish` below still does, makes
-   * that patch say `blocked` while holding values no blocked evaluation produced. ADR-098 deletes
-   * that field, so this member is where the answer moves rather than where it is lost, and a
-   * consumer rendering the last good pose keeps reading a real one.
+   * it. Carrying those forward onto a blocked patch, which is what `publish` below did until the
+   * source half of this slice, made that patch say `blocked` while holding values no blocked
+   * evaluation produced. ADR-098 has now deleted all three from every non-ready variant, so this
+   * member is where the answer moved rather than where it was lost, and a consumer rendering the last
+   * good pose keeps reading a real one.
+   *
+   * It answers `ReadyPatch | undefined` rather than `Patch | undefined`, which is the narrowing slice
+   * 1 named as owed and could not take: the map is written only under `patch.status === "ready"`, and
+   * a consumer asking for the last pose should not need a second narrowing to read `values`.
    *
    * What it answers is the frozen patch that was published rather than a copy of it, so identity
    * still tells a reader whether anything moved. A republication the registry suppressed is not a
@@ -119,7 +261,7 @@ export class PatchRegistry {
    * either: a remount reading a pose from before it was detached would be reading exactly the
    * staleness `remove` exists to clear.
    */
-  lastReady(nodeId: string): Patch | undefined {
+  lastReady(nodeId: string): ReadyPatch | undefined {
     return this.#lastReady.get(nodeId);
   }
   get notifying(): boolean {
@@ -175,16 +317,15 @@ export class PatchRegistry {
    * failures are swallowed because destruction cannot be allowed to fail halfway through and
    * leave the graph and the wire disagreeing about whether the node still exists.
    */
-  #notifyTerminal(nodeId: string, previous: Patch, listeners: Set<PatchListener>): void {
+  #notifyTerminal(nodeId: string, previous: LivePatch, listeners: Set<PatchListener>): void {
+    // Identity and the status, and nothing else. The four members this built empty were a payload a
+    // reader narrows into to find `{}`, `0`, `{}` and `[]`: a node that will never publish again has
+    // no pose, and nothing to refuse under either. See ADR-098.
     const terminal = deepFreeze({
       nodeId,
       revision: previous.revision + 1,
-      values: {},
-      sourceProgress: 0,
-      sourceRevisions: {},
       status: "destroyed",
-      diagnostics: [],
-    } satisfies Patch);
+    } satisfies DestroyedPatch);
     // The notification this delivery interrupted is restored rather than assumed to have been none,
     // which is why every phase carries one: an eviction reached from inside a notification leaves
     // that notification running, and one reached while a batch is open leaves the batch open.
@@ -227,28 +368,11 @@ export class PatchRegistry {
         return unreachable(opened);
     }
   }
-  publish(input: PublishInput): Patch | undefined {
+  publish(input: PublishInput): LivePatch | undefined {
     const phase = this.#phase;
     if (isDisposed(phase)) return undefined;
     const previous = this.#patches.get(input.nodeId);
-    const readyValues = input.values ?? previous?.values ?? {};
-    const readyProgress =
-      input.values === undefined && input.status !== "ready"
-        ? (previous?.sourceProgress ?? input.sourceProgress)
-        : input.sourceProgress;
-    const readyRevisions =
-      input.values === undefined && input.status !== "ready"
-        ? (previous?.sourceRevisions ?? input.sourceRevisions ?? {})
-        : (input.sourceRevisions ?? {});
-    const candidate = {
-      nodeId: input.nodeId,
-      revision: (previous?.revision ?? 0) + 1,
-      values: readyValues,
-      sourceProgress: readyProgress,
-      sourceRevisions: readyRevisions,
-      status: input.status,
-      diagnostics: input.diagnostics ?? [],
-    } satisfies Patch;
+    const candidate = candidateOf(input, (previous?.revision ?? 0) + 1);
     if (samePatch(previous, candidate)) return undefined;
     const patch = deepFreeze(candidate);
     this.#patches.set(input.nodeId, patch);

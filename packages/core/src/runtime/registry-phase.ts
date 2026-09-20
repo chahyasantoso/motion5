@@ -1,4 +1,4 @@
-import type { Diagnostic, Patch } from "../contract/v5";
+import type { Diagnostic, LivePatch, Patch } from "../contract/v5";
 import { unreachable } from "../domain/exhaustive";
 
 /**
@@ -214,8 +214,14 @@ export function opening(
  * frame publishes one per member and those buffers are what the batch is made of. A publication with
  * no batch open is retained by the registry's own map and collected nowhere, which is what the retired
  * fields did with it too: they pushed it into a buffer the next `beginBatch` emptied.
+ *
+ * It takes the live union rather than narrowing inside, because `publish` is its only caller and
+ * `publish` cannot mint a destroyed patch: the one producer of one is `PatchRegistry.#notifyTerminal`,
+ * which delivers out of band and never reaches a batch. So `patch.diagnostics` is read here with no
+ * predicate, which is the exhaustive-read rule satisfied by the declaration rather than by a switch in
+ * a function whose subject is the phase. See ADR-092 and ADR-098.
  */
-export function retain(phase: RegistryPhase, patch: Patch): void {
+export function retain(phase: RegistryPhase, patch: LivePatch): void {
   switch (phase.kind) {
     case "collecting":
       phase.patches.push(patch);
