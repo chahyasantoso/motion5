@@ -7,16 +7,13 @@ import { PatchRegistry, type Patch, type PublishInput } from "../../../src/runti
  * status owns, and the answer is the registry rather than a field on a patch that is about something
  * else. ADR-098 left that question open; these cases are what closes it.
  *
- * The member is reached through one intersection rather than off the class, so this round fails on
- * assertions rather than on `tsc`: `docs/GUARDRAILS.md` does not accept a failed compile as
- * failing-first evidence. The request that lands `lastReady` deletes this type and its cast.
+ * The round that landed these cases reached the member through an intersection rather than off the
+ * class, so it failed on assertions rather than on `tsc`, which is the failing-first evidence
+ * `docs/GUARDRAILS.md` asks for and a failed compile is not. The member exists now, so the cast is
+ * deleted and every case below reads it off the class.
  */
-type RegistryUnderTest = PatchRegistry & {
-  lastReady(nodeId: string): Patch | undefined;
-};
-
-function open(): RegistryUnderTest {
-  return new PatchRegistry() as RegistryUnderTest;
+function open(): PatchRegistry {
+  return new PatchRegistry();
 }
 
 function publish(registry: PatchRegistry, tick: number, input: PublishInput): Patch | undefined {

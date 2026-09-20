@@ -92,12 +92,35 @@ function samePatch(a: Patch | undefined, b: Patch): boolean {
 
 export class PatchRegistry {
   readonly #patches = new Map<string, Patch>();
+  readonly #lastReady = new Map<string, Patch>();
   readonly #nodeListeners = new Map<string, Set<PatchListener>>();
   readonly #batchListeners = new Set<BatchListener>();
   #phase: RegistryPhase = REGISTRY_IDLE;
 
   get(nodeId: string): Patch | undefined {
     return this.#patches.get(nodeId);
+  }
+  /**
+   * The last patch this node published as `ready`, or nothing if it never published one.
+   *
+   * Retention is this registry's question rather than a field on a patch that is about something
+   * else, and that is the decision slice 1 of #450 owed. A blocked or errored node has no pose of
+   * its own; the pose a consumer still wants to render is the last good one, which belongs to an
+   * earlier `ready` publication together with the progress and the source revisions measured with
+   * it. Carrying those forward onto a blocked patch, which is what `publish` below still does, makes
+   * that patch say `blocked` while holding values no blocked evaluation produced. ADR-098 deletes
+   * that field, so this member is where the answer moves rather than where it is lost, and a
+   * consumer rendering the last good pose keeps reading a real one.
+   *
+   * What it answers is the frozen patch that was published rather than a copy of it, so identity
+   * still tells a reader whether anything moved. A republication the registry suppressed is not a
+   * publication and cannot move it, and a status that owns no pose cannot replace one. Unmount,
+   * eviction and disposal all drop it, because a node with no retained patch has no last pose
+   * either: a remount reading a pose from before it was detached would be reading exactly the
+   * staleness `remove` exists to clear.
+   */
+  lastReady(nodeId: string): Patch | undefined {
+    return this.#lastReady.get(nodeId);
   }
   get notifying(): boolean {
     return isNotifying(this.#phase);
@@ -115,6 +138,7 @@ export class PatchRegistry {
    */
   remove(nodeId: string): void {
     this.#patches.delete(nodeId);
+    this.#lastReady.delete(nodeId);
   }
   /**
    * Permanently evict a node: publish one terminal patch, then drop its retained patch.
@@ -134,6 +158,7 @@ export class PatchRegistry {
     if (isDisposed(this.#phase)) return;
     const previous = this.#patches.get(nodeId);
     this.#patches.delete(nodeId);
+    this.#lastReady.delete(nodeId);
     const listeners = this.#nodeListeners.get(nodeId);
     if (listeners === undefined || listeners.size === 0) {
       this.#nodeListeners.delete(nodeId);
@@ -182,6 +207,7 @@ export class PatchRegistry {
     // owned it. Four fields were emptied here by hand and a fifth was the flag saying they had been.
     this.#phase = retired(this.#phase);
     this.#patches.clear();
+    this.#lastReady.clear();
     this.#nodeListeners.clear();
     this.#batchListeners.clear();
   }
@@ -226,6 +252,9 @@ export class PatchRegistry {
     if (samePatch(previous, candidate)) return undefined;
     const patch = deepFreeze(candidate);
     this.#patches.set(input.nodeId, patch);
+    // Read off the accepted publication rather than off the input, so a republication this member
+    // suppressed above cannot move what is retained, and a status owning no pose cannot replace one.
+    if (patch.status === "ready") this.#lastReady.set(input.nodeId, patch);
     retain(phase, patch);
     return patch;
   }
