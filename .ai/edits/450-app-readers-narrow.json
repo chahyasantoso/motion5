@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "operation": "apply",
+  "expected_head": "e69902597472137ebfc48ed07d294d0c9e95f553",
+  "expected_blobs": {
+    "apps/react-demo/src/components/InspectorPanel.tsx": "42fa78d46d5f4f1b8b1aa8fad5dd167ed33fba63",
+    "apps/ik-playground/src/components/SolverPanel.tsx": "0bed39615f07d5b53bda83cfcc6433ea5a97c966"
+  },
+  "message": "fix(apps): read a pose off a ready patch rather than off any patch",
+  "edits": [
+    {
+      "path": "apps/react-demo/src/components/InspectorPanel.tsx",
+      "find": "  const patch = usePatch(handle, nodeId);\n  if (!patch) return null;\n\n  const x = Number(patch.values.x ?? 0);",
+      "replace": "  const patch = usePatch(handle, nodeId);\n  // A pose belongs to a ready patch, so the guard asks for the status rather than for existence. The\n  // same spelling `@motion5/react`'s own `derived-dom-patch.ts` uses, which was the already-narrowed\n  // reader in the tree before ADR-098 made narrowing the only way to reach `values` at all.\n  //\n  // This card renders nothing while the node is blocked, where it used to render the pose the\n  // carry-forward republished onto the blocked patch. That pose is `PatchRegistry.lastReady`'s now and\n  // no consumer surface forwards it yet, so rendering nothing is the honest answer until one does.\n  if (patch?.status !== \"ready\") return null;\n\n  const x = Number(patch.values.x ?? 0);"
+    },
+    {
+      "path": "apps/ik-playground/src/components/SolverPanel.tsx",
+      "find": "  if (!rootPatch || !goalPatch || !solverPatch || !tipPatch) return null;",
+      "replace": "  // Four ready patches, not four existing ones: every read below is a pose or a solved rotation set,\n  // and neither is a member a blocked or errored patch owns. Same guard as the react-demo inspector,\n  // and the same consequence: the card is empty while any of the four is not ready, until a consumer\n  // surface forwards `PatchRegistry.lastReady`. See ADR-098.\n  if (\n    rootPatch?.status !== \"ready\" ||\n    goalPatch?.status !== \"ready\" ||\n    solverPatch?.status !== \"ready\" ||\n    tipPatch?.status !== \"ready\"\n  )\n    return null;"
+    }
+  ]
+}
