@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "expected_head": "d700dbf988611165eb9ef2709b73854a68baf83c",
+  "expected_blobs": {
+    "docs/ADR-098-a-patch-carries-only-the-payload-its-status-owns.md": "986366d72fdcf777aad4ef2140e597a3ebb5b7af",
+    "docs/SESSION-STATUS.md": "f28c6529d9283824919968af1854f1fd3c633d3e"
+  },
+  "message": "docs(record): state that the union merged and narrow ADR-098's ready diagnostics claim",
+  "edits": [
+    {
+      "path": "docs/ADR-098-a-patch-carries-only-the-payload-its-status-owns.md",
+      "find": "and a `ready` patch carries a `diagnostics` array that is empty by construction.",
+      "replace": "and a `ready` patch carries a `diagnostics` array that the one caller publishing ready patches always passes empty."
+    },
+    {
+      "path": "docs/ADR-098-a-patch-carries-only-the-payload-its-status-owns.md",
+      "find": "which is the shape ADR-094 closed everywhere else in `runtime/` and left standing on the observation wire.",
+      "replace": "which is the shape ADR-094 closed everywhere else in `runtime/` and left standing on the observation wire.\n\nThat second clause is narrower than the one this record shipped with, and the narrowing is a correction rather than a decision that moved. It said the array is empty **by construction**, and nothing constructs it that way: `ReadyPublishInput.diagnostics` is optional and `candidateOf`'s ready arm reads `input.diagnostics ?? []`, so a non-empty array a caller supplies on a ready publication is preserved onto the patch rather than dropped. What is true is about one caller instead of about the contract, which is why the sentence now names it: `GraphPublisher`'s ready publication passes `diagnostics: []`, so the member is empty in production while the type permits it not to be. The distinction matters to a reader deciding what to trust: the stronger claim invites reading a ready patch's diagnostics as dead weight, and it is a real member with one habitual caller. Corrected in place rather than marked superseded, because the marker convention `docs/PR-WORKFLOW.md` owns covers a decision that stopped being true, and this was a Context sentence that overstated the code it described from the day it was written. Making the original sentence true, by requiring the array to be empty at `ready`, is a refusal this record does not introduce: it would owe a failing case of its own, and the refusal this record does owe is a reason on a refusal input rather than the absence of one at `ready`. Found by the independent quality pass over the finished change rather than while writing this."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- **Read against:** `3c5d39cfde9f21f1de64553c8ba1a58c6ec87174`, which is the head this rewrite was verified at rather than the head it publishes on;",
+      "replace": "- **Read against:** `d700dbf988611165eb9ef2709b73854a68baf83c`, the squash of [#453](https://github.com/chahyasantoso/motion5/pull/453) onto `main`, which is the state this file describes rather than the head this rewrite publishes on;"
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "and the whole union has landed:** [#450](https://github.com/chahyasantoso/motion5/issues/450) is the live area on [#453](https://github.com/chahyasantoso/motion5/pull/453).",
+      "replace": "and it is merged:** [#450](https://github.com/chahyasantoso/motion5/issues/450) landed through [#453](https://github.com/chahyasantoso/motion5/pull/453) and is squashed onto `main`."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "Green at all seven jobs on the head named above; it is not merged and it stays a draft.",
+      "replace": "Green at all seven required jobs on the head it merged from."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "Forwarding the retained pose onto `PatchSource` and the `contract/v5` version bump ADR-098 deferred are owed, with the exact commits and runs in that pull request rather than here.",
+      "replace": "What it left owed is the live area now, and it is being taken one slice at a time: forwarding the retained pose onto `PatchSource`, narrowing `PatchRegistry.get` to `LivePatch`, requiring a reason on a refusal input, and the `contract/v5` version bump ADR-098 deferred. The exact commits and runs stay in the owning pull requests rather than here."
+    },
+    {
+      "path": "docs/SESSION-STATUS.md",
+      "find": "- **The mutation baseline [#419](https://github.com/chahyasantoso/motion5/issues/419) is owed and nothing else is queued:**",
+      "replace": "- **The mutation baseline [#419](https://github.com/chahyasantoso/motion5/issues/419) is owed once the union's follow-ups clear:**"
+    }
+  ]
+}
