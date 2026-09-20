@@ -201,4 +201,4 @@ A refused single-track mutation costs nothing. `addTrack` and `replaceTrack` res
 
 A rejected motion mutation reports the rejection that caused it. If the rollback itself also fails, for example because your own scroll-source unsubscribe throws, you get one `AggregateError` whose message opens with the original rejection verbatim and whose `errors` are `[rejection, rollbackFailure]`. The reason the operation was refused always outranks the noise from cleaning up.
 
-Destruction is visible on the wire. An evicted node publishes exactly one `destroyed` patch before its retained patch is dropped, so an already-attached subscriber cannot keep rendering a node the graph has removed.
+Destruction is visible on the wire. An evicted node that has a retained publication delivers exactly one `destroyed` patch to its subscribers, and its entry is dropped before that delivery rather than after, so an already-attached subscriber cannot keep rendering a node the graph has removed and `get` can never hand the terminal patch back. Evicting a node that never published is silent, because there is no state for a terminal patch to contradict.

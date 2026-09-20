@@ -16,7 +16,13 @@ First, `adapters/dom.ts` is not the only renderer. `packages/react/src/patch-sto
 returns the whole `Patch`, values included, and `usePatch` hands it to the consumer untouched. That
 is the path the demo renders through. A denylist at the renderer means every renderer reimplements
 it, and one of the two shipped renderers never did, so a regression test written against
-`createDomPatchAdapter` would pass while React kept leaking.
+`createDomPatchAdapter` would pass while React kept leaking. **Refined by ADR-098, 2026-09-18.** The
+sentence saying `patch-store.ts` returns the whole `Patch`, values included, stopped being true when
+`Patch` became a union discriminated by `status`. The store answers `LivePatch | undefined` and
+`usePatch` returns that, so a terminal publication reaches a component as absence, and only a
+`ready` patch owns `values` for it to hand on. The argument this paragraph makes is untouched,
+because two renderers still receive the observation result and neither may reimplement internal-key
+filtering. See [ADR-098](./ADR-098-a-patch-carries-only-the-payload-its-status-owns.md).
 
 Second, the underscore is not a renderer denylist to mirror. It is stripped from interpolator state
 before the plugin chain in `domain/track.ts`, and _rejected_ after the chain by `isRendererNeutral`,
