@@ -4,7 +4,6 @@ import type {
   Diagnostic,
   ErrorPatch,
   LivePatch,
-  Patch,
   PatchBatch,
   PatchListener,
   ReadyPatch,
@@ -234,7 +233,21 @@ export class PatchRegistry {
   readonly #batchListeners = new Set<BatchListener>();
   #phase: RegistryPhase = REGISTRY_IDLE;
 
-  get(nodeId: string): Patch | undefined {
+  /**
+   * The patch this node last published, or nothing if it has published none or is gone.
+   *
+   * `LivePatch` rather than `Patch`, which is the narrowing ADR-098 named as owed and deferred. The
+   * map behind it is already `Map<string, LivePatch>`, and `evict` deletes a node's entry before
+   * `#notifyTerminal` delivers its terminal patch, so a destroyed patch reaches a listener exactly
+   * once and is never readable back out of here. The type states that now instead of leaving every
+   * caller to narrow past a variant this member cannot answer.
+   *
+   * The asymmetry with `subscribeNode` is the point rather than an oversight: a listener sees every
+   * publication a node makes including its last, and this sees only the ones it can still be asked
+   * about. A reader that wants the terminal event subscribes; a reader that wants current state
+   * asks here. `D1` in `patch-registry.test.ts` is the case that pins both halves together.
+   */
+  get(nodeId: string): LivePatch | undefined {
     return this.#patches.get(nodeId);
   }
   /**

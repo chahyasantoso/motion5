@@ -1,7 +1,7 @@
 // Docs: ./engine.md
 import type {
+  LivePatch,
   MotionDefinition,
-  Patch,
   PatchBatch,
   PatchListener,
   ProjectDefinition,
@@ -82,7 +82,16 @@ export interface ProjectHandle {
   freeTrackIds(): readonly string[];
   mountedNodeIds(): readonly string[];
   dependantsOf(nodeId: string): readonly string[];
-  get(nodeId: string): Patch | undefined;
+  /**
+   * The patch this node last published, or nothing if it has published none.
+   *
+   * `LivePatch` rather than `Patch`: a terminal patch is delivered to `subscribeNode` once and is
+   * never readable back, because eviction drops the registry entry before it notifies. A reader
+   * here accounts for `ready`, `blocked` and `error` and cannot receive `destroyed`, so the
+   * declaration states that instead of asking every call site to narrow past a variant it cannot
+   * get. See ADR-098.
+   */
+  get(nodeId: string): LivePatch | undefined;
   subscribeNode(nodeId: string, listener: PatchListener): () => void;
   /**
    * The render metadata for one node, or `undefined` for a node this project holds no track for.

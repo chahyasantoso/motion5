@@ -27,6 +27,7 @@ export type {
   ScrollTriggerDefinition,
   PatchStatus,
   Patch,
+  LivePatch,
   PatchBatch,
   PatchListener,
 } from "./contract/v5";
