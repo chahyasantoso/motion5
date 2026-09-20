@@ -7,10 +7,13 @@ import { PatchRegistry, type Patch, type PublishInput } from "../../../src/runti
  * status owns, and the answer is the registry rather than a field on a patch that is about something
  * else. ADR-098 left that question open; these cases are what closes it.
  *
- * The round that landed these cases reached the member through an intersection rather than off the
- * class, so it failed on assertions rather than on `tsc`, which is the failing-first evidence
- * `docs/GUARDRAILS.md` asks for and a failed compile is not. The member exists now, so the cast is
- * deleted and every case below reads it off the class.
+ * The round that landed these cases declared the member on an intersection and read it off a cast, so
+ * `tsc` stayed clean and every case below ran. What they then were is worth stating exactly, because
+ * an independent pass caught this sentence overclaiming: each threw `TypeError: registry.lastReady is
+ * not a function` at the call rather than reaching a failed expectation. That is a red test file and
+ * not a red compile, which is the distinction `docs/GUARDRAILS.md` draws, and it is also not the
+ * failed-assertion shape that document names, so it is recorded as what it was rather than
+ * relabelled. The member exists now, so the cast is deleted and every case reads it off the class.
  */
 function open(): PatchRegistry {
   return new PatchRegistry();
@@ -26,6 +29,10 @@ function publish(registry: PatchRegistry, tick: number, input: PublishInput): Pa
 const BLOCKED = [
   diagnostic("blocked-upstream", "hero/arm", "Upstream is blocked.", ["hero/shoulder"]),
 ];
+
+// Named for what an errored publication really reports: `runtime/graph-publisher.ts` hands the
+// registry one `composition-failure` per failed publication, pathed by the node and naming it.
+const FAILED = [diagnostic("composition-failure", "hero/arm", "Composition failed.", ["hero/arm"])];
 
 describe("the registry owns the last ready patch", () => {
   it("answers the last ready patch while the node is blocked", () => {
@@ -132,6 +139,27 @@ describe("the registry owns the last ready patch", () => {
     registry.dispose();
 
     expect(registry.lastReady("hero/arm")).toBeUndefined();
+  });
+
+  it("keeps what it retains when the node errors, because an error owns no pose either", () => {
+    const registry = open();
+    const ready = publish(registry, 1, {
+      nodeId: "hero/arm",
+      values: { x: 1 },
+      sourceProgress: 0,
+      status: "ready",
+    });
+    const errored = publish(registry, 2, {
+      nodeId: "hero/arm",
+      sourceProgress: 0,
+      status: "error",
+      diagnostics: FAILED,
+    });
+
+    expect(errored?.status).toBe("error");
+    // Two conditions, one answer, and the arm is written rather than inherited: `blocked` above and
+    // `error` here both leave the retained pose alone, and neither reaches it through the other.
+    expect(registry.lastReady("hero/arm")).toBe(ready);
   });
 
   // Green on both sides, and deliberately so: this slice moves nothing on the observation wire. The
