@@ -160,7 +160,7 @@ A driver bug is never reported as `flush-failure`, and the graph still flushes o
 
 ## Runtime trouble arrives on the patch
 
-A node that exists but cannot produce a value publishes with status `blocked` or `error` and keeps its last known values, with the reason inline in `patch.diagnostics`. There is no separate diagnostics stream to subscribe to, by design. Batch-level diagnostics are on the `PatchBatch` that a flush produces.
+A node that exists but cannot produce a value publishes with status `blocked` or `error` carrying its refusal and nothing else, with the reason inline in `patch.diagnostics`. It does not keep its last known values: `values`, `sourceProgress` and `sourceRevisions` belong to `ready` alone since ADR-098, so a consumer that renders from `values` retains the last `ready` patch it received and renders from that. There is no separate diagnostics stream to subscribe to, by design. Batch-level diagnostics are on the `PatchBatch` that a flush produces.
 
 That means a rendering consumer should branch on `patch.status` rather than assume every patch is renderable, and an inspector can read `patch.diagnostics` without any extra wiring.
 

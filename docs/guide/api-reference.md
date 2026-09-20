@@ -21,7 +21,7 @@ A declared subpath is not automatically production API. The tier says who may im
 `new Engine({ clock, interpolator, scheduler, plugins?, triggerFactory? })` validates all three ports. `engine.load(project)` returns a `ProjectHandle`:
 
 - `mount(nodeId, instance?)` and `unmount(nodeId)` control membership.
-- `get(nodeId)` returns the retained `Patch` or `undefined`.
+- `get(nodeId)` returns the retained `LivePatch` or `undefined`. It cannot answer `destroyed`: eviction drops the node's entry before its terminal patch is delivered, so a subscriber hears that publication exactly once and a reader of current state is never handed it.
 - `renderMetadata(nodeId)` returns the node's `RenderMetadata`, the output serializers a renderer needs, or `undefined` for a node with no compiled track.
 - `subscribeNode(nodeId, listener)` returns an unsubscribe function, and is the one mechanism for it. The `subscribe` alias that used to sit beside it is deleted rather than discouraged. See ADR-076.
 - `seek(nodeId, progress)` scrubs one leaf and returns a `PatchBatch`.
@@ -54,7 +54,7 @@ The six authoring members above are the structural tier, and each returns `void`
 
 **Schema and validation.** `AUTHORED_SCHEMA_VERSION`, `SUPPORTED_TRIGGER_TYPES`, `DIAGNOSTIC_SEVERITIES`, `validateV5`, `validateTrackDefinition`, `validateMotionTrigger`, `resolveTriggerDefinition`, `migrateV4ToV5`, `parseGolden`, and `serializeGolden`.
 
-**Types.** `ProjectDefinition`, `MotionDefinition`, `TrackDefinition`, `ObservationDefinition`, `AuthoredProperty`, `AuthoredStop`, `TriggerDefinition` and its three members, `TriggerType`, `TriggerSignal`, `Patch`, `PatchBatch`, `PatchStatus`, `PatchListener`, `Diagnostic`, `DiagnosticSeverity`, `MigrationDiagnostic`, `MigrationResult`, `ValidationResult`, `TrackValidationResult`, `GoldenFixture`, and `GoldenValidationFixture`.
+**Types.** `ProjectDefinition`, `MotionDefinition`, `TrackDefinition`, `ObservationDefinition`, `AuthoredProperty`, `AuthoredStop`, `TriggerDefinition` and its three members, `TriggerType`, `TriggerSignal`, `Patch`, `LivePatch`, `PatchBatch`, `PatchStatus`, `PatchListener`, `Diagnostic`, `DiagnosticSeverity`, `MigrationDiagnostic`, `MigrationResult`, `ValidationResult`, `TrackValidationResult`, `GoldenFixture`, and `GoldenValidationFixture`.
 
 An `ObservationDefinition` carries `source` and nothing else. There is no `target`, no `role`, and no `projection`, and an authored one of each is rejected with `observation-target-unsupported`, `observation-role-unsupported`, or `observation-projection-unsupported`. `InputProjection` is gone with the primitive it described. See ADR-046 and ADR-047.
 
@@ -98,13 +98,15 @@ These are the implementations the core suite runs the port contract suite agains
 
 ## @motion5/core/internal
 
-A private channel between core and React: `Patch`, `PatchListener`, `PatchSource`, `RenderMetadata`, and `RenderMetadataSource`. The metadata half is declared separately and required only by the binding that renders, so a consumer that reads values keeps the two-member source contract.
+A private channel between core and React: the `Patch`, `LivePatch`, `PatchListener`, `PatchSource`, `RenderMetadata`, and `RenderMetadataSource` types, plus the `liveOrAbsent` function. The metadata half is declared separately and required only by the binding that renders, so a consumer that reads values keeps the two-member source contract. `PatchSource.get` answers `LivePatch | undefined` while `subscribeNode` delivers every variant, and `liveOrAbsent` is the one function that converts between them, so an implementor discharges that obligation with a call rather than re-deriving which variants are live.
 
 ## @motion5/react
 
-`usePatch(source, nodeId)`, `useDomPatch(source, nodeId)`, `useDerivedDomPatch(source, nodeIds, derive)`, the `PatchDerivation` and `PatchValues` types, and the re-exported `Patch`, `PatchListener`, `PatchSource`, `RenderMetadata`, and `RenderMetadataSource` types.
+`usePatch(source, nodeId)`, `useDomPatch(source, nodeId)`, `useDerivedDomPatch(source, nodeIds, derive)`, `liveOrAbsent(patch)`, the `PatchDerivation` and `PatchValues` types, and the re-exported `Patch`, `LivePatch`, `PatchListener`, `PatchSource`, `RenderMetadata`, and `RenderMetadataSource` types.
 
 `useDomPatch` returns a callback ref for one-patch-to-one-target HTML or SVG binding and requires a `PatchSource & RenderMetadataSource`. `useDerivedDomPatch` returns one for a target whose values are a `PatchDerivation` over the nodes it names: it takes a plain `PatchSource`, runs the derivation only while every named node is ready, and hides the target while one is not or while the derivation returns `undefined`. Diagnostics and markup that must render absence rather than hide it stay on `usePatch`. See ADR-073 and ADR-075.
+
+`usePatch` answers `LivePatch | undefined`. The store behind it collapses a node's terminal publication to absence rather than serving it, so a component renders the node's disappearance as the absence its markup already handles instead of as a fourth status it has to know to check. `liveOrAbsent(patch)` is that collapse, exported because `get` answers the live union while `subscribeNode` delivers all four variants: a consumer implementing a source over a wire that carries a terminal patch owes the conversion, and this is the one function that makes it. It answers the patch it was handed for `ready`, `blocked` and `error`, by identity rather than by copy, so snapshot stability survives it, and `undefined` for `destroyed`. A consumer that wants the terminal event itself reads it from `subscribeNode`, which is the only place it is ever delivered.
 
 ## Known gaps
 

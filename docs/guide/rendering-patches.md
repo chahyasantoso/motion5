@@ -40,7 +40,7 @@ Status is the part worth reading carefully, because it decides what the patch ca
 
 A non-ready patch used to carry the previous patch's `values`, `sourceProgress` and `sourceRevisions`, so a blocked node republished the last pose and a subscriber reading `patch.values` on it was reading an earlier publication's answer. That is gone, and it is a behaviour change rather than a type refinement. The DOM adapter and `useDomPatch` are unaffected, because both already ignore a non-ready patch and leave the target at the last pose they wrote. A consumer that renders from `values` itself keeps the last `ready` patch it received and renders from that, because the wire does not carry it a second time any more.
 
-The variants have names in the source and are deliberately not on the package entry, so narrow on `status` rather than importing one. `Patch`, `PatchStatus`, `PatchBatch` and `PatchListener` are the exported names, and `PatchStatus` is read off the union rather than spelled beside it, so it cannot name a status that no variant declares.
+The variants have names in the source and are deliberately not on the package entry, so narrow on `status` rather than importing one. `Patch`, `LivePatch`, `PatchStatus`, `PatchBatch` and `PatchListener` are the exported names, and `PatchStatus` is read off the union rather than spelled beside it, so it cannot name a status that no variant declares. `LivePatch` is the union minus `destroyed`, and it is on the entry because the members that answer current state name it: `get` on a project handle or on any `PatchSource` answers `LivePatch | undefined`, since eviction drops a node's entry before its terminal patch is delivered, so that patch reaches a subscriber exactly once and is never readable back out. Subscribe when you want the terminal event; ask `get` when you want the current state.
 
 ## The DOM adapter
 
@@ -103,7 +103,7 @@ It subscribes to every id, reads their retained patches on each delivery, and wr
 
 Liveness is this hook's rule, unlike `useDomPatch`'s: the derivation runs only while every named node is `ready`, and the target is hidden while one is not, because a bound element cannot unmount itself. Returning `undefined` from the derivation hides it the same way.
 
-`usePatch` remains the read API: diagnostic readouts, and markup that must render absence rather than hide it. It takes any `PatchSource`, which is exactly `{ get, subscribeNode }`, and is built on `useSyncExternalStore`, so it is tear-free under concurrent rendering and safe in strict mode. One hook subscribes to one node; render a component per animated node rather than subscribing to the project and re-rendering the tree.
+`usePatch` remains the read API: diagnostic readouts, and markup that must render absence rather than hide it. It takes any `PatchSource`, which is exactly `{ get, subscribeNode }`, and is built on `useSyncExternalStore`, so it is tear-free under concurrent rendering and safe in strict mode. It answers `LivePatch | undefined`, so a destroyed node arrives as the absence your markup already handles rather than as a fourth status to branch on. One hook subscribes to one node; render a component per animated node rather than subscribing to the project and re-rendering the tree.
 
 ## Your own consumer
 
@@ -119,5 +119,7 @@ const unsubscribe = handle.subscribeNode("hero/title", (patch) => {
   sprites.get(patch.nodeId)?.set(patch.values);
 });
 ```
+
+A source you implement yourself owes the same split. `get(nodeId)` answers `LivePatch | undefined`, so a delivered `destroyed` patch drops your entry for that node rather than being stored as its current state, and `liveOrAbsent(patch)` is that collapse: it is exported from `@motion5/react` and from the `@motion5/core/internal` channel so the partition has one owner rather than one per source. `subscribeNode` keeps delivering all four variants, because a subscriber has to hear a node's last publication.
 
 Two rules keep a consumer honest. Read the current value with `get(nodeId)` when you attach, because subscribing does not replay the retained patch. And never throw from a listener as flow control: a throwing listener does not stop its siblings from being notified, but the first failure is rethrown once the batch has finished delivering, and you will see it at the flush call site.
