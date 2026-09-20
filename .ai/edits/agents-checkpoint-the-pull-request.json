@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "expected_head": "7226550ac9dcf8f82ed57451d7073d927702f50a",
+  "expected_blobs": {
+    "AGENTS.md": "25cc99a5d5aced2f762491e7352b3ecc12c0d864"
+  },
+  "message": "docs(agents): checkpoint the pull request, so a slice that runs out of time is resumable",
+  "edits": [
+    {
+      "path": "AGENTS.md",
+      "find": "## If you have no local checkout",
+      "replace": "Checkpoint to the pull request as you go, because you can run out of time, context or budget mid-slice, and the next implementor has only what you wrote down. A checkpoint comment names the head you read against, which slice and which step is in progress, what is published as against merely prepared or requested, the exact commits and runs that are evidence so far, what you decided and what you withdrew on the way, and the single next action. It is a handover rather than a project-state claim, so it belongs on the pull request and never in `docs/SESSION-STATUS.md`, which still states only what has landed. Stopping without one is the same defect as a decision taken and not recorded, one step further on: the work survives and the reason for it does not, and the next implementor pays for the reconstruction. A slice that ended without a checkpoint is incomplete rather than merely unfinished.\n\n## If you have no local checkout"
+    }
+  ]
+}
